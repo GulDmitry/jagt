@@ -5,17 +5,21 @@ import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.Verification;
+import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
- * Runs the project's own command for every task waiting at VERIFYING. Green hands the round on to the human;
- * red goes back to the agent with the output, so nobody opens an IDE on a tree that does not build.
+ * Runs the project's own command, then the plan's acceptance probes, for every task waiting at VERIFYING. Green
+ * hands the round on to the human; red goes back to the agent with the output, so nobody opens an IDE on a tree
+ * that does not build.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,13 +55,29 @@ public class VerifyJob implements Job {
 
     private void verify(String taskId, TaskState task) {
         Optional<String> failure = verification.failure(task);
-        if (failure.isEmpty()) {
+        if (failure.isPresent()) {
+            sessions.relayIfChanged(taskId, brief(failure.get()));
+            statusReports.report(FlowRules.verified(false), "verification failed; relayed", taskId);
+            return;
+        }
+        List<Probe> probed = verification.probed(taskId, task);
+        if (!probed.isEmpty()) {
+            stateService.updateTask(taskId, current -> current.withProbes(probed));
+        }
+        List<Probe> failed = probed.stream().filter(Probe::failed).toList();
+        if (failed.isEmpty()) {
             statusReports.report(FlowRules.verified(true), "verified", taskId);
             return;
         }
-        sessions.relayIfChanged(taskId, brief(failure.get()));
-        statusReports.report(FlowRules.verified(false), "verification failed; relayed", taskId);
+        sessions.relayIfChanged(taskId, PROBES_FAILED + failed.stream().map(Probe::result)
+                .collect(Collectors.joining("\n\n")));
+        statusReports.report(FlowRules.verified(false), "acceptance probe failed; relayed", taskId);
     }
+
+    /** The plan was ratified with these probes, so the code is what changes; a new plan is the way to new probes. */
+    private static final String PROBES_FAILED = "jagt ran the acceptance probes of the plan you were given a go on,"
+            + " and these failed. Make them pass, leave the fix uncommitted, and report REVIEW_PENDING again. A probe"
+            + " that is itself wrong changes only with a new plan: write it into plan.md and report PLAN_PENDING.\n\n";
 
     /** The output, and the one route out of it: a failing command is not a judgement to weigh. */
     private static String brief(String failure) {

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.surface.agent;
+package dev.jagt.orchestrator.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,7 +45,7 @@ class ToolGateTest {
             "git push origin ABC-42 x\\> main",
     })
     void refusesAPushWhoseDestinationIsNotTheTasksBranch(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290))
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290))
                 .isPresent()
                 .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
                 .contains("ABC-42");
@@ -72,7 +72,7 @@ class ToolGateTest {
             "git commit -c HEAD && git push origin ABC-42",
     })
     void allowsEverythingThatDoesNotWriteAnotherBranch(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).isEmpty();
     }
 
     @ParameterizedTest
@@ -91,7 +91,7 @@ class ToolGateTest {
             "git '-c' remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
     })
     void refusesAPushThatCouldSkipThePrePushCheck(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("could skip its pre-push check");
     }
 
@@ -99,7 +99,7 @@ class ToolGateTest {
     @ValueSource(strings = {"git push --force origin ABC-42", "git push -f origin ABC-42",
             "git push -uf origin ABC-42", "git push origin +ABC-42", "git push --force-with-lease origin +ABC-42"})
     void refusesForcingTheTasksOwnBranchWithoutTheLease(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("--force-with-lease");
     }
 
@@ -113,7 +113,7 @@ class ToolGateTest {
             "curl -X POST http://0x7f000001:8290/api/tasks/say", "curl -X POST http://LOCALHOST:8290/api/tasks/say",
             "curl -X POST http://[::ffff:127.0.0.1]:8290/api/tasks/say", "cat .jagt/MASTER-TOKEN"})
     void refusesALineReachingTheBoardOrTheMastersToken(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("reaching its board");
     }
 
@@ -130,7 +130,7 @@ class ToolGateTest {
             "GH_TOKEN=x gh pr merge 12", "env -u GH_HOST gh pr merge 12", "xargs -n 1 gh pr close",
             "command 'gh' pr merge 12"})
     void refusesWritingToTheCodeHostPastThePush(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");
     }
 
@@ -153,7 +153,7 @@ class ToolGateTest {
             "watch 'gh pr merge 1'", "ssh localhost 'gh pr merge 1'",
             "su -c 'gh pr merge 1'", "flock f -c 'gh pr merge 1'"})
     void refusesAHostCliWriteHoweverItIsWrapped(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");
     }
 
@@ -163,55 +163,50 @@ class ToolGateTest {
             "gh api repos/o/r/pulls --paginate --jq .[].number", "gh api -i -H Accept:x repos/o/r",
             "env gh pr view 1", "env GH_TOKEN=x gh pr view 1", "env GH_PAGER= gh pr view 1", "env -u GH_TOKEN gh pr list"})
     void letsTheCodeHostBeRead(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).isEmpty();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"grep -rn glab src", "ls docs/gh", "which gh", "git commit -m \"bump gh to 2.0\"",
             "rg -t sh gh src", "bash scripts/check.sh gh", "env | grep gh", "which bash gh"})
     void letsAHostCliBeNamedAnywhereButInCommandPosition(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).isEmpty();
     }
 
     @Test
     void letsATaskWhoseBranchOpensWithAHashPushItQuoted() {
-        assertThat(ToolGate.refusal("Bash", "git push origin '#123'", "#123", 8290)).isEmpty();
+        assertThat(ToolGate.refusal("git push origin '#123'", "#123", 8290)).isEmpty();
     }
 
     @Test
     void refusesAPushThatNamesNoBranchBecauseTheConfigWouldDecide() {
-        assertThat(ToolGate.refusal("Bash", "git push", "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal("git push", "ABC-42", 8290)).get()
                 .asString().contains("names no branch");
     }
 
     @Test
-    void answersNothingForAToolThatCannotPush() {
-        assertThat(ToolGate.refusal("Read", "git push origin dev", "ABC-42", 8290)).isEmpty();
-    }
-
-    @Test
     void answersNothingWhenTheCallerHasNoBranchOfItsOwn() {
-        assertThat(ToolGate.refusal("Bash", "git push origin dev", null, 8290)).isEmpty();
+        assertThat(ToolGate.refusal("git push origin dev", null, 8290)).isEmpty();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"git push origin :ABC-42", "git push --delete origin ABC-42",
             "git push -d origin ABC-42", "git push --dele origin ABC-42", "git push -ud origin ABC-42"})
     void refusesDeletingTheTasksOwnBranch(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("refuses deleting a branch");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"git $'\\x70ush' origin main", "git $\"push\" origin main", "time gh $'pr' merge 1", "$'gh' pr merge 1"})
     void refusesAGitLineInAQuotingItDoesNotRead(String command) {
-        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("plain quotes");
     }
 
     @Test
     void refusesALineReachingTheBoardOnTheAddressItIsServedOn() {
-        assertThat(ToolGate.refusal("Bash", "curl -X POST http://192.168.1.5:8290/api/tasks/say", "ABC-42", 8290))
+        assertThat(ToolGate.refusal("curl -X POST http://192.168.1.5:8290/api/tasks/say", "ABC-42", 8290))
                 .get().asString().contains("reaching its board");
     }
 }

@@ -80,6 +80,18 @@ class AgentToolGateControllerTest {
     }
 
     @Test
+    void answersNothingForAToolThatCannotPush() {
+        when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
+                TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+
+        var answered = new AgentToolGateController(stateService).gate("/wt/ABC-1-proj",
+                new AgentToolGateController.ToolCall("Read", Map.of("command", "git push origin dev")),
+                new MockHttpServletRequest());
+
+        assertThat(answered.getBody()).isNull();
+    }
+
+    @Test
     void answersACallWithNoPayloadWithNothing() {
         var answered = new AgentToolGateController(stateService).gate("/wt/ABC-1-proj", null,
                 new MockHttpServletRequest());

@@ -14,7 +14,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 |-------|--------|----------|-----------|
 | `ReadGate` | each call of a headless read and the Master's reviewer | allow-list, fails closed | nothing: it is the boundary |
 | `BoardWriteFilter` | every board write but `/mcp` and `/api/agent/` | allow-list | the Master's token, same-user trust |
-| `ToolGate` | a session's shell line before it runs | block-list over one line | the worktree's `pre-push` |
+| `ToolGate` | a session's shell line or a plan's command probe | block-list over one line | the worktree's `pre-push` |
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
 | `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit | the code host's branch protection |
 | `GitStateGuard` | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |

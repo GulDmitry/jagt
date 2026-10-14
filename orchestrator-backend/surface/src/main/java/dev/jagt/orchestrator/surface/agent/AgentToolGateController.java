@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Guard;
+import dev.jagt.orchestrator.service.ToolGate;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -21,6 +22,9 @@ import java.util.Objects;
 @RestController
 @Slf4j
 public class AgentToolGateController {
+
+    /** Only a shell command can push; every other tool is answered with nothing. */
+    private static final String SHELL_TOOL = "Bash";
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ToolCall(@JsonProperty("tool_name") @Nullable String toolName,
@@ -43,12 +47,12 @@ public class AgentToolGateController {
     public ResponseEntity<Map<String, Object>> gate(
             @RequestHeader(value = "X-Working-Directory", required = false) @Nullable String cwd,
             @RequestBody(required = false) @Nullable ToolCall call, HttpServletRequest request) {
-        if (call == null) {
+        if (call == null || !SHELL_TOOL.equalsIgnoreCase(call.toolName())) {
             return ResponseEntity.noContent().build();
         }
         // A directory no task owns has no branch a push could be refused against.
         String taskBranch = stateService.findByWorktree(cwd).map(Map.Entry::getKey).orElse(null);
-        return ToolGate.refusal(call.toolName(), call.command(), taskBranch, request.getLocalPort())
+        return ToolGate.refusal(call.command(), taskBranch, request.getLocalPort())
                 .map(reason -> {
                     stateService.updateTask(Objects.requireNonNull(taskBranch),
                             task -> task.refused(Guard.SESSION_LINE));

@@ -30,7 +30,7 @@ class VerificationTest {
                 .withRoot(root.toString()).withConfigFile(configFile.toString())), mock(AgentRuntime.class));
         Processes processes = mock(Processes.class);
 
-        Optional<String> failure = new Verification(config, processes)
+        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))
                 .failure(TaskState.builder("gone", "/wt", TaskStatus.VERIFYING).build());
 
         assertThat(failure).isEmpty();

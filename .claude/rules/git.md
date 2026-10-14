@@ -9,7 +9,8 @@ paths:
   - "**/service/NewTaskWorktrees.java"
   - "**/surface/agent/*Gate*.java"
   - "**/surface/agent/GitReadLine.java"
-  - "**/surface/agent/HostCliLine.java"
+  - "**/service/HostCliLine.java"
+  - "**/service/ToolGate.java"
   - "**/service/DeployTargets.java"
   - "**/service/ReadScopes.java"
 ---

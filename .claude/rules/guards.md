@@ -2,7 +2,9 @@
 paths:
   - "**/surface/agent/*Gate*.java"
   - "**/surface/agent/GitReadLine.java"
-  - "**/surface/agent/HostCliLine.java"
+  - "**/service/HostCliLine.java"
+  - "**/service/ToolGate.java"
+  - "**/service/AcceptanceProbing.java"
   - "**/service/ReadScopes.java"
   - "**/service/WorktreeHooks.java"
   - "**/BoardWriteFilter.java"

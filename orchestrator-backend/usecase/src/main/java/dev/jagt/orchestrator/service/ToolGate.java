@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.surface.agent;
+package dev.jagt.orchestrator.service;
 
 import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * The calls a session may be refused: a line reaching the board or the Master's token, a write to the code host
+ * The shell lines a task may be refused: a line reaching the board or the Master's token, a write to the code host
  * past the push, {@code $'…'} or {@code $"…"} on a git, gh or glab line, a push that could switch off the hook, a push naming
  * no branch or one not the task's own, a delete of the branch its review request is built on, and a force without
  * the lease. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an explicit
@@ -17,8 +17,6 @@ import java.util.stream.Stream;
  */
 public final class ToolGate {
 
-    /** Only a shell command can push; every other tool is answered with nothing. */
-    private static final String SHELL_TOOL = "Bash";
     /** An {@code &} beside a redirection ({@code 2>&1}, {@code &>}) separates nothing. */
     private static final String SEPARATORS = "&&|\\|\\||;|\\n|\\||(?<![<>])&(?!>)|\\(|\\)|`|\\$\\(";
     private static final List<String> GIT_OPTION_WITH_VALUE =
@@ -50,10 +48,9 @@ public final class ToolGate {
     private ToolGate() {
     }
 
-    /** Why the call is refused, or empty when it is allowed. */
-    public static Optional<String> refusal(@Nullable String toolName, @Nullable String line, @Nullable String taskBranch, int boardPort) {
-        if (!SHELL_TOOL.equalsIgnoreCase(toolName) || line == null || taskBranch == null
-                || taskBranch.isBlank()) {
+    /** Why the line is refused, or empty when it is allowed. */
+    public static Optional<String> refusal(@Nullable String line, @Nullable String taskBranch, int boardPort) {
+        if (line == null || taskBranch == null || taskBranch.isBlank()) {
             return Optional.empty();
         }
         String command = line.replace("\\\n", " ").replace("\\", "").replace("''", "").replace("\"\"", "");

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -31,10 +32,17 @@ public class Verification {
 
     private final ConfigService configService;
     private final Processes processes;
+    private final AcceptanceProbing probing;
 
     /** The first failure the commands reported: empty means every one of them passed, or none is configured. */
     public Optional<String> failure(TaskState task) {
         return task.repos().stream().map(this::failureOf).flatMap(Optional::stream).findFirst();
+    }
+
+    /** Each probe the ratified plan declared, with its result; the task's id is its branch. */
+    public List<Probe> probed(String taskId, TaskState task) {
+        return task.probes().isEmpty() ? List.of()
+                : probing.probed(taskId, Path.of(task.worktreePath()), task.probes());
     }
 
     private Optional<String> failureOf(TaskRepo repo) {

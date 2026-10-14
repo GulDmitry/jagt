@@ -57,7 +57,9 @@ public record TaskState(
         List<StatusChange> history,
         @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
         // Null until first recorded.
-        @Nullable GitTrust gitTrust
+        @Nullable GitTrust gitTrust,
+        // What the last plan submitted declared, each with its last result once VERIFYING ran it.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Probe> probes
 ) {
 
     /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
@@ -67,6 +69,7 @@ public record TaskState(
         repos = repos == null ? List.of() : List.copyOf(repos);
         history = history == null ? List.of() : List.copyOf(history);
         refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
+        probes = probes == null ? List.of() : List.copyOf(probes);
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
@@ -100,7 +103,8 @@ public record TaskState(
             @JsonProperty("agentSpend") @Nullable AgentSpend agentSpend,
             @JsonProperty("history") @Nullable List<StatusChange> history,
             @JsonProperty("refusals") @Nullable Map<Guard, Integer> refusals,
-            @JsonProperty("gitTrust") @Nullable GitTrust gitTrust) {
+            @JsonProperty("gitTrust") @Nullable GitTrust gitTrust,
+            @JsonProperty("probes") @Nullable List<Probe> probes) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -108,7 +112,8 @@ public record TaskState(
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
                 pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
-                refusals == null ? Map.of() : refusals, gitTrust);
+                refusals == null ? Map.of() : refusals, gitTrust,
+                probes == null ? List.of() : probes);
     }
 
     @JsonIgnore
@@ -415,6 +420,11 @@ public record TaskState(
         return gitTrust != null && gitTrust.changed() != null;
     }
 
+    /** Does NOT touch lastActiveTimestamp: jagt recorded them, the agent did nothing. */
+    public TaskState withProbes(List<Probe> probes) {
+        return toBuilder().probes(probes).build();
+    }
+
     /** Does NOT touch lastActiveTimestamp: metering is not agent activity. */
     public TaskState withUsageAdded(TokenUsage added) {
         return toBuilder().usage(usageOrNone().plus(added)).build();
@@ -436,7 +446,7 @@ public record TaskState(
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
                 .approved(approved)
-                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust);
+                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -464,6 +474,7 @@ public record TaskState(
         private @Nullable List<StatusChange> history;
         private Map<Guard, Integer> refusals = Map.of();
         private @Nullable GitTrust gitTrust;
+        private List<Probe> probes = List.of();
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -599,13 +610,19 @@ public record TaskState(
             return this;
         }
 
+        public Builder probes(List<Probe> probes) {
+            this.probes = probes;
+            return this;
+        }
+
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
-                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust);
+                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust,
+                    probes);
         }
     }
 }

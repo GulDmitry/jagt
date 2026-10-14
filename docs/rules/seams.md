@@ -22,8 +22,8 @@ implementation plus a config value, never `if claude` or `if macos`.
   at it and **not** the worktree's `.codex/`).
 - **Nothing outside the runtime names an agent's files**: `WorktreeSetup` calls `provisionWorktree`,
   `AgentSessions` `displayName`.
-- **The hook wire is the CLI's own protocol, read where it lands**: `ToolGate`, `ReadGate` and
-  their two controllers name its tools and `hookSpecificOutput`, `HostCliLine` the host CLIs.
+- **The hook wire is the CLI's own protocol, read where it lands**: `ReadGate` and the two
+  gate controllers name its tools and `hookSpecificOutput`, `HostCliLine` the host CLIs.
 
 ## Which name holds the briefing is the runtime's to answer
 

@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.nio.file.attribute.PosixFilePermission;
 
@@ -61,12 +64,22 @@ public final class WorktreeHooks {
      * runs NO hook at all.
      */
     public static String gitEnv(Path worktree) {
+        return gitEnvironment(worktree).entrySet().stream()
+                .map(variable -> variable.getKey() + "=" + quoted(variable.getValue()) + " ")
+                .collect(Collectors.joining());
+    }
+
+    /** The same assignment, for a process jagt starts itself. */
+    public static Map<String, String> gitEnvironment(Path worktree) {
         Path directory = worktree.resolve(DIRECTORY);
         if (!Files.isDirectory(directory)) {
-            return "";
+            return Map.of();
         }
-        return "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0="
-                + quoted(directory.toString()) + " ";
+        Map<String, String> env = new LinkedHashMap<>();
+        env.put("GIT_CONFIG_COUNT", "1");
+        env.put("GIT_CONFIG_KEY_0", "core.hooksPath");
+        env.put("GIT_CONFIG_VALUE_0", directory.toString());
+        return env;
     }
 
     /**

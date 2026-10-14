@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.RoundReviewer.Premise;
+import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -69,6 +70,28 @@ class MasterPanelTest {
                 new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""));
 
         assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>");
+    }
+
+    @Test
+    void quotesTheProbesJagtRanToEachReviewerAsFacts() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING)
+                .probes(List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)
+                        .probed(true, "exit 0"))).build();
+
+        String prompt = MasterPanel.quote("ABC-1", task, new MasterPanel.RoundRead("", "", "", List.of(), ""));
+
+        assertThat(prompt).contains("<probes>\ncommand ./gradlew test — passed\nexit 0\n</probes>");
+    }
+
+    @Test
+    void showsThePlanReaderTheProbesJagtWillRun() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING)
+                .probes(List.of(Probe.specified(Probe.Kind.REF, List.of("refs/tags/v1"), 0))).build();
+
+        String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. tag v1",
+                new MasterPanel.RoundRead("", "", "", List.of(), ""), false, true);
+
+        assertThat(prompt).contains("<probes>\nref refs/tags/v1\n</probes>");
     }
 
     @Test

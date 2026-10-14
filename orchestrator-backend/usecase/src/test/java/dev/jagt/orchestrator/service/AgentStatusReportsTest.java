@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
@@ -656,5 +657,36 @@ class AgentStatusReportsTest {
 
         assertThat(answer).endsWith("verification runs first, and the Master reads this round once it passes;"
                 + " end your turn");
+    }
+
+    @Test
+    void recordsTheProbesAPlanDeclaresAsItIsPutUp(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        Files.writeString(root.resolve("plan.md"), "# Plan\n```probes\nartifact docs/guide.md\n```\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().probes())
+                .containsExactly(Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/guide.md"), 0));
+    }
+
+    @Test
+    void refusesAPlanWhoseProbesBlockHoldsALineNoProbeReads(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        Files.writeString(root.resolve("plan.md"), "```probes\ncommand ./gradlew test | tee out.log\n```\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        assertThatThrownBy(() -> reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("| tee out.log");
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
     }
 }

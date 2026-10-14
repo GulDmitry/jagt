@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.protocol.Reported;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.TaskState;
@@ -82,22 +83,9 @@ public class AgentStatusReports {
         String shortMessage = OneLine.of(stated(said, current, taskId), MAX_MESSAGE);
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
-        FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage, (was, next) -> {
-            if (url == null) {
-                return next;
-            }
-            // Repeating CI_POLLING on the request already carried is the same round.
-            boolean sameRound = FlowRules.outForReview(was) && (requestsByProject.isEmpty()
-                    ? url.equals(next.mrUrl())
-                    : requestsByProject.entrySet().stream().allMatch(request ->
-                            next.reviewRequestOf(request.getKey()).filter(request.getValue()::equals).isPresent()));
-            boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
-            if (!requestsByProject.isEmpty()) {
-                return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
-            }
-            return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
-        }, handBack::verificationOwed).orElseThrow(() ->
-                Refusal.noSuchTask(taskId));
+        FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage,
+                (was, next) -> planned(was, linked(was, next, url, requestsByProject)), handBack::verificationOwed)
+                .orElseThrow(() -> Refusal.noSuchTask(taskId));
         TaskStatus previous = written.previous();
         TaskStatus landed = written.now();
         String alias = current.map(TaskState::alias).orElse(null);
@@ -133,6 +121,35 @@ public class AgentStatusReports {
                 : "; the Master reads this round next; end your turn";
         return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")")
                 + (FlowRules.headedForTheMaster(landed) && handBack.masterReads() ? next : "");
+    }
+
+    private static TaskState linked(TaskStatus was, TaskState next, @Nullable String url,
+                                    Map<String, String> requestsByProject) {
+        if (url == null) {
+            return next;
+        }
+        // Repeating CI_POLLING on the request already carried is the same round.
+        boolean sameRound = FlowRules.outForReview(was) && (requestsByProject.isEmpty()
+                ? url.equals(next.mrUrl())
+                : requestsByProject.entrySet().stream().allMatch(request ->
+                        next.reviewRequestOf(request.getKey()).filter(request.getValue()::equals).isPresent()));
+        boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
+        if (!requestsByProject.isEmpty()) {
+            return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
+        }
+        return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
+    }
+
+    /** Read as the plan is put up, not after: what VERIFYING runs is what was ratified. */
+    private TaskState planned(TaskStatus was, TaskState next) {
+        if (FlowRules.holdsAPlan(was) || !FlowRules.holdsAPlan(next.status())) {
+            return next;
+        }
+        PlanProbes.Read read = handBack.planProbes(next);
+        if (!read.violations().isEmpty()) {
+            throw new IllegalArgumentException(Message.refusal(read.violations()));
+        }
+        return next.withProbes(read.probes());
     }
 
     /** Puts what {@link FlowRules#readReview} concluded on the board; a red was tapped when the round read it. */

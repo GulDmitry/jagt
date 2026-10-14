@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -240,6 +241,10 @@ public class MasterPanel {
                 + (!read.ticket().isBlank() ? "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n"
                         : ticket(tracker, "plan") + "\n")
                 + (plan.isBlank() ? "" : "The plan, plan.md:\n<plan>\n" + plan + "\n</plan>\n")
+                + (task.probes().isEmpty() ? "" : "The acceptance probes jagt read from it; once it holds, jagt runs"
+                        + " them itself before any round reaches review, and a red one returns the round:\n<probes>\n"
+                        + task.probes().stream().map(Probe::toString).collect(Collectors.joining("\n"))
+                        + "\n</probes>\n")
                 + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
                         + "\n</session_notes>\n")
                 + settled(read.decided()) + humanSaid(read.said())
@@ -340,6 +345,9 @@ public class MasterPanel {
                 + (read.diff().isBlank() ? "" : "The diff, read for this round:\n<diff>\n" + read.diff() + "</diff>\n")
                 + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
                         + "\n</session_notes>\n")
+                + (task.probes().isEmpty() ? "" : "The acceptance probes of the ratified plan, as jagt itself ran"
+                        + " them, facts the session cannot author:\n<probes>\n" + task.probes().stream()
+                        .map(Probe::result).collect(Collectors.joining("\n")) + "\n</probes>\n")
                 + settled(read.decided()) + humanSaid(read.said());
     }
 

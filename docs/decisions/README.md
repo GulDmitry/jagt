@@ -9,10 +9,10 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
 - **Never edited once accepted**, typos aside: a change is a new record, marking the old `superseded by NNNN`.
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
-  **Decision**, **Rejected** (each with its reason), **Reopen when** (what measurement changes it).
+  **Decision**, **Rejected** (each with why), **Reopen when** (the measurement changing it).
 - At most 400 words, else two decisions.
 - **Linked**: a record names its rule first; this index lists all (`DecisionIndexTest`).
-- A record taken after the fact says `recorded retroactively`, carrying only what history proves.
+- Taken after the fact: `recorded retroactively`, carrying only what history proves.
 
 ## Index
 
@@ -21,19 +21,19 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0003 Tracker, code host via MCP](0003-tracker-and-code-host-are-read-through-the-agents-own-mcp.md)
 - [0004 Invariants out of git hooks](0004-jagt-keeps-its-invariants-out-of-git-hooks.md)
 - [0005 The base branch is read-only](0005-the-base-branch-is-read-only.md)
-- [0006 The machine moves, a model judges](0006-the-machine-owns-every-move-a-model-only-judges.md)
-- [0007 Only adapter names a vendor or an OS](0007-only-adapter-names-a-vendor-or-an-os.md)
-- [0008 A failed read is never "not found"](0008-a-failed-read-is-never-not-found.md)
+- [0006 Machine moves, model judges](0006-the-machine-owns-every-move-a-model-only-judges.md)
+- [0007 Only adapter names vendor, OS](0007-only-adapter-names-a-vendor-or-an-os.md)
+- [0008 Failed read is not missing](0008-a-failed-read-is-never-not-found.md)
 - [0009 Read once and quoted](0009-what-jagt-can-read-it-reads-once-and-quotes.md)
-- [0010 The human overrules the Master](0010-the-humans-own-word-stands-over-the-master.md)
-- [0011 A red run is the session's to diagnose](0011-a-red-run-is-the-sessions-to-diagnose.md)
-- [0012 The Master finishes the task](0012-the-master-finishes-the-task.md)
+- [0010 Human overrules Master](0010-the-humans-own-word-stands-over-the-master.md)
+- [0011 Red run, session diagnoses](0011-a-red-run-is-the-sessions-to-diagnose.md)
+- [0012 Master finishes task](0012-the-master-finishes-the-task.md)
 - [0013 Deploy conflict, session's in `act`](0013-a-deploy-conflict-is-the-sessions-in-act.md)
 - [0014 Behaviour lives in OpenSpec](0014-behaviour-is-recorded-as-openspec-specs.md)
 - [0015 Another branch is another task](0015-another-branch-is-another-task.md)
-- [0016 Only the human closes a task](0016-only-the-human-closes-a-task.md)
+- [0016 Only the human closes](0016-only-the-human-closes-a-task.md)
 - [0017 The Master in one feed window](0017-the-master-is-seen-in-one-feed-window.md)
-- [0018 The Master judges by default](0018-the-master-judges-by-default.md)
+- [0018 Master judges by default](0018-the-master-judges-by-default.md)
 - [0019 Large work cut by spec](0019-large-work-is-cut-by-its-spec-not-split-into-requests.md)
 - [0020 jagt holds no token](0020-jagt-holds-no-token-of-its-own.md)
 - [0021 jagt runs from its clone](0021-jagt-runs-from-a-clone-of-its-repository.md)
@@ -56,3 +56,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0038 First role writes the round](0038-a-panels-first-role-writes-the-round.md)
 - [0039 No JVM flag](0039-jagt-starts-with-no-jvm-flag.md)
 - [0040 Git runs what was trusted](0040-git-runs-only-what-the-human-trusted.md)
+- [0041 jagt runs a plan's probes](0041-a-plans-probes-are-run-by-jagt.md)
