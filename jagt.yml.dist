@@ -21,6 +21,7 @@ orchestrator:
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
+  keepAwake: false         # true: macOS stays awake while the Master acts, auto-review polls or `take` runs
   # kittyCommand: kitty   # if the binary is not on PATH
   # kittyFontSize: 13     # blank keeps kitty.conf's own
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs

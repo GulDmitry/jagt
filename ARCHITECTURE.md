@@ -127,15 +127,16 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
 | `Processes` | `adapter/ProcessRunner` |
-| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one seam with a single impl |
+| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam |
 | `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
+| `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/NoKeepAwake` |
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |
 | `EditorDriver` | `adapter/CliEditorDriver` |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
-| `AgentWorktree`, `Notification`, `Answer` | nothing: they are value **records** the interfaces above pass |
+| `AgentWorktree`, `Notification`, `Answer` | nothing: value **records** the ports pass |
 
 ## Where a new thing goes
 
