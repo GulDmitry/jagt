@@ -46,6 +46,7 @@ public class TaskProvisioning {
                     // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
                     .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
                     .autoReview(config.autoReview().enabledOrDefault())
+                    .gitTrust(worktrees.trust(repos))
                     .build());
         }
         NewRepo session = repos.get(0);

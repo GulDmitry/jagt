@@ -5,7 +5,8 @@
 A review judges a guard against this file. The records it condenses keep the evidence:
 [0022](../decisions/0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md),
 [0026](../decisions/0026-the-guards-gaps-after-round-three.md) to
-[0031](../decisions/0031-the-host-cli-is-judged-wherever-it-stands.md).
+[0031](../decisions/0031-the-host-cli-is-judged-wherever-it-stands.md),
+[0040](../decisions/0040-git-runs-only-what-the-human-trusted.md).
 
 ## A boundary is an allow-list, a guardrail is a block-list
 
@@ -16,13 +17,14 @@ A review judges a guard against this file. The records it condenses keep the evi
 | `ToolGate` | a session's shell line before it runs | block-list over one line | the worktree's `pre-push` |
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
 | `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit | the code host's branch protection |
+| `GitStateGuard` | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |
 
 ## What a review reports
 
 - **A new spelling of a class below is not a finding.** Refusing it is optional work and never blocks a release.
 - A finding is a class missing below, a Reopen condition that now holds, or an allow-list that widened.
 - A gap that joins the list carries its Reopen condition, in the commit refusing what it can.
-- `finished` sums what `ToolGate` and the report door refused, per kind; the `pre-push` hook's refusals stay uncounted.
+- `finished` sums what `ToolGate`, the report door and `GitStateGuard` refused, per kind; the `pre-push` hook's refusals stay uncounted.
 - Never proposed again, each rejected with its reason: a shell grammar in `ToolGate` (0028, 0031), state across
   lines (0026), `gh`/`glab` writes refused verb by verb (0029), `git -c` in the reviewer (0028).
 
@@ -40,8 +42,9 @@ A review judges a guard against this file. The records it condenses keep the evi
 | The board reached with no port spelled: port 80, `nc 127.0.0.1 8290`, `/dev/tcp/…`, still forging Host and Origin | a write lands that way |
 | `HEAD` moved on an earlier call, then pushed | the `pre-push` hook is bypassed too |
 | A non-loopback `server.address`: any host there acts as the human | the board leaves loopback by default |
-| Config the reviewer's git obeys: `core.fsmonitor`, `gpg.program`, `blame.ignoreRevsFile` | a read runs a program or reads a file jagt did not name |
-| Shared repository config set from a worktree, run in the human's checkout | the human's git runs a program jagt saw set |
+| Config `GitStateGuard` reads no further: global, system, an `include.path` file, `branch.*` tracking | a guarded git runs a program set there |
+| A hook the merged branch carries under a relative `core.hooksPath` | a deploy runs a hook the record did not hold |
+| jagt's own `git diff HEAD` in a worktree, obeying `diff.external` | it runs a program a session set |
 | A headless answer in prose, its object in a fence and no schema call made | such an answer carries a tool's output |
 | An MCP read sends its arguments out; a local server's read verb reads outside the worktrees | a read tool writes, or one named takes a path |
 | A command harming the machine outside git and the board, where the agent CLI's own rules allow it | [`TODO.md`](../../TODO.md) holds it open |

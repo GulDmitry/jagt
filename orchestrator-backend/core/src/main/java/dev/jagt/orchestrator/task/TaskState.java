@@ -55,7 +55,9 @@ public record TaskState(
         @Nullable AgentSpend agentSpend,
         // Append-only, oldest first: every status this task actually moved TO, with when.
         List<StatusChange> history,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
+        // Null until first recorded.
+        @Nullable GitTrust gitTrust
 ) {
 
     /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
@@ -97,7 +99,8 @@ public record TaskState(
             @JsonProperty("usage") @Nullable TokenUsage usage,
             @JsonProperty("agentSpend") @Nullable AgentSpend agentSpend,
             @JsonProperty("history") @Nullable List<StatusChange> history,
-            @JsonProperty("refusals") @Nullable Map<Guard, Integer> refusals) {
+            @JsonProperty("refusals") @Nullable Map<Guard, Integer> refusals,
+            @JsonProperty("gitTrust") @Nullable GitTrust gitTrust) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -105,7 +108,7 @@ public record TaskState(
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
                 pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
-                refusals == null ? Map.of() : refusals);
+                refusals == null ? Map.of() : refusals, gitTrust);
     }
 
     @JsonIgnore
@@ -402,6 +405,16 @@ public record TaskState(
         return toBuilder().agentSpend(spend).build();
     }
 
+    /** Does NOT touch lastActiveTimestamp: what git holds is not agent activity. */
+    public TaskState withGitTrust(GitTrust trust) {
+        return toBuilder().gitTrust(trust).build();
+    }
+
+    @JsonIgnore
+    public boolean gitStateChanged() {
+        return gitTrust != null && gitTrust.changed() != null;
+    }
+
     /** Does NOT touch lastActiveTimestamp: metering is not agent activity. */
     public TaskState withUsageAdded(TokenUsage added) {
         return toBuilder().usage(usageOrNone().plus(added)).build();
@@ -423,7 +436,7 @@ public record TaskState(
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
                 .approved(approved)
-                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals);
+                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -450,6 +463,7 @@ public record TaskState(
         /** Null means "a brand-new task". */
         private @Nullable List<StatusChange> history;
         private Map<Guard, Integer> refusals = Map.of();
+        private @Nullable GitTrust gitTrust;
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -580,13 +594,18 @@ public record TaskState(
             return this;
         }
 
+        public Builder gitTrust(@Nullable GitTrust gitTrust) {
+            this.gitTrust = gitTrust;
+            return this;
+        }
+
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
-                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals);
+                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust);
         }
     }
 }

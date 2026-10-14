@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TaskState;
@@ -13,6 +14,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,6 +68,19 @@ class TaskProvisioningTest {
         assertThat(answer).contains("agent running on ABC-7", "also in web");
         assertThat(state.task("ABC-7").orElseThrow().projects()).containsExactly("api", "web");
         verify(sessions).startAgent("ABC-7", "a1", Path.of("/ABC-7-api"), false);
+    }
+
+    @Test
+    void bornTrustingWhatGitObeyedAsItsWorktreesWereCut() {
+        List<NewRepo> cut = List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/wt"), null, "origin/main", null, true));
+        when(worktrees.cut(any(), any(), any())).thenReturn(cut);
+        when(worktrees.trust(cut)).thenReturn(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
+
+        provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
+
+        assertThat(state.task("ABC-2").orElseThrow().gitTrust())
+                .isEqualTo(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
     }
 
     @Test

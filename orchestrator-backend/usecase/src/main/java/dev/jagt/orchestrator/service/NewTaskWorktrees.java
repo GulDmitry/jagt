@@ -2,11 +2,13 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.BranchStrategy;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskName;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,7 @@ import java.util.stream.Stream;
 /** Refuses a new task before anything exists, then cuts every worktree it needs, or none. */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NewTaskWorktrees {
 
     private static final Pattern SAFE_KEY = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
@@ -76,6 +79,17 @@ public class NewTaskWorktrees {
         return stateService.tasks().keySet().stream()
                 .anyMatch(registered -> TaskName.slug(registered).equals(TaskName.slug(name)))
                 || existingBranchProject(name, projectKeys) != null;
+    }
+
+    /** What git obeys around the worktrees just cut, null where it could not be read. */
+    public @Nullable GitTrust trust(List<NewRepo> repos) {
+        try {
+            return GitTrust.of(gitWorktrees.gitState(repos.stream().map(NewRepo::worktreePath).toList()));
+        } catch (RuntimeException unreadable) {
+            log.atWarn().setMessage("git state unread").addKeyValue("cause", unreadable.toString())
+                    .addKeyValue("effect", "trusted at the first check").log();
+            return null;
+        }
     }
 
     /** Every repository of {@code request}, each worktree cut; a refusal comes before anything is. */

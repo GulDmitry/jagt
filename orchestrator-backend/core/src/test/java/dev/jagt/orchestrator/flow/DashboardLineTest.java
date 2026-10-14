@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
 
@@ -7,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -166,5 +169,15 @@ class DashboardLineTest {
                 .mrUrl("https://host/mr/501").pipelineStatus(pipelineStatus).build();
 
         assertThat(DashboardLine.forTask(task, "https://host/mr/501").text()).isEmpty();
+    }
+
+    @Test
+    void namesWhatGitNowObeysAsTheHumansMove() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.APPROVED)
+                .gitTrust(GitTrust.of(Map.of()).withChanged("core.fsmonitor in /r/.git/config added")).build();
+
+        assertThat(DashboardLine.forTask(task, null))
+                .isEqualTo(new DashboardLine.Line(DashboardLine.Kind.YOURS,
+                        "NEEDS YOU: core.fsmonitor in /r/.git/config added"));
     }
 }

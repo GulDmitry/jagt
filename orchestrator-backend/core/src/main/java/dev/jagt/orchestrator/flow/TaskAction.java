@@ -20,6 +20,8 @@ public enum TaskAction {
     DEPLOY(90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
     REVERT(120, Group.FLOW, "revert", "Revert",
             "revert the last deploy's merge commit and push; earlier deploys stay live"),
+    TRUST(125, Group.FLOW, "trust", "Trust git",
+            "adopt the git config and hooks jagt found changed, as they are now"),
     DONE(130, Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
     FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
     IDE(50, Group.TOOL, "ide", "Open IDE", "open every worktree in the IDE; its uncommitted-changes view is the live diff",
@@ -54,7 +56,7 @@ public enum TaskAction {
      * Verbs a human keeps even where the Master session acts for them. A task is opened by a person and closed
      * by one; what happens in between is the work, and the work is what the reviewer stands in for.
      */
-    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(DONE);
+    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, DONE);
 
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
     private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);

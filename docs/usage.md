@@ -46,6 +46,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push |
 | `revert <ticket>` | undo that deploy with a revert commit |
 | `respawn <ticket>` | restart a dead agent session |
+| `trust <ticket>` | adopt the git config or hooks jagt found changed |
 | `done <ticket>` | close the task: session, worktree and state gone (the branch stays) |
 
 ### Global
@@ -106,9 +107,8 @@ the task branch, open or update one request **per repository**, post the drafted
 **A review round is a judgement, not a work order.** The agent may fix a comment, change nothing and say why,
 or ask you; it does not implement a suggestion it thinks is wrong.
 
-**`resume`** takes over a review request that already exists — reopened, or someone else's work. Its branch
-comes back with the commits on it, and its target branch is remembered, so the next `ship` updates that request
-rather than opening a second.
+**`resume`** takes over an existing review request: its branch comes back with its commits, its target is
+remembered, and the next `ship` updates that request.
 
 **`deploy` on conflict** pushes nothing: the task goes `DEPLOY_CONFLICT` and `ide <ticket>` opens the **deploy**
 worktree — resolve, `git add`, `deploy` again. Your task branch and request are untouched.

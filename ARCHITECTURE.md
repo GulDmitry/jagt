@@ -119,7 +119,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TaskStore` | `service/StateService` |
 | `AgentPresence` | `service/AgentSessions` |
 | `flow/TaskCapability` | one per verb under `capability/` |
-| `flow/CapabilityInterceptor` | `capability/ship/SpecFold`; an install may add its own step |
+| `flow/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/trust/GitStateGuard`; an install may add its own step |
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`) |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe` |

@@ -23,6 +23,11 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
     /** The WATCH rather than a flag off it: a promised poll that STOPPED and no poller at all are different cards. */
     public static Move forTask(TaskStatus status, Facts facts, RoundState round,
                                boolean agentSilent, AutoReviewWatch watch) {
+        if (facts.gitStateChanged()) {
+            return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "read what git changed",
+                    FlowRules.allowed(status, facts), TaskAction.TRUST,
+                    "git config or hooks changed since you trusted them; read the line, then trust");
+        }
         boolean hasReviewRequest = facts.hasReviewRequest();
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());

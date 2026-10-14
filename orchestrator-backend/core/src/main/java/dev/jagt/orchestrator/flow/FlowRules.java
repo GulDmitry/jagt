@@ -37,7 +37,7 @@ public final class FlowRules {
                 .from(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING, TaskStatus.REVIEW_PENDING,
                         TaskStatus.SHIPPING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.REVIEWED,
                         TaskStatus.DEPLOYED, TaskStatus.REVERTED)
-                .when((status, facts) -> switch (status) {
+                .when((status, facts) -> !facts.gitStateChanged() && switch (status) {
                     case IN_PROGRESS, VERIFYING, REVIEW_PENDING -> true;
                     case SHIPPING -> !facts.agentLive().getAsBoolean();
                     default -> facts.hasReviewRequest();
@@ -59,7 +59,8 @@ public final class FlowRules {
                         TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOYED,
                         TaskStatus.DEPLOY_CONFLICT)
                 // A stalled deploy is finished by deploying again, whatever the request says.
-                .when((status, facts) -> status == TaskStatus.DEPLOY_CONFLICT || facts.hasReviewRequest())
+                .when((status, facts) -> !facts.gitStateChanged()
+                        && (status == TaskStatus.DEPLOY_CONFLICT || facts.hasReviewRequest()))
                 .on(Outcome.Kind.OK, TaskStatus.DEPLOYED)
                 .on(Outcome.Kind.CONFLICT, TaskStatus.DEPLOY_CONFLICT)
                 .add();
@@ -67,13 +68,19 @@ public final class FlowRules {
         // A deploy that stopped part way, or one the task has moved on from, may have left a repository live.
         rule(TaskAction.REVERT)
                 .fromAny()
-                .when((status, facts) -> status == TaskStatus.DEPLOYED || status == TaskStatus.DEPLOY_CONFLICT
-                        || facts.liveDeploy())
+                .when((status, facts) -> !facts.gitStateChanged() && (status == TaskStatus.DEPLOYED
+                        || status == TaskStatus.DEPLOY_CONFLICT || facts.liveDeploy()))
                 .on(Outcome.Kind.OK, TaskStatus.REVERTED)
                 // Only some of it came out, so what is left is still live.
                 .on(Outcome.Kind.PARTIAL, TaskStatus.DEPLOYED)
                 // Its half-merge still waits in the deploy worktree, which nothing resumes from DEPLOYED.
                 .keeps(Outcome.Kind.PARTIAL, TaskStatus.DEPLOY_CONFLICT)
+                .add();
+
+        // Git that runs with the human's credentials waits until the human trusts what it would obey.
+        rule(TaskAction.TRUST)
+                .fromAny()
+                .when((status, facts) -> facts.gitStateChanged())
                 .add();
 
         for (TaskAction action : ALWAYS) {

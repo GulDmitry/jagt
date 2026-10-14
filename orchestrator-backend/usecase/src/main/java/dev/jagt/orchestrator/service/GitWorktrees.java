@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** A task's worktrees and the branches under them: cut, resumed, freed and removed. */
@@ -20,6 +21,11 @@ import java.util.Optional;
 public class GitWorktrees {
 
     private final GitCommands git;
+
+    /** One digest per entry of what git obeys around {@code worktrees}; throws where one cannot be read. */
+    public Map<String, String> gitState(List<Path> worktrees) {
+        return new GitStates(git).read(worktrees);
+    }
 
     public void createWorktree(Path projectPath, Path worktreePath, String branch, String baseBranch,
                                BranchStrategy strategy) {

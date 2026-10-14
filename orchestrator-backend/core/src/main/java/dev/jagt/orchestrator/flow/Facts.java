@@ -11,9 +11,14 @@ import java.util.function.BooleanSupplier;
  * of a dashboard passes one that says no, while the gate that is about to act passes the real thing. One rule,
  * two prices.
  */
-public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive) {
+public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive,
+                    boolean gitStateChanged) {
+
+    public Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive) {
+        this(hasReviewRequest, liveDeploy, agentLive, false);
+    }
 
     public static Facts projected(TaskState task) {
-        return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> false);
+        return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> false, task.gitStateChanged());
     }
 }

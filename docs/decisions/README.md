@@ -55,3 +55,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0037 One-shot caches minutes](0037-a-one-shot-caches-for-minutes.md)
 - [0038 First role writes the round](0038-a-panels-first-role-writes-the-round.md)
 - [0039 No JVM flag](0039-jagt-starts-with-no-jvm-flag.md)
+- [0040 Git runs what was trusted](0040-git-runs-only-what-the-human-trusted.md)

@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.task.TaskState;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * The one contextual line under a task — empty whenever the status and the next move already answer, so a
  * surface must expect nothing to render. Never the agent's own status chatter ("tests green"): what it says
@@ -24,6 +26,9 @@ public final class DashboardLine {
     }
 
     public static Line forTask(TaskState task, @Nullable String usableRequestLink) {
+        if (task.gitStateChanged()) {
+            return new Line(Kind.YOURS, "NEEDS YOU: " + Objects.requireNonNull(task.gitTrust()).changed());
+        }
         String message = task.message();
         AgentReport report = AgentReport.of(message);
         // A question OUTRANKS every other line and is reachable from every status — an agent may ask without

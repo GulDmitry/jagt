@@ -221,4 +221,28 @@ class FlowRulesTest {
     void theMasterReadsAPlanOrAHandBackButNotARoundStillBeingVerified(TaskStatus status, boolean read) {
         assertThat(FlowRules.readByTheMaster(status)).isEqualTo(read);
     }
+
+    @ParameterizedTest
+    @CsvSource({"REVIEW_PENDING,SHIP", "APPROVED,DEPLOY", "DEPLOYED,REVERT"})
+    void refusesGitWithTheHumansCredentialsOnceWhatItObeysChanged(TaskStatus status, TaskAction action) {
+        assertThat(FlowRules.allows(status, action, new Facts(true, true, () -> false, true))).isFalse();
+    }
+
+    @Test
+    void offersTrustOnlyOnceWhatGitObeysChanged() {
+        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, new Facts(true, false, () -> false, true)))
+                .isTrue();
+        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, new Facts(true, false, () -> false)))
+                .isFalse();
+    }
+
+    @Test
+    void parksATaskWhoseGitChangedWithTheHumanAndTrustAsTheMove() {
+        Move move = Move.forTask(TaskStatus.APPROVED, new Facts(true, false, () -> false, true), RoundState.NONE,
+                false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
+        assertThat(move.primary()).isEqualTo(TaskAction.TRUST);
+    }
 }
