@@ -40,6 +40,11 @@ public class OrchestratorPaths {
         return stateFile;
     }
 
+    /** Present while `act` is stopped, whatever the configured mode says. */
+    public Path actStopped() {
+        return stateFile.resolveSibling("act-stopped");
+    }
+
     private Path resolve(@Nullable String override, String defaultName) {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()

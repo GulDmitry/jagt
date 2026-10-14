@@ -22,6 +22,7 @@ export async function refresh() {
       phases: data.phases || [],
       autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
       jobs: data.jobs,
+      actStopped: data.actStopped,
       offers: data.offers || {},
     });
     render();

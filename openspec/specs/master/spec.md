@@ -71,6 +71,10 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 - **WHEN** `humanPaths: ["**/auth/**"]` names a changed path, or the paths are unread
 - **THEN** it presses neither; the `master` window names the path
 
+#### Scenario: A session stops to ask
+- **WHEN** a session asks a question
+- **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours
+
 #### Scenario: Questions repeat over an unchanged tree
 - **WHEN** they repeat
 - **THEN** after three, a fresh session and an answer that changes the worktrees; the ninth is a runaway, yours
@@ -98,7 +102,7 @@ SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the ses
 #### Scenario: A round is not ready
 - **WHEN** a plan or round has a blocking, wrong or unproven finding
 - **THEN** the fix is read anew; one an earlier round made on the same file goes back `[repeat]`
-- **AND** where two rounds running hold only repeats, the second is your question, in any mode
+- **AND** where two rounds running hold only repeats, the second is your question
 
 #### Scenario: Ready beside findings
 - **WHEN** the verdict is `ready` beside findings
@@ -129,7 +133,7 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 
 #### Scenario: An earlier round settled something
 - **WHEN** a later reviewer meets it
-- **THEN** it reopens it only for a blocking reason
+- **THEN** only a blocking reason reopens it
 
 ### Requirement: Another branch is another task
 In `act` work needing another branch SHALL be its own task, opened by the Master's line

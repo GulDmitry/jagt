@@ -46,5 +46,7 @@ usage-by-day.jsonl
 # The masterEval suite's own root, trusted once by a human and rebuilt each run, and its run lock
 .master-eval/
 .master-eval.lock
+# Present while the Master's act is stopped, written beside state.json
+act-stopped
 # The Master's MCP token, drawn by jagt at each start
 /.jagt/

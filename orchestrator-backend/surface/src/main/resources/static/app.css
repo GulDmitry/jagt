@@ -183,6 +183,7 @@ a.id, a.mr-age {
 a.mr-age.approved, .tick { color: var(--ok); }
 /* A poll that STOPPED hands the move back: a ring on the request it was watching, never a fifth thing in the row. */
 .mr-age.stalled, .repos.stalled, .status.stalled { border: 1px solid var(--you); border-radius: 999px; padding: 0 6px; }
+.chip.stalled { border-color: var(--you); }
 .tick { font-size: 11px; align-self: center; }
 /* After the approval, or a link wearing it would answer a hover with nothing but a solid underline. */
 a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }

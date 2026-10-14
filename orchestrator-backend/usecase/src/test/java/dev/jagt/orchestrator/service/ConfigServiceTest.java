@@ -67,6 +67,19 @@ class ConfigServiceTest {
         assertThat(mode).isEqualTo("off");
     }
 
+    @Test
+    void readsActAsJudgeWhileActIsStopped(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
+        Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+
+        assertThat(mode).isEqualTo("judge");
+    }
+
     @ParameterizedTest
     @CsvSource({"true, judge", "false, off"})
     void leavesTheMasterJudgingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(boolean reads, String expected,

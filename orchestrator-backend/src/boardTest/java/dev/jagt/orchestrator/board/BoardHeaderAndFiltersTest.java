@@ -282,6 +282,18 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
+    void givesActBackFromTheHeaderWhereItStoppedItself() throws Exception {
+        java.nio.file.Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#act-stopped")).isVisible();
+
+        page.locator("#act-stopped").click();
+
+        assertThat(page.locator("#act-stopped")).isHidden();
+    }
+
+    @Test
     void theAutoReviewChipOpensItsTipFromTheKeyboard() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");

@@ -28,7 +28,7 @@ import java.util.Map;
 public class BoardApiController {
 
     public record Board(List<TaskView> tasks, List<String> projects, String autoReview,
-                        boolean autoReviewEnabled, Jobs.Summary jobs,
+                        boolean autoReviewEnabled, Jobs.Summary jobs, boolean actStopped,
                         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases,
                         Map<String, List<String>> offers) {
     }
@@ -43,7 +43,8 @@ public class BoardApiController {
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                jobs.summary(System.currentTimeMillis()), BranchStrategy.choices(), Phase.choices(),
+                jobs.summary(System.currentTimeMillis()), snapshot.actStopped(), BranchStrategy.choices(),
+                Phase.choices(),
                 offers(snapshot.tasks()));
     }
 

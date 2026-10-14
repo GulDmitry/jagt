@@ -39,6 +39,7 @@ the appender opens it.
     <logger name="dev.jagt.orchestrator.service.master.MasterBriefs"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterDecisions"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterReview"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterBrake"><appender-ref ref="MASTER"/></logger>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

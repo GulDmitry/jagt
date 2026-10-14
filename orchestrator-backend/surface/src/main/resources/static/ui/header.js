@@ -15,6 +15,7 @@ const phaseBar = document.getElementById('phases');
 const waitingLabel = document.getElementById('waiting');
 const autoReviewChip = document.getElementById('auto-review');
 const jobsChip = document.getElementById('jobs-pulse');
+const actChip = document.getElementById('act-stopped');
 
 // Only a failed run is news: the next one sits in the hover.
 function renderJobs() {
@@ -49,6 +50,7 @@ export function render(tasks, showing) {
   autoReviewChip.textContent = store.autoReview().summary || '';
   autoReviewChip.classList.toggle('on', store.autoReview().enabled);
   renderJobs();
+  actChip.hidden = !store.actStopped();
   renderEmpty(tasks.length, showing);
   phaseBar.hidden = tasks.length === 0;
   const perPhase = filters.narrowed(tasks);
@@ -82,6 +84,10 @@ export function render(tasks, showing) {
     phaseBar.append(clear);
   }
 }
+
+export const onVerbClick = (press) => {
+  actChip.onclick = () => press(actChip.dataset.verb);
+};
 
 export const onBarClick = (repaint) => {
   phaseBar.onclick = (event) => {

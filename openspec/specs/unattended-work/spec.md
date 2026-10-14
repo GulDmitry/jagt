@@ -96,12 +96,20 @@ opens.
 - **WHEN** jagt starts
 - **THEN** the log holds this run only
 
+### Requirement: `act` stops itself after three bad endings
+Three tasks in a row the Master moved in `act` ending silent, in a deploy conflict or reverted SHALL stop `act`
+(`MasterBrake`); a deploy resets the count.
+
+#### Scenario: Three tasks it moved end badly in a row
+- **WHEN** the third one is stamped silent, conflicts on deploy or is reverted
+- **THEN** it only judges, across restarts, until you press the header's `act stopped`
+
 ### Requirement: Every Master step is seen in one window
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
 `jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back within seconds.
 
 #### Scenario: You want to know why a window opened or closed
-- **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
+- **WHEN** the Master answers, asks, returns, starts, ships, deploys, opens a task or stops `act`
 - **THEN** the `master` window shows it with the task, and an answer with its question and decision
 
 ### Requirement: A second wording of a rule merges into it

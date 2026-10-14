@@ -343,11 +343,18 @@ public class ConfigService {
         return masterByDefault(config.projects() == null ? config.withProjects(Map.of()) : config);
     }
 
-    /** Unset, the Master judges where the runtime can read the human's words, and is off where it cannot. */
+    /** Unset, the Master judges where the runtime reads the human's words, else is off; a stopped act judges. */
     private ConfigFile masterByDefault(ConfigFile config) {
         ConfigFile.MasterConfig master = config.master();
+        if (master.modeOrDefault() == MasterMode.ACT && actStopped()) {
+            return config.withMaster(master.withMode(MasterMode.JUDGE.id()));
+        }
         return master.mode() != null && !master.mode().isBlank() ? config : config.withMaster(master.withMode(
                 (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.JUDGE : MasterMode.OFF).id()));
+    }
+
+    public boolean actStopped() {
+        return Files.exists(paths.actStopped());
     }
 
     /** The names the human wrote under {@code orchestrator}, INCLUDING ones nothing binds — both readers drop those. */

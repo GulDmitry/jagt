@@ -12,6 +12,17 @@ import {toast} from './toast.js';
 const actionOf = (task, actionId) => (task.actions || []).find((each) => each.id === actionId)
   || {id: actionId, label: actionId, hint: '', readOnly: false};
 
+export async function runGlobal(verbId) {
+  try {
+    const result = await api(`/api/commands/${encodeURIComponent(verbId)}`, {method: 'POST'});
+    toast(result.message);
+  } catch (e) {
+    toast(refusal(e), true);
+  } finally {
+    await refresh();
+  }
+}
+
 export async function run(taskId, actionId) {
   const task = store.taskById(taskId);
   if (!task) {

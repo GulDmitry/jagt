@@ -1,7 +1,7 @@
 // The wiring, and nothing else: no module below here has to know that another one exists.
 
 import * as store from './core/store.js';
-import {run} from './ui/act.js';
+import {run, runGlobal} from './ui/act.js';
 import {openReport, repaintReport, showReport} from './ui/dialogs.js';
 import * as filters from './ui/filters.js';
 import * as header from './ui/header.js';
@@ -15,7 +15,7 @@ import {sessionLog, showLog} from './ui/toast.js';
 
 const live = document.getElementById('live');
 // Cut off from the backend, the board is a picture of the past: nothing on it may act.
-const STALE = ['board', 'phases', 'launch', 'palette', 'open-palette', 'reports', 'report-line'];
+const STALE = ['board', 'phases', 'launch', 'palette', 'open-palette', 'reports', 'report-line', 'act-stopped'];
 const connected = (yes) => {
   live.classList.toggle('on', yes);
   document.getElementById('offline').hidden = yes;
@@ -29,6 +29,7 @@ onClick({
     `/api/commands/${id}?about=${encodeURIComponent(about)}`, {about}),
 });
 header.onBarClick(render);
+header.onVerbClick(runGlobal);
 filters.onChange(render);
 // Where on this page each part a verb names is.
 const parts = {launch: {focus: launch.focusRef}, legend: {section: legend.node}};
