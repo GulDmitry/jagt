@@ -2,8 +2,7 @@
 
 ## Purpose
 
-The Master: a headless reader writing a verdict on each handed-back round; in `act` it stands where the
-human stands.
+The Master: a headless reader judging each handed-back round; in `act` it stands where the human stands.
 
 ## Requirements
 
@@ -18,7 +17,7 @@ the rest after the first, reading its cached round.
 - **AND** only the MCP tools `allowed-tools` names; it writes nothing, its session included
 - **AND** jagt refuses any other call, your allow rules included (`ReadGate`)
 
-#### Scenario: You want a round read before you look
+#### Scenario: A round read before you look
 - **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
 - **THEN** each handed-back round is read into the worktree's `master-review.md`; it presses nothing
 
@@ -30,7 +29,7 @@ the rest after the first, reading its cached round.
 - **WHEN** the brief's role table has a `model` column
 - **THEN** that role runs on it; blank keeps `master.model`
 
-#### Scenario: Whose roles a round is read by
+#### Scenario: Whose roles read a round
 - **WHEN** a session hands back a round
 - **THEN** its `<self_review>` reads it first, then the Master by the same roles unless its brief names others
 
@@ -39,16 +38,15 @@ The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`, or
 or copied (`MasterBriefs.file`); a named brief missing SHALL refuse the start.
 
 #### Scenario: No brief copied
-- **WHEN** you start jagt without copying a brief
-- **THEN** the Master judges by the shipped one
+- **WHEN** no brief is copied
+- **THEN** the shipped one judges
 
 ### Requirement: The human's own word stands over the Master
 Every read SHALL quote the human's own words to the session (`AgentRuntime.humanSaid`), overruling any decision taken
-for them; unreadable, they SHALL stop the round
-([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-the-master.md)).
+for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-the-master.md)).
 
 #### Scenario: The human's words cannot be read
-- **WHEN** reading what the human said fails
+- **WHEN** reading them fails
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
@@ -61,28 +59,27 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 - **THEN** the Master deploys it; `mine: [deploy, revert]` leaves the press yours
 
 #### Scenario: A ready round holds nothing to ship
-- **WHEN** a `ready` round has nothing to ship in `master.mode: act`
+- **WHEN** it has nothing to ship in `master.mode: act`
 - **THEN** it presses nothing; the task waits for you
 
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question in `master.mode: act`
 - **THEN** the Master answers in the session's window and the task resumes; `mine: [answer]` keeps it yours
 
-#### Scenario: Questions keep coming back over an unchanged tree
+#### Scenario: Questions repeat over an unchanged tree
 - **WHEN** they repeat in `master.mode: act`
 - **THEN** after three, a fresh session and an answer that changes the worktrees; the ninth is a runaway, yours
 
 #### Scenario: It is unsure what the ticket asks
 - **WHEN** the ticket could mean "switch" or "add beside"
 - **THEN** in `act` it decides as you would and sends the decision back as a finding
-- **AND** a question reaches you in `judge`, or where `mine` keeps `answer`
 
 ### Requirement: Instructions never land inside your line
 A nudge to a session SHALL wait while the human is typing in its window.
 
-#### Scenario: You are typing when instructions arrive
-- **WHEN** they arrive mid-line
-- **THEN** the nudge waits until you send your line
+#### Scenario: You are typing
+- **WHEN** instructions arrive mid-line
+- **THEN** they wait for your line
 
 ### Requirement: Only blocking, wrong and unproven stop a round
 A plan or round SHALL be ready unless a finding is blocking, wrong or unproven, the last a `show:` request; advice
@@ -98,15 +95,15 @@ SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the ses
 - **THEN** the fix is read anew; one an earlier round made on the same file goes back `[repeat]`
 - **AND** where two rounds running hold only repeats, the second is your question, in any mode
 
-#### Scenario: Ready, but its file lists findings
-- **WHEN** the verdict is `ready` and `master-review.md` lists findings
+#### Scenario: Ready beside findings
+- **WHEN** the verdict is `ready` beside findings
 - **THEN** it counts as not ready
 
-#### Scenario: The acceptance check never ran
+#### Scenario: The acceptance check skipped
 - **WHEN** a round skipped it
 - **THEN** it is not ready, or a question where the check cannot be run
 
-#### Scenario: A round removes what no ticket line asks
+#### Scenario: An unasked removal
 - **WHEN** it removes an endpoint or version unasked
 - **THEN** it is a question, not a verdict
 
@@ -118,7 +115,7 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 - **WHEN** it cannot prove one
 - **THEN** it asks the session to `show:` it, settling nothing
 
-#### Scenario: The session thinks a finding wrong
+#### Scenario: The session disputes a finding
 - **WHEN** it disagrees
 - **THEN** it writes `disputed:` with evidence in `task_notes.md`; proven, it reopens even a settled decision
 
@@ -145,3 +142,11 @@ While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmu
 #### Scenario: Why a window opened or closed
 - **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
 - **THEN** the `master` window shows it with the task, and an answer with its question and decision
+
+### Requirement: A disagreement offers a lesson, never applies one
+The `master` report SHALL offer a `master-lesson` run for the latest task you reverted after a pass or deployed after
+a fail (`MasterRecord`); it changes no brief.
+
+#### Scenario: You reverted what it passed
+- **WHEN** ABC-42 passed and you reverted it
+- **THEN** `master` shows a `lesson:` line: what to paste into `/master-lesson`

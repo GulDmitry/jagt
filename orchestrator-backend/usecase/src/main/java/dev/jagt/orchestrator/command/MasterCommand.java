@@ -53,6 +53,7 @@ public class MasterCommand implements GlobalCommand {
                         ? "nothing — every step but `sweep`, `revert` and `done`"
                         : String.join(", ", config.mineOrNone()))
                 + judged()
+                + lesson()
                 + spent();
     }
 
@@ -61,6 +62,13 @@ public class MasterCommand implements GlobalCommand {
         return "\n  spent:     " + TokenFormat.compact(spent.total()) + " tokens, $"
                 + String.format(java.util.Locale.ROOT, "%.2f", spent.costUsd()) + " since jagt started, each"
                 + " round also charged to its task";
+    }
+
+    private String lesson() {
+        return record.latestDisagreement().map(differed -> "\n  lesson:    " + differed.task()
+                + (differed.passed() ? " passed, then you reverted it" : " failed, then you deployed it")
+                + " — to teach the Master, run /master-lesson with its master-review.md, what you said and why")
+                .orElse("");
     }
 
     /** Silent until it has judged something: a line of zeroes says nothing a human did not already know. */

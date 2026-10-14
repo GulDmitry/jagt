@@ -8,8 +8,10 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -46,8 +48,28 @@ public class MasterRecord {
                 count(judged, FinishedTask::asked),
                 count(judged, task -> task.passed() && task.rounds() > 0 && !task.reached(TaskStatus.DEPLOYED)
                         && deployable(task)),
-                count(judged, task -> task.passed() && task.reached(TaskStatus.REVERTED)),
-                count(judged, task -> !task.passed() && !task.asked() && task.judgedBefore(TaskStatus.DEPLOYED)));
+                count(judged, MasterRecord::passedReverted),
+                count(judged, MasterRecord::failedButDeployed));
+    }
+
+    /** {@code passed} false where it failed work you deployed anyway. */
+    public record Disagreement(String task, boolean passed) {
+    }
+
+    /** The latest task you undid a verdict on: you acted, so there is an exchange to learn from. */
+    public Optional<Disagreement> latestDisagreement() {
+        return finished.all().stream().filter(FinishedTask::judged)
+                .filter(task -> passedReverted(task) || failedButDeployed(task))
+                .max(Comparator.comparingLong(FinishedTask::finishedAt))
+                .map(task -> new Disagreement(task.id(), task.passed()));
+    }
+
+    private static boolean passedReverted(FinishedTask task) {
+        return task.passed() && task.reached(TaskStatus.REVERTED);
+    }
+
+    private static boolean failedButDeployed(FinishedTask task) {
+        return !task.passed() && !task.asked() && task.judgedBefore(TaskStatus.DEPLOYED);
     }
 
     /** A project jagt does not deploy, or no longer knows, owes no deploy: its work lands elsewhere. */

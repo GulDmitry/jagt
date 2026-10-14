@@ -108,6 +108,39 @@ class MasterRecordTest {
     }
 
     @Test
+    void offersTheLatestTaskYouRevertedAfterItPassed() {
+        when(finished.all()).thenReturn(List.of(
+                FinishedTask.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                        .history(List.of(new StatusChange(TaskStatus.REVERTED, 1L, ActionOrigin.BOARD)))
+                        .build(), 3L, "ready"),
+                FinishedTask.of("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                        .history(List.of(new StatusChange(TaskStatus.REVERTED, 4L, ActionOrigin.BOARD)))
+                        .build(), 5L, "ready")));
+
+        assertThat(record.latestDisagreement()).contains(new MasterRecord.Disagreement("ABC-2", true));
+    }
+
+    @Test
+    void offersWorkItFailedThatYouDeployedAnyway() {
+        when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1",
+                TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                        .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, ActionOrigin.BOARD)))
+                        .build(), 2L, "not ready")));
+
+        assertThat(record.latestDisagreement()).contains(new MasterRecord.Disagreement("ABC-1", false));
+    }
+
+    @Test
+    void offersNoLessonForPassedWorkNobodyDeployed() {
+        when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1",
+                TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, ActionOrigin.MCP))).build(),
+                2L, "ready")));
+
+        assertThat(record.latestDisagreement()).isEmpty();
+    }
+
+    @Test
     void readsAFailedRoundAfterTheDeployAsNoDisagreement() {
         when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1",
                 TaskState.builder("proj", "/wt", TaskStatus.DONE)
