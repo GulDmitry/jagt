@@ -60,6 +60,30 @@ class WorktreeInspectionTest {
         assertThat(git.treeState(repo, repo)).isNotEqualTo(answered);
     }
 
+    @Test
+    void readsTheTreeWithoutRunningADiffProgramTheSessionSet(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        Files.createDirectories(repo);
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        Files.writeString(repo.resolve("A.java"), "class A {}");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        Path ran = dir.resolve("ran");
+        Path program = dir.resolve("external.sh");
+        Files.writeString(program, "#!/bin/sh\ntouch " + ran + "\n");
+        program.toFile().setExecutable(true);
+        runner.run(repo, timeout, List.of("git", "config", "diff.external", program.toString()));
+        Files.writeString(repo.resolve("A.java"), "class A { int x; }");
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        git.treeState(repo, repo);
+
+        assertThat(ran).doesNotExist();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"main", "origin/main"})
     void readsTheChangesSinceTheBaseCommittedAndNotNamingNewFilesButNotJagtsOwn(String baseBranch,

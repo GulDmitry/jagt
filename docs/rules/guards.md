@@ -44,7 +44,6 @@ A review judges a guard against this file. The records it condenses keep the evi
 | A non-loopback `server.address`: any host there acts as the human | the board leaves loopback by default |
 | Config `GitStateGuard` reads no further: global, system, an `include.path` file, `branch.*` tracking | a guarded git runs a program set there |
 | A hook the merged branch carries under a relative `core.hooksPath` | a deploy runs a hook the record did not hold |
-| jagt's own `git diff HEAD` in a worktree, obeying `diff.external` | it runs a program a session set |
 | A headless answer in prose, its object in a fence and no schema call made | such an answer carries a tool's output |
 | An MCP read sends its arguments out; a local server's read verb reads outside the worktrees | a read tool writes, or one named takes a path |
 | A command harming the machine outside git and the board, where the agent CLI's own rules allow it | [`TODO.md`](../../TODO.md) holds it open |

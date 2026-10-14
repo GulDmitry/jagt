@@ -44,7 +44,7 @@ public class WorktreeInspection {
         return git.locked(projectPath, () -> {
             String head = git.run(worktree, List.of("git", "rev-parse", "HEAD"))
                     .expectSuccess("git rev-parse in " + worktree).stdout().strip();
-            String diff = git.run(worktree, List.of("git", "diff", "HEAD"))
+            String diff = git.run(worktree, List.of("git", "diff", "--no-ext-diff", "--no-textconv", "HEAD"))
                     .expectSuccess("git diff in " + worktree).stdout();
             String changed = branchNames(git.run(worktree,
                             List.of("git", "status", "--porcelain"))
