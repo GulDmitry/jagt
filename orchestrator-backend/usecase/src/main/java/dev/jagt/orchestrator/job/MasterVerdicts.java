@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -37,24 +38,14 @@ public class MasterVerdicts {
         boolean plan = FlowRules.holdsAPlan(task.status());
         switch (verdict.kind()) {
             case NOT_READY -> {
-                if (!sessions.relayIfChanged(taskId, (plan ? PLAN_RETURNED : ROUND_RETURNED)
-                        + String.join("\n", verdict.findings()))) {
-                    return false;
-                }
-                String ruled = verdict.findings().stream().filter(f -> !f.contains(" — " + MasterPanel.SHOW))
-                        .collect(Collectors.joining("\n"));
-                if (!ruled.isEmpty()) {
-                    decisions.record(task, ruled);
-                }
-                log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId)
-                        .addKeyValue("findings", verdict.findings().size()).log();
-                // Back to work, or the session's report is no transition and the verdict reads as this round's.
-                return reports.report(taskId, FlowRules.relayed(), "reviewer: not ready; relayed");
+                return returned(taskId, task, verdict, plan);
             }
             case QUESTION -> {
+                decisions.returned(task, verdict.writtenAt(), false);
                 return ask(taskId, verdict.question());
             }
             case READY -> {
+                decisions.returned(task, verdict.writtenAt(), false);
                 if (plan) {
                     return config.may(MasterRight.PLAN) && go(taskId);
                 }
@@ -65,6 +56,35 @@ public class MasterVerdicts {
             }
         }
         return false;
+    }
+
+    /** Repeats are relayed marked, never dropped; rounds of nothing but repeats end as the human's question. */
+    private boolean returned(String taskId, TaskState task, MasterReview.Verdict verdict, boolean plan) {
+        List<String> findings = verdict.findings().stream()
+                .map(f -> decisions.repeats(task, f) ? f + REPEAT : f).toList();
+        int repeated = decisions.returned(task, verdict.writtenAt(),
+                !findings.isEmpty() && findings.stream().allMatch(f -> f.endsWith(REPEAT)));
+        if (repeated >= MasterDecisions.REPEATED_ROUNDS) {
+            log.atWarn().setMessage("master review stalled").addKeyValue("task", taskId)
+                    .addKeyValue("rounds", repeated)
+                    .addKeyValue("cause", "findings repeat earlier rounds")
+                    .addKeyValue("effect", "the round goes to the human")
+                    .log();
+            return ask(taskId, "These findings came back " + repeated + " rounds running, neither fixed nor"
+                    + " disputed: " + String.join(" ", findings));
+        }
+        if (!sessions.relayIfChanged(taskId, (plan ? PLAN_RETURNED : ROUND_RETURNED) + String.join("\n", findings))) {
+            return false;
+        }
+        String ruled = verdict.findings().stream().filter(f -> !f.contains(" — " + MasterPanel.SHOW))
+                .collect(Collectors.joining("\n"));
+        if (!ruled.isEmpty()) {
+            decisions.record(task, ruled);
+        }
+        log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId)
+                .addKeyValue("findings", verdict.findings().size()).log();
+        // Back to work, or the session's report is no transition and the verdict reads as this round's.
+        return reports.report(taskId, FlowRules.relayed(), "reviewer: not ready; relayed");
     }
 
     private boolean go(String taskId) {
@@ -112,13 +132,20 @@ public class MasterVerdicts {
         return decisions.answersOverThisTree(task);
     }
 
+    public boolean stalled(TaskState task) {
+        return decisions.repeatedRounds(task) >= MasterDecisions.REPEATED_ROUNDS;
+    }
+
+    private static final String REPEAT = " [repeat]";
+
     /** Ahead of the reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
     private static final String ROUND_RETURNED = "The review of your round came back NOT READY. Each line below is a"
             + " review comment: fix it, or where you believe it wrong, change nothing for it and write in"
             + " task_notes.md `disputed: <the comment> — <evidence>`. A `show:` comment asks for evidence: answer it"
             + " the same way. Evidence is a ticket line, a file:line, or a command and what it printed: the reviewer"
-            + " checks evidence and cannot read your reasons. Ask (rule 1) only for a decision nobody gave you. Leave"
-            + " the fix uncommitted and report REVIEW_PENDING again.\n\n";
+            + " checks evidence and cannot read your reasons. A line ending [repeat] came back from an earlier round."
+            + " Ask (rule 1) only for a decision nobody gave you. Leave the fix uncommitted and report REVIEW_PENDING"
+            + " again.\n\n";
 
     private static final String PLAN_RETURNED = "The Master read plan.md against the ticket: NOT READY. Rework the"
             + " plan for each line below. Where you believe one wrong, change nothing for it and write in"

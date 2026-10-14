@@ -25,11 +25,37 @@ public class MasterDecisions {
     public static final int ANSWERS_PER_TREE = 3;
     /** Answers over one unchanged tree past which the loop is a runaway, the one stop that reaches the human. */
     public static final int RUNAWAY = 9;
+    /** Not-ready rounds running holding only repeats, at which the loop is the human's rather than the session's. */
+    public static final int REPEATED_ROUNDS = 2;
 
     private final WorktreeChanges changes;
     private final Map<String, Answered> answeredOver = new ConcurrentHashMap<>();
+    private final Map<String, Repeated> repeatedRounds = new ConcurrentHashMap<>();
 
     private record Answered(String tree, int times) {
+    }
+
+    private record Repeated(long verdictAt, int rounds) {
+    }
+
+    /** Not-ready rounds running that held only repeats, this one counted once however often it is acted on. */
+    public int returned(TaskState task, long verdictAt, boolean onlyRepeats) {
+        if (!onlyRepeats) {
+            repeatedRounds.remove(task.worktreePath());
+            return 0;
+        }
+        return repeatedRounds.merge(task.worktreePath(), new Repeated(verdictAt, 1),
+                (then, now) -> then.verdictAt() == verdictAt ? then : new Repeated(verdictAt, then.rounds() + 1))
+                .rounds();
+    }
+
+    public boolean repeats(TaskState task, String finding) {
+        return FindingMatch.repeats(finding, of(task).lines().toList());
+    }
+
+    public int repeatedRounds(TaskState task) {
+        Repeated then = repeatedRounds.get(task.worktreePath());
+        return then == null ? 0 : then.rounds();
     }
 
     public void answered(TaskState task) {

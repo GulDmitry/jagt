@@ -94,4 +94,20 @@ class MasterAnswerJobTest {
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
+
+    @Test
+    void leavesTheQuestionToTheHumanOnceTheReviewKeptReturningTheSameFindings(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("outcome=question — reviewer: these findings came back").build();
+        state.putTask("ABC-1", asking);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(verdicts.stalled(asking)).thenReturn(true);
+
+        new MasterAnswerJob(state, config, panel, verdicts).run();
+
+        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
 }

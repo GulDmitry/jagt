@@ -126,6 +126,45 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void relaysAFindingAnEarlierRoundMadeMarkedAsARepeat(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned (unguarded delay)"))
+                .thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("- [qa] Foo.java — the delay is never pinned (unguarded delay)"), 7), acting);
+
+        verify(sessions).relayIfChanged(eq("ABC-1"),
+                contains("- [qa] Foo.java — the delay is never pinned (unguarded delay) [repeat]"));
+    }
+
+    @Test
+    void asksTheHumanWhenRoundsOfRepeatsKeepComingBack(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned (unguarded delay)"))
+                .thenReturn(true);
+        when(decisions.returned(task, 7, true)).thenReturn(2);
+        when(sessions.relayIfChanged(eq("ABC-1"), contains("The reviewer asked the human"))).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("- [qa] Foo.java — the delay is never pinned (unguarded delay)"), 7), acting);
+
+        assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("outcome=question — reviewer: These findings"
+                + " came back 2 rounds running, neither fixed nor disputed:"
+                + " - [qa] Foo.java — the delay is never pinned (unguarded delay) [repeat]");
+    }
+
+    @Test
     void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

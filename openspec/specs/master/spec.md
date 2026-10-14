@@ -56,11 +56,7 @@ With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that
 deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps
 (`task/MasterRight`) the human's. Closing SHALL stay the human's: the Master's `done` is refused.
 
-#### Scenario: You want it to act for you
-- **WHEN** a round is `ready`, or a plan holds, in `master.mode: act`
-- **THEN** it is shipped, or the session started
-
-#### Scenario: The request is green with every thread closed
+#### Scenario: Green with every thread closed
 - **WHEN** a task reaches `REVIEWED` or `APPROVED` in `master.mode: act`
 - **THEN** the Master deploys it; `mine: [deploy, revert]` leaves the press yours
 
@@ -91,7 +87,7 @@ A nudge to a session SHALL wait while the human is typing in its window.
 ### Requirement: Only blocking, wrong and unproven stop a round
 A plan or round SHALL be ready unless a finding is blocking, wrong or unproven, the last a `show:` request; advice
 SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the session, in any mode, and the task to
-`IN_PROGRESS`.
+`IN_PROGRESS`, until rounds of repeats reach the human (`FindingMatch`).
 
 #### Scenario: Reviewers find only advice
 - **WHEN** findings are only unguarded, noise or an unproven premise
@@ -99,13 +95,14 @@ SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the ses
 
 #### Scenario: A round is not ready
 - **WHEN** a plan or round has a blocking, wrong or unproven finding
-- **THEN** the fix is read anew
+- **THEN** the fix is read anew; one an earlier round made on the same file goes back `[repeat]`
+- **AND** where two rounds running hold only repeats, the second is your question, in any mode
 
 #### Scenario: Ready, but its file lists findings
 - **WHEN** the verdict is `ready` and `master-review.md` lists findings
 - **THEN** it counts as not ready
 
-#### Scenario: The ticket's acceptance check was never run
+#### Scenario: The acceptance check never ran
 - **WHEN** a round skipped it
 - **THEN** it is not ready, or a question where the check cannot be run
 
@@ -137,7 +134,7 @@ In `act` work needing another branch SHALL be its own task, opened by the Master
 `do <project> <what to do…> from <branch>` (`MasterShip.open`), the session told what opened; a `from`, `into` or
 `onto` the deploy branch SHALL open nothing.
 
-#### Scenario: A session asks for its work on the deploy branch
+#### Scenario: Work asked onto the deploy branch
 - **WHEN** its `do` line says `into dev`
 - **THEN** nothing opens; that merge is the task's own `deploy`, once `REVIEWED`
 
@@ -145,6 +142,6 @@ In `act` work needing another branch SHALL be its own task, opened by the Master
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
 `jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back within seconds.
 
-#### Scenario: You want to know why a window opened or closed
+#### Scenario: Why a window opened or closed
 - **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
 - **THEN** the `master` window shows it with the task, and an answer with its question and decision

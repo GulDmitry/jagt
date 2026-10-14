@@ -65,10 +65,12 @@ public class MasterAnswerJob implements Job {
 
     private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
         int given = verdicts.answersOverThisTree(task);
-        if (given >= MasterDecisions.RUNAWAY) {
+        boolean stalled = verdicts.stalled(task);
+        if (given >= MasterDecisions.RUNAWAY || stalled) {
             log.atWarn().setMessage("master answer runaway").addKeyValue("task", taskId)
                     .addKeyValue("answers", given)
-                    .addKeyValue("cause", "answers over a tree nothing changed in")
+                    .addKeyValue("cause", stalled ? "findings repeat earlier rounds"
+                            : "answers over a tree nothing changed in")
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
             unanswered.put(taskId, task.message());
