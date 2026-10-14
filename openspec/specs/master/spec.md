@@ -8,8 +8,8 @@ The Master: a headless reader judging each handed-back round; in `act` it stands
 
 ### Requirement: The Master is a headless run per role, not a window
 One headless run per role of the brief SHALL read each round in the task's worktrees, loading no worktree setting.
-jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy read per role, charged as `master`,
-the rest after the first, reading its cached round.
+jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy read per role it applies to, charged as
+`master`, the rest after the first, reading its cached round.
 
 #### Scenario: What a role may call
 - **WHEN** a role reads
@@ -19,7 +19,7 @@ the rest after the first, reading its cached round.
 
 #### Scenario: A round read before you look
 - **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
-- **THEN** each handed-back round is read into the worktree's `master-review.md`; it presses nothing
+- **THEN** each round is read into the worktree's `master-review.md`; it presses nothing
 
 #### Scenario: The Master is reading a round
 - **WHEN** a round is under Master review
@@ -28,6 +28,10 @@ the rest after the first, reading its cached round.
 #### Scenario: A role worth a lighter model
 - **WHEN** the brief's role table has a `model` column
 - **THEN** that role runs on it; blank keeps `master.model`
+
+#### Scenario: A role the diff does not touch
+- **WHEN** the diff touches none of a role's `applies` globs
+- **THEN** a `# skipped` line replaces its read; unread paths, or no role left, read every role
 
 #### Scenario: Whose roles read a round
 - **WHEN** a session hands back a round
@@ -55,24 +59,24 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 (`task/MasterRight`) the human's. Closing SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: Green with every thread closed
-- **WHEN** a task reaches `REVIEWED` or `APPROVED` in `master.mode: act`
+- **WHEN** a task reaches `REVIEWED` or `APPROVED`
 - **THEN** the Master deploys it; `mine: [deploy, revert]` leaves the press yours
 
 #### Scenario: A ready round holds nothing to ship
-- **WHEN** it has nothing to ship in `master.mode: act`
+- **WHEN** it has nothing to ship
 - **THEN** it presses nothing; the task waits for you
 
 #### Scenario: A session stops to ask
-- **WHEN** a session asks a question in `master.mode: act`
+- **WHEN** a session asks a question
 - **THEN** the Master answers in the session's window and the task resumes; `mine: [answer]` keeps it yours
 
 #### Scenario: Questions repeat over an unchanged tree
-- **WHEN** they repeat in `master.mode: act`
+- **WHEN** they repeat
 - **THEN** after three, a fresh session and an answer that changes the worktrees; the ninth is a runaway, yours
 
 #### Scenario: It is unsure what the ticket asks
 - **WHEN** the ticket could mean "switch" or "add beside"
-- **THEN** in `act` it decides as you would and sends the decision back as a finding
+- **THEN** it decides as you would, sent back as a finding
 
 ### Requirement: Instructions never land inside your line
 A nudge to a session SHALL wait while the human is typing in its window.
@@ -101,7 +105,7 @@ SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the ses
 
 #### Scenario: The acceptance check skipped
 - **WHEN** a round skipped it
-- **THEN** it is not ready, or a question where the check cannot be run
+- **THEN** it is not ready, or a question where it cannot be
 
 #### Scenario: An unasked removal
 - **WHEN** it removes an endpoint or version unasked
@@ -134,14 +138,6 @@ In `act` work needing another branch SHALL be its own task, opened by the Master
 #### Scenario: Work asked onto the deploy branch
 - **WHEN** its `do` line says `into dev`
 - **THEN** nothing opens; that merge is the task's own `deploy`, once `REVIEWED`
-
-### Requirement: Every Master step is seen in one window
-While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
-`jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back within seconds.
-
-#### Scenario: Why a window opened or closed
-- **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
-- **THEN** the `master` window shows it with the task, and an answer with its question and decision
 
 ### Requirement: A disagreement offers a lesson, never applies one
 The `master` report SHALL offer a `master-lesson` run for the latest task you reverted after a pass or deployed after

@@ -124,6 +124,12 @@ public final class WorktreeFiles {
                 .toList();
     }
 
+    public static java.util.Optional<String> firstMatching(List<String> globs, List<String> paths) {
+        List<PathMatcher> matchers = localFileMatchers(globs);
+        return paths.stream().filter(path -> matchers.stream().anyMatch(glob -> glob.matches(Path.of(path))))
+                .findFirst();
+    }
+
     /** The file's content, or empty when it is not there — an absent relay file is the normal first case. */
     public static java.util.Optional<String> read(Path file) {
         if (!Files.isRegularFile(file)) {

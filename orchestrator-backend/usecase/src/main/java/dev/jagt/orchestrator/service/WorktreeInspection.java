@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 /** What a worktree holds against its base, read without touching it; jagt's own files never count as work. */
 @Service
@@ -76,6 +78,17 @@ public class WorktreeInspection {
                     .filter(path -> !generated.contains(path)).toList();
             return added.isEmpty() ? diff : diff + "New files, not in the diff: " + String.join(", ", added) + "\n";
         });
+    }
+
+    /** Every path the worktree changed since it left its base at origin, committed and not, a rename as both. */
+    public List<String> changedPaths(Path projectPath, Path worktree, String baseBranch) {
+        List<String> generated = WorktreeFiles.generated(agentRuntime);
+        return git.locked(projectPath, () -> Stream.of(
+                        List.of("git", "diff", "--name-only", "--no-renames", "-z", mergeBase(worktree, baseBranch)),
+                        List.of("git", "ls-files", "--others", "--exclude-standard", "-z"))
+                .flatMap(command -> Arrays.stream(git.run(worktree, command)
+                        .expectSuccess(command.get(1) + " in " + worktree).stdout().split("\0")))
+                .filter(path -> !path.isEmpty() && !generated.contains(path)).distinct().toList());
     }
 
     /** Lines the worktree added to the repository's agent files since it left its base, committed and not. */

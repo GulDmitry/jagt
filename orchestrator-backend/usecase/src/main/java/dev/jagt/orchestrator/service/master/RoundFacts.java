@@ -34,6 +34,11 @@ public class RoundFacts {
         return changes.diff(task);
     }
 
+    /** Every repository's changed paths; empty where git could not answer for one. */
+    public Optional<List<String>> paths(TaskState task) {
+        return changes.paths(task).map(paths -> paths.values().stream().flatMap(List::stream).toList());
+    }
+
     /** Blank where the session left none. */
     public String notes(TaskState task) {
         return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.NOTES.fileName())).orElse("").strip();

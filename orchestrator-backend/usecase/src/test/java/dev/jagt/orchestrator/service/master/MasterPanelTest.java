@@ -31,8 +31,9 @@ import static org.mockito.Mockito.when;
 
 class MasterPanelTest {
 
-    private static final List<MasterPanel.Role> TWO = List.of(new MasterPanel.Role("chaplain", "should it exist", ""),
-            new MasterPanel.Role("developer", "is the code right", ""));
+    private static final List<MasterPanel.Role> TWO = List.of(
+            new MasterPanel.Role("chaplain", "should it exist", "", List.of()),
+            new MasterPanel.Role("developer", "is the code right", "", List.of()));
 
     @Test
     void showsEachReviewerTheBriefTheAuthorWorkedTo() {
@@ -401,6 +402,78 @@ class MasterPanelTest {
 
         assertThat(MasterPanel.roles(brief, "")).extracting(role -> role.modelOr("sonnet"))
                 .containsExactly("opus", "sonnet");
+    }
+
+    @Test
+    void readsTheModelAndTheAppliesGlobsByTheirColumnsNamesInAnyOrder() {
+        String brief = """
+                | role | the question it asks | applies | model |
+                |------|----------------------|---------|-------|
+                | designer | is the ideology intact | `static/**`, docs/{rules,usage}.md | opus |
+                """;
+
+        assertThat(MasterPanel.roles(brief, "")).containsExactly(new MasterPanel.Role("designer",
+                "is the ideology intact", "opus", List.of("static/**", "docs/{rules,usage}.md")));
+    }
+
+    @Test
+    void skipsTheReadOfARoleWhoseGlobsMatchNoChangedPathAndSaysSoInTheReviewFile(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(
+                "| role | question | applies |\n| designer | is the mark worth it | static/** |\n| QA | is it tested |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/Main.java")));
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of()));
+
+        new MasterPanel(reviews, briefs, quotes)
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+
+        verify(reviews, times(1)).review(eq("ABC-1"), argThat(round -> round.prompt().contains("QA")));
+        verify(reviews, never()).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
+        assertThat(worktree.resolve(MasterReview.FILE)).content()
+                .contains("# skipped [designer] no changed path matches static/**\n").endsWith("VERDICT: ready\n");
+    }
+
+    @Test
+    void readsARoundByARoleWithGlobsWhereTheChangedPathsCouldNotBeRead(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(
+                "| role | question | applies |\n| designer | is the mark worth it | static/** |\n| QA | is it tested |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(quotes.paths(task)).thenReturn(Optional.empty());
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of()));
+
+        new MasterPanel(reviews, briefs, quotes)
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+
+        verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
+    }
+
+    @Test
+    void readsARoundByEveryRoleWhereNoRolesGlobsMatchIt(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(
+                "| role | question | applies |\n| designer | is the mark worth it | static/** |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/Main.java")));
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of()));
+
+        new MasterPanel(reviews, briefs, quotes)
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+
+        verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
     }
 
     @Test

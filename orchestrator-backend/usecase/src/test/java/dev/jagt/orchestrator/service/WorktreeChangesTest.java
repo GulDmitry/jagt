@@ -53,6 +53,18 @@ class WorktreeChangesTest {
     }
 
     @Test
+    void namesNoChangedPathsWhereGitCouldNotReadThemRatherThanFindingNone() {
+        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+        when(inspection.changedPaths(any(Path.class), any(Path.class), any(String.class)))
+                .thenThrow(new IllegalStateException("git merge-base in /wt failed (exit 1)"));
+
+        var paths = new WorktreeChanges(configService, inspection)
+                .paths(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
+
+        assertThat(paths).isEmpty();
+    }
+
+    @Test
     void quotesNoDiffTooLargeForAPromptSoEachRoleReadsItItself() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
         when(inspection.changesSince(any(Path.class), any(Path.class), any(String.class)))

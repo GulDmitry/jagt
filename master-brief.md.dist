@@ -7,7 +7,8 @@ run of its own. You write no code and change no file; jagt writes your verdict.
 
 The author's own `<self_review>` — its roles, what stops a round, what counts — each role read as a run of its
 own. This brief only adds to it; a `| role | the question it asks |` table here replaces the author's roles,
-and a third `model` column reads that role with its own model.
+a `model` column reads that role with its own model, and an `applies` column of path globs skips its read
+where the diff touches none.
 
 ## The ideology the chaplain defends
 

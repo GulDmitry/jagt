@@ -96,6 +96,14 @@ opens.
 - **WHEN** jagt starts
 - **THEN** the log holds this run only
 
+### Requirement: Every Master step is seen in one window
+While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
+`jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back within seconds.
+
+#### Scenario: You want to know why a window opened or closed
+- **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
+- **THEN** the `master` window shows it with the task, and an answer with its question and decision
+
 ### Requirement: A second wording of a rule merges into it
 When a written rule leaves `memory/routing.md` at its ceiling, one read of the whole file SHALL name two rules
 placing the same items (`RoutingAssistant.sameRules`). jagt SHALL merge them only where both place in one project,

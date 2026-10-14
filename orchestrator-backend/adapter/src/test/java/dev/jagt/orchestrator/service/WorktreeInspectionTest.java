@@ -91,6 +91,35 @@ class WorktreeInspectionTest {
     }
 
     @Test
+    void namesEveryChangedPathCommittedUncommittedNewAndBothSidesOfARenameButNotJagtsOwn(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.createDirectories(repo.resolve("auth"));
+        Files.writeString(repo.resolve("auth/Login.java"), "class Login {}\n");
+        Files.writeString(repo.resolve("b.txt"), "base\n");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "mv", "auth/Login.java", "Login.java"));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "ABC-42 Move the login"));
+        Files.writeString(repo.resolve("b.txt"), "uncommitted\n");
+        Files.writeString(repo.resolve("new ü.txt"), "fresh\n");
+        Files.writeString(repo.resolve("task_context.md"), "the round brief");
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        List<String> paths = git.changedPaths(repo, repo, "main");
+
+        assertThat(paths).containsExactlyInAnyOrder("auth/Login.java", "Login.java", "b.txt", "new ü.txt");
+    }
+
+    @Test
     void countsTheLinesTheTaskAddedToTheAgentFileCommittedAndNot(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

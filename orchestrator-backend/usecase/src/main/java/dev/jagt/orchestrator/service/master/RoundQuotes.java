@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /** What jagt reads for a Master read once; empty where what the human typed could not be read. */
@@ -26,6 +27,10 @@ public class RoundQuotes {
 
     Optional<MasterPanel.RoundRead> question(TaskState task) {
         return facts.humanSaid(task).map(said -> new MasterPanel.RoundRead("", "", decisions.of(task), said, ""));
+    }
+
+    Optional<List<String>> paths(TaskState task) {
+        return facts.paths(task);
     }
 
     String planFile(TaskState task) {

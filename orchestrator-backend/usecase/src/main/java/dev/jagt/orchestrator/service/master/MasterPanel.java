@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
+import dev.jagt.orchestrator.service.WorktreeFiles;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -16,8 +17,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -45,11 +49,17 @@ public class MasterPanel {
     record RoundRead(String ticket, String diff, String decided, List<String> said, String notes) {
     }
 
-    /** {@code model} blank reads with the Master's own model. */
-    public record Role(String name, String question, String model) {
+    /** {@code model} blank reads with the Master's own model; {@code applies} empty reads every round. */
+    public record Role(String name, String question, String model, List<String> applies) {
 
         String modelOr(String masters) {
             return model.isBlank() ? masters : model;
+        }
+
+        /** True where the changed paths are unknown. */
+        boolean reads(Optional<List<String>> changed) {
+            return applies.isEmpty() || changed.isEmpty()
+                    || WorktreeFiles.firstMatching(applies, changed.get()).isPresent();
         }
     }
 
@@ -61,7 +71,12 @@ public class MasterPanel {
         }
         String brief = masters.get();
         List<Path> worktrees = worktrees(task);
-        List<Role> roles = roles(brief, briefs.author());
+        List<Role> named = roles(brief, briefs.author());
+        Optional<List<String>> changed = named.stream().allMatch(role -> role.applies().isEmpty()) ? Optional.empty()
+                : quotes.paths(task);
+        List<Role> applying = named.stream().filter(role -> role.reads(changed)).toList();
+        // A round no role reads would pass unread.
+        List<Role> roles = applying.isEmpty() ? named : applying;
         String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER),
                 reviews.loadsMcpServer());
         Optional<RoundRead> read = quotes.round(taskId, task);
@@ -85,7 +100,8 @@ public class MasterPanel {
                 return false;
             }
         }
-        return write(taskId, worktrees, verdictFile(taskId, roles, judgements));
+        return write(taskId, worktrees, verdictFile(taskId, roles, judgements,
+                named.stream().filter(role -> !roles.contains(role)).toList()));
     }
 
     /** One read, not one per role: a plan answers a single question, whether it does what the ticket asks. */
@@ -103,7 +119,8 @@ public class MasterPanel {
         return write(taskId, worktrees(task), verdictFile(taskId, List.of(PLANNER), List.of(judged)));
     }
 
-    private static final Role PLANNER = new Role("planner", "whether the plan does what the ticket asks", "");
+    private static final Role PLANNER = new Role("planner", "whether the plan does what the ticket asks", "",
+            List.of());
 
     private static boolean write(String taskId, List<Path> worktrees, String file) {
         try {
@@ -150,30 +167,47 @@ public class MasterPanel {
     static List<Role> roles(String brief, String authorBrief) {
         List<Role> own = table(brief);
         List<Role> roles = own.isEmpty() ? table(authorBrief) : own;
-        return roles.isEmpty() ? List.of(new Role("reviewer", "every question your brief asks", "")) : roles;
+        return roles.isEmpty() ? List.of(new Role("reviewer", "every question your brief asks", "", List.of()))
+                : roles;
     }
 
+    /** Columns past the question are found by their header's name. */
     private static List<Role> table(String brief) {
         List<Role> roles = new ArrayList<>();
-        boolean inTable = false;
+        List<String> header = List.of();
         for (String line : brief.lines().map(String::strip).toList()) {
-            List<String> cells = line.startsWith("|") ? List.of(line.substring(1).split("\\|")) : List.of();
+            List<String> cells = line.startsWith("|")
+                    ? Arrays.stream(line.substring(1).split("\\|")).map(String::strip).toList() : List.of();
             if (cells.size() < 2) {
-                inTable = false;
-            } else if (cells.getFirst().strip().equalsIgnoreCase("role")) {
-                inTable = true;
-            } else if (inTable && !cells.getFirst().strip().startsWith("-")) {
-                roles.add(new Role(cells.get(0).strip(), cells.get(1).strip(),
-                        cells.size() > 2 ? cells.get(2).strip() : ""));
+                header = List.of();
+            } else if (cells.getFirst().equalsIgnoreCase("role")) {
+                header = cells.stream().map(cell -> cell.toLowerCase(Locale.ROOT)).toList();
+            } else if (!header.isEmpty() && !cells.getFirst().startsWith("-")) {
+                roles.add(new Role(cells.get(0), cells.get(1), cell(cells, header, "model"),
+                        GLOBS.splitAsStream(cell(cells, header, "applies").replace("`", ""))
+                                .filter(glob -> !glob.isEmpty()).toList()));
             }
         }
         return roles;
     }
 
+    /** Commas and blanks part globs, but not inside a brace's alternatives. */
+    private static final Pattern GLOBS = Pattern.compile("[,\\s]+(?![^{]*})");
+
+    private static String cell(List<String> cells, List<String> header, String column) {
+        int at = header.indexOf(column);
+        return at > 1 && at < cells.size() ? cells.get(at) : "";
+    }
+
     static String verdictFile(String taskId, List<Role> roles, List<Judgement> judgements) {
+        return verdictFile(taskId, roles, judgements, List.of());
+    }
+
+    static String verdictFile(String taskId, List<Role> roles, List<Judgement> judgements, List<Role> skipped) {
         List<String> lines = new ArrayList<>();
         List<String> questions = new ArrayList<>();
-        List<String> advice = new ArrayList<>();
+        List<String> advice = new ArrayList<>(skipped.stream().map(role -> "# skipped [" + role.name()
+                + "] no changed path matches " + String.join(", ", role.applies())).toList());
         for (int i = 0; i < roles.size(); i++) {
             String role = roles.get(i).name();
             Judgement said = judgements.get(i);

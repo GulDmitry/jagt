@@ -8,6 +8,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -117,6 +120,22 @@ public class WorktreeChanges {
             }
         }
         return diff.length() > MAX_QUOTED ? "" : diff.toString();
+    }
+
+    /** Each repository's changed paths since its base, by project; EMPTY where git could not answer for one. */
+    public Optional<Map<String, List<String>>> paths(TaskState task) {
+        Map<String, List<String>> paths = new LinkedHashMap<>();
+        for (TaskRepo repo : task.repos()) {
+            String project = Objects.requireNonNull(repo.project());
+            try {
+                String base = task.baseBranchOr(configService.project(project).baseBranch());
+                paths.put(project, inspection.changedPaths(projectPath(project), Path.of(repo.worktreePath()), base));
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+                return Optional.empty();
+            }
+        }
+        return Optional.of(paths);
     }
 
     /** Lines the task added to every repository's agent files; EMPTY where git could not count them for one. */
