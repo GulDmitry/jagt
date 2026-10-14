@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -31,6 +32,7 @@ public class MasterVerdicts {
     private final MasterDecisions decisions;
 
     private static final String DO = "do ";
+    private static final String REVIEWER = "reviewer: ";
 
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
     public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
@@ -107,13 +109,15 @@ public class MasterVerdicts {
             return false;
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", question).log();
-        return reports.report(taskId, FlowRules.relayed(), "outcome=question — reviewer: " + question);
+        return reports.report(taskId, FlowRules.relayed(), "outcome=question — " + REVIEWER + question);
     }
 
-    /** The Master's answer to the session's own question, and the task back at work on it. */
+    /** The Master's answer to a question, and the task back at work on it. */
     public boolean answered(String taskId, TaskState task, String question, String decision, boolean freshSession) {
+        boolean ownQuestion = AgentReport.withoutMarker(question).startsWith(REVIEWER);
         String opened = decision.lines().filter(line -> line.startsWith(DO))
-                .map(line -> "\n" + ship.open(line.substring(DO.length()))).collect(Collectors.joining());
+                .map(line -> "\n" + (ownQuestion ? NOT_OPENED : ship.open(line.substring(DO.length()))))
+                .collect(Collectors.joining());
         if (!sessions.relayIfChanged(taskId, "The Master answered your question, standing in for the human:\n"
                 + decision + opened + "\n\nReport IN_PROGRESS, apply it, and hand the round back as usual.")) {
             return false;
@@ -137,6 +141,7 @@ public class MasterVerdicts {
     }
 
     private static final String REPEAT = " [repeat]";
+    private static final String NOT_OPENED = "Not opened: work the Master found unasked is the human's to open.";
 
     /** Ahead of the reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
     private static final String ROUND_RETURNED = "The review of your round came back NOT READY. Each line below is a"

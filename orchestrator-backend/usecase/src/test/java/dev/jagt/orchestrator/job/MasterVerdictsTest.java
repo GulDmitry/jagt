@@ -96,6 +96,20 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void opensNoTaskWhereTheMasterAnswersAQuestionItAskedItself(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build();
+        state.putTask("ABC-1", task);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        verdicts.answered("ABC-1", task, "outcome=question — reviewer: it also drops the cache; own task?",
+                "do proj drop the cache from main", false);
+
+        verify(ship, never()).open(anyString());
+    }
+
+    @Test
     void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
