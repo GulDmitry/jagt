@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * What a task left behind after `done` removed it. The status log is kept whole rather than summarised: whatever
@@ -28,8 +29,13 @@ public record FinishedTask(
         long tokens,
         List<StatusChange> history,
         // What the unattended reviewer concluded last, or null where nothing judged this task.
-        @Nullable String masterVerdict
+        @Nullable String masterVerdict,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals
 ) {
+
+    public FinishedTask {
+        refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
+    }
 
     public static FinishedTask of(String id, TaskState task, long finishedAt) {
         return of(id, task, finishedAt, null);
@@ -37,7 +43,8 @@ public record FinishedTask(
 
     public static FinishedTask of(String id, TaskState task, long finishedAt, @Nullable String masterVerdict) {
         return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
-                task.rounds(), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict);
+                task.rounds(), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict,
+                task.refusals());
     }
 
     /** Whether the reviewer read this task at all; every comparison below is over these and no others. */

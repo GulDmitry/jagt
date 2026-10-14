@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 
@@ -9,6 +10,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,7 +20,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FlowReportsTest {
@@ -43,7 +45,6 @@ class FlowReportsTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("DEPLOYED")
                 .hasMessageContaining("jagt's to set");
-        verifyNoInteractions(stateService);
     }
 
     @ParameterizedTest
@@ -52,7 +53,22 @@ class FlowReportsTest {
         assertThatThrownBy(() -> reports.report("ABC-1", verdict, "lgtm"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("jagt's to set");
-        verifyNoInteractions(stateService);
+    }
+
+    @Test
+    void countsAReportTheTasksStatusForbidsOnTheTask() {
+        AtomicReference<TaskState> written = new AtomicReference<>();
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            written.set(write.apply(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+            return true;
+        });
+
+        assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.PLAN_PENDING, "a plan"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+        assertThat(written.get().refusals()).containsExactly(Map.entry(Guard.STATUS_REPORT, 1));
     }
 
     @Test

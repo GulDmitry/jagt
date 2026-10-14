@@ -1,16 +1,21 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AgentToolGateControllerTest {
@@ -34,6 +39,21 @@ class AgentToolGateControllerTest {
                 .containsEntry("hookEventName", "PreToolUse")
                 .hasEntrySatisfying("permissionDecisionReason",
                         reason -> assertThat(reason).asString().contains("ABC-1"));
+    }
+
+    @Test
+    void countsARefusedLineOnItsTask() {
+        when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
+                TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+
+        new AgentToolGateController(stateService).gate("/wt/ABC-1-proj",
+                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")),
+                new MockHttpServletRequest());
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+                .refusals()).containsExactly(Map.entry(Guard.SESSION_LINE, 1));
     }
 
     @Test

@@ -22,6 +22,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 - **A new spelling of a class below is not a finding.** Refusing it is optional work and never blocks a release.
 - A finding is a class missing below, a Reopen condition that now holds, or an allow-list that widened.
 - A gap that joins the list carries its Reopen condition, in the commit refusing what it can.
+- `finished` sums what `ToolGate` and the report door refused, per kind; the `pre-push` hook's refusals stay uncounted.
 - Never proposed again, each rejected with its reason: a shell grammar in `ToolGate` (0028, 0031), state across
   lines (0026), `gh`/`glab` writes refused verb by verb (0029), `git -c` in the reviewer (0028).
 

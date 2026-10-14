@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,7 +54,8 @@ public record TaskState(
         // What this task's own agent sessions have burned, and how far their log has been read.
         @Nullable AgentSpend agentSpend,
         // Append-only, oldest first: every status this task actually moved TO, with when.
-        List<StatusChange> history
+        List<StatusChange> history,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals
 ) {
 
     /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
@@ -62,6 +64,7 @@ public record TaskState(
     public TaskState {
         repos = repos == null ? List.of() : List.copyOf(repos);
         history = history == null ? List.of() : List.copyOf(history);
+        refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
@@ -93,14 +96,16 @@ public record TaskState(
             @JsonProperty("approved") @Nullable Boolean approved,
             @JsonProperty("usage") @Nullable TokenUsage usage,
             @JsonProperty("agentSpend") @Nullable AgentSpend agentSpend,
-            @JsonProperty("history") @Nullable List<StatusChange> history) {
+            @JsonProperty("history") @Nullable List<StatusChange> history,
+            @JsonProperty("refusals") @Nullable Map<Guard, Integer> refusals) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
-                pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history);
+                pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
+                refusals == null ? Map.of() : refusals);
     }
 
     @JsonIgnore
@@ -264,6 +269,14 @@ public record TaskState(
         return toBuilder().approved(approved).build();
     }
 
+    /** Does NOT touch lastActiveTimestamp: a refused call moved nothing. */
+    public TaskState refused(Guard guard) {
+        Map<Guard, Integer> counted = new EnumMap<>(Guard.class);
+        counted.putAll(refusals);
+        counted.merge(guard, 1, Integer::sum);
+        return toBuilder().refusals(counted).build();
+    }
+
     /**
      * Stamps who caused the step just taken — separate from taking it, because the transition is built where the
      * work happens and the asker is known only at the entry point.
@@ -410,7 +423,7 @@ public record TaskState(
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
                 .approved(approved)
-                .usage(usage).agentSpend(agentSpend).history(history);
+                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -436,6 +449,7 @@ public record TaskState(
         private @Nullable AgentSpend agentSpend;
         /** Null means "a brand-new task". */
         private @Nullable List<StatusChange> history;
+        private Map<Guard, Integer> refusals = Map.of();
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -561,13 +575,18 @@ public record TaskState(
             return this;
         }
 
+        public Builder refusals(Map<Guard, Integer> refusals) {
+            this.refusals = refusals;
+            return this;
+        }
+
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
-                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log);
+                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals);
         }
     }
 }

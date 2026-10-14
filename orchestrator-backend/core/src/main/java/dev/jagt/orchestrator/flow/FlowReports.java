@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
@@ -47,20 +48,25 @@ public class FlowReports {
     public Optional<Landed> report(String taskId, TaskStatus status, @Nullable String message,
                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
                                    Predicate<TaskState> verificationOwed) {
-        if (!FlowRules.reportable(status)) {
-            throw Refusal.byState(FlowRules.refusedReport(status, status).orElseThrow());
-        }
         // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving together
         // must not both pass on a status neither of them ends up leaving from.
         AtomicReference<Landed> landed = new AtomicReference<>();
+        AtomicReference<String> refused = new AtomicReference<>();
         tasks.updateTask(taskId, task -> {
-            FlowRules.refusedReport(task.status(), status).ifPresent(why -> {
-                throw Refusal.byState(why);
-            });
+            Optional<String> why = FlowRules.refusedReport(task.status(), status);
+            if (why.isPresent()) {
+                refused.set(why.get());
+                return task.refused(Guard.STATUS_REPORT);
+            }
             TaskStatus now = FlowRules.reported(task.status(), status, verificationOwed.test(task));
             landed.set(new Landed(task.status(), now));
             return alsoRecord.apply(task.status(), task.withStatus(now, message));
         });
+        Optional<String> why = Optional.ofNullable(refused.get())
+                .or(() -> FlowRules.reportable(status) ? Optional.empty() : FlowRules.refusedReport(status, status));
+        if (why.isPresent()) {
+            throw Refusal.byState(why.get());
+        }
         return Optional.ofNullable(landed.get());
     }
 

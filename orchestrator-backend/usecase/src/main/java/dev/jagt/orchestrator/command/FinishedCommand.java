@@ -2,11 +2,15 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;
+import dev.jagt.orchestrator.task.Guard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -49,6 +53,12 @@ public class FinishedCommand implements GlobalCommand {
             lines.add("  %-14s %-9s %-8s %s".formatted(task.id(), took(task),
                     task.rounds() + (task.rounds() == 1 ? " round" : " rounds"),
                     task.title() == null ? "" : task.title()));
+        }
+        Map<Guard, Integer> refused = new EnumMap<>(Guard.class);
+        records.forEach(task -> task.refusals().forEach((guard, count) -> refused.merge(guard, count, Integer::sum)));
+        if (!refused.isEmpty()) {
+            lines.add("refused: " + refused.entrySet().stream()
+                    .map(entry -> entry.getKey().label() + " " + entry.getValue()).collect(Collectors.joining(", ")));
         }
         return String.join("\n", lines);
     }
