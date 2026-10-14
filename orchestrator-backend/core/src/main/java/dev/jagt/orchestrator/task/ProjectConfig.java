@@ -16,24 +16,30 @@ public record ProjectConfig(
         // What jagt runs in the worktree before a hand-back reaches a human. Null or empty = nothing is run.
         @Nullable List<String> verifyCommand,
         // One line saying what this repository IS, for placing an item no label places. Blank = its path.
-        @Nullable String about
+        @Nullable String about,
+        @Nullable List<String> humanPaths
 ) {
 
     private static final Pattern REF_PREFIX = Pattern.compile("^\\+?(refs/heads/|refs/remotes/origin/|origin/)?");
 
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
-        this(path, baseBranch, deployBranch, labels, List.of(), null);
+        this(path, baseBranch, deployBranch, labels, List.of(), null, null);
     }
 
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels,
                          @Nullable List<String> verifyCommand) {
-        this(path, baseBranch, deployBranch, labels, verifyCommand, null);
+        this(path, baseBranch, deployBranch, labels, verifyCommand, null, null);
     }
 
     /** What a router is told this repository is; its path where nobody wrote a line, the name carrying most. */
     public String aboutOrPath() {
         return about == null || about.isBlank() ? String.valueOf(path) : about;
+    }
+
+    /** Repository paths, as globs, whose change only a human takes further. */
+    public List<String> humanPathsOrNone() {
+        return humanPaths == null ? List.of() : humanPaths;
     }
 
     /** The base branch as a LOCAL name, which is the form every other branch here is written in. */

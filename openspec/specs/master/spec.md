@@ -22,12 +22,12 @@ jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy re
 - **THEN** each round is read into the worktree's `master-review.md`; it presses nothing
 
 #### Scenario: The Master is reading a round
-- **WHEN** a round is under Master review
+- **WHEN** it is under review
 - **THEN** the chip says `master review` and nothing asks you; the session was told to end its turn
 
 #### Scenario: A role worth a lighter model
-- **WHEN** the brief's role table has a `model` column
-- **THEN** that role runs on it; blank keeps `master.model`
+- **WHEN** a role's row names a `model`
+- **THEN** it runs on it; blank keeps `master.model`
 
 #### Scenario: A role the diff does not touch
 - **WHEN** the diff touches none of a role's `applies` globs
@@ -38,8 +38,8 @@ jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy re
 - **THEN** its `<self_review>` reads it first, then the Master by the same roles unless its brief names others
 
 ### Requirement: The Master judges by a brief
-The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`, or by that `.dist` where none is named
-or copied (`MasterBriefs.file`); a named brief missing SHALL refuse the start.
+The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`, else by that `.dist`
+(`MasterBriefs.file`); a named brief missing SHALL refuse the start.
 
 #### Scenario: No brief copied
 - **WHEN** no brief is copied
@@ -56,7 +56,8 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 ### Requirement: In act the Master moves for you
 With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that holds and answer a question. It SHALL
 deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps
-(`task/MasterRight`) the human's. Closing SHALL stay the human's: the Master's `done` is refused.
+(`task/MasterRight`) the human's, and a project's `humanPaths` a task's ship and deploy where it changes a path they name
+(`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: Green with every thread closed
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
@@ -66,9 +67,9 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 - **WHEN** it has nothing to ship
 - **THEN** it presses nothing; the task waits for you
 
-#### Scenario: A session stops to ask
-- **WHEN** a session asks a question
-- **THEN** the Master answers in the session's window and the task resumes; `mine: [answer]` keeps it yours
+#### Scenario: A path kept for you
+- **WHEN** `humanPaths: ["**/auth/**"]` names a changed path, or the paths are unread
+- **THEN** it presses neither; the `master` window names the path
 
 #### Scenario: Questions repeat over an unchanged tree
 - **WHEN** they repeat
@@ -90,7 +91,7 @@ A plan or round SHALL be ready unless a finding is blocking, wrong or unproven, 
 SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the session, in any mode, and the task to
 `IN_PROGRESS`, until rounds of repeats reach the human (`FindingMatch`).
 
-#### Scenario: Reviewers find only advice
+#### Scenario: Only advice
 - **WHEN** findings are only unguarded, noise or an unproven premise
 - **THEN** the round is ready
 
@@ -115,7 +116,7 @@ SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the ses
 The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PLAN_PENDING` task's `plan.md` in one read
 (`MasterPanel.plan`). It SHALL prove each premise by a run, never from the author; an unread ticket proves nothing.
 
-#### Scenario: The reviewer cannot prove a finding
+#### Scenario: An unprovable finding
 - **WHEN** it cannot prove one
 - **THEN** it asks the session to `show:` it, settling nothing
 
