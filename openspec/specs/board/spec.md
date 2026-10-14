@@ -47,16 +47,16 @@ runs `sweep`), unadvertised (`TaskAction.RENAMED`).
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
 `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself. It declares
-the board part it opens typed alone and its card (`offeredOn`). `CommandReference` renders both: `help`'s
-text and the palette's verb list. A launch creating no task is refused.
+the board part it opens typed alone and its card (`offeredOn`). `CommandReference` renders `help`
+and the palette's verb list. A launch creating no task is refused.
 
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`
-- **THEN** `stats` gives per task the time on the human, the agent, the host
+- **THEN** `stats` splits each open task's time: human, agent, host
 - **AND** `stats` adds a `COLD` column, starts that read no cache as `3/40`, `?` where usage has no cache field
 - **AND** `master` the Master's verdicts the human overrode: passed then reverted or never deployed, failed then
   deployed
-- **AND** `finished` every retired task with its status log
+- **AND** `finished` every retired task with its status log, their median, the same split
 
 #### Scenario: A verb typed alone
 - **WHEN** the human types `do` alone

@@ -1,13 +1,10 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -15,9 +12,6 @@ import java.util.Map;
 /**
  * Where each task's clock has gone, added up from the status history. A retired task takes its history with it, so
  * this is a picture of the OPEN work, never a throughput figure over time.
- *
- * <p>An interval is attributed to whoever owned the status it was spent in, so this cannot disagree with
- * the whose-turn the board shows.
  */
 @Component
 public class CycleTimeRenderer {
@@ -97,14 +91,8 @@ public class CycleTimeRenderer {
     }
 
     private static Clock clockOf(String taskId, TaskState task, long now) {
-        List<StatusChange> history = task.history();
-        Map<Owner, Long> byOwner = new EnumMap<>(Owner.class);
-        for (int step = 0; step < history.size(); step++) {
-            StatusChange change = history.get(step);
-            long until = step + 1 < history.size() ? history.get(step + 1).at() : now;
-            byOwner.merge(Move.ownerOf(change.status()), Math.max(0, until - change.at()), Long::sum);
-        }
-        return new Clock(taskId, Math.max(0, now - history.getFirst().at()),
+        Map<Owner, Long> byOwner = HeldTime.byOwner(task.history(), now);
+        return new Clock(taskId, Math.max(0, now - task.history().getFirst().at()),
                 byOwner.getOrDefault(Owner.YOU, 0L), byOwner.getOrDefault(Owner.AGENT, 0L),
                 byOwner.getOrDefault(Owner.CI, 0L), task.rounds(), task.historyAtCap());
     }
