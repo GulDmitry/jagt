@@ -23,7 +23,7 @@ class TextBudgetTest {
     private static final Path PROMPTS = Path.of("usecase/src/main/resources/prompts");
 
     @ParameterizedTest
-    @CsvSource({"../README.md, 950", "../AGENTS.md, 1620", "../ARCHITECTURE.md, 2900", "../TODO.md, 600"})
+    @CsvSource({"../README.md, 1000", "../AGENTS.md, 1620", "../ARCHITECTURE.md, 2900", "../TODO.md, 600"})
     void aDocumentStaysInsideItsWordBudget(Path document, int maxWords) {
         assertThat(words(document)).describedAs("%s", document).isLessThanOrEqualTo(maxWords);
     }

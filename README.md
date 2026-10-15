@@ -27,6 +27,17 @@ flowchart LR
 ```
 
 
+## Key features
+
+- **One task, one worktree, one branch.** The base branch is read-only; nothing rewrites shared history.
+- **The machine owns every move.** Statuses and actions live in one compiler-checked table; a model only judges.
+- **A deterministic protocol.** A session reports through a schema-checked MCP message; every violation comes
+  back at once, typed: validation, business, permission or transient.
+- **A session writes only inside its task**, under the agent CLI's own OS sandbox.
+- **The Master** reviews every round in your place; in `act` it ships and deploys, and your word overrules it.
+- **jagt runs the checks itself**: a plan's acceptance probes, and a valid spec change before any hand-back.
+- **Any agent CLI, no token.** Tracker and code host are read through your own MCP.
+
 ## The session, and you
 
 | the agent session | you |
@@ -35,8 +46,6 @@ flowchart LR
 | leaves **everything uncommitted** | `ship` — the first commit and push there is |
 | fixes the CI failures and the comments, drafts every reply | read the drafts — `replies` — then `ship` |
 | touches no shared branch and no other task | `deploy`, then `done` |
-
-One session, one worktree, one branch, one request; the server, not a prompt, keeps it out of other tasks.
 
 ## With the Master, and without
 
@@ -50,8 +59,7 @@ The Master: a model reading every round before you, by the roles in its brief.
 | `deploy` | yours | yours | once green |
 | costs | nothing | one heavy read per role, per round | the same |
 
-In `act` a task reaches you deployed; `master.mine` keeps any step yours, your
-words overrule it.
+In `act` a task reaches you deployed; `master.mine` keeps any step yours.
 
 ## Start
 
@@ -66,8 +74,7 @@ an interactive login, or from a plugin, does not answer it, though `claude mcp l
 cd "$TMPDIR" && claude "Name your MCP tools for <your tracker> and <your code host>, or say NONE." -p
 ```
 
-`NONE` means jagt cannot read a ticket yet; [Installation](docs/installation.md) has the fix. Any agent CLI may
-write the code.
+`NONE` means jagt cannot read a ticket yet; [Installation](docs/installation.md) has the fix.
 
 ### 2 — clone, and name one repository
 
@@ -116,21 +123,15 @@ Anything missing, and jagt refuses to start with the **whole** list, each line n
 
 **http://localhost:8290** — type a ticket key or URL, or with no ticket `<project> <what to do>`, then **Start**.
 
-## Commands
-
-Every verb is a board button; each one, with `focus`, `sweep` and `revert`: [Usage](docs/usage.md#commands).
-
 ## What you keep
 
-- The base branch is **read-only**; only `deploy` and its undo `revert` write a shared branch, both yours to
-  trigger and neither rewriting history.
 - **Nothing is written into your project's tracked files** — no git hook, nothing to uninstall.
 - Sessions live in tmux and the state is one JSON file, so restarting the backend loses nothing; a reboot
   costs the windows, and `focus` re-enters each session where it left off.
 - **Four things cost a model call**: a ticket, a merge request, a review round, a `⌘K` sentence.
 - The board asks for no password and can deploy, so it stays on `127.0.0.1`.
 
-It does not run your CI, hold a credential, or run on Windows.
+It does not run your CI or run on Windows.
 
 ## Documentation
 
