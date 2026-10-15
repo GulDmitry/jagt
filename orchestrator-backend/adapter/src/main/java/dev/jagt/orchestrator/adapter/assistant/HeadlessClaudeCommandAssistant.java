@@ -23,14 +23,26 @@ public class HeadlessClaudeCommandAssistant implements CommandAssistant {
         if (text == null || text.isBlank()) {
             return Answer.unavailable();
         }
-        String prompt = "Map this operator request onto EXACTLY ONE command of the tool below.\n\nREQUEST: "
-                + text + "\n\n" + context + "\n\nAnswer with the command word, the task it applies to (its"
-                + " id or alias, copied verbatim from the list — never invented), the ticket reference for `do` or"
-                + " the request URL for `resume`, and a reason. Leave a field as an empty string when it does not"
-                + " apply. `do` and `resume` name no task. If the request does not clearly match one command and,"
-                + " where it acts on one, one task, answer"
-                + " command=\"none\" and put the ambiguity in reason. Do NOT guess between two tasks:"
-                + " ambiguity is a `none`. Respond directly.";
+        String prompt = """
+                <role>You map one operator request onto EXACTLY ONE command of the tool below.</role>
+                <request>%s</request>
+                <tool>
+                %s
+                </tool>
+                <rules>
+                - command: the command word. task: the task it applies to, its id or alias copied verbatim from the \
+                list, never invented. ticket: the ticket reference for `do`, the request URL for `resume`. reason: \
+                why, in a few words.
+                - Leave a field as an empty string when it does not apply. `do` and `resume` name no task.
+                - If the request does not clearly match one command and, where it acts on one, one task, answer \
+                command="none" and put the ambiguity in reason. Do NOT guess between two tasks: ambiguity is a `none`.
+                </rules>
+                <examples>
+                Tasks ABC-5 (alias s1, search filters) and ABC-6 (alias s2, search ranking); request "the search \
+                filters work can go out for review": command=ship, task=ABC-5.
+                Same tasks; request "restart the search agent": command=none, reason="two search tasks fit".
+                </examples>
+                Respond directly.""".formatted(text, context);
         return claude.ask(prompt, CommandRead.SCHEMA.json(), "command mapping", AssistantCallKind.COMMAND_MAP, TIMEOUT)
                 .map(n -> new CommandProposal(n.path("command").asString(""), n.path("task").asString(""),
                         n.path("ticket").asString(""), n.path("reason").asString("")));

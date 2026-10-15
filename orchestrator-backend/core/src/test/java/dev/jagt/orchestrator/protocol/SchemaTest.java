@@ -37,6 +37,15 @@ class SchemaTest {
     }
 
     @Test
+    void holdsAFindingToTheSeveritiesARoundIsJudgedBy() {
+        JsonNode schema = mapper.readTree(RoundRead.SCHEMA.json());
+
+        assertThat(schema.path("properties").path("findings").path("items").path("properties").path("severity")
+                .path("enum")).extracting(JsonNode::asString)
+                .containsExactly("blocking", "wrong", "unproven", "unguarded", "noise");
+    }
+
+    @Test
     void escapesADescriptionCarryingTheBracesOfAnExample() {
         JsonNode schema = mapper.readTree(AgentStatusMessage.SCHEMA.json());
 

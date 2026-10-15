@@ -243,35 +243,40 @@ public class MasterPanel {
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
                                String decided, List<String> said, boolean stuck, boolean tracker) {
-        return GOAL + "You stand in for the human on task " + taskId + ". The session working it stopped to ask: "
-                + question + "\n\nThe brief you judge by:\n" + brief + "\n\n"
-                + "The brief the session works to, its %s filled per task:\n" + authorBrief + "\n\n"
+        return GOAL + "You stand in for the human on task " + taskId + ". The session working it stopped to ask:\n"
+                + "<question>\n" + question + "\n</question>\n"
+                + "The brief you judge by:\n<brief>\n" + brief + "\n</brief>\n"
+                + "The brief the session works to, its %s filled per task:\n<author_brief>\n" + authorBrief
+                + "\n</author_brief>\n"
                 + round(taskId, task) + settled(decided) + humanSaid(said) + (stuck ? STUCK : "")
-                + ticket(tracker, "code") + " Read the code, its history with " + GIT + "."
-                + " Then decide as the human would, by both briefs and the codebase."
-                + " Decide only what you can prove."
-                + " Where the decision rests on a fact only the session can show, the decision is to show it first."
-                + " Name exactly what to show, and what you decide on each answer."
-                + " A check this task's request turns red is the task's to turn green, code that predates it included."
+                + "<rules>\n"
+                + "1. " + ticket(tracker, "code") + " Read the code, its history with " + GIT + ".\n"
+                + "2. Then decide as the human would, by both briefs and the codebase. Decide only what you can prove.\n"
+                + "3. Where the decision rests on a fact only the session can show, the decision is to show it first."
+                + " Name exactly what to show, and what you decide on each answer.\n"
+                + "4. A check this task's request turns red is the task's to turn green, code that predates it included."
                 + " This holds whatever the ticket's scope: an override, an exception or a human's action is no answer"
-                + " while a change in the worktrees can pass it. Decide that change."
-                + " Work needing a branch other than " + taskId + " is a task of its own."
+                + " while a change in the worktrees can pass it. Decide that change.\n"
+                + "5. Work needing a branch other than " + taskId + " is a task of its own."
                 + " Open it with a finding that is exactly `do " + task.project() + " <what to do…> from <branch>`."
-                + " jagt runs that line as the human's own."
-                + " Merging into the deploy branch is never such a task: it is this task's own `deploy`."
-                + " jagt presses it once the request is green with every thread closed; until then the session waits."
-                + " Never answer question and never defer: the decision is the answer."
-                + " verdict: ready."
-                + " findings: the decision, one per line — what the session does, and the one clause of why."
-                + " premises: what it rests on, each with provenBy — the file:line or read-only command"
-                + " that shows it."
-                + " failure: blank unless something stopped you reading, then what.";
+                + " jagt runs that line as the human's own.\n"
+                + "6. Merging into the deploy branch is never such a task: it is this task's own `deploy`."
+                + " jagt presses it once the request is green with every thread closed; until then the session waits.\n"
+                + "7. Never answer question and never defer: the decision is the answer.\n"
+                + "</rules>\n"
+                + "<output_format>\n"
+                + "- verdict: ready.\n"
+                + "- findings: the decision, one per line — what the session does, and the one clause of why.\n"
+                + "- premises: what it rests on, each with provenBy — the file:line or read-only command"
+                + " that shows it.\n"
+                + "- failure: blank unless something stopped you reading, then what.\n"
+                + "</output_format>";
     }
 
     static String planPrompt(String taskId, TaskState task, String brief, String plan, RoundRead read,
                              boolean decides, boolean tracker) {
-        return GOAL + "Task " + taskId + " stopped at its plan, before any code. The brief you judge by:\n" + brief
-                + "\n\n" + round(taskId, task)
+        return GOAL + "Task " + taskId + " stopped at its plan, before any code. The brief you judge by:\n<brief>\n"
+                + brief + "\n</brief>\n" + round(taskId, task)
                 + (!read.ticket().isBlank() ? "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n"
                         : ticket(tracker, "plan") + "\n")
                 + (plan.isBlank() ? "" : "The plan, plan.md:\n<plan>\n" + plan + "\n</plan>\n")
@@ -282,20 +287,25 @@ public class MasterPanel {
                 + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
                         + "\n</session_notes>\n")
                 + settled(read.decided()) + humanSaid(read.said())
-                + "Judge one thing: whether this plan does what the ticket asks, by your brief and the codebase."
-                + " A plan missing a ticket line is wrong. So is one doing what no ticket line asks."
-                + " Read the code only where the plan rests on it, its history with " + GIT + "."
-                + " A `disputed:` line in the notes names its evidence: check it, and proven, it stands."
-                + (plan.isBlank() ? " The session wrote no plan.md: that alone is not ready." : "")
-                + " verdict: ready where the plan holds, not ready, or question."
-                + " findings: one per problem — what the plan gets wrong, and the one clause of why."
+                + "<rules>\n"
+                + "- Judge one thing: whether this plan does what the ticket asks, by your brief and the codebase.\n"
+                + "- A plan missing a ticket line is wrong. So is one doing what no ticket line asks.\n"
+                + "- Read the code only where the plan rests on it, its history with " + GIT + ".\n"
+                + "- A `disputed:` line in the notes names its evidence: check it, and proven, it stands.\n"
+                + (plan.isBlank() ? "- The session wrote no plan.md: that alone is not ready.\n" : "")
+                + (decides ? "- You stand in for the human: never answer question. Decide what the ticket leaves"
+                        + " open as they would, and write the decision as a finding.\n" : "")
+                + "</rules>\n"
+                + "<output_format>\n"
+                + "- verdict: ready where the plan holds, not ready, or question.\n"
+                + "- findings: one per problem — what the plan gets wrong, and the one clause of why."
                 + " Each finding carries pattern: two to four words naming the kind of problem."
-                + " Each finding carries severity: wrong, blocking, unproven or noise. Only noise lets the plan pass."
-                + " question: only with verdict question, the one thing the human must decide."
-                + (decides ? " You stand in for the human: never answer question. Decide what the ticket leaves"
-                        + " open as they would, and write the decision as a finding." : "")
-                + " premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
-                + " command and what it printed. failure: blank unless something stopped you reading, then what.";
+                + " Each finding carries severity: wrong, blocking, unproven or noise. Only noise lets the plan pass.\n"
+                + "- question: only with verdict question, the one thing the human must decide.\n"
+                + "- premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
+                + " command and what it printed.\n"
+                + "- failure: blank unless something stopped you reading, then what.\n"
+                + "</output_format>";
     }
 
     /** The Master's reason to exist, ahead of every read so no rule below it is taken for the goal. */
@@ -337,36 +347,42 @@ public class MasterPanel {
 
     /** Names no role and no task. */
     static String shared(String brief, String authorBrief, boolean decides, boolean tracker) {
-        return GOAL + "The brief you judge by:\n" + brief + "\n\n"
-                + "The brief the author worked to, its %s filled per task; yours extends it:\n"
-                + authorBrief + "\n\n"
-                + "The ticket is quoted in the round where jagt read it. Elsewhere: " + ticket(tracker, "diff")
-                + " Then read everything the task changed against its base, committed and not: quoted in the round"
-                + " where jagt read it, with " + GIT + " where it is not. Judge from the"
-                + " ticket and the diff: the author's own account is not evidence, what it points at is. A"
-                + " `disputed:` line in the session's notes names a ticket line, a file:line or a command and what it"
-                + " printed: check it, and proven, it stands over your own earlier finding. Rule only on what you can"
-                + " prove from what you read; a decision resting on a fact you cannot read is unproven, never a"
-                + " guess. Run no build and no test: they ran before the round reached you.\n"
-                + "The best is the enemy of the good: ready means nothing is broken and nothing misses the ticket.\n"
-                + "verdict: ready, not ready, or question."
-                + " findings: one per problem — file, what is wrong and the one clause of why."
-                + " Each finding carries pattern: two to four words naming the kind of problem."
-                + " Each finding carries severity, one of five."
-                + " blocking: someone relying on it today breaks."
-                + " wrong: not what the ticket asks."
-                + " unguarded: right, but nothing fails when it breaks."
-                + " unproven: you would decide it, but nothing you can read proves it."
-                + " An unproven issue names exactly what the session must show."
-                + " noise: style or taste."
-                + " Only blocking, wrong and unproven stop the round."
-                + " question: only with verdict question, the one thing the human must decide."
-                + (decides ? " You stand in for the human: never answer question. Where the ticket or the code"
+        return GOAL + "The brief you judge by:\n<brief>\n" + brief + "\n</brief>\n"
+                + "The brief the author worked to, its %s filled per task; yours extends it:\n<author_brief>\n"
+                + authorBrief + "\n</author_brief>\n"
+                + "<rules>\n"
+                + "1. The ticket is quoted in the round where jagt read it. Elsewhere: " + ticket(tracker, "diff") + "\n"
+                + "2. Then read everything the task changed against its base, committed and not: quoted in the round"
+                + " where jagt read it, with " + GIT + " where it is not.\n"
+                + "3. Judge from the ticket and the diff: the author's own account is not evidence, what it points at"
+                + " is.\n"
+                + "4. A `disputed:` line in the session's notes names a ticket line, a file:line or a command and what"
+                + " it printed: check it, and proven, it stands over your own earlier finding.\n"
+                + "5. Rule only on what you can prove from what you read; a decision resting on a fact you cannot read"
+                + " is unproven, never a guess.\n"
+                + "6. Run no build and no test: they ran before the round reached you.\n"
+                + "7. The best is the enemy of the good: ready means nothing is broken and nothing misses the ticket.\n"
+                + (decides ? "8. You stand in for the human: never answer question. Where the ticket or the code"
                         + " leaves something open, decide it as they would, by both briefs and the codebase."
-                        + " Write the decision as a finding." : "")
-                + " premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
-                + " command and what it printed, that shows it; blank where you only reasoned it. failure: blank"
-                + " unless something stopped you reading the round, then what.";
+                        + " Write the decision as a finding.\n" : "")
+                + "</rules>\n"
+                + "<output_format>\n"
+                + "- verdict: ready, not ready, or question.\n"
+                + "- findings: one per problem — file, what is wrong and the one clause of why."
+                + " Each finding carries pattern: two to four words naming the kind of problem.\n"
+                + "- severity, one of five:\n"
+                + "  - blocking: someone relying on it today breaks.\n"
+                + "  - wrong: not what the ticket asks.\n"
+                + "  - unguarded: right, but nothing fails when it breaks.\n"
+                + "  - unproven: you would decide it, but nothing you can read proves it."
+                + " An unproven issue names exactly what the session must show.\n"
+                + "  - noise: style or taste.\n"
+                + "  Only blocking, wrong and unproven stop the round.\n"
+                + "- question: only with verdict question, the one thing the human must decide.\n"
+                + "- premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
+                + " command and what it printed, that shows it; blank where you only reasoned it.\n"
+                + "- failure: blank unless something stopped you reading the round, then what.\n"
+                + "</output_format>";
     }
 
     /** What every role of one round reads alike, so the roles after the first find it cached. */

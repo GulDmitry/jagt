@@ -80,12 +80,22 @@ public final class Schema {
 
     /** A list of objects, every one of {@code fields} a required string. */
     public Schema records(String name, @Nullable String describes, List<String> fields) {
+        return records(name, describes, fields, Map.of());
+    }
+
+    /** As {@link #records(String, String, List)}, a field {@code choices} names taking only its values. */
+    public Schema records(String name, @Nullable String describes, List<String> fields,
+                          Map<String, ? extends Collection<?>> choices) {
         ObjectNode item = field(name, "array", describes).putObject("items");
         item.put("type", "object");
         ObjectNode props = item.putObject("properties");
         ArrayNode names = item.putArray("required");
         fields.forEach(field -> {
-            props.putObject(field).put("type", "string");
+            ObjectNode property = props.putObject(field).put("type", "string");
+            if (choices.containsKey(field)) {
+                ArrayNode allowed = property.putArray("enum");
+                choices.get(field).forEach(value -> allowed.add(String.valueOf(value)));
+            }
             names.add(field);
         });
         return this;
