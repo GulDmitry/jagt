@@ -108,6 +108,8 @@ class HeadlessClaude {
                 "--output-format", "json",
                 // Off the system prompt, cwd and git status stop making every worktree write its own cache.
                 "--exclude-dynamic-system-prompt-sections",
+                // Nothing resumes a one-shot, so its transcript is only disk.
+                "--no-session-persistence",
                 "--tools", ""));
         if (!withMcp) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));

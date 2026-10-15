@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.Guard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -45,7 +46,10 @@ public class FinishedCommand implements GlobalCommand {
 
     @Override
     public String run(String tail) {
-        return render(finished.all());
+        List<Path> archives = finished.archives();
+        return render(finished.all()) + (archives.isEmpty() ? ""
+                : "\nolder tasks are packed in " + archives.stream().map(path -> path.getFileName().toString())
+                        .collect(Collectors.joining(", ")));
     }
 
     static String render(List<FinishedTask> records) {

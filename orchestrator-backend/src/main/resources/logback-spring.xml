@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-One run, one file. Boot's own file appender is a RollingFileAppender that rolls at midnight and keeps a week
-of `<log>.<date>.<n>.gz` beside it, so a jagt left running for days grows an archive a day that nothing sweeps
-until the next start. A plain FileAppender never writes a second file; `LogFileReset` empties this one before
-the appender opens it.
+Each log holds at most two files: past 10MB it rolls into `<log>.1`, replacing the last one. Boot's own appender
+rolls daily and keeps a week of archives. `LogFileReset` empties the backend log and its `.1` at start.
 -->
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>${FILE_LOG_THRESHOLD}</level>
         </filter>
@@ -20,14 +18,30 @@ the appender opens it.
             <charset>${FILE_LOG_CHARSET}</charset>
         </encoder>
         <file>${LOG_FILE:-jagt-backend.log}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${LOG_FILE:-jagt-backend.log}.%i</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>1</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>10MB</maxFileSize>
+        </triggeringPolicy>
     </appender>
 
     <!-- The human's: what the Master does, followed in the `master` window (`MasterFeedWindow`). -->
-    <appender name="MASTER" class="ch.qos.logback.core.FileAppender">
+    <appender name="MASTER" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>%gray(%d{HH:mm:ss}) %highlight(%msg) %kvp%n</pattern>
         </encoder>
         <file>jagt-master.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>jagt-master.log.%i</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>1</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>10MB</maxFileSize>
+        </triggeringPolicy>
     </appender>
     <logger name="dev.jagt.orchestrator.job.MasterAnswerJob"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.job.MasterReviewJob"><appender-ref ref="MASTER"/></logger>

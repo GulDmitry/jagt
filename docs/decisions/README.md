@@ -12,7 +12,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
   **Decision**, **Rejected** (each with why), **Reopen when** (the measurement changing it).
 - At most 400 words, else two decisions.
 - **Linked**: a record names its rule first; this index lists all (`DecisionIndexTest`).
-- Taken after the fact: `recorded retroactively`, carrying only what history proves.
+- Taken late: `recorded retroactively`, only what history proves.
 
 ## Index
 
@@ -60,3 +60,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0042 Kept paths stay human](0042-a-path-list-keeps-a-step-with-the-human.md)
 - [0043 `act` stops itself](0043-act-stops-itself-after-three-bad-endings.md)
 - [0044 Sandboxed writes](0044-a-session-writes-only-inside-its-task.md)
+- [0045 Bounded stores](0045-every-store-jagt-writes-has-a-ceiling.md)

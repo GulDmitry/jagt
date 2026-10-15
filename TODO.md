@@ -1,7 +1,5 @@
 # jagt — TODO
 
-- Nothing jagt writes may grow unbounded: each file beside `state.json`, `jagt-master.log`, `artifacts/` and the
-  worktrees' own files gets a ceiling and what folds, archives or refuses past it. `finished.jsonl` only warns.
 - A production signal could become a task with no token in jagt: an alert (Sentry, an on-call tool) opens a tracker
   item with the label the configured `TrackerWorkflow` reads as ready, and `IntakeJob` opens the task as it does
   today. Open: whether a task that starts as a root-cause read needs a flow `IntakeJob` lacks; settles roadmap §2
@@ -21,6 +19,7 @@
   - Guards outside the project: per-session push hooks under `.jagt/`, `ToolGate` refusing a line, refusals counted
     per task; nothing written into tracked files (0004, `guards`).
   - A session writes only inside its task, under the CLI's OS sandbox; every host stays reachable (0044).
+  - Nothing it writes grows unbounded: each store has a ceiling and packs, rolls or refuses past it (0045).
   - Git with the human's credentials runs only the config and hooks the human trusted (0040, `git-trust`).
   - The Master: a per-role review panel, `judge` by default; `act` ships and deploys, stops itself after three bad
     endings, and the human's word overrules it (0010, 0018, 0043, `master`).
