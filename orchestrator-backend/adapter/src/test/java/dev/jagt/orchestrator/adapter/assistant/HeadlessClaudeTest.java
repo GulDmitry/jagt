@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -212,6 +213,25 @@ class HeadlessClaudeTest {
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).contains("--exclude-dynamic-system-prompt-sections");
+    }
+
+    @Test
+    void tellsTheRetryWhyTheFirstReplyWasRefused() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"result\":\"The request is open.\"}", ""))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
+
+        claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
+                AssistantCallKind.REVIEW_SWEEP);
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner, times(2)).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getAllValues().get(1))
+                .contains("Read https://host/mr/9.\n\nYour last reply was prose without the StructuredOutput call:"
+                        + " answer through StructuredOutput alone.");
     }
 
     @Test

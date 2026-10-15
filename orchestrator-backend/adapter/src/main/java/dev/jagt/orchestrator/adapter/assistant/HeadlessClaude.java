@@ -48,6 +48,8 @@ class HeadlessClaude {
             + " answered, never one recalled or guessed.";
     /** The CLI's own tool carrying the answer a {@code --json-schema} asks for. */
     static final String STRUCTURED_OUTPUT = "StructuredOutput";
+    static final String RETRY_REASON = "\n\nYour last reply was prose without the " + STRUCTURED_OUTPUT
+            + " call: answer through " + STRUCTURED_OUTPUT + " alone.";
     private static final int MAX_CAUSE = 400;
     private static final Pattern FENCE = Pattern.compile("```(?:json)?\\s*(\\{.*?})\\s*```", Pattern.DOTALL);
 
@@ -84,7 +86,7 @@ class HeadlessClaude {
             return new Answer<>(answer, first.usage());
         }
         // The CLI at times hands back the model's prose without the object its schema tool validated.
-        Reply second = call(prompt, schema, label, kind, timeout);
+        Reply second = call(prompt + RETRY_REASON, schema, label, kind, timeout);
         JsonNode secondEnvelope = second.envelope();
         return new Answer<>(secondEnvelope != null ? answerOf(secondEnvelope, label, schema) : Optional.empty(),
                 first.usage().plus(second.usage()));

@@ -10,14 +10,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AgentBootstrapPromptTest {
 
     @Test
-    void theShippedBootstrapPromptLeavesEveryCommitToAHumansShip() throws Exception {
+    void theShippedBootstrapPromptLeavesCommittingToTheBriefsOwnRule() throws Exception {
         String applicationYml;
         try (InputStream in = getClass().getResourceAsStream("/application.yml")) {
             applicationYml = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
 
-        assertThat(applicationYml)
-                .contains("do NOT commit")
-                .doesNotContain("commit to your task branch WITHOUT asking");
+        String bootstrap = applicationYml.substring(applicationYml.indexOf("agent-prompt:"),
+                applicationYml.indexOf("agent-revive-prompt:"));
+
+        assertThat(bootstrap).doesNotContainIgnoringCase("commit");
     }
 }

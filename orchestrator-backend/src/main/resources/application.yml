@@ -63,11 +63,8 @@ orchestrator:
   # Initial prompt every spawned sub-agent starts with (otherwise the session idles).
   agent-prompt: >-
     You are the sub-agent for this worktree. Read task_notes.md (if present) and task_context.md, set
-    your status to IN_PROGRESS via update_agent_status, and start working on the task. The orchestrator
-    rules are already in your context — follow them. Work autonomously, but do NOT commit, push, or open a merge request on your
-    own — leave ALL changes UNCOMMITTED so the human reviews your working tree; committing happens ONLY
-    when task_context.md later instructs it (that is the human's `ship`). When done and verified, set
-    status REVIEW_PENDING.
+    your status to IN_PROGRESS via update_agent_status, and start working on the task by the rules
+    already in your context.
   # Prompt a session gets when jagt re-enters one it did not end itself — a lost tmux server, a rebooted machine.
   agent-revive-prompt: >-
     Your session was interrupted and has been re-entered, so the context above may be incomplete. Re-read
