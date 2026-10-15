@@ -60,7 +60,8 @@ as `validation`; a runtime that cannot choose ignores it.
 
 ### Requirement: A detached launch gets its own session
 A launch SHALL leave jagt's process group, which Ctrl-C reaches and `ProcessBuilder.start()` never leaves:
-`ProcessRunner.detachedFrom` runs it under `setsid`, or perl's `POSIX::setsid` where there is none. Both wrappers `exec`, so `destroy()` on the returned `Process` reaches the app.
+`ProcessRunner.detachedFrom` runs it under `setsid`, or perl's `POSIX::setsid` where there is none. Both wrappers
+`exec`, so `destroy()` on the returned `Process` reaches the app.
 
 #### Scenario: Ctrl-C stops jagt
 - **WHEN** the human presses Ctrl-C in jagt's terminal

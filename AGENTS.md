@@ -92,7 +92,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 
 ## Tests
 
-- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval` and `masterEval` are asked for by name.
+- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval` and
+  `masterEval` are asked for by name.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
 - Run `./gradlew boardTest` after any change to `static/`.
@@ -106,14 +107,15 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - **One fact per line**, in every text: a decision plus one clause of why, never the road to it nor what it used to be.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
 - **Never cite a line number or a line count** in a doc or a comment; name the file, the symbol or the rule.
-- **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide or spec ≤ 1200, no line over 220
-  characters, comments ≤ 15% of main sources. Counted in WORDS — a paragraph folded into a table cell is the
-  same paragraph. Over budget means cut text; raising a number is the owner's call.
+- **Budgets, asserted by `TextBudgetTest`**, in lines on Anthropic's scale
+  ([memory](https://code.claude.com/docs/en/memory), [skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)):
+  a decision 50, a rule 100, a page read whole 200, `ARCHITECTURE.md` 500; no line past 150 characters outside a
+  table; comments ≤ 15% of main sources. Past a limit, split the file one level deep; never raise the number.
 - **Every log line is structured**: constant event, values as fields, `cause` on every failure, never `{}` or `+`
   in a message. Keys: [`docs/rules/style.md`](docs/rules/style.md).
 - **English only**, but for kitty's ЙЦУКЕН keymap, where the symbols are the key events.
 - **Never a real ticket key, project name or issue title**, tests and fixtures included. Invent `ABC-42`.
-- Markdown ~120 columns, hard max 150; a non-obvious case earns a spec scenario, not a paragraph.
+- Markdown ~120 columns; a non-obvious case earns a spec scenario, not a paragraph.
 
 ## The human in the loop
 

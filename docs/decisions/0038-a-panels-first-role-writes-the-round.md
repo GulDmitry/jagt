@@ -17,7 +17,8 @@ Probed 2026-10-13 with two `claude -p` runs a few seconds apart, the second diff
 
 The cache matches a prefix only up to a block boundary. Replayed on 648 real role runs, 135 panels of 11 tasks
 (2026-09-30..10-07, transcripts from before reads stopped persisting): of 91.1M input-equivalent the Master paid
-for cache, the 5m TTL saves 22.7M and the stagger 20.1M more; the first role ran a median 0.5 minutes, past 5 in 6. Roles started together all write before any can read.
+for cache, the 5m TTL saves 22.7M and the stagger 20.1M more; the first role ran a median 0.5 minutes, past 5 in 6.
+Roles started together all write before any can read.
 The Master's reads ran without `FORCE_PROMPT_CACHING_5M`, so at the 1h TTL's 2× write.
 
 ## Decision

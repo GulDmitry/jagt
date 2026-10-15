@@ -5,7 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GulDmitry/jagt/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/GulDmitry/jagt/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/GulDmitry/jagt/actions/workflows/ci.yml">
+  <img alt="CI" src="https://github.com/GulDmitry/jagt/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Java 25+" src="https://img.shields.io/badge/Java-25%2B-orange">
   <img alt="macOS · Linux" src="https://img.shields.io/badge/macOS-·%20Linux-lightgrey">
   <a href="LICENSE"><img alt="Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>

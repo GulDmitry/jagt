@@ -8,6 +8,19 @@ Every path below is a package under `dev.jagt.orchestrator`, inside `orchestrato
 
 Status is part of the map: *built* means built; fix a stale row, never delete it.
 
+## Contents
+
+- [The kinds](#the-kinds)
+- [The rings](#the-rings)
+- [The flow machine](#the-flow-machine)
+- [The artifact chain](#the-artifact-chain)
+- [Ports and who answers them](#ports-and-who-answers-them)
+- [Where a new thing goes](#where-a-new-thing-goes)
+- [The board is two rings too](#the-board-is-two-rings-too)
+- [The agent system is a ring](#the-agent-system-is-a-ring)
+- [Assembly validation](#assembly-validation)
+- [The build](#the-build)
+
 ## The kinds
 
 Anything that runs, tells, decides, or is done to a task is one of the **kinds**: one interface — in `port/` when

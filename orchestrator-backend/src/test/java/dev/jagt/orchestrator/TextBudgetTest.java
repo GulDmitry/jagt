@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -21,55 +19,42 @@ class TextBudgetTest {
     private static final Pattern NOT_PROSE = Pattern.compile("^(```|\\||#|<|>)");
     private static final Pattern LIST_ITEM = Pattern.compile("^([-*]|\\d+\\.)\\s+");
     private static final Path PROMPTS = Path.of("usecase/src/main/resources/prompts");
+    private static final Path MAP_FILE = Path.of("../ARCHITECTURE.md");
+    private static final int RECORD = 50;
+    private static final int RULE = 100;
+    private static final int PAGE = 200;
+    private static final int MAP = 500;
+    private static final int WIDTH = 150;
 
-    @ParameterizedTest
-    @CsvSource({"../README.md, 1000", "../AGENTS.md, 1620", "../ARCHITECTURE.md, 2900", "../TODO.md, 600"})
-    void aDocumentStaysInsideItsWordBudget(Path document, int maxWords) {
-        assertThat(words(document)).describedAs("%s", document).isLessThanOrEqualTo(maxWords);
+    @Test
+    void aDecisionOrTheOpenListIsOneRecordOfFiftyLines() {
+        assertThat(Stream.of(decisions(), List.of(Path.of("../TODO.md"))).flatMap(List::stream))
+                .allSatisfy(record -> assertThat(lines(record)).describedAs("%s", record).hasSizeLessThanOrEqualTo(RECORD));
     }
 
     @Test
-    void aRuleIsStatedInSevenHundredWordsOrItIsBeingArgued() {
+    void aRuleIsStatedInAHundredLinesOrItIsBeingArgued() {
         assertThat(markdownIn(Path.of("../docs/rules"))).allSatisfy(rule ->
-                assertThat(words(rule)).describedAs("%s", rule).isLessThanOrEqualTo(700));
+                assertThat(lines(rule)).describedAs("%s", rule).hasSizeLessThanOrEqualTo(RULE));
     }
 
     @Test
-    void aGuideOrAPromptStaysUnderTwelveHundredWords() {
-        assertThat(Stream.of(markdownIn(Path.of("../docs")), markdownIn(PROMPTS)).flatMap(List::stream))
-                .allSatisfy(guide ->
-                assertThat(words(guide)).describedAs("%s", guide).isLessThanOrEqualTo(1200));
+    void aPageReadWholeStaysUnderTwoHundredLines() {
+        assertThat(pages()).allSatisfy(page ->
+                assertThat(lines(page)).describedAs("%s", page).hasSizeLessThanOrEqualTo(PAGE));
     }
 
     @Test
-    void aSpecStaysUnderTwelveHundredWords() {
-        assertThat(specs()).allSatisfy(spec ->
-                assertThat(words(spec)).describedAs("%s", spec).isLessThanOrEqualTo(1200));
+    void theMapReadInPartsStaysUnderFiveHundredLines() {
+        assertThat(lines(MAP_FILE)).hasSizeLessThanOrEqualTo(MAP);
     }
 
     @Test
-    void noParagraphHidesInASpecLine() {
-        assertThat(specs().stream().flatMap(spec -> lines(spec).stream()).filter(line -> line.length() > 220)).isEmpty();
-    }
-
-    @Test
-    void aDecisionIsRecordedInFourHundredWordsOrItIsTwo() {
-        assertThat(markdownIn(Path.of("../docs/decisions"))).allSatisfy(decision ->
-                assertThat(words(decision)).describedAs("%s", decision).isLessThanOrEqualTo(400));
-    }
-
-    @ParameterizedTest
-    @CsvSource({"../README.md", "../AGENTS.md", "../ARCHITECTURE.md", "../TODO.md"})
-    void noParagraphHidesInATableCell(Path document) {
-        assertThat(lines(document)).describedAs("%s", document)
-                .allSatisfy(line -> assertThat(line.length()).describedAs("%s", line).isLessThanOrEqualTo(220));
-    }
-
-    @Test
-    void noParagraphHidesInARulesTableCell() {
-        assertThat(markdownIn(Path.of("../docs/rules")).stream()
-                .flatMap(rule -> lines(rule).stream())
-                .filter(line -> line.length() > 220)).isEmpty();
+    void noLineOutsideATableRunsPastOneHundredFiftyCharacters() {
+        assertThat(Stream.of(pages(), decisions(), markdownIn(Path.of("../docs/rules")), List.of(MAP_FILE))
+                .flatMap(List::stream)
+                .flatMap(text -> lines(text).stream().filter(line -> line.length() > WIDTH && !line.startsWith("|"))
+                        .map(line -> text.getFileName() + ": " + line))).isEmpty();
     }
 
     @Test
@@ -103,9 +88,14 @@ class TextBudgetTest {
         assertThat(mainSources().count()).isGreaterThan(100);
     }
 
-    private static int words(Path document) {
-        return lines(document).stream().mapToInt(line -> line.isBlank() ? 0 : line.trim().split("\\s+").length)
-                .sum();
+    private static List<Path> pages() {
+        return Stream.of(List.of(Path.of("../AGENTS.md"), Path.of("../README.md"), Path.of("../docs/decisions/README.md")),
+                markdownIn(Path.of("../docs")), specs(), markdownIn(PROMPTS)).flatMap(List::stream).toList();
+    }
+
+    private static List<Path> decisions() {
+        return markdownIn(Path.of("../docs/decisions")).stream()
+                .filter(path -> path.getFileName().toString().matches("\\d{4}-.*")).toList();
     }
 
     private static List<String> sentences(Path document) {
