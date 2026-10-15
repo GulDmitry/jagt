@@ -50,42 +50,47 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
         if (mrUrl == null || !mrUrl.startsWith("http")) {
             return Answer.unavailable();
         }
-        String prompt = "<role>You sweep one merge/pull request for its review state.</role>\n"
-                + "<task>Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
-                + " MCP tools.</task>\n"
-                + "<rules>Return exists; approved (true only if the request is actually APPROVED by a human"
-                + " reviewer — not merely mergeable); pipelineStatus, the CI PIPELINE's own latest result: LIST"
-                + " this request's pipelines (or its head commit's check runs) with the host's own tool and read"
-                + " the newest one. Exactly one of success | failed | running | none | unknown,"
-                + " never the merge status (mergeable, can_be_merged) and never a review bot's verdict; none ONLY"
-                + " when that listing came back EMPTY, and unknown where you could not list them at all."
-                + " Return pipelineFailure ONLY where pipelineStatus is failed: the failing job's name and the"
-                + " error lines of its log, at most 20 lines, cut to what names the fault. A bridge or trigger"
-                + " job is never that job: follow it into the pipeline it started and read the one failing there."
-                + " Where that log only points at an external analysis (a quality gate, a scanner), read its"
-                + " verdict with that tool's own MCP when one is available: the project key, then one line per"
-                + " failed condition as \"<metric> <actual> / <threshold>\". Tools an MCP keeps behind a"
-                + " discovery or category tool are yours to activate first. A log or verdict you could not read"
-                + " fails nothing: pipelineFailure is then the job's name and the lines you did read, never a word"
-                + " of your own about what you could not. No timestamps, run"
-                + " ids, URLs or durations — one failure read twice must read the same, or every poll relays a"
-                + " brief the agent has already answered. Empty string in every other case."
-                + " Return openedAt, the request's OWN creation timestamp"
-                + " as the host reports it (ISO-8601; empty string if it does not say), and threads — ONE entry"
-                + " per DISCUSSION THREAD still awaiting an answer, never one per note: every thread holding a"
-                + " resolvable note that is not resolved. A RESOLVED thread is CLOSED — leave it out, whatever"
-                + " landed in it since. Read each of them WHOLE with the host's discussion tool and keep EVERY"
-                + " note in it, oldest first, bots and humans alike — never drop a note because an earlier one"
-                + " already answers it, an answer being what the exchange is. One string per thread: its own"
-                + " link (or file:line) on the first line, then one line per note as \"<author>: <body>\"."
-                + " Copy each body as the host gives it, cut at its first 60 words — never paraphrased and"
-                + " never summarised, a thread read twice having to read the same or every poll relays a brief"
-                + " the agent has already answered. Empty array where no thread awaits an answer."
-                + FAILURE_RULE
-                + " The pipelines are the ONE exception to the failure rule above, and they change nothing"
-                + " about exists: a listing you could not get is pipelineStatus=unknown with failure=\"\"."
-                + "</rules>\n"
-                + "Respond directly, no preamble.";
+        String prompt = """
+                <role>You sweep one merge/pull request for its review state.</role>
+                <task>Review sweep of the merge/pull request at %s via the matching code-host MCP tools.</task>
+                <steps>
+                1. Read the request: whether it exists, whether a human reviewer APPROVED it, when it was opened.
+                2. LIST this request's pipelines (or its head commit's check runs) with the host's own tool and read \
+                the newest one. Its result is the status: never the merge status (mergeable, can_be_merged), never \
+                a review bot's verdict.
+                3. Only where it failed: find the failing job. A bridge or trigger job is never that job: follow it \
+                into the pipeline it started and read the one failing there. Read the error lines of its log.
+                4. Where that log only points at an external analysis (a quality gate, a scanner), read its verdict \
+                with that tool's own MCP when one is available. Tools an MCP keeps behind a discovery or category \
+                tool are yours to activate first.
+                5. Find every thread holding a resolvable note that is not resolved. A RESOLVED thread is CLOSED: \
+                leave it out, whatever landed in it since. Read each of them WHOLE with the host's discussion tool \
+                and keep EVERY note in it, oldest first, bots and humans alike — never drop a note because an \
+                earlier one already answers it, an answer being what the exchange is.
+                </steps>
+                <output_format>
+                - exists: whether the request is there.
+                - approved: true only if the request is actually APPROVED by a human reviewer, not merely mergeable.
+                - pipelineStatus: exactly one of success | failed | running | none | unknown; none ONLY when that \
+                listing came back EMPTY, and unknown where you could not list them at all.
+                - pipelineFailure: ONLY where pipelineStatus is failed, the failing job's name and the error lines \
+                of its log, at most 20 lines, cut to what names the fault; for an external analysis, its project \
+                key, then one line per failed condition as "<metric> <actual> / <threshold>". A log or verdict you \
+                could not read fails nothing: pipelineFailure is then the job's name and the lines you did read, \
+                never a word of your own about what you could not. No timestamps, run ids, URLs or durations: one \
+                failure read twice must read the same, or every poll relays a brief the agent has already \
+                answered. Empty string in every other case.
+                - openedAt: the request's OWN creation timestamp as the host reports it (ISO-8601; empty string if \
+                it does not say).
+                - threads: ONE entry per DISCUSSION THREAD still awaiting an answer, never one per note. One string \
+                per thread: its own link (or file:line) on the first line, then one line per note as \
+                "<author>: <body>". Copy each body as the host gives it, cut at its first 60 words, never \
+                paraphrased and never summarised: a thread read twice must read the same. Empty array where no \
+                thread awaits an answer.
+                </output_format>
+                <failure>%s The pipelines are the ONE exception to it, and they change nothing about exists: a \
+                listing you could not get is pipelineStatus=unknown with failure="".</failure>
+                Respond directly, no preamble.""".formatted(mrUrl, FAILURE_RULE.strip());
         return claude.read(prompt, ReviewRead.SCHEMA.json(), mrUrl, AssistantCallKind.REVIEW_SWEEP, REVIEW_TIMEOUT)
                 .map(n -> {
                     List<String> threads = new ArrayList<>();
