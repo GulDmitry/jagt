@@ -11,7 +11,7 @@ import java.util.List;
  * agent's own default.
  */
 public record AgentWorktree(Path path, Path orchestratorRoot, @Nullable String outputStyle, List<String> disabledPlugins,
-                            List<String> allowedTools) {
+                            List<String> allowedTools, Sandbox sandbox) {
 
     public AgentWorktree {
         disabledPlugins = disabledPlugins == null ? List.of() : List.copyOf(disabledPlugins);
@@ -19,18 +19,22 @@ public record AgentWorktree(Path path, Path orchestratorRoot, @Nullable String o
     }
 
     public static AgentWorktree of(Path path, Path orchestratorRoot) {
-        return new AgentWorktree(path, orchestratorRoot, null, List.of(), List.of());
+        return new AgentWorktree(path, orchestratorRoot, null, List.of(), List.of(), Sandbox.off());
     }
 
     public AgentWorktree withOutputStyle(@Nullable String outputStyle) {
-        return new AgentWorktree(path, orchestratorRoot, outputStyle, disabledPlugins, allowedTools);
+        return new AgentWorktree(path, orchestratorRoot, outputStyle, disabledPlugins, allowedTools, sandbox);
     }
 
     public AgentWorktree withDisabledPlugins(List<String> plugins) {
-        return new AgentWorktree(path, orchestratorRoot, outputStyle, plugins, allowedTools);
+        return new AgentWorktree(path, orchestratorRoot, outputStyle, plugins, allowedTools, sandbox);
     }
 
     public AgentWorktree withAllowedTools(List<String> tools) {
-        return new AgentWorktree(path, orchestratorRoot, outputStyle, disabledPlugins, tools);
+        return new AgentWorktree(path, orchestratorRoot, outputStyle, disabledPlugins, tools, sandbox);
+    }
+
+    public AgentWorktree withSandbox(Sandbox sandbox) {
+        return new AgentWorktree(path, orchestratorRoot, outputStyle, disabledPlugins, allowedTools, sandbox);
     }
 }

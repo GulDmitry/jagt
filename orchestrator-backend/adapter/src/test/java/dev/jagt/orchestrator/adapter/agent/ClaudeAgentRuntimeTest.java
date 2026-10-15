@@ -2,12 +2,14 @@ package dev.jagt.orchestrator.adapter.agent;
 
 
 import dev.jagt.orchestrator.port.AgentWorktree;
+import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
@@ -202,6 +204,27 @@ class ClaudeAgentRuntimeTest {
         new JsonMapper().readTree(json).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
 
         assertThat(allow).containsExactly("mcp__jagt-orchestrator", "Bash(git:*)", "mcp__host__open_request");
+    }
+
+    @Test
+    void confinesTheShellsWritesToTheTaskWithEveryHostReachable() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null, ClaudeAgentRuntime.sandboxJson(
+                Sandbox.on(List.of(Path.of("/w/ABC-42"), Path.of("/repo/.git")), List.of("ssh *"))));
+
+        JsonNode sandbox = new JsonMapper().readTree(json).path("sandbox");
+
+        assertThat(sandbox).isEqualTo(new JsonMapper().readTree("""
+                {"enabled":true,"failIfUnavailable":true,"autoAllowBashIfSandboxed":true,\
+                "allowUnsandboxedCommands":true,"enableWeakerNetworkIsolation":true,"excludedCommands":["ssh *"],\
+                "filesystem":{"allowWrite":["/w/ABC-42","/repo/.git"]},\
+                "network":{"allowedDomains":["*"],"allowLocalBinding":true,"allowAllUnixSockets":true}}"""));
+    }
+
+    @Test
+    void leavesTheShellUnsandboxedWhenTheSandboxIsOff() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null, ClaudeAgentRuntime.sandboxJson(Sandbox.off()));
+
+        assertThat(new JsonMapper().readTree(json).has("sandbox")).isFalse();
     }
 
     @Test

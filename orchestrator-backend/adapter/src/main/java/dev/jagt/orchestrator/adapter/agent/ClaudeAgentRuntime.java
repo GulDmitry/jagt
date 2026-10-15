@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 
 import dev.jagt.orchestrator.port.AgentWorktree;
+import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,6 +14,8 @@ import org.jspecify.annotations.Nullable;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.List;
@@ -158,7 +161,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         }
         write(worktree.path().resolve(".claude").resolve("settings.local.json"),
                 settingsJson(worktree.outputStyle(), worktree.disabledPlugins(), worktree.allowedTools(),
-                        hooksJson(worktree.path())));
+                        hooksJson(worktree.path()) + sandboxJson(worktree.sandbox())));
         ClaudeTrust.accept(ClaudeTrust.configFile(), worktree.path());
     }
 
@@ -198,7 +201,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
      * keeps a ~1-2GB language server from spawning per worktree.
      */
     static String settingsJson(@Nullable String outputStyle, List<String> disabledPlugins, List<String> allowedTools,
-                               String hooksLine) {
+                               String sections) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
                 : "\n  \"outputStyle\": " + quoted(outputStyle) + ",";
         String pluginsLine = "";
@@ -220,7 +223,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                     "allow": [%s]
                   }
                 }
-                """.formatted(styleLine, pluginsLine, hooksLine == null ? "" : hooksLine, COMPACT_AT_TOKENS,
+                """.formatted(styleLine, pluginsLine, sections == null ? "" : sections, COMPACT_AT_TOKENS,
                 Stream.concat(Stream.of("mcp__jagt-orchestrator", "Bash(git:*)"),
                                 allowedTools == null ? Stream.empty() : allowedTools.stream())
                         .filter(tool -> tool != null && !tool.isBlank())
@@ -250,6 +253,27 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public String toldTheHuman(String line) {
         return "{\"systemMessage\": " + quoted(line) + "}";
+    }
+
+    /**
+     * Claude's sandbox reaches the network through a web proxy alone, so every host is allowed there; a socket and a
+     * local port stay open for a container client and a tunnel, the OS trust store for a TLS client.
+     */
+    static String sandboxJson(Sandbox sandbox) {
+        if (!sandbox.enabled()) {
+            return "";
+        }
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("enabled", true);
+        block.put("failIfUnavailable", true);
+        block.put("autoAllowBashIfSandboxed", true);
+        block.put("allowUnsandboxedCommands", true);
+        block.put("enableWeakerNetworkIsolation", true);
+        block.put("excludedCommands", sandbox.excludedCommands());
+        block.put("filesystem", Map.of("allowWrite", sandbox.writable().stream().map(Path::toString).toList()));
+        block.put("network", Map.of("allowedDomains", List.of("*"), "allowLocalBinding", true,
+                "allowAllUnixSockets", true));
+        return "\n  \"sandbox\": " + JSON.writeValueAsString(block) + ",";
     }
 
     /** Which of Claude's events mean what is declared in {@code hooks/claude.properties}, not here. */

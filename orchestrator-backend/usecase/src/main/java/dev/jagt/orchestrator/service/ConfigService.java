@@ -106,10 +106,15 @@ public class ConfigService {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds) {
+        public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds,
+                                  @Nullable SandboxConfig sandbox) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null);
+                return new AgentConfig(null, null, null);
+            }
+
+            public SandboxConfig sandboxOrDefault() {
+                return sandbox == null ? SandboxConfig.defaults() : sandbox;
             }
 
             /** Null: nothing is written and the agent resolves its own style. */
@@ -120,6 +125,29 @@ public class ConfigService {
             /** How often every running session is looked at; the cadence for one whose harness reports NOTHING. */
             public int probeSecondsOrDefault() {
                 return probeSeconds == null || probeSeconds <= 0 ? 600 : probeSeconds;
+            }
+        }
+
+        /** Both lists add to what jagt always allows; neither replaces it. */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record SandboxConfig(@Nullable Boolean enabled, @Nullable List<String> allowWrite,
+                                    @Nullable List<String> excludedCommands) {
+
+            public static SandboxConfig defaults() {
+                return new SandboxConfig(null, null, null);
+            }
+
+            public boolean enabledOrDefault() {
+                return enabled == null || enabled;
+            }
+
+            public List<String> allowWriteOrEmpty() {
+                return allowWrite == null ? List.of() : allowWrite;
+            }
+
+            public List<String> excludedCommandsOrEmpty() {
+                return excludedCommands == null ? List.of() : excludedCommands;
             }
         }
 

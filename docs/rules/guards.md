@@ -6,7 +6,8 @@ A review judges a guard against this file. The records it condenses keep the evi
 [0022](../decisions/0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md),
 [0026](../decisions/0026-the-guards-gaps-after-round-three.md) to
 [0031](../decisions/0031-the-host-cli-is-judged-wherever-it-stands.md),
-[0040](../decisions/0040-git-runs-only-what-the-human-trusted.md).
+[0040](../decisions/0040-git-runs-only-what-the-human-trusted.md),
+[0044](../decisions/0044-a-session-writes-only-inside-its-task.md).
 
 ## A boundary is an allow-list, a guardrail is a block-list
 
@@ -18,6 +19,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
 | `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit | the code host's branch protection |
 | `GitStateGuard` | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |
+| CLI's OS sandbox | a session's shell writing | path allow-list (`WorktreeSandbox`) | the human, asked by the CLI |
 
 ## What a review reports
 
@@ -46,6 +48,6 @@ A review judges a guard against this file. The records it condenses keep the evi
 | A hook the merged branch carries under a relative `core.hooksPath` | a deploy runs a hook the record did not hold |
 | A headless answer in prose, its object in a fence and no schema call made | such an answer carries a tool's output |
 | An MCP read sends its arguments out; a local server's read verb reads outside the worktrees | a read tool writes, or one named takes a path |
-| A command harming the machine outside git and the board, where the agent CLI's own rules allow it | [`TODO.md`](../../TODO.md) holds it open |
+| An excluded command, the Edit tool, an MCP server, a Unix socket | a write lands outside the task so |
 
 Known to refuse: `git -C` on a worktree whose path holds a space. Reopen when a round's second worktree has one.

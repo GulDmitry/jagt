@@ -1,0 +1,48 @@
+package dev.jagt.orchestrator.adapter.agent;
+
+import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.service.ConfigService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.function.Predicate;
+
+/** On Linux Claude's sandbox is bubblewrap with socat relaying its network, neither of which ships with the OS. */
+@Component
+@ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "claude", matchIfMissing = true)
+public class ClaudeSandboxCheck implements StartupCheck {
+
+    private static final List<String> LINUX_BINARIES = List.of("bwrap", "socat");
+
+    private final OrchestratorProperties properties;
+    private final ConfigService configService;
+    private final Predicate<String> onPath;
+
+    @Autowired
+    public ClaudeSandboxCheck(OrchestratorProperties properties, ConfigService configService) {
+        this(properties, configService, Executables::onPath);
+    }
+
+    ClaudeSandboxCheck(OrchestratorProperties properties, ConfigService configService, Predicate<String> onPath) {
+        this.properties = properties;
+        this.configService = configService;
+        this.onPath = onPath;
+    }
+
+    @Override
+    public List<String> problems() {
+        if (!"linux".equalsIgnoreCase(properties.platform())
+                || !configService.load().agent().sandboxOrDefault().enabledOrDefault()) {
+            return List.of();
+        }
+        List<String> missing = LINUX_BINARIES.stream().filter(onPath.negate()).toList();
+        return missing.isEmpty() ? List.of()
+                : List.of("orchestrator.agent.sandbox: " + String.join(" and ", missing) + " not on PATH, and a"
+                        + " session's shell runs inside bubblewrap. Install the packages bubblewrap and socat, or"
+                        + " set orchestrator.agent.sandbox.enabled: false.");
+    }
+}

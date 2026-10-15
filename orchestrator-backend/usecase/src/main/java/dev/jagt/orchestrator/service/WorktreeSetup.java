@@ -43,7 +43,9 @@ public class WorktreeSetup {
         agentRuntime.provisionWorktree(AgentWorktree.of(worktreePath, paths.root())
                 .withOutputStyle(configService.load().agent().outputStyleOrNull())
                 .withDisabledPlugins(agentDisabledPlugins)
-                .withAllowedTools(agentAllowedTools));
+                .withAllowedTools(agentAllowedTools)
+                .withSandbox(WorktreeSandbox.of(configService.load().agent().sandboxOrDefault(), repos,
+                        Path.of(System.getProperty("user.home")))));
         WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, editor.projectFiles());
         WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,
                 configService.load().worktree().copyGlobsOrDefault(), editor);

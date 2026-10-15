@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
+import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -128,8 +130,30 @@ class CodexAgentRuntimeTest {
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
         assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
-                .contains("approval_policy = \"never\"")
-                .contains("sandbox_mode = \"workspace-write\"");
+                .contains("approval_policy = \"never\"");
+    }
+
+    @Test
+    void confinesWritesToTheTaskWithTheNetworkOpenWhenTheSandboxIsOn() {
+        String toml = CodexAgentRuntime.configToml(Path.of("/w/ABC-42"), "http://127.0.0.1:8290/mcp",
+                Sandbox.on(List.of(Path.of("/w/ABC-42"), Path.of("/repo/.git")), List.of()));
+
+        assertThat(toml)
+                .contains("approval_policy = \"never\"\nsandbox_mode = \"workspace-write\"\n")
+                .endsWith("""
+                        [sandbox_workspace_write]
+                        network_access = true
+                        writable_roots = ["/w/ABC-42","/repo/.git"]
+                        """);
+    }
+
+    @Test
+    void writesAnywhereWhenTheSandboxIsOff() {
+        String toml = CodexAgentRuntime.configToml(Path.of("/w/ABC-42"), "http://127.0.0.1:8290/mcp", Sandbox.off());
+
+        assertThat(toml)
+                .contains("sandbox_mode = \"danger-full-access\"")
+                .doesNotContain("[sandbox_workspace_write]");
     }
 
     @Test

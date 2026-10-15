@@ -59,3 +59,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0041 jagt runs a plan's probes](0041-a-plans-probes-are-run-by-jagt.md)
 - [0042 Kept paths stay human](0042-a-path-list-keeps-a-step-with-the-human.md)
 - [0043 `act` stops itself](0043-act-stops-itself-after-three-bad-endings.md)
+- [0044 Sandboxed writes](0044-a-session-writes-only-inside-its-task.md)

@@ -1,8 +1,5 @@
 # jagt — TODO
 
-- A session and the Master get a boundary for what is not task work: no command that harms the machine beyond the
-  task (an `rm -rf` outside the worktree, a system service, a disk), while a cluster, a browser or a staging UI the
-  task needs stay open to them. Today only the agent CLI's own permission rules stand there.
 - Nothing jagt writes may grow unbounded: each file beside `state.json`, `jagt-master.log`, `artifacts/` and the
   worktrees' own files gets a ceiling and what folds, archives or refuses past it. `finished.jsonl` only warns.
 - A production signal could become a task with no token in jagt: an alert (Sentry, an on-call tool) opens a tracker
@@ -23,6 +20,7 @@
     write a shared branch, neither rewriting history (0005, `git`).
   - Guards outside the project: per-session push hooks under `.jagt/`, `ToolGate` refusing a line, refusals counted
     per task; nothing written into tracked files (0004, `guards`).
+  - A session writes only inside its task, under the CLI's OS sandbox; every host stays reachable (0044).
   - Git with the human's credentials runs only the config and hooks the human trusted (0040, `git-trust`).
   - The Master: a per-role review panel, `judge` by default; `act` ships and deploys, stops itself after three bad
     endings, and the human's word overrules it (0010, 0018, 0043, `master`).
