@@ -39,4 +39,15 @@ class ReadGateControllerTest {
 
         assertThat(scopes.close("f1")).isTrue();
     }
+
+    @Test
+    void keepsEachCallItJudgesSoTheReadsSourcesAreTheRunsOwn() {
+        ReadScopes scopes = new ReadScopes();
+        scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));
+
+        new ReadGateController(scopes).gate("f1", new ReadGateController.ToolCall("mcp__acme__get_issue",
+                Map.of("issueIdOrKey", "ABC-42"), "/tmp"));
+
+        assertThat(scopes.heard("f1")).containsExactly("mcp__acme__get_issue {issueIdOrKey=ABC-42}");
+    }
 }

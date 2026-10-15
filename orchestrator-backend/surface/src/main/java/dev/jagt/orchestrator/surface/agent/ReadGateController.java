@@ -30,6 +30,9 @@ public class ReadGateController {
     @PostMapping(value = "/api/agent/read/{fence}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> gate(@PathVariable String fence,
                                                     @RequestBody(required = false) ToolCall call) {
+        if (call != null) {
+            scopes.hear(fence, call.toolName(), call.toolInput());
+        }
         Optional<String> refusal = call == null
                 ? Optional.of("jagt refuses a call it cannot read.")
                 : scopes.ask(fence)

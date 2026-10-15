@@ -9,10 +9,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /** What each running headless call may touch, keyed by the fence its hook names. */
 @Component
 public class ReadScopes {
+
+    static final int MAX_CALLS = 50;
+    static final int MAX_LINE = 200;
 
     /**
      * {@code tools} are tool names or globs; {@code roots} bound the file tools; {@code git} admits the read-only
@@ -28,6 +32,7 @@ public class ReadScopes {
 
     private final Map<String, ReadScope> open = new ConcurrentHashMap<>();
     private final Set<String> asked = ConcurrentHashMap.newKeySet();
+    private final Map<String, List<String>> heard = new ConcurrentHashMap<>();
 
     public void open(String fence, ReadScope scope) {
         open.put(fence, scope);
@@ -36,7 +41,24 @@ public class ReadScopes {
     /** False where no call ever asked under the fence: its hook never ran. */
     public boolean close(String fence) {
         open.remove(fence);
+        heard.remove(fence);
         return asked.remove(fence);
+    }
+
+    /** One line per call the run made, so where an answer came from is read off the run, not off the answer. */
+    public void hear(String fence, String tool, Object input) {
+        if (!open.containsKey(fence)) {
+            return;
+        }
+        String line = tool + " " + input;
+        List<String> calls = heard.computeIfAbsent(fence, key -> new CopyOnWriteArrayList<>());
+        if (calls.size() < MAX_CALLS) {
+            calls.add(line.length() <= MAX_LINE ? line : line.substring(0, MAX_LINE) + "…");
+        }
+    }
+
+    public List<String> heard(String fence) {
+        return List.copyOf(heard.getOrDefault(fence, List.of()));
     }
 
     /** The scope held under {@code fence}, counting the call as one the fence heard. */

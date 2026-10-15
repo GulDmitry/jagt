@@ -157,11 +157,18 @@ class HeadlessClaude {
         fenced.addAll(readOnlyTools.fence(fence, scope));
         Reply reply;
         Optional<String> unheard;
+        List<String> calls;
         try {
             reply = booked(cwd, timeout, fenced, kind, label);
         } finally {
+            calls = readOnlyTools.calls(fence);
             unheard = readOnlyTools.lift(fence);
         }
+        log.atInfo().setMessage("assistant read")
+                .addKeyValue("ref", label)
+                .addKeyValue("kind", kind)
+                .addKeyValue("calls", calls)
+                .log();
         // The schema's own tool call passes the hook, so an object no call reached jagt for ran unfenced.
         JsonNode replied = reply.envelope();
         if (unheard.isPresent() && replied != null && replied.path("structured_output").isObject()) {

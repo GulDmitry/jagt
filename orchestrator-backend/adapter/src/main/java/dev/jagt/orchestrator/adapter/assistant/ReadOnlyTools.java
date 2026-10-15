@@ -66,6 +66,11 @@ class ReadOnlyTools {
                         "command", hooks.readGateCommand(fence), "timeout", 10))))))));
     }
 
+    /** Every call the run under {@code fence} made, asked before {@link #lift} forgets them. */
+    List<String> calls(String fence) {
+        return scopes.heard(fence);
+    }
+
     /** Why the fence held nothing, where no call ever reached it: a managed policy may drop a hook unsaid. */
     Optional<String> lift(String fence) {
         return scopes.close(fence) ? Optional.empty() : Optional.of("no call reached the read gate");
