@@ -11,6 +11,6 @@ import java.util.List;
  */
 public interface StartupCheck {
 
-    /** Everything this part needs and does not have, one sentence each naming the key that fixes it. Empty = ready. */
-    List<String> problems();
+    /** Everything this part needs and does not have. Empty = ready. */
+    List<Problem> problems();
 }

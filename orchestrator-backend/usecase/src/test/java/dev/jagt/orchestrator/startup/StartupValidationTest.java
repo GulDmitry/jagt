@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.Problem;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,8 +19,9 @@ class StartupValidationTest {
     @Test
     void reportsEveryMissingPartAtOnceSoTheHumanFixesTheListOnce() {
         StartupValidation validation = new StartupValidation(List.of(
-                () -> List.of("tmux is not on PATH"),
-                () -> List.of("config.json defines no projects", "kitty is not on PATH")));
+                () -> List.of(new Problem("orchestrator.tmux-command", "tmux is not on PATH")),
+                () -> List.of(new Problem("orchestrator.projects", "config.json defines no projects"),
+                        new Problem("orchestrator.kitty-command", "kitty is not on PATH"))));
 
         assertThatThrownBy(validation::refuseToRunWithoutWhatItNeeds)
                 .isInstanceOf(Misconfigured.class)

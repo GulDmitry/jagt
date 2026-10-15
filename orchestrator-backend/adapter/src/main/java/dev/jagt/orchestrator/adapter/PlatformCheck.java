@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,8 @@ import java.util.Locale;
 @Component
 public class PlatformCheck implements StartupCheck {
 
+    private static final String KEY = "orchestrator.platform";
+
     private final OrchestratorProperties properties;
     private final String osName;
 
@@ -31,17 +34,17 @@ public class PlatformCheck implements StartupCheck {
     }
 
     @Override
-    public List<String> problems() {
-        List<String> problems = new ArrayList<>();
+    public List<Problem> problems() {
+        List<Problem> problems = new ArrayList<>();
         String running = running();
         String configured = configured();
         if (running == null) {
-            problems.add("orchestrator.platform: jagt drives macOS and Linux, and this machine reports '"
-                    + osName + "' — there is no platform to set it to.");
+            problems.add(new Problem(KEY, "orchestrator.platform: jagt drives macOS and Linux, and this machine"
+                    + " reports '" + osName + "' — there is no platform to set it to."));
         } else if (!running.equals(configured)) {
-            problems.add("orchestrator.platform is '" + configured + "' on a machine reporting '" + osName
-                    + "': its notifier binary does not exist here, so no alert would reach you."
-                    + " Set it to '" + running + "'.");
+            problems.add(new Problem(KEY, "orchestrator.platform is '" + configured + "' on a machine reporting '"
+                    + osName + "': its notifier binary does not exist here, so no alert would reach you."
+                    + " Set it to '" + running + "'."));
         }
         return problems;
     }

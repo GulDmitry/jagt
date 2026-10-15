@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -28,7 +29,7 @@ class TrackerCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withTracker(TrackerConfig.defaults().withMode("sometimes").withWorkflow("jira")));
 
-        assertThat(check.problems()).singleElement().asString().contains("orchestrator.tracker.mode");
+        assertThat(check.problems()).extracting(Problem::key).containsExactly("orchestrator.tracker.mode");
     }
 
     @Test
@@ -56,8 +57,8 @@ class TrackerCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withTracker(TrackerConfig.defaults().withMode("both").withWorkflow("jira")));
 
-        assertThat(check.problems()).hasSize(3)
-                .allSatisfy(problem -> assertThat(problem).startsWith("orchestrator.tracker."));
+        assertThat(check.problems()).extracting(Problem::key).containsExactly("orchestrator.tracker.assignee",
+                "orchestrator.tracker.startStatus", "orchestrator.tracker.doneStatus");
     }
 
     @Test
@@ -67,6 +68,6 @@ class TrackerCheckTest {
                         null)));
         when(workflow.id()).thenReturn("none");
 
-        assertThat(check.problems()).singleElement().asString().contains("orchestrator.tracker.workflow");
+        assertThat(check.problems()).extracting(Problem::key).containsExactly("orchestrator.tracker.workflow");
     }
 }

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import org.jspecify.annotations.Nullable;
 
@@ -37,11 +38,11 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     }
 
     @Override
-    public List<String> problems() {
+    public List<Problem> problems() {
         return Executables.unresolved(kittyCommand)
-                ? List.of("orchestrator.kitty-command: '" + kittyCommand + "' is not on PATH nor in the usual"
-                        + " install directories — nothing would show the agents' sessions. Install kitty"
-                        + " or set the key to a full path.")
+                ? List.of(new Problem("orchestrator.kitty-command", "orchestrator.kitty-command: '" + kittyCommand
+                        + "' is not on PATH nor in the usual install directories — nothing would show the agents'"
+                        + " sessions. Install kitty or set the key to a full path."))
                 : List.of();
     }
 

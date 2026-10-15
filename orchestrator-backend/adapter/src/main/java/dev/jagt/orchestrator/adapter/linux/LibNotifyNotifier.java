@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.linux;
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,11 +36,11 @@ public class LibNotifyNotifier implements UserNotifier, StartupCheck {
     }
 
     @Override
-    public List<String> problems() {
+    public List<Problem> problems() {
         return Executables.unresolved(notifySendCommand)
-                ? List.of("orchestrator.notify-send-command: '" + notifySendCommand + "' is not on PATH nor in"
-                        + " the usual install directories — every alert jagt raises would go nowhere. Install"
-                        + " libnotify or set the key to a full path.")
+                ? List.of(new Problem("orchestrator.notify-send-command", "orchestrator.notify-send-command: '"
+                        + notifySendCommand + "' is not on PATH nor in the usual install directories — every"
+                        + " alert jagt raises would go nowhere. Install libnotify or set the key to a full path."))
                 : List.of();
     }
 

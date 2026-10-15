@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,15 +35,16 @@ public class ClaudeSandboxCheck implements StartupCheck {
     }
 
     @Override
-    public List<String> problems() {
+    public List<Problem> problems() {
         if (!"linux".equalsIgnoreCase(properties.platform())
                 || !configService.load().agent().sandboxOrDefault().enabledOrDefault()) {
             return List.of();
         }
         List<String> missing = LINUX_BINARIES.stream().filter(onPath.negate()).toList();
         return missing.isEmpty() ? List.of()
-                : List.of("orchestrator.agent.sandbox: " + String.join(" and ", missing) + " not on PATH, and a"
-                        + " session's shell runs inside bubblewrap. Install the packages bubblewrap and socat, or"
-                        + " set orchestrator.agent.sandbox.enabled: false.");
+                : List.of(new Problem("orchestrator.agent.sandbox.enabled", "orchestrator.agent.sandbox: "
+                        + String.join(" and ", missing) + " not on PATH, and a session's shell runs inside"
+                        + " bubblewrap. Install the packages bubblewrap and socat, or"
+                        + " set orchestrator.agent.sandbox.enabled: false."));
     }
 }

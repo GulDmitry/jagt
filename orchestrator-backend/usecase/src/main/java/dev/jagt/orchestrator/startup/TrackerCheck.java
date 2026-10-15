@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -24,22 +25,23 @@ public class TrackerCheck implements StartupCheck {
     private final TrackerWorkflow workflow;
 
     @Override
-    public List<String> problems() {
+    public List<Problem> problems() {
         TrackerConfig tracker = configService.load().tracker();
         if (TrackerMode.of(tracker.mode()).isEmpty()) {
-            return List.of("orchestrator.tracker.mode: '" + tracker.mode() + "' is not one of "
-                    + TrackerMode.ids());
+            return List.of(new Problem("orchestrator.tracker.mode", "orchestrator.tracker.mode: '" + tracker.mode()
+                    + "' is not one of " + TrackerMode.ids()));
         }
         if (tracker.modeOrOff() == TrackerMode.OFF) {
             return List.of();
         }
-        List<String> problems = new ArrayList<>();
-        tracker.missing().forEach(key -> problems.add("orchestrator.tracker." + key + ": mode is '"
-                + tracker.modeOrOff().id() + "' and this is blank, so that end would never recognise"
-                + " anything"));
+        List<Problem> problems = new ArrayList<>();
+        tracker.missing().forEach(key -> problems.add(new Problem("orchestrator.tracker." + key,
+                "orchestrator.tracker." + key + ": mode is '" + tracker.modeOrOff().id() + "' and this is blank,"
+                        + " so that end would never recognise anything")));
         if ("none".equals(workflow.id()) && !tracker.missing().contains("workflow")) {
-            problems.add("orchestrator.tracker.workflow: '" + tracker.workflow() + "' is not a workflow jagt"
-                    + " carries, so nothing reads your tracker — see jagt.yml.dist for the ones it does");
+            problems.add(new Problem("orchestrator.tracker.workflow", "orchestrator.tracker.workflow: '"
+                    + tracker.workflow() + "' is not a workflow jagt carries, so nothing reads your tracker — see"
+                    + " jagt.yml.dist for the ones it does"));
         }
         return List.copyOf(problems);
     }

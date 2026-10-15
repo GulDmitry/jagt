@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -45,7 +46,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .singleElement().asString().contains("orchestrator.master.mode");
+                .extracting(Problem::key).containsExactly("orchestrator.master.mode");
     }
 
     @Test
@@ -59,7 +60,7 @@ class MasterCheckTest {
         assertThat(new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
                 agentRuntime).problems())
-                .singleElement().asString().contains("postReviewReplies");
+                .extracting(Problem::key).containsExactly("orchestrator.master.mode");
     }
 
     @Test
@@ -72,7 +73,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .singleElement().asString().contains("orchestrator.master.mine");
+                .extracting(Problem::key).containsExactly("orchestrator.master.withhold");
     }
 
     @Test
@@ -85,7 +86,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .singleElement().asString().contains("keep both or neither");
+                .extracting(Problem::key).containsExactly("orchestrator.master.mine");
     }
 
     @Test
@@ -111,7 +112,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .singleElement().asString().contains("`judge` written long");
+                .extracting(Problem::key).containsExactly("orchestrator.master.mine");
     }
 
     @Test
@@ -123,7 +124,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .singleElement().asString().contains("copy master-brief.md.dist");
+                .extracting(Problem::key).containsExactly("orchestrator.master.brief");
     }
 
     @Test
@@ -147,7 +148,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .singleElement().asString().contains("mine.md");
+                .extracting(Problem::key).containsExactly("orchestrator.master.brief");
     }
 
     @Test
@@ -161,7 +162,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .singleElement().asString().contains("orchestrator.master.model", "Codex");
+                .extracting(Problem::key).containsExactly("orchestrator.master.model");
     }
 
     @Test

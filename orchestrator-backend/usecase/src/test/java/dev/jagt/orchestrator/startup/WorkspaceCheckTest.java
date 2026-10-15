@@ -2,13 +2,13 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Problem;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 class WorkspaceCheckTest {
 
@@ -26,7 +26,7 @@ class WorkspaceCheckTest {
                 .withStateFile(root.resolve("gone").resolve("state.json").toString());
 
         assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
-                .singleElement(STRING).contains("is not a directory");
+                .extracting(Problem::key).containsExactly("orchestrator.state-file");
     }
 
     @Test
@@ -36,6 +36,6 @@ class WorkspaceCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new WorkspaceCheck(new OrchestratorPaths(properties)).problems())
-                .singleElement(STRING).contains("orchestrator.root", "is not a directory");
+                .extracting(Problem::key).containsExactly("orchestrator.root");
     }
 }

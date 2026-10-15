@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Problem;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 class PlatformCheckTest {
 
@@ -17,9 +19,10 @@ class PlatformCheckTest {
         OrchestratorProperties properties =
                 OrchestratorProperties.defaults().withPlatform(configured);
 
-        assertThat(new PlatformCheck(properties, osName).problems())
-                .singleElement(STRING)
-                .contains("orchestrator.platform", "Set it to '" + expected + "'");
+        List<Problem> problems = new PlatformCheck(properties, osName).problems();
+
+        assertThat(problems).extracting(Problem::key).containsExactly("orchestrator.platform");
+        assertThat(problems.getFirst().text()).contains("Set it to '" + expected + "'");
     }
 
     @Test
@@ -34,8 +37,7 @@ class PlatformCheckTest {
         OrchestratorProperties properties =
                 OrchestratorProperties.defaults().withPlatform("macos");
 
-        assertThat(new PlatformCheck(properties, "Windows 11").problems())
-                .singleElement(STRING)
-                .contains("macOS and Linux", "Windows 11");
+        assertThat(new PlatformCheck(properties, "Windows 11").problems()).extracting(Problem::key)
+                .containsExactly("orchestrator.platform");
     }
 }

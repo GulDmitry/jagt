@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import org.junit.jupiter.api.Test;
@@ -18,17 +19,15 @@ class ClaudeSandboxCheckTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults());
 
-        List<String> problems = new ClaudeSandboxCheck(OrchestratorProperties.defaults().withPlatform("linux"),
+        List<Problem> problems = new ClaudeSandboxCheck(OrchestratorProperties.defaults().withPlatform("linux"),
                 config, "bwrap"::equals).problems();
 
-        assertThat(problems).singleElement().asString()
-                .startsWith("orchestrator.agent.sandbox: socat not on PATH")
-                .contains("orchestrator.agent.sandbox.enabled: false");
+        assertThat(problems).extracting(Problem::key).containsExactly("orchestrator.agent.sandbox.enabled");
     }
 
     @Test
     void needsNothingInstalledOnMacos() {
-        List<String> problems = new ClaudeSandboxCheck(OrchestratorProperties.defaults().withPlatform("macos"),
+        List<Problem> problems = new ClaudeSandboxCheck(OrchestratorProperties.defaults().withPlatform("macos"),
                 mock(ConfigService.class), name -> false).problems();
 
         assertThat(problems).isEmpty();

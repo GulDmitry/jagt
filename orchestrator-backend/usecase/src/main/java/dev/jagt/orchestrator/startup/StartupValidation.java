@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,18 +23,19 @@ public class StartupValidation {
 
     @EventListener(ApplicationStartedEvent.class)
     public void refuseToRunWithoutWhatItNeeds() {
-        List<String> problems = checks.stream().flatMap(check -> problemsOf(check).stream()).toList();
+        List<Problem> problems = checks.stream().flatMap(check -> problemsOf(check).stream()).toList();
         if (!problems.isEmpty()) {
             throw new Misconfigured(problems);
         }
     }
 
     /** A check that cannot answer is itself a part that is not there, and the start stops for that too. */
-    private static List<String> problemsOf(StartupCheck check) {
+    private static List<Problem> problemsOf(StartupCheck check) {
         try {
             return check.problems();
         } catch (RuntimeException e) {
-            return List.of(check.getClass().getSimpleName() + " could not run: " + e);
+            String name = check.getClass().getSimpleName();
+            return List.of(new Problem(name, name + " could not run: " + e));
         }
     }
 }

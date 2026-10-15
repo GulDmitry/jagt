@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -195,8 +196,7 @@ class CodexAgentRuntimeTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
 
-        assertThat(runtime.problems())
-                .anySatisfy(problem -> assertThat(problem).contains("mcp_client.js", "is not there"));
+        assertThat(runtime.problems()).extracting(Problem::key).contains("orchestrator.agent.cli");
     }
 
     @Test
@@ -208,7 +208,6 @@ class CodexAgentRuntimeTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
 
-        assertThat(runtime.problems())
-                .noneSatisfy(problem -> assertThat(problem).contains("mcp_client.js"));
+        assertThat(runtime.problems()).extracting(Problem::key).doesNotContain("orchestrator.agent.cli");
     }
 }

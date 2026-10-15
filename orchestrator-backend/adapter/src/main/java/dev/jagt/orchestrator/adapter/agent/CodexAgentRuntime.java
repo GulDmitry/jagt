@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -37,15 +38,16 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
     private final McpEndpoint mcp;
 
     @Override
-    public List<String> problems() {
-        List<String> problems = new ArrayList<>();
+    public List<Problem> problems() {
+        List<Problem> problems = new ArrayList<>();
         Path bridge = paths.root().resolve("mcp_client.js");
         if (!Files.isRegularFile(bridge)) {
-            problems.add("orchestrator.agent.cli=codex needs " + bridge + ", which is not there — the agent"
-                    + " reaches jagt through it.");
+            problems.add(new Problem("orchestrator.agent.cli", "orchestrator.agent.cli=codex needs " + bridge
+                    + ", which is not there — the agent reaches jagt through it."));
         }
         if (!Executables.onPath("node")) {
-            problems.add("orchestrator.agent.cli=codex needs node on PATH — it spawns the bridge itself.");
+            problems.add(new Problem("node",
+                    "orchestrator.agent.cli=codex needs node on PATH — it spawns the bridge itself."));
         }
         return problems;
     }

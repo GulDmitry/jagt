@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.EditorDriver.WorktreeLocation;
+import dev.jagt.orchestrator.port.Problem;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -48,9 +49,8 @@ class CliEditorDriverTest {
                 OrchestratorProperties.defaults().withEditorCommand(List.of("no-such-editor"))
                         .withEditorDiffCommand(List.of("no-such-difftool")));
 
-        assertThat(driver.problems())
-                .anySatisfy(problem -> assertThat(problem).contains("orchestrator.editor-command"))
-                .anySatisfy(problem -> assertThat(problem).contains("orchestrator.editor-diff-command"));
+        assertThat(driver.problems()).extracting(Problem::key)
+                .containsExactly("orchestrator.editor-command", "orchestrator.editor-diff-command");
     }
 
     @Test

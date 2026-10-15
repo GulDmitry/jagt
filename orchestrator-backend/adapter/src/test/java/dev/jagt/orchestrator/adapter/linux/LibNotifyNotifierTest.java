@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.linux;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -10,7 +11,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -22,8 +22,8 @@ class LibNotifyNotifierTest {
     void refusesToStartWhenNoAlertCouldEverBeDelivered() {
         var notifier = new LibNotifyNotifier(mock(ProcessRunner.class), "no-such-notify-send");
 
-        assertThat(notifier.problems()).singleElement(STRING)
-                .contains("orchestrator.notify-send-command", "no-such-notify-send");
+        assertThat(notifier.problems()).extracting(Problem::key)
+                .containsExactly("orchestrator.notify-send-command");
     }
 
     @Test

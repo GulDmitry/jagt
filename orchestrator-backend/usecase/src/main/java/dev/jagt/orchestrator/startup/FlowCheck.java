@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import org.springframework.stereotype.Component;
 
@@ -18,8 +19,9 @@ public class FlowCheck implements StartupCheck {
     private static final Set<TaskStatus> WITHOUT_A_WAY_IN = EnumSet.of(TaskStatus.NEW, TaskStatus.DONE);
 
     @Override
-    public List<String> problems() {
-        return java.util.stream.Stream.concat(unreachableStatuses(), verbsNoRuleMentions()).toList();
+    public List<Problem> problems() {
+        return java.util.stream.Stream.concat(unreachableStatuses(), verbsNoRuleMentions())
+                .map(text -> new Problem(FlowRules.class.getSimpleName(), text)).toList();
     }
 
     private static java.util.stream.Stream<String> unreachableStatuses() {

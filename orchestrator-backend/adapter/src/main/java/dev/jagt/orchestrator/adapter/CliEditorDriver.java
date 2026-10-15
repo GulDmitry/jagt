@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -31,18 +32,18 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
     private final OrchestratorProperties properties;
 
     @Override
-    public List<String> problems() {
+    public List<Problem> problems() {
         return Stream.of(problems(properties.editorCommand(), "orchestrator.editor-command"),
                         problems(properties.editorDiffCommand(), "orchestrator.editor-diff-command"))
                 .flatMap(List::stream).toList();
     }
 
-    private static List<String> problems(@Nullable List<String> configured, String configKey) {
+    private static List<Problem> problems(@Nullable List<String> configured, String configKey) {
         try {
             launcher(configured, configKey);
             return List.of();
         } catch (IllegalStateException missing) {
-            return List.of(missing.getMessage());
+            return List.of(new Problem(configKey, String.valueOf(missing.getMessage())));
         }
     }
 

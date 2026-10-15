@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,6 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.mockito.Mockito.mock;
 
 class ConfigCheckTest {
@@ -46,8 +46,8 @@ class ConfigCheckTest {
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)),
                 new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
-                .singleElement(STRING)
-                .contains("jagt.yml.dist");
+                .extracting(Problem::key)
+                .containsExactly("orchestrator.config-file");
     }
 
     @ParameterizedTest
@@ -67,17 +67,17 @@ class ConfigCheckTest {
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)),
                 new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
-                .singleElement(STRING)
-                .contains(expected);
+                .extracting(Problem::key)
+                .containsExactly(expected);
     }
 
     static Stream<Arguments> namesAKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt() {
         return Stream.of(
-                Arguments.of("ui: tui", "orchestrator.ui is no longer read"),
-                Arguments.of("terminal: warp", "orchestrator.terminal is no longer read"),
-                Arguments.of("openWarpWindow: false", "openTerminalWindow"),
-                Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal is no longer read"),
-                Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard is no longer read"));
+                Arguments.of("ui: tui", "orchestrator.ui"),
+                Arguments.of("terminal: warp", "orchestrator.terminal"),
+                Arguments.of("openWarpWindow: false", "orchestrator.openWarpWindow"),
+                Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal"),
+                Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"));
     }
 
     @ParameterizedTest
@@ -93,8 +93,8 @@ class ConfigCheckTest {
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)),
                 new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
-                .singleElement(STRING)
-                .contains(expected);
+                .extracting(Problem::key)
+                .containsExactly(expected);
     }
 
     static Stream<Arguments> namesWhatAConfiguredProjectWouldFailOn() {
@@ -102,32 +102,32 @@ class ConfigCheckTest {
                 Arguments.of("""
                         orchestrator:
                           projects: {}
-                        """, "defines no projects"),
+                        """, "orchestrator.projects"),
                 Arguments.of("""
                         orchestrator:
                           projects: { demo: { path: "", baseBranch: origin/main } }
-                        """, "projects.demo.path is empty"),
+                        """, "orchestrator.projects.demo.path"),
                 Arguments.of("""
                         orchestrator:
                           projects: { demo: { path: $ROOT/gone, baseBranch: origin/main } }
-                        """, "is not a directory"),
+                        """, "orchestrator.projects.demo.path"),
                 Arguments.of("""
                         orchestrator:
                           projects: { demo: { path: $ROOT/plain-dir, baseBranch: origin/main } }
-                        """, "is not a git repository"),
+                        """, "orchestrator.projects.demo.path"),
                 Arguments.of("""
                         orchestrator:
                           projects: { demo: { path: $ROOT/repo } }
-                        """, "projects.demo.baseBranch is empty"),
+                        """, "orchestrator.projects.demo.baseBranch"),
                 Arguments.of("""
                         orchestrator:
                           projects:
                             demo: { path: $ROOT/repo, baseBranch: origin/main, deployBranch: main }
-                        """, "equals the base branch 'main'"),
+                        """, "orchestrator.projects.demo.deployBranch"),
                 Arguments.of("""
                         orchestrator:
                           viewer: { viewMode: one-per-task }
                           projects: { demo: { path: $ROOT/repo, baseBranch: origin/main } }
-                        """, "viewer.viewMode 'one-per-task'"));
+                        """, "orchestrator.viewer.viewMode"));
     }
 }

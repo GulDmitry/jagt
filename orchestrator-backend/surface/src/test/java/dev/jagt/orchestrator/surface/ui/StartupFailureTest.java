@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.ui;
 
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.startup.Misconfigured;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.web.server.PortInUseException;
@@ -23,7 +24,8 @@ class StartupFailureTest {
     @Test
     void handsBackTheWholeListWhenTheInstallationIsIncompleteRatherThanPointingAtALog() {
         IllegalStateException wrapped = new IllegalStateException("startup failed",
-                new Misconfigured(List.of("git is not on PATH", "jagt.yml defines no projects")));
+                new Misconfigured(List.of(new Problem("git", "git is not on PATH"),
+                        new Problem("orchestrator.projects", "jagt.yml defines no projects"))));
 
         assertThat(StartupFailure.describe(wrapped))
                 .contains("1. git is not on PATH")
