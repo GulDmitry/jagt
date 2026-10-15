@@ -1,9 +1,5 @@
 # jagt — TODO
 
-- A production signal could become a task with no token in jagt: an alert (Sentry, an on-call tool) opens a tracker
-  item with the label the configured `TrackerWorkflow` reads as ready, and `IntakeJob` opens the task as it does
-  today. Open: whether a task that starts as a root-cause read needs a flow `IntakeJob` lacks; settles roadmap §2
-  "Off production" if it holds, so it takes a `docs/decisions/` record.
 - README says what jagt does, never why to choose it over another orchestrator: gather the differentiators into one
   section README links to, each naming the spec or decision proving it and the peer lacking it. Peers are the
   market-review sources in `CLAUDE.local.md`, not compared yet. Found so far:

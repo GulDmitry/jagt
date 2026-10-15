@@ -83,6 +83,6 @@ The two ends of the loop the playbook closes, both blocked on something outside 
 - **Off the tracker** — built: `IntakeJob` takes the items a configured `TrackerWorkflow` says are ready, and
   `TicketCloseJob` closes a task whose item reached the stage that says the work landed. What is left is the
   routing: an item whose labels name no project is turned away rather than guessed at.
-- **Off production**: a signal becomes a task. jagt holds no credential and reaches outside itself only through
-  the one-shot assistant, so what jagt may promise before it holds a token is the decision, not the plumbing.
+- **Off production** is not jagt's: a task starts from a tracker item or the human, and an alert reaches jagt
+  only as an item filed outside it.
 - **A verdict issuing a verb**: the invariant at the top, and the reason the finished record came first.
