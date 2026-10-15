@@ -23,8 +23,9 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("promptEval")
-@SpringBootTest(properties = {"spring.config.import=", "orchestrator.startup-checks=false",
-        "orchestrator.open-terminal-window=false"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.import=",
+        "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false", "server.port=8393",
+        "orchestrator.gate-url=http://127.0.0.1:8393/api/agent"})
 class CommandMappingEvalTest {
 
     @TempDir

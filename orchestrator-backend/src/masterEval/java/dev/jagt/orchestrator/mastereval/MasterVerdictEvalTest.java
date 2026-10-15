@@ -29,15 +29,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 @Tag("masterEval")
-@SpringBootTest(properties = {"spring.config.import=", "orchestrator.startup-checks=false",
-        "orchestrator.open-terminal-window=false",
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.import=",
+        "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false",
+        "server.port=" + MasterVerdictEvalTest.GATE_PORT,
         "orchestrator.mcp-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/mcp",
         "orchestrator.hook-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent/session",
-        "orchestrator.gate-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent"})
+        "orchestrator.gate-url=http://127.0.0.1:" + MasterVerdictEvalTest.GATE_PORT + "/api/agent"})
 @org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
 class MasterVerdictEvalTest {
 
     static final String DEAD_PORT = "8391";
+    static final String GATE_PORT = "8392";
 
     private static final Duration VERDICT_WAIT = Duration.ofMinutes(20);
 
