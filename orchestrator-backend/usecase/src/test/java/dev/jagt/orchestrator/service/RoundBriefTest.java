@@ -53,6 +53,15 @@ class RoundBriefTest {
     }
 
     @Test
+    void tellsTheAgentAThreadMayReachItCutAndWhereToReadItWhole() {
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
+                List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern")), "success");
+
+        assertThat(brief).contains("jagt's sweep copied each note cut\nshort and a long thread without its oldest"
+                + " notes: read a cut one whole on the host first.");
+    }
+
+    @Test
     void tellsTheAgentToLeaveAThreadWaitingOnTheReviewerAlone() {
         String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
                 List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern")), "success");

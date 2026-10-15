@@ -44,7 +44,8 @@ final class RoundBrief {
                     Your job this round is to get the code RIGHT, not to satisfy the reviewer. A comment is an
                     argument from someone who read the diff, not the system: it can be mistaken about the
                     architecture, and you have the code in front of you. Each block below is one THREAD, its
-                    notes oldest first: what you answer is its NEWEST note. Where a reply of your own is
+                    notes oldest first: what you answer is its NEWEST note. jagt's sweep copied each note cut
+                    short and a long thread without its oldest notes: read a cut one whole on the host first. Where a reply of your own is
                     followed by the reviewer answering back, that answer is the argument to weigh now — never
                     re-post the reply it has already read. Where the newest note is your OWN and nobody
                     answered it, that thread is waiting on the reviewer: leave it alone and give it no block.
