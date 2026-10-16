@@ -61,6 +61,13 @@ without its fix: a stopped poll invisible on a closed row, the band hiding a row
 scrolling away with a long list, the log button over the last row, two Tab stops a row, and a linked task
 closing once its filter cleared.
 
+## Walked a third time on the full redesign, 2026-10-16
+
+Header, Reports menu, New task and Add project dialogs, the open task's three tabs, the Jobs table on the real
+jobs, the empty board, 1024 px and dark were walked in Chrome after a code review and a UI/UX review. Their
+findings are fixed with board tests; the Replies chip beside the Review round tab stays, its dialog holding the say
+line and the live repaint the tab lacks.
+
 ## Gaps the mockup must close before it is built
 
 - **`run <job>`** has no button: a Jobs panel row needs one.
