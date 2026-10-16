@@ -215,6 +215,16 @@ class BoardWorkspaceTest extends BoardPageContext {
     }
 
     @Test
+    void anEmptyBoardLeavesNoGapAboveItsWords() {
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#empty")).isVisible();
+        org.assertj.core.api.Assertions.assertThat(page.locator("#board").boundingBox().height).isLessThan(1);
+    }
+
+    @Test
     void aNarrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

@@ -164,6 +164,7 @@ main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-i
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
 }
 main#board { padding-bottom: 56px; }
+main#board:empty { padding: 0; }
 /* The open task stays in view while the list scrolls under it. */
 #pane {
   display: flex; flex-direction: column; gap: 12px; min-width: 0;
