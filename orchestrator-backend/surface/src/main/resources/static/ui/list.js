@@ -1,4 +1,5 @@
-// Every task as one row, the human's own first: a row moves only when whose move it is changes.
+// Every task as one row, the human's own first: a row moves only when whose move it is changes. Only the open
+// row is a Tab stop; the keys walk the rest, so Tab reaches the open task past one row and not past all of them.
 
 import {duration} from '../core/format.js';
 import {html} from './html.js';
@@ -13,7 +14,7 @@ const Row = ({task, selected, changed, project}) => {
   const quick = (task.actions || []).find((action) => action.onRow);
   return html`<div class=${['row', owner, task.attention === 'OPTIONAL' && 'optional', selected && 'selected']
       .filter(Boolean).join(' ')} data-row=${task.id}>
-    <button class="pick" data-select=${task.id} aria-current=${selected ? 'true' : undefined}
+    <button class="pick" data-select=${task.id} aria-current=${selected ? 'true' : undefined} tabIndex=${selected ? 0 : -1}
         aria-label=${[`${task.alias || task.id} ${task.title || ''}`, task.statusLabel,
           marked(task) && `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`,
           stopped, changed && 'changed since you looked'].filter(Boolean).join(', ')}>
@@ -30,6 +31,7 @@ const Row = ({task, selected, changed, project}) => {
       </span>
     </button>
     ${quick ? html`<button class=${quickClass(task, quick)} data-task=${task.id} data-action=${quick.id} data-place="row"
+        tabIndex=${selected ? 0 : -1}
         aria-label=${`${quick.label} ${task.alias || task.id}`} data-tip=${quick.hint}>▸_</button>` : ''}
   </div>`;
 };

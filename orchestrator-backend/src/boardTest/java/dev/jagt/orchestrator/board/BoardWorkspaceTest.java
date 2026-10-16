@@ -178,6 +178,27 @@ class BoardWorkspaceTest extends BoardPageContext {
     }
 
     @Test
+    void tabReachesTheOpenTaskPastOneRowWhileTheKeysWalkTheRest() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-3", TaskState.builder("alpha", root.resolve("ABC-3-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a3").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#tasks .row")).hasCount(3);
+        page.locator("#tasks .row.selected .pick").focus();
+
+        page.keyboard().press("j");
+        assertThat(page.locator("#tasks .row:has-text(\"a2\") .pick")).isFocused();
+        page.keyboard().press("Tab");
+        page.keyboard().press("Tab");
+
+        assertThat(page.locator("#pane button.flag")).isFocused();
+    }
+
+    @Test
     void aNarrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
