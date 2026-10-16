@@ -1,6 +1,7 @@
 # The board as a workspace — research, 2026-10-16
 
-Seen on the running 0.9.4 board, fictional tasks injected into the page. Mockup with three artboards (today,
+Seen on the running 0.9.4 board, fictional tasks injected into the page. What it must keep:
+[board-capabilities](board-capabilities.md). Mockup with three artboards (today,
 proposed, add a project): https://claude.ai/artifact/1ot4ZnnVavMibvwMyzZz2u
 
 ## 1. TL;DR
@@ -21,7 +22,7 @@ proposed, add a project): https://claude.ai/artifact/1ot4ZnnVavMibvwMyzZz2u
 |---|---------|-------|
 | 1 | the two tasks that need you sit apart; row order is insertion order, and rows are ragged by card height | `main` grid `auto-fit` |
 | 2 | 28 tool buttons on seven cards; `Restart agent` weighs as much as `Diff` | `card.js` tool row |
-| 3 | `Done` kills the session and deletes the worktree, and looks like any verb (blue as a primary) | `TaskAction.DONE` |
+| 3 | `Done` kills the session and deletes the worktree, and looks like any verb (blue as a primary); only its confirm differs | `TaskAction.DONE` |
 | 4 | a click on a card does nothing; the status history, next poll and checks are only in hovers | `meta.js` `data-tip` |
 | 5 | the launch form is on screen all day; the project picker says `0 selected` over eleven, ⌘-click to pick several | `index.html` `#launch` |
 | 6 | launch row, Ask and filter are three text boxes; `do` in Ask and Start answer one question | `#launch`, `#palette` |
@@ -53,7 +54,7 @@ proposed, add a project): https://claude.ai/artifact/1ot4ZnnVavMibvwMyzZz2u
   and the job touching it now. Two lines, always. At the right end sits **Focus**, one click from the list on every row.
   It fills blue where `Move` names Focus as the next move: a question asked, a plan waiting, an agent at work.
 - **Task pane**: the verbs for the next step on top, and the tool verbs after a divider. `Done…` sits apart,
-  in `--danger` text, and asks to confirm.
+  in `--danger` text, and keeps the confirm it has today.
   Tabs: *Overview* (the line under the card, the timeline, what watches the task, spend), *Diff* (desktop-host §3A),
   *Session* (the session's last output read with `tmux capture-pane`, plus the existing say line), *Review round*.
 - **Jobs panel**: grouped by what each job serves (your tasks, Master, tracker, housekeeping). A row has a human name
@@ -76,7 +77,7 @@ Focus as the move in five statuses and whenever an agent asks. That makes Focus 
 | deploy an approved task | 1 | 2 | 2 | a deliberate step; `d` on the selected row is 1 |
 | start a task on two projects | 5, ⌘-click | 4 | 4 | ⌘N, ticket, two boxes, Enter |
 | see which job broke and what it touched | 2, read a dump | 1 | 1 | status bar → red row naming the task |
-| close a task | 1, no confirm | 2 | 2 | `Done…` confirms on purpose |
+| close a task | 1 + confirm | 2 + confirm | 2 + confirm | the confirm already exists; the pane sets `Done…` apart |
 
 - **Keep one click for the move the code calls next**; everything else may cost a second click.
 - **A hidden gesture is no shortcut**: no double-click on a row; the key `f` and the row button are the same action.
@@ -93,7 +94,6 @@ Focus as the move in five statuses and whenever an agent asks. That makes Focus 
 | AGENTS: every option lives in `jagt.yml` | edited by hand | still: the dialog writes the file; a decision record |
 | `board`: the launch row's pickers | a form always on screen | the same fields behind ⌘N |
 | AGENTS: never two controls for one question | Start and `do` | one input |
-| `design.md`: `--agent` and `--accent` never in one row | a card's edge and its primary button | an agent's row has a blue edge and a blue Focus; Focus wears a ring there |
 
 ## 6. Order, cheapest first
 
@@ -109,3 +109,34 @@ Focus as the move in five statuses and whenever an agent asks. That makes Focus 
 - Group the list by project or by whose move it is? By owner puts your tasks on top, but a row moves when its owner changes.
 - Does the bottom panel stay open by default, or open only on a failed job?
 - Should the Session tab show the output live (SSE), or only on open?
+
+## 8. UX review for all-day engineering use
+
+A separate reviewer read §1–7, the inventory, the mockup and the screenshots. Where this section and §3 disagree,
+this section holds.
+
+- **A "yours" band on top**: REQUIRED rows only, the rest below in project order. A row moves when its tier
+  changes, which is the news. It replaces the `needs my action` checkbox and the `2 need you` button.
+- **The glance happens off the page**: `(2) jagt` in the tab title and a favicon dot, amber yours and red broken.
+  Nothing sets either today.
+- **What changed since I looked**: a row whose status changed since it was last opened is bold, cleared on open,
+  kept per browser like the flag.
+- **`n` selects the next row that needs you**, and `f` focuses it. Verb letters come from the server with the verb.
+- **Focus fills only where `Move` names it and the move is yours**; elsewhere it is a plain button. No ring.
+- **A row has at most four facts a line**: edge, alias, title, badge and Focus; then status with age, and checks.
+  Ticket, `MR` and the job touching it move to the pane.
+- **Under ~1200 px the pane replaces the list**: Enter opens a task, Esc goes back.
+- **The status bar shows only what stopped or failed**: empty when all is well, as the jobs chip is today. `act`
+  is a header chip that wears the ring only when it stops.
+- **Jobs stays a dialog** with a real table; the `<dialog>` rule holds. The bottom panel is dropped.
+- **Session before Diff**: the read-only session tail saves a context switch, and the IDE already diffs well.
+- **Overview keeps the status history and the whole PROBLEM text**; watchers, countdowns and spend stay in hovers
+  and `stats`.
+- **Filtering never calls a model**: typing filters at once, and plain words go to tier 2 only on an explicit row.
+- **Add project goes last**: it happens once per project.
+
+Settled by the press log (`interactions.jsonl`):
+
+- the share of `action:focus` by status, which decides whether Focus is needed on rows the agent owns;
+- the delay from a task turning REQUIRED to its first press, with and without the band;
+- how often the Jobs dialog opens within a minute of a failed-jobs chip, against at random.
