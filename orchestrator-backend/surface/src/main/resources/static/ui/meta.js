@@ -1,7 +1,8 @@
 // A card's one row of facts: the state, the request and its checks. Pure, like the card it sits on.
 
-import {link, named, span} from '../core/dom.js';
+import {httpOnly} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
+import {html} from './html.js';
 
 // The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
 const watchLine = (watch) => {
@@ -16,39 +17,33 @@ const watchLine = (watch) => {
 // Equality rather than a negation: a projection missing the field would throw inside the render and blank the board.
 const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' || task.pipeline === 'GREEN';
 
+const classes = (...names) => names.filter(Boolean).join(' ');
+
 // `sole` is false for one link among several: the approval is every repository's, not one link's.
-const requestChip = (url, label, openedAt, task, sole) => {
-  const anchor = link(url, openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label);
-  anchor.className = 'mr-age';
+const RequestChip = ({url, label, openedAt, task, sole}) => {
   const lines = [openedAt > 0
     ? `review request; opened ${new Date(openedAt).toLocaleString()}`
     : 'review request; the next sweep will date it'];
-  if (sole && task.approved) {
-    anchor.classList.add('approved');
-    anchor.append(' ✓');
-  }
+  const approved = sole && task.approved;
   if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
   // Only where the checks have no dot to say it themselves: one verdict in two hovers can disagree with itself.
   if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
   const watch = watchLine(task.autoReview);
   if (watch) lines.push(watch.line);
-  if (sole && watch?.stalled) anchor.classList.add('stalled');
-  anchor.dataset.tip = lines.join('\n');
-  return anchor;
+  const text = openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label;
+  return html`<a href=${httpOnly(url)} target="_blank" rel="noreferrer"
+    class=${classes('mr-age', approved && 'approved', sole && watch?.stalled && 'stalled')}
+    data-tip=${lines.join('\n')}>${text}${approved ? ' ✓' : ''}</a>`;
 };
 
 // Where several links share one approval there is no label to tick, so it becomes the same glyph on its own.
-const approvalTick = () => {
-  const tick = named(span('tick', '✓'), 'review request approved');
-  tick.dataset.tip = 'review request approved';
-  return tick;
-};
+const ApprovalTick = () => html`<span class="tick" role="img" aria-label="review request approved" tabIndex=${0}
+  data-tip="review request approved">✓</span>`;
 
-const checksDot = (task) => {
+const ChecksDot = ({task}) => {
   const said = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
-  const dot = named(span(`checks ${task.pipeline.toLowerCase()}`, ''), said);
-  dot.dataset.tip = task.pipelineUnread ? `${said}\nthe last sweep could not read them` : said;
-  return dot;
+  return html`<span class=${`checks ${task.pipeline.toLowerCase()}`} role="img" aria-label=${said} tabIndex=${0}
+    data-tip=${task.pipelineUnread ? `${said}\nthe last sweep could not read them` : said}></span>`;
 };
 
 const timeline = (task) => (task.history || [])
@@ -59,52 +54,34 @@ const timeline = (task) => (task.history || [])
   .join('\n');
 
 // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
-const statusChip = (task, stalled) => {
-  const status = span('status', task.statusLabel);
-  status.append(' ', span('age', duration(Date.now() - task.statusSince)));
-  status.dataset.tip = `${task.status}\n${timeline(task)}`;
-  status.tabIndex = 0;
-  if (stalled) {
-    status.classList.add('stalled');
-    status.dataset.tip = `${status.dataset.tip}\n\n${stalled.line}`;
-  }
+const StatusChip = ({task, stalled}) => {
+  let tip = `${task.status}\n${timeline(task)}`;
+  if (stalled) tip = `${tip}\n\n${stalled.line}`;
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
-  if (task.deployed && !(task.actions || []).some((action) => action.again)) {
-    status.classList.add('live');
-    status.dataset.tip = `${status.dataset.tip}\n\nits work is on a shared branch`;
-    named(status, `${task.statusLabel}, its work is on a shared branch`);
-  }
-  return status;
+  const live = task.deployed && !(task.actions || []).some((action) => action.again);
+  if (live) tip = `${tip}\n\nits work is on a shared branch`;
+  return html`<span class=${classes('status', stalled && 'stalled', live && 'live')} data-tip=${tip} tabIndex=${0}
+    role=${live ? 'img' : undefined} aria-label=${live ? `${task.statusLabel}, its work is on a shared branch` : undefined}
+    >${task.statusLabel} <span class="age">${duration(Date.now() - task.statusSince)}</span></span>`;
 };
 
 // Each repository named once, its request on its name: a chip beside every name would crowd the row.
-const repositories = (task) => {
-  const group = span('repos', '');
-  task.repos.forEach((repo, index) => {
-    if (index) group.append(' + ');
-    group.append(repo.reviewRequestUrl
-      ? requestChip(repo.reviewRequestUrl, repo.project, 0, task, false) : repo.project);
-  });
-  if (task.approved) group.append(' ', approvalTick());
-  if (watchLine(task.autoReview)?.stalled) group.classList.add('stalled');
-  return group;
-};
+const Repositories = ({task}) => html`<span class=${classes('repos', watchLine(task.autoReview)?.stalled && 'stalled')}>${
+  task.repos.map((repo, index) => html`${index ? ' + ' : ''}${repo.reviewRequestUrl
+    ? html`<${RequestChip} url=${repo.reviewRequestUrl} label=${repo.project} openedAt=${0} task=${task} sole=${false}/>`
+    : repo.project}`)}${task.approved ? html` <${ApprovalTick}/>` : ''}</span>`;
 
 // `manyProjects` comes from the wiring: where every card would wear the same key, it is a word nobody reads.
-export function meta(task, manyProjects) {
-  const row = document.createElement('div');
-  row.className = 'meta';
+export function Meta({task, manyProjects}) {
   const many = (task.repos || []).length > 1;
   // A stopped poll with no request chip to ring rings the state instead.
   const watch = watchLine(task.autoReview);
-  row.append(statusChip(task, !many && !task.reviewRequestUrl && watch?.stalled ? watch : null));
-  if (many) {
-    row.append(repositories(task));
-  } else {
-    if (manyProjects) row.append(span(null, task.project));
-    if (task.reviewRequestUrl) row.append(requestChip(task.reviewRequestUrl, 'MR', task.requestOpenedAt, task, true));
-  }
-  // Beside the request whether there is one link or several: the verdict is the worst repository's either way.
-  if (marked(task)) row.append(checksDot(task));
-  return row;
+  return html`<div class="meta">
+    <${StatusChip} task=${task} stalled=${!many && !task.reviewRequestUrl && watch?.stalled ? watch : null}/>
+    ${many ? html`<${Repositories} task=${task}/>` : html`
+      ${manyProjects ? html`<span>${task.project}</span>` : ''}
+      ${task.reviewRequestUrl ? html`<${RequestChip} url=${task.reviewRequestUrl} label="MR"
+        openedAt=${task.requestOpenedAt} task=${task} sole=${true}/>` : ''}`}
+    ${marked(task) ? html`<${ChecksDot} task=${task}/>` : ''}
+  </div>`;
 }

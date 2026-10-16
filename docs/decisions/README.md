@@ -61,3 +61,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0043 `act` stops itself](0043-act-stops-itself-after-three-bad-endings.md)
 - [0044 Sandboxed writes](0044-a-session-writes-only-inside-its-task.md)
 - [0045 Bounded stores](0045-every-store-jagt-writes-has-a-ceiling.md)
+- [0046 Preact, no build](0046-the-board-renders-preact-components-with-no-build.md)

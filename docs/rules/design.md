@@ -68,3 +68,5 @@ Shadow lifts a thing OFF the page and nothing else (report dialog, log button, t
 is not depth: the 2px `--ok` ring on a primary deploy button.
 
 **No build step, no CDN, no external asset**: every mark is a border, a background or a character in the jar.
+A library is a vendored file the jar serves as published, pinned by `BoardAssetsTest`
+([0046](../decisions/0046-the-board-renders-preact-components-with-no-build.md)).

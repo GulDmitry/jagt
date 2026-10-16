@@ -243,3 +243,6 @@ button:not(.primary).again { border-color: var(--ok); color: var(--ok); }
 button:not(.primary).again:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
 /* The highlighted move keeps its fill and takes the mark as a ring: green ON accent is legible in neither theme. */
 button.primary.again { box-shadow: 0 0 0 2px var(--ok); }
+#styleguide h2 { font-size: 15px; margin: 16px 16px 0; }
+.state { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.state figcaption { font-size: 12px; }

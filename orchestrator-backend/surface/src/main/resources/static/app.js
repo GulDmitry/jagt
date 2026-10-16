@@ -5,6 +5,7 @@ import {run, runGlobal} from './ui/act.js';
 import {openReport, repaintReport, showReport} from './ui/dialogs.js';
 import * as filters from './ui/filters.js';
 import * as header from './ui/header.js';
+import './ui/interactions.js';
 import './ui/keys.js';
 import * as legend from './ui/legend.js';
 import * as launch from './ui/launch.js';

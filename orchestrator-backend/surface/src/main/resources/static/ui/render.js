@@ -1,16 +1,24 @@
 // One repaint of everything: a card that changes in place keeps the position a human has learnt.
 
+import {render as paint} from 'preact';
 import * as store from '../core/store.js';
-import {card} from './card.js';
+import {Card} from './card.js';
 import * as filters from './filters.js';
 import * as flags from './flags.js';
 import * as header from './header.js';
+import {html} from './html.js';
+import {blocked} from './inflight.js';
 import * as launch from './launch.js';
 import * as order from './order.js';
 import * as projects from './projects.js';
-import {hideStaleTip, tipped} from './tips.js';
+import {hideStaleTip} from './tips.js';
 
 const board = document.getElementById('board');
+
+const offersOn = (task) => store.offersOn(task)
+  .map((id) => ({id, hint: store.verbs().find((verb) => verb.id === id)?.hint || id}));
+
+const blockedOn = (task) => new Set((task.actions || []).filter((action) => blocked(task, action)).map((action) => action.id));
 
 export function render() {
   const tasks = store.tasks();
@@ -20,40 +28,14 @@ export function render() {
   header.render(tasks, shown.length);
   // Read off the cards themselves: the configured list can be longer than the board, and shorter than the truth.
   const manyProjects = new Set(tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project))).size > 1;
-  const read = located(tipped());
-  place(shown.map((task) => card(task, manyProjects)));
-  hideStaleTip(read && nodeOf(read));
+  // Keyed by task, so a card that reads the same keeps its node, its keyboard focus and a click in progress.
+  paint(shown.map((task) => html`<${Card} key=${task.id} task=${task} manyProjects=${manyProjects}
+    flagged=${flags.holds(task.id)} blocked=${blockedOn(task)} offers=${offersOn(task)}/>`), board);
+  hideStaleTip(null);
 }
 
-const buttonOf = ({task, action, report, about}) => board.querySelector(action
-  ? `button[data-task="${CSS.escape(task)}"][data-action="${CSS.escape(action)}"]`
-  : `button[data-report="${CSS.escape(report)}"][data-about="${CSS.escape(about)}"]`);
-
-// A chip is found again by its card and its kind, where a button is by its names.
-const located = (node) => {
-  const article = node?.closest('#board article');
-  if (!article) return null;
-  if (node.matches('button[data-action], button[data-report]')) return {button: node.dataset};
-  if (!node.classList.length) return null;
-  const kind = `.${CSS.escape(node.classList[0])}`;
-  return {task: article.dataset.task, kind, index: [...article.querySelectorAll(kind)].indexOf(node)};
-};
-
-const nodeOf = ({button, task, kind, index}) => (button ? buttonOf(button)
-  : board.querySelector(`article[data-task="${CSS.escape(task)}"]`)?.querySelectorAll(kind)[index]);
-
-// A card that reads the same stays the same node: rebuilding it drops keyboard focus and a click in progress.
-function place(fresh) {
-  const focused = located(document.activeElement);
-  fresh.forEach((built, index) => {
-    const there = board.children[index];
-    if (there?.isEqualNode(built)) return;
-    if (there) there.replaceWith(built);
-    else board.append(built);
-  });
-  while (board.children.length > fresh.length) board.lastElementChild.remove();
-  if (focused && !document.activeElement?.closest('#board')) nodeOf(focused)?.focus();
-}
+const buttonOf = ({task, action}) => board.querySelector(
+  `button[data-task="${CSS.escape(task)}"][data-action="${CSS.escape(action)}"]`);
 
 // A press disables its own button while it runs, which drops the focus to the page; nobody else has taken it.
 export function refocus(pressed) {

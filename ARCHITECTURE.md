@@ -174,9 +174,11 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 ## The board is two rings too
 
-`surface/src/main/resources/static` is vanilla HTML/CSS/JS served from the jar, no external asset of any kind
+`surface/src/main/resources/static` is HTML/CSS/JS served from the jar, no build step and no external asset
 ([`docs/rules/design.md`](docs/rules/design.md)). Native ES modules, split by the backend's rule: `core/` answers a
-question without owning a node, `ui/` owns the nodes it renders, `app.js` only wires them.
+question without owning a node, `ui/` owns the nodes it renders, `app.js` only wires them. A component is Preact
+written with `htm`, both in `vendor/` behind the page's import map
+([0046](docs/decisions/0046-the-board-renders-preact-components-with-no-build.md)).
 
 | file | the question it answers |
 |------|------------------------|
@@ -185,7 +187,11 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 | `core/format` | the two clocks, mirroring `DurationFormat` |
 | `core/dom` | how an element is built — never markup: ids come from a hand-edited state file |
 | `ui/render` | one repaint from the snapshot, and the one delegated click on the grid |
-| `ui/card`, `ui/meta`, `ui/header` | what a task looks like, and the line above the grid — pure, no listeners |
+| `ui/html`, `vendor/` | how a component is written; the libraries, pinned by `BoardAssetsTest` |
+| `ui/card`, `ui/meta` | what a task looks like — components of their props alone |
+| `ui/header` | the line above the grid — pure, no listeners |
+| `ui/interactions` | what the human pressed, sent to `service/PressLog` |
+| `styleguide.html`, `styleguide/` | every component in every state, from fixtures; `boardTest` loads it |
 | `ui/filters`, `ui/order`, `ui/projects` | what narrows, what re-orders, and the project picker |
 | `ui/act`, `ui/inflight` | running one action: what is in flight, what it asks first |
 | `ui/submit`, `ui/launch` | one submit pipeline, and the form that uses it |
@@ -196,8 +202,9 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 
 - **A module owns its own nodes** — never `getElementById` for another module's; one needing another to act takes a
   callback at wiring time (`palette.wire`, `header.onBarClick`, `toast.showLog`).
-- **Rendering is pure and total.** A card is a function of the task, the grid is `replaceChildren`, and no card carries
-  a closure — a button carries `data-action`/`data-report` and `ui/render` delegates the one listener.
+- **Rendering is pure and total.** A component is a function of its props, the grid is one keyed render, and no card
+  carries a closure — a button carries `data-action`/`data-report` and `ui/render` delegates the one listener.
+- **A new component gets its states in `styleguide/`** before the board uses it.
 - **One answer per question.** One transport, one toast, one submit pipeline, one key table.
 - **A board file over ~150 lines is the signal to split**, not to add a section comment.
 

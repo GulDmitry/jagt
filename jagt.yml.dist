@@ -24,6 +24,7 @@ orchestrator:
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
   keepAwake: false         # true: macOS stays awake while the Master acts, auto-review polls or `take` runs
+  interactionLog: true     # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`
   # kittyCommand: kitty   # if the binary is not on PATH
   # kittyFontSize: 13     # blank keeps kitty.conf's own
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs

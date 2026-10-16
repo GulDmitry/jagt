@@ -16,9 +16,11 @@ export const named = (node, label) => {
 };
 
 // Only http(s) becomes an href: a `javascript:` one would run in the page that can deploy.
+export const httpOnly = (href) => (/^https?:/i.test(href || '') ? href : undefined);
+
 export const link = (href, text) => {
   const anchor = document.createElement('a');
-  if (/^https?:/i.test(href)) anchor.href = href;
+  if (httpOnly(href)) anchor.href = href;
   anchor.target = '_blank';
   anchor.rel = 'noreferrer';
   anchor.textContent = text;
