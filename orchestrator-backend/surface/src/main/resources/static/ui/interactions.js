@@ -28,7 +28,7 @@ const named = (node) => {
 // The server refuses a whole batch over one malformed name, so a name is made to fit before it is queued.
 const fitted = (name) => name.toLowerCase().replace(/[^a-z0-9:#._-]/g, '-').replace(/^[^a-z0-9]+/, '').slice(0, 48);
 
-const note = (name, taskId) => {
+export const note = (name, taskId) => {
   const control = name && fitted(name);
   if (!control) return;
   queue.push({at: Date.now(), control, status: (taskId && store.taskById(taskId)?.status) || null});

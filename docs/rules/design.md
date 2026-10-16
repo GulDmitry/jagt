@@ -42,7 +42,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `✓` on the request, or `.tick` closing `.repos`: approved.
 - in a round's replies — `.block` head, its `.verdict` green fixed / amber a question / grey pushed back;
   the `.quote` it answers muted.
-- amber ring — `.mr-age.stalled` / `.repos.stalled` / `.status.stalled` (no link): the poll stopped,
+- amber ring — `.mr-age.stalled` / `.repos.stalled` / `.status.stalled` (no link, and on every row): the poll stopped,
   nothing will look again; `.chip.stalled`: `act` stopped, pressed to restore.
 - `button.flag` ⚐/⚑ — flagged important, this browser only.
 - `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.

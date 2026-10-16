@@ -110,7 +110,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
-    void foldsATitleTooLongForACardIntoItsHover() {
+    void theOpenTaskShowsATitleTooLongForItsRowWhole() {
         String whole = "A ticket whose first paragraph was pasted into its title".repeat(4);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").title(whole).lastActiveTimestamp(System.currentTimeMillis())
@@ -122,12 +122,12 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("article .title")).hasText(whole.substring(0, 150) + "…");
-        assertThat(page.locator("article .title")).hasAttribute("data-tip", whole);
+        assertThat(page.locator("#pane article .title")).hasText(whole);
+        assertThat(page.locator("#tasks .row-title")).hasText(whole);
     }
 
     @Test
-    void foldsALineTooLongForACardIntoItsHover() {
+    void theOpenTaskShowsItsWholeLine() {
         String reason = "a merge conflict in a file whose path runs on ".repeat(4);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.DEPLOY_CONFLICT).alias("a1").message(reason).lastActiveTimestamp(System
@@ -139,8 +139,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("article .detail")).hasText(("NEEDS YOU: " + reason).substring(0, 150) + "…");
-        assertThat(page.locator("article .detail")).hasAttribute("data-tip", "NEEDS YOU: " + reason);
+        assertThat(page.locator("#pane article .detail")).hasText("NEEDS YOU: " + reason);
     }
 
     @Test

@@ -45,7 +45,7 @@ export const cards = [
   card('stopped: nothing polls again', {id: 'ABC-81', alias: 'a8', title: 'Cache headers on static files', owner: 'CI',
     status: 'CI_POLLING', statusLabel: 'out for review', reviewRequestUrl: 'https://code.example/mr/6',
     requestOpenedAt: now - 9 * 1440 * MINUTE, autoReview: {state: 'STALLED', label: 'poll stopped', note: 'request unreadable'}}),
-  card('a pasted paragraph, clipped', {id: 'own-1', alias: 'a9', title: 'Spike: '
+  card('a pasted paragraph', {id: 'own-1', alias: 'a9', title: 'Spike: '
     + 'warm the cache on start, measure the first request, compare with a lazy load, and write down the numbers '
     + 'for each of the three environments before anything is changed in the configuration', owner: 'AGENT',
     status: 'IN_PROGRESS', statusLabel: 'agent working'}),

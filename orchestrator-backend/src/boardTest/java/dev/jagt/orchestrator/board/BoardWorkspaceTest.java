@@ -130,6 +130,54 @@ class BoardWorkspaceTest extends BoardPageContext {
     }
 
     @Test
+    void aPollThatStoppedRingsTheRowOfATaskThatIsNotOpen() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
+                .pipelineStatus("failed")
+                .lastPolledAt(System.currentTimeMillis()).lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#tasks .row:has-text(\"a2\") .pick").click();
+        assertThat(page.locator("#pane article .alias")).hasText("a2");
+        assertThat(page.locator("#tasks .row:has-text(\"a1\") .status.stalled")).hasCount(1);
+    }
+
+    @Test
+    void aRowWaitingOnTheHumanNamesItsProjectWhereSeveralShareTheBand() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_FAILED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("beta", root.resolve("ABC-2-beta").toString(),
+                TaskStatus.IN_PROGRESS).alias("b2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#tasks .group.yours .row-facts")).containsText("alpha");
+        assertThat(page.locator("#tasks .group.project .row-facts")).not().containsText("beta");
+    }
+
+    @Test
+    void theOpenTaskStaysInViewWhileTheListScrolls() {
+        for (int i = 1; i <= 16; i++) {
+            state.putTask("ABC-" + i, TaskState.builder("alpha", root.resolve("ABC-" + i + "-alpha").toString(),
+                    TaskStatus.IN_PROGRESS).alias("a" + i).lastActiveTimestamp(System.currentTimeMillis()).build());
+        }
+        Page page = session.newPage();
+        page.setViewportSize(1280, 600);
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#tasks .row")).hasCount(16);
+
+        page.locator("#tasks .row").last().scrollIntoViewIfNeeded();
+
+        assertThat(page.locator("#pane article")).isInViewport();
+    }
+
+    @Test
     void aNarrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

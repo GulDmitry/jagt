@@ -5,17 +5,6 @@ import {httpOnly} from '../core/dom.js';
 import {html} from './html.js';
 import {Meta} from './meta.js';
 
-// Where a pasted paragraph is cut off, so no card grows taller; the whole of it stays in the hover.
-export const LIMIT = 150;
-
-const Clipped = ({class: className, written}) => {
-  const cut = written.length > LIMIT;
-  return cut
-    ? html`<div class=${className} data-tip=${written} role="img" aria-label=${written} tabIndex=${0}
-        >${written.slice(0, LIMIT)}…</div>`
-    : html`<div class=${className}>${written}</div>`;
-};
-
 const Flag = ({taskId, on}) => html`<button class="flag" data-flag=${taskId} aria-pressed=${String(on)}
   aria-label="flag as important" data-tip="important — kept in this browser only">${on ? '⚑' : '⚐'}</button>`;
 
@@ -62,9 +51,9 @@ export function Card({task, manyProjects, flagged, blocked, offers}) {
       ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}`} data-tip=${task.hint}
         tabIndex=${0}>${task.ask}</span>` : ''}
     </div>
-    <div class="heading"><${Flag} taskId=${task.id} on=${flagged}/><${Clipped} class="title" written=${task.title || ''}/></div>
+    <div class="heading"><${Flag} taskId=${task.id} on=${flagged}/><div class="title">${task.title || ''}</div></div>
     <${Meta} task=${task} manyProjects=${manyProjects}/>
-    ${task.detail ? html`<${Clipped} class=${detailClass(task)} written=${task.detail}/>` : ''}
+    ${task.detail ? html`<div class=${detailClass(task)}>${task.detail}</div>` : ''}
     ${rows(task, offers).map(({group, items}) => html`<div class=${`actions ${group}`} data-group=${group}>${
       items.map(({action, offer}) => (action
         ? html`<${Button} task=${task} action=${action} blocked=${blocked}/>`

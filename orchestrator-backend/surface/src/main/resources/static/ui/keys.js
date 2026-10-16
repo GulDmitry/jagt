@@ -2,6 +2,7 @@
 
 import {run} from './act.js';
 import * as filters from './filters.js';
+import {note} from './interactions.js';
 import * as palette from './palette.js';
 import {ordered, render} from './render.js';
 import * as selection from './selection.js';
@@ -37,6 +38,7 @@ document.addEventListener('keydown', (event) => {
   const letter = !event.metaKey && !event.ctrlKey && !event.altKey && letters[event.key];
   if (letter) {
     event.preventDefault();
+    note(`key:${event.key}`, selection.current(ordered())?.id);
     letter();
     render();
     return;

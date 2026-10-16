@@ -18,19 +18,27 @@ browser alone.
 
 ## ADDED Requirements
 
-### Requirement: One task is open beside the list
-The board SHALL show every task as a row of at most two lines: alias, title, badge and the one verb the server marks
-`onRow`; then the status with its age and the checks dot. The picked row opens in a pane as the task's card and
-its status history. With nothing picked, the first task waiting on the human is open, else the first row. Under
-1200 px the pane replaces the list; `Esc` goes back.
+### Requirement: A task is one row
+Each task SHALL be one row of at most two lines: alias, title, badge and the one verb the server marks `onRow`; then
+the status with its age and the checks dot. A row whose poll stopped rings its status; in the band on top a row
+names its project where projects are several.
 
-#### Scenario: Picking a row
-- **WHEN** the human picks a2's row
-- **THEN** a2's card stands in the pane and its row reads selected
+#### Scenario: A poll stops on a closed task
+- **WHEN** a1's poll stops while a2 is open
+- **THEN** a1's row rings its status
 
 #### Scenario: Focus from the list
 - **WHEN** the human presses the row verb of a task that is not open
 - **THEN** Focus runs on that task and the pane keeps the task it had
+
+### Requirement: One task is open beside the list
+The picked row SHALL open in a pane as the task's card, whole, and its status history; the pane stays in view while
+the list scrolls. With nothing picked, the first task waiting on the human is open, else the first row. Under 1200 px
+the pane replaces the list, and `Esc` or its back button returns.
+
+#### Scenario: Picking a row
+- **WHEN** the human picks a2's row
+- **THEN** a2's card stands in the pane and its row reads selected
 
 ### Requirement: The tab says what waits
 The page's title SHALL read `(n) jagt` while n tasks wait on the human, and `jagt` otherwise. Its icon SHALL wear a

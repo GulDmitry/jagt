@@ -1,6 +1,6 @@
 // The one task open in full: its card, then every status it passed through.
 
-import {Card, LIMIT} from './card.js';
+import {Card} from './card.js';
 import {html} from './html.js';
 
 const History = ({task}) => html`<section class="history" aria-label="status history">
@@ -14,6 +14,5 @@ const History = ({task}) => html`<section class="history" aria-label="status his
 export const Pane = ({card}) => html`<section id="pane" aria-label="the open task">
   <button class="back" data-back="">‹ all tasks</button>
   <${Card} key=${card.task.id} ...${card}/>
-  ${card.task.detail && card.task.detail.length > LIMIT ? html`<p class="detail-full">${card.task.detail}</p>` : ''}
   <${History} task=${card.task}/>
 </section>`;

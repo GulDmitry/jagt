@@ -5,7 +5,7 @@ import {duration, countdown} from '../core/format.js';
 import {html} from './html.js';
 
 // The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
-const watchLine = (watch) => {
+export const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
     const remaining = watch.nextPollAt - Date.now();

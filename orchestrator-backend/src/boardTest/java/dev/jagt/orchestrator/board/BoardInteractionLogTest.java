@@ -31,4 +31,18 @@ class BoardInteractionLogTest extends BoardPageContext {
                 .contains("\"control\":\"action:focus\",\"status\":\"IN_PROGRESS\"")
                 .doesNotContain("ABC-1").doesNotContain("a1");
     }
+
+    @Test
+    void aKeyIsLoggedByItsLetterAndTheOpenTasksStatus() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#tasks .row")).hasCount(1);
+
+        page.waitForResponse("**/api/interactions", () -> page.keyboard().press("j"));
+
+        org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
+                .contains("\"control\":\"key:j\",\"status\":\"IN_PROGRESS\"");
+    }
 }
