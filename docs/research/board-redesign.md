@@ -50,7 +50,8 @@ proposed, add a project): https://claude.ai/artifact/1ot4ZnnVavMibvwMyzZz2u
 ```
 
 - **Row**: the edge colour (owner), alias, title, badge; then ticket, status with its age, `MR`, checks dot,
-  and the job touching it now. Two lines, always.
+  and the job touching it now. Two lines, always. At the right end sits **Focus**, one click from the list on every row.
+  It fills blue where `Move` names Focus as the next move: a question asked, a plan waiting, an agent at work.
 - **Task pane**: the verbs for the next step on top, and the tool verbs after a divider. `Done…` sits apart,
   in `--danger` text, and asks to confirm.
   Tabs: *Overview* (the line under the card, the timeline, what watches the task, spend), *Diff* (desktop-host §3A),
@@ -60,7 +61,28 @@ proposed, add a project): https://claude.ai/artifact/1ot4ZnnVavMibvwMyzZz2u
 - **Keys**: `j`/`k` move between rows, `Enter` opens one, and each verb shows its letter. Every row and tab
   has a URL hash, so a notification opens `#a5` directly.
 
-## 4. Rules this touches — each needs a yes
+## 4. Usability walkthrough
+
+Clicks from the board at rest to the goal: today, the first mockup, and the mockup with Focus on the row.
+Nothing records which verb is pressed (`CommandService` logs none), so frequency comes from `Move`: it names
+Focus as the move in five statuses and whenever an agent asks. That makes Focus the most frequent move.
+
+| goal | today | pane only | Focus on the row | note |
+|------|-------|-----------|------------------|------|
+| answer an agent's question | 1 | 2 | **1** | Focus in the pane alone cost a click; fixed |
+| watch an agent at work | 1 | 2 | **1** | same |
+| read why a task failed | hover, 150 chars | 1 | 1 | the whole text, not a clipped hover |
+| read the diff | 1, another app | 2 | 2 | stays in the board |
+| deploy an approved task | 1 | 2 | 2 | a deliberate step; `d` on the selected row is 1 |
+| start a task on two projects | 5, ⌘-click | 4 | 4 | ⌘N, ticket, two boxes, Enter |
+| see which job broke and what it touched | 2, read a dump | 1 | 1 | status bar → red row naming the task |
+| close a task | 1, no confirm | 2 | 2 | `Done…` confirms on purpose |
+
+- **Keep one click for the move the code calls next**; everything else may cost a second click.
+- **A hidden gesture is no shortcut**: no double-click on a row; the key `f` and the row button are the same action.
+- **Focus still leaves the board** for the kitty window. The Session tab is the read-only view that stays.
+
+## 5. Rules this touches — each needs a yes
 
 | rule | today | the change |
 |------|-------|------------|
@@ -71,17 +93,18 @@ proposed, add a project): https://claude.ai/artifact/1ot4ZnnVavMibvwMyzZz2u
 | AGENTS: every option lives in `jagt.yml` | edited by hand | still: the dialog writes the file; a decision record |
 | `board`: the launch row's pickers | a form always on screen | the same fields behind ⌘N |
 | AGENTS: never two controls for one question | Start and `do` | one input |
+| `design.md`: `--agent` and `--accent` never in one row | a card's edge and its primary button | an agent's row has a blue edge and a blue Focus; Focus wears a ring there |
 
-## 5. Order, cheapest first
+## 6. Order, cheapest first
 
-1. **No layout change**: tool verbs behind the selection, `Done…` set apart, a checkbox list for projects, the
+1. **No layout change**: Focus as each card's corner button, the other tool verbs behind the selection, `Done…` set apart, a checkbox list for projects, the
    Jobs report as a grouped table, the Master mode in the header. Each is a `boardTest` case.
 2. **Split view**: the list, the task pane, the hash route. The card builder becomes the row plus the pane.
 3. **Tabs**: Diff and Session first; each is one read endpoint.
 4. **Bottom panel and status bar**: reports leave the dialog; the header loses its six buttons.
 5. **Add project**: `POST /api/projects` writes `jagt.yml`, and the startup checks run on the new entry.
 
-## 6. Open
+## 7. Open
 
 - Group the list by project or by whose move it is? By owner puts your tasks on top, but a row moves when its owner changes.
 - Does the bottom panel stay open by default, or open only on a failed job?
