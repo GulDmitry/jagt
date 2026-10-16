@@ -175,33 +175,33 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 ## The board is two rings too
 
 `surface/src/main/resources/static` is HTML/CSS/JS served from the jar, no build step and no external asset
-([`docs/rules/design.md`](docs/rules/design.md)). Native ES modules, split by the backend's rule: `core/` answers a
-question without owning a node, `ui/` owns the nodes it renders, `app.js` only wires them. A component is Preact
-written with `htm`, both in `vendor/` behind the page's import map
+([`docs/rules/design.md`](docs/rules/design.md)). Native ES modules in three layers: `core/` holds the page's data and
+calls without a node, `components/` draws from props alone, `ui/` owns the events, the dialogs and the one render;
+`app.js` only wires them. A component is Preact written with `htm`, both in `vendor/` behind the import map
 ([0046](docs/decisions/0046-the-board-renders-preact-components-with-no-build.md)).
 
 | file | the question it answers |
 |------|------------------------|
-| `core/api` | how the backend is called, and what a refusal carries |
-| `core/store` | what the page knows; only `set` writes it |
-| `core/format` | the two clocks, mirroring `DurationFormat` |
-| `core/dom` | how an element is built — never markup: ids come from a hand-edited state file |
-| `ui/render` | one repaint from the snapshot, and the one delegated click on the board |
-| `ui/list`, `ui/pane`, `ui/selection` | the rows and their groups, the open task, which one is open |
-| `ui/seen`, `ui/glance` | what changed while a row was closed; what the tab's title and icon say |
-| `ui/html`, `vendor/` | how a component is written; the libraries, pinned by `BoardAssetsTest` |
-| `ui/card`, `ui/meta` | what a task looks like — components of their props alone |
-| `ui/header` | the line above the grid — pure, no listeners |
-| `ui/interactions` | what the human pressed, sent to `service/PressLog` |
-| `styleguide.html`, `styleguide/` | every component in every state, from fixtures; `boardTest` loads it |
-| `ui/filters`, `ui/order`, `ui/projects` | what narrows, what re-orders, and the project picker |
+| `core/api`, `core/store`, `core/format`, `core/dom` | how the backend is called; what the page knows; the two clocks; a safe link |
+| `core/grammar` | what a typed line means, before anything runs |
+| `components/html`, `vendor/` | how a component is written; the libraries, pinned by `BoardAssetsTest` |
+| `components/TaskList` | every task as a row, the human's own in a band on top |
+| `components/Pane`, `components/Card`, `components/Meta` | the open task: its card, its verbs, its tabs |
+| `components/JobsTable`, `components/ProjectChecks` | the jobs by whom they serve; what reading a path found |
+| `ui/render` | one repaint from the snapshot, and the one delegated click and submit on the board |
+| `ui/selection`, `ui/tabs`, `ui/seen` | which task is open, which tab and what it read, what changed while closed |
+| `ui/header`, `ui/glance`, `ui/menu` | the chips above the board, the tab's title and icon, the Reports menu |
+| `ui/launch`, `ui/projects`, `ui/addproject`, `ui/submit` | the New task and Add project dialogs, and their one submit path |
+| `ui/jobs` | the jobs table inside the Jobs report, and its Run now |
+| `ui/filters`, `ui/order` | what narrows and what re-orders |
 | `ui/act`, `ui/inflight` | running one action: what is in flight, what it asks first |
-| `ui/submit`, `ui/launch` | one submit pipeline, and the form that uses it |
-| `ui/palette`, `core/grammar`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
+| `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
 | `ui/dialogs`, `ui/report`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
 | `ui/legend` | what every mark means, as the page's own elements — their one definition |
-| `ui/refresh` | how the page learns a task changed, and the one clock it ticks itself |
+| `ui/refresh`, `ui/interactions` | how the page learns a task changed; what the human pressed |
+| `styleguide.html`, `styleguide/` | every component in every state, from fixtures; `boardTest` loads it |
 
+- **A component reads no module and calls nothing**: its facts arrive as props, its presses leave as `data-*`.
 - **A module owns its own nodes** — never `getElementById` for another module's; one needing another to act takes a
   callback at wiring time (`palette.wire`, `header.onBarClick`, `toast.showLog`).
 - **Rendering is pure and total.** A component is a function of its props, the grid is one keyed render, and no card

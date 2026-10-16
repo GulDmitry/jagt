@@ -66,7 +66,7 @@ class BoardConnectionTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        assertThat(page.locator("#show-help")).isVisible();
+        assertThat(page.locator("#show-help")).hasCount(1);
 
         org.assertj.core.api.Assertions.assertThat(reads).filteredOn(url -> url.equals("/api/tasks")).hasSize(1);
         org.assertj.core.api.Assertions.assertThat(reads).filteredOn(url -> url.equals("/api/commands")).hasSize(1);

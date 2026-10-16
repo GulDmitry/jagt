@@ -1,6 +1,7 @@
 // Everything the page knows, in ONE place: a module that mutated what another renders is a second answer.
 
 let data = {tasks: [], projects: [], autoReview: {summary: '', enabled: false}, jobs: null, actStopped: false,
+  masterMode: 'off',
   verbs: [],
   branchStrategies: [], phases: [], offers: {}};
 
@@ -11,6 +12,7 @@ export const phases = () => data.phases;
 export const autoReview = () => data.autoReview;
 export const jobs = () => data.jobs;
 export const actStopped = () => data.actStopped;
+export const masterMode = () => data.masterMode;
 export const verbs = () => data.verbs;
 export const offersOn = (task) => data.offers[task.id] || [];
 

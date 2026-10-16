@@ -1,15 +1,23 @@
-// The form that starts a task, and the only place its fields are read.
+// The form that starts a task, in its own dialog, and the only place its fields are read.
 
 import {api} from '../core/api.js';
 import * as store from '../core/store.js';
 import * as projects from './projects.js';
 import {submits} from './submit.js';
 
+const dialog = document.getElementById('launch-dialog');
 const form = document.getElementById('launch');
 const ref = document.getElementById('ref');
 const strategy = document.getElementById('strategy');
 
-export const focusRef = () => ref.focus();
+export const open = () => {
+  if (!dialog.open) dialog.showModal();
+  ref.focus();
+};
+
+export const focusRef = open;
+
+document.getElementById('close-launch').onclick = () => dialog.close();
 
 let rendered = null;
 
@@ -44,5 +52,6 @@ submits(form, {
   done: () => {
     form.reset();
     projects.forget();
+    dialog.close();
   },
 });

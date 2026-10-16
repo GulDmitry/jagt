@@ -1,5 +1,24 @@
 ## MODIFIED Requirements
 
+### Requirement: A mark says what it replaces
+The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours
+are [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the New task form's branch-strategy
+picker and MCP schema both read `task/BranchStrategy`. A verb with all its inputs gets no form. The
+project key renders only where projects are several, in the install or the task.
+
+#### Scenario: A mark is unclear
+- **WHEN** the human opens `Help`
+- **THEN** above the commands every mark stands beside its one board-wide meaning
+
+#### Scenario: The launch row
+- **WHEN** the human presses New task or `t`
+- **THEN** a dialog offers ticket, a box per project, base branch, `plan first`, notes, branch strategy, Start
+- **AND** no box ticked sends no project
+
+#### Scenario: Resuming a request
+- **WHEN** the human resumes a review request
+- **THEN** `resume <url>` after ⌘K is the one control
+
 ### Requirement: Facts sit on the thing they are about
 Rows SHALL keep their order inside their group: the tasks waiting on the human first, then each project in the
 order it first appears; only `order: alias` lets a new task take a retired one's place. The filter box (`/`)
@@ -75,3 +94,44 @@ load itself again, so it never keeps the code of a board that is gone.
 #### Scenario: jagt restarts under an open tab
 - **WHEN** jagt restarts on a new jar while a tab stays open
 - **THEN** the tab reconnects, sees a new run and loads the new board
+
+### Requirement: The header says only what needs a look
+The header SHALL hold the count of tasks waiting on the human, a failed job, the Master while it acts, review polling
+while it is off, the filter, one Reports menu and New task. A failed job's chip opens the jobs.
+
+#### Scenario: A job fails
+- **WHEN** a job's last run failed
+- **THEN** a chip says how many of how many failed, and pressing it opens the jobs with that row marked
+
+### Requirement: Every job can run now
+The jobs SHALL show as rows grouped by whom each serves, with the server's words, the last run, the next and its
+error; each row's Run now sends `run <job>`.
+
+#### Scenario: Running a job by hand
+- **WHEN** the human presses Run now on idecleanup
+- **THEN** it runs within a second, and the toast says so
+
+### Requirement: A project is added from the board
+Add a project SHALL read a repository path as it is typed — a git repository, its origin, the branch tasks are cut
+from, a key no project holds — fill the fields the human has not typed, and write one entry under `projects:` in
+`jagt.yml`, leaving every other line as it was. A path that is not ready is refused and nothing is written.
+
+#### Scenario: A folder that is no repository
+- **WHEN** the human types the path of a plain folder and adds it
+- **THEN** the reading says it is not a git repository, the add is refused, and `jagt.yml` is unchanged
+
+### Requirement: The open task has three tabs
+The open task SHALL show its status history, its session's screen read without colour codes with a line to tell
+the session, and its drafted review replies or that none are drafted.
+
+#### Scenario: Reading the session
+- **WHEN** the human opens the Session tab
+- **THEN** the session's screen as it reads now stands there, and a line typed under it reaches that session
+
+### Requirement: A verb carries its key
+A verb SHALL carry the letter that runs it on the open task, drawn on its button, from the server; a verb that cannot
+be taken back carries none, and `Done` stands apart at the end of its row.
+
+#### Scenario: Focus by key
+- **WHEN** the human presses `f` with a1 open
+- **THEN** Focus runs on a1

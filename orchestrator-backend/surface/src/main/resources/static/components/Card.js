@@ -3,20 +3,24 @@
 import {bothNames} from '../core/store.js';
 import {httpOnly} from '../core/dom.js';
 import {html} from './html.js';
-import {Meta} from './meta.js';
+import {Meta} from './Meta.js';
 
 const Flag = ({taskId, on}) => html`<button class="flag" data-flag=${taskId} aria-pressed=${String(on)}
   aria-label="flag as important" data-tip="important — kept in this browser only">${on ? '⚑' : '⚐'}</button>`;
 
-const verbClass = (action) => [action.primary && 'primary', action.again && 'again'].filter(Boolean).join(' ') || undefined;
+const verbClass = (action) => [action.primary && 'primary', action.again && 'again', action.apart && 'apart']
+  .filter(Boolean).join(' ') || undefined;
 
-// Which groups exist, and which comes first, stays the projection's answer; an offered report joins the row that only looks.
+// Which groups exist, and which comes first, stays the projection's answer; a verb drawn apart ends its row, and an
+// offered report joins the row that only looks.
 const rows = (task, offers) => {
   const grouped = [];
   for (const action of task.actions || []) {
     if (grouped.at(-1)?.group !== action.group) grouped.push({group: action.group, items: []});
     grouped.at(-1).items.push({action});
   }
+  const last = (item) => Number(Boolean(item.action.apart));
+  grouped.forEach((row) => row.items.sort((one, other) => last(one) - last(other)));
   for (const offer of offers) {
     if (grouped.at(-1)?.group !== 'tool') grouped.push({group: 'tool', items: []});
     grouped.at(-1).items.push({offer});
@@ -25,7 +29,9 @@ const rows = (task, offers) => {
 };
 
 const Button = ({task, action, blocked}) => html`<button class=${verbClass(action)} data-tip=${action.hint}
-  data-task=${task.id} data-action=${action.id} disabled=${blocked.has(action.id)}>${action.label}</button>`;
+  data-task=${task.id} data-action=${action.id} disabled=${blocked.has(action.id)} data-key=${action.key || undefined}
+  aria-label=${action.key ? action.label : undefined}
+  >${action.label}</button>`;
 
 const Offer = ({task, offer}) => html`<button class="offer" data-tip=${offer.hint} data-report=${offer.id}
   data-about=${task.alias || task.id}>${offer.id.charAt(0).toUpperCase() + offer.id.slice(1)}</button>`;

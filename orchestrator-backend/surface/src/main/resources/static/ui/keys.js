@@ -3,6 +3,8 @@
 import {run} from './act.js';
 import * as filters from './filters.js';
 import {note} from './interactions.js';
+import * as launch from './launch.js';
+import * as menu from './menu.js';
 import * as palette from './palette.js';
 import {ordered, render} from './render.js';
 import * as selection from './selection.js';
@@ -10,15 +12,13 @@ import * as selection from './selection.js';
 const typingInto = (target) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
   || target instanceof HTMLSelectElement;
 
-// A letter moves the selection or runs a verb the open task offers; the server still decides whether it may.
+// A letter moves the selection or opens a form; any other letter is the key of a verb the open task offers, and the
+// server still decides whether it may run.
 const letters = {
+  t: () => launch.open(),
   j: () => selection.step(ordered(), 1),
   k: () => selection.step(ordered(), -1),
   n: () => selection.nextRequired(ordered()),
-  f: () => {
-    const open = selection.current(ordered());
-    if (open?.actions?.some((action) => action.id === 'focus')) run(open.id, 'focus');
-  },
 };
 
 document.addEventListener('keydown', (event) => {
@@ -35,7 +35,16 @@ document.addEventListener('keydown', (event) => {
     filters.box.focus();
     return;
   }
-  const letter = !event.metaKey && !event.ctrlKey && !event.altKey && letters[event.key];
+  const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
+  const open = selection.current(ordered());
+  const verb = plain && !letters[event.key] && open?.actions?.find((action) => action.key && action.key === event.key);
+  if (verb) {
+    event.preventDefault();
+    note(`key:${event.key}`, open.id);
+    run(open.id, verb.id);
+    return;
+  }
+  const letter = plain && letters[event.key];
   if (letter) {
     event.preventDefault();
     note(`key:${event.key}`, selection.current(ordered())?.id);
@@ -57,6 +66,7 @@ document.addEventListener('keydown', (event) => {
     filters.box.value = '';
   }
   selection.back();
+  menu.close();
   palette.close();
   render();
 });

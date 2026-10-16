@@ -6,20 +6,27 @@ jagt has one surface: the **board** at `http://localhost:8290`.
 
 ## The board
 
-Every task is one card, in the order the tasks were registered: a new one lands at the END, and **no card
-moves because its status changed**. One line of counts above the grid holds the pipeline
-(build → review → check → ready → deploy → done), and `order: added` beside them switches to alias order.
+Every task is a **row** of two lines, the tasks waiting on you in a band on top and the rest by project, each in
+the order it was registered: a row moves only when whose move it is changes. One line of counts above the list
+holds the pipeline (build → review → check → ready → deploy → done), and `order: added` switches to alias order.
+`▸_` on a row is Focus without opening the task.
 
-A card shows whose move it is, the status and how long it has been in it, what jagt has spent, links to the
-ticket and the review request, and a line to click when the agent has left **drafted review replies**. It
-carries exactly the actions legal right now, the obvious one highlighted, in two rows: what moves the task
-along (ship … done), then what only looks at it (focus, ide, diff, restart agent). `deploy` and `done` ask for
-confirmation — one writes to a shared branch, the other deletes a worktree.
+**The open task** stands beside the list: its card with every legal action, the obvious one highlighted and each
+one's key drawn on it, `Done` apart at the end; then three tabs — the status history, the session's screen read
+without leaving the board with a line to tell it, and the drafted review replies. `deploy`, `revert` and `done` ask
+for confirmation. Under 1200 px the open task replaces the list; `Esc` goes back.
 
-**Filtering, and one order.** Type in the filter box (`/` focuses it, `Esc` clears) to match an alias, ticket
-number or title, and tick *needs my action* for what is yours. A title longer than 150 characters is cut
-with `…`, the whole one in its hover. The page never polls; the backend pushes
-changes.
+**Keys.** `j`/`k` walk the list, `n` opens the next task waiting on you, `t` opens New task, `/` the filter, ⌘K a
+command, and a verb's own letter runs it on the open task. The tab's title counts what waits on you, and its icon
+wears a dot — red when something broke.
+
+**The header** says only what needs a look: how many tasks wait on you, a failed job (press it for the jobs, each
+runnable now), the Master while it presses your buttons, review polling when it is off. **Reports** holds every
+report; **New task** holds the form, with **+ add a project**, which reads a repository path and writes its entry
+into `jagt.yml`.
+
+**Filtering.** Type in the filter box (`/` focuses it, `Esc` clears) to match an alias, ticket number or title. The
+page never polls; the backend pushes changes, and a tab left open across a restart loads the new board itself.
 
 **Focus** selects the agent's tmux window in kitty and raises it; **Shift+←/→** switches between them there.
 Closing the viewer only detaches it — agents live in tmux and keep working; `done` kills them. Every task also

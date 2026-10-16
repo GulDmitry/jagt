@@ -16,6 +16,7 @@ const waitingLabel = document.getElementById('waiting');
 const autoReviewChip = document.getElementById('auto-review');
 const jobsChip = document.getElementById('jobs-pulse');
 const actChip = document.getElementById('act-stopped');
+const masterChip = document.getElementById('master-mode');
 
 // Only a failed run is news: the next one sits in the hover.
 function renderJobs() {
@@ -26,8 +27,8 @@ function renderJobs() {
   }
   // A run writes no state, so this stamp is the last change's and goes into the past: past means DUE.
   const due = jobs.nextRunAt ? jobs.nextRunAt - Date.now() : null;
-  jobsChip.textContent = `jobs: ${jobs.failing} failed`;
-  jobsChip.dataset.tip = 'a job\u2019s last run failed; open the Jobs report\nnext run: '
+  jobsChip.textContent = `${jobs.failing} of ${jobs.count} jobs failed`;
+  jobsChip.dataset.tip = 'a job\u2019s last run failed; press for the jobs\nnext run: '
     + (due === null ? '-' : due > 0 ? countdown(due) : 'due');
 }
 
@@ -47,8 +48,13 @@ export function render(tasks, showing) {
   const waiting = tasks.filter((task) => task.attention === 'REQUIRED').length;
   waitingLabel.hidden = waiting === 0;
   waitingLabel.textContent = `${waiting} need your action`;
+  // Polling as it should is not news; only the poll being off is said.
+  autoReviewChip.hidden = store.autoReview().enabled;
   autoReviewChip.textContent = store.autoReview().summary || '';
-  autoReviewChip.classList.toggle('on', store.autoReview().enabled);
+  // The Master pressing buttons for the human is said while it does; judging alone changes nothing on screen.
+  masterChip.hidden = store.masterMode() !== 'act';
+  masterChip.textContent = 'Master: act';
+  masterChip.dataset.tip = 'the Master presses the buttons you would; the Master report says what it may do';
   renderJobs();
   actChip.hidden = !store.actStopped();
   renderEmpty(tasks.length, showing);
@@ -87,6 +93,10 @@ export function render(tasks, showing) {
 
 export const onVerbClick = (press) => {
   actChip.onclick = () => press(actChip.dataset.verb);
+};
+
+export const onJobsClick = (open) => {
+  jobsChip.onclick = open;
 };
 
 export const onBarClick = (repaint) => {

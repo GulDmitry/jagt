@@ -124,6 +124,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#launch button[type=submit]").click();
 
@@ -140,6 +141,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#notes").fill("start with the failing test");
         page.locator("#launch button[type=submit]").click();
@@ -159,6 +161,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#base-branch").fill("feature/parent");
         page.locator("#notes").fill("start with the failing test");
@@ -238,13 +241,15 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     }
 
     @Test
-    void offersTheProjectsWithNonePickedSoAMultiSelectStartsEmpty() {
+    void offersEveryProjectAsABoxWithNoneTicked() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("#project option")).hasCount(2);
-        assertThat(page.locator("#project")).hasValues(new String[]{});
+        page.locator("#new-task").click();
+
+        assertThat(page.locator("#project input[type=checkbox]")).hasCount(2);
+        assertThat(page.locator("#project input:checked")).hasCount(0);
     }
 
     @Test
@@ -269,8 +274,9 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
-        page.locator("#project").selectOption("beta");
+        page.locator("#project input[value=beta]").check();
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
@@ -286,6 +292,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#strategy").selectOption("recreate");
         page.locator("#launch button[type=submit]").click();

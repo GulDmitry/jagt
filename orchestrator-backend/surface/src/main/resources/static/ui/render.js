@@ -6,15 +6,18 @@ import * as filters from './filters.js';
 import * as flags from './flags.js';
 import * as glance from './glance.js';
 import * as header from './header.js';
-import {html} from './html.js';
+import {html} from '../components/html.js';
 import {blocked} from './inflight.js';
 import * as launch from './launch.js';
-import {grouped, TaskList} from './list.js';
+import {grouped, TaskList} from '../components/TaskList.js';
 import * as order from './order.js';
-import {Pane} from './pane.js';
+import {Pane} from '../components/Pane.js';
 import * as projects from './projects.js';
 import * as seen from './seen.js';
 import * as selection from './selection.js';
+import * as tabs from './tabs.js';
+import {api, refusal} from '../core/api.js';
+import {toast} from './toast.js';
 import {hideStaleTip} from './tips.js';
 
 const board = document.getElementById('board');
@@ -46,7 +49,7 @@ export function render() {
   paint(open ? html`
     <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
-      offers: offersOn(open)}}/>` : null, board);
+      offers: offersOn(open)}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
   hideStaleTip(null);
 }
 
@@ -64,6 +67,12 @@ export const onClick = ({action, report}) => {
   board.onclick = (event) => {
     if (event.target.closest('button[data-back]')) {
       selection.back();
+      render();
+      return;
+    }
+    const tab = event.target.closest('button[data-tab]');
+    if (tab) {
+      tabs.choose(tab.dataset.tab);
       render();
       return;
     }
@@ -85,3 +94,22 @@ export const onClick = ({action, report}) => {
     else report(button.dataset.report, button.dataset.about);
   };
 };
+
+// The line typed under an open session goes into that session, as the say line of a report does.
+board.addEventListener('submit', async (event) => {
+  const form = event.target.closest('form[data-say]');
+  if (!form) return;
+  event.preventDefault();
+  const line = form.elements.line.value.trim();
+  if (!line) return;
+  try {
+    const said = await api(`/api/tasks/say?task=${encodeURIComponent(form.dataset.say)}`, {method: 'POST',
+      headers: {'Content-Type': 'application/json'}, body: JSON.stringify({line})});
+    toast(said.message);
+    form.reset();
+    tabs.forget();
+    render();
+  } catch (e) {
+    toast(refusal(e), true);
+  }
+});

@@ -535,6 +535,7 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
 
         assertThat(page.locator("#report-title")).containsText("activity");
@@ -546,6 +547,7 @@ class BoardReportsTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
         assertThat(page.locator("#report")).isVisible();
 
@@ -559,6 +561,7 @@ class BoardReportsTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
         assertThat(page.locator("#report")).isVisible();
         page.keyboard().press("Control+k");
@@ -572,6 +575,7 @@ class BoardReportsTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
 
         page.locator("#report-body").hover();
@@ -587,7 +591,8 @@ class BoardReportsTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Help").setExact(true)).click();
+        page.locator("#reports-toggle").click();
+        page.locator("#show-help").click();
 
         assertThat(page.locator("#report")).isVisible();
         assertThat(page.locator("#report-section .legend button.again")).hasText("Deploy");

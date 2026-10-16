@@ -15,33 +15,27 @@
 <header>
   <h1>jagt</h1>
   <span id="waiting" class="waiting" hidden></span>
-  <span id="auto-review" class="chip" tabindex="0" data-tip="unattended review polling"></span>
-  <span id="jobs-pulse" class="chip bad" tabindex="0" hidden></span>
+  <button id="jobs-pulse" class="chip bad" hidden></button>
+  <span id="master-mode" class="chip" hidden></span>
   <button id="act-stopped" class="chip stalled" data-verb="act" hidden
           data-tip="three tasks the Master moved ended badly in a row, so it only judges now; press to give it act back">act stopped</button>
+  <span id="auto-review" class="chip" tabindex="0" data-tip="unattended review polling" hidden></span>
   <span class="grow"></span>
-  <input id="filter" class="control" aria-label="filter the board" placeholder="filter: alias, ticket or title (/)" autocomplete="off"
-         data-tip="substring match">
-  <label class="control checkbox" data-tip="show only tasks that need your action"><input type="checkbox" id="mine"> needs my action</label>
-  <button id="open-palette" data-tip="⌘K / Ctrl-K: a command, or plain words">Ask</button>
-  <span id="reports"></span>
+  <label class="search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    <input id="filter" aria-label="filter the board" placeholder="a5 filters · ⌘K for a command" autocomplete="off"
+           data-tip="substring match on alias, ticket or title">
+    <button id="open-palette" type="button" aria-label="a command or plain words (⌘K)" data-tip="⌘K / Ctrl-K: a command, or plain words">⌘K</button>
+  </label>
+  <div class="menu">
+    <button id="reports-toggle" type="button" aria-haspopup="menu" aria-expanded="false">Reports ▾</button>
+    <div id="reports" role="menu" hidden></div>
+  </div>
+  <button id="new-task" type="button" class="primary" data-tip="t: start a task">New task <kbd>t</kbd></button>
   <span id="live" class="dot" role="img" aria-label="push connection to the backend" tabindex="0"
         data-tip="push connection to the backend"></span>
   <span id="offline" class="chip bad" role="status" hidden data-tip="nothing on the board is current and nothing on it can run; it reconnects by itself">backend unreachable</span>
 </header>
-
-<form id="launch">
-  <input id="ref" name="ref" aria-label="ticket" placeholder="ABC-42 or a ticket URL — empty for a task of your own" autocomplete="off">
-  <!-- Several picked = one task, one agent session, a worktree in each. -->
-  <select id="project" name="project" multiple size="1" aria-label="projects" data-tip="one project, or several for work that spans them"></select>
-  <input id="base-branch" name="baseBranch" aria-label="base branch" placeholder="base branch (optional)" autocomplete="off">
-  <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first</label>
-  <input id="notes" name="notes" aria-label="instructions for the agent" placeholder="extra instructions — or the whole task, with no ticket" autocomplete="off">
-  <select id="strategy" name="strategy" size="1" aria-label="when the branch exists"
-          data-tip="what to do when a branch of this name already exists"></select>
-  <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>
-  <span id="launch-state" class="muted state"></span>
-</form>
 
 <form id="palette" hidden>
   <input id="ask" list="ask-options" aria-label="a command or plain words" placeholder="a command (ship a1), or plain words"
@@ -50,6 +44,55 @@
   <button type="submit" class="primary">Run</button>
   <span id="palette-state" class="muted state"></span>
 </form>
+
+<dialog id="launch-dialog" aria-labelledby="launch-title">
+  <form id="launch">
+    <header class="report-head"><strong id="launch-title">New task</strong><span class="grow"></span>
+      <button type="button" id="close-launch">Close</button></header>
+    <label class="field"><span>Ticket</span>
+      <input id="ref" name="ref" aria-label="ticket" placeholder="ABC-42 or a ticket URL — empty for a task of your own" autocomplete="off"></label>
+    <fieldset class="field" id="project-field"><legend>Projects <span class="muted">— none picked: the ticket decides</span></legend>
+      <!-- Several picked = one task, one agent session, a worktree in each. -->
+      <div id="project" role="group" aria-label="projects"></div>
+      <button type="button" id="add-project" class="link">+ add a project</button>
+    </fieldset>
+    <label class="field"><span>What to do</span>
+      <input id="notes" name="notes" aria-label="instructions for the agent" placeholder="extra instructions — or the whole task, with no ticket" autocomplete="off"></label>
+    <div class="field-row">
+      <label class="field"><span>Base branch</span>
+        <input id="base-branch" name="baseBranch" aria-label="base branch" placeholder="the project's own" autocomplete="off"></label>
+      <label class="field"><span>When the branch exists</span>
+        <select id="strategy" name="strategy" size="1" aria-label="when the branch exists"
+                data-tip="what to do when a branch of this name already exists"></select></label>
+      <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first</label>
+    </div>
+    <footer class="dialog-foot"><span id="launch-state" class="muted state"></span><span class="grow"></span>
+      <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button></footer>
+  </form>
+</dialog>
+
+<dialog id="project-dialog" aria-labelledby="project-title">
+  <form id="project-form">
+    <header class="report-head"><strong id="project-title">Add a project</strong><span class="grow"></span>
+      <button type="button" id="close-project">Close</button></header>
+    <label class="field"><span>Repository path</span>
+      <input id="project-path" name="path" placeholder="~/www/billing-api" autocomplete="off" required></label>
+    <ul id="project-checks" class="checks-list" aria-live="polite"></ul>
+    <div class="field-row">
+      <label class="field"><span>Key</span><input id="project-key" name="key" autocomplete="off" required></label>
+      <label class="field"><span>Tasks cut from</span><input id="project-base" name="baseBranch" autocomplete="off" required></label>
+    </div>
+    <div class="field-row">
+      <label class="field"><span>Deploy branch <span class="muted">— empty: no deploy</span></span>
+        <input id="project-deploy" name="deployBranch" autocomplete="off"></label>
+      <label class="field"><span>Verify before hand-back</span><input id="project-verify" name="verify" autocomplete="off"></label>
+    </div>
+    <label class="field"><span>What it is, in one line <span class="muted">— places a ticket no label places</span></span>
+      <input id="project-about" name="about" autocomplete="off"></label>
+    <footer class="dialog-foot"><span class="muted state" id="project-state"></span><span class="grow"></span>
+      <button type="submit" class="primary">Add to jagt.yml</button></footer>
+  </form>
+</dialog>
 
 <dialog id="report" aria-labelledby="report-title">
   <header class="report-head">
@@ -70,8 +113,8 @@
 
 <div id="phases"></div>
 <main id="board"></main>
-<p id="empty" class="empty" hidden>No tasks. The row above starts one, as does
-  <code>do ABC-42</code> in Ask.</p>
+<p id="empty" class="empty" hidden>No tasks. <button type="button" id="empty-new" class="link">New task</button> starts one, as does
+  <code>do ABC-42</code> after ⌘K.</p>
 <p id="filtered" class="empty" hidden></p>
 <button id="show-log" class="log" hidden>log</button>
 <div id="toasts" role="status"></div>

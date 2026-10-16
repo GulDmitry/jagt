@@ -20,7 +20,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     Jobs jobs;
 
     @Test
-    void saysThatTheUnattendedPollIsOnAndWhenItWillNextLookAtATask() {
+    void aPollRunningAsItShouldIsNotNewsWhileItsNextLookStaysOnTheRequest() {
         long shipped = System.currentTimeMillis();
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").lastActiveTimestamp(shipped)
@@ -33,8 +33,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("#auto-review")).hasText("auto-review on");
-        assertThat(page.locator("#auto-review")).hasClass(java.util.regex.Pattern.compile("on"));
+        assertThat(page.locator("#auto-review")).isHidden();
         assertThat(page.locator("article .meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("next poll 10m"));
     }
@@ -275,7 +274,6 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        assertThat(page.locator("#auto-review")).hasText("auto-review on");
 
         assertThat(page.locator("#jobs-pulse")).isHidden();
     }
@@ -290,17 +288,6 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         page.locator("#act-stopped").click();
 
         assertThat(page.locator("#act-stopped")).isHidden();
-    }
-
-    @Test
-    void theAutoReviewChipOpensItsTipFromTheKeyboard() {
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-
-        page.locator("#auto-review").focus();
-
-        assertThat(page.locator("#tip")).hasText("unattended review polling");
     }
 
     @Test
@@ -342,20 +329,4 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         assertThat(page.locator("#waiting")).hasText("1 need your action");
     }
 
-    @Test
-    void waitingOnMeLeavesOnlyTheTasksWhoseTurnItIs() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
-                TaskStatus.REVIEWED).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
-
-        Page page = session.newPage();
-
-        page.navigate("http://localhost:" + port + "/");
-
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        page.locator("#mine").check();
-
-        assertThat(page.locator("article .alias")).hasText(new String[]{"a2"});
-    }
 }

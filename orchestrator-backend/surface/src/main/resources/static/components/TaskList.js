@@ -3,7 +3,7 @@
 
 import {duration} from '../core/format.js';
 import {html} from './html.js';
-import {marked, watchLine} from './meta.js';
+import {marked, watchLine} from './Meta.js';
 
 // Filled only where it is the move and the move is the human's: the edge already says when an agent holds it.
 const quickClass = (task, action) => (action.primary && task.owner === 'YOU' ? 'row-verb primary' : 'row-verb');

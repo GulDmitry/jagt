@@ -124,8 +124,9 @@ const rows = () => [
     'the tab\u2019s title: how many tasks wait on you; its icon wears an amber dot, or red when something broke'],
   [[span('waiting', '2 need your action')],
     'in the header: how many cards are an interruption'],
-  [[span('chip on', 'auto-review on'), span('chip', 'auto-review off'), span('chip bad', 'jobs: 1 failed')],
-    'in the header: whether anything polls \u00b7 a job whose last run failed'],
+  [[span('chip', 'auto-review off'), span('chip bad', '1 of 16 jobs failed'), span('chip', 'Master: act')],
+    'in the header: nothing polls the requests \u00b7 a job whose last run failed, pressed for the jobs '
+    + '\u00b7 the Master presses the buttons you would'],
   [[span('dot on', ''), span('chip bad', 'backend unreachable')],
     'top right: this page is told about changes \u00b7 it is not, and nothing on it can run'],
 ];

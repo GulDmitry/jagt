@@ -313,8 +313,7 @@ class BoardCardTest extends BoardPageContext {
         assertThat(page.locator("#tasks .row .badge"))
                 .hasText(new String[]{"relay the failed checks", "you can deploy it"});
         assertThat(page.locator("#waiting")).hasText("1 need your action");
-        page.locator("#mine").check();
-        assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a1"});
+        assertThat(page.locator("#tasks .group.yours .alias")).hasText(new String[]{"a1"});
     }
 
     @Test

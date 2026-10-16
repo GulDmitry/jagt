@@ -1,35 +1,32 @@
-// The project picker of the launch form, filled from the same snapshot the board renders.
+// The projects a new task can run in, one box each, filled from the same snapshot the board renders.
 
 import * as store from '../core/store.js';
 
-const select = document.getElementById('project');
-// An untouched default is not a decision, and naming a project SKIPS the ticket read, so only a pick is sent.
-let picked = false;
+const group = document.getElementById('project');
 let rendered = null;
-select.onchange = () => { picked = true; };
 
-// The order they were picked in does not survive a multi-select, so the CONFIGURED order decides which
-// repository the agent's session runs in.
-export const chosen = () => (picked
-  ? [...select.selectedOptions].map((option) => option.value).join(',')
-  : '');
+// The order they were ticked in is not kept, so the CONFIGURED order decides which repository the agent's
+// session runs in. None ticked sends nothing: naming a project skips the ticket read.
+export const chosen = () => [...group.querySelectorAll('input:checked')].map((box) => box.value).join(',');
 
-export const forget = () => { picked = false; };
+export const forget = () => {
+  group.querySelectorAll('input').forEach((box) => { box.checked = false; });
+};
 
 export function render() {
   const configured = store.projects();
   const signature = configured.join('\n');
   if (rendered === signature) {
-    return;                       // a rebuild collapses the list under a human who has it open
+    return;                       // a rebuild under a human ticking boxes would drop the ticks
   }
   rendered = signature;
-  const chosenBefore = select.value;
-  select.replaceChildren(...(configured.length
-    ? configured.map((project) => new Option(project, project))
-    : [Object.assign(new Option('no projects in jagt.yml', ''), {disabled: true})]));
-  if (configured.includes(chosenBefore)) {
-    select.value = chosenBefore;
-  } else {
-    picked = false;
-  }
+  const ticked = new Set(chosen().split(',').filter(Boolean));
+  group.replaceChildren(...(configured.length ? configured.map((project) => {
+    const label = document.createElement('label');
+    label.className = 'checkbox';
+    const box = Object.assign(document.createElement('input'), {type: 'checkbox', value: project, name: 'project'});
+    box.checked = ticked.has(project);
+    label.append(box, ` ${project}`);
+    return label;
+  }) : [Object.assign(document.createElement('span'), {className: 'muted', textContent: 'no projects in jagt.yml'})]));
 }
