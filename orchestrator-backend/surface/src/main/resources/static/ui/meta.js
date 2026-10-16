@@ -15,7 +15,7 @@ const watchLine = (watch) => {
 };
 
 // Equality rather than a negation: a projection missing the field would throw inside the render and blank the board.
-const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' || task.pipeline === 'GREEN';
+export const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' || task.pipeline === 'GREEN';
 
 const classes = (...names) => names.filter(Boolean).join(' ');
 

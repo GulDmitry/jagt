@@ -3,7 +3,7 @@
 const MINUTE = 60000;
 const now = Date.now();
 const verb = (id, label, group, extra) => ({id, label, hint: label, group, ...extra});
-const tools = [verb('ide', 'Open IDE', 'tool'), verb('diff', 'Diff', 'tool'), verb('focus', 'Focus', 'tool'),
+const tools = [verb('ide', 'Open IDE', 'tool'), verb('diff', 'Diff', 'tool'), verb('focus', 'Focus', 'tool', {onRow: true}),
   verb('respawn', 'Restart agent', 'tool')];
 const task = (fields) => ({project: 'alpha', repos: [{project: 'alpha'}], pipeline: 'NONE', attention: 'NONE',
   owner: 'NONE', statusSince: now - 12 * MINUTE, history: [{at: now - 90 * MINUTE, status: 'NEW'},
@@ -16,7 +16,7 @@ export const cards = [
     owner: 'YOU', attention: 'REQUIRED', ask: 'NEEDS INPUT', hint: 'the agent asked a question', status: 'IN_PROGRESS',
     statusLabel: 'agent working', detail: 'NEEDS INPUT: which retry budget, 3 or 5?', detailKind: 'YOURS',
     ticketUrl: 'https://tracker.example/ABC-42',
-    actions: [verb('done', 'Done', 'flow'), verb('focus', 'Focus', 'tool', {primary: true}), verb('ide', 'Open IDE', 'tool')]}),
+    actions: [verb('done', 'Done', 'flow'), verb('focus', 'Focus', 'tool', {primary: true, onRow: true}), verb('ide', 'Open IDE', 'tool')]}),
   card('agent working', {id: 'ABC-51', alias: 'a2', title: 'Invoice PDF misses the VAT line', owner: 'AGENT',
     status: 'IN_PROGRESS', statusLabel: 'agent working', actions: [verb('ship', 'Ship', 'flow'), verb('done', 'Done', 'flow'), ...tools]}),
   card('with the reviewers, checks running', {id: 'ABC-57', alias: 'a3', title: 'Currency rounding in the monthly report',

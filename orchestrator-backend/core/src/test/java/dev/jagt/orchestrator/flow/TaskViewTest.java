@@ -92,6 +92,15 @@ class TaskViewTest {
     }
 
     @Test
+    void onlyFocusRidesOnTheRowOfAWorkingTask() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.actions()).filteredOn(TaskView.ActionView::onRow).extracting(TaskView.ActionView::id)
+                .containsExactly("focus");
+    }
+
+    @Test
     void offersASweepAsSoonAsANYRepositoryHasARequestOpen() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
                 TaskRepo.of("api", "/api-wt").withRemoteUrl("git@host:g/api.git"),

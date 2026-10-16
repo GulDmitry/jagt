@@ -134,6 +134,44 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 #phases .sep { opacity: .4; }
 /* One cell per TASK: a card keeps its place, and only its own contents change under it. */
 main { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; padding: 16px; }
+/* The list keeps its width and the open task takes the rest; a narrow window shows one of the two. */
+main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-items: start; }
+#tasks { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.group-head {
+  margin: 0; padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted);
+}
+.group.yours .group-head { color: var(--you); background: var(--you-bg); }
+.row { display: flex; border-left: 3px solid var(--line); border-top: 1px solid var(--line); }
+.row.you { border-left-color: var(--you); }
+.row.you.optional { border-left-color: var(--line); }
+.row.agent { border-left-color: var(--agent); }
+.row.ci { border-left-color: var(--ci); }
+.row.selected { background: var(--chip-bg); }
+.row .pick {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 6px 8px;
+  border: 0; border-radius: 0; background: none; text-align: left; color: var(--text); cursor: pointer;
+}
+.row-line { display: flex; gap: 8px; align-items: center; min-width: 0; font-size: 13px; }
+.row-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Shape, not colour, says it changed while nobody had it open: every colour already means something. */
+.row-title.changed { font-weight: 700; }
+.row-facts { font-size: 12px; color: var(--muted); padding-left: 30px; }
+.row .alias { width: 22px; flex-shrink: 0; font-size: 12px; }
+.row-verb {
+  width: 44px; flex-shrink: 0; border: 0; border-left: 1px solid var(--line); border-radius: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+}
+#pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.history ol { margin: 0; padding: 0 10px 8px 28px; font-size: 12px; }
+.history .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+.detail-full { margin: 0; white-space: pre-wrap; }
+#pane .back { display: none; align-self: start; }
+@media (max-width: 1199px) {
+  main#board { grid-template-columns: minmax(0, 1fr); }
+  #pane .back { display: inline-block; }
+  main#board:not(.open) #pane, main#board.open #tasks { display: none; }
+}
 article {
   background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line);
   border-radius: 8px; padding: 10px; align-self: start;

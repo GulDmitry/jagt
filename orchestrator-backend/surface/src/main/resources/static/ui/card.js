@@ -6,7 +6,7 @@ import {html} from './html.js';
 import {Meta} from './meta.js';
 
 // Where a pasted paragraph is cut off, so no card grows taller; the whole of it stays in the hover.
-const LIMIT = 150;
+export const LIMIT = 150;
 
 const Clipped = ({class: className, written}) => {
   const cut = written.length > LIMIT;

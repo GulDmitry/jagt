@@ -58,6 +58,9 @@ public enum TaskAction {
      */
     private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, DONE);
 
+    /** The verb pressed often enough to ride on a task's row in the list, not only in its open view. */
+    private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);
+
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
     private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
 
@@ -114,6 +117,10 @@ public enum TaskAction {
     /** Whether this action changes nothing, so nothing else being in flight is a reason to refuse it. */
     public boolean readOnly() {
         return READ_ONLY.contains(this);
+    }
+
+    public boolean onRow() {
+        return ON_ROW.contains(this);
     }
 
     public String id() {

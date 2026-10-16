@@ -293,9 +293,10 @@ class BoardActionsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        page.locator("article", new Page.LocatorOptions().setHas(page.locator(".alias:text-is(\"42\")")))
-                .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Ship").setExact(true))
-                .click();
+        page.locator("#tasks .row", new Page.LocatorOptions().setHas(page.locator(".alias:text-is(\"42\")")))
+                .locator(".pick").click();
+        page.locator("#pane article").getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Ship")
+                .setExact(true)).click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Shipped 41.");
         verify(commands, never()).execute("4", TaskAction.SHIP);

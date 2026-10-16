@@ -196,10 +196,11 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        page.locator("article:has-text(\"a13\") .offer").click();
+        page.locator("#pane .offer").click();
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#close-report").click();
-        page.locator("article:has-text(\"a14\") .offer").click();
+        page.locator("#tasks .row:has-text(\"a14\") .pick").click();
+        page.locator("#pane .offer").click();
 
         assertThat(page.locator("#say")).hasValue("");
     }
@@ -458,8 +459,9 @@ class BoardReportsTest extends BoardPageContext {
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
         page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
-                () -> page.locator("article", new Page.LocatorOptions().setHasText("a7")).locator(".offer").click());
-        page.locator("article", new Page.LocatorOptions().setHasText("a8")).locator(".offer").click();
+                () -> page.locator("#pane .offer").click());
+        page.locator("#tasks .row:has-text(\"a8\") .pick").click();
+        page.locator("#pane .offer").click();
         assertThat(page.locator("#report-title")).hasText("replies a8 \u00b7 ABC-8");
 
         page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()
@@ -488,8 +490,9 @@ class BoardReportsTest extends BoardPageContext {
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
         page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
-                () -> page.locator("article", new Page.LocatorOptions().setHasText("a7")).locator(".offer").click());
-        page.locator("article", new Page.LocatorOptions().setHasText("a8")).locator(".offer").click();
+                () -> page.locator("#pane .offer").click());
+        page.locator("#tasks .row:has-text(\"a8\") .pick").click();
+        page.locator("#pane .offer").click();
         assertThat(page.locator("#report-title")).hasText("replies a8 \u00b7 ABC-8");
 
         page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()

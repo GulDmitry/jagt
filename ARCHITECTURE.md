@@ -186,7 +186,9 @@ written with `htm`, both in `vendor/` behind the page's import map
 | `core/store` | what the page knows; only `set` writes it |
 | `core/format` | the two clocks, mirroring `DurationFormat` |
 | `core/dom` | how an element is built — never markup: ids come from a hand-edited state file |
-| `ui/render` | one repaint from the snapshot, and the one delegated click on the grid |
+| `ui/render` | one repaint from the snapshot, and the one delegated click on the board |
+| `ui/list`, `ui/pane`, `ui/selection` | the rows and their groups, the open task, which one is open |
+| `ui/seen`, `ui/glance` | what changed while a row was closed; what the tab's title and icon say |
 | `ui/html`, `vendor/` | how a component is written; the libraries, pinned by `BoardAssetsTest` |
 | `ui/card`, `ui/meta` | what a task looks like — components of their props alone |
 | `ui/header` | the line above the grid — pure, no listeners |
@@ -203,7 +205,7 @@ written with `htm`, both in `vendor/` behind the page's import map
 - **A module owns its own nodes** — never `getElementById` for another module's; one needing another to act takes a
   callback at wiring time (`palette.wire`, `header.onBarClick`, `toast.showLog`).
 - **Rendering is pure and total.** A component is a function of its props, the grid is one keyed render, and no card
-  carries a closure — a button carries `data-action`/`data-report` and `ui/render` delegates the one listener.
+  carries a closure — a button carries `data-action`/`data-report`/`data-select` and `ui/render` delegates the one listener.
 - **A new component gets its states in `styleguide/`** before the board uses it.
 - **One answer per question.** One transport, one toast, one submit pipeline, one key table.
 - **A board file over ~150 lines is the signal to split**, not to add a section comment.

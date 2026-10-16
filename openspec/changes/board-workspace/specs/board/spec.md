@@ -1,0 +1,57 @@
+## MODIFIED Requirements
+
+### Requirement: Facts sit on the thing they are about
+Rows SHALL keep their order inside their group: the tasks waiting on the human first, then each project in the
+order it first appears; only `order: alias` lets a new task take a retired one's place. The filter box (`/`)
+matches alias, ticket number or title; `Esc` clears. The task number opens the ticket, the `MR` chip the request;
+across repositories each project's name opens its own. The chip shows the request's own age, green with ✓ once
+approved. The Deploy button is green while the work is live. A `⚐` beside the title flags the task, in this
+browser alone.
+
+#### Scenario: Taking the colour off
+- **WHEN** a live task is reverted
+- **THEN** the Deploy button loses its green
+
+#### Scenario: A task turns to the human
+- **WHEN** a task's checks fail while another task's agent works
+- **THEN** its row moves into the band on top, and the other row keeps its place
+
+## ADDED Requirements
+
+### Requirement: One task is open beside the list
+The board SHALL show every task as a row of at most two lines: alias, title, badge and the one verb the server marks
+`onRow`; then the status with its age and the checks dot. The picked row opens in a pane as the task's card and
+its status history. With nothing picked, the first task waiting on the human is open, else the first row. Under
+1200 px the pane replaces the list; `Esc` goes back.
+
+#### Scenario: Picking a row
+- **WHEN** the human picks a2's row
+- **THEN** a2's card stands in the pane and its row reads selected
+
+#### Scenario: Focus from the list
+- **WHEN** the human presses the row verb of a task that is not open
+- **THEN** Focus runs on that task and the pane keeps the task it had
+
+### Requirement: The tab says what waits
+The page's title SHALL read `(n) jagt` while n tasks wait on the human, and `jagt` otherwise. Its icon SHALL wear a
+red dot while a task shows a problem, a job's last run failed or `act` stopped, else an amber one while a task waits.
+
+#### Scenario: One task waits
+- **WHEN** one task's checks fail
+- **THEN** the title reads `(1) jagt`
+
+### Requirement: A change while closed is bold
+A row whose status moved since the human last had it open SHALL show its title bold until it is opened. What was
+seen is kept in this browser alone; a task met for the first time counts as seen.
+
+#### Scenario: A round comes back
+- **WHEN** a2's status moves while a1 is open
+- **THEN** a2's title is bold, and picking a2 clears it
+
+### Requirement: Keys walk the list
+`j` and `k` SHALL move the open task down and up the list, `n` SHALL open the next task waiting on the human, and
+`f` SHALL run Focus on the open task. A key does nothing while the human types into a field or a dialog is open.
+
+#### Scenario: The next task waiting
+- **WHEN** a1 and a3 wait on the human, a1 is open and the human presses `n`
+- **THEN** a3 is open

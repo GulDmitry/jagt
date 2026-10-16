@@ -273,6 +273,7 @@ class BoardCardTest extends BoardPageContext {
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
         assertThat(page.locator("article .detail.problem")).hasText("PROBLEM: lint red");
+        page.locator("#tasks .row:has-text(\"a2\") .pick").click();
         assertThat(page.locator("article .detail.you")).containsText("NEEDS YOU");
     }
 
@@ -309,11 +310,11 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("article .badge"))
+        assertThat(page.locator("#tasks .row .badge"))
                 .hasText(new String[]{"relay the failed checks", "you can deploy it"});
         assertThat(page.locator("#waiting")).hasText("1 need your action");
         page.locator("#mine").check();
-        assertThat(page.locator("article .alias")).hasText(new String[]{"a1"});
+        assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a1"});
     }
 
     @Test
@@ -345,6 +346,7 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
         page.setViewportSize(400, 1200);
+        page.locator("#tasks .row .pick").click();
 
         assertThat(page.locator("article"))
                 .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
@@ -636,10 +638,11 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("article").nth(0).locator(".meta a.mr-age")).hasText("MR");
-        assertThat(page.locator("article").nth(0).locator(".meta a.mr-age"))
+        assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
+        assertThat(page.locator("article .meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("not approved yet"));
-        assertThat(page.locator("article").nth(1).locator(".meta a.mr-age.approved")).hasText("MR \u2713");
+        page.locator("#tasks .row:has-text(\"a2\") .pick").click();
+        assertThat(page.locator("article .meta a.mr-age.approved")).hasText("MR \u2713");
     }
 
     @Test

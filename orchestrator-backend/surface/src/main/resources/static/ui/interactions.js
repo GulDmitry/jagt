@@ -11,8 +11,10 @@ let queue = [];
 let due = 0;
 
 const named = (node) => {
-  const {action, report, verb, phase} = node.dataset;
-  if (action) return `action:${action}`;
+  const {action, report, verb, phase, place} = node.dataset;
+  if (action) return place ? `action:${action}.${place}` : `action:${action}`;
+  if (node.hasAttribute('data-select')) return 'select';
+  if (node.hasAttribute('data-back')) return 'back';
   if (report) return `report:${report}`;
   if (verb) return `verb:${verb}`;
   if (phase) return 'phase';

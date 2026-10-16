@@ -88,7 +88,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("article .alias")).hasText(new String[]{"a10", "a2"});
+        assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a10", "a2"});
     }
 
     @Test
@@ -105,7 +105,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
         page.locator("#phases button.order").click();
 
-        assertThat(page.locator("article .alias")).hasText(new String[]{"a2", "a10"});
+        assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a2", "a10"});
         assertThat(page.locator("#phases button.order")).hasText("order: alias");
     }
 
@@ -223,7 +223,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         page.locator("#phases button.phase").nth(1).click();
         page.locator("#phases .clear-filters").click();
 
-        assertThat(page.locator("article .alias")).hasText(new String[]{"a1", "a2"});
+        assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a1", "a2"});
     }
 
     @Test
@@ -323,7 +323,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(now).build());
 
-        assertThat(page.locator("article")).hasCount(2);
+        assertThat(page.locator("#tasks .row")).hasCount(2);
         assertThat(page.locator("#tip")).containsText("next run: 6m");
     }
 

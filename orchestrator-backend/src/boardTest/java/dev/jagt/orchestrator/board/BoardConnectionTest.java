@@ -99,7 +99,7 @@ class BoardConnectionTest extends BoardPageContext {
 
         state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
 
-        assertThat(page.locator("article .status")).containsText(new String[]{"agent working", "review"});
+        assertThat(page.locator("#tasks .row .status")).containsText(new String[]{"agent working", "review"});
         assertThat(focus).isFocused();
     }
 
@@ -172,7 +172,7 @@ class BoardConnectionTest extends BoardPageContext {
 
         state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
 
-        assertThat(page.locator("article .status")).containsText(new String[]{"agent working", "review"});
+        assertThat(page.locator("#tasks .row .status")).containsText(new String[]{"agent working", "review"});
         assertThat(page.locator("#tip")).isVisible();
     }
 

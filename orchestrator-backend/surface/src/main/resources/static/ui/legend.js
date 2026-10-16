@@ -72,6 +72,20 @@ const detailLine = (className, text) => {
   return line;
 };
 
+const yoursHead = () => {
+  const group = document.createElement('div');
+  group.className = 'group yours';
+  group.append(span('group-head', 'yours 2'));
+  return group;
+};
+
+const rowVerb = (className) => {
+  const button = document.createElement('button');
+  button.className = className;
+  button.textContent = '\u25b8_';
+  return button;
+};
+
 const rows = () => [
   [[edge('you'), edge('agent'), edge('ci'), edge('')],
     'your move \u00b7 agent working \u00b7 with the reviewers '
@@ -100,6 +114,14 @@ const rows = () => [
     + 'request is linked · in the header, the Master only judges until you press it'],
   [[detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],
     'the card\u2019s own line: broken \u00b7 your move'],
+  [[yoursHead()],
+    'in the list: the tasks waiting on you, above the rest'],
+  [[span('row-title changed', 'Login form loses focus')],
+    'in the list: bold, its state moved since you last had it open'],
+  [[rowVerb('row-verb primary'), rowVerb('row-verb')],
+    'on a row: its most pressed verb, without opening the task \u00b7 filled where that verb is your move'],
+  [[span(null, '(2) jagt')],
+    'the tab\u2019s title: how many tasks wait on you; its icon wears an amber dot, or red when something broke'],
   [[span('waiting', '2 need your action')],
     'in the header: how many cards are an interruption'],
   [[span('chip on', 'auto-review on'), span('chip', 'auto-review off'), span('chip bad', 'jobs: 1 failed')],
