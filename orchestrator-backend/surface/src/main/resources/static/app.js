@@ -23,7 +23,7 @@ import {sessionLog, showLog} from './ui/toast.js';
 const live = document.getElementById('live');
 // Cut off from the backend, the board is a picture of the past: nothing on it may act.
 const STALE = ['board', 'phases', 'new-task', 'empty-new', 'palette', 'open-palette', 'reports-toggle', 'report-line',
-  'act-stopped', 'jobs-pulse', 'launch', 'project-form'];
+  'act-stopped', 'jobs-pulse', 'launch', 'project-form', 'empty-project'];
 const connected = (yes) => {
   live.classList.toggle('on', yes);
   document.getElementById('offline').hidden = yes;
@@ -43,6 +43,7 @@ header.onJobsClick(() => openReport('jobs — what runs unattended', '/api/comma
 document.getElementById('new-task').onclick = launch.open;
 document.getElementById('empty-new').onclick = launch.open;
 document.getElementById('add-project').onclick = addProject.open;
+document.getElementById('empty-project').onclick = addProject.open;
 filters.onChange(render);
 // Where on this page each part a verb names is.
 const parts = {launch: {focus: launch.open}, legend: {section: legend.node}, jobs: {section: jobs.node}};

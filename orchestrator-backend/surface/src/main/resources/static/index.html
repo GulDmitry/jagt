@@ -113,8 +113,12 @@
 
 <div id="phases"></div>
 <main id="board"></main>
-<p id="empty" class="empty" hidden>No tasks. <button type="button" id="empty-new" class="link">New task</button> starts one, as does
-  <code>do ABC-42</code> after ⌘K.</p>
+<section id="empty" class="empty" hidden>
+  <p>No tasks yet.</p>
+  <p><button type="button" id="empty-new" class="primary">New task <kbd>t</kbd></button>
+    <button type="button" id="empty-project">Add a project</button></p>
+  <p class="muted">Or press ⌘K and type do ABC-42.</p>
+</section>
 <p id="filtered" class="empty" hidden></p>
 <button id="show-log" class="log" hidden>log</button>
 <div id="toasts" role="status"></div>

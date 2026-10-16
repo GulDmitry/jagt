@@ -85,6 +85,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
         page.locator("#jobs-pulse").click();
         assertThat(page.locator("table.jobs tr.failed")).containsText("idecleanup");
+        assertThat(page.locator("table.jobs[aria-label=housekeeping] tbody tr").first()).hasClass(Pattern.compile("failed"));
         page.locator("table.jobs button[data-job=idecleanup]").click();
 
         assertThat(page.locator("#toasts .toast").last()).containsText("idecleanup runs within a second");
@@ -124,6 +125,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
         page.locator("#pane .tabs button[data-tab=round]").click();
         assertThat(page.locator("#pane .round")).containsText("Renamed it.");
+        assertThat(page.locator("#pane .round .verdict.ok")).hasText("FIXED");
         page.locator("#tasks .row:has-text(\"a3\") .pick").click();
 
         assertThat(page.locator("#pane .round")).containsText("Nothing is drafted for this round.");
@@ -225,5 +227,40 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/styleguide.html");
 
         assertThat(page.locator("table.jobs [aria-label='not run yet']")).hasCount(1);
+    }
+
+    @Test
+    void aTaskWaitingOnTheHumanThatBrokeWearsARedBadgeAndItsHistoryReadsInWords() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_FAILED).alias("a1").message("lint red").lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#tasks .row .badge.problem")).hasCount(1);
+        assertThat(page.locator("#pane .history")).containsText("checks failed");
+    }
+
+    @Test
+    void theListSaysWhatItsKeysDo() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#tasks .keys")).containsText("n next yours");
+    }
+
+    @Test
+    void anEmptyBoardOffersANewTaskAndAProject() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        page.locator("#empty-project").click();
+
+        assertThat(page.locator("#project-dialog")).isVisible();
     }
 }

@@ -21,7 +21,7 @@ const Row = ({task, selected, changed, project, now}) => {
       <span class="row-line">
         <span class="alias">${task.alias || '-'}</span>
         <span class=${changed ? 'row-title changed' : 'row-title'}>${task.title || task.id}</span>
-        ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}`}>${task.ask}</span>` : ''}
+        ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}${task.detailKind === 'PROBLEM' ? ' problem' : ''}`}>${task.ask}</span>` : ''}
       </span>
       <span class="row-line row-facts">
         <span class=${stopped ? 'status stalled' : 'status'} data-tip=${stopped || undefined}
@@ -32,7 +32,10 @@ const Row = ({task, selected, changed, project, now}) => {
     </button>
     ${quick ? html`<button class=${quickClass(task, quick)} data-task=${task.id} data-action=${quick.id} data-place="row"
         tabIndex=${selected ? 0 : -1}
-        aria-label=${`${quick.label} ${task.alias || task.id}`} data-tip=${quick.hint}>▸_</button>` : ''}
+        aria-label=${`${quick.label} ${task.alias || task.id}`} data-tip=${quick.hint}><svg width="16" height="16"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect>
+        <path d="M7 9l3 3-3 3M13 15h4"></path></svg></button>` : ''}
   </div>`;
 };
 
@@ -54,6 +57,6 @@ export function grouped(shown, manyProjects) {
     .filter((group) => group.tasks.length);
 }
 
-export const TaskList = ({groups, selected, changed, now}) => html`<nav id="tasks" aria-label="tasks">${
+export const TaskList = ({groups, selected, changed, now, keys}) => html`<nav id="tasks" aria-label="tasks">${
   groups.map((group) => html`<${Group} key=${group.kind + group.name} ...${group} selected=${selected}
-    changed=${changed} now=${now}/>`)}</nav>`;
+    changed=${changed} now=${now}/>`)}${keys ? html`<p class="keys">${keys}</p>` : ''}</nav>`;

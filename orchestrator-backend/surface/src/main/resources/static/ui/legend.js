@@ -90,8 +90,8 @@ const rows = () => [
   [[edge('you'), edge('agent'), edge('ci'), edge('')],
     'your move \u00b7 agent working \u00b7 with the reviewers '
     + '\u00b7 nothing waiting, or a move of yours that can wait'],
-  [[span('badge required', 'ship it'), span('badge optional', 'read the round')],
-    'you are the hold-up \u00b7 yours whenever you like'],
+  [[span('badge required', 'ship it'), span('badge optional', 'read the round'), span('badge required problem', 'NEEDS YOU')],
+    'you are the hold-up \u00b7 yours whenever you like \u00b7 red: what is waiting on you is broken'],
   [[flagButton(false), flagButton(true)],
     'not flagged \u00b7 flagged important by you, in this browser only'],
   [[statusChip(), liveStatusChip()],

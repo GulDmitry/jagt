@@ -324,4 +324,18 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         assertThat(page.locator("#" + id)).hasAttribute("aria-label", Pattern.compile(named));
     }
+
+    @Test
+    void commandEnterStartsTheTaskFromAnyFieldOfTheForm() {
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
+        page.locator("#ref").fill("ABC-9");
+
+        page.locator("#ref").press("Meta+Enter");
+
+        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+    }
 }

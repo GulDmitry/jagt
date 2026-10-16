@@ -55,7 +55,7 @@ export function Card({task, manyProjects, flagged, blocked, offers, now}) {
       ${task.ticketUrl
         ? html`<a href=${ticket} target="_blank" rel="noreferrer" class="id">${task.id}</a>`
         : html`<span class="id">${task.id}</span>`}
-      ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}`} data-tip=${task.hint}
+      ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}${task.detailKind === 'PROBLEM' ? ' problem' : ''}`} data-tip=${task.hint}
         tabIndex=${0}>${task.ask}</span>` : ''}
     </div>
     <div class="heading"><${Flag} taskId=${task.id} on=${flagged}/><div class="title">${task.title || ''}</div></div>

@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.flow;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
-import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.jspecify.annotations.Nullable;
@@ -44,7 +44,7 @@ public record TaskView(
         long statusSince,
         // When the code host says the review request was opened; 0 = no request, or no read has said yet.
         long requestOpenedAt,
-        List<StatusChange> history,
+        List<Step> history,
         // Whether its code is on a shared branch RIGHT NOW; only a revert takes it back off.
         boolean deployed,
         // Drafted review replies are waiting in the worktree; read on the record, so no page is sent it.
@@ -56,8 +56,14 @@ public record TaskView(
         // Whether the newest round could not read them, so the verdict above is an older round's.
         boolean pipelineUnread,
         // Whether the request is approved; null until a read has said. No status can answer this.
-        @Nullable Boolean approved
+        @Nullable Boolean approved,
+        // The task's own base branch; null = the project's configured one.
+        @Nullable String baseBranch
 ) {
+
+    /** One status the task passed through, in the words the board shows it by. */
+    public record Step(TaskStatus status, String label, long at, @Nullable ActionOrigin origin) {
+    }
 
     /**
      * {@code again} = this verb has already run and what it did is still live, so pressing it repeats it. Built in one
@@ -97,9 +103,10 @@ public record TaskView(
                         .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl())))
                         .toList(),
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
-                task.history(), deployed, draftedReplies, autoReview,
+                task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
+                        change.origin())).toList(), deployed, draftedReplies, autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
-                task.hasReviewRequest() ? task.approved() : null);
+                task.hasReviewRequest() ? task.approved() : null, task.baseBranch());
     }
 
     private static Map<String, String> confirmations(String id, TaskState task, Map<String, String> deployBranches) {

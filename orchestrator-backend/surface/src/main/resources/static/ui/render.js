@@ -18,6 +18,8 @@ import * as selection from './selection.js';
 import * as tabs from './tabs.js';
 import {api, refusal} from '../core/api.js';
 import {toast} from './toast.js';
+import {said as keys} from './keys.js';
+import {body} from './report.js';
 import {hideStaleTip} from './tips.js';
 
 const board = document.getElementById('board');
@@ -49,9 +51,9 @@ export function render() {
     broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || store.actStopped()});
   board.classList.toggle('open', selection.isOpen());
   paint(open ? html`
-    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now}/>
+    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${keys}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
-      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
+      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)} format=${body}/>` : null, board);
   hideStaleTip(null);
 }
 

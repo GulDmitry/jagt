@@ -105,6 +105,17 @@ class TaskViewTest {
     }
 
     @Test
+    void theHistorySaysEachStatusInTheBoardsWordsAndTheTaskNamesItsOwnBase() {
+        TaskState started = TaskState.builder("api", "/api-wt", TaskStatus.NEW).alias("a1").baseBranch("release/2")
+                .build();
+        TaskView view = TaskView.of("ABC-1", started.withStatus(TaskStatus.IN_PROGRESS, "working"), false,
+                AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.history()).extracting(TaskView.Step::label).endsWith("agent working");
+        assertThat(view.baseBranch()).isEqualTo("release/2");
+    }
+
+    @Test
     void onlyFocusRidesOnTheRowOfAWorkingTask() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));

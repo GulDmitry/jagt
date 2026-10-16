@@ -6,10 +6,15 @@ import {html} from './html.js';
 export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'session', label: 'Session'},
   {id: 'round', label: 'Review round'}];
 
-const History = ({task}) => html`<section class="history" aria-label="status history">
+// Today's steps by the clock alone; an older one by its day too.
+const when = (at, now) => (new Date(at).toDateString() === new Date(now).toDateString()
+  ? new Date(at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+  : new Date(at).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}));
+
+const History = ({task, now}) => html`<section class="history" aria-label="status history">
   <h2 class="group-head">status history</h2>
   <ol>${(task.history || []).map((step) => html`<li>
-    <span class="age">${new Date(step.at).toLocaleString()}</span> ${step.status}${
+    <span class="age">${when(step.at, now)}</span> ${step.label || step.status}${
       step.origin ? html` <span class="muted">${step.origin.toLowerCase().replace('_', '-')}</span>` : ''}
   </li>`)}</ol>
 </section>`;
@@ -25,17 +30,20 @@ const Session = ({task, shown}) => html`<section class="session" aria-label="the
   </form>
 </section>`;
 
-const Round = ({shown, offered}) => html`<section class="round" aria-label="the review round">
+// `format` turns a round's text into its blocks, verdicts and quotes, as the replies report draws them.
+const Round = ({shown, offered, format}) => html`<section class="round" aria-label="the review round">
   ${!offered ? html`<p class="muted">Nothing is drafted for this round.</p>`
-    : html`<pre class="screen">${shown === null ? 'reading…' : shown}</pre>`}
+    : shown === null ? html`<pre class="screen">reading…</pre>`
+      : html`<pre class="screen" ref=${(node) => node && node.replaceChildren(...format(shown))}></pre>`}
 </section>`;
 
-export const Pane = ({card, tab, shown}) => html`<section id="pane" aria-label="the open task">
+export const Pane = ({card, tab, shown, format}) => html`<section id="pane" aria-label="the open task">
   <button class="back" data-back="">‹ all tasks</button>
   <${Card} key=${card.task.id} ...${card}/>
   <div role="tablist" class="tabs">${TABS.map((one) => html`<button role="tab" data-tab=${one.id}
     aria-selected=${String(one.id === tab)}>${one.label}</button>`)}</div>
   ${tab === 'session' ? html`<${Session} task=${card.task} shown=${shown}/>`
-    : tab === 'round' ? html`<${Round} shown=${shown} offered=${card.offers.some((offer) => offer.id === 'replies')}/>`
-    : html`<${History} task=${card.task}/>`}
+    : tab === 'round' ? html`<${Round} shown=${shown} format=${format}
+      offered=${card.offers.some((offer) => offer.id === 'replies')}/>`
+    : html`<${History} task=${card.task} now=${card.now}/>`}
 </section>`;

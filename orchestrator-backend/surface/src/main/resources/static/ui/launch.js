@@ -17,6 +17,14 @@ export const open = () => {
 
 document.getElementById('close-launch').onclick = () => dialog.close();
 
+// ⌘↵ starts from any field, the way a form that has a single submit is sent everywhere else.
+form.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+
 let rendered = null;
 
 export function render() {

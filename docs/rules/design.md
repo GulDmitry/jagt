@@ -47,7 +47,9 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `button.flag` ⚐/⚑ — flagged important, this browser only.
 - `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.
 - bold `.row-title.changed` — its state moved since you last had it open; shape, since every colour is taken.
-- `button.row-verb` ▸_ — a row's `onRow` verb, `primary` filled only where it is your move.
+- `button.row-verb`, a terminal glyph — a row's `onRow` verb, `primary` filled only where it is your move.
+- `.badge.problem` in `--danger` — what waits on you is broken.
+- a verb's key drawn after its name (`data-key`), and `button.apart` muted at the row's end until hovered.
 - the tab's title `(n) jagt` and an icon dot — `--danger` something broke, else `--you` something waits.
 - absence — no dot, no tick, no badge: the expected state, no pipeline, or nothing read yet, the hover saying
   which. **Absence is the cheapest mark**: a fact earning neither height nor colour goes in `data-tip`, not

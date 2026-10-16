@@ -266,7 +266,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
 
-        assertThat(page.locator("#empty")).containsText("No tasks.");
+        assertThat(page.locator("#empty")).containsText("No tasks yet.");
     }
 
     @Test
