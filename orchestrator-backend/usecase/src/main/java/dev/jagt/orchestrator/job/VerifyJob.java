@@ -37,6 +37,11 @@ public class VerifyJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TASKS;
+    }
+
+    @Override
     public String describe() {
         return "run each project's own command before a hand-back reaches a human";
     }

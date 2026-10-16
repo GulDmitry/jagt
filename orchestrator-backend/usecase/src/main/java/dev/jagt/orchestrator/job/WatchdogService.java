@@ -41,6 +41,11 @@ public class WatchdogService implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TASKS;
+    }
+
+    @Override
     public String describe() {
         return "alert when an agent has gone quiet in a status where it is supposed to be working";
     }

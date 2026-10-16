@@ -39,6 +39,11 @@ public class AutoReviewScheduler implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TASKS;
+    }
+
+    @Override
     public String describe() {
         return "poll the review request of every task out for review, and relay the round to its agent";
     }

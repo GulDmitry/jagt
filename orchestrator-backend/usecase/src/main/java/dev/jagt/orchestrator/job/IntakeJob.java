@@ -28,6 +28,11 @@ public class IntakeJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TRACKER;
+    }
+
+    @Override
     public String describe() {
         return "start a task on every item the tracker says is ready for one";
     }

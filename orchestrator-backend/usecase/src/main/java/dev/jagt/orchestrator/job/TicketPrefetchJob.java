@@ -26,6 +26,11 @@ public class TicketPrefetchJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TASKS;
+    }
+
+    @Override
     public String describe() {
         return "read each working task's ticket once, for the Master's next review of it";
     }

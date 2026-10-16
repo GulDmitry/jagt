@@ -15,8 +15,10 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Which agent runs here is never assumed: window titles, liveness and the words in these messages all come from
@@ -32,6 +34,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     public static final String NUDGE = "The Master updated task_context.md — re-read it now and follow the new"
             + " instructions.";
+
+    private static final Pattern ESCAPES = Pattern.compile("\u001B\\[[0-9;?]*[ -/]*[@-~]|\u001B[\\]P][^\u0007\u001B]*(\u0007|\u001B\\\\)");
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -96,6 +100,14 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 : "Closed " + killed + " tab(s) for " + taskId + "; the "
                         + agentRuntime.displayName() + " session is terminated. Worktree kept: "
                         + task.worktreePath();
+    }
+
+    /** What the task's session shows now, colour codes removed; empty when no window holds it. Changes nothing. */
+    public Optional<String> screen(String taskId) {
+        String id = stateService.canonicalTaskId(taskId);
+        requireTask(id);
+        return sessions.screenOf(agentSession(configService.load(), id), id)
+                .map(shown -> ESCAPES.matcher(shown).replaceAll("").stripTrailing());
     }
 
     /** A session that is gone or dead is re-entered first: focus must always land on a live agent. */

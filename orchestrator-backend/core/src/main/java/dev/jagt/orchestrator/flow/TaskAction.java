@@ -61,6 +61,13 @@ public enum TaskAction {
     /** The verb pressed often enough to ride on a task's row in the list, not only in its open view. */
     private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);
 
+    /** The verb that ends the task, drawn apart from the ones that move it on. */
+    private static final Set<TaskAction> APART = EnumSet.of(DONE);
+
+    /** One letter a key runs the verb by on an open task; a verb that cannot be taken back has none. */
+    private static final Map<TaskAction, String> KEYS = Map.of(SWEEP, "r", SHIP, "s", DEPLOY, "d", REVERT, "v",
+            FOCUS, "f", IDE, "o", DIFF, "g");
+
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
     private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
 
@@ -121,6 +128,15 @@ public enum TaskAction {
 
     public boolean onRow() {
         return ON_ROW.contains(this);
+    }
+
+    public boolean apart() {
+        return APART.contains(this);
+    }
+
+    /** Empty where no key runs the verb. */
+    public String key() {
+        return KEYS.getOrDefault(this, "");
     }
 
     public String id() {

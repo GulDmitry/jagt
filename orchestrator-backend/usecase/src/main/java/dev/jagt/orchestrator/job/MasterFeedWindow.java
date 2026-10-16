@@ -26,6 +26,11 @@ public class MasterFeedWindow implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.MASTER;
+    }
+
+    @Override
     public String describe() {
         return "keep the master window following what the Master does";
     }

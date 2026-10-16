@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Jobs {
 
     public record Status(String id, String describe, @Nullable Duration every, @Nullable Long lastStartedAt,
-                         @Nullable String lastError, @Nullable Long nextRunAt, boolean running) {
+                         @Nullable String lastError, @Nullable Long nextRunAt, boolean running, String serves) {
     }
 
     /** {@code nextRunAt} is the soonest run of any job, or null when nothing is scheduled. */
@@ -67,7 +67,7 @@ public class Jobs {
             // Never behind the present: a job that has not run yet is due at the tick about to happen.
             Long next = run.nextAt == Long.MAX_VALUE ? null : Math.max(run.nextAt, now);
             return new Status(job.id(), job.describe(), every(job, run), run.startedAt, run.lastError, next,
-                    run.running.get());
+                    run.running.get(), Objects.requireNonNullElse(job.serves(), Job.Serves.HOUSEKEEPING).label());
         }).toList();
     }
 

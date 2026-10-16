@@ -30,7 +30,7 @@ public class BoardApiController {
     public record Board(List<TaskView> tasks, List<String> projects, String autoReview,
                         boolean autoReviewEnabled, Jobs.Summary jobs, boolean actStopped,
                         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases,
-                        Map<String, List<String>> offers) {
+                        Map<String, List<String>> offers, String masterMode) {
     }
 
     private final TaskViews taskViews;
@@ -45,7 +45,7 @@ public class BoardApiController {
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
                 jobs.summary(System.currentTimeMillis()), snapshot.actStopped(), BranchStrategy.choices(),
                 Phase.choices(),
-                offers(snapshot.tasks()));
+                offers(snapshot.tasks()), snapshot.masterMode());
     }
 
     private Map<String, List<String>> offers(List<TaskView> tasks) {
@@ -58,6 +58,11 @@ public class BoardApiController {
             }
         }
         return offers;
+    }
+
+    @GetMapping("/jobs")
+    public List<Jobs.Status> jobs() {
+        return jobs.statuses(System.currentTimeMillis());
     }
 
     @GetMapping("/commands")

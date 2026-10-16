@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,15 @@ public class TypedLineController {
             throw new IllegalArgumentException("There is nothing to say");
         }
         return new ActionResult(sessions.say(taskId, line));
+    }
+
+    public record Screen(String shown) {
+    }
+
+    /** The open task's session as it reads now, so it can be read without leaving the board. */
+    @GetMapping("/tasks/screen")
+    public Screen screen(@RequestParam("task") String taskId) {
+        return new Screen(sessions.screen(taskId).orElse(""));
     }
 
     /** The model only proposes; the proposal passes the same gate as a button. */

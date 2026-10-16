@@ -38,6 +38,11 @@ public class DeployCheckJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TASKS;
+    }
+
+    @Override
     public String describe() {
         return "ask each deployed task's session to check the change where it landed";
     }

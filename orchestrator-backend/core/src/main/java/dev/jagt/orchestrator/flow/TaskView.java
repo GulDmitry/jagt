@@ -61,7 +61,7 @@ public record TaskView(
 
     /** {@code again} = this verb has already run and what it did is still live, so pressing it repeats it. */
     public record ActionView(String id, String label, String hint, boolean primary, String group,
-                            boolean readOnly, boolean again, boolean onRow) {
+                            boolean readOnly, boolean again, boolean onRow, boolean apart, String key) {
     }
 
     public record RepoView(@Nullable String project, @Nullable String reviewRequestUrl) {
@@ -82,7 +82,7 @@ public record TaskView(
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
                         action == move.primary(), action.group().id(), action.readOnly(),
-                        deployed && action == TaskAction.DEPLOY, action.onRow()))
+                        deployed && action == TaskAction.DEPLOY, action.onRow(), action.apart(), action.key()))
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
                 round.masterReading() ? "master review"

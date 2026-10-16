@@ -36,6 +36,11 @@ public class MasterReviewJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.MASTER;
+    }
+
+    @Override
     public String describe() {
         return "hand the Master session each plan and each round that came back, and act on what it answered";
     }

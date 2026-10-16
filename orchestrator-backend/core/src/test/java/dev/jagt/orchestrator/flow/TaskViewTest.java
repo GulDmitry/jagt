@@ -92,6 +92,19 @@ class TaskViewTest {
     }
 
     @Test
+    void doneStandsApartAndCarriesNoKeyWhileShipCarriesItsLetter() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.actions()).filteredOn(TaskView.ActionView::apart).extracting(TaskView.ActionView::id)
+                .containsExactly("done");
+        assertThat(view.actions()).filteredOn(action -> action.id().equals("done")).singleElement()
+                .extracting(TaskView.ActionView::key).isEqualTo("");
+        assertThat(view.actions()).filteredOn(action -> action.id().equals("ship")).singleElement()
+                .extracting(TaskView.ActionView::key).isEqualTo("s");
+    }
+
+    @Test
     void onlyFocusRidesOnTheRowOfAWorkingTask() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));

@@ -53,6 +53,11 @@ public class TicketCloseJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TRACKER;
+    }
+
+    @Override
     public String describe() {
         return "close every task whose item reached the stage that says the work landed";
     }

@@ -65,6 +65,16 @@ class AgentSessionsTest {
     }
 
     @Test
+    void readsATasksScreenAsPlainTextWithoutItsColourCodes() {
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(java.util.Optional.of("\u001B[31m✗ two tests fail\u001B[0m\n\n"));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.screen("ABC-1")).contains("✗ two tests fail");
+    }
+
+    @Test
     void givesEachTaskItsOwnSessionWhenViewModeIsTabPerTask() throws Exception {
         state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
         Files.writeString(root.resolve("jagt.yml"),

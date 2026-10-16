@@ -37,6 +37,11 @@ public class MasterAnswerJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.MASTER;
+    }
+
+    @Override
     public String describe() {
         return "answer the question a session stopped on, where the Master stands in for the human";
     }

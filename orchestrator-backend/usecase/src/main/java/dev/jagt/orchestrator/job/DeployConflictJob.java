@@ -25,6 +25,11 @@ public class DeployConflictJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.TASKS;
+    }
+
+    @Override
     public String describe() {
         return "hand each deploy conflict to its session, and finish the deploy once it is resolved";
     }

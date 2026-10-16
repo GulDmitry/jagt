@@ -28,6 +28,11 @@ public class MasterDeployJob implements Job {
     }
 
     @Override
+    public Serves serves() {
+        return Serves.MASTER;
+    }
+
+    @Override
     public String describe() {
         return "deploy each task whose request is green with every thread closed";
     }

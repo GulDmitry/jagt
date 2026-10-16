@@ -16,6 +16,25 @@ public interface Job {
     /** {@code null} means once, as soon as the application is up. */
     @Nullable Duration every();
 
+    /** Whom a job works for, which is how a list of them is grouped. */
+    enum Serves {
+        TASKS("your tasks"), MASTER("the master"), TRACKER("the tracker"), HOUSEKEEPING("housekeeping");
+
+        private final String label;
+
+        Serves(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
+    }
+
+    default Serves serves() {
+        return Serves.HOUSEKEEPING;
+    }
+
     /** A run never overlaps itself, but every job shares one pool. */
     void run();
 }
