@@ -167,4 +167,18 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
         assertThat(page.locator("#master-mode")).hasText("Master: act");
     }
+
+    @Test
+    void theReportsMenuDropsBelowItsButtonAndLeavesTheHeaderOneLine() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        page.locator("#reports-toggle").click();
+
+        var toggle = page.locator("#reports-toggle").boundingBox();
+        org.assertj.core.api.Assertions.assertThat(page.locator("#reports").boundingBox().y)
+                .isGreaterThanOrEqualTo(toggle.y + toggle.height);
+        org.assertj.core.api.Assertions.assertThat(page.locator("body > header").boundingBox().height).isLessThan(60);
+    }
 }
