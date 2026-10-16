@@ -163,6 +163,7 @@ main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-i
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
 }
 #pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+#pane article { align-self: stretch; }
 .history ol { margin: 0; padding: 0 10px 8px 28px; font-size: 12px; }
 .history .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
 .detail-full { margin: 0; white-space: pre-wrap; }

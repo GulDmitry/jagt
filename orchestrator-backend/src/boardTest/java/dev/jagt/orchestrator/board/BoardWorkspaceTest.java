@@ -112,6 +112,24 @@ class BoardWorkspaceTest extends BoardPageContext {
     }
 
     @Test
+    void aRowThatMovedWhileThePageWasClosedIsBoldWhenItOpensAgain() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_FAILED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page first = session.newPage();
+        first.navigate("http://localhost:" + port + "/");
+        assertThat(first.locator("#tasks .row")).hasCount(2);
+        first.close();
+
+        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+        Page again = session.newPage();
+        again.navigate("http://localhost:" + port + "/");
+
+        assertThat(again.locator("#tasks .row-title.changed")).hasCount(1);
+    }
+
+    @Test
     void aNarrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
