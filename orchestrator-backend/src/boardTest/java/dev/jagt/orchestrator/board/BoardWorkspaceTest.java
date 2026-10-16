@@ -199,6 +199,22 @@ class BoardWorkspaceTest extends BoardPageContext {
     }
 
     @Test
+    void aLinkedTaskStaysOpenOnceItsFilterIsCleared() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_FAILED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/?task=a2");
+        assertThat(page.locator("#tasks .row")).hasCount(1);
+
+        page.locator("#filter").press("Escape");
+
+        assertThat(page.locator("#tasks .row")).hasCount(2);
+        assertThat(page.locator("#pane article .alias")).hasText("a2");
+    }
+
+    @Test
     void aNarrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

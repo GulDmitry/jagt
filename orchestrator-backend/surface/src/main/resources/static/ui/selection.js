@@ -1,10 +1,17 @@
 // Which task the pane shows, and whether a narrow window shows the pane instead of the list.
 
 let chosen = null;
+let linked = null;
 let opened = false;
 
 export const choose = (taskId) => {
   chosen = taskId;
+  opened = true;
+};
+
+// A task a link names, by alias or id, stays open until the human picks another.
+export const link = (name) => {
+  linked = name;
   opened = true;
 };
 
@@ -16,6 +23,7 @@ export const isOpen = () => opened;
 
 // A choice that left the view falls back to the first task waiting on the human, so the pane is never empty.
 export const current = (shown) => shown.find((task) => task.id === chosen)
+  || (chosen === null && linked !== null && shown.find((task) => task.alias === linked || task.id === linked))
   || shown.find((task) => task.attention === 'REQUIRED') || shown[0] || null;
 
 export const step = (ordered, by) => {

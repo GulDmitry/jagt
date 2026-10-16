@@ -53,6 +53,14 @@ Preact card, fictional tasks in the page; *suite* names the `boardTest` class th
 | styleguide of every component state | — | `/styleguide.html` | walked, `BoardStyleguideTest` |
 | press log | — | `interactions.jsonl` | walked: 26 presses, no task named |
 
+## Walked again on the list and pane, 2026-10-16
+
+Every row above was walked once more on the new layout, light and dark, at 1440 and 1024 px, with 24 tasks
+(a repaint takes about a millisecond). Six defects were found and fixed, each with a board test that failed
+without its fix: a stopped poll invisible on a closed row, the band hiding a row's project, the open task
+scrolling away with a long list, the log button over the last row, two Tab stops a row, and a linked task
+closing once its filter cleared.
+
 ## Gaps the mockup must close before it is built
 
 - **`run <job>`** has no button: a Jobs panel row needs one.

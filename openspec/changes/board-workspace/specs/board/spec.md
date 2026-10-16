@@ -40,6 +40,10 @@ the pane replaces the list, and `Esc` or its back button returns.
 - **WHEN** the human picks a2's row
 - **THEN** a2's card stands in the pane and its row reads selected
 
+#### Scenario: A link names a task
+- **WHEN** a banner opens the board on `?task=a2` and the human clears the filter
+- **THEN** every row is back and a2 stays open
+
 ### Requirement: The tab says what waits
 The page's title SHALL read `(n) jagt` while n tasks wait on the human, and `jagt` otherwise. Its icon SHALL wear a
 red dot while a task shows a problem, a job's last run failed or `act` stopped, else an amber one while a task waits.

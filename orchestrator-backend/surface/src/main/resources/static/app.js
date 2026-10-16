@@ -12,6 +12,7 @@ import * as launch from './ui/launch.js';
 import * as palette from './ui/palette.js';
 import {refresh, refreshVerbs} from './ui/refresh.js';
 import {onClick, render} from './ui/render.js';
+import * as selection from './ui/selection.js';
 import {sessionLog, showLog} from './ui/toast.js';
 
 const live = document.getElementById('live');
@@ -42,6 +43,7 @@ showLog(() => showReport('log — this session', sessionLog()));
 const deepLink = new URLSearchParams(window.location.search).get('task');
 if (deepLink) {
   filters.box.value = deepLink;
+  selection.link(deepLink);
 }
 
 // A card painted before the verbs arrived hints its offers by their bare id.
