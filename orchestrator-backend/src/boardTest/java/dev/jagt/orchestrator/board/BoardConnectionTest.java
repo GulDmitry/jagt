@@ -28,6 +28,23 @@ import static org.mockito.Mockito.when;
 class BoardConnectionTest extends BoardPageContext {
 
     @Test
+    void aPageThatOutlivedARestartLoadsTheNewBoardWhenItReconnects() {
+        Page page = session.newPage();
+        java.util.concurrent.atomic.AtomicInteger connects = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicInteger loads = new java.util.concurrent.atomic.AtomicInteger();
+        page.onRequest(request -> {
+            if (request.isNavigationRequest()) loads.incrementAndGet();
+        });
+        page.route("**/api/events", route -> route.fulfill(new com.microsoft.playwright.Route.FulfillOptions()
+                .setContentType("text/event-stream")
+                .setBody("event:open\ndata:" + (connects.incrementAndGet() == 1 ? "first" : "second") + "\n\n")));
+
+        page.navigate("http://localhost:" + port + "/");
+
+        page.waitForCondition(() -> loads.get() > 1, new Page.WaitForConditionOptions().setTimeout(15_000));
+    }
+
+    @Test
     void aStateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");

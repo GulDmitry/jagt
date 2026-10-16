@@ -30,6 +30,7 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
     private final AtomicBoolean broadcastQueued = new AtomicBoolean();
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();
     private volatile boolean closing;
+    private final String started = Long.toString(System.currentTimeMillis(), 36);
 
     @Autowired
     public TaskEventStream(StateService stateService) {
@@ -71,7 +72,7 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
         }
     }
 
-    /** No timeout: the board stays open all day. */
+    /** No timeout: the board stays open all day. The first event names this run, so a page older than it can tell. */
     public SseEmitter open() {
         SseEmitter browser = new SseEmitter(0L);
         browser.onCompletion(() -> browsers.remove(browser));
@@ -86,7 +87,7 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
             }
             browsers.add(browser);
         }
-        send(browser, "open", "open");
+        send(browser, "open", started);
         beat(browser);
         return browser;
     }

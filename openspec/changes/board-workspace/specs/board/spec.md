@@ -67,3 +67,11 @@ seen is kept in this browser alone; a task met for the first time counts as seen
 #### Scenario: The next task waiting
 - **WHEN** a1 and a3 wait on the human, a1 is open and the human presses `n`
 - **THEN** a3 is open
+
+### Requirement: A page follows a restart
+The push stream's first event SHALL name the run that serves it. A page that reconnects to a different run SHALL
+load itself again, so it never keeps the code of a board that is gone.
+
+#### Scenario: jagt restarts under an open tab
+- **WHEN** jagt restarts on a new jar while a tab stays open
+- **THEN** the tab reconnects, sees a new run and loads the new board

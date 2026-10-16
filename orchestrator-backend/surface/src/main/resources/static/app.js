@@ -54,6 +54,7 @@ async function loadVerbs() {
 }
 
 let retryIn = 1000;
+let servedBy = null;
 
 function retry() {
   setTimeout(listen, retryIn);
@@ -65,8 +66,13 @@ function listen() {
   let silence = 0;
   // Every connect reads the board, the first one included: whatever changed while disconnected sent no event.
   events.addEventListener('open', (event) => {
-    // The server's first message is also named `open`, and one connect is one read.
-    if (event instanceof MessageEvent) return;
+    // The server's first message is also named `open`, and one connect is one read. It names the run: a page
+    // that outlived a restart is still the old board's code, so it loads the new one.
+    if (event instanceof MessageEvent) {
+      if (servedBy && servedBy !== event.data) window.location.reload();
+      servedBy = event.data;
+      return;
+    }
     retryIn = 1000;
     connected(true);
     loadVerbs();
