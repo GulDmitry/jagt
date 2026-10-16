@@ -76,7 +76,12 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .say { display: flex; gap: 8px; margin-top: 8px; }
 .say input { flex: 1; }
 .session p, .round p { margin: 0 0 6px; font-size: 12px; }
-table.jobs { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; }
+table.jobs { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; table-layout: fixed; }
+table.jobs td:nth-child(1) { width: 20px; }
+table.jobs td:nth-child(2) { width: 140px; }
+table.jobs td:nth-child(4) { width: 90px; }
+table.jobs td:nth-child(5) { width: 60px; }
+table.jobs td:nth-child(6) { width: 96px; }
 table.jobs caption { text-align: left; }
 table.jobs td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: top; }
 table.jobs tr.failed { background: var(--chip-bg); }
@@ -227,7 +232,14 @@ main#board:empty { padding: 0; }
   display: flex; flex-direction: column; gap: 12px; min-width: 0;
   position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto;
 }
-#pane article { align-self: stretch; }
+#pane article { align-self: stretch; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+#pane article > .card-top, #pane article > .heading, #pane article > .meta, #pane article > .detail { flex: 0 0 100%; }
+/* One line of verbs in the open task: what moves it, then what only looks, then Done at the far end. */
+#pane article > .actions { display: contents; }
+#pane article .actions.flow > button { order: 1; }
+#pane article .actions.tool > button { order: 2; }
+#pane article .actions.tool > button:first-child { margin-left: 12px; }
+#pane article .actions > button.apart { order: 3; }
 .history ol { margin: 0; padding: 0 10px 8px 28px; font-size: 12px; }
 .history .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
 #pane .back { display: none; align-self: start; }

@@ -154,6 +154,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
         assertThat(page.locator("#pane .actions.flow button").last()).hasClass(Pattern.compile("\\bapart\\b"));
         assertThat(page.locator("#pane .actions.flow button.apart")).hasText("Done");
+        org.assertj.core.api.Assertions.assertThat(page.locator("#pane button.apart").boundingBox().x)
+                .isGreaterThan(page.locator("#pane button[data-action=respawn]").boundingBox().x);
     }
 
     @Test
