@@ -67,8 +67,13 @@ public class ProjectSetup {
             lines.add(new Line(false, "no directory at " + path));
             return new Reading(lines, key, "", "", List.of());
         }
-        if (git(path, "rev-parse", "--show-toplevel").isEmpty()) {
+        var top = git(path, "rev-parse", "--show-toplevel");
+        if (top.isEmpty()) {
             lines.add(new Line(false, "not a git repository"));
+            return new Reading(lines, key, "", "", List.of());
+        }
+        if (!real(Path.of(top.get())).equals(real(path))) {
+            lines.add(new Line(false, "a folder inside the repository at " + top.get() + " — add that instead"));
             return new Reading(lines, key, "", "", List.of());
         }
         String origin = git(path, "remote", "get-url", "origin").orElse("");

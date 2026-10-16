@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +40,8 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
 
         setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "dev", List.of("./gradlew", "test"),
@@ -85,6 +88,8 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
@@ -110,6 +115,8 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
 
         setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
@@ -137,11 +144,30 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
 
         setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
 
         assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects:\n    billing:\n      path: \"%s\"\n"
                 .formatted(repo) + "      baseBranch: \"origin/main\"\n  keepAwake: false\n");
+    }
+
+    @Test
+    void refusesAFolderInsideARepositoryAndNamesTheRepositoryToAddInstead() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path docs = Files.createDirectories(repo.resolve("docs"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
+
+        ProjectSetup.Reading reading = setup.read(docs.toString());
+
+        assertThat(reading.ready()).isFalse();
+        assertThat(reading.lines()).extracting(ProjectSetup.Line::text).anyMatch(text -> text.contains(repo.toString()));
     }
 }
