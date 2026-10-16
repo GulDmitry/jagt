@@ -42,14 +42,16 @@ export function render() {
   const groups = grouped(shown, manyProjects);
   walked = groups.flatMap((group) => group.tasks);
   const open = selection.current(walked);
-  seen.note(tasks, open);
+  const now = Date.now();
+  // Wide, the open task stands on screen whether picked or not, so it is seen; narrow, only once opened.
+  seen.note(tasks, selection.paneShown() ? open : null);
   glance.render({waiting: tasks.filter((task) => task.attention === 'REQUIRED').length,
     broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || store.actStopped()});
   board.classList.toggle('open', selection.isOpen());
   paint(open ? html`
-    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed}/>
+    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
-      offers: offersOn(open)}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
+      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
   hideStaleTip(null);
 }
 

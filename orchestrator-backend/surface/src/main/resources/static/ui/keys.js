@@ -37,7 +37,9 @@ document.addEventListener('keydown', (event) => {
   }
   const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
   const open = selection.current(ordered());
-  const verb = plain && !letters[event.key] && open?.actions?.find((action) => action.key && action.key === event.key);
+  // A verb key acts only on a task whose verbs are on screen.
+  const verb = plain && !letters[event.key] && selection.paneShown()
+    && open?.actions?.find((action) => action.key && action.key === event.key);
   if (verb) {
     event.preventDefault();
     note(`key:${event.key}`, open.id);

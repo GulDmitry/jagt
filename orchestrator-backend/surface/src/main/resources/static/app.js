@@ -14,6 +14,7 @@ import * as launch from './ui/launch.js';
 import './ui/menu.js';
 import * as palette from './ui/palette.js';
 import {refresh, refreshVerbs} from './ui/refresh.js';
+import {onSent} from './ui/submit.js';
 import {onClick, render} from './ui/render.js';
 import * as selection from './ui/selection.js';
 import * as tabs from './ui/tabs.js';
@@ -22,7 +23,7 @@ import {sessionLog, showLog} from './ui/toast.js';
 const live = document.getElementById('live');
 // Cut off from the backend, the board is a picture of the past: nothing on it may act.
 const STALE = ['board', 'phases', 'new-task', 'empty-new', 'palette', 'open-palette', 'reports-toggle', 'report-line',
-  'act-stopped', 'jobs-pulse'];
+  'act-stopped', 'jobs-pulse', 'launch', 'project-form'];
 const connected = (yes) => {
   live.classList.toggle('on', yes);
   document.getElementById('offline').hidden = yes;
@@ -36,6 +37,7 @@ onClick({
     `/api/commands/${id}?about=${encodeURIComponent(about)}`, {about}),
 });
 header.onBarClick(render);
+onSent(refresh);
 header.onVerbClick(runGlobal);
 header.onJobsClick(() => openReport('jobs — what runs unattended', '/api/commands/jobs', {extra: jobs.node()}));
 document.getElementById('new-task').onclick = launch.open;
@@ -43,7 +45,7 @@ document.getElementById('empty-new').onclick = launch.open;
 document.getElementById('add-project').onclick = addProject.open;
 filters.onChange(render);
 // Where on this page each part a verb names is.
-const parts = {launch: {focus: launch.focusRef}, legend: {section: legend.node}, jobs: {section: jobs.node}};
+const parts = {launch: {focus: launch.open}, legend: {section: legend.node}, jobs: {section: jobs.node}};
 palette.wire({partFor: (part) => parts[part] || {}});
 showLog(() => showReport('log — this session', sessionLog()));
 

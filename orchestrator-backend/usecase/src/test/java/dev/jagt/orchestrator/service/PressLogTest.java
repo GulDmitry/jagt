@@ -79,4 +79,12 @@ class PressLogTest {
 
         assertThat(file).doesNotExist();
     }
+
+    @Test
+    void refusesABatchHoldingAnEmptyEntry() {
+        PressLog presses = new PressLog(new JsonMapper(), dir.resolve("interactions.jsonl"), true, 1024);
+
+        assertThatThrownBy(() -> presses.record(java.util.Arrays.asList(new Interaction(NOW, "flag", null), null), NOW))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

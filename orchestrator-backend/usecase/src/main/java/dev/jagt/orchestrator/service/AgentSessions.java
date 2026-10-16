@@ -35,7 +35,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     public static final String NUDGE = "The Master updated task_context.md — re-read it now and follow the new"
             + " instructions.";
 
-    private static final Pattern ESCAPES = Pattern.compile("\u001B\\[[0-9;?]*[ -/]*[@-~]|\u001B[\\]P][^\u0007\u001B]*(\u0007|\u001B\\\\)");
+    private static final Pattern ESCAPES = Pattern.compile(
+            "\u001B\\[[0-?]*[ -/]*[@-~]|\u001B[\\]P][^\u0007\u001B]*(\u0007|\u001B\\\\)|\u001B[()][0-9A-B]|\u001B[78=>]");
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -233,8 +234,15 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING;
     }
 
+    /** A screen that cannot be read holds no draft we know of, so the nudge goes ahead as for an empty prompt. */
     private boolean composing(String session, String taskId) {
-        return sessions.screenOf(session, taskId).filter(agentRuntime::holdsDraft).isPresent();
+        try {
+            return sessions.screenOf(session, taskId).filter(agentRuntime::holdsDraft).isPresent();
+        } catch (RuntimeException unread) {
+            log.atDebug().setMessage("session screen unread").addKeyValue("task", taskId)
+                    .addKeyValue("cause", unread.toString()).log();
+            return false;
+        }
     }
 
     /** A line typed over a draft is glued to it and sent as the human's, so the nudge waits for an empty prompt. */

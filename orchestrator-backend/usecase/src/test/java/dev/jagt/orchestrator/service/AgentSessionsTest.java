@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
@@ -72,6 +73,28 @@ class AgentSessionsTest {
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         assertThat(sessions.screen("ABC-1")).contains("✗ two tests fail");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\u001B[>4;1m✗ two tests fail\u001B[0m", "\u001B(B✗ two tests fail",
+            "\u001B7✗ two tests fail\u001B8"})
+    void stripsEveryTerminalControlSequenceFromAScreen(String shown) {
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(java.util.Optional.of(shown));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.screen("ABC-1")).contains("✗ two tests fail");
+    }
+
+    @Test
+    void saysAScreenThatCouldNotBeReadRatherThanThatNoWindowHoldsIt() {
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenThrow(new IllegalStateException("tmux capture-pane failed (exit 1)"));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThatThrownBy(() -> sessions.screen("ABC-1")).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

@@ -15,8 +15,6 @@ export const open = () => {
   ref.focus();
 };
 
-export const focusRef = open;
-
 document.getElementById('close-launch').onclick = () => dialog.close();
 
 let rendered = null;

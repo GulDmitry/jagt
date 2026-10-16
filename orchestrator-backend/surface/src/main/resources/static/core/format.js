@@ -15,3 +15,6 @@ export const countdown = (millis) => {
   const minutes = Math.ceil(seconds / 60);
   return minutes < 60 ? `${minutes}m` : `${Math.ceil(minutes / 60)}h`;
 };
+
+// A task by both its names, the short one first; a task with no alias is its id.
+export const bothNames = (task) => (task.alias ? `${task.alias} \u00b7 ${task.id}` : task.id);

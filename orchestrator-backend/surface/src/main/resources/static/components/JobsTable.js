@@ -9,11 +9,11 @@ const dot = (job) => (job.lastError ? 'red' : job.running ? 'running' : job.last
 
 const Row = ({job, now}) => html`<tr class=${job.lastError ? 'failed' : undefined}>
   <td><span class=${`checks ${dot(job)}`} role="img"
-    aria-label=${job.lastError ? 'last run failed' : job.running ? 'running now' : 'last run fine'}></span></td>
+    aria-label=${job.lastError ? 'last run failed' : job.running ? 'running now' : job.lastStartedAt ? 'last run fine' : 'not run yet'}></span></td>
   <td class="job-id">${job.id}</td>
   <td>${job.describe}${job.lastError ? html`<div class="detail problem">${job.lastError}</div>` : ''}</td>
   <td class="muted">${job.running ? 'running now' : ago(job.lastStartedAt, now)}</td>
-  <td class="muted" data-tip="next run">${job.nextRunAt ? countdown(Math.max(0, job.nextRunAt - now)) : 'at start'}</td>
+  <td class="muted" data-tip="next run">${job.nextRunAt ? countdown(Math.max(0, job.nextRunAt - now)) : job.lastStartedAt ? 'not again' : 'at start'}</td>
   <td><button type="button" class="run-now" data-job=${job.id} disabled=${job.running}>Run now</button></td>
 </tr>`;
 

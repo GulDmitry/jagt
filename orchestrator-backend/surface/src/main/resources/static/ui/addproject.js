@@ -5,7 +5,6 @@ import {render} from 'preact';
 import {api, refusal} from '../core/api.js';
 import {html} from '../components/html.js';
 import {ProjectChecks} from '../components/ProjectChecks.js';
-import {refresh} from './refresh.js';
 import {sending} from './submit.js';
 
 const dialog = document.getElementById('project-dialog');
@@ -73,12 +72,11 @@ form.onsubmit = (event) => {
         about: document.getElementById('project-about').value.trim() || null,
       }),
     }),
-    done: async () => {
+    done: () => {
       form.reset();
       form.querySelectorAll('[data-typed]').forEach((field) => delete field.dataset.typed);
       render(null, checks);
       dialog.close();
-      await refresh();
     },
   });
 };

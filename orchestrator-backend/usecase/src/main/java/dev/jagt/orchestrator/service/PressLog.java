@@ -68,7 +68,10 @@ public class PressLog {
         append(lines);
     }
 
-    private static void check(Interaction press, long now) {
+    private static void check(@Nullable Interaction press, long now) {
+        if (press == null) {
+            throw new IllegalArgumentException("A batch holds presses, not an empty entry");
+        }
         if (press.control() == null || !CONTROL.matcher(press.control()).matches()) {
             throw new IllegalArgumentException("A press names a control in lower case, not \"" + press.control() + "\"");
         }

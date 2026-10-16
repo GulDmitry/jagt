@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BoardAssetsTest {
 
     private static final Path STATIC = Path.of("src/main/resources/static");
-    private static final Pattern LOADED_FROM_OUTSIDE = Pattern.compile("(src|href)=\"(https?:)?//");
+    private static final Pattern LOADED_FROM_OUTSIDE = Pattern.compile(
+            "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:)?//"
+                    + "|@import\\s+(url\\()?[\"']?(https?:)?//|url\\(\\s*[\"']?(https?:)?//|\"(https?:)?//[^\"]*\\.m?js\"");
 
     @ParameterizedTest
     @CsvSource({
@@ -48,13 +50,14 @@ class BoardAssetsTest {
     }
 
     @Test
-    void noPageLoadsAnythingFromOutsideTheJar() throws IOException {
-        List<Path> pages;
-        try (Stream<Path> files = Files.list(STATIC)) {
-            pages = files.filter(path -> path.toString().endsWith(".html")).toList();
+    void noPageScriptOrStyleLoadsAnythingFromOutsideTheJar() throws IOException {
+        List<Path> sources;
+        try (Stream<Path> files = Files.walk(STATIC)) {
+            sources = files.filter(Files::isRegularFile)
+                    .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$")).toList();
         }
 
-        assertThat(pages).isNotEmpty().noneMatch(page -> LOADED_FROM_OUTSIDE.matcher(read(page)).find());
+        assertThat(sources).isNotEmpty().noneMatch(source -> LOADED_FROM_OUTSIDE.matcher(read(source)).find());
     }
 
     private static long size(Path path) {

@@ -8,9 +8,9 @@ import {marked, watchLine} from './Meta.js';
 // Filled only where it is the move and the move is the human's: the edge already says when an agent holds it.
 const quickClass = (task, action) => (action.primary && task.owner === 'YOU' ? 'row-verb primary' : 'row-verb');
 
-const Row = ({task, selected, changed, project}) => {
+const Row = ({task, selected, changed, project, now}) => {
   const owner = task.owner.toLowerCase();
-  const stopped = watchLine(task.autoReview)?.stalled ? watchLine(task.autoReview).line : null;
+  const stopped = watchLine(task.autoReview, now)?.stalled ? watchLine(task.autoReview, now).line : null;
   const quick = (task.actions || []).find((action) => action.onRow);
   return html`<div class=${['row', owner, task.attention === 'OPTIONAL' && 'optional', selected && 'selected']
       .filter(Boolean).join(' ')} data-row=${task.id}>
@@ -25,7 +25,7 @@ const Row = ({task, selected, changed, project}) => {
       </span>
       <span class="row-line row-facts">
         <span class=${stopped ? 'status stalled' : 'status'} data-tip=${stopped || undefined}
-          >${task.statusLabel} <span class="age">${duration(Date.now() - task.statusSince)}</span></span>
+          >${task.statusLabel} <span class="age">${duration(now - task.statusSince)}</span></span>
         ${project ? html`<span>${task.project}</span>` : ''}
         ${marked(task) ? html`<span class=${`checks ${task.pipeline.toLowerCase()}`} aria-hidden="true"></span>` : ''}
       </span>
@@ -36,10 +36,10 @@ const Row = ({task, selected, changed, project}) => {
   </div>`;
 };
 
-const Group = ({name, kind, tasks, named, selected, changed}) => html`<section class=${`group ${kind}`} aria-label=${name}>
+const Group = ({name, kind, tasks, named, selected, changed, now}) => html`<section class=${`group ${kind}`} aria-label=${name}>
   ${name ? html`<h2 class="group-head">${name} <span class="count">${tasks.length}</span></h2>` : ''}
   ${tasks.map((task) => html`<${Row} key=${task.id} task=${task} selected=${task.id === selected}
-    changed=${changed(task)} project=${named}/>`)}
+    changed=${changed(task)} project=${named} now=${now}/>`)}
 </section>`;
 
 // The rows in the order the keyboard walks them: the human's band first, then each project in its first-seen order.
@@ -54,6 +54,6 @@ export function grouped(shown, manyProjects) {
     .filter((group) => group.tasks.length);
 }
 
-export const TaskList = ({groups, selected, changed}) => html`<nav id="tasks" aria-label="tasks">${
+export const TaskList = ({groups, selected, changed, now}) => html`<nav id="tasks" aria-label="tasks">${
   groups.map((group) => html`<${Group} key=${group.kind + group.name} ...${group} selected=${selected}
-    changed=${changed}/>`)}</nav>`;
+    changed=${changed} now=${now}/>`)}</nav>`;

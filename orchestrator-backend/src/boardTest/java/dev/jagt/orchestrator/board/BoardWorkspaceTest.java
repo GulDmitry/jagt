@@ -163,18 +163,31 @@ class BoardWorkspaceTest extends BoardPageContext {
 
     @Test
     void theOpenTaskStaysInViewWhileTheListScrolls() {
-        for (int i = 1; i <= 16; i++) {
-            state.putTask("ABC-" + i, TaskState.builder("alpha", root.resolve("ABC-" + i + "-alpha").toString(),
-                    TaskStatus.IN_PROGRESS).alias("a" + i).lastActiveTimestamp(System.currentTimeMillis()).build());
-        }
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-3", TaskState.builder("alpha", root.resolve("ABC-3-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a3").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-4", TaskState.builder("alpha", root.resolve("ABC-4-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a4").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-5", TaskState.builder("alpha", root.resolve("ABC-5-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a5").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-6", TaskState.builder("alpha", root.resolve("ABC-6-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a6").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-7", TaskState.builder("alpha", root.resolve("ABC-7-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a7").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-8", TaskState.builder("alpha", root.resolve("ABC-8-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a8").lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
-        page.setViewportSize(1280, 600);
+        page.setViewportSize(1280, 360);
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#tasks .row")).hasCount(16);
+        assertThat(page.locator("#tasks .row")).hasCount(8);
 
         page.locator("#tasks .row").last().scrollIntoViewIfNeeded();
 
-        assertThat(page.locator("#pane article")).isInViewport();
+        assertThat(page.locator("#pane article")).isInViewport(
+                new com.microsoft.playwright.assertions.LocatorAssertions.IsInViewportOptions().setRatio(1));
     }
 
     @Test
@@ -222,6 +235,20 @@ class BoardWorkspaceTest extends BoardPageContext {
 
         assertThat(page.locator("#empty")).isVisible();
         org.assertj.core.api.Assertions.assertThat(page.locator("#board").boundingBox().height).isLessThan(1);
+    }
+
+    @Test
+    void aTaskANarrowWindowNeverOpenedTurnsBoldWhenItMoves() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_FAILED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.setViewportSize(800, 900);
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#tasks .row")).hasCount(1);
+
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.IN_PROGRESS, "back to work"));
+
+        assertThat(page.locator("#tasks .row-title.changed")).hasCount(1);
     }
 
     @Test

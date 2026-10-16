@@ -1,8 +1,12 @@
 // Every form asks the backend for one thing and says so the same way, so a fix reaches all of them at once.
 
 import {refusal} from '../core/api.js';
-import {refresh} from './refresh.js';
 import {toast} from './toast.js';
+
+// The board is read again after every form, whatever it answered; what reads it is wired in, not imported.
+let afterwards = async () => {};
+
+export const onSent = (read) => { afterwards = read; };
 
 export async function sending(form, {waiting, send, done}) {
   const state = form.querySelector('.state');
@@ -18,7 +22,7 @@ export async function sending(form, {waiting, send, done}) {
   } finally {
     button.disabled = false;
     state.textContent = '';
-    await refresh();
+    await afterwards();
   }
 }
 

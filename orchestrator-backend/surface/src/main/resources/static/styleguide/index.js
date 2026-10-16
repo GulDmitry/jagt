@@ -24,9 +24,9 @@ render(html`<section aria-label="Card">
   <h2>Task list</h2>
   <main>
     <${State} name="one project: yours first, a3 changed since it was opened, a4 selected">
-      <${TaskList} groups=${grouped(tasks, false)} selected="ABC-70" changed=${changed}/></${State}>
+      <${TaskList} groups=${grouped(tasks, false)} selected="ABC-70" changed=${changed} now=${Date.now()}/></${State}>
     <${State} name="several projects"><${TaskList} groups=${grouped(tasks, true)} selected="ABC-42"
-      changed=${() => false}/></${State}>
+      changed=${() => false} now=${Date.now()}/></${State}>
     <${State} name="the open task, overview"><${Pane} card=${cards[0].props} tab="overview" shown=${null}/></${State}>
     <${State} name="the open task, its session"><${Pane} card=${cards[1].props} tab="session"
       shown=${'› npm test\n  ✗ restores the stored mode on load'}/></${State}>

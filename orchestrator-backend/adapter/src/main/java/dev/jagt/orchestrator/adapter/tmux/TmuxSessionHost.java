@@ -159,7 +159,7 @@ public class TmuxSessionHost implements SessionHost {
             }
             var screen = processRunner.run(null, TIMEOUT, List.of(tmux(), "capture-pane", "-p", "-e", "-t",
                     windowId.get()));
-            return screen.exitCode() == 0 ? Optional.of(screen.stdout()) : Optional.empty();
+            return Optional.of(screen.expectSuccess("tmux capture-pane " + windowId.get()).stdout());
         }
     }
 

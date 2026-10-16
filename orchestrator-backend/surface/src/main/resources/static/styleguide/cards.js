@@ -9,7 +9,7 @@ const task = (fields) => ({project: 'alpha', repos: [{project: 'alpha'}], pipeli
   owner: 'NONE', statusSince: now - 12 * MINUTE, history: [{at: now - 90 * MINUTE, status: 'NEW'},
     {at: now - 80 * MINUTE, status: 'IN_PROGRESS'}], actions: [verb('done', 'Done', 'flow'), ...tools], ...fields});
 const card = (name, fields, extra) => ({name, props: {task: task(fields), manyProjects: false, flagged: false,
-  blocked: new Set(), offers: [], ...extra}});
+  blocked: new Set(), offers: [], now, ...extra}});
 
 export const cards = [
   card('your move: a question', {id: 'ABC-42', alias: 'a1', title: 'Refund webhook retries twice on timeout',

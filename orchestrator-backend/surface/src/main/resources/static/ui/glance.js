@@ -14,7 +14,8 @@ async function dot(colour) {
     return;
   }
   svg ??= await fetch(source).then((response) => response.text()).catch(() => null);
-  if (!svg) return;
+  // A later paint may have changed the colour while the icon was being read.
+  if (!svg || colour !== drawn) return;
   const marked = svg.replace('</svg>',
     `<circle cx="25" cy="7" r="6.5" fill="${colour}" stroke="${token('--panel')}" stroke-width="2"/></svg>`);
   icon.href = `data:image/svg+xml,${encodeURIComponent(marked)}`;

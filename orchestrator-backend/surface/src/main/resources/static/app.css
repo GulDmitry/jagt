@@ -110,17 +110,16 @@ button.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.12); }
   button.primary, button.primary:hover:not(:disabled) { color: #10131a; }
 }
 .chip { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
-.chip.on { color: var(--ok); border-color: var(--ok); }
 .chip.bad { color: var(--danger); border-color: var(--danger); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .dot.on { background: var(--ok); }
-body.stale #board, body.stale #phases, body.stale #launch, body.stale #report-line { opacity: .5; }
+body.stale #board, body.stale #phases, body.stale #report-line { opacity: .5; }
 
 #palette { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
 #palette input#ask { flex: 1; min-width: 260px; }
 /* An id rule outranks the browser's own [hidden], so a toggled form stayed on screen and its button did nothing. */
-#launch[hidden], #palette[hidden] { display: none; }
+#palette[hidden] { display: none; }
 button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 #palette-state.ok { color: var(--ok); }
 #palette-state.bad { color: var(--danger); }

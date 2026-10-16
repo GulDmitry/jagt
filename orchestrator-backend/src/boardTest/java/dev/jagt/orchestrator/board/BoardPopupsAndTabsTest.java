@@ -183,4 +183,47 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
                 .isGreaterThanOrEqualTo(toggle.y + toggle.height);
         org.assertj.core.api.Assertions.assertThat(page.locator("body > header").boundingBox().height).isLessThan(60);
     }
+
+    @Test
+    void aVerbsKeyDoesNothingWhileANarrowWindowShowsOnlyTheList() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+        Page page = session.newPage();
+        page.setViewportSize(800, 900);
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#tasks .row")).hasCount(1);
+
+        page.keyboard().press("f");
+        page.keyboard().press("Enter");
+        page.keyboard().press("f");
+
+        assertThat(page.locator("#toasts .toast")).hasCount(1);
+        verify(commands, org.mockito.Mockito.times(1)).execute("ABC-1", TaskAction.FOCUS);
+    }
+
+    @Test
+    void theSessionTabReadsTheScreenAgainWhileItStaysOpen() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"), Optional.of("tests pass"));
+        Page page = session.newPage();
+        page.clock().install();
+        page.navigate("http://localhost:" + port + "/");
+        page.locator("#pane .tabs button[data-tab=session]").click();
+        assertThat(page.locator("#pane .session .screen")).hasText("compiling");
+
+        page.clock().runFor(5_000);
+
+        assertThat(page.locator("#pane .session .screen")).hasText("tests pass");
+    }
+
+    @Test
+    void aJobThatHasNotRunYetIsNotCalledFine() {
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/styleguide.html");
+
+        assertThat(page.locator("table.jobs [aria-label='not run yet']")).hasCount(1);
+    }
 }

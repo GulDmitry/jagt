@@ -75,4 +75,73 @@ class ProjectSetupTest {
                 null))).isInstanceOf(IllegalArgumentException.class);
         assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
     }
+
+    @Test
+    void refusesAKeyAnotherProjectAlreadyHolds() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("payments"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"),
+                "orchestrator:\n  projects:\n    billing: {path: /srv/other, baseBranch: origin/main}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
+
+        assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
+                null))).isInstanceOf(IllegalArgumentException.class);
+        assertThat(Files.readString(configFile))
+                .isEqualTo("orchestrator:\n  projects:\n    billing: {path: /srv/other, baseBranch: origin/main}\n");
+    }
+
+    @Test
+    void addsUnderTheOrchestratorsProjectsAtTheIndentItsEntriesUseAndNotUnderTheTrackers() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
+                orchestrator:   # mine
+                    tracker:
+                        projects:
+                            - ABC
+                    projects:
+                        web:
+                            path: /srv/web
+                            baseBranch: origin/main
+                """);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
+
+        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
+
+        assertThat(Files.readString(configFile)).isEqualTo("""
+                orchestrator:   # mine
+                    tracker:
+                        projects:
+                            - ABC
+                    projects:
+                        billing:
+                            path: "%s"
+                            baseBranch: "origin/main"
+                        web:
+                            path: /srv/web
+                            baseBranch: origin/main
+                """.formatted(repo));
+    }
+
+    @Test
+    void addsTheFirstProjectToAnEmptyProjectsMap() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  keepAwake: false\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class)), paths, git);
+
+        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
+
+        assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects:\n    billing:\n      path: \"%s\"\n"
+                .formatted(repo) + "      baseBranch: \"origin/main\"\n  keepAwake: false\n");
+    }
 }

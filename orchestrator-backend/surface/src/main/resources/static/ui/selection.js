@@ -21,11 +21,17 @@ export const back = () => {
 
 export const isOpen = () => opened;
 
+const narrow = window.matchMedia('(max-width: 1199px)');
+
+// Wide, the open task always stands beside the list; narrow, only once the human opened it.
+export const paneShown = () => !narrow.matches || opened;
+
 // A choice that left the view falls back to the first task waiting on the human, so the pane is never empty.
 export const current = (shown) => shown.find((task) => task.id === chosen)
   || (chosen === null && linked !== null && shown.find((task) => task.alias === linked || task.id === linked))
   || shown.find((task) => task.attention === 'REQUIRED') || shown[0] || null;
 
+// A walk moves the cursor through the list; on a narrow window Enter is what opens the task it rests on.
 export const step = (ordered, by) => {
   const at = ordered.findIndex((task) => task.id === current(ordered)?.id);
   const next = ordered[Math.min(ordered.length - 1, Math.max(0, at + by))];

@@ -29,7 +29,8 @@ public class ProjectSetup {
 
     private static final Duration GIT = Duration.ofSeconds(10);
     private static final Pattern KEY = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{0,39}");
-    private static final Pattern PROJECTS = Pattern.compile("(?m)^( +)projects:[ \\t]*(\\{\\s*})?[ \\t]*$");
+    private static final Pattern ROOT = Pattern.compile("(?m)^orchestrator:[ \\t]*(#.*)?$");
+    private static final Pattern LEADING = Pattern.compile("^( *)\\S");
 
     public record Line(boolean ok, String text) {
     }
@@ -77,22 +78,22 @@ public class ProjectSetup {
         lines.add(new Line(!base.isBlank(), base.isBlank() ? "no origin/main or origin/master to cut tasks from"
                 : "tasks are cut from " + base));
         String deploy = exists(path, "origin/dev") ? "dev" : "";
-        var projects = configService.load().projects();
-        boolean taken = projects.values().stream().anyMatch(project -> Path.of(expand(project.path()))
-                .toAbsolutePath().normalize().equals(path));
+        Path real = real(path);
+        boolean taken = configService.load().projects().values().stream()
+                .anyMatch(project -> real(Path.of(expand(project.path())).toAbsolutePath().normalize()).equals(real));
         lines.add(new Line(!taken, taken ? "a project already points here" : "no project points here yet"));
-        if (projects.containsKey(key)) {
-            lines.add(new Line(false, "the key " + key + " is taken: pick another"));
-        }
         List<String> verify = Files.exists(path.resolve("gradlew")) ? List.of("./gradlew", "test")
                 : Files.exists(path.resolve("package.json")) ? List.of("npm", "test") : List.of();
         return new Reading(lines, key, base, deploy, verify);
     }
 
     /** Refuses an entry the file could not hold, and leaves the file as it was when the result does not read. */
-    public String add(Entry entry) {
+    public synchronized String add(Entry entry) {
         if (entry.key() == null || !KEY.matcher(entry.key()).matches()) {
             throw new IllegalArgumentException("A key starts with a letter and holds letters, digits, - or _");
+        }
+        if (configService.load().projects().containsKey(entry.key())) {
+            throw new IllegalArgumentException("The key " + entry.key() + " is taken: pick another");
         }
         Reading reading = read(entry.path());
         if (!reading.ready()) {
@@ -103,36 +104,77 @@ public class ProjectSetup {
             throw new IllegalArgumentException("A project names the branch tasks are cut from");
         }
         Path file = paths.configFile();
+        Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try {
             String before = Files.readString(file, StandardCharsets.UTF_8);
-            Matcher projects = PROJECTS.matcher(before);
-            if (!projects.find()) {
-                throw new IllegalArgumentException("jagt.yml holds no projects: section to add to");
-            }
-            String indent = projects.group(1) + "  ";
-            String block = block(indent, entry, Path.of(expand(entry.path())).toAbsolutePath().normalize());
-            String rest = before.substring(projects.end());
-            String after = before.substring(0, projects.start()) + projects.group(1) + "projects:\n" + block
-                    + (rest.startsWith("\n") ? rest.substring(1) : rest);
-            Path written = Files.writeString(file.resolveSibling(file.getFileName() + ".tmp"), after,
-                    StandardCharsets.UTF_8);
-            Files.move(written, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Files.move(Files.writeString(temp, inserted(before, entry), StandardCharsets.UTF_8), file,
+                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             try {
                 configService.project(entry.key());
             } catch (RuntimeException unreadable) {
-                Files.writeString(file, before, StandardCharsets.UTF_8);
+                Files.move(Files.writeString(temp, before, StandardCharsets.UTF_8), file,
+                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
                 throw new IllegalStateException("jagt.yml did not read after the change, so it was put back: "
                         + unreadable.getMessage(), unreadable);
             }
             return "Added " + entry.key() + " to jagt.yml";
         } catch (IOException e) {
-            throw new UncheckedIOException("Cannot write " + file, e);
+            throw new UncheckedIOException("Cannot change " + file + ": " + e.getMessage(), e);
+        } finally {
+            try {
+                Files.deleteIfExists(temp);
+            } catch (IOException ignored) {
+                // A left-over temporary file is overwritten by the next add.
+            }
         }
     }
 
-    private String block(String indent, Entry entry, Path path) {
+    /** The file with the entry first under the {@code projects:} that is a direct child of {@code orchestrator:}. */
+    private String inserted(String file, Entry entry) {
+        Matcher root = ROOT.matcher(file);
+        if (!root.find()) {
+            throw new IllegalArgumentException("jagt.yml holds no orchestrator: section");
+        }
+        String[] lines = file.substring(root.end()).split("\n", -1);
+        String child = null;
+        int at = -1;
+        for (int i = 1; i < lines.length; i++) {
+            String indent = indent(lines[i]);
+            if (indent == null) continue;
+            if (indent.isEmpty()) break;
+            if (child == null) child = indent;
+            if (indent.equals(child) && lines[i].strip().matches("projects:\\s*(\\{\\s*})?\\s*(#.*)?")) {
+                at = i;
+                break;
+            }
+        }
+        if (at < 0) {
+            throw new IllegalArgumentException("jagt.yml holds no projects: under orchestrator: to add to");
+        }
+        String parent = java.util.Objects.requireNonNull(child);
+        String entryIndent = parent + parent;
+        for (int i = at + 1; i < lines.length; i++) {
+            String indent = indent(lines[i]);
+            if (indent == null) continue;
+            if (indent.length() > parent.length()) entryIndent = indent;
+            break;
+        }
+        lines[at] = parent + "projects:";
+        String block = block(entryIndent, entry, Path.of(expand(entry.path())).toAbsolutePath().normalize(),
+                entryIndent.substring(parent.length()));
+        lines[at] = lines[at] + "\n" + block.substring(0, block.length() - 1);
+        return file.substring(0, root.end()) + String.join("\n", lines);
+    }
+
+    /** The leading spaces of a line that holds a key, or null for a blank or comment line. */
+    private static @Nullable String indent(String line) {
+        Matcher leading = LEADING.matcher(line);
+        return leading.find() && !line.strip().startsWith("#") ? leading.group(1) : null;
+    }
+
+    private String block(String indent, Entry entry, Path path, String step) {
         StringBuilder block = new StringBuilder();
-        String inner = indent + "  ";
+        String inner = indent + step;
         block.append(indent).append(entry.key()).append(":\n");
         block.append(inner).append("path: ").append(json.writeValueAsString(path.toString())).append('\n');
         block.append(inner).append("baseBranch: ").append(json.writeValueAsString(entry.baseBranch())).append('\n');
@@ -161,6 +203,16 @@ public class ProjectSetup {
 
     private static String expand(String path) {
         String home = System.getProperty("user.home");
-        return path == null ? "" : path.strip().startsWith("~/") ? home + path.strip().substring(1) : path.strip();
+        String typed = path == null ? "" : path.strip();
+        return typed.equals("~") || typed.startsWith("~/") ? home + typed.substring(1) : typed;
+    }
+
+    /** Where a path really leads, so a link to a configured repository is the same repository. */
+    private static Path real(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            return path;
+        }
     }
 }

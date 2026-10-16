@@ -59,7 +59,10 @@ public record TaskView(
         @Nullable Boolean approved
 ) {
 
-    /** {@code again} = this verb has already run and what it did is still live, so pressing it repeats it. */
+    /**
+     * {@code again} = this verb has already run and what it did is still live, so pressing it repeats it. Built in one
+     * place from a verb with every field set, so no field is ever left to a default.
+     */
     public record ActionView(String id, String label, String hint, boolean primary, String group,
                             boolean readOnly, boolean again, boolean onRow, boolean apart, String key) {
     }
