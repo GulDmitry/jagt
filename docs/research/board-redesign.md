@@ -50,8 +50,8 @@ proposed, add a project): https://claude.ai/artifact/1ot4ZnnVavMibvwMyzZz2u
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Row**: the edge colour (owner), alias, title, badge; then ticket, status with its age, `MR`, checks dot,
-  and the job touching it now. Two lines, always. At the right end sits **Focus**, one click from the list on every row.
+- **Row**: the edge colour (owner), alias, title, badge; then ticket, status with its age, `MR`, checks dot.
+  Two lines, always. At the right end sits **Focus**, one click from the list on every row.
   It fills blue where `Move` names Focus as the next move: a question asked, a plan waiting, an agent at work.
 - **Task pane**: the verbs for the next step on top, and the tool verbs after a divider. `Done…` sits apart,
   in `--danger` text, and keeps the confirm it has today.

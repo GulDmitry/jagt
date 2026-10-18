@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -217,5 +218,15 @@ class TaskLaunchesTest {
                 .containsExactly("split-the-invoice-mailer", "Split the invoice mailer",
                         "Split the invoice mailer", null);
         verifyNoInteractions(placement);
+    }
+
+    @Test
+    void refusesWrittenWordsThatCannotNameABranchByTheirReason() {
+        var refused = launches.written(LaunchRequest.defaults().withProject("group-a").withNotes("!!! ???"),
+                List.of("group-a"));
+
+        assertThat(refused.created()).isFalse();
+        assertThat(refused.reason()).isEqualTo(Launched.Reason.NO_BRANCH_NAME);
+        verifyNoInteractions(provisioning);
     }
 }

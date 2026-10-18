@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,13 +35,14 @@ class DoCommandTest {
                 .hasMessage("branch 'ABC-9' already exists in alpha");
     }
 
-    @Test
-    void teachesTheDoGrammarWhenTheLineNamesNothingToDo() {
-        when(launcher.launchLine("demo")).thenReturn(Launched.refused(Launched.NOTHING_TO_DO));
+    @ParameterizedTest
+    @EnumSource(value = Launched.Reason.class, names = {"NOTHING_TO_DO", "NO_BRANCH_NAME"})
+    void teachesTheDoGrammarWhenTheLineNeedsSayingWhatTheTaskIs(Launched.Reason reason) {
+        when(launcher.launchLine("demo")).thenReturn(Launched.refused(reason, "error: refused"));
 
         assertThatThrownBy(() -> command.run("demo"))
                 .isInstanceOf(Refusal.class)
-                .hasMessageContaining("nothing to do")
+                .hasMessageContaining("error: refused")
                 .hasMessageContaining(LaunchRequest.OWN_GRAMMAR);
     }
 }

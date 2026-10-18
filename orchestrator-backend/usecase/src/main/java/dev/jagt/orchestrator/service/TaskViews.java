@@ -3,11 +3,13 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -30,12 +32,16 @@ public class TaskViews {
     }
 
     public Snapshot snapshot() {
+        return snapshot(stateService.tasks());
+    }
+
+    private Snapshot snapshot(Map<String, TaskState> tasks) {
         ConfigService.ConfigFile config = readableConfig();
         AutoReviewCadence cadence = AutoReviewCadence.from(config.autoReview());
         long now = System.currentTimeMillis();
         Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
         config.projects().forEach((key, project) -> deployBranches.put(key, project.deployBranch()));
-        List<TaskView> views = stateService.tasks().entrySet().stream()
+        List<TaskView> views = tasks.entrySet().stream()
                 .map(entry -> TaskView.of(entry.getKey(), entry.getValue(), rounds.of(entry.getValue(), config),
                         cadence.watch(entry.getValue(), now), deployBranches))
                 .toList();
@@ -47,16 +53,18 @@ public class TaskViews {
         return snapshot().tasks();
     }
 
-    /** A task per line, without its history or spend; lives here because the legal verbs come from the projection. */
+    /** A task per line, without its history or spend. */
     public String listing() {
-        String listing = all().stream().map(this::listed).collect(Collectors.joining("\n"));
+        Map<String, TaskState> tasks = stateService.tasks();
+        String listing = snapshot(tasks).tasks().stream().map(view -> listed(tasks.get(view.id()), view))
+                .collect(Collectors.joining("\n"));
         return listing.isEmpty() ? "no tasks" : listing;
     }
 
-    private String listed(TaskView view) {
-        String tail = stateService.task(view.id()).map(task -> (task.title() == null ? "" : " " + task.title())
-                + (task.message() == null || task.message().isBlank() ? "" : " — " + task.message())
-                + task.repos().stream().map(repo -> " | " + repo.worktreePath()
+    private String listed(@Nullable TaskState task, TaskView view) {
+        String tail = Optional.ofNullable(task).map(t -> (t.title() == null ? "" : " " + t.title())
+                + (t.message() == null || t.message().isBlank() ? "" : " — " + t.message())
+                + t.repos().stream().map(repo -> " | " + repo.worktreePath()
                         + (repo.mrUrl() == null ? "" : " " + repo.mrUrl())).collect(Collectors.joining())).orElse("");
         return view.id() + " [" + view.status() + "]" + tail + " alias=" + (view.alias() == null ? "-" : view.alias())
                 + " legal=" + view.actions().stream().map(TaskView.ActionView::id).collect(Collectors.joining(","));

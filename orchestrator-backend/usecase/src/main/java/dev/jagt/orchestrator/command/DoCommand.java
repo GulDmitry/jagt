@@ -47,8 +47,9 @@ public class DoCommand implements GlobalCommand {
     @Override
     public String run(String tail) {
         Launched launched = launcher.launchLine(tail);
-        if (Launched.NOTHING_TO_DO.equals(launched.message())) {
-            return created(Launched.refused(launched.message() + " — say what the task is: " + LaunchRequest.OWN_GRAMMAR));
+        if (launched.reason() == Launched.Reason.NOTHING_TO_DO || launched.reason() == Launched.Reason.NO_BRANCH_NAME) {
+            return created(Launched.refused(launched.reason(),
+                    launched.message() + " — say what the task is: " + LaunchRequest.OWN_GRAMMAR));
         }
         return created(launched);
     }

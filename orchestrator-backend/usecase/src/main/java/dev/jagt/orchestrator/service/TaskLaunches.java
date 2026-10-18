@@ -56,8 +56,7 @@ public class TaskLaunches {
         String written = Objects.requireNonNull(request.notes());
         String named = TaskName.from(written);
         if (named == null) {
-            return Launched.refused("error: nothing in that line can name a branch — open it with a word: "
-                    + LaunchRequest.OWN_GRAMMAR);
+            return Launched.refused(Launched.Reason.NO_BRANCH_NAME, "error: nothing in that line can name a branch");
         }
         String taskId = worktrees.freeTaskName(named, projects);
         return Launched.created(taskId, provisioning.initializeTask(

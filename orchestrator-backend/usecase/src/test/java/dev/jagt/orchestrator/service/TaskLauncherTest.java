@@ -88,7 +88,7 @@ class TaskLauncherTest {
         var refused = launcher.launch(LaunchRequest.defaults().withProject("group-a"));
 
         assertThat(refused.created()).isFalse();
-        assertThat(refused.message()).isEqualTo(Launched.NOTHING_TO_DO);
+        assertThat(refused.reason()).isEqualTo(Launched.Reason.NOTHING_TO_DO);
         verifyNoInteractions(launches);
     }
 }
