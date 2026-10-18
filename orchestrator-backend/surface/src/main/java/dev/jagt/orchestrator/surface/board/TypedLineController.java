@@ -34,13 +34,13 @@ public class TypedLineController {
         return new ActionResult(sessions.say(taskId, line));
     }
 
-    public record Screen(String shown) {
+    public record Screen(boolean held, String shown) {
     }
 
-    /** The open task's session as it reads now, so it can be read without leaving the board. */
+    /** The open task's session as it reads now; `held` is false when no window holds it, whatever `shown` is. */
     @GetMapping("/tasks/screen")
     public Screen screen(@RequestParam("task") String taskId) {
-        return new Screen(sessions.screen(taskId).orElse(""));
+        return sessions.screen(taskId).map(shown -> new Screen(true, shown)).orElseGet(() -> new Screen(false, ""));
     }
 
     /** The model only proposes; the proposal passes the same gate as a button. */

@@ -65,13 +65,9 @@ document.addEventListener('keydown', (event) => {
     render();
     return;
   }
-  // A <dialog> closes on Escape by itself; the inline forms do not.
+  // A <dialog> closes on Escape by itself; the inline forms do not. One press closes the innermost thing open.
   if (event.key !== 'Escape') return;
-  if (event.target === filters.box) {
-    filters.box.value = '';
-  }
-  selection.back();
-  menu.close();
-  palette.close();
+  const closed = palette.close() || menu.close() || (event.target === filters.box && filters.clearText());
+  if (!closed) selection.back();
   render();
 });

@@ -251,4 +251,30 @@ class BoardConnectionTest extends BoardPageContext {
 
         assertThat(page.locator("#offline")).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(10_000));
     }
+
+    @Test
+    void aPageThatOutlivedARestartKeepsAnOpenFormUntilItCloses() {
+        Page page = session.newPage();
+        page.clock().install();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
+        page.locator("#ref").fill("ABC-5");
+        page.route("**/api/events", route -> route.fulfill(new Route.FulfillOptions()
+                .setContentType("text/event-stream").setBody("event:open\ndata:another-run\n\n")));
+        List<String> loads = new java.util.concurrent.CopyOnWriteArrayList<>();
+        page.onRequest(request -> {
+            if (request.isNavigationRequest()) {
+                loads.add(request.url());
+            }
+        });
+
+        page.clock().runFor(50_500);
+        page.waitForRequest("**/api/events", () -> page.clock().runFor(1_000));
+        page.waitForTimeout(500);
+
+        org.assertj.core.api.Assertions.assertThat(loads).isEmpty();
+        assertThat(page.locator("#ref")).hasValue("ABC-5");
+        page.waitForRequest("http://localhost:" + port + "/", () -> page.keyboard().press("Escape"));
+    }
 }

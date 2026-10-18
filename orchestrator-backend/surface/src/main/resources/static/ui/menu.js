@@ -4,8 +4,10 @@ const toggle = document.getElementById('reports-toggle');
 const list = document.getElementById('reports');
 
 export const close = () => {
+  const wasOpen = !list.hidden;
   list.hidden = true;
   toggle.setAttribute('aria-expanded', 'false');
+  return wasOpen;
 };
 
 const open = () => {

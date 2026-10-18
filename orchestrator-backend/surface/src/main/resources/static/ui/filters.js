@@ -27,6 +27,12 @@ export const togglePhase = (phase) => {
   if (!phases.delete(phase)) phases.add(phase);
 };
 
+export const clearText = () => {
+  const had = box.value !== '';
+  box.value = '';
+  return had;
+};
+
 export function clear() {
   box.value = '';
   phases.clear();

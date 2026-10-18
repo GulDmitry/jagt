@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.board;
 import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -11,11 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -262,5 +265,94 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         page.locator("#empty-project").click();
 
         assertThat(page.locator("#project-dialog")).isVisible();
+    }
+
+    @Test
+    void theSessionTabKeepsItsScreenWhileAPushMakesItReadAgain() throws Exception {
+        CountDownLatch release = new CountDownLatch(1);
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling")).thenAnswer(call -> {
+            release.await();
+            return Optional.of("tests pass");
+        });
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        page.locator("#pane .tabs button[data-tab=session]").click();
+        assertThat(page.locator("#pane .session .screen")).hasText("compiling");
+
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().touched());
+        verify(sessions, timeout(5000).times(2)).screen("ABC-1");
+
+        assertThat(page.locator("#pane .session .screen")).hasText("compiling");
+        release.countDown();
+        assertThat(page.locator("#pane .session .screen")).hasText("tests pass");
+    }
+
+    @Test
+    void theRoundTabReadsRepliesThatAppearedWithoutAnyPush() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-4-alpha"));
+        state.putTask("ABC-4", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a4").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        page.locator("#pane .tabs button[data-tab=round]").click();
+        assertThat(page.locator("#pane .round")).containsText("Nothing is drafted for this round.");
+
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        page.locator("#new-task").click();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#pane .round")).containsText("Renamed it.");
+    }
+
+    @Test
+    void aSessionNoWindowHoldsSaysSoAndABlankLiveScreenDoesNot() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        when(sessions.screen("ABC-1")).thenReturn(Optional.of(""));
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#pane .tabs button[data-tab=session]").click();
+
+        assertThat(page.locator("#pane .session .screen")).isEmpty();
+    }
+
+    @Test
+    void theJobsTableTurnsAFailedJobRedWithoutReopeningTheReport() {
+        doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#reports-toggle").click();
+        page.locator("#show-jobs").click();
+        assertThat(page.locator("table.jobs tr.failed")).hasCount(0);
+
+        jobs.runNow("idecleanup");
+        page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+
+        assertThat(page.locator("table.jobs tr.failed")).containsText("idecleanup");
+    }
+
+    @Test
+    void theJobGroupsOfTheJobsTableShareOneColumnGrid() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/styleguide.html");
+
+        var first = page.locator("table.jobs").nth(0);
+        var second = page.locator("table.jobs").nth(1);
+
+        org.assertj.core.api.Assertions.assertThat(first.locator("th").nth(3).boundingBox().x)
+                .isEqualTo(second.locator("th").nth(3).boundingBox().x);
+        org.assertj.core.api.Assertions.assertThat(first.locator("td").nth(3).boundingBox().x)
+                .isEqualTo(second.locator("td").nth(3).boundingBox().x);
+        org.assertj.core.api.Assertions.assertThat(first.locator("td").nth(3).boundingBox().width)
+                .isEqualTo(second.locator("td").nth(3).boundingBox().width);
     }
 }

@@ -13,10 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -337,5 +339,27 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         page.locator("#ref").press("Meta+Enter");
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+    }
+
+    @Test
+    void aSecondCommandEnterDuringASlowLaunchStartsNoSecondTask() {
+        CountDownLatch release = new CountDownLatch(1);
+        when(launcher.launch(any())).thenAnswer(call -> {
+            release.await();
+            return Launched.created("ABC-9", "Started ABC-9.");
+        });
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("#new-task").click();
+        page.locator("#ref").fill("ABC-9");
+
+        page.locator("#ref").press("Meta+Enter");
+        assertThat(page.locator("#launch button[type=submit]")).isDisabled();
+        page.locator("#ref").press("Meta+Enter");
+        release.countDown();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+        verify(launcher, times(1)).launch(any());
     }
 }

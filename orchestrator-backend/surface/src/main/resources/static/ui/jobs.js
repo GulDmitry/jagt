@@ -12,6 +12,7 @@ export function node() {
   const paint = () => api('/api/jobs')
     .then((jobs) => render(html`<${JobsTable} jobs=${jobs} now=${Date.now()}/>`, holder))
     .catch((e) => toast(refusal(e), true));
+  holder.addEventListener('reread', paint);
   holder.onclick = async (event) => {
     const button = event.target.closest('button[data-job]');
     if (!button) return;

@@ -81,8 +81,7 @@ table.jobs { width: 100%; border-collapse: collapse; font-size: 12px; margin-bot
 table.jobs td:nth-child(1) { width: 20px; }
 table.jobs td:nth-child(2) { width: 140px; }
 table.jobs td:nth-child(4) { width: 90px; }
-table.jobs td:nth-child(5) { width: 60px; }
-table.jobs td:nth-child(6) { width: 96px; }
+table.jobs td:nth-child(5) { width: 96px; }
 table.jobs caption { text-align: left; }
 table.jobs td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: top; }
 table.jobs tr.failed { background: var(--chip-bg); }
@@ -378,7 +377,6 @@ button.primary.again { box-shadow: 0 0 0 2px var(--ok); }
 .row-verb { display: flex; align-items: center; justify-content: center; }
 table.jobs th { text-align: left; font-weight: 400; color: var(--muted); font-size: 11px; padding: 2px 6px; }
 table.jobs td.last.failed { color: var(--danger); }
-table.jobs td:nth-child(5) { white-space: nowrap; }
 #empty { text-align: center; padding: 64px 16px; }
 #empty p { margin: 0 0 12px; }
 .round .screen .block, .round .screen .quote { font-family: inherit; }

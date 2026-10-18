@@ -11,6 +11,8 @@ export const onSent = (read) => { afterwards = read; };
 export async function sending(form, {waiting, send, done}) {
   const state = form.querySelector('.state');
   const button = form.querySelector('button[type=submit]');
+  // requestSubmit() fires a submit even when the button is disabled.
+  if (button.disabled) return;
   button.disabled = true;
   state.textContent = waiting;
   try {

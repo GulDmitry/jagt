@@ -18,10 +18,10 @@ class BoardStyleguideTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/styleguide.html");
 
-        assertThat(page.locator("figure.state")).hasCount(19);
+        assertThat(page.locator("figure.state")).hasCount(21);
         assertThat(page.locator("figure.state > article")).hasCount(12);
         assertThat(page.locator("figure.state #tasks")).hasCount(2);
-        assertThat(page.locator("figure.state #pane article")).hasCount(3);
+        assertThat(page.locator("figure.state #pane article")).hasCount(5);
         assertThat(page.locator("figure.state table.jobs")).hasCount(3);
         assertThat(page.locator("figure.state .checks-list li")).hasCount(3);
         org.assertj.core.api.Assertions.assertThat(errors).isEmpty();

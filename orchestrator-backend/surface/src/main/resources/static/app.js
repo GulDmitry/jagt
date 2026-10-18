@@ -65,6 +65,13 @@ async function loadVerbs() {
   render();
 }
 
+// A new run reloads the page, but not under a form someone is filling in.
+function reloadOnceNoDialogIsOpen() {
+  const open = document.querySelector('dialog[open]');
+  if (open) open.addEventListener('close', reloadOnceNoDialogIsOpen, {once: true});
+  else window.location.reload();
+}
+
 let retryIn = 1000;
 let servedBy = null;
 
@@ -81,7 +88,7 @@ function listen() {
     // The server's first message is also named `open`, and one connect is one read. It names the run: a page
     // that outlived a restart is still the old board's code, so it loads the new one.
     if (event instanceof MessageEvent) {
-      if (servedBy && servedBy !== event.data) window.location.reload();
+      if (servedBy && servedBy !== event.data) reloadOnceNoDialogIsOpen();
       servedBy = event.data;
       return;
     }

@@ -29,7 +29,11 @@ render(html`<section aria-label="Card">
       changed=${() => false} now=${Date.now()}/></${State}>
     <${State} name="the open task, overview"><${Pane} card=${cards[0].props} tab="overview" shown=${null}/></${State}>
     <${State} name="the open task, its session"><${Pane} card=${cards[1].props} tab="session"
-      shown=${'› npm test\n  ✗ restores the stored mode on load'}/></${State}>
+      shown=${{held: true, shown: '› npm test\n  ✗ restores the stored mode on load'}}/></${State}>
+    <${State} name="the open task, its session has no window"><${Pane} card=${cards[1].props} tab="session"
+      shown=${{held: false, shown: ''}}/></${State}>
+    <${State} name="the open task, its session shows a blank screen"><${Pane} card=${cards[1].props} tab="session"
+      shown=${{held: true, shown: ''}}/></${State}>
     <${State} name="the open task, a round not drafted"><${Pane} card=${cards[1].props} tab="round" shown=${null}/></${State}>
   </main>
 </section>

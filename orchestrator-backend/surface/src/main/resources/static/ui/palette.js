@@ -30,7 +30,11 @@ function show(open) {
   }
 }
 
-export const close = () => show(false);
+export const close = () => {
+  const wasOpen = isOpen();
+  show(false);
+  return wasOpen;
+};
 
 export function toggle() {
   show(form.hidden);

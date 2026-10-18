@@ -14,7 +14,7 @@ const say = document.getElementById('say');
 const working = document.getElementById('said');
 
 // What the open report is showing, so a change under the reader can be read again and repainted.
-let showing = {path: null, about: null, body: ''};
+let showing = {path: null, about: null, body: '', extra: null};
 let poll = 0;
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
 let asked = 0;
@@ -34,7 +34,7 @@ function paint(title, said, extra) {
 
 export function showReport(title, said, extra = null) {
   asked++;
-  showing = {path: null, about: null, body: said};
+  showing = {path: null, about: null, body: said, extra};
   stopWaiting();
   paint(title, said, extra);
 }
@@ -45,7 +45,7 @@ export async function openReport(title, path, {extra = null, about = null} = {})
   try {
     const said = await text(path);
     if (mine !== asked) return true;
-    showing = {path, about, body: said};
+    showing = {path, about, body: said, extra};
     stopWaiting();
     paint(title, said, extra);
     // Whatever changed WHILE this was being read reached no open dialog, so it is read once more now.
@@ -63,6 +63,8 @@ export async function repaintReport() {
   if (!report.open || !showing.path) {
     return;
   }
+  // What an extra shows may change with no word of the report changing.
+  showing.extra?.dispatchEvent(new Event('reread'));
   const read = showing.path;
   const mine = ++reread;
   let said;

@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.service.AgentSessions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -29,6 +31,20 @@ class TypedLineControllerTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("nothing to say");
         verifyNoInteractions(sessions);
+    }
+
+    @Test
+    void aLiveWindowWithABlankScreenIsHeldNotMissing() {
+        when(sessions.screen("a1")).thenReturn(Optional.of(""));
+
+        assertThat(api.screen("a1")).isEqualTo(new TypedLineController.Screen(true, ""));
+    }
+
+    @Test
+    void aSessionNoWindowHoldsIsNotHeld() {
+        when(sessions.screen("a1")).thenReturn(Optional.empty());
+
+        assertThat(api.screen("a1")).isEqualTo(new TypedLineController.Screen(false, ""));
     }
 
     @Test

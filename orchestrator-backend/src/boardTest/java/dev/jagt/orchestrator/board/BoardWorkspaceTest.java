@@ -267,4 +267,21 @@ class BoardWorkspaceTest extends BoardPageContext {
         assertThat(page.locator("#tasks")).isVisible();
         assertThat(page.locator("#pane")).isHidden();
     }
+
+    @Test
+    void escapeClosesThePaletteButLeavesTheOpenTaskOnANarrowWindow() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.setViewportSize(800, 900);
+        page.navigate("http://localhost:" + port + "/");
+        page.locator("#tasks .row .pick").click();
+        page.keyboard().press("Control+k");
+        assertThat(page.locator("#palette")).isVisible();
+
+        page.keyboard().press("Escape");
+
+        assertThat(page.locator("#palette")).isHidden();
+        assertThat(page.locator("#pane")).isVisible();
+    }
 }
