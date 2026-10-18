@@ -15,7 +15,7 @@ absolute path in `jagt.yml` to pin one.
 | [tmux](https://github.com/tmux/tmux) | the session an agent lives in, outliving the board and the window | `brew install tmux` · `apt install tmux` |
 | [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent | `brew install kitty` · `apt install kitty` |
 | [bubblewrap](https://github.com/containers/bubblewrap) + socat | Claude's sandbox, keeping a session's writes in its task | built in · `apt install bubblewrap socat` |
-| [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `ide` checkpoint | `idea` or `code` on PATH |
+| [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `ide` checkpoint | `idea` or `code` on PATH, or installed as an application |
 
 jagt refuses to start when one of those is missing — bar Claude Code, whose absence shows at the first read.
 The rest are optional, and what selects each is in `jagt.yml.dist`:
