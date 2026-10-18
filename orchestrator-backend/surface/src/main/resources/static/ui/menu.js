@@ -27,7 +27,6 @@ export const onPick = (open) => { picked = open; };
 export const render = () => list.replaceChildren(
   ...store.verbs().filter((verb) => verb.report && !verb.aboutOneTask).map((verb) => {
     const button = document.createElement('button');
-    button.setAttribute('role', 'menuitem');
     button.id = `show-${verb.id}`;
     button.dataset.verb = verb.id;
     button.append(verb.id.charAt(0).toUpperCase() + verb.id.slice(1),

@@ -49,6 +49,12 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - bold `.row-title.changed` — its state moved since you last had it open; shape, since every colour is taken.
 - `button.row-verb`, a terminal glyph — a row's `onRow` verb, `primary` filled only where it is your move.
 - `.badge.problem` in `--danger` — what waits on you is broken.
+- `.badge.required` on `--you-bg` — the act waiting on you now; `.badge.optional` on `--chip-bg`, whenever you like.
+- `.detail.problem` in `--danger` / `.detail.you` in `--you` — the card's own line: broken, your move.
+- `.waiting` pill on `--you-bg`, in the header — how many cards interrupt you.
+- `.chip.bad` in `--danger` — a job failed, or the backend is unreachable.
+- `td.last.failed` in `--danger` — a job's last run failed; its dot, and a path check's, are `.checks` as above.
+- toast edge, 3px — `.toast` `--ok`, `.toast.error` `--danger`: the verb ran, or was refused.
 - a verb's key drawn after its name (`data-key`), and `button.apart` muted at the row's end until hovered.
 - the tab's title `(n) jagt` and an icon dot — `--danger` something broke, else `--you` something waits.
 - absence — no dot, no tick, no badge: the expected state, no pipeline, or nothing read yet, the hover saying

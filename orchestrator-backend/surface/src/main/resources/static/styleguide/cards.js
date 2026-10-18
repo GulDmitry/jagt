@@ -2,12 +2,13 @@
 
 const MINUTE = 60000;
 const now = Date.now();
-const verb = (id, label, group, extra) => ({id, label, hint: label, group, ...extra});
-const tools = [verb('ide', 'Open IDE', 'tool'), verb('diff', 'Diff', 'tool'), verb('focus', 'Focus', 'tool', {onRow: true}),
+const verb = (id, label, group, extra) => ({id, label, hint: label, group, apart: id === 'done', ...extra});
+const tools = [verb('ide', 'Open IDE', 'tool', {key: 'o'}), verb('diff', 'Diff', 'tool', {key: 'g'}),
+  verb('focus', 'Focus', 'tool', {onRow: true, key: 'f'}),
   verb('respawn', 'Restart agent', 'tool')];
 const task = (fields) => ({project: 'alpha', repos: [{project: 'alpha'}], pipeline: 'NONE', attention: 'NONE',
-  owner: 'NONE', statusSince: now - 12 * MINUTE, history: [{at: now - 90 * MINUTE, status: 'NEW'},
-    {at: now - 80 * MINUTE, status: 'IN_PROGRESS'}], actions: [verb('done', 'Done', 'flow'), ...tools], ...fields});
+  owner: 'NONE', statusSince: now - 12 * MINUTE, history: [{at: now - 90 * MINUTE, status: 'NEW', label: 'starting'},
+    {at: now - 80 * MINUTE, status: 'IN_PROGRESS', label: 'agent working'}], actions: [verb('done', 'Done', 'flow'), ...tools], ...fields});
 const card = (name, fields, extra) => ({name, props: {task: task(fields), manyProjects: false, flagged: false,
   blocked: new Set(), offers: [], now, ...extra}});
 
@@ -16,7 +17,7 @@ export const cards = [
     owner: 'YOU', attention: 'REQUIRED', ask: 'NEEDS INPUT', hint: 'the agent asked a question', status: 'IN_PROGRESS',
     statusLabel: 'agent working', detail: 'NEEDS INPUT: which retry budget, 3 or 5?', detailKind: 'YOURS',
     ticketUrl: 'https://tracker.example/ABC-42',
-    actions: [verb('done', 'Done', 'flow'), verb('focus', 'Focus', 'tool', {primary: true, onRow: true}), verb('ide', 'Open IDE', 'tool')]}),
+    actions: [verb('done', 'Done', 'flow'), verb('focus', 'Focus', 'tool', {primary: true, onRow: true, key: 'f'}), verb('ide', 'Open IDE', 'tool')]}),
   card('agent working', {id: 'ABC-51', alias: 'a2', title: 'Invoice PDF misses the VAT line', owner: 'AGENT',
     status: 'IN_PROGRESS', statusLabel: 'agent working', actions: [verb('ship', 'Ship', 'flow'), verb('done', 'Done', 'flow'), ...tools]}),
   card('with the reviewers, checks running', {id: 'ABC-57', alias: 'a3', title: 'Currency rounding in the monthly report',
@@ -37,11 +38,26 @@ export const cards = [
   card('live on a shared branch', {id: 'ABC-74', alias: 'a6', title: 'Footer links point at the old docs',
     status: 'DEPLOYED', statusLabel: 'deployed', pipeline: 'GREEN', approved: true, deployed: true,
     actions: [verb('deploy', 'Deploy', 'flow', {again: true}), verb('revert', 'Revert', 'flow'),
-      verb('done', 'Done', 'flow', {primary: true}), ...tools]}),
+      verb('done', 'Done', 'flow'), ...tools]}),
+  card('live, no deploy verb on the card', {id: 'ABC-75', alias: 'a6', title: 'Footer links point at the old docs',
+    owner: 'AGENT', status: 'IN_PROGRESS', statusLabel: 'agent working', deployed: true}),
+  card('the deploy highlighted, its last run still live', {id: 'ABC-76', alias: 'a6', title: 'Footer links, round two',
+    owner: 'YOU', attention: 'OPTIONAL', ask: 'deploy', hint: 'approved; deploy when you like', status: 'APPROVED',
+    statusLabel: 'approved', pipeline: 'GREEN', deployed: true, reviewRequestUrl: 'https://code.example/mr/7',
+    requestOpenedAt: now - 1440 * MINUTE, approved: true,
+    actions: [verb('deploy', 'Deploy', 'flow', {primary: true, again: true}), verb('done', 'Done', 'flow'), ...tools]}),
+  card('the last sweep could not read the checks', {id: 'ABC-77', alias: 'a6', title: 'Checks read an older round',
+    owner: 'CI', status: 'CI_POLLING', statusLabel: 'out for review', pipeline: 'GREEN', pipelineUnread: true,
+    reviewRequestUrl: 'https://code.example/mr/8', requestOpenedAt: now - 60 * MINUTE, approved: false}),
   card('across repositories, approved', {id: 'ABC-80', alias: 'a7', title: 'Rename the tenant header', owner: 'CI',
     status: 'REVIEWED', statusLabel: 'not approved', approved: true, pipeline: 'GREEN',
     repos: [{project: 'alpha', reviewRequestUrl: 'https://code.example/mr/4'},
       {project: 'beta', reviewRequestUrl: 'https://code.example/mr/5'}]}),
+  card('across repositories, the poll stopped', {id: 'ABC-82', alias: 'a8', title: 'Rename the tenant header, again',
+    owner: 'CI', status: 'CI_POLLING', statusLabel: 'out for review',
+    repos: [{project: 'alpha', reviewRequestUrl: 'https://code.example/mr/9'},
+      {project: 'beta', reviewRequestUrl: 'https://code.example/mr/10'}],
+    autoReview: {state: 'STALLED', label: 'poll stopped', note: 'request unreadable'}}),
   card('stopped: nothing polls again', {id: 'ABC-81', alias: 'a8', title: 'Cache headers on static files', owner: 'CI',
     status: 'CI_POLLING', statusLabel: 'out for review', reviewRequestUrl: 'https://code.example/mr/6',
     requestOpenedAt: now - 9 * 1440 * MINUTE, autoReview: {state: 'STALLED', label: 'poll stopped', note: 'request unreadable'}}),

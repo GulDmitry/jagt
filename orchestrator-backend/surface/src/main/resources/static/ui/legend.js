@@ -79,6 +79,35 @@ const yoursHead = () => {
   return group;
 };
 
+const verbButton = (className, text, key) => {
+  const button = document.createElement('button');
+  button.className = className;
+  button.textContent = text;
+  if (key) button.dataset.key = key;
+  return button;
+};
+
+const failedLastRun = () => {
+  const table = document.createElement('table');
+  table.className = 'jobs';
+  const cell = document.createElement('td');
+  cell.className = 'last failed';
+  cell.textContent = '6m ago';
+  const row = document.createElement('tr');
+  row.append(cell);
+  const body = document.createElement('tbody');
+  body.append(row);
+  table.append(body);
+  return table;
+};
+
+const toastEdge = (className) => {
+  const toast = document.createElement('div');
+  toast.className = className;
+  toast.textContent = className.includes('error') ? 'refused' : 'done';
+  return toast;
+};
+
 const rowVerb = (className) => {
   const button = document.createElement('button');
   button.className = className;
@@ -120,6 +149,12 @@ const rows = () => [
     'in the list: bold, its state moved since you last had it open'],
   [[rowVerb('row-verb primary'), rowVerb('row-verb')],
     'on a row: its most pressed verb, without opening the task \u00b7 filled where that verb is your move'],
+  [[verbButton('', 'Focus', 'f'), verbButton('apart', 'Done')],
+    'a verb\u2019s key, drawn after its name \u00b7 Done muted at the row\u2019s end until hovered'],
+  [[failedLastRun()],
+    'in the jobs: the last run failed, its age in red \u00b7 its dot and a path check\u2019s are the checks dot'],
+  [[toastEdge('toast'), toastEdge('toast error')],
+    'a verb\u2019s answer, passing: it ran \u00b7 it was refused'],
   [[span(null, '(2) jagt')],
     'the tab\u2019s title: how many tasks wait on you; its icon wears an amber dot, or red when something broke'],
   [[span('waiting', '2 need your action')],

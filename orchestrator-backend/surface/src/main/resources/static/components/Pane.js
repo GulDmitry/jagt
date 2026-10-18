@@ -13,7 +13,7 @@ const when = (at, now) => (new Date(at).toDateString() === new Date(now).toDateS
   ? new Date(at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
   : new Date(at).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}));
 
-const History = ({task, now}) => html`<section class="history" aria-label="status history">
+const History = ({task, now}) => html`<section class="history" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
   <h2 class="group-head">status history</h2>
   <ol>${(task.history || []).map((step) => html`<li>
     <span class="age">${when(step.at, now)}</span> ${step.label || step.status}${
@@ -22,7 +22,7 @@ const History = ({task, now}) => html`<section class="history" aria-label="statu
 </section>`;
 
 // `shown` is what the tab read, `{held, shown}`, or null while it reads.
-const Session = ({task, shown}) => html`<section class="session" aria-label="the session">
+const Session = ({task, shown}) => html`<section class="session" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
   <pre class="screen">${shown === null ? 'reading…' : shown.held ? shown.shown : 'no window holds this session'}</pre>
   <form class="say" data-say=${task.id}>
     <input name="line" aria-label="tell this session" placeholder="tell this session — no, answer 2 differently"
@@ -31,7 +31,7 @@ const Session = ({task, shown}) => html`<section class="session" aria-label="the
   </form>
 </section>`;
 
-const Round = ({shown, offered}) => html`<section class="round" aria-label="the review round">
+const Round = ({shown, offered}) => html`<section class="round" role="tabpanel" id="panel-round" aria-labelledby="tab-round">
   ${!offered ? html`<p class="muted">Nothing is drafted for this round.</p>`
     : shown === null ? html`<pre class="screen">reading…</pre>`
       : html`<pre class="screen"><${Report} parts=${reportParts(shown)}/></pre>`}
@@ -40,8 +40,8 @@ const Round = ({shown, offered}) => html`<section class="round" aria-label="the 
 export const Pane = ({card, tab, shown}) => html`<section id="pane" aria-label="the open task">
   <button class="back" data-back="">‹ all tasks</button>
   <${Card} key=${card.task.id} ...${card}/>
-  <div role="tablist" class="tabs">${TABS.map((one) => html`<button role="tab" data-tab=${one.id}
-    aria-selected=${String(one.id === tab)}>${one.label}</button>`)}</div>
+  <div role="tablist" class="tabs">${TABS.map((one) => html`<button role="tab" data-tab=${one.id} id=${`tab-${one.id}`}
+    aria-selected=${String(one.id === tab)} aria-controls=${one.id === tab ? `panel-${one.id}` : undefined}>${one.label}</button>`)}</div>
   ${tab === 'session' ? html`<${Session} task=${card.task} shown=${shown}/>`
     : tab === 'round' ? html`<${Round} shown=${shown}
       offered=${card.offers.some((offer) => offer.part === 'round')}/>`
