@@ -116,8 +116,8 @@ is `round`.
 - **THEN** the tab shows it blank; it says no window holds the session only when none does
 
 ### Requirement: A verb carries its key
-A verb SHALL carry the letter that runs it on the open task, drawn on its button, from the server; a verb that cannot
-be taken back carries none, and `Done` stands apart at the end of its row.
+A verb SHALL carry the letter that runs it on the open task, drawn on its button, from the server; a verb that asks
+before it runs asks on its key too, and `Done` carries none and stands apart at the end of its row.
 
 #### Scenario: Focus by key
 - **WHEN** the human presses `f` with a1 open
