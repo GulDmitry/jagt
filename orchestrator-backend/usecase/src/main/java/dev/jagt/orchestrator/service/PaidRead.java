@@ -31,7 +31,7 @@ final class PaidRead {
             answer = ask.apply(corrections);
             spent = spent.plus(answer.usage());
             if (answer.facts().filter(usable).isPresent()) {
-                return new Answer<>(answer.facts(), spent);
+                return new Answer<>(answer.facts(), spent, answer.failure());
             }
             corrections = answer.facts()
                     .map(facts -> violations.apply(facts).stream().map(Violation::toString).toList())
@@ -47,7 +47,7 @@ final class PaidRead {
                 break;
             }
         }
-        return new Answer<>(answer.facts(), spent);
+        return new Answer<>(answer.facts(), spent, answer.failure());
     }
 
     private static boolean pause(RetryPolicy policy) {

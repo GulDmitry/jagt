@@ -75,6 +75,15 @@ class TicketPlacementTest {
     }
 
     @Test
+    void carriesTheReadsOwnSentenceWhenItSaysWhatStoppedIt() {
+        var outcome = placement.place("ABC-42", Answer.failed(TokenUsage.NONE, "Atlassian MCP needs authentication"),
+                null);
+
+        assertThat(outcome).isEqualTo(new TicketPlacement.Refused(
+                "error: read failed: ABC-42 — Atlassian MCP needs authentication — no task created"));
+    }
+
+    @Test
     void refusesWhenTheReadAnsweredAboutADifferentItem() {
         TicketFacts other = TicketFacts.defaults().withExists(true).withKey("ABC-99").withTitle("Widget layout is off")
                 .withTrackerProject("ABC").withUrl("https://tracker/ABC-99");

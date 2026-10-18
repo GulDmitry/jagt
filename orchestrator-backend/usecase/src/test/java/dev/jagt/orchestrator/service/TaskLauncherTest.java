@@ -60,6 +60,15 @@ class TaskLauncherTest {
     }
 
     @Test
+    void refusesWordsTypedAsATicketBeforeAnyReadIsPaidFor() {
+        Launched refused = launcher.launch(LaunchRequest.of("widgets try the board"));
+
+        assertThat(refused.created()).isFalse();
+        assertThat(refused.message()).contains("a ticket is a key or a URL");
+        verifyNoInteractions(launches);
+    }
+
+    @Test
     void refusesTheLaunchWhenOneOfTheNamedProjectsIsNotConfigured() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("api", new ProjectConfig("/p", "origin/main", "dev", List.of()))));

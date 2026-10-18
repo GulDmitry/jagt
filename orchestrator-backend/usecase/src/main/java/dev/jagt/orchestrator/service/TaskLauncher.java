@@ -38,6 +38,10 @@ public class TaskLauncher {
     }
 
     public Launched launch(LaunchRequest request) {
+        if (request.ref() != null && request.ref().codePoints().anyMatch(Character::isWhitespace)) {
+            return Launched.refused("error: a ticket is a key or a URL; for your own words pick a project and say"
+                    + " what to do");
+        }
         if (request.ref() != null) {
             // An unknown project is settled before the read, not after paying for one.
             return launches.ticket(request, request.project() != null ? resolveProjects(request.project()) : null);

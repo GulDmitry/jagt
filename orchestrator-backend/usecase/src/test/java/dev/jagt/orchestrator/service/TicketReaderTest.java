@@ -41,6 +41,17 @@ class TicketReaderTest {
     }
 
     @Test
+    void namesTheServerThatIsDownWhenTheReadGaveNoSentenceOfItsOwn() {
+        when(assistant.readTicket(eq("ABC-42"), any())).thenReturn(Answer.unavailable());
+        when(mcp.brokenServers()).thenReturn(Optional.of(List.of("atlassian (needs authentication)")));
+
+        var answer = new TicketReader(assistant, mcp, usage, new RetryPolicy(1, Duration.ZERO, Duration.ofMinutes(2)))
+                .read("ABC-42");
+
+        assertThat(answer.failure()).contains("atlassian (needs authentication)", "installation.md");
+    }
+
+    @Test
     void readsTheTicketOnASecondAttemptWhenTheModelFirstSaidItDoesNotExist() {
         TicketFacts read = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
                 .withTrackerProject("ABC").withUrl("https://tracker/ABC-42");

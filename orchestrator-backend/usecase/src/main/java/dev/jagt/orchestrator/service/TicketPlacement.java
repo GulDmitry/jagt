@@ -35,7 +35,8 @@ public class TicketPlacement {
     public Outcome place(String ref, Answer<TicketFacts> read, @Nullable List<String> chosen) {
         // Three different answers: one names a missing item, the others a read that never got there.
         if (read.facts().isEmpty()) {
-            return new Refused("error: read failed: " + ref + " (cause in the log) — no task created");
+            String cause = read.failure().isBlank() ? "(cause in the log)" : "— " + read.failure();
+            return new Refused("error: read failed: " + ref + " " + cause + " — no task created");
         }
         if (!read.facts().get().exists()) {
             return new Refused("error: no such item: " + ref + " (the tracker says so) — no task created");
