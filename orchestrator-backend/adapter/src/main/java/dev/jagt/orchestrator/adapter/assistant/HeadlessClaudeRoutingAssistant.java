@@ -53,6 +53,13 @@ public class HeadlessClaudeRoutingAssistant implements RoutingAssistant {
                 + " wordings of one rule are two rules, and this file is read whole every time."
                 + FAILURE_RULE
                 + "</rules>\n"
+                + "<examples>\n"
+                + "Repositories shop (the storefront) and ledger (invoicing); item \"ABC-42 — Invoice PDF shows the"
+                + " wrong VAT\", labelled frontend, which matched shop, its description saying the VAT sum is"
+                + " computed by the invoicing service: project=ledger, reason=\"the VAT sum is computed there\".\n"
+                + "Same repositories; item \"ABC-43 — Make it faster\" with no description: project="
+                + ProjectRead.NONE + ", reason=\"the item names no system\".\n"
+                + "</examples>\n"
                 + "Respond directly, no preamble.";
         return claude.read(prompt, ProjectRead.schemaFor(question.projects().keySet()).json(), item.key(),
                         AssistantCallKind.ROUTE)

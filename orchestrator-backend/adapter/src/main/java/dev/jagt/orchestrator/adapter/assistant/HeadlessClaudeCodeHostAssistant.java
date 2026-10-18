@@ -88,6 +88,12 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 paraphrased and never summarised: a thread read twice must read the same. Empty array where no \
                 thread awaits an answer.
                 </output_format>
+                <examples>
+                threads: ["https://host.invalid/shop/merge_requests/9#note_1\\nmia: Why is this loop not bounded?\\n\
+                lee: The page size bounds it, see Paging.java"]
+                pipelineFailure (a failed pipeline): "unit-tests\\nCartTest.leavesShippingOutOfTheDiscount: expected \
+                60 but was 55"
+                </examples>
                 <failure>%s The pipelines are the ONE exception to it, and they change nothing about exists: a \
                 listing you could not get is pipelineStatus=unknown with failure="".</failure>
                 Respond directly, no preamble.""".formatted(mrUrl, FAILURE_RULE.strip());
