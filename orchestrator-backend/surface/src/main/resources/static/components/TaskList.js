@@ -5,8 +5,7 @@ import {duration} from '../core/format.js';
 import {html} from './html.js';
 import {marked, watchLine} from './Meta.js';
 
-// Filled only where it is the move and the move is the human's: the edge already says when an agent holds it.
-const quickClass = (task, action) => (action.primary && task.owner === 'YOU' ? 'row-verb primary' : 'row-verb');
+const quickClass = (action) => (action.primary ? 'row-verb primary' : 'row-verb');
 
 const Row = ({task, selected, changed, project, now}) => {
   const owner = task.owner.toLowerCase();
@@ -30,7 +29,7 @@ const Row = ({task, selected, changed, project, now}) => {
         ${marked(task) ? html`<span class=${`checks ${task.pipeline.toLowerCase()}`} aria-hidden="true"></span>` : ''}
       </span>
     </button>
-    ${quick ? html`<button class=${quickClass(task, quick)} data-task=${task.id} data-action=${quick.id} data-place="row"
+    ${quick ? html`<button class=${quickClass(quick)} data-task=${task.id} data-action=${quick.id} data-place="row"
         tabIndex=${selected ? 0 : -1}
         aria-label=${`${quick.label} ${task.alias || task.id}`} data-tip=${quick.hint}><svg width="16" height="16"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -45,10 +44,13 @@ const Group = ({name, kind, tasks, named, selected, changed, now}) => html`<sect
     changed=${changed(task)} project=${named} now=${now}/>`)}
 </section>`;
 
-// The rows in the order the keyboard walks them: the human's band first, then each project in its first-seen order.
-export function grouped(shown, manyProjects) {
-  const yours = shown.filter((task) => task.attention === 'REQUIRED');
-  const rest = shown.filter((task) => task.attention !== 'REQUIRED');
+// The rows in the order the keyboard walks them: the human's band first, then each project in its first-seen order;
+// a flagged row leads its group.
+export function grouped(shown, manyProjects, flagged = () => false) {
+  const leading = shown.filter(flagged);
+  const ordered = [...leading, ...shown.filter((task) => !leading.includes(task))];
+  const yours = ordered.filter((task) => task.attention === 'REQUIRED');
+  const rest = ordered.filter((task) => task.attention !== 'REQUIRED');
   const projects = [...new Set(rest.map((task) => task.project))];
   const groups = manyProjects
     ? projects.map((project) => ({name: project, kind: 'project', tasks: rest.filter((task) => task.project === project)}))

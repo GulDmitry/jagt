@@ -22,7 +22,7 @@ class BoardInteractionLogTest extends BoardPageContext {
         when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.waitForResponse("**/api/interactions", () -> page.getByRole(AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Focus").setExact(true)).click());

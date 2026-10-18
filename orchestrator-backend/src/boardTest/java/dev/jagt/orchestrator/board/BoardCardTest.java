@@ -28,7 +28,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .alias")).hasText("a1");
         assertThat(page.locator("article .id")).hasText("ABC-1");
@@ -44,12 +44,12 @@ class BoardCardTest extends BoardPageContext {
                 .lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("article button.flag").click();
         page.reload();
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         assertThat(page.locator("article button.flag")).hasAttribute("aria-pressed", "true");
     }
 
@@ -64,7 +64,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .mr-age")).hasText("MR 8h");
     }
@@ -79,7 +79,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .mr-age")).hasText("MR");
     }
@@ -94,7 +94,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article a.mr-age")).hasAttribute("href", "https://host.example/mr/7");
     }
@@ -116,7 +116,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .mr-age")).hasText(new String[]{"alpha", "beta"});
     }
@@ -135,7 +135,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta > *")).hasCount(3);
         assertThat(page.locator("article .meta .repos")).hasText("alpha + beta \u2713");
@@ -151,7 +151,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .status")).hasText("out for review 0m");
         assertThat(page.locator("article .status .age")).hasText("0m");
@@ -167,7 +167,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .detail")).hasCount(0);
     }
@@ -186,7 +186,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         Locator meta = page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".meta");
         assertThat(meta.locator("a.mr-age.stalled")).hasCount(1);
@@ -204,7 +204,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article a.mr-age.stalled")).hasAttribute("data-tip",
                 Pattern.compile("polling stopped — no further polls: this round is past its 24h window"));
@@ -220,7 +220,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article a.id")).hasAttribute("href", "https://tracker.example/ABC-1");
     }
@@ -234,7 +234,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article a.id")).hasCount(0);
     }
@@ -250,7 +250,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .badge")).hasCount(0);
         assertThat(page.locator("article .hint")).hasCount(0);
@@ -270,7 +270,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .detail.problem")).hasText("PROBLEM: lint red");
         page.locator("#tasks .row:has-text(\"a2\") .pick").click();
@@ -289,7 +289,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .detail.problem")).hasCount(0);
         assertThat(page.locator("#waiting")).isHidden();
@@ -308,7 +308,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#tasks .row .badge"))
                 .hasText(new String[]{"relay the failed checks", "you can deploy it"});
@@ -326,7 +326,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .badge")).hasCount(0);
         assertThat(page.locator("#waiting")).isHidden();
@@ -343,7 +343,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.setViewportSize(400, 1200);
         page.locator("#tasks .row .pick").click();
 
@@ -361,7 +361,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         Object spills = page.locator("article .title").evaluate("title => title.scrollWidth > title.clientWidth");
 
         org.assertj.core.api.Assertions.assertThat(spills).isEqualTo(false);
@@ -373,7 +373,7 @@ class BoardCardTest extends BoardPageContext {
                 TaskStatus.REVIEWED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("article .badge").focus();
 
@@ -392,7 +392,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .status.stalled")).hasAttribute("data-tip",
                 Pattern.compile("polling stopped — no further polls: this round is past its 24h window"));
@@ -407,7 +407,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .alias")).hasText("a1<b>x</b>");
         assertThat(page.locator("article .alias b")).hasCount(0);
@@ -423,7 +423,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .actions button")).hasText(
                 new String[]{"Check review", "Deploy", "Done", "Focus", "Open IDE", "Diff", "Restart agent"});
@@ -437,16 +437,44 @@ class BoardCardTest extends BoardPageContext {
     @Test
     void theObviousActionKeepsItsLabelReadableEvenWhenItSitsInTheQuietRow() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.REVERTED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        assertThat(page.locator("article .actions.tool button.primary")).hasText("Focus");
+        assertThat(page.locator("article .actions.tool button.primary")).hasCSS("color", "rgb(255, 255, 255)");
+    }
+
+    @Test
+    void noVerbIsFilledWhileTheAgentHoldsTheMove() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
 
         Page page = session.newPage();
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        assertThat(page.locator("article .actions.tool button.primary")).hasText("Focus");
-        assertThat(page.locator("article .actions.tool button.primary")).hasCSS("color", "rgb(255, 255, 255)");
+        assertThat(page.locator("article button[data-action=focus]")).not().hasClass(Pattern.compile("\\bprimary\\b"));
+    }
+
+    @Test
+    void doneStaysMutedAtTheRowsEndEvenWhereItIsTheMove() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.APPROVED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        assertThat(page.locator("article button.apart")).not().hasClass(Pattern.compile("\\bprimary\\b"));
     }
 
     @Test
@@ -459,7 +487,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revert").setExact(true)).hover();
 
         assertThat(page.locator("#tip")).isVisible();
@@ -468,58 +496,66 @@ class BoardCardTest extends BoardPageContext {
     }
 
     @Test
-    void keepsALongLivedTasksTimelineInsideAScrollingTipInsteadOfCoveringTheBoard() {
+    void keepsALongTipInsideAScrollingTipInsteadOfCoveringTheBoard() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis())
-                .history(Collections.nCopies(40,
-                        new StatusChange(TaskStatus.IN_PROGRESS, System
-                                .currentTimeMillis(), null)))
-                .build());
-
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
+                .lastPolledAt(System.currentTimeMillis()).lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
+        page.setViewportSize(1300, 170);
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        page.locator("article .status").hover();
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        assertThat(page.locator("article .mr-age")).isVisible();
+        var chip = page.locator("article .mr-age").boundingBox();
+        page.mouse().move(chip.x + 4, chip.y + 4);
 
-        assertThat(page.locator("#tip")).isVisible();
         assertThat(page.locator("#tip")).hasClass("scrolls");
     }
 
     @Test
-    void aStatusThatIsNotLiveStillOpensItsTimelineFromTheKeyboard() {
+    void aStatusChipCarriesNoHistoryInItsHover() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-
         Page page = session.newPage();
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        assertThat(page.locator("article .status")).not().hasAttribute("data-tip", Pattern.compile("IN_PROGRESS|_"));
+    }
+
+    @Test
+    void aLiveStatusOpensItsHoverFromTheKeyboard() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis())
+                .deployCommit("abc1234").build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .status").focus();
 
-        assertThat(page.locator("#tip")).containsText("IN_PROGRESS");
+        assertThat(page.locator("#tip")).containsText("its work is on a shared branch");
     }
 
     @Test
     void aTipBeingReadStaysOpenInItsNewWordsWhenARepaintRebuildsItsCard() {
-        long now = System.currentTimeMillis();
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now)
-                .history(Collections.nCopies(40,
-                        new StatusChange(TaskStatus.IN_PROGRESS, now, null)))
-                .build());
+                TaskStatus.APPROVED).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
-        page.locator("article .status").hover();
-        assertThat(page.locator("#tip")).hasClass("scrolls");
-        page.locator("#tip").hover();
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("article .badge").focus();
+        assertThat(page.locator("#tip")).containsText("approved: deploy or done");
 
-        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "round 1"));
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.DEPLOY_CONFLICT, "conflict"));
 
-        assertThat(page.locator("#tip")).containsText("REVIEW_PENDING");
+        assertThat(page.locator("#tip")).containsText("resolve the conflict");
     }
 
     @Test
@@ -531,7 +567,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).hover();
         page.locator("h1").hover();
 
@@ -548,7 +584,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
         assertThat(page.locator("article .meta .checks.red"))
@@ -565,7 +601,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         Locator checks = page.getByRole(AriaRole.IMG, new Page.GetByRoleOptions().setName("checks: failed"));
         checks.focus();
 
@@ -582,7 +618,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.getByRole(AriaRole.ARTICLE, new Page.GetByRoleOptions().setName("a1 \u00b7 ABC-1")))
                 .hasCount(1);
@@ -599,7 +635,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta .checks.running")).hasCount(1);
         assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
@@ -618,7 +654,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
         assertThat(page.locator("article .meta a.mr-age"))
@@ -637,7 +673,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta a.mr-age.approved")).hasText("MR \u2713");
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
@@ -654,7 +690,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta .checks.green"))
                 .hasAttribute("data-tip", Pattern.compile("checks: success"));
@@ -671,7 +707,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta .checks")).hasCount(0);
         assertThat(page.locator("article .meta a.mr-age"))
@@ -688,7 +724,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta .checks")).hasCount(0);
         assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
@@ -710,7 +746,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta a.mr-age")).hasCount(2);
         assertThat(page.locator("article .meta .tick")).hasCount(1);
@@ -727,7 +763,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article button.again")).hasText("Deploy");
         assertThat(page.locator("article .meta .status.live")).hasCount(0);
@@ -743,7 +779,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article button.primary.again")).hasText("Deploy");
     }
@@ -758,7 +794,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article button.again")).hasCount(0);
         assertThat(page.locator("article .meta .status.live")).hasCount(1);
@@ -774,7 +810,7 @@ class BoardCardTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article button[data-action=deploy]")).isVisible();
         assertThat(page.locator("article button.again")).hasCount(0);

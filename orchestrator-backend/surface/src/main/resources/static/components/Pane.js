@@ -23,7 +23,6 @@ const History = ({task, now}) => html`<section class="history" aria-label="statu
 
 // `shown` is what the tab read, `{held, shown}`, or null while it reads.
 const Session = ({task, shown}) => html`<section class="session" aria-label="the session">
-  <p class="muted">The session's screen as it reads now, read-only; Focus opens the terminal itself.</p>
   <pre class="screen">${shown === null ? 'reading…' : shown.held ? shown.shown : 'no window holds this session'}</pre>
   <form class="say" data-say=${task.id}>
     <input name="line" aria-label="tell this session" placeholder="tell this session — no, answer 2 differently"

@@ -93,7 +93,7 @@ const rows = () => [
   [[span('badge required', 'ship it'), span('badge optional', 'read the round'), span('badge required problem', 'NEEDS YOU')],
     'you are the hold-up \u00b7 yours whenever you like \u00b7 red: what is waiting on you is broken'],
   [[flagButton(false), flagButton(true)],
-    'not flagged \u00b7 flagged important by you, in this browser only'],
+    'not flagged \u00b7 flagged important by you, in this browser only; its row leads its group'],
   [[statusChip(), liveStatusChip()],
     'the state and its age \u00b7 green: already on a shared branch'],
   [[deployedButton()],
@@ -127,8 +127,8 @@ const rows = () => [
   [[span('chip', 'auto-review off'), span('chip bad', '1 of 16 jobs failed'), span('chip', 'Master: act')],
     'in the header: nothing polls the requests \u00b7 a job whose last run failed, pressed for the jobs '
     + '\u00b7 the Master presses the buttons you would'],
-  [[span('dot on', ''), span('chip bad', 'backend unreachable')],
-    'top right: this page is told about changes \u00b7 it is not, and nothing on it can run'],
+  [[span('chip bad', 'backend unreachable')],
+    'in the header: this page is cut off from the backend, and nothing on it can run'],
 ];
 
 export function node() {

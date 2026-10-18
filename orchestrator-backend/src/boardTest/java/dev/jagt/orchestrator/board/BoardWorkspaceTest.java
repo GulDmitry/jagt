@@ -24,7 +24,7 @@ class BoardWorkspaceTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a2", "a1"});
         assertThat(page.locator("#tasks .group.yours .alias")).hasText(new String[]{"a2"});
         assertThat(page.locator("#pane article .alias")).hasText("a2");
@@ -38,7 +38,7 @@ class BoardWorkspaceTest extends BoardPageContext {
                 TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("#tasks .row:has-text(\"a2\") .pick").click();
 
@@ -72,7 +72,7 @@ class BoardWorkspaceTest extends BoardPageContext {
         when(commands.execute("ABC-2", TaskAction.FOCUS)).thenReturn("Focused ABC-2.");
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.getByLabel("Focus a2", new Page.GetByLabelOptions().setExact(true)).click();
 
@@ -283,5 +283,32 @@ class BoardWorkspaceTest extends BoardPageContext {
 
         assertThat(page.locator("#palette")).isHidden();
         assertThat(page.locator("#pane")).isVisible();
+    }
+
+    @Test
+    void aFlaggedRowLeadsItsGroup() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#tasks .row:has-text(\"a2\") .pick").click();
+
+        page.locator("#pane button.flag").click();
+
+        assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a2", "a1"});
+    }
+
+    @Test
+    void theFilterBoxShowsItHoldsTheFocusWhenSlashMovesItThere() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        page.keyboard().press("/");
+
+        assertThat(page.locator(".search:focus-within")).hasCSS("border-top-color", "rgb(29, 78, 216)");
     }
 }

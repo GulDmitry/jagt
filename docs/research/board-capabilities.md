@@ -71,6 +71,7 @@ line and the live repaint the tab lacks.
 ## Gaps the mockup must close before it is built
 
 - **`run <job>`** has no button: a Jobs panel row needs one.
-- **The flag, the order toggle and the session log** are missing from the mockup.
+- ~~**The flag** is drawn on the open card only~~ — closed: a flagged row leads its group.
+- **The order toggle and the session log** are missing from the mockup.
 - **Stats, Finished, Master and Help** must be tabs of the bottom panel; the mockup shows two.
 - ~~**A launch refusal speaks the palette's grammar**~~ — closed: the `do` command alone adds it.

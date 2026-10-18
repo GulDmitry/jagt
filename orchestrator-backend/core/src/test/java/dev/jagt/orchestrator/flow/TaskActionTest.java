@@ -2,6 +2,9 @@ package dev.jagt.orchestrator.flow;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TaskActionTest {
@@ -19,5 +22,12 @@ class TaskActionTest {
     @Test
     void answersNothingForARetiredLookupOfACurrentVerb() {
         assertThat(TaskAction.byRetiredVerb("sweep")).isEmpty();
+    }
+
+    @Test
+    void noVerbTakesAKeyTheBoardKeepsForItself() {
+        List<String> keys = Arrays.stream(TaskAction.values()).map(TaskAction::key).toList();
+
+        assertThat(keys).doesNotContainAnyElementsOf(List.of("t", "j", "k", "n", "/"));
     }
 }

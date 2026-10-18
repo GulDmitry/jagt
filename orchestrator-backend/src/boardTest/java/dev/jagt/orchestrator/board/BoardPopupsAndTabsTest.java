@@ -31,7 +31,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     void theReportsMenuOpensAReportAndClosesOnEscape() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("#reports-toggle").click();
         assertThat(page.locator("#reports")).isVisible();
@@ -48,7 +48,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     void theKeyTOpensTheNewTaskFormAtItsTicket() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.keyboard().press("t");
 
@@ -80,7 +80,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         jobs.runNow("idecleanup");
         page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -179,7 +179,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     void theReportsMenuDropsBelowItsButtonAndLeavesTheHeaderOneLine() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("#reports-toggle").click();
 
@@ -260,7 +260,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     void anEmptyBoardOffersANewTaskAndAProject() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("#empty-project").click();
 
@@ -327,7 +327,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#reports-toggle").click();
         page.locator("#show-jobs").click();
         assertThat(page.locator("table.jobs tr.failed")).hasCount(0);

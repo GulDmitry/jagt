@@ -46,21 +46,13 @@ const ChecksDot = ({task}) => {
     data-tip=${task.pipelineUnread ? `${said}\nthe last sweep could not read them` : said}></span>`;
 };
 
-const timeline = (task) => (task.history || [])
-  .map((step) => {
-    const asked = step.origin ? `  (${step.origin.toLowerCase().replace('_', '-')})` : '';
-    return `${new Date(step.at).toLocaleString()}  ${step.status}${asked}`;
-  })
-  .join('\n');
-
 // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
 const StatusChip = ({task, stalled, now}) => {
-  let tip = `${task.status}\n${timeline(task)}`;
-  if (stalled) tip = `${tip}\n\n${stalled.line}`;
+  let tip = stalled ? stalled.line : '';
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   const live = task.deployed && !(task.actions || []).some((action) => action.again);
-  if (live) tip = `${tip}\n\nits work is on a shared branch`;
-  return html`<span class=${classes('status', stalled && 'stalled', live && 'live')} data-tip=${tip} tabIndex=${0}
+  if (live) tip = tip ? `${tip}\n\nits work is on a shared branch` : 'its work is on a shared branch';
+  return html`<span class=${classes('status', stalled && 'stalled', live && 'live')} data-tip=${tip || undefined} tabIndex=${tip ? 0 : undefined}
     role=${live ? 'img' : undefined} aria-label=${live ? `${task.statusLabel}, its work is on a shared branch` : undefined}
     >${task.statusLabel} <span class="age">${duration(now - task.statusSince)}</span></span>`;
 };

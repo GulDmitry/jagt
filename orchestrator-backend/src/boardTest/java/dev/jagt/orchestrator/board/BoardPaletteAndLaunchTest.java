@@ -34,7 +34,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("ship a1");
 
@@ -51,7 +51,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("ship a1");
         page.locator("#ask").press("Enter");
@@ -69,7 +69,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("ship nope");
 
@@ -88,7 +88,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("review a1");
 
@@ -109,7 +109,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("send the widget work out for review");
         page.locator("#ask").press("Enter");
@@ -125,7 +125,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#launch button[type=submit]").click();
@@ -142,7 +142,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#notes").fill("start with the failing test");
@@ -162,7 +162,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#base-branch").fill("feature/parent");
@@ -183,7 +183,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("do ABC-9 plan keep the API stable");
         page.locator("#ask").press("Enter");
@@ -196,7 +196,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     void aVerbTypedAloneHandsOverToThePartOfTheBoardItNames() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("do");
         page.locator("#ask").press("Enter");
@@ -214,7 +214,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("resume https://host.example/mr/42");
         page.locator("#ask").press("Enter");
@@ -233,7 +233,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("do ABC-9");
         page.locator("#ask").press("Enter");
@@ -246,7 +246,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     void offersEveryProjectAsABoxWithNoneTicked() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("#new-task").click();
 
@@ -258,7 +258,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     void answersATasklessVerbItselfInsteadOfSendingItToTheModel() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("ship");
         page.locator("#ask").press("Enter");
@@ -275,7 +275,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#project input[value=beta]").check();
@@ -293,7 +293,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
         page.locator("#strategy").selectOption("recreate");
@@ -322,7 +322,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     void everyFieldIsNamedWithoutLeaningOnItsPlaceholder(String id, String named) {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#" + id)).hasAttribute("aria-label", Pattern.compile(named));
     }
@@ -332,7 +332,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
 
@@ -350,7 +350,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         });
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
 

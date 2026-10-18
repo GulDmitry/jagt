@@ -46,6 +46,10 @@ names its project where projects are several.
 - **WHEN** a1's poll stops while a2 is open
 - **THEN** a1's row rings its status
 
+#### Scenario: A task is flagged
+- **WHEN** a task is flagged
+- **THEN** its row leads its group
+
 #### Scenario: Focus from the list
 - **WHEN** the human presses the row verb of a task that is not open
 - **THEN** Focus runs on that task and the pane keeps the task it had

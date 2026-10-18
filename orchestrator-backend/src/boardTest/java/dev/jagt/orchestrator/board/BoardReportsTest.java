@@ -34,7 +34,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
 
         assertThat(page.locator("#show-log")).hasText("log");
@@ -46,7 +46,7 @@ class BoardReportsTest extends BoardPageContext {
     void aReportThatAnswersForOneTaskGetsNoButtonInTheBarOfReports() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#show-stats")).hasCount(1);
         assertThat(page.locator("#show-replies")).hasCount(0);
@@ -64,7 +64,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .actions.tool .offer")).containsText("Replies");
     }
@@ -111,7 +111,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
 
         assertThat(page.locator("#report-body")).containsText("1 · FIXED · !12 thread 1");
@@ -131,7 +131,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
 
         assertThat(page.locator("#report-body .verdict.ok")).hasText("FIXED ");
@@ -151,7 +151,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#say").press("Enter");
@@ -169,7 +169,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("activity a12");
         page.locator("#ask").press("Enter");
@@ -195,7 +195,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#pane .offer").click();
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#close-report").click();
@@ -218,7 +218,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#say").press("Enter");
@@ -239,7 +239,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
 
         assertThat(page.locator("#said")).isHidden();
@@ -254,7 +254,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("replies");
         page.locator("#ask").press("Enter");
@@ -275,7 +275,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
         Files.writeString(worktree.resolve("review_replies.md"),
                 "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
@@ -294,7 +294,7 @@ class BoardReportsTest extends BoardPageContext {
                 .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.route("**/api/commands/replies**", route -> {
             APIResponse read = route.fetch();
             try {
@@ -324,7 +324,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
 
         assertThat(page.locator("#report-body a"))
@@ -346,7 +346,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
 
         assertThat(page.locator("#toasts .toast.error")).hasText("the round file is not readable");
@@ -362,7 +362,7 @@ class BoardReportsTest extends BoardPageContext {
         doThrow(Refusal.noSuchTask("a18")).when(replies).render("a18");
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.locator("article .offer").click();
 
@@ -378,7 +378,7 @@ class BoardReportsTest extends BoardPageContext {
                 .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
         assertThat(page.locator("#report-body")).containsText("Renamed it.");
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -416,7 +416,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
 
         assertThat(page.locator("#report-title")).hasText("replies a7 \u00b7 ABC-7");
@@ -434,7 +434,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
 
         assertThat(page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("replies a7 \u00b7 ABC-7")))
@@ -455,7 +455,7 @@ class BoardReportsTest extends BoardPageContext {
                 .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
         page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
@@ -486,7 +486,7 @@ class BoardReportsTest extends BoardPageContext {
                 .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
         page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
@@ -516,7 +516,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("replies a1");
         page.locator("#ask").press("Enter");
@@ -534,7 +534,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
 
@@ -546,7 +546,7 @@ class BoardReportsTest extends BoardPageContext {
     void aReportClosesWhenTheDimmedAreaAroundItIsClicked() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
         assertThat(page.locator("#report")).isVisible();
@@ -560,7 +560,7 @@ class BoardReportsTest extends BoardPageContext {
     void theShortcutsLeaveTheBoardAloneWhileAReportIsOpen() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
         assertThat(page.locator("#report")).isVisible();
@@ -574,7 +574,7 @@ class BoardReportsTest extends BoardPageContext {
     void aReportSurvivesASelectionThatStartedInsideItAndEndedOutside() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#reports-toggle").click();
         page.locator("#show-activity").click();
 
@@ -590,7 +590,7 @@ class BoardReportsTest extends BoardPageContext {
     void helpAlsoSaysWhatTheBoardsOwnMarksMean() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#reports-toggle").click();
         page.locator("#show-help").click();
 

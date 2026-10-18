@@ -64,6 +64,7 @@ public record TaskView(
     }
 
     /**
+     * {@code primary} = the move's own verb, and the move is the human's: where an agent holds it nothing is filled.
      * {@code again} = this verb has already run and what it did is still live, so pressing it repeats it. Built in one
      * place from a verb with every field set, so no field is ever left to a default.
      */
@@ -88,7 +89,7 @@ public record TaskView(
         DashboardLine.Line line = DashboardLine.forTask(task, webLink(task.mrUrl()));
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
-                        action == move.primary(), action.group().id(), action.readOnly(),
+                        action == move.primary() && move.owner() == Owner.YOU, action.group().id(), action.readOnly(),
                         deployed && action == TaskAction.DEPLOY, action.onRow(), action.apart(), action.key()))
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),

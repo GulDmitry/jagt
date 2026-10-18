@@ -119,6 +119,23 @@ class TaskViewTest {
     }
 
     @Test
+    void highlightsNoVerbWhileTheAgentHoldsTheMove() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.actions()).noneMatch(TaskView.ActionView::primary);
+    }
+
+    @Test
+    void highlightsTheMovesVerbWhereTheMoveIsTheHumans() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.CI_FAILED).alias("a1")
+                .mrUrl("http://host/mr/1").build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.actions()).filteredOn(TaskView.ActionView::primary).extracting(TaskView.ActionView::id)
+                .containsExactly("sweep");
+    }
+
+    @Test
     void theHistorySaysEachStatusInTheBoardsWords() {
         TaskState started = TaskState.builder("api", "/api-wt", TaskStatus.NEW).alias("a1").build();
         TaskView view = TaskView.of("ABC-1", started.withStatus(TaskStatus.IN_PROGRESS, "working"), false,

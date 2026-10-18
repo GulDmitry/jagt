@@ -12,8 +12,9 @@ import * as selection from './selection.js';
 const typingInto = (target) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
   || target instanceof HTMLSelectElement;
 
-// What the keys do, said once under the list; the bindings below are what it describes.
-export const said = 'j k walk · ↵ open · n next yours · f focus · t new task · / filter · ⌘K command';
+// What the keys do, said once under the list; the row verb's own key and name come from the server's verb.
+export const said = (rowVerb) => ['j k walk', '↵ open', 'n next yours', rowVerb?.key && `${rowVerb.key} ${rowVerb.label.toLowerCase()}`,
+  't new task', '/ filter', '⌘K command'].filter(Boolean).join(' · ');
 
 // A letter moves the selection or opens a form; any other letter is the key of a verb the open task offers, and the
 // server still decides whether it may run.

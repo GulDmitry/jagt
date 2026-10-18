@@ -44,7 +44,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
   the `.quote` it answers muted.
 - amber ring — `.mr-age.stalled` / `.repos.stalled` / `.status.stalled` (no link, and on every row): the poll stopped,
   nothing will look again; `.chip.stalled`: `act` stopped, pressed to restore.
-- `button.flag` ⚐/⚑ — flagged important, this browser only.
+- `button.flag` ⚐/⚑ — flagged important, this browser only; a flagged row leads its group.
 - `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.
 - bold `.row-title.changed` — its state moved since you last had it open; shape, since every colour is taken.
 - `button.row-verb`, a terminal glyph — a row's `onRow` verb, `primary` filled only where it is your move.

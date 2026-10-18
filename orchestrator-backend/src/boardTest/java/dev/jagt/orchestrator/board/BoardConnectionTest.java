@@ -44,7 +44,7 @@ class BoardConnectionTest extends BoardPageContext {
     void aStateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
@@ -61,7 +61,7 @@ class BoardConnectionTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         assertThat(page.locator("#show-help")).hasCount(1);
 
         org.assertj.core.api.Assertions.assertThat(reads).filteredOn(url -> url.equals("/api/tasks")).hasSize(1);
@@ -74,7 +74,7 @@ class BoardConnectionTest extends BoardPageContext {
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         List<APIResponse> read = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route("**/api/tasks", route -> {
@@ -105,7 +105,7 @@ class BoardConnectionTest extends BoardPageContext {
                 TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         Locator focus = page.locator("article", new Page.LocatorOptions().setHasText("a1"))
                 .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Focus").setExact(true));
         focus.focus();
@@ -126,7 +126,7 @@ class BoardConnectionTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         Locator focus = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true));
         focus.focus();
         focus.press("Enter");
@@ -144,7 +144,7 @@ class BoardConnectionTest extends BoardPageContext {
                 .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         Locator offer = page.locator("article .offer");
         offer.focus();
 
@@ -159,10 +159,10 @@ class BoardConnectionTest extends BoardPageContext {
     @Test
     void aRepaintLeavesKeyboardFocusOnTheChipOfTheCardItRebuilt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).deployCommit("abc1234").build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .status").focus();
 
         state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
@@ -174,14 +174,14 @@ class BoardConnectionTest extends BoardPageContext {
     @Test
     void aRepaintKeepsTheTipOfAChipWhoseCardDidNotChange() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).deployCommit("abc1234").build());
         state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).deployCommit("abc1234").build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".status").focus();
-        assertThat(page.locator("#tip")).containsText("IN_PROGRESS");
+        assertThat(page.locator("#tip")).containsText("shared branch");
 
         state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
 
@@ -216,7 +216,7 @@ class BoardConnectionTest extends BoardPageContext {
                 .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .offer").click();
         assertThat(page.locator("#report-line")).isVisible();
 
@@ -231,7 +231,7 @@ class BoardConnectionTest extends BoardPageContext {
         Page page = session.newPage();
         page.clock().install();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         page.clock().runFor(50_500);
         assertThat(page.locator("#offline")).isVisible();
@@ -257,7 +257,7 @@ class BoardConnectionTest extends BoardPageContext {
         Page page = session.newPage();
         page.clock().install();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-5");
         page.route("**/api/events", route -> route.fulfill(new Route.FulfillOptions()

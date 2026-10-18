@@ -8,7 +8,8 @@ import {Meta} from './Meta.js';
 const Flag = ({taskId, on}) => html`<button class="flag" data-flag=${taskId} aria-pressed=${String(on)}
   aria-label="flag as important" data-tip="important — kept in this browser only">${on ? '⚑' : '⚐'}</button>`;
 
-const verbClass = (action) => [action.primary && 'primary', action.again && 'again', action.apart && 'apart']
+// A verb drawn apart stays muted at the row's end even where the move names it.
+const verbClass = (action) => [action.primary && !action.apart && 'primary', action.again && 'again', action.apart && 'apart']
   .filter(Boolean).join(' ') || undefined;
 
 // Which groups exist, and which comes first, stays the projection's answer; a verb drawn apart ends its row, and an

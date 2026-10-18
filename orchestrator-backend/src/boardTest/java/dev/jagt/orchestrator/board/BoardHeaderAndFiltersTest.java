@@ -31,7 +31,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#auto-review")).isHidden();
         assertThat(page.locator("article .meta a.mr-age"))
@@ -47,7 +47,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article")).hasCount(1);
         assertThat(page.locator("article a.mr-age")).hasCount(0);
@@ -66,7 +66,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#phases .phase")).hasText(
                 new String[]{"build 1", "review 1", "check 0", "ready 0", "deploy 1", "done 0"});
@@ -85,7 +85,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a10", "a2"});
     }
@@ -101,7 +101,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#phases button.order").click();
 
         assertThat(page.locator("#tasks .row .alias")).hasText(new String[]{"a2", "a10"});
@@ -119,7 +119,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#pane article .title")).hasText(whole);
         assertThat(page.locator("#tasks .row-title")).hasText(whole);
@@ -136,7 +136,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#pane article .detail")).hasText("NEEDS YOU: " + reason);
     }
@@ -152,7 +152,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#phases button.phase").nth(1).click();
 
         assertThat(page.locator("article .alias")).hasText(new String[]{"a2"});
@@ -169,7 +169,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#phases button.phase").nth(1).click();
 
         assertThat(page.locator("#phases")).containsText("build 1 · review 1");
@@ -184,7 +184,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#phases button.phase").nth(1)).isDisabled();
     }
@@ -199,7 +199,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#filter").fill("nothing matches this");
 
         assertThat(page.locator("article")).hasCount(0);
@@ -217,7 +217,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#phases button.phase").nth(1).click();
         page.locator("#phases .clear-filters").click();
 
@@ -237,7 +237,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#filter").fill("invoice");
 
         assertThat(page.locator("article .alias")).hasText(new String[]{"a2"});
@@ -254,7 +254,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#filter").fill("xyz-9");
 
         assertThat(page.locator("article .alias")).hasText(new String[]{"x1"});
@@ -264,16 +264,17 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     void anEmptyBoardSaysWhereATaskComesFrom() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#empty")).containsText("No tasks yet.");
+        assertThat(page.locator("#empty")).not().containsText("ABC-42");
     }
 
     @Test
     void saysNothingInTheHeaderAboutJobsWhileNoneHasFailed() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#jobs-pulse")).isHidden();
     }
@@ -297,7 +298,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         Page page = session.newPage();
         page.clock().setFixedTime(now - Duration.ofSeconds(630).toMillis());
         page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         jobs.runNow("idecleanup");
         page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -324,7 +325,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#waiting")).hasText("1 need your action");
     }

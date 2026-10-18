@@ -38,7 +38,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.onDialog(dialog -> {
             asked.complete(dialog.message());
             dialog.dismiss();
@@ -63,7 +63,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1 — its window is in front.");
@@ -80,7 +80,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.onDialog(dialog -> {
             asked.complete(dialog.message());
             dialog.dismiss();
@@ -104,7 +104,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.onDialog(dialog -> {
             asked.complete(dialog.message());
             dialog.dismiss();
@@ -133,7 +133,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.onDialog(dialog -> {
             asked.complete(dialog.message());
             dialog.dismiss();
@@ -156,7 +156,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true)).click();
 
         assertThat(page.locator("#toasts .toast.error"))
@@ -179,7 +179,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Check review").setExact(true)).click();
 
@@ -215,7 +215,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Check review").setExact(true)).click();
 
@@ -248,7 +248,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Check review").setExact(true)).click();
 
@@ -272,7 +272,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.keyboard().press("Control+k");
         page.locator("#ask").fill("do ABC-9");
         page.locator("#ask").press("Enter");
@@ -292,7 +292,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#tasks .row", new Page.LocatorOptions().setHas(page.locator(".alias:text-is(\"42\")")))
                 .locator(".pick").click();
         page.locator("#pane article").getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Ship")
@@ -312,7 +312,7 @@ class BoardActionsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true)).click();
         page.getByRole(AriaRole.ALERT).getByRole(AriaRole.BUTTON).click();
 

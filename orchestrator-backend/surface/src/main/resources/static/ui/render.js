@@ -18,7 +18,7 @@ import * as selection from './selection.js';
 import * as tabs from './tabs.js';
 import {sayTo} from '../core/api.js';
 import {sending} from './submit.js';
-import {said as keys} from './keys.js';
+import {said} from './keys.js';
 import {hideStaleTip} from './tips.js';
 
 const board = document.getElementById('board');
@@ -42,7 +42,7 @@ export function render() {
   header.render(tasks, shown.length);
   // Read off the cards themselves: the configured list can be longer than the board, and shorter than the truth.
   const manyProjects = new Set(tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project))).size > 1;
-  const groups = grouped(shown, manyProjects);
+  const groups = grouped(shown, manyProjects, (task) => flags.holds(task.id));
   walked = groups.flatMap((group) => group.tasks);
   const open = selection.current(walked);
   const now = Date.now();
@@ -52,7 +52,7 @@ export function render() {
     broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || store.actStopped()});
   board.classList.toggle('open', selection.isOpen());
   paint(open ? html`
-    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${keys}/>
+    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${said(shown.flatMap((task) => task.actions || []).find((action) => action.onRow))}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
       offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
   hideStaleTip(null);

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="app.css">
   <script type="importmap">{"imports": {"preact": "./vendor/preact.mjs", "preact/hooks": "./vendor/hooks.mjs", "htm": "./vendor/htm.mjs"}}</script>
 </head>
-<body>
+<body class="stale">
 <header>
   <h1>jagt</h1>
   <span id="waiting" class="waiting" hidden></span>
@@ -31,9 +31,7 @@
     <button id="reports-toggle" type="button" aria-haspopup="menu" aria-expanded="false">Reports ▾</button>
     <div id="reports" role="menu" hidden></div>
   </div>
-  <button id="new-task" type="button" class="primary" data-tip="t: start a task">New task <kbd>t</kbd></button>
-  <span id="live" class="dot" role="img" aria-label="push connection to the backend" tabindex="0"
-        data-tip="push connection to the backend"></span>
+  <button id="new-task" type="button" class="primary">New task <kbd>t</kbd></button>
   <span id="offline" class="chip bad" role="status" hidden data-tip="nothing on the board is current and nothing on it can run; it reconnects by itself">backend unreachable</span>
 </header>
 
@@ -87,7 +85,7 @@
         <input id="project-deploy" name="deployBranch" autocomplete="off"></label>
       <label class="field"><span>Verify before hand-back</span><input id="project-verify" name="verify" autocomplete="off"></label>
     </div>
-    <label class="field"><span>What it is, in one line <span class="muted">— places a ticket no label places</span></span>
+    <label class="field"><span>What it is, in one line</span>
       <input id="project-about" name="about" autocomplete="off"></label>
     <footer class="dialog-foot"><span class="muted state" id="project-state"></span><span class="grow"></span>
       <button type="submit" class="primary">Add to jagt.yml</button></footer>
@@ -118,7 +116,6 @@
   <p>No tasks yet.</p>
   <p><button type="button" id="empty-new" class="primary">New task <kbd>t</kbd></button>
     <button type="button" id="empty-project">Add a project</button></p>
-  <p class="muted">Or press ⌘K and type do ABC-42.</p>
 </section>
 <p id="filtered" class="empty" hidden></p>
 <button id="show-log" class="log" hidden>log</button>
