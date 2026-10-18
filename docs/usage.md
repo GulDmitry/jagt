@@ -9,7 +9,7 @@ jagt has one surface: the **board** at `http://localhost:8290`.
 Every task is a **row** of two lines, the tasks waiting on you in a band on top and the rest by project, each in
 the order it was registered: a row moves only when whose move it is changes. One line of counts above the list
 holds the pipeline (build → review → check → ready → deploy → done), and `order: added` switches to alias order.
-`▸_` on a row is Focus without opening the task.
+`▸_` on a row is Focus without opening the task. The empty board offers **New task** and **Add a project**.
 
 **The open task** stands beside the list: its card with every legal action, the obvious one highlighted and each
 one's key drawn on it, `Done` apart at the end; then three tabs: **Overview** (the status history), **Session** (its screen,
@@ -46,6 +46,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `focus <ticket>` | jump to the agent's session and talk to it directly |
 | `ide <ticket>` | open the worktree as a project — Git → Local Changes is the live diff |
 | `ide <ticket> diff` | a static snapshot against the branch the request targets |
+| `diff <ticket>` | every repository's diff against the branch its request targets |
 | `ship <ticket>` | commit, push, open or update the review request |
 | `sweep <ticket>` | pull checks + comments; the agent fixes locally and drafts replies |
 | `replies [ticket]` | every comment of the round with its verdict and the reply drafted for it |
@@ -63,6 +64,10 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `stats` | subscription limits, jagt's own model spend per task, cycle time |
 | `activity` | what jagt did unattended |
 | `jobs` | every scheduled job, its cadence, last and next run |
+| `run <job>` | run an unattended job now instead of at its next tick |
+| `finished` | what has been closed, how long each took, how many rounds it cost and who held it |
+| `master` | the unattended reviewer: what it may do, and what it judges by |
+| `act` | give the Master back the buttons it stopped pressing after three bad endings in a row |
 | `help` | command reference and recovery cheatsheet |
 | *anything else* | free text — see below |
 
@@ -75,7 +80,7 @@ curl -s localhost:8290/api/commands/activity
 
 ### Free text
 
-Type a sentence instead of a command (the board's **Ask** button, or `⌘K`) and a model maps it onto **exactly
+Type a sentence instead of a command (the `⌘K` button, or its key) and a model maps it onto **exactly
 one** of the commands above, runs it through the same gate a button uses, and says what it understood. The
 palette completes the grammar as you type and says whether the line will run (green) or why it will not
 (`no task "a9"`). **A line that parses is executed as typed, with no model call**; one mistyped word is

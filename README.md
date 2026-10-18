@@ -76,6 +76,7 @@ cd "$TMPDIR" && claude "Name your MCP tools for <your tracker> and <your code ho
 ```
 
 `NONE` means jagt cannot read a ticket yet; [Installation](docs/installation.md) has the fix.
+No tracker: skip this step. `tracker.workflow: none` is the default, and a task is then your own words.
 
 ### 2 — clone, and name one repository
 
@@ -84,7 +85,8 @@ git clone https://github.com/GulDmitry/jagt.git && cd jagt
 cp jagt.yml.dist jagt.yml
 ```
 
-`projects` is the only section with no default — without one jagt refuses to start:
+`projects` is the only section with no default — without one jagt refuses to start.
+Edit the `my-project` entry the copy already holds; the repository needs a remote named `origin`, fetched:
 
 ```yaml
 orchestrator:
@@ -124,7 +126,8 @@ Anything missing, and jagt refuses to start with the **whole** list, each line n
 
 ### 5 — open the board
 
-**http://localhost:8290** — type a ticket key or URL, or with no ticket `<project> <what to do>`, then **New task** (key `t`).
+**http://localhost:8290** — **New task** (key `t`): a ticket key or URL in Ticket; or leave Ticket empty, pick a project
+and say what to do. It starts an agent session in tmux at once, and a session costs tokens.
 
 ## What you keep
 
