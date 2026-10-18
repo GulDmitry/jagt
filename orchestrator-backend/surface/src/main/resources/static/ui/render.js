@@ -51,8 +51,9 @@ export function render() {
   glance.render({waiting: tasks.filter((task) => task.attention === 'REQUIRED').length,
     broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || store.actStopped()});
   board.classList.toggle('open', selection.isOpen());
+  const rowVerb = shown.flatMap((task) => task.actions || []).find((action) => action.onRow);
   paint(open ? html`
-    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${said(shown.flatMap((task) => task.actions || []).find((action) => action.onRow))}/>
+    <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${said(rowVerb)}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
       offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
   hideStaleTip(null);

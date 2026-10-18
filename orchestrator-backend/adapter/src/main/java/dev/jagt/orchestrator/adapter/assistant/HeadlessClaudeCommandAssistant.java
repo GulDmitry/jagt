@@ -43,7 +43,8 @@ public class HeadlessClaudeCommandAssistant implements CommandAssistant {
                 Same tasks; request "restart the search agent": command=none, reason="two search tasks fit".
                 </examples>
                 Respond directly.""".formatted(text, menu.prompt());
-        return claude.ask(prompt, CommandRead.schemaFor(menu.commands(), menu.tasks()).json(), "command mapping", AssistantCallKind.COMMAND_MAP, TIMEOUT)
+        return claude.ask(prompt, CommandRead.schemaFor(menu.commands(), menu.tasks()).json(), "command mapping",
+                AssistantCallKind.COMMAND_MAP, TIMEOUT)
                 .map(n -> new CommandProposal(n.path("command").asString(""), n.path("task").asString(""),
                         n.path("ticket").asString(""), n.path("reason").asString("")));
     }

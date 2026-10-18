@@ -27,8 +27,8 @@ A session line `ToolGate` refuses and a report `FlowRules.refusedReport` refuses
 - **THEN** it becomes `interactions.jsonl.1`, the older `.1` is gone, and the next press starts a new file
 
 ### Requirement: A record store packs its older half
-`finished.jsonl` past 10 MB and `artifacts/` past 1000 task directories SHALL pack their older half beside them,
-`finished-<stamp>.jsonl.gz` and `artifacts/archive-<stamp>.zip`, keeping the newer half where every reader looks.
+`finished.jsonl` past 10 MB and `artifacts/` past 1000 task directories SHALL pack their older half beside them.
+The packs are `finished-<stamp>.jsonl.gz` and `artifacts/archive-<stamp>.zip`; the newer half stays where every reader looks.
 An artifact past 10 MB SHALL NOT be copied; `<name>.not-kept` names its size.
 
 #### Scenario: The finished log passes its ceiling
@@ -57,9 +57,9 @@ keep no transcript (`--no-session-persistence`); a session's own transcripts are
 - **THEN** nothing it said is left under the agent CLI's transcripts
 
 ### Requirement: A session writes only inside its task
-A session's shell SHALL write only in the task's worktrees, the git directories they commit to, `/tmp`, the build and
-cluster tools' own directories and `orchestrator.agent.sandbox.allowWrite` (`WorktreeSandbox`). Every host SHALL stay
-reachable. A command needing more SHALL ask the human through the agent CLI's own prompt.
+A session's shell SHALL write only in the task's worktrees and the git directories they commit to.
+It MAY also write `/tmp`, the build and cluster tools' own directories and `orchestrator.agent.sandbox.allowWrite`
+(`WorktreeSandbox`). Every host SHALL stay reachable. A command needing more SHALL ask the human through the agent CLI's own prompt.
 
 #### Scenario: A write outside the task
 - **WHEN** ABC-42's session runs `rm -rf ~/other-project`
