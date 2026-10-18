@@ -197,7 +197,7 @@ calls without a node, `components/` draws from props alone, `ui/` owns the event
 | `ui/act`, `ui/inflight` | running one action: what is in flight, what it asks first |
 | `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
 | `ui/dialogs`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
-| `ui/legend` | what every mark means, as the page's own elements — their one definition |
+| `ui/legend`, `ui/legend/` | what every mark means, as the page's own elements — their one definition; `card` and `page` hold the rows |
 | `ui/refresh`, `ui/interactions` | how the page learns a task changed; what the human pressed |
 | `styleguide.html`, `styleguide/` | every component in every state, from fixtures; `boardTest` loads it |
 
