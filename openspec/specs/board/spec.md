@@ -18,7 +18,7 @@ question. Stopping the backend is no verb.
 
 ### Requirement: A mark says what it replaces
 The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours
-are [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the launch row's branch-strategy
+are [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the New task form's branch-strategy
 picker and MCP schema both read `task/BranchStrategy`. A verb with all its inputs gets no form. The
 project key renders only where projects are several, in the install or the task.
 
@@ -27,13 +27,13 @@ project key renders only where projects are several, in the install or the task.
 - **THEN** above the commands every mark stands beside its one board-wide meaning
 
 #### Scenario: The launch row
-- **WHEN** the human starts a task there
-- **THEN** it offers ticket, project, base branch, `plan first`, notes, branch strategy, Start
-- **AND** an untouched picker sends nothing
+- **WHEN** the human presses New task or `t`
+- **THEN** a dialog offers ticket, a box per project, base branch, `plan first`, notes, branch strategy, Start
+- **AND** no box ticked sends no project
 
 #### Scenario: Resuming a request
 - **WHEN** the human resumes a review request
-- **THEN** `resume <url>` in Ask is the one control
+- **THEN** `resume <url>` after ⌘K is the one control
 
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`, a row per group.
@@ -123,10 +123,9 @@ on it.
 - **THEN** the board opens filtered to that task; elsewhere the title names the task
 
 ### Requirement: Facts sit on the thing they are about
-Cards SHALL keep their order; only `order: alias` lets a new task take a retired one's place. The filter box (`/`)
-matches alias, ticket number or title; `Esc` clears. The task number opens the ticket, the `MR` chip the request; across
-repositories each project's name opens its own. The chip shows the request's own age, green with ✓ once approved. The
-Deploy button is green while the work is live. A `⚐` beside the title flags the task, in this browser alone.
+The task number SHALL open the ticket, the `MR` chip the request; across repositories each project's name opens its
+own. The chip shows the request's own age, green with ✓ once approved. The Deploy button is green while the work is
+live. A `⚐` beside the title flags the task, in this browser alone.
 
 #### Scenario: Taking the colour off
 - **WHEN** a live task is reverted
@@ -144,3 +143,42 @@ highlighted button says what to do. A badge is the human's move; a quiet "you ca
 #### Scenario: Jobs that run fine
 - **WHEN** no job's last run failed
 - **THEN** no jobs chip shows
+
+### Requirement: Components ship as the files that run
+The board SHALL render Preact components written with `htm`, served from `static/vendor/` byte for byte as the npm
+registry published them. The page's import map resolves them. A page SHALL load nothing from outside the jar, and
+the board's code and styles SHALL weigh under 160 KB (`BoardAssetsTest`).
+
+#### Scenario: A vendored file is edited
+- **WHEN** `vendor/preact.mjs` differs from the published 11.0.1 by one byte
+- **THEN** `BoardAssetsTest` fails naming the file
+
+#### Scenario: A page reaches for a CDN
+- **WHEN** a page under `static/` loads a script or a stylesheet from `https://`
+- **THEN** `BoardAssetsTest` fails
+
+### Requirement: The styleguide draws every state
+`styleguide.html` SHALL render each component in each state its `styleguide/` fixtures name, with the modules the
+board renders. A component reads no module state: everything it shows arrives in its props.
+
+#### Scenario: Opening the styleguide
+- **WHEN** a human opens `/styleguide.html`
+- **THEN** every card state stands as one card under its name, and the page throws nothing
+
+### Requirement: A press is logged as a control and a status
+The board SHALL log each press as `{at, control, status}` to `interactions.jsonl` beside `state.json`, unless
+`interactionLog: false`. `control` names the verb, report or element; `status` is the task's status or null. A press
+SHALL NOT carry a task id, an alias, a ticket or typed text. A batch is sent two seconds after a burst begins, holds
+at most 50 presses, and is refused whole when one press breaks the shape.
+
+#### Scenario: Pressing Focus
+- **WHEN** the human presses Focus on an agent's working task
+- **THEN** a line holds `action:focus` and `IN_PROGRESS`, and nothing naming the task
+
+#### Scenario: A malformed press
+- **WHEN** a batch carries a control with a space, a status in lower case, or a date a day away
+- **THEN** it is refused with a sentence, and nothing of it is written
+
+#### Scenario: Switched off
+- **WHEN** `interactionLog: false`
+- **THEN** a batch is checked and nothing is written

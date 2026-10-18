@@ -17,3 +17,11 @@ A session line `ToolGate` refuses and a report `FlowRules.refusedReport` refuses
 #### Scenario: The finished report
 - **WHEN** the human runs `finished`
 - **THEN** its last line sums the refusals of every finished task per kind
+
+### Requirement: The press log rolls at one megabyte
+`interactions.jsonl` past 1 MB SHALL roll into one `interactions.jsonl.1`, replacing the last; the page holds at most
+200 unsent presses.
+
+#### Scenario: A long week of presses
+- **WHEN** a batch takes the log past 1 MB
+- **THEN** it becomes `interactions.jsonl.1`, the older `.1` is gone, and the next press starts a new file

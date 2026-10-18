@@ -100,16 +100,16 @@ load itself again, so it never keeps the code of a board that is gone.
 - **THEN** the tab reconnects, sees a new run and loads the new board
 
 ### Requirement: The header says only what needs a look
-The header SHALL hold the count of tasks waiting on the human, a failed job, the Master while it acts, review polling
-while it is off, the filter, one Reports menu and New task. A failed job's chip opens the jobs.
+The header SHALL hold the count of tasks waiting on the human, a failed job, `act` stopped, the Master while it acts,
+review polling while it is off, the filter, one Reports menu and New task. A failed job's chip opens the jobs.
 
 #### Scenario: A job fails
 - **WHEN** a job's last run failed
 - **THEN** a chip says how many of how many failed, and pressing it opens the jobs with that row marked
 
 ### Requirement: Every job can run now
-The jobs SHALL show as rows grouped by whom each serves, with the server's words, the last run, the next and its
-error; each row's Run now sends `run <job>`.
+The jobs SHALL show as rows grouped by whom each serves, with the server's words, the last run and its error; the
+next run sits in the row's hover. Each row's Run now sends `run <job>`.
 
 #### Scenario: Running a job by hand
 - **WHEN** the human presses Run now on idecleanup
@@ -126,11 +126,16 @@ from, a key no project holds — fill the fields the human has not typed, and wr
 
 ### Requirement: The open task has three tabs
 The open task SHALL show its status history, its session's screen read without colour codes with a line to tell
-the session, and its drafted review replies or that none are drafted.
+the session, and its drafted review replies or that none are drafted. The replies tab reads the command whose `part`
+is `round`.
 
 #### Scenario: Reading the session
 - **WHEN** the human opens the Session tab
 - **THEN** the session's screen as it reads now stands there, and a line typed under it reaches that session
+
+#### Scenario: A blank screen
+- **WHEN** a window holds the session and its screen is blank
+- **THEN** the tab shows it blank; it says no window holds the session only when none does
 
 ### Requirement: A verb carries its key
 A verb SHALL carry the letter that runs it on the open task, drawn on its button, from the server; a verb that cannot

@@ -118,15 +118,23 @@ move; the enum name is the wire value `state.json` carries. `RoundRecord.record`
 - **WHEN** it opens
 - **THEN** approval drops
 
-### Requirement: Position carries nothing
-`TaskViews` SHALL order by registration, a status change repainting the chip in place. A phase is a count above the
-grid, zeros included. One order control, `static/ui/order.js`, MUST offer registration or alias; all else narrows:
-a filter over alias, id and title, plus needs-my-action. An alias is the lowest free number, so alias order puts a
-new task where a retired one sat.
+### Requirement: Position carries the tier
+`TaskViews` SHALL put the tasks waiting on the human first, then the rest in project order, each group in
+registration order. A phase is a count above the grid, zeros included. One order control, `static/ui/order.js`, MUST
+offer registration or alias; all else narrows: a filter over alias, id and title, typed in the filter box alone.
+An alias is the lowest free number, so alias order puts a new task where a retired one sat.
 
 #### Scenario: A status changes
-- **WHEN** a task moves
-- **THEN** its card stays put
+- **WHEN** a task's tier changes to waiting on the human
+- **THEN** its row moves into the band on top
+
+#### Scenario: The rest
+- **WHEN** no tier changes
+- **THEN** the other rows keep their place, in project order
+
+#### Scenario: The filter
+- **WHEN** the human types in the filter box
+- **THEN** rows narrow by alias, id or title, and no checkbox narrows them by tier
 
 ### Requirement: Three clocks, three questions
 `statusSince` SHALL be time in this status, restarting on every real transition. `lastActiveTimestamp` is watchdog
