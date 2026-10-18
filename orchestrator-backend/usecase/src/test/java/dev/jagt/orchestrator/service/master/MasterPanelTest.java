@@ -291,8 +291,35 @@ class MasterPanelTest {
                 "outcome=question — keep v2?", "", List.of(), false, false);
         String review = MasterPanel.shared("judge hard", "never commit unasked", true, true);
 
-        assertThat(answer).startsWith("Your goal is the task finished: ready to merge, its request's checks green");
-        assertThat(review).startsWith("Your goal is the task finished: ready to merge, its request's checks green");
+        assertThat(answer).startsWith("<goal>\nYour goal is the task finished: ready to merge, its request's checks green");
+        assertThat(review).startsWith("<goal>\nYour goal is the task finished: ready to merge, its request's checks green");
+    }
+
+    @Test
+    void definesAllFiveSeveritiesToThePlanReaderAsToEveryRoundReader() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
+
+        String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
+                new MasterPanel.RoundRead("", "", "", List.of(), ""), false, true);
+
+        assertThat(prompt).contains("- blocking: someone relying on it today breaks.",
+                "- wrong: not what the ticket asks.", "- unguarded: right, but nothing fails when it breaks.",
+                "- unproven: you would decide it", "- noise: style or taste.")
+                .doesNotContain("Only noise lets the plan pass");
+    }
+
+    @Test
+    void tagsTheRoleAndForbidsAPreambleInEveryMasterPrompt() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
+        MasterPanel.RoundRead read = new MasterPanel.RoundRead("", "", "", List.of(), "");
+
+        assertThat(MasterPanel.prompt(TWO.getFirst())).startsWith("<role>You are the chaplain")
+                .endsWith("</role>\nRespond directly, no preamble.");
+        assertThat(MasterPanel.planPrompt("ABC-1", task, "judge hard", "", read, false, true))
+                .contains("<role>You judge the plan of task ABC-1").endsWith("Respond directly, no preamble.");
+        assertThat(MasterPanel.answerPrompt("ABC-1", task, "judge hard", "author", "keep v2?", "", List.of(), false,
+                true)).contains("<role>You stand in for the human on task ABC-1.</role>")
+                .endsWith("Respond directly, no preamble.");
     }
 
     @Test

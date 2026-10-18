@@ -243,7 +243,8 @@ public class MasterPanel {
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
                                String decided, List<String> said, boolean stuck, boolean tracker) {
-        return GOAL + "You stand in for the human on task " + taskId + ". The session working it stopped to ask:\n"
+        return GOAL + "<role>You stand in for the human on task " + taskId + ".</role>\nThe session working it"
+                + " stopped to ask:\n"
                 + "<question>\n" + question + "\n</question>\n"
                 + "The brief you judge by:\n<brief>\n" + brief + "\n</brief>\n"
                 + "The brief the session works to, its %s filled per task:\n<author_brief>\n" + authorBrief
@@ -270,12 +271,14 @@ public class MasterPanel {
                 + "- premises: what it rests on, each with provenBy — the file:line or read-only command"
                 + " that shows it.\n"
                 + "- failure: blank unless something stopped you reading, then what.\n"
-                + "</output_format>";
+                + "</output_format>\n"
+                + RESPOND;
     }
 
     static String planPrompt(String taskId, TaskState task, String brief, String plan, RoundRead read,
                              boolean decides, boolean tracker) {
-        return GOAL + "Task " + taskId + " stopped at its plan, before any code. The brief you judge by:\n<brief>\n"
+        return GOAL + "<role>You judge the plan of task " + taskId + ", which stopped before any code.</role>\n"
+                + "The brief you judge by:\n<brief>\n"
                 + brief + "\n</brief>\n" + round(taskId, task)
                 + (!read.ticket().isBlank() ? "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n"
                         : ticket(tracker, "plan") + "\n")
@@ -299,20 +302,32 @@ public class MasterPanel {
                 + "<output_format>\n"
                 + "- verdict: ready where the plan holds, not ready, or question.\n"
                 + "- findings: one per problem — what the plan gets wrong, and the one clause of why."
-                + " Each finding carries pattern: two to four words naming the kind of problem."
-                + " Each finding carries severity: wrong, blocking, unproven or noise. Only noise lets the plan pass.\n"
+                + " Each finding carries pattern: two to four words naming the kind of problem.\n"
+                + SEVERITY
                 + "- question: only with verdict question, the one thing the human must decide.\n"
                 + "- premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
                 + " command and what it printed.\n"
                 + "- failure: blank unless something stopped you reading, then what.\n"
-                + "</output_format>";
+                + "</output_format>\n"
+                + RESPOND;
     }
 
+    private static final String RESPOND = "Respond directly, no preamble.";
+
+    private static final String SEVERITY = "- severity, one of five:\n"
+            + "  - blocking: someone relying on it today breaks.\n"
+            + "  - wrong: not what the ticket asks.\n"
+            + "  - unguarded: right, but nothing fails when it breaks.\n"
+            + "  - unproven: you would decide it, but nothing you can read proves it."
+            + " An unproven issue names exactly what the session must show.\n"
+            + "  - noise: style or taste.\n"
+            + "  Only blocking, wrong and unproven stop the round.\n";
+
     /** The Master's reason to exist, ahead of every read so no rule below it is taken for the goal. */
-    static final String GOAL = "Your goal is the task finished: ready to merge, its request's checks green, the ticket"
-            + " met, the codebase's architecture and naming kept. You are the strongest reader in this loop."
+    static final String GOAL = "<goal>\nYour goal is the task finished: ready to merge, its request's checks green,"
+            + " the ticket met, the codebase's architecture and naming kept. You are the strongest reader in this loop."
             + " Where the session stalls or a check stays red, find the cause. Decide the change that clears it, and"
-            + " insist on it until it holds. Never hold the task, defer it or settle for red.\n\n";
+            + " insist on it until it holds. Never hold the task, defer it or settle for red.\n</goal>\n";
 
     private static final String GIT = "git in plain words (no quote, ~, ^, brace or glob; diff, log, show and blame"
             + " carry `--no-ext-diff --no-textconv`; `git -C <worktree>` reads each worktree past the first)";
@@ -370,14 +385,7 @@ public class MasterPanel {
                 + "- verdict: ready, not ready, or question.\n"
                 + "- findings: one per problem — file, what is wrong and the one clause of why."
                 + " Each finding carries pattern: two to four words naming the kind of problem.\n"
-                + "- severity, one of five:\n"
-                + "  - blocking: someone relying on it today breaks.\n"
-                + "  - wrong: not what the ticket asks.\n"
-                + "  - unguarded: right, but nothing fails when it breaks.\n"
-                + "  - unproven: you would decide it, but nothing you can read proves it."
-                + " An unproven issue names exactly what the session must show.\n"
-                + "  - noise: style or taste.\n"
-                + "  Only blocking, wrong and unproven stop the round.\n"
+                + SEVERITY
                 + "- question: only with verdict question, the one thing the human must decide.\n"
                 + "- premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
                 + " command and what it printed, that shows it; blank where you only reasoned it.\n"
@@ -402,7 +410,8 @@ public class MasterPanel {
     }
 
     static String prompt(Role role) {
-        return "You are the " + role.name() + " of jagt's unattended reviewer, and only that role: " + role.question()
-                + ". The other roles read this round separately; say nothing outside yours.";
+        return "<role>You are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
+                + role.question() + ". The other roles read this round separately; say nothing outside yours.</role>\n"
+                + RESPOND;
     }
 }
