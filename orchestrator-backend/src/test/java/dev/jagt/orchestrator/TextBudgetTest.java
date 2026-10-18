@@ -27,8 +27,8 @@ class TextBudgetTest {
     private static final int WIDTH = 150;
 
     @Test
-    void aDecisionOrTheOpenListIsOneRecordOfFiftyLines() {
-        assertThat(Stream.of(decisions(), List.of(Path.of("../TODO.md"))).flatMap(List::stream))
+    void aDecisionIsOneRecordOfFiftyLines() {
+        assertThat(decisions())
                 .allSatisfy(record -> assertThat(lines(record)).describedAs("%s", record).hasSizeLessThanOrEqualTo(RECORD));
     }
 

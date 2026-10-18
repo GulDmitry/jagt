@@ -52,3 +52,6 @@ interactions.jsonl.1
 act-stopped
 # The Master's MCP token, drawn by jagt at each start
 /.jagt/
+
+# Open ideas, collected on this machine
+TODO.md

@@ -1,7 +1,7 @@
 # Roadmap
 
 Where jagt grows, in what order, and what each step must not break. Loose ends nobody has scheduled stay in
-[`TODO.md`](../TODO.md); this file is the sequence and the reason.
+`TODO.md` (local); this file is the sequence and the reason.
 
 ## What growing means here
 

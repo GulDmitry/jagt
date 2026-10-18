@@ -21,7 +21,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 | `.claude/rules/` | the same table as path-scoped pointers, no rule of its own |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | the map: what kinds of thing jagt has, and where a new one goes |
 | [`README.md`](README.md) + `docs/` | what a human installing jagt needs |
-| [`TODO.md`](TODO.md) | only what is still open; empty is normal |
+| `TODO.md` (local, gitignored) | only what is still open; empty is normal |
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 

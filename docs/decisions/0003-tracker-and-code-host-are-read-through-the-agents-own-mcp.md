@@ -37,4 +37,4 @@ Accepted 2026-08-24 (`7e9e35a`), recorded retroactively 2026-10-02.
 ## Reopen when
 
 - jagt can state what it promises before it holds a token: where it is read from, what may act with it, and
-  what the board needs first ([`TODO.md`](../../TODO.md)).
+  what the board needs first (`TODO.md`).
