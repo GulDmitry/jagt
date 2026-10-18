@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.board;
 
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
@@ -9,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** The board as the palette's model sees it, and the one way back from a task it named to a task that exists. */
 @Component
@@ -25,11 +28,21 @@ public class PaletteContext {
     private final TaskViews taskViews;
 
     /** Built from the SAME projection the surfaces render, so nothing off the board can be proposed. */
-    public String prompt() {
+    public CommandAssistant.Menu menu() {
+        List<TaskView> views = taskViews.all();
+        List<String> commands = Stream.concat(Arrays.stream(TaskAction.values()).map(TaskAction::id),
+                Stream.of(DO, RESUME)).toList();
+        List<String> tasks = views.stream()
+                .flatMap(task -> Stream.of(task.id(), task.alias()))
+                .filter(name -> name != null && !name.isBlank()).toList();
+        return new CommandAssistant.Menu(prompt(views), commands, tasks);
+    }
+
+    private String prompt(List<TaskView> views) {
         String commandList = Arrays.stream(TaskAction.values())
                 .map(action -> "- " + action.id() + ": " + action.hint())
                 .collect(Collectors.joining("\n"));
-        String taskList = taskViews.all().stream()
+        String taskList = views.stream()
                 .map(PaletteContext::taskLine)
                 .collect(Collectors.joining("\n"));
         return "COMMANDS (one of these words, or \"none\"):\n" + commandList

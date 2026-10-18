@@ -68,11 +68,12 @@ class CommandMappingEvalTest {
     @ParameterizedTest
     @MethodSource("cases")
     void mapsTheOperatorsOwnWordsOntoOneCommandAndOneTask(CommandMappingCase expected) {
-        Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.prompt());
+        Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.menu());
 
         assertThat(answer.facts()).isPresent();
         assertThat(answer.facts().orElseThrow().command()).isEqualTo(expected.command());
         assertThat(answer.facts().orElseThrow().task()).isIn(expected.taskId(), expected.taskAlias());
+        assertThat(answer.facts().orElseThrow().ticket()).isEqualTo(expected.ticket());
     }
 
     static java.util.List<CommandMappingCase> cases() {

@@ -5,6 +5,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SchemaTest {
@@ -43,6 +45,17 @@ class SchemaTest {
         assertThat(schema.path("properties").path("findings").path("items").path("properties").path("severity")
                 .path("enum")).extracting(JsonNode::asString)
                 .containsExactly("blocking", "wrong", "unproven", "unguarded", "noise");
+    }
+
+    @Test
+    void holdsACommandMappingToTheWordsTheBoardOffers() {
+        JsonNode properties = mapper.readTree(CommandRead.schemaFor(List.of("ship", "do"), List.of("ABC-42", "a1"))
+                .json()).path("properties");
+
+        assertThat(properties.path("command").path("enum")).extracting(JsonNode::asString)
+                .containsExactly("ship", "do", "none");
+        assertThat(properties.path("task").path("enum")).extracting(JsonNode::asString)
+                .containsExactly("ABC-42", "a1", "");
     }
 
     @Test

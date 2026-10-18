@@ -57,7 +57,7 @@ public class NaturalLanguageDispatch {
             return "Unknown command '" + text.strip() + "' — type `help` for the grammar, or say what you"
                     + " want in a few words.";
         }
-        Optional<CommandProposal> proposal = assistant.mapCommand(text, palette.prompt()).facts();
+        Optional<CommandProposal> proposal = assistant.mapCommand(text, palette.menu()).facts();
         if (proposal.isEmpty()) {
             return "Could not reach the assistant to interpret \"" + text.strip() + "\" — type `help` for the"
                     + " command grammar.";
