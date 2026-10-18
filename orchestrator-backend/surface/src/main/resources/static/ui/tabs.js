@@ -10,7 +10,7 @@ let asked = 0;
 const sources = {
   session: (task) => api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`)
     .catch((e) => ({held: true, shown: `could not read it: ${e.message}`})),
-  round: (task) => text(`/api/commands/replies?about=${encodeURIComponent(task.alias || task.id)}`),
+  round: (task, offer) => text(`/api/commands/${offer.id}?about=${encodeURIComponent(task.alias || task.id)}`),
 };
 
 export const current = () => tab;
@@ -40,14 +40,15 @@ export function shown(task, repaint) {
   repaintOnTick = repaint;
   const source = sources[tab];
   if (!source || !task) return null;
-  if (tab === 'round' && !store.offersOn(task).includes('replies')) return null;
+  const offer = store.offerFor(task, tab);
+  if (tab === 'round' && !offer) return null;
   const key = `${tab}:${task.id}:${task.statusSince}`;
   if (read.key === key && !read.stale) return read.shown;
   // A re-read keeps the last screen up rather than flashing back to "reading…", but never another task's or tab's.
   const kept = read.key === key ? read.shown : null;
   const mine = ++asked;
   read = {key, shown: kept, stale: false};
-  source(task).then((said) => {
+  source(task, offer).then((said) => {
     if (mine !== asked) return;
     read = {key, shown: said, stale: false};
     repaint();

@@ -38,6 +38,9 @@ export const step = (ordered, by) => {
   if (next) chosen = next.id;
 };
 
+// A row the keyboard moved the cursor to is also where the focus goes, so the next key starts from it.
+export const focusSelected = () => document.querySelector('#tasks .row.selected .pick')?.focus();
+
 export const nextRequired = (ordered) => {
   const at = ordered.findIndex((task) => task.id === current(ordered)?.id);
   const waiting = [...ordered.slice(at + 1), ...ordered.slice(0, at + 1)].find((task) => task.attention === 'REQUIRED');

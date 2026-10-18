@@ -16,17 +16,18 @@ import * as projects from './projects.js';
 import * as seen from './seen.js';
 import * as selection from './selection.js';
 import * as tabs from './tabs.js';
-import {api, refusal} from '../core/api.js';
-import {toast} from './toast.js';
+import {sayTo} from '../core/api.js';
+import {sending} from './submit.js';
 import {said as keys} from './keys.js';
-import {body} from './report.js';
 import {hideStaleTip} from './tips.js';
 
 const board = document.getElementById('board');
 let walked = [];
 
-const offersOn = (task) => store.offersOn(task)
-  .map((id) => ({id, hint: store.verbs().find((verb) => verb.id === id)?.hint || id}));
+const offersOn = (task) => store.offersOn(task).map((id) => {
+  const verb = store.verbs().find((each) => each.id === id);
+  return {id, hint: verb?.hint || id, part: verb?.part};
+});
 
 const blockedOn = (task) => new Set((task.actions || []).filter((action) => blocked(task, action)).map((action) => action.id));
 
@@ -53,7 +54,7 @@ export function render() {
   paint(open ? html`
     <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${keys}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
-      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)} format=${body}/>` : null, board);
+      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
   hideStaleTip(null);
 }
 
@@ -100,20 +101,15 @@ export const onClick = ({action, report}) => {
 };
 
 // The line typed under an open session goes into that session, as the say line of a report does.
-board.addEventListener('submit', async (event) => {
+board.addEventListener('submit', (event) => {
   const form = event.target.closest('form[data-say]');
   if (!form) return;
   event.preventDefault();
   const line = form.elements.line.value.trim();
   if (!line) return;
-  try {
-    const said = await api(`/api/tasks/say?task=${encodeURIComponent(form.dataset.say)}`, {method: 'POST',
-      headers: {'Content-Type': 'application/json'}, body: JSON.stringify({line})});
-    toast(said.message);
+  sending(form, {waiting: 'sending…', send: () => sayTo(form.dataset.say, line), done: () => {
     form.reset();
     tabs.forget();
     render();
-  } catch (e) {
-    toast(refusal(e), true);
-  }
+  }});
 });

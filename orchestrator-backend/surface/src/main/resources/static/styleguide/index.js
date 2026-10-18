@@ -13,6 +13,9 @@ import {cards} from './cards.js';
 const State = ({name, children}) => html`<figure class="state" data-state=${name}>
   <figcaption class="muted">${name}</figcaption>${children}</figure>`;
 
+const DRAFTED = ['1 · FIXED · Renamed the helper.', '  > why is this public?',
+  '2 · QUESTION · Is the cap per project? https://example.com/ABC-42.', '3 · PUSHED BACK · The ring forbids it.'].join('\n');
+
 const tasks = cards.map(({props}) => props.task);
 const changed = (task) => task.alias === 'a3';
 
@@ -34,6 +37,8 @@ render(html`<section aria-label="Card">
       shown=${{held: false, shown: ''}}/></${State}>
     <${State} name="the open task, its session shows a blank screen"><${Pane} card=${cards[1].props} tab="session"
       shown=${{held: true, shown: ''}}/></${State}>
+    <${State} name="a round drafted: two blocks, a quote, the three verdicts"><${Pane} card=${{...cards[1].props,
+      offers: [{id: 'replies', hint: 'the drafted answers', part: 'round'}]}} tab="round" shown=${DRAFTED}/></${State}>
     <${State} name="the open task, a round not drafted"><${Pane} card=${cards[1].props} tab="round" shown=${null}/></${State}>
   </main>
 </section>

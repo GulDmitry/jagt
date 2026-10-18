@@ -18,3 +18,38 @@ export const countdown = (millis) => {
 
 // A task by both its names, the short one first; a task with no alias is its id.
 export const bothNames = (task) => (task.alias ? `${task.alias} \u00b7 ${task.id}` : task.id);
+
+// A report's text as data: its links followable, a round's verdicts and the comments they answer told apart.
+// Only http(s) becomes a link: this text comes from an agent, a model and a hand-edited file.
+const WEB_LINK = /https?:\/\/[^\s<>"'`)\]]+/g;
+// The two shapes a report writes: a numbered block head, and the comment a block answers.
+const HEAD = /^(\s*\d+ · )([^·]+)(· .*)$/;
+const QUOTE = /^\s*>/;
+// A verdict with nothing wrong reads as muted, as every other verdict on the board does.
+const TONE = {FIXED: 'ok', QUESTION: 'you'};
+
+function linked(line) {
+  const parts = [];
+  let at = 0;
+  for (const found of line.matchAll(WEB_LINK)) {
+    // A URL ending a sentence keeps that sentence's punctuation out of the href.
+    const url = found[0].replace(/[.,;:!?]+$/, '');
+    if (found.index > at) parts.push({kind: 'text', text: line.slice(at, found.index)});
+    parts.push({kind: 'link', text: url, href: url});
+    at = found.index + url.length;
+  }
+  parts.push({kind: 'text', text: line.slice(at)});
+  return parts;
+}
+
+function marked(line) {
+  const head = HEAD.exec(line);
+  if (head) {
+    return [{kind: 'block', parts: [{kind: 'text', text: head[1]},
+      {kind: 'verdict', text: head[2], tone: TONE[head[2].trim()] || 'muted'}, ...linked(head[3])]}];
+  }
+  return QUOTE.test(line) ? [{kind: 'quote', parts: linked(line)}] : linked(line);
+}
+
+export const reportParts = (said) => said.trimEnd().split('\n')
+  .flatMap((line, index) => (index ? [{kind: 'text', text: '\n'}, ...marked(line)] : marked(line)));

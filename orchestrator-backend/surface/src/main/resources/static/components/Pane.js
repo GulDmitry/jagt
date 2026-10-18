@@ -1,7 +1,9 @@
 // The one task open in full: its card, then a tab of what is known about it.
 
 import {Card} from './Card.js';
+import {reportParts} from '../core/format.js';
 import {html} from './html.js';
+import {Report} from './Report.js';
 
 export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'session', label: 'Session'},
   {id: 'round', label: 'Review round'}];
@@ -30,20 +32,19 @@ const Session = ({task, shown}) => html`<section class="session" aria-label="the
   </form>
 </section>`;
 
-// `format` turns a round's text into its blocks, verdicts and quotes, as the replies report draws them.
-const Round = ({shown, offered, format}) => html`<section class="round" aria-label="the review round">
+const Round = ({shown, offered}) => html`<section class="round" aria-label="the review round">
   ${!offered ? html`<p class="muted">Nothing is drafted for this round.</p>`
     : shown === null ? html`<pre class="screen">reading…</pre>`
-      : html`<pre class="screen" ref=${(node) => node && node.replaceChildren(...format(shown))}></pre>`}
+      : html`<pre class="screen"><${Report} parts=${reportParts(shown)}/></pre>`}
 </section>`;
 
-export const Pane = ({card, tab, shown, format}) => html`<section id="pane" aria-label="the open task">
+export const Pane = ({card, tab, shown}) => html`<section id="pane" aria-label="the open task">
   <button class="back" data-back="">‹ all tasks</button>
   <${Card} key=${card.task.id} ...${card}/>
   <div role="tablist" class="tabs">${TABS.map((one) => html`<button role="tab" data-tab=${one.id}
     aria-selected=${String(one.id === tab)}>${one.label}</button>`)}</div>
   ${tab === 'session' ? html`<${Session} task=${card.task} shown=${shown}/>`
-    : tab === 'round' ? html`<${Round} shown=${shown} format=${format}
-      offered=${card.offers.some((offer) => offer.id === 'replies')}/>`
+    : tab === 'round' ? html`<${Round} shown=${shown}
+      offered=${card.offers.some((offer) => offer.part === 'round')}/>`
     : html`<${History} task=${card.task} now=${card.now}/>`}
 </section>`;

@@ -1,6 +1,7 @@
 // What was pressed, sent once a burst settles: a control's name and its task's status, never a task, a ticket or a
 // typed word.
 
+import {api} from '../core/api.js';
 import * as store from '../core/store.js';
 
 const BATCH = 50;
@@ -43,7 +44,7 @@ function flush() {
   if (!queue.length) return;
   const presses = queue.splice(0, BATCH);
   if (queue.length) due = setTimeout(flush, SETTLE);
-  fetch('/api/interactions', {method: 'POST', keepalive: true, headers: {'Content-Type': 'application/json'},
+  api('/api/interactions', {method: 'POST', keepalive: true, headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({presses})}).catch(() => {});
 }
 

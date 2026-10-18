@@ -37,7 +37,7 @@ public interface GlobalCommand {
         return false;
     }
 
-    /** The part of a surface the verb typed alone hands over to, or null: the one place a page names it. */
+    /** The part of a surface the verb belongs to, or null: what typed alone hands over to, or the tab a report feeds. */
     default @Nullable String part() {
         return null;
     }

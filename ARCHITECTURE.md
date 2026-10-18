@@ -187,7 +187,7 @@ calls without a node, `components/` draws from props alone, `ui/` owns the event
 | `components/html`, `vendor/` | how a component is written; the libraries, pinned by `BoardAssetsTest` |
 | `components/TaskList` | every task as a row, the human's own in a band on top |
 | `components/Pane`, `components/Card`, `components/Meta` | the open task: its card, its verbs, its tabs |
-| `components/JobsTable`, `components/ProjectChecks` | the jobs by whom they serve; what reading a path found |
+| `components/JobsTable`, `components/ProjectChecks`, `components/Report` | the jobs by whom they serve; what reading a path found; a report's text, one renderer for the dialog and the round tab |
 | `ui/render` | one repaint from the snapshot, and the one delegated click and submit on the board |
 | `ui/selection`, `ui/tabs`, `ui/seen`, `ui/flags` | which task is open, which tab and what it read, what changed while closed, which tasks are flagged |
 | `ui/header`, `ui/glance`, `ui/menu` | the chips above the board, the tab's title and icon, the Reports menu |
@@ -196,7 +196,7 @@ calls without a node, `components/` draws from props alone, `ui/` owns the event
 | `ui/filters`, `ui/order` | what narrows and what re-orders |
 | `ui/act`, `ui/inflight` | running one action: what is in flight, what it asks first |
 | `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
-| `ui/dialogs`, `ui/report`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
+| `ui/dialogs`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
 | `ui/legend` | what every mark means, as the page's own elements — their one definition |
 | `ui/refresh`, `ui/interactions` | how the page learns a task changed; what the human pressed |
 | `styleguide.html`, `styleguide/` | every component in every state, from fixtures; `boardTest` loads it |

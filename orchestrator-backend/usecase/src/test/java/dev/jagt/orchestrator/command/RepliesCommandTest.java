@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -21,5 +22,10 @@ class RepliesCommandTest {
                 drafted, AutoReviewWatch.none(), Map.of());
 
         assertThat(new RepliesCommand(mock(ReviewRepliesReport.class)).offeredOn(card)).isEqualTo(drafted);
+    }
+
+    @Test
+    void feedsTheRoundTab() {
+        assertThat(new RepliesCommand(mock(ReviewRepliesReport.class)).part()).isEqualTo("round");
     }
 }

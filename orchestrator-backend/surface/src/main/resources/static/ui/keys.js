@@ -56,7 +56,7 @@ document.addEventListener('keydown', (event) => {
     const inList = Boolean(event.target.closest?.('#tasks'));
     letter();
     render();
-    if (inList) document.querySelector('#tasks .row.selected .pick')?.focus();
+    if (inList) selection.focusSelected();
     return;
   }
   if (event.key === 'Enter' && !event.target.closest?.('button, a')) {

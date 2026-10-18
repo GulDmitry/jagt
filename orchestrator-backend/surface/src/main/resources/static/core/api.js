@@ -29,6 +29,13 @@ export async function text(path, options) {
   return body;
 }
 
+// The one way a line reaches a running session, from the board's tab and from a report alike.
+export const sayTo = (taskId, line) => api(`/api/tasks/say?task=${encodeURIComponent(taskId)}`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({line}),
+});
+
 // Every action reloads the board, so by the time such a refusal is read the view is already right — say so, or
 // it reads as jagt refusing something it will keep refusing.
 const STALE_VIEW = ['NO_SUCH_TASK', 'ACTION_NOT_AVAILABLE'];

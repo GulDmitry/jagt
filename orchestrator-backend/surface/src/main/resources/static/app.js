@@ -11,7 +11,7 @@ import * as jobs from './ui/jobs.js';
 import './ui/keys.js';
 import * as legend from './ui/legend.js';
 import * as launch from './ui/launch.js';
-import './ui/menu.js';
+import * as menu from './ui/menu.js';
 import * as palette from './ui/palette.js';
 import {refresh, refreshVerbs} from './ui/refresh.js';
 import {onSent} from './ui/submit.js';
@@ -39,7 +39,6 @@ onClick({
 header.onBarClick(render);
 onSent(refresh);
 header.onVerbClick(runGlobal);
-header.onJobsClick(() => openReport('jobs — what runs unattended', '/api/commands/jobs', {extra: jobs.node()}));
 document.getElementById('new-task').onclick = launch.open;
 document.getElementById('empty-new').onclick = launch.open;
 document.getElementById('add-project').onclick = addProject.open;
@@ -48,6 +47,13 @@ filters.onChange(render);
 // Where on this page each part a verb names is.
 const parts = {launch: {focus: launch.open}, legend: {section: legend.node}, jobs: {section: jobs.node}};
 palette.wire({partFor: (part) => parts[part] || {}});
+// The menu and the header's Jobs chip open a report the same way: its title and part come from the server's verb.
+const openVerb = (id) => {
+  const verb = store.verbs().find((each) => each.id === id);
+  return openReport(verb ? `${id} — ${verb.hint}` : id, `/api/commands/${id}`, {extra: parts[verb?.part]?.section?.()});
+};
+menu.onPick(openVerb);
+header.onJobsClick(() => openVerb('jobs'));
 showLog(() => showReport('log — this session', sessionLog()));
 
 // A linked task lands in the FILTER rather than a selection of its own: the control that did it is visible, and
@@ -62,6 +68,7 @@ if (deepLink) {
 async function loadVerbs() {
   await refreshVerbs();
   palette.refreshSuggestions();
+  menu.render();
   render();
 }
 

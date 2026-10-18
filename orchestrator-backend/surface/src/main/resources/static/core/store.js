@@ -18,6 +18,9 @@ export const masterMode = () => data.masterMode;
 export const verbs = () => data.verbs;
 export const offersOn = (task) => data.offers[task.id] || [];
 
+// The verb a task's card offers for a tab: the server's verb says which tab it feeds, by its part.
+export const offerFor = (task, part) => data.verbs.find((verb) => verb.part === part && offersOn(task).includes(verb.id));
+
 export const taskFor = (name) => data.tasks.find((task) => task.id === name || (task.alias || '') === name);
 
 

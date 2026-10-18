@@ -41,23 +41,10 @@ export function toggle() {
   judge();
 }
 
-// A report about ONE task gets no button: the card that has something to show is where it is pressed, and a bar
-// button would answer for all of them.
 export function refreshSuggestions() {
   document.getElementById('ask-options').replaceChildren(
     ...store.verbs().map((verb) => Object.assign(document.createElement('option'),
       {value: verb.id, label: verb.hint})));
-  document.getElementById('reports').replaceChildren(
-    ...store.verbs().filter((verb) => verb.report && !verb.aboutOneTask).map((verb) => {
-      const button = document.createElement('button');
-      button.setAttribute('role', 'menuitem');
-      button.id = `show-${verb.id}`;
-      button.append(verb.id.charAt(0).toUpperCase() + verb.id.slice(1),
-        Object.assign(document.createElement('span'), {className: 'muted', textContent: verb.hint}));
-      button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`,
-        {extra: forms.partFor(verb.part).section?.()});
-      return button;
-    }));
 }
 
 export function judge() {

@@ -43,6 +43,11 @@ public class RepliesCommand implements GlobalCommand {
     }
 
     @Override
+    public String part() {
+        return "round";
+    }
+
+    @Override
     public boolean offeredOn(TaskView task) {
         return task.draftedReplies();
     }

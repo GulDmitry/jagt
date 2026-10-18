@@ -1,7 +1,11 @@
 // A plain-text report over the board: a <dialog> dims it, cannot be lost behind another window, and closes three ways.
 
-import {api, refusal, text} from '../core/api.js';
-import {body} from './report.js';
+import {render} from 'preact';
+import {html} from '../components/html.js';
+import {Report} from '../components/Report.js';
+import {refusal, sayTo, text} from '../core/api.js';
+import {reportParts} from '../core/format.js';
+import {sending} from './submit.js';
 import {toast} from './toast.js';
 
 const report = document.getElementById('report');
@@ -10,7 +14,7 @@ const reportBody = document.getElementById('report-body');
 const reportScroll = document.getElementById('report-scroll');
 const reportSection = document.getElementById('report-section');
 const reportLine = document.getElementById('report-line');
-const say = document.getElementById('say');
+const sayInput = document.getElementById('say');
 const working = document.getElementById('said');
 
 // What the open report is showing, so a change under the reader can be read again and repainted.
@@ -21,13 +25,15 @@ let asked = 0;
 // A poll and the board's own event read it again side by side, and the read sent last is the one that paints.
 let reread = 0;
 
+const drawn = (said) => render(html`<${Report} parts=${reportParts(said)}/>`, reportBody);
+
 function paint(title, said, extra) {
   reportTitle.textContent = title;
-  reportBody.replaceChildren(...body(said));
+  drawn(said);
   reportSection.replaceChildren(...(extra ? [extra] : []));
   // Only a report about ONE task has a session to talk to, and a line typed at one round is not the next one's.
   reportLine.hidden = !showing.about;
-  say.value = '';
+  sayInput.value = '';
   if (!report.open) report.showModal();
   reportScroll.scrollTop = 0;
 }
@@ -79,7 +85,7 @@ export async function repaintReport() {
   }
   showing = {...showing, body: said};
   const where = reportScroll.scrollTop;
-  reportBody.replaceChildren(...body(said));
+  drawn(said);
   reportScroll.scrollTop = where;
   stopWaiting();
 }
@@ -109,28 +115,16 @@ function stopWaiting() {
 }
 
 // Sent as typed, and refused by the backend when no session is running: the page decides neither.
-reportLine.onsubmit = async (event) => {
+reportLine.onsubmit = (event) => {
   event.preventDefault();
-  const line = say.value.trim();
+  const line = sayInput.value.trim();
   if (!line) {
     return;
   }
-  say.disabled = true;
-  try {
-    const result = await api(`/api/tasks/say?task=${encodeURIComponent(showing.about)}`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({line}),
-    });
-    toast(result.message);
-    say.value = '';
+  sending(reportLine, {waiting: '', send: () => sayTo(showing.about, line), done: () => {
+    sayInput.value = '';
     waitForTheAnswer();
-  } catch (e) {
-    toast(refusal(e), true);
-  } finally {
-    say.disabled = false;
-    say.focus();
-  }
+  }});
 };
 
 // Which element the press STARTED on decides: selecting text inside and releasing outside asks for nothing.

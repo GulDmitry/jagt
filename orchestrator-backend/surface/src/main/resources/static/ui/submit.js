@@ -14,7 +14,7 @@ export async function sending(form, {waiting, send, done}) {
   // requestSubmit() fires a submit even when the button is disabled.
   if (button.disabled) return;
   button.disabled = true;
-  state.textContent = waiting;
+  if (state) state.textContent = waiting;
   try {
     const result = await send();
     toast(result.message);
@@ -23,7 +23,7 @@ export async function sending(form, {waiting, send, done}) {
     toast(refusal(e), true);
   } finally {
     button.disabled = false;
-    state.textContent = '';
+    if (state) state.textContent = '';
     await afterwards();
   }
 }
