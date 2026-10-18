@@ -1,7 +1,11 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.ProjectProblems;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.task.GitRemote;
+import dev.jagt.orchestrator.task.ProjectConfig;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
@@ -67,18 +71,28 @@ public class ProjectSetup {
             lines.add(new Line(false, "no directory at " + path));
             return new Reading(lines, key, "", "", List.of());
         }
-        var top = git(path, "rev-parse", "--show-toplevel");
-        if (top.isEmpty()) {
-            lines.add(new Line(false, "not a git repository"));
+        Processes.Result top = git(path, "rev-parse", "--show-toplevel");
+        if (top.exitCode() != 0) {
+            boolean notARepository = top.exitCode() == 128 && top.stderr().contains("not a git repository");
+            lines.add(new Line(false, notARepository ? "not a git repository"
+                    : "git could not read " + path + ": " + firstLine(top.stderr())));
             return new Reading(lines, key, "", "", List.of());
         }
-        if (!real(Path.of(top.get())).equals(real(path))) {
-            lines.add(new Line(false, "a folder inside the repository at " + top.get() + " — add that instead"));
+        String toplevel = top.stdout().strip();
+        if (!real(Path.of(toplevel)).equals(real(path))) {
+            lines.add(new Line(false, "a folder inside the repository at " + toplevel + " — add that instead"));
             return new Reading(lines, key, "", "", List.of());
         }
-        String origin = git(path, "remote", "get-url", "origin").orElse("");
-        lines.add(new Line(!origin.isBlank(), origin.isBlank() ? "no remote named origin" : "a git repository, origin " + origin));
-        String base = git(path, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+        Processes.Result remote = git(path, "remote", "get-url", "origin");
+        String origin = remote.stdout().strip();
+        if (remote.exitCode() == 0 && !origin.isBlank()) {
+            lines.add(new Line(true, "a git repository, origin " + GitRemote.withoutCredentials(origin)));
+        } else if (remote.exitCode() == 0 || remote.exitCode() == 2 && remote.stderr().contains("No such remote")) {
+            lines.add(new Line(false, "no remote named origin"));
+        } else {
+            lines.add(new Line(false, "git could not read the remote of " + path + ": " + firstLine(remote.stderr())));
+        }
+        String base = gitOut(path, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
                 .orElse(exists(path, "origin/main") ? "origin/main" : exists(path, "origin/master") ? "origin/master" : "");
         lines.add(new Line(!base.isBlank(), base.isBlank() ? "no origin/main or origin/master to cut tasks from"
                 : "tasks are cut from " + base));
@@ -108,7 +122,13 @@ public class ProjectSetup {
         if (entry.baseBranch() == null || entry.baseBranch().isBlank()) {
             throw new IllegalArgumentException("A project names the branch tasks are cut from");
         }
-        Path file = paths.configFile();
+        Path normalized = Path.of(expand(entry.path())).toAbsolutePath().normalize();
+        List<Problem> refused = ProjectProblems.of(entry.key(), new ProjectConfig(normalized.toString(),
+                entry.baseBranch(), entry.deployBranch() == null ? "" : entry.deployBranch(), List.of()));
+        if (!refused.isEmpty()) {
+            throw new IllegalArgumentException(refused.get(0).text());
+        }
+        Path file = real(paths.configFile());
         Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try {
             String before = Files.readString(file, StandardCharsets.UTF_8);
@@ -117,9 +137,14 @@ public class ProjectSetup {
             try {
                 configService.project(entry.key());
             } catch (RuntimeException unreadable) {
-                Files.move(Files.writeString(temp, before, StandardCharsets.UTF_8), file,
-                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                throw new IllegalStateException("jagt.yml did not read after the change, so it was put back: "
+                try {
+                    Files.move(Files.writeString(temp, before, StandardCharsets.UTF_8), file,
+                            StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (IOException cannotRestore) {
+                    throw new IllegalStateException(file.getFileName() + " did not read after the change and could"
+                            + " not be put back; fix it by hand: " + cannotRestore.getMessage(), cannotRestore);
+                }
+                throw new IllegalStateException(file.getFileName() + " did not read after the change, so it was put back: "
                         + unreadable.getMessage(), unreadable);
             }
             return "Added " + entry.key() + " to jagt.yml";
@@ -195,15 +220,25 @@ public class ProjectSetup {
         return block.toString();
     }
 
-    private java.util.Optional<String> git(Path path, String... args) {
+    private Processes.Result git(Path path, String... args) {
         List<String> command = new ArrayList<>(List.of("git", "-C", path.toString()));
         command.addAll(List.of(args));
-        Processes.Result result = processes.run(null, GIT, command);
+        return processes.run(null, GIT, command);
+    }
+
+    private java.util.Optional<String> gitOut(Path path, String... args) {
+        Processes.Result result = git(path, args);
         return result.exitCode() == 0 ? java.util.Optional.of(result.stdout().strip()) : java.util.Optional.empty();
     }
 
     private boolean exists(Path path, String ref) {
-        return git(path, "rev-parse", "--verify", "--quiet", ref).isPresent();
+        return gitOut(path, "rev-parse", "--verify", "--quiet", ref).isPresent();
+    }
+
+    private static String firstLine(String text) {
+        String stripped = text.strip();
+        int end = stripped.indexOf('\n');
+        return end < 0 ? stripped : stripped.substring(0, end);
     }
 
     private static String expand(String path) {
