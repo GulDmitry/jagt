@@ -43,8 +43,7 @@ public class TaskLauncher {
             return launches.ticket(request, request.project() != null ? resolveProjects(request.project()) : null);
         }
         if (request.notes() == null || request.notes().isBlank()) {
-            return Launched.refused("error: no ticket and nothing to do — say what the task is: "
-                    + LaunchRequest.OWN_GRAMMAR);
+            return Launched.refused(Launched.NOTHING_TO_DO);
         }
         return launches.written(request, resolveProjects(request.project()));
     }

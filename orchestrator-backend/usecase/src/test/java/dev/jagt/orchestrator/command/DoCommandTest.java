@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import org.junit.jupiter.api.Test;
 
@@ -30,5 +31,15 @@ class DoCommandTest {
                 .isInstanceOfSatisfying(Refusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.STATE))
                 .hasMessage("branch 'ABC-9' already exists in alpha");
+    }
+
+    @Test
+    void teachesTheDoGrammarWhenTheLineNamesNothingToDo() {
+        when(launcher.launchLine("demo")).thenReturn(Launched.refused(Launched.NOTHING_TO_DO));
+
+        assertThatThrownBy(() -> command.run("demo"))
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("nothing to do")
+                .hasMessageContaining(LaunchRequest.OWN_GRAMMAR);
     }
 }

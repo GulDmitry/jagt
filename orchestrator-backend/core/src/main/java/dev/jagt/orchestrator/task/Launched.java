@@ -8,6 +8,8 @@ import org.jspecify.annotations.Nullable;
  */
 public record Launched(@Nullable String taskId, String message) {
 
+    public static final String NOTHING_TO_DO = "error: no ticket and nothing to do";
+
     public static Launched refused(String message) {
         return new Launched(null, message);
     }

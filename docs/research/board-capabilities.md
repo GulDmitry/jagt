@@ -73,4 +73,4 @@ line and the live repaint the tab lacks.
 - **`run <job>`** has no button: a Jobs panel row needs one.
 - **The flag, the order toggle and the session log** are missing from the mockup.
 - **Stats, Finished, Master and Help** must be tabs of the bottom panel; the mockup shows two.
-- **A launch refusal speaks the palette's grammar** (`do <project…>`) to someone who used the form.
+- ~~**A launch refusal speaks the palette's grammar**~~ — closed: the `do` command alone adds it.

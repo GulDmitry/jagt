@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -87,7 +88,7 @@ class TaskLauncherTest {
         var refused = launcher.launch(LaunchRequest.defaults().withProject("group-a"));
 
         assertThat(refused.created()).isFalse();
-        assertThat(refused.message()).contains("nothing to do");
+        assertThat(refused.message()).isEqualTo(Launched.NOTHING_TO_DO);
         verifyNoInteractions(launches);
     }
 }
