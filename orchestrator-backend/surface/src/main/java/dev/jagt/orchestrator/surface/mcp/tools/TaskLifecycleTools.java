@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.NewTaskMessage;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class TaskLifecycleTools implements McpTools {
 
     private final TaskProvisioning provisioning;
-    private final StateService stateService;
+    private final TaskViews taskViews;
     private final ConfigService configService;
 
     @Override
@@ -40,9 +40,10 @@ public class TaskLifecycleTools implements McpTools {
                         .build()));
 
         tools.tool("list_tasks", Audience.MASTER, NoArguments.schema("Every task, one per line: its id, status,"
-                        + " title, last message, and each worktree with its review request."),
+                        + " title, last message, each worktree with its review request, its alias and the verbs"
+                        + " legal for it now."),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> stateService.listing());
+                (said, caller) -> taskViews.listing());
 
         tools.tool("list_projects", Audience.MASTER, NoArguments.schema("Every project jagt works on, one per line:"
                         + " its key (what initialize_task's projectKey takes), what it is, and the labels placing an"

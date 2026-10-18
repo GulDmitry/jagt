@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -73,7 +74,7 @@ class McpToolScopeTest {
     void offersNoToolThatClosesATask() {
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
-                mock(StateService.class), mock(ConfigService.class)).declare(registered);
+                mock(TaskViews.class), mock(ConfigService.class)).declare(registered);
         Map<String, ToolHandler> tools = registered.handlers;
 
         assertThat(tools).doesNotContainKey("remove_task");
@@ -126,7 +127,7 @@ class McpToolScopeTest {
     void refusesASubAgentCreatingATask() {
         TaskProvisioning provisioning = mock(TaskProvisioning.class);
         Registered registered = new Registered();
-        new TaskLifecycleTools(provisioning, mock(StateService.class),
+        new TaskLifecycleTools(provisioning, mock(TaskViews.class),
                 mock(ConfigService.class)).declare(registered);
         ToolHandler handler = registered.handlers.get("initialize_task");
 
@@ -144,7 +145,7 @@ class McpToolScopeTest {
                 "origin/main", "dev", List.of("backend"), List.of(), "the order API", null))));
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
-                mock(StateService.class), config).declare(registered);
+                mock(TaskViews.class), config).declare(registered);
         ToolHandler handler = registered.handlers.get("list_projects");
 
         Object listed = handler.call(new JsonMapper().readTree("{}"), null);
@@ -196,16 +197,16 @@ class McpToolScopeTest {
 
     @Test
     void refusesASubAgentListingEveryTask() {
-        StateService stateService = mock(StateService.class);
+        TaskViews taskViews = mock(TaskViews.class);
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
-                stateService, mock(ConfigService.class)).declare(registered);
+                taskViews, mock(ConfigService.class)).declare(registered);
         ToolHandler handler = registered.handlers.get("list_tasks");
 
         assertThatThrownBy(() -> handler.call(
                 new JsonMapper().readTree("{}"), "MINE-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("list_tasks is Master-only");
-        verifyNoInteractions(stateService);
+        verifyNoInteractions(taskViews);
     }
 }

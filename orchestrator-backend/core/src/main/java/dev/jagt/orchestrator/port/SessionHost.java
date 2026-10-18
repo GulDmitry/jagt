@@ -52,7 +52,10 @@ public interface SessionHost {
 
     WindowState taskWindowState(String session, String taskId);
 
-    /** What the task's window shows, its styling kept; empty when it is gone, a throw when it is there but unread. */
+    /**
+     * What the task's window shows, its styling kept; empty when it is gone, a throw when it is there but unread.
+     * A failed read throws as every adapter read does; the three answers are a value, empty and the throw.
+     */
     Optional<String> screenOf(String session, String taskId);
 
     /** Types a line into the session as if a human had, without touching focus; false when it is gone. */

@@ -92,27 +92,39 @@ class TaskViewTest {
     }
 
     @Test
-    void doneStandsApartAndCarriesNoKeyWhileShipCarriesItsLetter() {
+    void doneStandsApartFromTheOtherVerbs() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));
 
         assertThat(view.actions()).filteredOn(TaskView.ActionView::apart).extracting(TaskView.ActionView::id)
                 .containsExactly("done");
+    }
+
+    @Test
+    void doneCarriesNoKey() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
         assertThat(view.actions()).filteredOn(action -> action.id().equals("done")).singleElement()
                 .extracting(TaskView.ActionView::key).isEqualTo("");
+    }
+
+    @Test
+    void shipCarriesItsLetter() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .build(), false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
         assertThat(view.actions()).filteredOn(action -> action.id().equals("ship")).singleElement()
                 .extracting(TaskView.ActionView::key).isEqualTo("s");
     }
 
     @Test
-    void theHistorySaysEachStatusInTheBoardsWordsAndTheTaskNamesItsOwnBase() {
-        TaskState started = TaskState.builder("api", "/api-wt", TaskStatus.NEW).alias("a1").baseBranch("release/2")
-                .build();
+    void theHistorySaysEachStatusInTheBoardsWords() {
+        TaskState started = TaskState.builder("api", "/api-wt", TaskStatus.NEW).alias("a1").build();
         TaskView view = TaskView.of("ABC-1", started.withStatus(TaskStatus.IN_PROGRESS, "working"), false,
                 AutoReviewWatch.none(), Map.of("api", "dev"));
 
         assertThat(view.history()).extracting(TaskView.Step::label).endsWith("agent working");
-        assertThat(view.baseBranch()).isEqualTo("release/2");
     }
 
     @Test

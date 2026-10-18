@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Builds the ONE projection a human surface renders, in the order the tasks were REGISTERED: an alias is reused the
@@ -44,6 +45,21 @@ public class TaskViews {
 
     public List<TaskView> all() {
         return snapshot().tasks();
+    }
+
+    /** A task per line, without its history or spend; lives here because the legal verbs come from the projection. */
+    public String listing() {
+        String listing = all().stream().map(this::listed).collect(Collectors.joining("\n"));
+        return listing.isEmpty() ? "no tasks" : listing;
+    }
+
+    private String listed(TaskView view) {
+        String tail = stateService.task(view.id()).map(task -> (task.title() == null ? "" : " " + task.title())
+                + (task.message() == null || task.message().isBlank() ? "" : " — " + task.message())
+                + task.repos().stream().map(repo -> " | " + repo.worktreePath()
+                        + (repo.mrUrl() == null ? "" : " " + repo.mrUrl())).collect(Collectors.joining())).orElse("");
+        return view.id() + " [" + view.status() + "]" + tail + " alias=" + (view.alias() == null ? "-" : view.alias())
+                + " legal=" + view.actions().stream().map(TaskView.ActionView::id).collect(Collectors.joining(","));
     }
 
     /**

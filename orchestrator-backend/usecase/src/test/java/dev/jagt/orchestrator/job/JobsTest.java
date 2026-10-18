@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.job;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.Duration;
 import java.util.List;
@@ -71,6 +73,17 @@ class JobsTest {
         assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::lastError)
                 .containsExactly(tuple("archive-logs", "java.lang.IllegalStateException: disk full"),
                         tuple("poll-reviews", null));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"TASKS,your tasks", "MASTER,the master", "TRACKER,the tracker", "HOUSEKEEPING,housekeeping"})
+    void reportsWhomAJobWorksForByTheLabelOfWhatItDeclares(Job.Serves serves, String label) {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        when(job.serves()).thenReturn(serves);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        assertThat(jobs.statuses(1_000)).singleElement().extracting(Jobs.Status::serves).isEqualTo(label);
     }
 
     @Test

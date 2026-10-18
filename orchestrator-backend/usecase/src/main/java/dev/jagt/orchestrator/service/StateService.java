@@ -26,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 /**
  * SSOT for all active tasks. Every mutation rewrites the file atomically, which protects against a TORN file and
@@ -175,20 +174,6 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         } catch (IOException e) {
             return path.toAbsolutePath().normalize();
         }
-    }
-
-    /** A task per line, without its history or spend. */
-    public String listing() {
-        String listing = tasks().entrySet().stream().map(entry -> listed(entry.getKey(), entry.getValue()))
-                .collect(Collectors.joining("\n"));
-        return listing.isEmpty() ? "no tasks" : listing;
-    }
-
-    private static String listed(String taskId, TaskState task) {
-        return taskId + " [" + task.status() + "]" + (task.title() == null ? "" : " " + task.title())
-                + (task.message() == null || task.message().isBlank() ? "" : " — " + task.message())
-                + task.repos().stream().map(repo -> " | " + repo.worktreePath()
-                        + (repo.mrUrl() == null ? "" : " " + repo.mrUrl())).collect(Collectors.joining());
     }
 
     /**

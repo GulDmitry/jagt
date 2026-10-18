@@ -323,27 +323,4 @@ class StateServiceTest {
         assertThat(removed).isTrue();
         assertThat(state.task("ABC-1")).isEmpty();
     }
-
-    @Test
-    void listsEachTaskOnOneLineWithoutItsHistory(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("alpha", "/wt/ABC-1", TaskStatus.REVIEW_PENDING)
-                .title("Fix the login").message("ready").mrUrl("https://host/mr/7")
-                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1L, ActionOrigin.BOARD))).build());
-
-        String listing = state.listing();
-
-        assertThat(listing).isEqualTo("ABC-1 [REVIEW_PENDING] Fix the login — ready | /wt/ABC-1 https://host/mr/7");
-    }
-
-    @Test
-    void saysThereAreNoTasksWhenNoneIsOpen(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-
-        String listing = state.listing();
-
-        assertThat(listing).isEqualTo("no tasks");
-    }
 }

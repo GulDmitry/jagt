@@ -56,9 +56,7 @@ public record TaskView(
         // Whether the newest round could not read them, so the verdict above is an older round's.
         boolean pipelineUnread,
         // Whether the request is approved; null until a read has said. No status can answer this.
-        @Nullable Boolean approved,
-        // The task's own base branch; null = the project's configured one.
-        @Nullable String baseBranch
+        @Nullable Boolean approved
 ) {
 
     /** One status the task passed through, in the words the board shows it by. */
@@ -106,7 +104,7 @@ public record TaskView(
                 task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
                         change.origin())).toList(), deployed, draftedReplies, autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
-                task.hasReviewRequest() ? task.approved() : null, task.baseBranch());
+                task.hasReviewRequest() ? task.approved() : null);
     }
 
     private static Map<String, String> confirmations(String id, TaskState task, Map<String, String> deployBranches) {

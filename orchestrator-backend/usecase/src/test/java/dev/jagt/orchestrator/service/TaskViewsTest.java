@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -8,7 +10,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -76,5 +80,32 @@ class TaskViewsTest {
         var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
+    }
+
+    @Test
+    void listsEachTaskOnOneLineWithItsAliasAndLegalVerbsButNotItsHistory() {
+        TaskState task = TaskState.builder("alpha", "/wt/ABC-1", TaskStatus.REVIEW_PENDING).alias("a1")
+                .title("Fix the login").message("ready").mrUrl("https://host/mr/7")
+                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1L, ActionOrigin.BOARD))).build();
+        when(stateService.tasks()).thenReturn(Map.of("ABC-1", task));
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        String listing = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()))
+                .listing();
+
+        assertThat(listing).isEqualTo("ABC-1 [REVIEW_PENDING] Fix the login — ready | /wt/ABC-1 https://host/mr/7"
+                + " alias=a1 legal=ship,sweep,deploy,done,focus,ide,diff,respawn");
+    }
+
+    @Test
+    void saysThereAreNoTasksWhenNoneIsOpen() {
+        when(stateService.tasks()).thenReturn(Map.of());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        String listing = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()))
+                .listing();
+
+        assertThat(listing).isEqualTo("no tasks");
     }
 }

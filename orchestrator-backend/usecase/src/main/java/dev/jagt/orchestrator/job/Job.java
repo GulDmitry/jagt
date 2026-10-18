@@ -16,7 +16,7 @@ public interface Job {
     /** {@code null} means once, as soon as the application is up. */
     @Nullable Duration every();
 
-    /** Whom a job works for, which is how a list of them is grouped. */
+    /** Whom a job works for. */
     enum Serves {
         TASKS("your tasks"), MASTER("the master"), TRACKER("the tracker"), HOUSEKEEPING("housekeeping");
 
