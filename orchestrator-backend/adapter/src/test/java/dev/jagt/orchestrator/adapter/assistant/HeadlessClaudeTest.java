@@ -55,6 +55,7 @@ class HeadlessClaudeTest {
                 AssistantCallKind.MR_READ);
 
         assertThat(answer.facts()).isEmpty();
+        assertThat(answer.failure()).isEqualTo("no GitLab MCP tool in this session");
     }
 
     @Test

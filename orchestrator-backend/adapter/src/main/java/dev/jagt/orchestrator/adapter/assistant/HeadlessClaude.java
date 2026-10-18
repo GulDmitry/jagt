@@ -71,7 +71,7 @@ class HeadlessClaude {
                 .addKeyValue("ref", label)
                 .addKeyValue("cause", failure)
                 .log();
-        return new Answer<>(Optional.empty(), answer.usage());
+        return Answer.failed(answer.usage(), failure);
     }
 
     Answer<JsonNode> read(String prompt, String schema, String label, AssistantCallKind kind) {
