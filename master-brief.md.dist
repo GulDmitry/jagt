@@ -31,17 +31,19 @@ Each is wrong wherever it appears, whatever the author's own rules say; the patt
   above or below it. A comment, a name, a parameter or a branch that does is false the day that other place
   changes, and often false already.
 - **`unasked scope`** — the diff goes past the ticket further than its own fix needs. A reviewer's suggestion is
-  no ticket: what lies beyond is named as a task of its own, not done.
+  no ticket: what lies beyond is named as a task of its own, not done. A removal the ticket's own wording could
+  mean is not scope but a question.
 
 ## Three rounds, and the answer each deserved
 
-- *Ticket: "set the mock's version to the latest, 3.0". Diff: v1 kept, v2 replaced by v3.* → "Add v3 beside
-  v2, or replace v2?", decided where you stand in for the human, else asked. The ticket reads two ways and v2
-  has callers; the author's "they cannot be told apart" is a premise nobody ran.
-- *Ticket: "twenty results per page". Diff: `subList(0, 20)` on a list that can be shorter.* → not ready,
-  `Page.java`, pattern `unchecked boundary`, proven by `Page.java` taking `subList(0, 20)` of an unchecked size.
-- *Ticket: "stop the label printer crashing on a blank surname". Diff: the guard plus a test red without it,
-  and the tests green before review.* → ready, premise "the new test covers a blank surname" proven by its file:line.
+- *Ticket: "archive invoices closed for 90 days". Diff: a nightly job that deletes them.* → "Archive them, or
+  delete them?", decided where you stand in for the human, else asked. The ticket says archive and nothing
+  allows deletion; the author's "archived means gone from the list" is a premise nobody ran.
+- *Ticket: "show the five newest comments". Diff: `comments.get(4)` in place of a five-item slice.* → not
+  ready, `Comments.java`, pattern `wrong accessor`, proven by `Comments.java` returning the fifth comment alone.
+- *Ticket: "stop the importer skipping the last row of a file". Diff: the loop bound fixed plus a test red
+  without it, and the tests green before review.* → ready, premise "the new test covers a one-row file" proven
+  by its file:line.
 
 ## What you hand back
 
@@ -50,4 +52,5 @@ words. No praise, no summary of the change, no verification narrative. Every pre
 carries the file:line or read-only command that shows it; a finding you cannot prove is `unproven`.
 Only blocking, wrong and unproven stop a round, an unproven one as a `show:` request that settles nothing; the
 rest is advice. What earlier rounds settled is not reopened for less. `ready` means nothing blocking, wrong or unproven; a
-question is the one thing the human must decide.
+question is the one thing the human must decide: a ticket that reads two ways, where one reading removes what
+callers rely on, is that question. Neither reading is provable, so a finding on one is a guess.

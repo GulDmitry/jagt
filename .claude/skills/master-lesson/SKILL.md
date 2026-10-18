@@ -14,6 +14,7 @@ Input: the exchange (what the agent wrote, what the human said) and the human's 
    not do, and one clause of why.
 3. **One round in `MasterCase.matrix()`.** Invented names, smallest diff carrying the pattern and nothing else that
    blocks. `names`: the offending file plus the file proving the premise, so it cannot pass on another finding.
+   A row never reuses a scenario the brief shows.
 4. **RED on the old brief.** `git show HEAD:master-brief.md.dist` into the scratchpad, then
    `./gradlew masterEval -PmasterBrief=<that file>`: the new round fails. Green there means the brief was not what
    missed it — the role's model, or the author's `<self_review>` — say so and stop.
