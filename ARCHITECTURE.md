@@ -166,7 +166,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 - A new verb reaches the board because the board is generated from `flow/TaskAction`: it renders `Move.actions()` (the
   legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
-- **The surface holds no list** — the usual way to break that is building a button in `static/ui/card.js`.
+- **The surface holds no list** — the usual way to break that is building a button in `static/components/Card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
 - A capability gets a folder once it owns work (`capability/ship/`); the rest are flat.
 - `do` and `resume` are named literally only in tier 2: `PaletteContext`'s prompt maps a line onto them,
@@ -189,7 +189,7 @@ calls without a node, `components/` draws from props alone, `ui/` owns the event
 | `components/Pane`, `components/Card`, `components/Meta` | the open task: its card, its verbs, its tabs |
 | `components/JobsTable`, `components/ProjectChecks` | the jobs by whom they serve; what reading a path found |
 | `ui/render` | one repaint from the snapshot, and the one delegated click and submit on the board |
-| `ui/selection`, `ui/tabs`, `ui/seen` | which task is open, which tab and what it read, what changed while closed |
+| `ui/selection`, `ui/tabs`, `ui/seen`, `ui/flags` | which task is open, which tab and what it read, what changed while closed, which tasks are flagged |
 | `ui/header`, `ui/glance`, `ui/menu` | the chips above the board, the tab's title and icon, the Reports menu |
 | `ui/launch`, `ui/projects`, `ui/addproject`, `ui/submit` | the New task and Add project dialogs, and their one submit path |
 | `ui/jobs` | the jobs table inside the Jobs report, and its Run now |

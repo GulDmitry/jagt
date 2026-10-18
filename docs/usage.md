@@ -12,13 +12,13 @@ holds the pipeline (build → review → check → ready → deploy → done), a
 `▸_` on a row is Focus without opening the task.
 
 **The open task** stands beside the list: its card with every legal action, the obvious one highlighted and each
-one's key drawn on it, `Done` apart at the end; then three tabs — the status history, the session's screen read
-without leaving the board with a line to tell it, and the drafted review replies. `deploy`, `revert` and `done` ask
-for confirmation. Under 1200 px the open task replaces the list; `Esc` goes back.
+one's key drawn on it, `Done` apart at the end; then three tabs: **Overview** (the status history), **Session** (its screen,
+with a line to tell it) and **Review round** (the drafted replies). `deploy`, `revert` and `done` ask for
+confirmation. Under 1200 px the open task replaces the list; `Esc` goes back.
 
-**Keys.** `j`/`k` walk the list, `n` opens the next task waiting on you, `t` opens New task, `/` the filter, ⌘K a
-command, and a verb's own letter runs it on the open task. The tab's title counts what waits on you, and its icon
-wears a dot — red when something broke.
+**Keys.** `j`/`k` walk the list, `↵` opens the picked row, `n` opens the next task waiting on you, `f` focuses the
+open task, `t` opens New task, `/` the filter, ⌘K a command, and a verb's own letter runs it on the open task. The
+tab's title counts what waits on you, and its icon wears a dot — red when something broke.
 
 **The header** says only what needs a look: how many tasks wait on you, a failed job (press it for the jobs, each
 runnable now), the Master while it presses your buttons, review polling when it is off. **Reports** holds every

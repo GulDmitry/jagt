@@ -98,8 +98,10 @@ orchestrator:
 ```
 
 **`copyGlobs` makes a worktree usable**: a clean checkout lacks whatever your build reads but git does not
-track. Widen it until your tests pass inside one; each pattern copies those secrets beside the repository.
+track. Widen it until your tests pass inside one; each pattern carries matching files from the base repository into every fresh worktree.
 Every other key has a default, described in `jagt.yml.dist`.
+
+**+ add a project** inside New task writes the entry too, no restart.
 
 ### 3 — decide on the Master
 
@@ -122,7 +124,7 @@ Anything missing, and jagt refuses to start with the **whole** list, each line n
 
 ### 5 — open the board
 
-**http://localhost:8290** — type a ticket key or URL, or with no ticket `<project> <what to do>`, then **Start**.
+**http://localhost:8290** — type a ticket key or URL, or with no ticket `<project> <what to do>`, then **New task** (key `t`).
 
 ## What you keep
 

@@ -124,7 +124,7 @@ this section holds.
 - **`n` selects the next row that needs you**, and `f` focuses it. Verb letters come from the server with the verb.
 - **Focus fills only where `Move` names it and the move is yours**; elsewhere it is a plain button. No ring.
 - **A row has at most four facts a line**: edge, alias, title, badge and Focus; then status with age, and checks.
-  Ticket, `MR` and the job touching it move to the pane.
+  Ticket and `MR` move to the pane.
 - **Under ~1200 px the pane replaces the list**: Enter opens a task, Esc goes back.
 - **The status bar shows only what stopped or failed**: empty when all is well, as the jobs chip is today. `act`
   is a header chip that wears the ring only when it stops.
