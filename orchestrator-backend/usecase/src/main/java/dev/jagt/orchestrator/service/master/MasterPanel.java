@@ -84,6 +84,7 @@ public class MasterPanel {
         if (read.isEmpty()) {
             roles.forEach(role -> judgements.add(Judgement.failed(HUMAN_UNREAD)));
         } else {
+            // Rules and format after the quote was tried 2026-10-18: same verdicts, $2.05 against $2.02 on masterEval.
             String round = shared + "\n\n" + quote(taskId, task, read.get());
             List<RoundReviewer.Round> rounds = roles.stream().map(role -> new RoundReviewer.Round(round, prompt(role),
                     worktrees, role.modelOr(config.modelOrInherited()))).toList();
