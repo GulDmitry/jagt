@@ -91,13 +91,18 @@ A nudge to a session SHALL wait while the human is typing in its window.
 - **THEN** they wait for your line
 
 ### Requirement: Only blocking, wrong and unproven stop a round
-A plan or round SHALL be ready unless a finding is blocking, wrong or unproven, the last a `show:` request; advice
-SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the session, in any mode, and the task to
+A plan or round SHALL be ready unless a finding is blocking, wrong or unproven, the last a `show:` request. Only
+correctness or a stated requirement SHALL stop one; wording, glossary and style SHALL be noise. Advice SHALL be a `#`
+line in `master-review.md`. Its findings SHALL go back to the session, in any mode, and the task to
 `IN_PROGRESS`, until rounds of repeats reach the human (`FindingMatch`).
 
 #### Scenario: Only advice
 - **WHEN** findings are only unguarded, noise or an unproven premise
 - **THEN** the round is ready
+
+#### Scenario: A glossary nit
+- **WHEN** a reader finds only a term used against the glossary
+- **THEN** it is noise and the round is ready
 
 #### Scenario: A round is not ready
 - **WHEN** a plan or round has a blocking, wrong or unproven finding
@@ -155,3 +160,21 @@ a fail (`MasterRecord`); it changes no brief.
 #### Scenario: You reverted what it passed
 - **WHEN** ABC-42 passed and you reverted it
 - **THEN** `master` shows a `lesson:` line: what to paste into `/master-lesson`
+
+### Requirement: A base-only move keeps the verdict
+`MasterPanel.review` SHALL keep the last verdict, restamped, when it is ready and the task's own diff has the
+identifier stored in it (`WorktreeInspection.ownDiffId`: the diff since the merge-base, line numbers and index lines
+left out, hashed).
+A verdict SHALL store no identifier when a role could not read the round, and a task holding an untracked file has none.
+
+#### Scenario: Only the base moved
+- **WHEN** ABC-42 is rebased onto a moved base and handed back with the same own diff
+- **THEN** no role reads it; the last ready verdict stands
+
+#### Scenario: The session replied to a not-ready round
+- **WHEN** ABC-42 is handed back with the same own diff after a not-ready verdict
+- **THEN** each role reads the round again, the reply beside it
+
+#### Scenario: The task's own diff changed
+- **WHEN** ABC-42 is handed back with any change of its own
+- **THEN** each role reads the round as before

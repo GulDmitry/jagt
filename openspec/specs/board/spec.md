@@ -182,3 +182,17 @@ at most 50 presses, and is refused whole when one press breaks the shape.
 #### Scenario: Switched off
 - **WHEN** `interactionLog: false`
 - **THEN** a batch is checked and nothing is written
+
+### Requirement: The press log notes two sightings
+The board SHALL log `shown:required` when a task's attention BECOMES required, and `shown:jobs-failed` when the
+failed-jobs chip appears. Both SHALL go through a press's batch and switch. A sighting is logged once per
+change, never per render, and the first board painted only seeds. `shown:required` carries the task's status and
+`shown:jobs-failed` null; neither carries a task id or text.
+
+#### Scenario: A task turns required
+- **WHEN** a task's attention changes to REQUIRED on a board already painted
+- **THEN** one line holds `shown:required` and its status, and further renders add none
+
+#### Scenario: The failed-jobs chip appears
+- **WHEN** jobs report a failed run and the chip was hidden
+- **THEN** one line holds `shown:jobs-failed` and a null status
