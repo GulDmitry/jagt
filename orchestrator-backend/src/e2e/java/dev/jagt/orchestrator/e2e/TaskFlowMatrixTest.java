@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.e2e;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import dev.jagt.orchestrator.task.NewTask;
@@ -52,6 +53,8 @@ class TaskFlowMatrixTest {
     private UserNotifier userNotifier;
 
     @Autowired
+    private Jobs jobs;
+    @Autowired
     private TaskProvisioning provisioning;
     @Autowired
     private TaskRetirement retirement;
@@ -89,6 +92,7 @@ class TaskFlowMatrixTest {
         String created = provisioning.initializeTask(NewTask.builder("ABC-1", "proj")
                 .instructions("Fix the widget").title("Widget layout is off").build());
 
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-feed");
         assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
         assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
         assertThat(worktree.resolve("task_context.md")).exists();

@@ -73,6 +73,7 @@ final class E2eWorkspace {
 
     static void writeConfig(Path configFile, Path projectPath, TaskFlowCase flowCase) throws IOException {
         writeConfig(configFile, projectPath, flowCase.viewMode(), flowCase.autoReview());
+        Files.writeString(configFile, "  master: { mode: \"off\" }\n", StandardOpenOption.APPEND);
     }
 
     static void writeConfig(Path configFile, Path projectPath, String viewMode, boolean autoReview)
