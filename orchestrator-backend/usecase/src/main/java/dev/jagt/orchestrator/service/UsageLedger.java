@@ -6,7 +6,9 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,8 +36,11 @@ public class UsageLedger {
     static final int DAYS = 90;
     static final int MONTHS = 24;
 
-    /** {@code period} is a day, a month or a year: 2026-10-13, 2026-10 or 2026. */
-    public record Spend(String period, AssistantCallKind kind, TokenUsage usage) {
+    /**
+     * {@code period} is a day, a month or a year: 2026-10-13, 2026-10 or 2026. {@code maxCallCostUsd} is the dearest
+     * single call, 0 on a row written before it was kept.
+     */
+    public record Spend(String period, AssistantCallKind kind, TokenUsage usage, double maxCallCostUsd) {
     }
 
     private final ObjectMapper mapper;
@@ -62,10 +67,10 @@ public class UsageLedger {
             for (String line : Files.isRegularFile(file) ? Files.readAllLines(file, StandardCharsets.UTF_8).stream()
                     .filter(line -> !line.isBlank()).toList() : List.<String>of()) {
                 parsed(line).ifPresentOrElse(spend -> fold(periods, period(start(spend.period()), today), spend.kind(),
-                        spend.usage()), () -> kept.add(line));
+                        spend.usage(), spend.maxCallCostUsd()), () -> kept.add(line));
             }
-            fold(periods, today.toString(), kind, usage);
-            periods.values().forEach(spend -> kept.add(mapper.writeValueAsString(spend)));
+            fold(periods, today.toString(), kind, usage, usage.costUsd());
+            periods.values().forEach(spend -> kept.add(mapper.writeValueAsString(written(spend))));
             Path written = Files.createTempFile(file.getParent(), "usage-by-day", ".tmp");
             Files.write(written, kept, StandardCharsets.UTF_8);
             Files.move(written, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -75,9 +80,21 @@ public class UsageLedger {
         }
     }
 
-    private static void fold(Map<String, Spend> periods, String period, AssistantCallKind kind, TokenUsage usage) {
-        periods.merge(period + kind.name(), new Spend(period, kind, usage),
-                (was, added) -> new Spend(period, kind, was.usage().plus(added.usage())));
+    private static void fold(Map<String, Spend> periods, String period, AssistantCallKind kind, TokenUsage usage,
+                             double maxCallCostUsd) {
+        periods.merge(period + kind.name(), new Spend(period, kind, usage, maxCallCostUsd),
+                (was, added) -> new Spend(period, kind, was.usage().plus(added.usage()),
+                        Math.max(was.maxCallCostUsd(), added.maxCallCostUsd())));
+    }
+
+    private ObjectNode written(Spend spend) {
+        ObjectNode usage = mapper.valueToTree(spend.usage());
+        usage.put("maxCallCostUsd", spend.maxCallCostUsd());
+        ObjectNode row = mapper.createObjectNode();
+        row.put("period", spend.period());
+        row.put("kind", spend.kind().name());
+        row.set("usage", usage);
+        return row;
     }
 
     static String period(LocalDate day, LocalDate today) {
@@ -97,7 +114,11 @@ public class UsageLedger {
 
     private Optional<Spend> parsed(String line) {
         try {
-            return Optional.of(mapper.readValue(line, Spend.class));
+            JsonNode row = mapper.readTree(line);
+            JsonNode usage = row.required("usage");
+            return Optional.of(new Spend(row.required("period").asString(),
+                    AssistantCallKind.valueOf(row.required("kind").asString()),
+                    mapper.treeToValue(usage, TokenUsage.class), usage.path("maxCallCostUsd").asDouble(0)));
         } catch (RuntimeException e) {
             log.atWarn().setMessage("usage line unreadable").addKeyValue("file", file)
                     .addKeyValue("cause", e.toString()).log();

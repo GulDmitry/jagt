@@ -26,3 +26,4 @@ Accepted 2026-10-19.
 ## Reopen when
 
 - A legitimate call reaches the ceiling at the default.
+- The refresh re-derives the default from `maxCallCostUsd` in `usage-by-day.jsonl`: the largest per-call maximum times 3.

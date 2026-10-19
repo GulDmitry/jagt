@@ -51,6 +51,34 @@ class UsageLedgerTest {
                 .contains("\"period\":\"2026-06\"", "\"calls\":3", "\"inputTokens\":400");
     }
 
+    @Test
+    void keepsTheDearestSingleCallOfTheDay(@TempDir Path root) throws Exception {
+        UsageLedger ledger = new UsageLedger(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())),
+                Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
+
+        ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(40_000, 0, 900, 0.30));
+        ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(2_000, 0, 800, 0.05));
+
+        assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl"))).singleElement().asString()
+                .contains("\"costUsd\":0.35", "\"maxCallCostUsd\":0.3");
+    }
+
+    @Test
+    void readsARowWrittenBeforeTheDearestCallWasKept(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("usage-by-day.jsonl"), """
+                {"period":"2026-10-13","kind":"ROUTE","usage":{"calls":2,"inputTokens":300,"cachedInputTokens":0,"outputTokens":0,"costUsd":0.5,"coldStarts":0,"warmStarts":0}}
+                """);
+        UsageLedger ledger = new UsageLedger(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())),
+                Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
+
+        ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofCall(1_000, 0, 10, 0.07));
+
+        assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl"))).singleElement().asString()
+                .contains("\"calls\":3", "\"maxCallCostUsd\":0.07");
+    }
+
     @ParameterizedTest
     @CsvSource({"2026-07-16, 2026-07-16", "2026-07-15, 2026-07", "2024-10-14, 2024-10", "2024-10-13, 2024"})
     void namesTheDayItsMonthOrItsYearByItsAge(LocalDate day, String period) {
