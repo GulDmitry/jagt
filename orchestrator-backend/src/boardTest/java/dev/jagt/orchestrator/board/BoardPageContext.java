@@ -6,6 +6,7 @@ import com.microsoft.playwright.Playwright;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.EditorDriver;
+import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
@@ -94,6 +95,8 @@ abstract class BoardPageContext {
     EditorDriver editorDriver;
     @MockitoBean
     AgentSessions sessions;
+    @MockitoBean
+    SessionHost sessionHost;
     @MockitoSpyBean
     ReviewRepliesReport replies;
 
