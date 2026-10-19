@@ -5,10 +5,13 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Which of one CLI's own events mean what to jagt, as a resource per runtime: this is vendor knowledge, and it
@@ -24,11 +27,12 @@ final class SessionHooks {
     private static final String COMPACTED_START = "compacted-start";
     private static final String BLOCKING_NOTIFICATION = "blocking-notification";
     private static final String TURN_END = "turn-end";
-    private static final String RATE_LIMIT_STOP = "rate-limit-stop";
-    private static final String RATE_LIMIT_MATCHER = "rate-limit-matcher";
-    private static final java.util.Set<String> NOT_A_STATE =
-            java.util.Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END, RATE_LIMIT_STOP,
-                    RATE_LIMIT_MATCHER);
+    private static final String TURN_FAILURE = "turn-failure";
+    private static final String RATE_LIMIT_ERROR = "rate-limit-error";
+    private static final String CONTINUING_END = "continuing-end";
+    private static final Set<String> NOT_A_STATE =
+            Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END, TURN_FAILURE, RATE_LIMIT_ERROR,
+                    CONTINUING_END);
 
     /** The event this CLI answers with allow or deny, or nothing where it has none. */
     static Optional<String> gate(String runtime) {
@@ -40,14 +44,20 @@ final class SessionHooks {
         return Optional.ofNullable(declared(runtime).getProperty(TURN_END));
     }
 
-    /** The event ending a turn on a usage limit, or nothing where this CLI has none. */
-    static Optional<String> rateLimitStop(String runtime) {
-        return Optional.ofNullable(declared(runtime).getProperty(RATE_LIMIT_STOP));
+    /** The event ending a turn on an API error, or nothing where this CLI has none. */
+    static Optional<String> turnFailure(String runtime) {
+        return Optional.ofNullable(declared(runtime).getProperty(TURN_FAILURE));
     }
 
-    /** What that event carries when the cause is a usage limit. */
-    static String rateLimitMatcher(String runtime) {
-        return declared(runtime).getProperty(RATE_LIMIT_MATCHER, "");
+    /** The error word that means a usage limit, or blank where this CLI says nothing. */
+    static String rateLimitError(String runtime) {
+        return declared(runtime).getProperty(RATE_LIMIT_ERROR, "");
+    }
+
+    /** The reasons a session ends that a new start follows at once, or none. */
+    static Set<String> continuingEnds(String runtime) {
+        return Arrays.stream(declared(runtime).getProperty(CONTINUING_END, "").split(","))
+                .map(String::strip).filter(reason -> !reason.isEmpty()).collect(Collectors.toUnmodifiableSet());
     }
 
     /** What this CLI calls a start that follows a compaction, or blank where it says nothing about starts. */

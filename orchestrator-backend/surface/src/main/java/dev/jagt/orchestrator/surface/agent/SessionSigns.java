@@ -18,11 +18,11 @@ public class SessionSigns {
     private final AgentSpendReader agentSpend;
 
     /** {@code sessionLog} is the file the session appends to, or null where none was named. */
-    public void record(String taskId, SessionProbe.State state, @Nullable Path sessionLog) {
+    public void record(String taskId, SessionProbe.State state, @Nullable String cause, @Nullable Path sessionLog) {
         if (sessionLog != null) {
             probe.logAt(taskId, sessionLog);
         }
-        probe.report(taskId, state, System.currentTimeMillis());
+        probe.report(taskId, state, cause, System.currentTimeMillis());
         watchdog.check(taskId);
         // Off this thread: a read of the log, or the state lock a sweep holds, must not delay the answer.
         if (sessionLog != null) {

@@ -31,7 +31,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_990_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), sessions, mock(AgentRuntime.class));
 
-        probe.report("ABC-1", SessionProbe.State.WAITING, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.WAITING, null, 10_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
                 .map(SessionProbe.Silence::detail).contains("waiting for input");
@@ -44,7 +44,7 @@ class SessionProbeTest {
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
                 mock(AgentRuntime.class));
 
-        probe.report("ABC-1", SessionProbe.State.IDLE, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.IDLE, null, 10_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
@@ -59,7 +59,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(config, sessions, mock(AgentRuntime.class));
 
-        probe.report("ABC-1", SessionProbe.State.IDLE, 9_600_000);
+        probe.report("ABC-1", SessionProbe.State.IDLE, null, 9_600_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
                 .map(SessionProbe.Silence::detail).contains("its turn ended and nothing has moved since");
@@ -75,7 +75,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(config, sessions, mock(AgentRuntime.class));
 
-        probe.report("ABC-1", SessionProbe.State.IDLE, 9_000_000);
+        probe.report("ABC-1", SessionProbe.State.IDLE, null, 9_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
                 .get().extracting(SessionProbe.Silence::detail).isNull();
@@ -119,10 +119,50 @@ class SessionProbeTest {
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
                 mock(AgentRuntime.class));
 
-        probe.report("ABC-1", SessionProbe.State.GONE, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.GONE, null, 10_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
                 .map(SessionProbe.Silence::detail).contains("the session ended");
+    }
+
+    @Test
+    void raisesAFailedTurnAtOnceNamingItsCause() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_990_000L).build();
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.FAILED, "overloaded", 10_000_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
+                .map(SessionProbe.Silence::detail).contains("its turn failed: overloaded");
+    }
+
+    @Test
+    void keepsAFailedTurnWhenTheIdleNoticeFollowsAMinuteLater() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_990_000L).build();
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.FAILED, "overloaded", 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.IDLE, null, 10_060_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_060_000))
+                .map(SessionProbe.Silence::detail).contains("its turn failed: overloaded");
+    }
+
+    @Test
+    void raisesAFailedTurnWithNoCauseAsJustFailed() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_990_000L).build();
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.FAILED, null, 10_000_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
+                .map(SessionProbe.Silence::detail).contains("its turn failed");
     }
 
     @Test
@@ -131,9 +171,9 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
                 mock(AgentRuntime.class));
-        probe.report("ABC-1", SessionProbe.State.WAITING, 9_500_000);
+        probe.report("ABC-1", SessionProbe.State.WAITING, null, 9_500_000);
 
-        probe.report("ABC-1", SessionProbe.State.WORKING, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.WORKING, null, 10_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
@@ -146,7 +186,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class), runtime);
 
-        probe.report("ABC-1", SessionProbe.State.WAITING, 9_500_000);
+        probe.report("ABC-1", SessionProbe.State.WAITING, null, 9_500_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
@@ -171,9 +211,9 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
                 mock(AgentRuntime.class));
-        probe.report("ABC-1", SessionProbe.State.GONE, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.GONE, null, 10_000_000);
 
-        probe.report("ABC-1", SessionProbe.State.WORKING, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.WORKING, null, 10_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
@@ -199,7 +239,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_990_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
                 mock(AgentRuntime.class));
-        probe.report("ABC-1", SessionProbe.State.WAITING, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.WAITING, null, 10_000_000);
 
         probe.keepOnly(List.of("ABC-2"));
 
@@ -224,7 +264,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class), runtime);
 
-        probe.report("ABC-1", SessionProbe.State.WAITING, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.WAITING, null, 10_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
                 .map(SessionProbe.Silence::detail).contains("waiting for input");

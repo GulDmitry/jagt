@@ -23,18 +23,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessionProbe {
 
     /**
-     * What a session's harness says about it. {@code WAITING} and {@code GONE} are verdicts on their own;
-     * {@code IDLE} is not — a turn ending says only that a turn ended.
+     * What a session's harness says about it. {@code WAITING}, {@code GONE} and {@code FAILED} are verdicts on
+     * their own; {@code IDLE} is not — a turn ending says only that a turn ended.
      */
-    public enum State { WAITING, GONE, IDLE, WORKING }
+    public enum State { WAITING, GONE, FAILED, IDLE, WORKING }
 
-    /** Since when nothing has moved, and what a harness said about it — null where none of them did. */
-    public record Silence(long since, @Nullable State reported) {
+    /** Since when nothing has moved, what a harness said about it, and why — null where none of them did. */
+    public record Silence(long since, @Nullable State reported, @Nullable String cause) {
 
         /** The words a human is owed, or null where nothing was said and the sentence is the surface's own. */
         public @Nullable String detail() {
             if (reported == State.GONE) {
                 return "the session ended";
+            }
+            if (reported == State.FAILED) {
+                return cause == null ? "its turn failed" : "its turn failed: " + cause;
             }
             if (reported == State.IDLE) {
                 return "its turn ended and nothing has moved since";
@@ -48,7 +51,7 @@ public class SessionProbe {
         }
     }
 
-    private record Halt(long at, State state) {
+    private record Halt(long at, State state, @Nullable String cause) {
     }
 
     private final ConfigService configService;
@@ -86,13 +89,18 @@ public class SessionProbe {
      * A session reporting itself alive DROPS what was said before rather than outranking it by time: two hooks of
      * one event are stamped on arrival and can share a millisecond or arrive out of order.
      */
-    public void report(String taskId, State state, long at) {
+    public void report(String taskId, State state, @Nullable String cause, long at) {
         if (state == State.WORKING) {
             movingSince.put(taskId, at);
             halted.remove(taskId);
             return;
         }
-        halted.put(taskId, new Halt(at, state));
+        Halt held = halted.get(taskId);
+        if (state == State.IDLE && held != null && (held.state() == State.FAILED || held.state() == State.GONE)) {
+            // Only a prompt starts another turn, so an idle notice after a failure or an end is no news.
+            return;
+        }
+        halted.put(taskId, new Halt(at, state, cause));
     }
 
     /** When the session last reported itself moving, which is when its current turn began; 0 where it never did. */
@@ -113,7 +121,7 @@ public class SessionProbe {
         Halt halt = halted.get(taskId);
         if (halt != null && halt.at() >= lastSign) {
             if (halt.state() != State.IDLE) {
-                return Optional.of(new Silence(halt.at(), halt.state()));
+                return Optional.of(new Silence(halt.at(), halt.state(), halt.cause()));
             }
             // A turn that ENDED is a sign like any other, not a verdict: only nothing happening AFTER it means
             // anything, which is the threshold below.
@@ -133,7 +141,8 @@ public class SessionProbe {
         }
         return now - lastSign < staleMs
                 ? Optional.empty()
-                : Optional.of(new Silence(lastSign, halt == null ? null : halt.state()));
+                : Optional.of(new Silence(lastSign, halt == null ? null : halt.state(),
+                        halt == null ? null : halt.cause()));
     }
 
     /**

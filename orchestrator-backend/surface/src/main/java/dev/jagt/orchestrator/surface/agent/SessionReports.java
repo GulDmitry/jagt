@@ -25,38 +25,54 @@ public class SessionReports {
     /**
      * Everything a harness hands a hook that jagt can use, which is not the state. {@code sessionLog} is the file
      * the session appends to, otherwise derived; {@code startedBy} why it started, in the CLI's own word;
-     * {@code said} what the CLI told the human; {@code task} the task it runs for. Each null where nothing was
-     * named.
+     * {@code said} what the CLI told the human; {@code task} the task it runs for; {@code endedBy} why a session
+     * ended; {@code failedOn} the error a turn ended on. Each null where nothing was named.
      */
     public record Report(@Nullable Path sessionLog, @Nullable String startedBy, @Nullable String said,
-                         @Nullable TaskState task) {
+                         @Nullable TaskState task, @Nullable String endedBy, @Nullable String failedOn) {
 
         /** Everything absent: a harness may hand a hook nothing jagt can use, and most of them do. */
         public static Report defaults() {
-            return new Report(null, null, null, null);
+            return new Report(null, null, null, null, null, null);
         }
 
         public Report withSessionLog(@Nullable Path sessionLog) {
-            return new Report(sessionLog, startedBy, said, task);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
         }
 
         public Report withStartedBy(@Nullable String startedBy) {
-            return new Report(sessionLog, startedBy, said, task);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
         }
 
         public Report withSaid(@Nullable String said) {
-            return new Report(sessionLog, startedBy, said, task);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
         }
 
         public Report withTask(@Nullable TaskState task) {
-            return new Report(sessionLog, startedBy, said, task);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+        }
+
+        public Report withEndedBy(@Nullable String endedBy) {
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+        }
+
+        public Report withFailedOn(@Nullable String failedOn) {
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
         }
     }
 
     /** The brief for a session that has just been compacted, or empty for every other report. */
     public String record(String taskId, SessionProbe.State state, Report report) {
-        signs.record(taskId, blocked(state, report.said()), report.sessionLog());
+        signs.record(taskId, continued(blocked(state, report.said()), report.endedBy()), null, report.sessionLog());
         return brief(taskId, report.startedBy(), report.task());
+    }
+
+    /** Records the turn as failed on the error the CLI named, and says whether that error is a usage limit. */
+    public boolean turnFailed(String taskId, Report report) {
+        signs.record(taskId, SessionProbe.State.FAILED, report.failedOn(), report.sessionLog());
+        String limit = runtime.rateLimitError();
+        return report.failedOn() != null && limit != null && !limit.isBlank()
+                && limit.equalsIgnoreCase(report.failedOn().strip());
     }
 
     public String turnEnded(String taskId, Report report, boolean sentOn, boolean pausedOnBackgroundWork) {
@@ -77,6 +93,12 @@ public class SessionReports {
         return blocking != null && !blocking.isBlank()
                 && said.toLowerCase(java.util.Locale.ROOT).contains(blocking.toLowerCase(java.util.Locale.ROOT))
                 ? SessionProbe.State.WAITING : state;
+    }
+
+    private SessionProbe.State continued(SessionProbe.State state, @Nullable String endedBy) {
+        return state == SessionProbe.State.GONE && endedBy != null
+                && runtime.continuingEnds().stream().anyMatch(reason -> reason.equalsIgnoreCase(endedBy.strip()))
+                ? SessionProbe.State.IDLE : state;
     }
 
     /** A compaction drops the brief and the task's facts silently: the rules are named, the facts restated. */

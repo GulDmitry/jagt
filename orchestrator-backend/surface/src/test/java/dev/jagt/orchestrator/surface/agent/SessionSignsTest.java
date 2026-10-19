@@ -8,6 +8,7 @@ import java.nio.file.Path;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -20,16 +21,16 @@ class SessionSignsTest {
 
     @Test
     void hasTheTaskJudgedAtOnceRatherThanOnTheNextSweep() {
-        new SessionSigns(probe, watchdog, agentSpend).record("ABC-1", SessionProbe.State.WORKING, null);
+        new SessionSigns(probe, watchdog, agentSpend).record("ABC-1", SessionProbe.State.WORKING, null, null);
 
-        verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WORKING), anyLong());
+        verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WORKING), isNull(), anyLong());
         verify(watchdog).check("ABC-1");
     }
 
     @Test
     void believesTheLogFileTheSessionNamedAndCountsWhatItSpent() {
         new SessionSigns(probe, watchdog, agentSpend)
-                .record("ABC-1", SessionProbe.State.WAITING, Path.of("/logs/session.jsonl"));
+                .record("ABC-1", SessionProbe.State.WAITING, null, Path.of("/logs/session.jsonl"));
 
         verify(probe).logAt("ABC-1", Path.of("/logs/session.jsonl"));
         verify(agentSpend, timeout(2_000)).charge("ABC-1", Path.of("/logs/session.jsonl"));

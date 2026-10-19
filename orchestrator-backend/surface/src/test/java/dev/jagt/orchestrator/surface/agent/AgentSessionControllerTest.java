@@ -39,16 +39,31 @@ class AgentSessionControllerTest {
     }
 
     @Test
-    void reportsAUsageLimitStopAgainstTheTaskRunningInThatWorktree() {
+    void armsTheWakeForATurnFailureThatIsAUsageLimit() {
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+        SessionReports.Report report = SessionReports.Report.defaults().withFailedOn("rate_limit").withTask(task);
+        when(reports.turnFailed("ABC-1", report)).thenReturn(true);
+
+        new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
+                new SessionHookReport(null, null, null, null, "rate_limit", null, java.util.List.of()));
+
+        verify(wakes).arm("ABC-1");
+    }
+
+    @Test
+    void armsNoWakeForATurnFailureThatIsNotAUsageLimit() {
         StateService state = mock(StateService.class);
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, reports, wakes).rateLimit("/wt/ABC-1-proj", null);
+        new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
+                new SessionHookReport(null, null, null, null, "overloaded", null, java.util.List.of()));
 
-        verify(reports).record("ABC-1", SessionProbe.State.IDLE, SessionReports.Report.defaults().withTask(task));
-        verify(wakes).arm("ABC-1");
+        verify(wakes, never()).arm("ABC-1");
     }
 
     @Test
@@ -126,7 +141,7 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).turnEnd("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, true, java.util.List.of(Map.of("id", "b1"))));
+                new SessionHookReport(null, null, null, true, null, null, java.util.List.of(Map.of("id", "b1"))));
 
         verify(reports).turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), true, true);
     }

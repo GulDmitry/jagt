@@ -270,7 +270,7 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
-    void reportsATurnEndedOnAUsageLimitThroughItsOwnEvent(@TempDir Path root) throws Exception {
+    void reportsATurnEndedOnAnApiErrorThroughItsOwnUnmatchedEvent(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
@@ -282,9 +282,9 @@ class ClaudeAgentRuntimeTest {
         var hook = new JsonMapper()
                 .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
                 .path("hooks").path("StopFailure").path(0);
-        assertThat(hook.path("matcher").asString("")).isEqualTo("rate_limit");
+        assertThat(hook.has("matcher")).isFalse();
         assertThat(hook.path("hooks").path(0).path("command").asString(""))
-                .contains("/api/agent/session/rate-limit", worktree.toString());
+                .contains("/api/agent/session/turn-failure", worktree.toString());
     }
 
     @Test

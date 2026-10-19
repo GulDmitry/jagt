@@ -66,6 +66,16 @@ Master's reviewer, the ⌘K palette.
   the last two is the same bug.
 - The surfaces say which happened: **never "could not read (or not found)"**.
 
+### An ending says which one
+
+- **A turn, a session, a run or a call ends one of four ways: finished, stopped, failed, gone** — never merged
+  in a state, a surface or a log line ([0052](../decisions/0052-an-ending-says-which-one.md)).
+- A failure is reported at once with **its source's own word** for the cause (`SessionProbe.State.FAILED`).
+- **A seam subscribes to every ending its source emits**, unmatched, and jagt branches on the cause: a hook
+  matched to the one value a feature needs leaves the rest to silence (`turn-failure`, not a `rate_limit` matcher).
+- An end its source follows at once with a start is no ending (`continuing-end`).
+- **Silence is the last verdict, not an outcome**: the watchdog's threshold is for what emits nothing.
+
 ## Every assistant call is metered
 
 - `HeadlessClaude` books every call under its kind, **before its answer is judged**, in memory and

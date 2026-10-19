@@ -67,3 +67,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0049 Daily start ceiling](0049-unattended-starts-have-a-daily-ceiling.md)
 - [0050 Wake on reset](0050-a-session-stopped-on-a-full-window-is-woken-once.md)
 - [0051 One constructor](0051-a-class-has-one-constructor-and-tests-use-it.md)
+- [0052 Typed endings](0052-an-ending-says-which-one.md)

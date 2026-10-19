@@ -54,12 +54,13 @@ public class AgentSessionController {
         return reports.turnEnded(task.getKey(), read(task, said), said.sentOn(), said.pausedOnBackgroundWork());
     }
 
-    @PostMapping(value = "/rate-limit", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String rateLimit(@RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+    @PostMapping(value = "/turn-failure", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String turnFailure(@RequestHeader(value = "X-Working-Directory", required = false) String cwd,
                             @RequestBody(required = false) SessionHookReport session) {
         var task = task(cwd);
-        reports.record(task.getKey(), SessionProbe.State.IDLE, read(task, session));
-        wakes.arm(task.getKey());
+        if (reports.turnFailed(task.getKey(), read(task, session))) {
+            wakes.arm(task.getKey());
+        }
         return "";
     }
 
@@ -83,6 +84,8 @@ public class AgentSessionController {
                 .withSessionLog(said.sessionLog().orElse(null))
                 .withStartedBy(said.source())
                 .withSaid(said.message())
+                .withEndedBy(said.reason())
+                .withFailedOn(said.error())
                 .withTask(task.getValue());
     }
 

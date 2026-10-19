@@ -45,7 +45,7 @@ class WatchdogServiceTest {
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.WAITING)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.WAITING, null)));
 
         new WatchdogService(state, notifications, properties, probe).run();
 
@@ -83,7 +83,7 @@ class WatchdogServiceTest {
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, reported)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, reported, null)));
 
         new WatchdogService(state, notifications, properties, probe).run();
 
@@ -98,7 +98,7 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, SessionProbe.State.GONE)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, SessionProbe.State.GONE, null)));
 
         new WatchdogService(state, mock(Notifications.class), properties, probe).check("ABC-1");
 
@@ -113,7 +113,7 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, null)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, null, null)));
 
         new WatchdogService(state, mock(Notifications.class), properties, probe).run();
 
@@ -141,7 +141,7 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, null)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, null, null)));
         AtomicInteger writes = new AtomicInteger();
         state.onChange(file -> writes.incrementAndGet());
         WatchdogService watchdog = new WatchdogService(state, mock(Notifications.class), properties, probe);
@@ -170,7 +170,7 @@ class WatchdogServiceTest {
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)));
 
         new WatchdogService(state, notifications, properties, probe).run();
 
@@ -201,7 +201,7 @@ class WatchdogServiceTest {
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, null)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, null, null)));
 
         new WatchdogService(state, notifications, properties, probe).run();
 

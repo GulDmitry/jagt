@@ -9,12 +9,14 @@ Accepted 2026-10-19.
 ## Context
 
 - A session that hits a full window stops and stays stopped until a human sees the reset.
-- Claude Code's `StopFailure` event fires when a turn ends on an API error; its matcher filters on `error_type`, one value being `rate_limit`.
+- Claude Code's `StopFailure` event fires when a turn ends on an API error and carries that error's word in `error`, one value being `rate_limit`.
+- Every other error (overloaded, authentication, billing) stopped a session just as silently.
 - 0033 reads the windows and their resets; nothing it reads refuses or slows work.
 
 ## Decision
 
-- The stop is a typed report: `StopFailure` with matcher `rate_limit`, declared in `hooks/claude.properties`.
+- Every `StopFailure` is reported, unmatched, declared in `hooks/claude.properties` as `turn-failure`; the board names the error at once.
+- The error equal to the declared `rate-limit-error` arms the wake.
 - Opt-in, `usageLimits.wakeOnReset`, default false: a wake is a write into a session, not a read.
 - At the stop, one fresh read decides: a window at 100% with a known reset arms one wake at the latest such reset; otherwise none.
 - The wake is one line through `SessionHost.nudgeTaskWindow`, sent by a one-minute job.
@@ -31,4 +33,4 @@ Accepted 2026-10-19.
 ## Reopen when
 
 - A wake is sent into a human's unsent draft.
-- The CLI's event or its `rate_limit` value changes.
+- The CLI's event or its `error` values change.

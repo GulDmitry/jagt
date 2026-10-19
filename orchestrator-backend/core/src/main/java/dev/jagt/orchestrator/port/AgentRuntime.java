@@ -123,6 +123,16 @@ public interface AgentRuntime {
         return "";
     }
 
+    /** The error word this CLI gives a turn that ended on a usage limit; blank when it names none. */
+    default String rateLimitError() {
+        return "";
+    }
+
+    /** The reasons a session ends that a new start follows at once, so they are not an end. */
+    default Set<String> continuingEnds() {
+        return Set.of();
+    }
+
     /** The answer that keeps this CLI's turn going with {@code reason} as its next input; blank where it cannot. */
     default String refusedTurnEnd(String reason) {
         return "";

@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -24,7 +26,7 @@ class SessionReportsTest {
         new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.WAITING, null);
+        verify(signs).record("ABC-1", SessionProbe.State.WAITING, null, null);
     }
 
     @Test
@@ -34,7 +36,49 @@ class SessionReportsTest {
         new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude is waiting for your input"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null);
+        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null);
+    }
+
+    @Test
+    void recordsASessionClearedOrResumedAsIdleBecauseANewStartFollows() {
+        when(runtime.continuingEnds()).thenReturn(Set.of("clear", "resume"));
+
+        new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.GONE,
+                SessionReports.Report.defaults().withEndedBy("clear"));
+
+        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null);
+    }
+
+    @Test
+    void recordsASessionThatEndedForGoodAsGone() {
+        when(runtime.continuingEnds()).thenReturn(Set.of("clear", "resume"));
+
+        new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.GONE,
+                SessionReports.Report.defaults().withEndedBy("prompt_input_exit"));
+
+        verify(signs).record("ABC-1", SessionProbe.State.GONE, null, null);
+    }
+
+    @Test
+    void recordsAUsageLimitFailureAsFailedAndSaysItIsOne() {
+        when(runtime.rateLimitError()).thenReturn("rate_limit");
+
+        boolean limit = new SessionReports(signs, runtime, turnEnds)
+                .turnFailed("ABC-1", SessionReports.Report.defaults().withFailedOn("rate_limit"));
+
+        verify(signs).record("ABC-1", SessionProbe.State.FAILED, "rate_limit", null);
+        assertThat(limit).isTrue();
+    }
+
+    @Test
+    void recordsAnyOtherFailureAsFailedNamingItAndSaysItIsNoLimit() {
+        when(runtime.rateLimitError()).thenReturn("rate_limit");
+
+        boolean limit = new SessionReports(signs, runtime, turnEnds)
+                .turnFailed("ABC-1", SessionReports.Report.defaults().withFailedOn("overloaded"));
+
+        verify(signs).record("ABC-1", SessionProbe.State.FAILED, "overloaded", null);
+        assertThat(limit).isFalse();
     }
 
     @Test
@@ -45,7 +89,7 @@ class SessionReportsTest {
         String answered = new SessionReports(signs, runtime, turnEnds)
                 .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
 
-        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null);
+        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null);
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
 

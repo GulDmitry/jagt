@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 
@@ -22,6 +23,15 @@ class SessionHookReportTest {
         var said = new SessionHookReport("/tmp/agent/session.jsonl", "startup", null);
 
         assertThat(said.sessionLog()).contains(Path.of("/tmp/agent/session.jsonl"));
+    }
+
+    @Test
+    void readsTheErrorAndTheEndReasonFromTheNamesTheVendorGaveThem() {
+        var said = new JsonMapper().readValue("{\"error\": \"overloaded\", \"reason\": \"clear\"}",
+                SessionHookReport.class);
+
+        assertThat(said.error()).isEqualTo("overloaded");
+        assertThat(said.reason()).isEqualTo("clear");
     }
 
     @Test

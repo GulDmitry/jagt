@@ -246,6 +246,16 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public String rateLimitError() {
+        return SessionHooks.rateLimitError("claude");
+    }
+
+    @Override
+    public Set<String> continuingEnds() {
+        return SessionHooks.continuingEnds("claude");
+    }
+
+    @Override
     public String refusedTurnEnd(String reason) {
         return "{\"decision\": \"block\", \"reason\": " + quoted(reason) + "}";
     }
@@ -283,12 +293,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                 .map(event -> hook(event.getKey(), hooks.command(worktree, event.getValue()))),
                         SessionHooks.turnEnd("claude").stream()
                                 .map(event -> hook(event, hooks.command(worktree, "turn-end"))),
-                        SessionHooks.rateLimitStop("claude").stream()
-                                .map(event -> """
-                                        %s: [{"matcher": %s, "hooks": [{"type": "command", "command": %s,\
-                                         "timeout": 5}]}]"""
-                                        .formatted(quoted(event), quoted(SessionHooks.rateLimitMatcher("claude")),
-                                                quoted(hooks.command(worktree, "rate-limit")))),
+                        SessionHooks.turnFailure("claude").stream()
+                                .map(event -> hook(event, hooks.command(worktree, "turn-failure"))),
                         // Scoped to the one tool that can push: a hook on all of them would sit in front of
                         // every step the agent takes.
                         SessionHooks.gate("claude").stream()
