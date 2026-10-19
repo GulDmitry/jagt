@@ -9,7 +9,8 @@ needs git + tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
 **every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app
 passes `--orchestrator.open-terminal-window=false`, uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`,
-then removes the worktrees and branches. A test reading the repository's own files may keep **file-scanning**
+then removes the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed
+after the task), so no test reaches the human's. A test reading the repository's own files may keep **file-scanning**
 helpers (`TextBudgetTest.mainSources`, `ConfigReferenceTest.javaFilesUnder` …). A shared **fake** of a production
 seam (`ScriptedProcesses`) is allowed, a shared builder is not.
 

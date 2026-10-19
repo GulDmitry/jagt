@@ -66,6 +66,11 @@ allprojects {
         }
     }
 
+    ext.tmuxDirOf = { Task task ->
+        new File(System.getProperty('java.io.tmpdir'),
+                'jagt-tmux-' + Integer.toHexString("${task.project.rootDir}:${task.path}".hashCode()))
+    }
+
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         maxHeapSize = '2g'
@@ -81,6 +86,24 @@ allprojects {
         environment 'GIT_AUTHOR_EMAIL', 'tests@example.com'
         environment 'GIT_COMMITTER_NAME', 'jagt tests'
         environment 'GIT_COMMITTER_EMAIL', 'tests@example.com'
+        // Every tmux a test starts lives on a server of its own. Under the temp dir, not `build/`: a socket path
+        // past 104 characters is refused, and a worktree path alone is most of that.
+        def tmuxDir = tmuxDirOf(it)
+        environment 'TMUX_TMPDIR', tmuxDir.absolutePath
+        environment.remove('TMUX')
+        doFirst { tmuxDir.mkdirs() }
+    }
+
+    afterEvaluate {
+        tasks.withType(Test).names.toList().each { testName ->
+            def tmuxDir = tmuxDirOf(tasks.named(testName).get())
+            def stop = tasks.register("${testName}StopTmux", Exec) {
+                environment 'TMUX_TMPDIR', tmuxDir.absolutePath
+                environment.remove('TMUX')
+                commandLine 'sh', '-c', 'tmux kill-server 2>/dev/null; rm -rf "$TMUX_TMPDIR"; true'
+            }
+            tasks.named(testName) { finalizedBy stop }
+        }
     }
 }
 
