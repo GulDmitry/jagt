@@ -1,16 +1,14 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 /** On Linux Claude's sandbox is bubblewrap with socat relaying its network, neither of which ships with the OS. */
 @Component
@@ -21,17 +19,12 @@ public class ClaudeSandboxCheck implements StartupCheck {
 
     private final OrchestratorProperties properties;
     private final ConfigService configService;
-    private final Predicate<String> onPath;
+    private final Host host;
 
-    @Autowired
-    public ClaudeSandboxCheck(OrchestratorProperties properties, ConfigService configService) {
-        this(properties, configService, Executables::onPath);
-    }
-
-    ClaudeSandboxCheck(OrchestratorProperties properties, ConfigService configService, Predicate<String> onPath) {
+    public ClaudeSandboxCheck(OrchestratorProperties properties, ConfigService configService, Host host) {
         this.properties = properties;
         this.configService = configService;
-        this.onPath = onPath;
+        this.host = host;
     }
 
     @Override
@@ -40,7 +33,7 @@ public class ClaudeSandboxCheck implements StartupCheck {
                 || !configService.load().agent().sandboxOrDefault().enabledOrDefault()) {
             return List.of();
         }
-        List<String> missing = LINUX_BINARIES.stream().filter(onPath.negate()).toList();
+        List<String> missing = LINUX_BINARIES.stream().filter(name -> !host.onPath(name)).toList();
         return missing.isEmpty() ? List.of()
                 : List.of(new Problem("orchestrator.agent.sandbox.enabled", "orchestrator.agent.sandbox: "
                         + String.join(" and ", missing) + " not on PATH, and a session's shell runs inside"

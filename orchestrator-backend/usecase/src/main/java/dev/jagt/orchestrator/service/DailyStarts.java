@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.service.ActStop.Cause;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -23,12 +22,7 @@ public class DailyStarts {
     private LocalDate day;
     private int taken;
 
-    @Autowired
-    public DailyStarts(OrchestratorPaths paths) {
-        this(paths, Clock.systemDefaultZone());
-    }
-
-    DailyStarts(OrchestratorPaths paths, Clock clock) {
+    public DailyStarts(OrchestratorPaths paths, Clock clock) {
         this.paths = paths;
         this.clock = clock;
         this.day = LocalDate.now(clock);

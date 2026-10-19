@@ -16,15 +16,4 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
     public ReviewFacts {
         pipelineFailure = pipelineFailure == null ? "" : pipelineFailure;
     }
-
-    /** A round with no failure to read: its checks are not red, or the source cannot quote one. */
-    public ReviewFacts(boolean exists, boolean approved, String pipelineStatus, List<String> threads,
-                       long openedAt) {
-        this(exists, approved, pipelineStatus, "", threads, openedAt);
-    }
-
-    /** A round from a source that cannot say when the request was opened. */
-    public ReviewFacts(boolean exists, boolean approved, String pipelineStatus, List<String> threads) {
-        this(exists, approved, pipelineStatus, "", threads, 0);
-    }
 }

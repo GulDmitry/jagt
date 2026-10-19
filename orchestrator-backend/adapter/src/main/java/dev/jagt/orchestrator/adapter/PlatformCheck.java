@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
 
@@ -23,14 +23,9 @@ public class PlatformCheck implements StartupCheck {
     private final OrchestratorProperties properties;
     private final String osName;
 
-    @Autowired
-    public PlatformCheck(OrchestratorProperties properties) {
-        this(properties, System.getProperty("os.name", ""));
-    }
-
-    PlatformCheck(OrchestratorProperties properties, String osName) {
+    public PlatformCheck(OrchestratorProperties properties, Host host) {
         this.properties = properties;
-        this.osName = osName == null ? "" : osName;
+        this.osName = host.osName();
     }
 
     @Override

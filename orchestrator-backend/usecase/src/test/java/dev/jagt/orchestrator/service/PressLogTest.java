@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.PressLog.Interaction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -26,7 +28,8 @@ class PressLogTest {
     @Test
     void writesOneLinePerPress() throws IOException {
         Path file = dir.resolve("interactions.jsonl");
-        PressLog presses = new PressLog(new JsonMapper(), file, true, 1024);
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
 
         presses.record(List.of(new Interaction(NOW, "action:ship", "REVIEW_PENDING"),
                 new Interaction(NOW, "id:open-palette", null)), NOW);
@@ -40,7 +43,9 @@ class PressLogTest {
     void rollsIntoOneArchiveReplacingTheLastWhenPastItsCeiling() throws IOException {
         Path file = dir.resolve("interactions.jsonl");
         Files.writeString(dir.resolve("interactions.jsonl.1"), "older archive\n");
-        PressLog presses = new PressLog(new JsonMapper(), file, true, 40);
+        Files.writeString(file, "#".repeat(1024 * 1024));
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
 
         presses.record(List.of(new Interaction(NOW, "action:deploy", "APPROVED")), NOW);
 
@@ -55,7 +60,8 @@ class PressLogTest {
             "action:ship, REVIEW_PENDING, 1700000000000"})
     void refusesTheWholeBatchWhenOnePressCarriesMoreThanAControlAndAStatus(String control, String status, long at) {
         Path file = dir.resolve("interactions.jsonl");
-        PressLog presses = new PressLog(new JsonMapper(), file, true, 1024);
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
 
         assertThatThrownBy(() -> presses.record(List.of(new Interaction(NOW, "action:done", null),
                 new Interaction(at, control, status)), NOW)).isInstanceOf(IllegalArgumentException.class);
@@ -64,7 +70,8 @@ class PressLogTest {
 
     @Test
     void refusesABatchHoldingMoreThanFiftyPresses() {
-        PressLog presses = new PressLog(new JsonMapper(), dir.resolve("interactions.jsonl"), true, 1024);
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
 
         assertThatThrownBy(() -> presses.record(Collections.nCopies(51, new Interaction(NOW, "flag", null)), NOW))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -73,7 +80,8 @@ class PressLogTest {
     @Test
     void writesNothingWhenSwitchedOff() {
         Path file = dir.resolve("interactions.jsonl");
-        PressLog presses = new PressLog(new JsonMapper(), file, false, 1024);
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), false);
 
         presses.record(List.of(new Interaction(NOW, "action:ship", null)), NOW);
 
@@ -82,7 +90,8 @@ class PressLogTest {
 
     @Test
     void refusesABatchHoldingAnEmptyEntry() {
-        PressLog presses = new PressLog(new JsonMapper(), dir.resolve("interactions.jsonl"), true, 1024);
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
 
         assertThatThrownBy(() -> presses.record(java.util.Arrays.asList(new Interaction(NOW, "flag", null), null), NOW))
                 .isInstanceOf(IllegalArgumentException.class);

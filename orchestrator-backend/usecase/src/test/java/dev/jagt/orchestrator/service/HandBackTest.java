@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import java.time.Clock;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.Probe;
@@ -30,7 +31,7 @@ class HandBackTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withConfigFile(configFile.toString()));
         ConfigService config = new ConfigService(paths, mock(AgentRuntime.class),
-                new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths), new DailyStarts(paths)));
+                new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths), new DailyStarts(paths, Clock.systemDefaultZone())));
         HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
         boolean owed = handBack.verificationOwed(TaskState.builder("gone", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -47,7 +48,7 @@ class HandBackTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withConfigFile(configFile.toString()));
         ConfigService config = new ConfigService(paths, mock(AgentRuntime.class),
-                new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths), new DailyStarts(paths)));
+                new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths), new DailyStarts(paths, Clock.systemDefaultZone())));
         HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
         boolean owed = handBack.verificationOwed(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

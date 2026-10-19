@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.port.Host;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -24,19 +25,9 @@ public class CodexCredentials {
 
     private final Path file;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public CodexCredentials() {
-        this(home().resolve("auth.json"));
-    }
-
-    CodexCredentials(Path file) {
-        this.file = file;
-    }
-
-    private static Path home() {
-        String configured = System.getenv("CODEX_HOME");
-        return configured == null || configured.isBlank() ? Path.of(System.getProperty("user.home"), ".codex")
-                : Path.of(configured);
+    public CodexCredentials(Host host) {
+        String configured = host.env("CODEX_HOME").orElse("");
+        this.file = (configured.isBlank() ? host.home().resolve(".codex") : Path.of(configured)).resolve("auth.json");
     }
 
     OAuthCredential read(Instant now) {

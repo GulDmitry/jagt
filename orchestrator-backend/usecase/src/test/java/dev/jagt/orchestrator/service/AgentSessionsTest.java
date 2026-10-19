@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import java.time.Clock;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -54,7 +55,7 @@ class AgentSessionsTest {
                 .withStateFile(root.resolve("state.json").toString()).withConfigFile(configFile.toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         state = new StateService(new JsonMapper(), paths);
-        config = new ConfigService(paths, agentRuntime, new ActStops(new MasterBrake(state, paths), new DailyStarts(paths)));
+        config = new ConfigService(paths, agentRuntime, new ActStops(new MasterBrake(state, paths), new DailyStarts(paths, Clock.systemDefaultZone())));
     }
 
     @Test

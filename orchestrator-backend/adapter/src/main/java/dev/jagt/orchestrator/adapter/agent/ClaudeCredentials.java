@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Processes;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,15 +31,10 @@ public class ClaudeCredentials {
     private final boolean macos;
     private final Path file;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public ClaudeCredentials(Processes processes, @Value("${orchestrator.platform:macos}") String platform) {
-        this(processes, "macos".equals(platform), Path.of(System.getProperty("user.home"), ".claude", ".credentials.json"));
-    }
-
-    ClaudeCredentials(Processes processes, boolean macos, Path file) {
+    public ClaudeCredentials(Processes processes, Host host, @Value("${orchestrator.platform:macos}") String platform) {
         this.processes = processes;
-        this.macos = macos;
-        this.file = file;
+        this.macos = "macos".equals(platform);
+        this.file = host.home().resolve(".claude").resolve(".credentials.json");
     }
 
     OAuthCredential read(Instant now) {

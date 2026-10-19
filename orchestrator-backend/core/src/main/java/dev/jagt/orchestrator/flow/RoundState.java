@@ -12,10 +12,6 @@ public record RoundState(AgentReport report, boolean draftedReplies, boolean mas
 
     public static final RoundState NONE = new RoundState(AgentReport.PLAIN, false, false);
 
-    public RoundState(AgentReport report, boolean draftedReplies) {
-        this(report, draftedReplies, false);
-    }
-
     public static RoundState of(@Nullable String message, boolean draftedReplies) {
         return new RoundState(AgentReport.of(message), draftedReplies, false);
     }

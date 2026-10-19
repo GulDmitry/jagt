@@ -31,12 +31,12 @@ class ReviewReaderTest {
     @Test
     void answersTheRoundWithWhatTheReadCameBackWith() {
         when(assistant.readReview("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
-                new Answer<>(Optional.of(new ReviewFacts(true, false, "running", List.of())), TokenUsage.NONE));
+                new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0)), TokenUsage.NONE));
 
-        var facts = new ReviewReader(assistant, mcp, usage)
+        var facts = new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
                 .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
-        assertThat(facts).contains(new ReviewFacts(true, false, "running", List.of()));
+        assertThat(facts).contains(new ReviewFacts(true, false, "running", "", List.of(), 0));
     }
 
     @Test
@@ -53,7 +53,7 @@ class ReviewReaderTest {
     @Test
     void believesAHostSayingThereIsNoSuchRequestWithoutPayingToHearItAgain() {
         when(assistant.readReview("https://host/g/p/-/merge_requests/7")).thenReturn(new Answer<>(
-                Optional.of(new ReviewFacts(false, false, "unknown", List.of())), TokenUsage.NONE));
+                Optional.of(new ReviewFacts(false, false, "unknown", "", List.of(), 0)), TokenUsage.NONE));
 
         new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-1", "https://host/g/p/-/merge_requests/7");
@@ -77,7 +77,7 @@ class ReviewReaderTest {
         when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
                 new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "t")), TokenUsage.NONE));
 
-        var read = new ReviewReader(assistant, mcp, usage)
+        var read = new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
                 .readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
         assertThat(read.facts()).contains(new MergeRequestFacts(true, "ABC-1", "main", "t"));
@@ -88,7 +88,7 @@ class ReviewReaderTest {
         when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
                 new Answer<>(Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
 
-        new ReviewReader(assistant, mcp, usage).readRequest("https://other.example.com/g/p/-/merge_requests/7");
+        new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ).readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
         verify(mcp).brokenServers();
     }
@@ -99,7 +99,7 @@ class ReviewReaderTest {
                 new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "main", "Excel export")),
                         TokenUsage.NONE));
 
-        new ReviewReader(assistant, mcp, usage).readRequest("https://other.example.com/g/p/-/merge_requests/7");
+        new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ).readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
         verify(mcp, never()).brokenServers();
     }

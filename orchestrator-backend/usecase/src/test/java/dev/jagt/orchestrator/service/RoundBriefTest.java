@@ -11,33 +11,33 @@ class RoundBriefTest {
 
     @Test
     void asksForRepliesInAShapeAHumanCanReadInOnePass() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("reviewer (a.java:3): drop the cache")), "success");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("reviewer (a.java:3): drop the cache"), 0), "success");
 
         assertThat(brief).contains("FIXED | NO CHANGE | QUESTION").contains("NECESSARY AND SUFFICIENT");
     }
 
     @Test
     void relaysAReviewRoundAsAJudgementCallAndNotAsAListOfOrders() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("reviewer (a.java:3): drop the cache")), "success");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("reviewer (a.java:3): drop the cache"), 0), "success");
 
         assertThat(brief).contains("Wrong: change NOTHING").contains("outcome=question").contains("drop the cache");
     }
 
     @Test
     void relaysAReviewRoundThatLeavesARightCommentBeyondTheTicketToATaskOfItsOwn() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("bot (a.java:3): also migrate the other listeners")), "success");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("bot (a.java:3): also migrate the other listeners"), 0), "success");
 
         assertThat(brief).contains("Right, but beyond the ticket: change NOTHING");
     }
 
     @Test
     void relaysAThreadWholeSoTheAgentAnswersTheReviewersLastWord() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
                 List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern\n"
-                        + "bot: then bound the input length")), "success");
+                        + "bot: then bound the input length"), 0), "success");
 
         assertThat(brief).contains("<threads>\nhttp://mr/1#note_7\nbot: quote the pattern\n"
                 + "dev: the rule IS a pattern\nbot: then bound the input length");
@@ -45,8 +45,8 @@ class RoundBriefTest {
 
     @Test
     void tellsTheAgentToWeighTheReviewersAnswerRatherThanRepostItsOwnReply() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern")), "success");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"), 0), "success");
 
         assertThat(brief).contains("what you answer is its NEWEST note")
                 .contains("never\nre-post the reply it has already read");
@@ -54,8 +54,8 @@ class RoundBriefTest {
 
     @Test
     void tellsTheAgentAThreadMayReachItCutAndWhereToReadItWhole() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern")), "success");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"), 0), "success");
 
         assertThat(brief).contains("jagt's sweep copied each note cut\nshort and a long thread without its oldest"
                 + " notes: read a cut one whole on the host first.");
@@ -63,8 +63,8 @@ class RoundBriefTest {
 
     @Test
     void tellsTheAgentToLeaveAThreadWaitingOnTheReviewerAlone() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern")), "success");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"), 0), "success");
 
         assertThat(brief).contains("Where the newest note is your OWN and nobody\nanswered it, that thread is waiting"
                 + " on the reviewer: leave it alone and give it no block.");
@@ -72,8 +72,8 @@ class RoundBriefTest {
 
     @Test
     void asksTheAgentToReportWhetherTheRoundChangedAnything() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("reviewer (a.java:3): drop the cache")), "success");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("reviewer (a.java:3): drop the cache"), 0), "success");
 
         assertThat(brief).contains("outcome=no_changes").contains("jagt reads the worktree")
                 .contains("The file holds DRAFTS: post nothing and resolve");
@@ -81,7 +81,7 @@ class RoundBriefTest {
 
     @Test
     void tellsAnAgentFixingOnlyAFailedBuildWhenTheRoundIsOver() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "failed", List.of()), "failed");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0), "failed");
 
         assertThat(brief).contains("When the build is fixed locally, set status REVIEW_PENDING (outcome=progress).");
     }
@@ -97,7 +97,7 @@ class RoundBriefTest {
 
     @Test
     void briefsARedRoundToReproduceTheFailureAndAskWhereItIsNotTheCode() {
-        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "failed", List.of()), "failed");
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0), "failed");
 
         assertThat(brief).contains("Reproduce it with the command that job ran")
                 .contains("A gate fails on EVERY condition it lists: answer each.")

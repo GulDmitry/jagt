@@ -8,7 +8,6 @@ import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +27,7 @@ class TaskEventStreamTest {
     void handsTheBroadcastOffInsteadOfWritingOnTheThreadThatChangedTheState() {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = new TaskEventStream(stateService, broadcaster, Duration.ofSeconds(20));
+        TaskEventStream stream = new TaskEventStream(stateService, broadcaster);
         stream.followStateChanges();
         ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
         verify(stateService).onChange(listener.capture());
@@ -43,7 +42,7 @@ class TaskEventStreamTest {
     void keepsOnlyOnePendingBroadcastForABurstOfChanges() {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = new TaskEventStream(stateService, broadcaster, Duration.ofSeconds(20));
+        TaskEventStream stream = new TaskEventStream(stateService, broadcaster);
         stream.followStateChanges();
         ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
         verify(stateService).onChange(listener.capture());
@@ -61,16 +60,14 @@ class TaskEventStreamTest {
 
     @Test
     void handsEachBrowserItsOwnStream() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class),
-                Duration.ofSeconds(20));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
 
         assertThat(stream.open()).isNotSameAs(stream.open());
     }
 
     @Test
     void endsEveryBoardConnectionWhenTheBackendShutsDown() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class),
-                Duration.ofSeconds(20));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
         SseEmitter browser = stream.open();
 
         stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
@@ -80,8 +77,7 @@ class TaskEventStreamTest {
 
     @Test
     void handsBackAnAlreadyEndedStreamToATabThatReconnectsDuringShutdown() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class),
-                Duration.ofSeconds(20));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
         stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
 
         assertThatIllegalStateException().isThrownBy(() -> stream.open().send("reconnected"));
@@ -89,8 +85,7 @@ class TaskEventStreamTest {
 
     @Test
     void endsAConnectionWhoseWriteFailedInsteadOfMerelyForgettingIt() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class),
-                Duration.ofSeconds(20));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
         AtomicBoolean ended = new AtomicBoolean();
         SseEmitter gone = new SseEmitter(0L) {
             @Override
@@ -113,7 +108,7 @@ class TaskEventStreamTest {
     void beatsEveryOpenBoardOnTheConfiguredInterval() {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = new TaskEventStream(stateService, broadcaster, Duration.ofSeconds(20));
+        TaskEventStream stream = new TaskEventStream(stateService, broadcaster);
 
         stream.followStateChanges();
 

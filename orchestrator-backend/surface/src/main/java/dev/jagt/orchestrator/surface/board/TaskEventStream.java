@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -24,34 +23,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class TaskEventStream implements ApplicationListener<ContextClosedEvent> {
 
+    private static final Duration HEARTBEAT = Duration.ofSeconds(20);
+
     private final StateService stateService;
     private final ScheduledExecutorService broadcaster;
-    private final Duration heartbeat;
     private final AtomicBoolean broadcastQueued = new AtomicBoolean();
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();
     private volatile boolean closing;
     private final String started = Long.toString(System.currentTimeMillis(), 36);
 
-    @Autowired
-    public TaskEventStream(StateService stateService) {
-        this(stateService, Executors.newSingleThreadScheduledExecutor(task -> {
-            Thread thread = new Thread(task, "board-sse");
-            thread.setDaemon(true);
-            return thread;
-        }), Duration.ofSeconds(20));
-    }
-
-    TaskEventStream(StateService stateService, ScheduledExecutorService broadcaster, Duration heartbeat) {
+    public TaskEventStream(StateService stateService,
+                           @Qualifier("boardBroadcaster") ScheduledExecutorService broadcaster) {
         this.stateService = stateService;
         this.broadcaster = broadcaster;
-        this.heartbeat = heartbeat;
     }
 
     @PostConstruct
     void followStateChanges() {
         stateService.onChange(written -> queueBroadcast());
-        broadcaster.scheduleAtFixedRate(() -> browsers.forEach(this::beat), heartbeat.toMillis(),
-                heartbeat.toMillis(), TimeUnit.MILLISECONDS);
+        broadcaster.scheduleAtFixedRate(() -> browsers.forEach(this::beat), HEARTBEAT.toMillis(),
+                HEARTBEAT.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     private void queueBroadcast() {
@@ -115,7 +106,7 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
 
     /** Carries its own interval, so the page knows how long a silence may last without a setting of its own. */
     private void beat(SseEmitter browser) {
-        send(browser, "beat", String.valueOf(heartbeat.toMillis()));
+        send(browser, "beat", String.valueOf(HEARTBEAT.toMillis()));
     }
 
     void send(SseEmitter browser, String event, String data) {

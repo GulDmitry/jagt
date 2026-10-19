@@ -34,12 +34,7 @@ public class UsageEndpoint {
     private final Clock clock;
     private final Map<URI, Instant> coolingUntil = new ConcurrentHashMap<>();
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public UsageEndpoint() {
-        this(HttpClient.newBuilder().connectTimeout(TIMEOUT).build(), Clock.systemUTC());
-    }
-
-    UsageEndpoint(HttpClient http, Clock clock) {
+    public UsageEndpoint(HttpClient http, Clock clock) {
         this.http = http;
         this.clock = clock;
     }

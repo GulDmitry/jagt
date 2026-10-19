@@ -36,7 +36,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", List.of()));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "", List.of(), 0));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         TaskState after = stamped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -51,7 +51,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, true, "success", List.of()));
+        roundRecord.record("ABC-1", new ReviewFacts(true, true, "success", "", List.of(), 0));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue()
@@ -64,7 +64,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "SUCCEEDED", List.of()));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "SUCCEEDED", "", List.of(), 0));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue()
@@ -78,7 +78,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", List.of(), 1_700_000_000_000L));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue()
@@ -92,7 +92,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("running").approved(false)
                 .requestOpenedAt(1_700_000_000_000L).build()));
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", List.of()));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 0));
 
         verify(stateService, never()).updateTask(eq("ABC-1"), any());
     }
@@ -107,8 +107,8 @@ class RoundRecordTest {
             return true;
         });
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "failed", List.of()));
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "failed", List.of()));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "failed", "", List.of(), 0));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "failed", "", List.of(), 0));
 
         verify(notifications, times(1)).send(Notification.checksFailed("ABC-1", "failed"));
         verifyNoMoreInteractions(notifications);
@@ -119,7 +119,7 @@ class RoundRecordTest {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build()));
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "success", List.of()));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "success", "", List.of(), 0));
 
         verifyNoInteractions(notifications);
     }
@@ -129,7 +129,7 @@ class RoundRecordTest {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, true, "success", List.of()));
+        roundRecord.record("ABC-1", new ReviewFacts(true, true, "success", "", List.of(), 0));
 
         verifyNoInteractions(notifications);
     }

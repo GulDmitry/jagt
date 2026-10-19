@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -18,9 +19,11 @@ class ClaudeSandboxCheckTest {
     void refusesToStartOnLinuxWhenTheSandboxLacksItsRelay() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults());
+        Host host = mock(Host.class);
+        when(host.onPath("bwrap")).thenReturn(true);
 
         List<Problem> problems = new ClaudeSandboxCheck(OrchestratorProperties.defaults().withPlatform("linux"),
-                config, "bwrap"::equals).problems();
+                config, host).problems();
 
         assertThat(problems).extracting(Problem::key).containsExactly("orchestrator.agent.sandbox.enabled");
     }
@@ -28,7 +31,7 @@ class ClaudeSandboxCheckTest {
     @Test
     void needsNothingInstalledOnMacos() {
         List<Problem> problems = new ClaudeSandboxCheck(OrchestratorProperties.defaults().withPlatform("macos"),
-                mock(ConfigService.class), name -> false).problems();
+                mock(ConfigService.class), mock(Host.class)).problems();
 
         assertThat(problems).isEmpty();
     }

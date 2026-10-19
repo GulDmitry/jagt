@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,8 @@ class SessionWakesTest {
 
     private static SessionWakes wakes(UsageLimits limits, boolean on, Path file, Instant now) {
         return new SessionWakes(limits, UsageLimitsProperties.defaults().withWakeOnReset(on), JsonMapper.builder().build(),
-                file, at(now));
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(file.getParent().toString())),
+                at(now));
     }
 
     @Test

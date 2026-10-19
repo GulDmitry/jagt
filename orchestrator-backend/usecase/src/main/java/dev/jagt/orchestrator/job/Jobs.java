@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -42,12 +42,7 @@ public class Jobs {
     private final Map<String, Run> runs = new LinkedHashMap<>();
     private final Executor workers;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public Jobs(List<Job> declared) {
-        this(declared, Executors.newVirtualThreadPerTaskExecutor());
-    }
-
-    Jobs(List<Job> declared, Executor workers) {
+    public Jobs(List<Job> declared, @Qualifier("jobWorkers") Executor workers) {
         this.workers = workers;
         for (Job job : declared) {
             if (job.id() == null || job.id().isBlank()) {

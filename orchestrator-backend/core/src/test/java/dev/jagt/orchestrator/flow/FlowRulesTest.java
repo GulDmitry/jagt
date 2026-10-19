@@ -15,82 +15,82 @@ class FlowRulesTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING"})
     void takesAShipAsTheHumansApprovalWhileTheWorkIsStillTheAgents(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(false, false, () -> false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(false, false, () -> false, false))).isTrue();
     }
 
     @Test
     void shipsAStuckTaskAgainOnlyOnceTheAgentThatWasPushingItIsGone() {
         assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(false, false,
-                () -> false))).isTrue();
+                () -> false, false))).isTrue();
         assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(true, false,
-                () -> true))).isFalse();
+                () -> true, false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class,
             names = {"CI_POLLING", "CI_FAILED", "REVIEWED", "DEPLOYED", "REVERTED"})
     void shipsAFurtherRoundOnlyOntoARequestThatIsAlreadyOpen(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(true, false, () -> false))).isTrue();
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(false, false, () -> false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(true, false, () -> false, false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(false, false, () -> false, false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "DONE"})
     void refusesAShipForATaskWithNothingOnItsBranchYetOrNothingLeftToSay(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(true, false, () -> false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(true, false, () -> false, false))).isFalse();
     }
 
     @Test
     void deploysAStalledDeployAgainWithNoRequestAtAll() {
         assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.DEPLOY, new Facts(false, false,
-                () -> false))).isTrue();
+                () -> false, false))).isTrue();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class,
             names = {"REVIEW_PENDING", "CI_POLLING", "CI_FAILED", "REVIEWED", "APPROVED", "DEPLOYED"})
     void landsAnOpenRequestWhateverTheReviewerSaidAboutIt(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(true, false, () -> false))).isTrue();
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(false, false, () -> false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(true, false, () -> false, false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(false, false, () -> false, false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING", "REVERTED", "DONE"})
     void refusesADeployWhereItCouldOnlyRaceTheAgentOrRefuse(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(true, false, () -> false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(true, false, () -> false, false))).isFalse();
     }
 
     @Test
     void revertsATaskWhoseDeployActuallyLandedWhateverBecameOfItsRequest() {
         assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, new Facts(true, false,
-                () -> false))).isTrue();
+                () -> false, false))).isTrue();
         assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, new Facts(false, false,
-                () -> false))).isTrue();
+                () -> false, false))).isTrue();
     }
 
     @Test
     void revertsWhatADeployStoppedByAConflictLeftLive() {
         assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, new Facts(false, false,
-                () -> false))).isTrue();
+                () -> false, false))).isTrue();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"DEPLOYED", "DEPLOY_CONFLICT"})
     void refusesARevertForATaskWithNothingLiveToTakeBackOut(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.REVERT, new Facts(true, false, () -> false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.REVERT, new Facts(true, false, () -> false, false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void readsAReviewRoundFromAnywhereButOnlyWhereThereIsARequestToRead(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SWEEP, new Facts(true, false, () -> false))).isTrue();
-        assertThat(FlowRules.allows(status, TaskAction.SWEEP, new Facts(false, false, () -> false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.SWEEP, new Facts(true, false, () -> false, false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SWEEP, new Facts(false, false, () -> false, false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void letsAHumanLookAtCloseOrRestartATaskWhereverItGotTo(TaskStatus status) {
-        assertThat(FlowRules.allowed(status, new Facts(false, false, () -> false))).contains(TaskAction.FOCUS,
+        assertThat(FlowRules.allowed(status, new Facts(false, false, () -> false, false))).contains(TaskAction.FOCUS,
                 TaskAction.IDE,
                 TaskAction.DIFF, TaskAction.RESPAWN, TaskAction.DONE);
     }
@@ -153,7 +153,7 @@ class FlowRulesTest {
         FlowRules.allowed(status, new Facts(true, false, () -> {
             probed.set(true);
             return true;
-        }));
+        }, false));
 
         assertThat(probed).isFalse();
     }
@@ -232,7 +232,7 @@ class FlowRulesTest {
     void offersTrustOnlyOnceWhatGitObeysChanged() {
         assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, new Facts(true, false, () -> false, true)))
                 .isTrue();
-        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, new Facts(true, false, () -> false)))
+        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, new Facts(true, false, () -> false, false)))
                 .isFalse();
     }
 

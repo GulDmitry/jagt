@@ -23,11 +23,11 @@ class CaffeinateTest {
     void holdsTheAssertionForAsLongAsThisProcessLives() {
         when(processes.runDetached(isNull(), any())).thenReturn(caffeinate);
 
-        new Caffeinate(processes, 42).hold();
+        new Caffeinate(processes).hold();
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(processes).runDetached(isNull(), command.capture());
-        assertThat(command.getValue()).endsWith("-i", "-w", "42");
+        assertThat(command.getValue()).endsWith("-i", "-w", Long.toString(ProcessHandle.current().pid()));
         assertThat(command.getValue().getFirst()).endsWith("caffeinate");
     }
 
@@ -35,7 +35,7 @@ class CaffeinateTest {
     void spawnsOneAssertionWhileItLives() {
         when(processes.runDetached(isNull(), any())).thenReturn(caffeinate);
         when(caffeinate.isAlive()).thenReturn(true);
-        Caffeinate keepAwake = new Caffeinate(processes, 42);
+        Caffeinate keepAwake = new Caffeinate(processes);
 
         keepAwake.hold();
         keepAwake.hold();
@@ -46,7 +46,7 @@ class CaffeinateTest {
     @Test
     void releasingEndsTheAssertion() {
         when(processes.runDetached(isNull(), any())).thenReturn(caffeinate);
-        Caffeinate keepAwake = new Caffeinate(processes, 42);
+        Caffeinate keepAwake = new Caffeinate(processes);
         keepAwake.hold();
 
         keepAwake.release();

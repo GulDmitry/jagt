@@ -27,11 +27,6 @@ public record ProjectConfig(
         this(path, baseBranch, deployBranch, labels, List.of(), null, null);
     }
 
-    public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels,
-                         @Nullable List<String> verifyCommand) {
-        this(path, baseBranch, deployBranch, labels, verifyCommand, null, null);
-    }
-
     /** What a router is told this repository is; its path where nobody wrote a line, the name carrying most. */
     public String aboutOrPath() {
         return about == null || about.isBlank() ? String.valueOf(path) : about;

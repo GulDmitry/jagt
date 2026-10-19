@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import java.time.Clock;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ActStop.Cause;
 import dev.jagt.orchestrator.service.master.MasterBrake;
@@ -60,6 +61,6 @@ class ActStopsTest {
     private static ActStops stopsIn(Path root) {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        return new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths));
+        return new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
     }
 }

@@ -1,19 +1,18 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -21,15 +20,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class RunningJarWatchTest {
 
     private final Notifications notifications = mock(Notifications.class);
+    private final Host host = mock(Host.class);
 
     @Test
     void saysSoOnceWhenTheJarIsRewrittenUnderTheRunningProcess(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "first build");
-        RunningJarWatch watch = new RunningJarWatch(notifications, jar);
+        when(host.jar()).thenReturn(Optional.of(jar));
+        RunningJarWatch watch = new RunningJarWatch(notifications, host);
 
         Files.writeString(jar, "a different build entirely");
         Files.setLastModifiedTime(jar, FileTime.fromMillis(1_700_000_000_000L));
@@ -43,7 +45,8 @@ class RunningJarWatchTest {
     @Test
     void staysQuietWhileTheJarIsUntouched(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "one build");
-        RunningJarWatch watch = new RunningJarWatch(notifications, jar);
+        when(host.jar()).thenReturn(Optional.of(jar));
+        RunningJarWatch watch = new RunningJarWatch(notifications, host);
 
         watch.run();
         watch.run();
@@ -54,7 +57,8 @@ class RunningJarWatchTest {
     @Test
     void treatsAVanishedJarAsARewrite(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
-        RunningJarWatch watch = new RunningJarWatch(notifications, jar);
+        when(host.jar()).thenReturn(Optional.of(jar));
+        RunningJarWatch watch = new RunningJarWatch(notifications, host);
         Files.delete(jar);
 
         watch.run();
@@ -65,33 +69,11 @@ class RunningJarWatchTest {
 
     @Test
     void watchesNothingWhenTheProcessDidNotStartFromAJar() {
-        RunningJarWatch watch = new RunningJarWatch(notifications, null);
+        RunningJarWatch watch = new RunningJarWatch(notifications, host);
 
         watch.run();
 
         verifyNoInteractions(notifications);
-    }
-
-    @Test
-    void findsTheJarTheProcessWasStartedFrom(@TempDir Path dir) throws Exception {
-        Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
-
-        assertThat(RunningJarWatch.jarFromClassPath(jar.toString(), Files::isRegularFile)).isEqualTo(jar);
-    }
-
-    @Test
-    void findsNoJarWhenSomethingElseIsOnTheClassPathToo(@TempDir Path dir) throws Exception {
-        Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
-
-        assertThat(RunningJarWatch.jarFromClassPath(jar + File.pathSeparator + "other.jar",
-                Files::isRegularFile)).isNull();
-    }
-
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(strings = {"does-not-exist.jar", "classes"})
-    void findsNoJarWhenTheClassPathNamesNoFile(String classPath) {
-        assertThat(RunningJarWatch.jarFromClassPath(classPath, Files::isRegularFile)).isNull();
     }
 
     @ParameterizedTest
@@ -112,13 +94,17 @@ class RunningJarWatchTest {
     void knowsItIsRunningTheJarTheBuildRewrites(@TempDir Path dir) throws IOException {
         Path built = Files.writeString(dir.resolve("jagt.jar"), "x");
 
-        assertThat(new RunningJarWatch(mock(Notifications.class), built).runningTheBuildsOwnJar()).isTrue();
+        when(host.jar()).thenReturn(Optional.of(built));
+
+        assertThat(new RunningJarWatch(notifications, host).runningTheBuildsOwnJar()).isTrue();
     }
 
     @Test
     void saysNothingAboutAStagedCopyTheBuildNeverTouches(@TempDir Path dir) throws IOException {
         Path staged = Files.writeString(dir.resolve("jagt-run-20260819-120000.jar"), "x");
 
-        assertThat(new RunningJarWatch(mock(Notifications.class), staged).runningTheBuildsOwnJar()).isFalse();
+        when(host.jar()).thenReturn(Optional.of(staged));
+
+        assertThat(new RunningJarWatch(notifications, host).runningTheBuildsOwnJar()).isFalse();
     }
 }

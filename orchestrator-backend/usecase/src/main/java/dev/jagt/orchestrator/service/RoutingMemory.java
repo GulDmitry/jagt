@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -41,21 +40,10 @@ public class RoutingMemory {
     private static final String USES = " #";
 
     private final OrchestratorPaths paths;
-    private final int maxRules;
     private final Clock clock;
 
-    @Autowired
-    public RoutingMemory(OrchestratorPaths paths) {
-        this(paths, MAX_RULES);
-    }
-
-    RoutingMemory(OrchestratorPaths paths, int maxRules) {
-        this(paths, maxRules, Clock.systemDefaultZone());
-    }
-
-    RoutingMemory(OrchestratorPaths paths, int maxRules, Clock clock) {
+    public RoutingMemory(OrchestratorPaths paths, Clock clock) {
         this.paths = paths;
-        this.maxRules = maxRules;
         this.clock = clock;
     }
 
@@ -105,7 +93,7 @@ public class RoutingMemory {
     }
 
     public boolean full() {
-        return byKey().size() >= maxRules;
+        return byKey().size() >= MAX_RULES;
     }
 
     /**
@@ -221,7 +209,7 @@ public class RoutingMemory {
         // it was written first is the bug this replaces. Only the CHOICE is sorted — the file keeps its order.
         Set<String> dropped = rules.entrySet().stream()
                 .sorted(Comparator.comparingInt(entry -> entry.getValue().uses()))
-                .limit(Math.max(0, rules.size() - maxRules))
+                .limit(Math.max(0, rules.size() - MAX_RULES))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         List<String> kept = rules.entrySet().stream()
@@ -230,7 +218,7 @@ public class RoutingMemory {
                         + entry.getValue().uses())
                 .collect(Collectors.toCollection(ArrayList::new));
         // The history is bounded too: a file nothing ever drops is one nobody opens.
-        retired.stream().skip(Math.max(0, retired.size() - maxRules)).forEach(kept::add);
+        retired.stream().skip(Math.max(0, retired.size() - MAX_RULES)).forEach(kept::add);
         Path file = file();
         try {
             Files.createDirectories(file.getParent());

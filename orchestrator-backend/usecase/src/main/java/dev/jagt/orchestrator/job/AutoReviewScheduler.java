@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
@@ -64,21 +63,9 @@ public class AutoReviewScheduler implements Job {
     private final Set<String> windowElapsedNotified = ConcurrentHashMap.newKeySet();
     private final Set<String> unreadableNotified = ConcurrentHashMap.newKeySet();
 
-    // @Autowired disambiguates: with two constructors Spring otherwise demands a no-arg default.
-    @Autowired
     public AutoReviewScheduler(StateService stateService, ConfigService configService,
-                               ReviewSweepService reviewSweep, Notifications notifications) {
-        // Single thread: a sweep runs for minutes, so serialising keeps the tick from piling up polls.
-        this(stateService, configService, reviewSweep, notifications,
-                Executors.newSingleThreadExecutor(r -> {
-                    Thread t = new Thread(r, "auto-review");
-                    t.setDaemon(true);
-                    return t;
-                }));
-    }
-
-    AutoReviewScheduler(StateService stateService, ConfigService configService, ReviewSweepService reviewSweep,
-                        Notifications notifications, Executor executor) {
+                               ReviewSweepService reviewSweep, Notifications notifications,
+                               @Qualifier("autoReviewSweeps") Executor executor) {
         this.stateService = stateService;
         this.configService = configService;
         this.reviewSweep = reviewSweep;

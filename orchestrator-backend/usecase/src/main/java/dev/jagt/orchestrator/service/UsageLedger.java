@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -47,12 +46,7 @@ public class UsageLedger {
     private final Path file;
     private final Clock clock;
 
-    @Autowired
-    public UsageLedger(ObjectMapper mapper, OrchestratorPaths paths) {
-        this(mapper, paths, Clock.systemDefaultZone());
-    }
-
-    UsageLedger(ObjectMapper mapper, OrchestratorPaths paths, Clock clock) {
+    public UsageLedger(ObjectMapper mapper, OrchestratorPaths paths, Clock clock) {
         this.mapper = mapper;
         this.file = paths.stateFile().resolveSibling("usage-by-day.jsonl");
         this.clock = clock;

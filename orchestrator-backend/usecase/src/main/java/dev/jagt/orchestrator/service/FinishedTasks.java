@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.FinishedTask;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -41,21 +40,13 @@ public class FinishedTasks {
     private final StateService stateService;
     private final MasterReview reviews;
     private final Path file;
-    private final long maxBytes;
 
-    @Autowired
     public FinishedTasks(ObjectMapper mapper, StateService stateService, OrchestratorPaths paths,
                          MasterReview reviews) {
-        this(mapper, stateService, paths, reviews, MAX_BYTES);
-    }
-
-    FinishedTasks(ObjectMapper mapper, StateService stateService, OrchestratorPaths paths, MasterReview reviews,
-                  long maxBytes) {
         this.mapper = mapper;
         this.stateService = stateService;
         this.reviews = reviews;
         this.file = paths.stateFile().resolveSibling("finished.jsonl");
-        this.maxBytes = maxBytes;
     }
 
     /**
@@ -104,7 +95,7 @@ public class FinishedTasks {
             return;
         }
         try {
-            if (Files.size(file) > maxBytes) {
+            if (Files.size(file) > MAX_BYTES) {
                 packOlderHalf();
             }
         } catch (IOException | RuntimeException e) {

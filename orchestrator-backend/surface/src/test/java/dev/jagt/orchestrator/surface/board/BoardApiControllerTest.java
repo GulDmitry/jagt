@@ -33,7 +33,7 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class), new GlobalCommands(List.of(
                     new Declared("stats", "what the calls cost", true, 100),
                     new Declared("do", "start a task", false, 40))),
-            new dev.jagt.orchestrator.job.Jobs(List.of()));
+            new dev.jagt.orchestrator.job.Jobs(List.of(), Runnable::run));
 
     @Test
     void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
@@ -119,7 +119,7 @@ class BoardApiControllerTest {
             public String run(String tail) { return ""; }
         };
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
-                new GlobalCommands(List.of(drafts)), new dev.jagt.orchestrator.job.Jobs(List.of()));
+                new GlobalCommands(List.of(drafts)), new dev.jagt.orchestrator.job.Jobs(List.of(), Runnable::run));
         TaskView drafted = TaskView.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
                 true, null, Map.of());
         TaskView quiet = TaskView.of("ABC-2", TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),

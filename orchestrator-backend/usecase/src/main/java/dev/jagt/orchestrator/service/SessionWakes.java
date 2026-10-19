@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -39,18 +38,12 @@ public class SessionWakes {
     private final Clock clock;
     private final Map<String, Long> pending = new ConcurrentHashMap<>();
 
-    @Autowired
     public SessionWakes(UsageLimits limits, UsageLimitsProperties properties, ObjectMapper mapper,
-                        OrchestratorPaths paths) {
-        this(limits, properties, mapper, paths.stateFile().resolveSibling("session-wakes.json"),
-                Clock.systemDefaultZone());
-    }
-
-    SessionWakes(UsageLimits limits, UsageLimitsProperties properties, ObjectMapper mapper, Path file, Clock clock) {
+                        OrchestratorPaths paths, Clock clock) {
         this.limits = limits;
         this.properties = properties;
         this.mapper = mapper;
-        this.file = file;
+        this.file = paths.stateFile().resolveSibling("session-wakes.json");
         this.clock = clock;
         load();
     }

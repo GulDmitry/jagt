@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,12 +26,7 @@ public class TicketReader {
     private final UsageTracker usage;
     private final RetryPolicy policy;
 
-    @Autowired
-    public TicketReader(TrackerAssistant assistant, McpHealth mcp, UsageTracker usage) {
-        this(assistant, mcp, usage, RetryPolicy.PAID_READ);
-    }
-
-    TicketReader(TrackerAssistant assistant, McpHealth mcp, UsageTracker usage, RetryPolicy policy) {
+    public TicketReader(TrackerAssistant assistant, McpHealth mcp, UsageTracker usage, RetryPolicy policy) {
         this.assistant = assistant;
         this.mcp = mcp;
         this.usage = usage;

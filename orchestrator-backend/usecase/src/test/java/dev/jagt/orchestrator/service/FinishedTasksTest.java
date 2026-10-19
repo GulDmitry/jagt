@@ -65,17 +65,16 @@ class FinishedTasksTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a2").build());
         state.putTask("ABC-3", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a3").build());
-        state.putTask("ABC-4", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a4").build());
-        FinishedTasks roomy = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), 1_000_000);
-        roomy.record("ABC-1");
-        roomy.record("ABC-2");
-        roomy.record("ABC-3");
-        FinishedTasks full = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), 1);
+        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class));
+        finished.record("ABC-1");
+        finished.record("ABC-2");
+        Files.writeString(root.resolve("finished.jsonl"), Files.readString(root.resolve("finished.jsonl"))
+                + "#".repeat(10 * 1024 * 1024) + "\n");
 
-        full.record("ABC-4");
+        finished.record("ABC-3");
 
-        assertThat(full.all()).extracting(FinishedTask::id).containsExactly("ABC-4", "ABC-3");
-        assertThat(full.archives()).singleElement().satisfies(archive -> {
+        assertThat(finished.all()).extracting(FinishedTask::id).containsExactly("ABC-3");
+        assertThat(finished.archives()).singleElement().satisfies(archive -> {
             try (var in = new GZIPInputStream(Files.newInputStream(archive))) {
                 assertThat(new String(in.readAllBytes())).contains("\"ABC-1\"", "\"ABC-2\"")
                         .doesNotContain("\"ABC-3\"");

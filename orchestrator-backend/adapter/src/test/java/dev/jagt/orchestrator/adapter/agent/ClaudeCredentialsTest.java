@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,10 +57,13 @@ class ClaudeCredentialsTest {
         Processes processes = mock(Processes.class);
         when(processes.run(any(), any(), anyList()))
                 .thenReturn(new Processes.Result(44, "", "item could not be found"));
-        Path file = Files.writeString(home.resolve(".credentials.json"),
+        Files.createDirectories(home.resolve(".claude"));
+        Files.writeString(home.resolve(".claude/.credentials.json"),
                 "{\"claudeAiOauth\": {\"accessToken\": \"tok-file\"}}");
+        Host host = mock(Host.class);
+        when(host.home()).thenReturn(home);
 
-        var credential = new ClaudeCredentials(processes, true, file).read(NOW);
+        var credential = new ClaudeCredentials(processes, host, "macos").read(NOW);
 
         assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-file", ""));
     }
@@ -70,7 +74,10 @@ class ClaudeCredentialsTest {
         when(processes.run(any(), any(), anyList()))
                 .thenReturn(new Processes.Result(51, "", "user interaction is not allowed"));
 
-        var credential = new ClaudeCredentials(processes, true, home.resolve(".credentials.json")).read(NOW);
+        Host host = mock(Host.class);
+        when(host.home()).thenReturn(home);
+
+        var credential = new ClaudeCredentials(processes, host, "macos").read(NOW);
 
         assertThat(credential).isEqualTo(new OAuthCredential.Failed(
                 "keychain read exited 51 user interaction is not allowed"));

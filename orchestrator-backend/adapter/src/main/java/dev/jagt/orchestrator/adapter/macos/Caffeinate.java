@@ -19,14 +19,9 @@ public class Caffeinate implements KeepAwake {
     private final long pid;
     private @Nullable Process held;
 
-    @org.springframework.beans.factory.annotation.Autowired
     public Caffeinate(Processes processes) {
-        this(processes, ProcessHandle.current().pid());
-    }
-
-    Caffeinate(Processes processes, long pid) {
         this.processes = processes;
-        this.pid = pid;
+        this.pid = ProcessHandle.current().pid();
     }
 
     @Override

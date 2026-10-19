@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskName;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -49,19 +48,10 @@ public class FinishedArtifacts {
 
     private final StateService stateService;
     private final Path store;
-    private final int maxDirectories;
-    private final long maxArtifactBytes;
 
-    @Autowired
     public FinishedArtifacts(StateService stateService, OrchestratorPaths paths) {
-        this(stateService, paths, MAX_DIRECTORIES, MAX_ARTIFACT_BYTES);
-    }
-
-    FinishedArtifacts(StateService stateService, OrchestratorPaths paths, int maxDirectories, long maxArtifactBytes) {
         this.stateService = stateService;
         this.store = paths.stateFile().resolveSibling("artifacts");
-        this.maxDirectories = maxDirectories;
-        this.maxArtifactBytes = maxArtifactBytes;
     }
 
     /** Called while the worktree still exists: after retirement there is nothing left to copy. */
@@ -77,9 +67,9 @@ public class FinishedArtifacts {
                 if (Files.isRegularFile(artifact)) {
                     Files.createDirectories(into);
                     long bytes = Files.size(artifact);
-                    if (bytes > maxArtifactBytes) {
+                    if (bytes > MAX_ARTIFACT_BYTES) {
                         Files.writeString(into.resolve(name + ".not-kept"), "%s was %d bytes, past the %d kept"
-                                .formatted(name, bytes, maxArtifactBytes), StandardCharsets.UTF_8);
+                                .formatted(name, bytes, MAX_ARTIFACT_BYTES), StandardCharsets.UTF_8);
                     } else {
                         Files.copy(artifact, into.resolve(name), StandardCopyOption.REPLACE_EXISTING);
                     }
@@ -100,7 +90,7 @@ public class FinishedArtifacts {
         try (Stream<Path> stored = Files.list(store)) {
             tasks = stored.filter(Files::isDirectory).sorted().toList();
         }
-        if (tasks.size() < maxDirectories) {
+        if (tasks.size() < MAX_DIRECTORIES) {
             return;
         }
         List<Path> older = tasks.subList(0, tasks.size() / 2);

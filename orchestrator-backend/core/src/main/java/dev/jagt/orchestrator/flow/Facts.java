@@ -14,10 +14,6 @@ import java.util.function.BooleanSupplier;
 public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive,
                     boolean gitStateChanged) {
 
-    public Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive) {
-        this(hasReviewRequest, liveDeploy, agentLive, false);
-    }
-
     public static Facts projected(TaskState task) {
         return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> false, task.gitStateChanged());
     }

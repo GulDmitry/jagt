@@ -35,7 +35,7 @@ class TicketReaderTest {
                 TokenUsage.ofCall(25_000, 0, 120, 0.05));
         when(assistant.readTicket(eq("https://elsewhere.example.com/item/9"), any())).thenReturn(paid);
 
-        var read = new TicketReader(assistant, mcp, usage).read("https://elsewhere.example.com/item/9");
+        var read = new TicketReader(assistant, mcp, usage, RetryPolicy.PAID_READ).read("https://elsewhere.example.com/item/9");
 
         assertThat(read).isEqualTo(paid);
     }
@@ -103,7 +103,7 @@ class TicketReaderTest {
     void chargesWhatAReadCostToTheTaskItNamed() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 120, 0.05);
 
-        new TicketReader(assistant, mcp, usage).charge("ABC-42", spent);
+        new TicketReader(assistant, mcp, usage, RetryPolicy.PAID_READ).charge("ABC-42", spent);
 
         verify(usage).chargeTask("ABC-42", spent);
     }

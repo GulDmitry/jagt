@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.port.TrackerAssistant;
+import java.time.Clock;
 import dev.jagt.orchestrator.service.UsageLedger;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -39,7 +40,7 @@ class TicketPrefetchJobTest {
     private final TrackerAssistant assistant = mock(TrackerAssistant.class);
     private final TicketTexts tickets = new TicketTexts(assistant, new UsageTracker(state, new UsageLedger(new JsonMapper(),
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())))));
+                    .withStateFile(root.resolve("state.json").toString())), Clock.systemDefaultZone())));
     private final TicketPrefetchJob job = new TicketPrefetchJob(state, config, tickets);
 
     @Test

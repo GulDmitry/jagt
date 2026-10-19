@@ -21,12 +21,8 @@ public class UsageLimitsJob implements Job {
     private final UsageAlerts alerts;
     private final Clock clock;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public UsageLimitsJob(UsageLimits limits, Notifications notifications, UsageLimitsProperties properties) {
-        this(limits, notifications, properties, Clock.systemDefaultZone());
-    }
-
-    UsageLimitsJob(UsageLimits limits, Notifications notifications, UsageLimitsProperties properties, Clock clock) {
+    public UsageLimitsJob(UsageLimits limits, Notifications notifications, UsageLimitsProperties properties,
+                          Clock clock) {
         this.limits = limits;
         this.notifications = notifications;
         this.every = properties.every();

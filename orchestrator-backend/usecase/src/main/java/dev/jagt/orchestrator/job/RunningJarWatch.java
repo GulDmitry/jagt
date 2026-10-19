@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
@@ -63,15 +64,9 @@ public class RunningJarWatch implements Job {
     private final @Nullable Stamp atStartup;
     private boolean reported;
 
-    // @Autowired disambiguates: with two constructors Spring otherwise refuses to choose.
-    @org.springframework.beans.factory.annotation.Autowired
-    public RunningJarWatch(Notifications notifications) {
-        this(notifications, ownJar());
-    }
-
-    RunningJarWatch(Notifications notifications, @Nullable Path jar) {
+    public RunningJarWatch(Notifications notifications, Host host) {
         this.notifications = notifications;
-        this.jar = jar;
+        this.jar = host.jar().orElse(null);
         this.atStartup = stamp(jar);
     }
 
@@ -120,22 +115,5 @@ public class RunningJarWatch implements Job {
         } catch (IOException e) {
             return null;
         }
-    }
-
-    private static @Nullable Path ownJar() {
-        return jarFromClassPath(System.getProperty("java.class.path"), Files::isRegularFile);
-    }
-
-    /**
-     * {@code java -jar x.jar} puts EXACTLY that jar on the classpath, the one place the path is unambiguous: inside
-     * a fat jar {@code getProtectionDomain().getCodeSource()} answers a {@code jar:nested:…} URL that
-     * {@code Path.of} refuses. Anything else means several entries or a directory, and no single jar to watch.
-     */
-    static @Nullable Path jarFromClassPath(@Nullable String classPath, java.util.function.Predicate<Path> isFile) {
-        if (classPath == null || classPath.isBlank() || classPath.contains(java.io.File.pathSeparator)) {
-            return null;
-        }
-        Path path = Path.of(classPath.strip()).toAbsolutePath().normalize();
-        return path.getFileName().toString().endsWith(".jar") && isFile.test(path) ? path : null;
     }
 }

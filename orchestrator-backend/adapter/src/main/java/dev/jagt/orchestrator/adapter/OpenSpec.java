@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.Specs;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
 
@@ -33,14 +33,12 @@ public class OpenSpec implements Specs {
     private final Processes processes;
     private final String binary;
 
-    @Autowired
-    public OpenSpec(Processes processes) {
-        this(processes, Executables.resolve(BINARY));
-    }
+    private final Host host;
 
-    OpenSpec(Processes processes, String binary) {
+    public OpenSpec(Processes processes, Host host) {
         this.processes = processes;
-        this.binary = binary;
+        this.host = host;
+        this.binary = host.resolve(BINARY);
     }
 
     @Override
@@ -105,7 +103,7 @@ public class OpenSpec implements Specs {
 
     /** The CLI is a `#!/usr/bin/env node` script, and an install puts node beside it rather than on jagt's PATH. */
     private Map<String, String> environment() {
-        String inherited = System.getenv("PATH");
+        String inherited = host.env("PATH").orElse(null);
         String path = Path.of(binary).getParent() + (inherited == null ? "" : File.pathSeparator + inherited);
         return Map.of("OPENSPEC_TELEMETRY", "0", "PATH", path);
     }

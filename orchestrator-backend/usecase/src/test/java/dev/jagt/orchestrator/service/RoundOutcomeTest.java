@@ -24,7 +24,7 @@ class RoundOutcomeTest {
 
     @Test
     void recordsTheRoundItJudges() {
-        ReviewFacts facts = new ReviewFacts(true, false, "running", List.of());
+        ReviewFacts facts = new ReviewFacts(true, false, "running", "", List.of(), 0);
 
         outcome.settle("ABC-1", "http://mr/1", facts);
 
@@ -33,7 +33,7 @@ class RoundOutcomeTest {
 
     @Test
     void advancesToApprovedOnceAHumanApprovedAndNoThreadIsLeftOpen() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "", List.of(), 0));
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
         verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED);
@@ -42,7 +42,7 @@ class RoundOutcomeTest {
 
     @Test
     void marksAGreenRoundReviewedWhileNobodyHasApprovedItYet() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "", List.of(), 0));
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
         verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED);
@@ -51,7 +51,7 @@ class RoundOutcomeTest {
 
     @Test
     void leavesAGreenThisSweepCouldNotReReadOutOfTheReviewedDecision() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "unknown", List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "unknown", "", List.of(), 0));
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
@@ -59,7 +59,7 @@ class RoundOutcomeTest {
 
     @Test
     void holdsATaskBackWhileItsChecksAreStillRunning() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "running", List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "running", "", List.of(), 0));
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("checks running");
@@ -68,7 +68,7 @@ class RoundOutcomeTest {
 
     @Test
     void stopsTheTaskOnTheBoardWhenItsChecksReadRed() {
-        outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "failed", List.of()));
+        outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0));
 
         verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED);
     }
@@ -77,8 +77,8 @@ class RoundOutcomeTest {
     void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
         when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
 
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success",
-                List.of("coderabbit (a.java:3): rename x")));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "",
+                List.of("coderabbit (a.java:3): rename x"), 0));
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
         verify(sessions).relayFreshIfChanged(eq("ABC-1"), contains("review_replies.md"));
@@ -91,7 +91,7 @@ class RoundOutcomeTest {
         when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
 
         var result = outcome.settle("ABC-1", "http://mr/api, http://mr/web", new ReviewFacts(true, false,
-                "success", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2")));
+                "success", "", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"), 0));
 
         assertThat(result.message()).contains("2 thread(s) relayed");
     }
@@ -100,8 +100,8 @@ class RoundOutcomeTest {
     void reportsARoundUnchangedInsteadOfRelayingItASecondTime() {
         when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(false);
 
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success",
-                List.of("reviewer (a.java:3): drop the cache")));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("reviewer (a.java:3): drop the cache"), 0));
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNCHANGED);
         assertThat(result.message()).contains("unchanged since the last relay");

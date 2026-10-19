@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
@@ -40,19 +39,12 @@ public class PressLog {
     private final ObjectMapper mapper;
     private final Path file;
     private final boolean enabled;
-    private final long maxBytes;
 
-    @Autowired
     public PressLog(ObjectMapper mapper, OrchestratorPaths paths,
-                             @Value("${orchestrator.interaction-log:true}") boolean enabled) {
-        this(mapper, paths.stateFile().resolveSibling("interactions.jsonl"), enabled, MAX_BYTES);
-    }
-
-    PressLog(ObjectMapper mapper, Path file, boolean enabled, long maxBytes) {
+                    @Value("${orchestrator.interaction-log:true}") boolean enabled) {
         this.mapper = mapper;
-        this.file = file;
+        this.file = paths.stateFile().resolveSibling("interactions.jsonl");
         this.enabled = enabled;
-        this.maxBytes = maxBytes;
     }
 
     /** Refuses the whole batch on one bad entry, naming it; a refused or switched-off batch writes nothing. */
@@ -86,7 +78,7 @@ public class PressLog {
     private synchronized void append(String lines) {
         try {
             Files.writeString(file, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            if (Files.size(file) > maxBytes) {
+            if (Files.size(file) > MAX_BYTES) {
                 Files.move(file, file.resolveSibling(file.getFileName() + ".1"), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {

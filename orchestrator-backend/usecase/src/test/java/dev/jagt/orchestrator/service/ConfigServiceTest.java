@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import java.time.Clock;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -77,7 +78,7 @@ class ConfigServiceTest {
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
 
         String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 
@@ -175,7 +176,7 @@ class ConfigServiceTest {
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
 
         String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 
@@ -191,7 +192,7 @@ class ConfigServiceTest {
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
 
         String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 

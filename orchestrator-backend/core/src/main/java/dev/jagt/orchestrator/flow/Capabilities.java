@@ -14,10 +14,6 @@ public class Capabilities {
     private final List<CapabilityInterceptor> interceptors;
     private final List<String> takeovers = new java.util.ArrayList<>();
 
-    public Capabilities(List<TaskCapability> declared) {
-        this(declared, List.of());
-    }
-
     public Capabilities(List<TaskCapability> declared, List<CapabilityInterceptor> interceptors) {
         this.interceptors = interceptors.stream()
                 .sorted(Comparator.comparingInt(CapabilityInterceptor::order)).toList();

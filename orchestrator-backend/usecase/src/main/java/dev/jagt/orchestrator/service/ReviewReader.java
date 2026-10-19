@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -30,12 +29,7 @@ public class ReviewReader {
     private final UsageTracker usage;
     private final RetryPolicy policy;
 
-    @Autowired
-    public ReviewReader(CodeHostAssistant assistant, McpHealth mcp, UsageTracker usage) {
-        this(assistant, mcp, usage, RetryPolicy.PAID_READ);
-    }
-
-    ReviewReader(CodeHostAssistant assistant, McpHealth mcp, UsageTracker usage, RetryPolicy policy) {
+    public ReviewReader(CodeHostAssistant assistant, McpHealth mcp, UsageTracker usage, RetryPolicy policy) {
         this.assistant = assistant;
         this.mcp = mcp;
         this.usage = usage;

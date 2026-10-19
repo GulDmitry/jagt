@@ -156,7 +156,7 @@ class ReviewAndDeployFlowTest {
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " " + TITLE);
 
-        reads(new ReviewFacts(true, false, "success", List.of("bot (Widget.java:12): tighten this")));
+        reads(new ReviewFacts(true, false, "success", "", List.of("bot (Widget.java:12): tighten this"), 0));
         act("sweep");
         assertThat(Files.readString(worktree().resolve("task_context.md")))
                 .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
@@ -174,7 +174,7 @@ class ReviewAndDeployFlowTest {
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " address review comments");
 
-        reads(new ReviewFacts(true, true, "success", List.of()));
+        reads(new ReviewFacts(true, true, "success", "", List.of(), 0));
         assertThat(act("sweep")).contains("approved, checks success");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
@@ -215,7 +215,7 @@ class ReviewAndDeployFlowTest {
         agentCommitsAndPushes(worktree(), TASK + " " + TITLE);
         agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
         agentReportsRequests(Map.of("proj", request(), "web", webRequest()));
-        reads(new ReviewFacts(true, true, "success", List.of()));
+        reads(new ReviewFacts(true, true, "success", "", List.of(), 0));
         act("sweep");
         E2eWorkspace.commitOnDeployBranch(webRepo(), "widget.txt", "someone else's line\n");
 
@@ -287,7 +287,7 @@ class ReviewAndDeployFlowTest {
                 .containsExactly(TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
                         TaskStatus.CI_POLLING);
 
-        reads(new ReviewFacts(true, true, "success", List.of()));
+        reads(new ReviewFacts(true, true, "success", "", List.of(), 0));
         act("sweep");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
