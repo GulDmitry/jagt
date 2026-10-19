@@ -309,6 +309,17 @@ class MasterPanelTest {
     }
 
     @Test
+    void rulesWordingGlossaryAndStyleNeverStopTheRound() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
+
+        String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
+                new MasterPanel.RoundRead("", "", "", List.of(), ""), false, true);
+
+        assertThat(prompt).contains("only for correctness or a stated requirement",
+                "wording, glossary and style are noise");
+    }
+
+    @Test
     void tagsTheRoleAndForbidsAPreambleInEveryMasterPrompt() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
         MasterPanel.RoundRead read = new MasterPanel.RoundRead("", "", "", List.of(), "");

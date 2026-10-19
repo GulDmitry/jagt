@@ -322,7 +322,8 @@ public class MasterPanel {
             + "  - unproven: you would decide it, but nothing you can read proves it."
             + " An unproven issue names exactly what the session must show.\n"
             + "  - noise: style or taste.\n"
-            + "  Only blocking, wrong and unproven stop the round.\n";
+            + "  Only blocking, wrong and unproven stop the round, and only for correctness or a stated requirement:"
+            + " wording, glossary and style are noise.\n";
 
     /** The Master's reason to exist, ahead of every read so no rule below it is taken for the goal. */
     static final String GOAL = "<goal>\nYour goal is the task finished: ready to merge, its request's checks green,"
