@@ -39,6 +39,10 @@ public class RoundFacts {
         return changes.paths(task).map(paths -> paths.values().stream().flatMap(List::stream).toList());
     }
 
+    public Optional<String> ownDiff(TaskState task) {
+        return changes.ownDiff(task);
+    }
+
     /** Blank where the session left none. */
     public String notes(TaskState task) {
         return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.NOTES.fileName())).orElse("").strip();

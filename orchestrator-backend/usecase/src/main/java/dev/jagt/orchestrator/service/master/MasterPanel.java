@@ -69,6 +69,9 @@ public class MasterPanel {
         if (masters.isEmpty()) {
             return false;
         }
+        if (quotes.carried(task)) {
+            return true;
+        }
         String brief = masters.get();
         List<Path> worktrees = worktrees(task);
         List<Role> named = roles(brief, briefs.author());
@@ -101,8 +104,11 @@ public class MasterPanel {
                 return false;
             }
         }
-        return write(taskId, worktrees, verdictFile(taskId, roles, judgements,
-                named.stream().filter(role -> !roles.contains(role)).toList()));
+        String verdict = verdictFile(taskId, roles, judgements,
+                named.stream().filter(role -> !roles.contains(role)).toList());
+        boolean allRead = judgements.stream().allMatch(judgement -> judgement.failure().isBlank());
+        Optional<String> own = allRead ? quotes.ownDiff(task) : Optional.empty();
+        return write(taskId, worktrees, own.map(id -> MasterReview.OWN_DIFF + id + "\n" + verdict).orElse(verdict));
     }
 
     /** One read, not one per role: a plan answers a single question, whether it does what the ticket asks. */

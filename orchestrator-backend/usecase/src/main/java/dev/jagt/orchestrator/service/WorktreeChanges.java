@@ -138,6 +138,26 @@ public class WorktreeChanges {
         return Optional.of(paths);
     }
 
+    /** Every repository's {@link WorktreeInspection#ownDiffId}; EMPTY where one cannot say. */
+    public Optional<String> ownDiff(TaskState task) {
+        StringBuilder id = new StringBuilder();
+        for (TaskRepo repo : task.repos()) {
+            String project = Objects.requireNonNull(repo.project());
+            try {
+                String base = task.baseBranchOr(configService.project(project).baseBranch());
+                Optional<String> own = inspection.ownDiffId(projectPath(project), Path.of(repo.worktreePath()), base);
+                if (own.isEmpty()) {
+                    return Optional.empty();
+                }
+                id.append(own.get()).append(';');
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+                return Optional.empty();
+            }
+        }
+        return Optional.of(id.toString());
+    }
+
     /** Lines the task added to every repository's agent files; EMPTY where git could not count them for one. */
     public Optional<Integer> agentFileLinesAdded(TaskState task) {
         int added = 0;

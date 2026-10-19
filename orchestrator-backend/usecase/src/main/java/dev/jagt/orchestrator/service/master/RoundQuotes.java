@@ -14,6 +14,7 @@ public class RoundQuotes {
 
     private final RoundFacts facts;
     private final MasterDecisions decisions;
+    private final MasterReview reviews;
 
     Optional<MasterPanel.RoundRead> round(String taskId, TaskState task) {
         return facts.humanSaid(task).map(said -> new MasterPanel.RoundRead(facts.ask(taskId, task), facts.diff(task),
@@ -31,6 +32,18 @@ public class RoundQuotes {
 
     Optional<List<String>> paths(TaskState task) {
         return facts.paths(task);
+    }
+
+    Optional<String> ownDiff(TaskState task) {
+        return facts.ownDiff(task);
+    }
+
+    /** A ready verdict still stands while only the base moved; any other is read again with the reply beside it. */
+    boolean carried(TaskState task) {
+        Optional<String> own = facts.ownDiff(task);
+        boolean same = own.isPresent() && reviews.of(task).filter(verdict -> verdict.kind() == MasterReview.Kind.READY
+                && verdict.ownDiff().equals(own.get())).isPresent();
+        return same && reviews.restamp(task);
     }
 
     String planFile(TaskState task) {

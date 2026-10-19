@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -31,6 +32,9 @@ public class MasterReview {
     /** The last line the reviewer writes, and the only part of the file jagt reads as an answer. */
     private static final String VERDICT = "VERDICT:";
 
+    /** A heading line, so it is never a finding. */
+    public static final String OWN_DIFF = "# own-diff: ";
+
     /** What the reviewer concluded, or empty where it has not written, or has not finished. */
     public Optional<Verdict> of(TaskState task) {
         Path file = file(task);
@@ -48,14 +52,28 @@ public class MasterReview {
             }
             List<String> findings = lines.subList(0, verdictAt).stream()
                     .filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
+            String ownDiff = lines.stream().filter(line -> line.startsWith(OWN_DIFF)).findFirst()
+                    .map(line -> line.substring(OWN_DIFF.length())).orElse("");
             return Optional.of(Verdict.of(lines.get(verdictAt).substring(VERDICT.length()), findings,
-                    FileStamps.modified(file)));
+                    FileStamps.modified(file), ownDiff));
         } catch (IOException | RuntimeException unreadable) {
             log.atWarn().setMessage("master review unreadable")
                     .addKeyValue("file", file)
                     .addKeyValue("cause", unreadable.toString())
                     .log();
             return Optional.empty();
+        }
+    }
+
+    /** Makes the verdict answer the task as it stands now; false where the file could not be touched. */
+    public boolean restamp(TaskState task) {
+        try {
+            Files.setLastModifiedTime(file(task), FileTime.fromMillis(System.currentTimeMillis()));
+            return true;
+        } catch (IOException | RuntimeException unwritable) {
+            log.atWarn().setMessage("master review unstamped").addKeyValue("file", file(task))
+                    .addKeyValue("cause", unwritable.toString()).log();
+            return false;
         }
     }
 
@@ -72,16 +90,20 @@ public class MasterReview {
     public enum Kind { READY, NOT_READY, QUESTION }
 
     /** {@code findings} are the lines above the verdict, headings left out. */
-    public record Verdict(Kind kind, List<String> findings, long writtenAt) {
+    public record Verdict(Kind kind, List<String> findings, long writtenAt, String ownDiff) {
+
+        public Verdict(Kind kind, List<String> findings, long writtenAt) {
+            this(kind, findings, writtenAt, "");
+        }
 
         /** Ready beside anything but the one line saying nothing is wrong is a finding waved through. */
-        static Verdict of(String word, List<String> findings, long writtenAt) {
+        static Verdict of(String word, List<String> findings, long writtenAt, String ownDiff) {
             String said = word.strip();
             if (said.equalsIgnoreCase("question")) {
-                return new Verdict(Kind.QUESTION, findings, writtenAt);
+                return new Verdict(Kind.QUESTION, findings, writtenAt, ownDiff);
             }
             boolean ready = said.equalsIgnoreCase("ready") && findings.size() <= 1;
-            return new Verdict(ready ? Kind.READY : Kind.NOT_READY, findings, writtenAt);
+            return new Verdict(ready ? Kind.READY : Kind.NOT_READY, findings, writtenAt, ownDiff);
         }
 
         /** Written about the task as it stands, rather than about an earlier hand-back. */

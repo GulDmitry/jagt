@@ -4,7 +4,13 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,6 +84,34 @@ public class WorktreeInspection {
                     .filter(path -> !generated.contains(path)).toList();
             return added.isEmpty() ? diff : diff + "New files, not in the diff: " + String.join(", ", added) + "\n";
         });
+    }
+
+    /** Identifies the work itself: unchanged by a move of the base, EMPTY while a file is new and untracked. */
+    public Optional<String> ownDiffId(Path projectPath, Path worktree, String baseBranch) {
+        List<String> generated = WorktreeFiles.generated(agentRuntime);
+        return git.locked(projectPath, () -> {
+            boolean untracked = branchNames(git.run(worktree,
+                            List.of("git", "ls-files", "--others", "--exclude-standard"))
+                    .expectSuccess("git ls-files in " + worktree).stdout()).stream()
+                    .anyMatch(path -> !generated.contains(path));
+            if (untracked) {
+                return Optional.empty();
+            }
+            String diff = git.run(worktree, List.of("git", "diff", "--no-color", "--no-ext-diff", "--no-textconv",
+                            "--no-renames", "-U0", mergeBase(worktree, baseBranch)))
+                    .expectSuccess("git diff in " + worktree).stdout();
+            String stable = diff.lines().filter(line -> !line.startsWith("index "))
+                    .map(line -> line.startsWith("@@") ? "@@" : line).collect(Collectors.joining("\n"));
+            return Optional.of(HexFormat.of().formatHex(sha256(stable)));
+        });
+    }
+
+    private static byte[] sha256(String text) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException missing) {
+            throw new IllegalStateException(missing);
+        }
     }
 
     /** Every path the worktree changed since it left its base at origin, committed and not, a rename as both. */
