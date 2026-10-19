@@ -16,10 +16,11 @@ class DocLinksTest {
 
     private static final Pattern LINK = Pattern.compile("]\\(([^)\\s#]+)[^)]*\\)");
 
+    private static final Pattern ANCHORED_LINK = Pattern.compile("]\\(([^)\\s#]*)#([^)\\s]+)[^)]*\\)");
+
     @Test
     void everyRelativeLinkReachesAFile() {
-        List<String> broken = Stream.concat(Stream.of("..", "../docs", "../docs/rules", "../.claude/rules")
-                        .flatMap(directory -> markdownIn(Path.of(directory)).stream()), specs().stream())
+        List<String> broken = documents().stream()
                 .flatMap(document -> LINK.matcher(withoutCodeBlocks(document)).results()
                         .map(link -> link.group(1))
                         .filter(target -> !target.matches("[a-z]+:.*"))
@@ -28,6 +29,37 @@ class DocLinksTest {
                 .toList();
 
         assertThat(broken).isEmpty();
+    }
+
+    @Test
+    void everyAnchoredLinkReachesAHeading() {
+        List<String> broken = documents().stream()
+                .flatMap(document -> ANCHORED_LINK.matcher(withoutCodeBlocks(document)).results()
+                        .filter(link -> !link.group(1).matches("[a-z]+:.*"))
+                        .filter(link -> !headingSlugs(document.resolveSibling(link.group(1).isEmpty()
+                                ? document.getFileName().toString() : link.group(1))).contains(link.group(2)))
+                        .map(link -> document + " -> " + link.group(1) + "#" + link.group(2)))
+                .toList();
+
+        assertThat(broken).isEmpty();
+    }
+
+    @Test
+    void decisionIndexListsEveryRecordAndNothingElse() {
+        Path directory = Path.of("../docs/decisions");
+        List<String> records = namesIn(directory).stream().filter(name -> name.matches("\\d{4}-.*")).sorted().toList();
+        List<String> indexed = Pattern.compile("]\\((\\d{4}-[^)#]*\\.md)").matcher(withoutCodeBlocks(directory.resolve("README.md")))
+                .results().map(link -> link.group(1)).sorted().toList();
+
+        assertThat(indexed).isEqualTo(records);
+    }
+
+    @Test
+    void noOpenChangeSitsOnMain() throws IOException {
+        try (Stream<Path> changes = Files.list(Path.of("../openspec/changes"))) {
+            assertThat(changes.map(path -> path.getFileName().toString()).filter(name -> !name.equals("archive")))
+                    .isEmpty();
+        }
     }
 
     @Test
@@ -41,6 +73,21 @@ class DocLinksTest {
                 specs().stream().map(spec -> spec.getParent().getFileName() + ".md")).toList();
 
         assertThat(namesIn(Path.of("../.claude/rules"))).isSubsetOf(sources);
+    }
+
+    private static List<Path> documents() {
+        return Stream.concat(Stream.of("..", "../docs", "../docs/rules", "../.claude/rules")
+                .flatMap(directory -> markdownIn(Path.of(directory)).stream()), specs().stream()).toList();
+    }
+
+    private static List<String> headingSlugs(Path document) {
+        if (!Files.isRegularFile(document)) {
+            return List.of();
+        }
+        return withoutCodeBlocks(document).lines().filter(line -> line.matches("#{1,6} .*"))
+                .map(line -> line.replaceFirst("#+ ", "").trim().toLowerCase()
+                        .replaceAll("[^\\p{L}\\p{N} _-]", "").replace(' ', '-'))
+                .toList();
     }
 
     private static List<Path> specs() {
