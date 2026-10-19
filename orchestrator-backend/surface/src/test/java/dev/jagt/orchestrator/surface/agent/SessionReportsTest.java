@@ -74,6 +74,18 @@ class SessionReportsTest {
     }
 
     @Test
+    void restatesTheLastReportAndTheBranchToACompactedSession() {
+        when(runtime.compactedStart()).thenReturn("compact");
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("outcome=progress — v3 routes done").build();
+
+        String answered = new SessionReports(signs, runtime, turnEnds).record("ABC-1",
+                SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+
+        assertThat(answered).contains("its branch, ABC-1", "your last report: outcome=progress — v3 routes done");
+    }
+
+    @Test
     void answersAnOrdinaryStartWithNothingAtAll() {
         when(runtime.compactedStart()).thenReturn("compact");
 

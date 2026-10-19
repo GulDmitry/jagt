@@ -86,7 +86,8 @@ public class SessionReports {
                 || !compacted.equalsIgnoreCase(startedBy.strip())) {
             return "";
         }
-        return "You are jagt's sub-agent for " + taskId + facts(task) + ". In this worktree task_request.md is what"
+        return "You are jagt's sub-agent for " + taskId + facts(task) + ". The task is its branch, " + taskId
+                + ". In this worktree task_request.md is what"
                 + " the task was opened with and task_context.md the instruction standing now: re-read both, and the"
                 + " repository's own agent instructions, before doing anything else.\n";
     }
@@ -96,7 +97,8 @@ public class SessionReports {
             return "";
         }
         String asked = AgentReport.of(task.message()) == AgentReport.QUESTION
-                ? "; your open question: " + AgentReport.QUESTION.detailOf(task.message()) : "";
+                ? "; your open question: " + AgentReport.QUESTION.detailOf(task.message())
+                : present(task.message()) ? "; your last report: " + task.message() : "";
         return (present(task.title()) ? " — " + task.title() : "")
                 + (present(task.ticketUrl()) ? " (" + task.ticketUrl() + ")" : "")
                 + ". On the board: " + task.status() + asked;
