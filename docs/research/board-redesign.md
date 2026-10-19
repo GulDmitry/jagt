@@ -138,5 +138,7 @@ this section holds.
 Settled by the press log (`interactions.jsonl`):
 
 - the share of `action:focus` by status, which decides whether Focus is needed on rows the agent owns;
-- the delay from a task turning REQUIRED to its first press, with and without the band;
-- how often the Jobs dialog opens within a minute of a failed-jobs chip, against at random.
+- the delay from a task turning REQUIRED to its first press, with and without the band:
+  `shown:required`, then the next press;
+- how often the Jobs dialog opens within a minute of a failed-jobs chip, against at random:
+  `shown:jobs-failed`, then `id:jobs-pulse`.

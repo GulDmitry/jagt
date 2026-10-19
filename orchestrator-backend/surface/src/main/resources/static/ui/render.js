@@ -6,6 +6,7 @@ import * as filters from './filters.js';
 import * as flags from './flags.js';
 import * as glance from './glance.js';
 import * as header from './header.js';
+import {watch} from './interactions.js';
 import {html} from '../components/html.js';
 import {blocked} from './inflight.js';
 import * as launch from './launch.js';
@@ -50,6 +51,7 @@ export function render() {
   seen.note(tasks, selection.paneShown() ? open : null);
   glance.render({waiting: tasks.filter((task) => task.attention === 'REQUIRED').length,
     broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || store.actStopped()});
+  watch(tasks, Boolean(store.jobs()?.failing));
   board.classList.toggle('open', selection.isOpen());
   const rowVerb = shown.flatMap((task) => task.actions || []).find((action) => action.onRow);
   paint(open ? html`

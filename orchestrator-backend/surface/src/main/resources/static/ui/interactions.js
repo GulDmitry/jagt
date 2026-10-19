@@ -1,5 +1,5 @@
-// What was pressed, sent once a burst settles: a control's name and its task's status, never a task, a ticket or a
-// typed word.
+// What was pressed, and two things shown, sent once a burst settles: a name and its task's status, never a task, a
+// ticket or a typed word.
 
 import {api} from '../core/api.js';
 import * as store from '../core/store.js';
@@ -37,6 +37,19 @@ export const note = (name, taskId) => {
   if (queue.length >= BATCH) flush();
   else if (!due) due = setTimeout(flush, SETTLE);
 };
+
+let required = null;
+let jobsFailed = false;
+
+// A sighting is logged when it BEGINS: the first board seen only seeds, since when it turned required is unknown.
+export function watch(tasks, failing) {
+  if (failing && !jobsFailed) note('shown:jobs-failed');
+  jobsFailed = failing;
+  if (!tasks.length) return;
+  const now = new Set(tasks.filter((task) => task.attention === 'REQUIRED').map((task) => task.id));
+  if (required) tasks.filter((task) => now.has(task.id) && !required.has(task.id)).forEach((task) => note('shown:required', task.id));
+  required = now;
+}
 
 function flush() {
   clearTimeout(due);
