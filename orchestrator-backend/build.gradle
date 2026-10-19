@@ -192,7 +192,7 @@ dependencies {
     // Playwright brings its OWN Chromium, downloaded on first run: the suite asks the host for no browser, so
     // a Mac and a runner execute the same thing. The shared libraries it links against come from
     // scripts/linux-test-deps.sh.
-    boardTestImplementation 'com.microsoft.playwright:playwright:1.62.0'
+    boardTestImplementation 'com.microsoft.playwright:playwright:1.63.0'
 }
 
 tasks.register('playwrightChromium', JavaExec) {
