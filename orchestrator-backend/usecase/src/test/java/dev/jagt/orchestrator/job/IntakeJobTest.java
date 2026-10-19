@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import static org.mockito.Mockito.times;
-import java.util.OptionalInt;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -65,7 +64,7 @@ class IntakeJobTest {
     void takesNothingOffTheTrackerWhileTheDailyCeilingStands() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
-        when(configService.dailyCeiling()).thenReturn(OptionalInt.of(50));
+        when(configService.startsStopped()).thenReturn(true);
 
         job.run();
 

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -34,7 +35,7 @@ class ConfigCheckTest {
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString());
 
-        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)),
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
                 new OrchestratorPaths(properties), mock(SessionHost.class)).problems()).isEmpty();
     }
 
@@ -44,7 +45,7 @@ class ConfigCheckTest {
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString());
 
-        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)),
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
                 new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
                 .extracting(Problem::key)
                 .containsExactly("orchestrator.config-file");
@@ -65,7 +66,7 @@ class ConfigCheckTest {
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString());
 
-        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)),
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
                 new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
                 .extracting(Problem::key)
                 .containsExactly(expected);
@@ -91,7 +92,7 @@ class ConfigCheckTest {
                 .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString());
 
-        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)),
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
                 new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
                 .extracting(Problem::key)
                 .containsExactly(expected);

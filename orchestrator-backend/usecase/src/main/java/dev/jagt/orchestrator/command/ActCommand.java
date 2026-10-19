@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.service.DailyStarts;
-import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.service.ActStops;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -9,8 +8,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ActCommand implements GlobalCommand {
 
-    private final MasterBrake brake;
-    private final DailyStarts dailyStarts;
+    private final ActStops actStops;
 
     @Override
     public String id() {
@@ -29,9 +27,7 @@ public class ActCommand implements GlobalCommand {
 
     @Override
     public String run(String tail) {
-        boolean stopped = brake.restore();
-        stopped |= dailyStarts.lift();
-        return stopped ? "act restored: the Master presses again where `master.mode` is act"
+        return actStops.lift() ? "act restored: the Master presses again where `master.mode` is act"
                 : "act was not stopped";
     }
 }

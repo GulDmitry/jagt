@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -62,7 +63,7 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
-        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)).load().master().mode();
 
         assertThat(mode).isEqualTo("off");
     }
@@ -75,7 +76,10 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
-        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths));
+
+        String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 
         assertThat(mode).isEqualTo("judge");
     }
@@ -86,7 +90,7 @@ class ConfigServiceTest {
         Files.writeString(configFile, "orchestrator:\n  master:\n    mode: off\n");
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
-        ConfigService configService = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class));
+        ConfigService configService = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class));
         configService.load();
         Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
 
@@ -106,7 +110,7 @@ class ConfigServiceTest {
         AgentRuntime runtime = mock(AgentRuntime.class);
         when(runtime.readsWhatTheHumanTyped()).thenReturn(reads);
 
-        String mode = new ConfigService(new OrchestratorPaths(properties), runtime).load().master().mode();
+        String mode = new ConfigService(new OrchestratorPaths(properties), runtime, mock(ActStops.class)).load().master().mode();
 
         assertThat(mode).isEqualTo(expected);
     }
@@ -118,7 +122,7 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
-        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)).load().master().mode();
 
         assertThat(mode).isEqualTo("off");
     }
@@ -135,7 +139,7 @@ class ConfigServiceTest {
                 """);
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
-        ConfigService service = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class));
+        ConfigService service = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class));
 
         assertThat(service.load().worktree().copyGlobsOrDefault()).containsExactly("**/.env");
     }
@@ -170,7 +174,10 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
-        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths));
+
+        String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 
         assertThat(mode).isEqualTo("judge");
     }
@@ -183,7 +190,10 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
-        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths));
+
+        String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 
         assertThat(mode).isEqualTo("act");
     }

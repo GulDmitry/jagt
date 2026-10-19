@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TerminalDriver;
@@ -51,8 +52,9 @@ class AgentSessionsTest {
         Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()).withConfigFile(configFile.toString());
-        state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        config = new ConfigService(new OrchestratorPaths(properties), agentRuntime);
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        state = new StateService(new JsonMapper(), paths);
+        config = new ConfigService(paths, agentRuntime, new ActStops(new MasterBrake(state, paths), new DailyStarts(paths)));
     }
 
     @Test

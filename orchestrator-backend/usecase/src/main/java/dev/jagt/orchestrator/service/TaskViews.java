@@ -37,6 +37,7 @@ public class TaskViews {
 
     private Snapshot snapshot(Map<String, TaskState> tasks) {
         ConfigService.ConfigFile config = readableConfig();
+        Optional<ActStop> stop = configService.actStop();
         AutoReviewCadence cadence = AutoReviewCadence.from(config.autoReview());
         long now = System.currentTimeMillis();
         Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
@@ -45,8 +46,8 @@ public class TaskViews {
                 .map(entry -> TaskView.of(entry.getKey(), entry.getValue(), rounds.of(entry.getValue(), config),
                         cadence.watch(entry.getValue(), now), deployBranches))
                 .toList();
-        return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()), configService.actStopped() || configService.dailyCeiling().isPresent(),
-                configService.dailyCeiling().orElse(0), config.master().modeOrDefault().id());
+        return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()), stop.isPresent(),
+                stop.map(ActStop::ceiling).orElse(0), config.master().modeOrDefault().id());
     }
 
     public List<TaskView> all() {

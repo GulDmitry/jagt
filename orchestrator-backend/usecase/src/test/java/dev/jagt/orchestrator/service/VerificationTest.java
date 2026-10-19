@@ -27,7 +27,7 @@ class VerificationTest {
                   projects: {}
                 """);
         ConfigService config = new ConfigService(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withConfigFile(configFile.toString())), mock(AgentRuntime.class));
+                .withRoot(root.toString()).withConfigFile(configFile.toString())), mock(AgentRuntime.class), mock(ActStops.class));
         Processes processes = mock(Processes.class);
 
         Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))

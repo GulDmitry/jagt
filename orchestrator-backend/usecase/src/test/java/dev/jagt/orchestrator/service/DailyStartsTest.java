@@ -26,7 +26,7 @@ class DailyStartsTest {
         starts.take(2);
         starts.take(2);
 
-        assertThat(starts.ceiling()).hasValue(2);
+        assertThat(starts.standing()).contains(new ActStop(ActStop.Cause.DAILY_CEILING, 2));
         assertThat(root.resolve("starts-stopped")).exists();
     }
 
@@ -36,7 +36,7 @@ class DailyStartsTest {
 
         starts.take(2);
 
-        assertThat(starts.ceiling()).isEmpty();
+        assertThat(starts.standing()).isEmpty();
     }
 
     @Test
@@ -46,7 +46,7 @@ class DailyStartsTest {
 
         DailyStarts tuesday = new DailyStarts(paths, TUESDAY);
 
-        assertThat(tuesday.ceiling()).isEmpty();
+        assertThat(tuesday.standing()).isEmpty();
         assertThat(root.resolve("starts-stopped")).doesNotExist();
     }
 
@@ -60,7 +60,7 @@ class DailyStartsTest {
         starts.take(2);
         starts.take(2);
 
-        assertThat(starts.ceiling()).isEmpty();
+        assertThat(starts.standing()).isEmpty();
     }
 
     @Test
@@ -73,7 +73,7 @@ class DailyStartsTest {
         starts.take(2);
 
         assertThat(wasStopped).isTrue();
-        assertThat(starts.ceiling()).isEmpty();
+        assertThat(starts.standing()).isEmpty();
     }
 
     private static OrchestratorPaths pathsIn(Path root) {

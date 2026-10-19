@@ -131,7 +131,7 @@ public class AutoReviewScheduler implements Job {
     private void poll(String taskId, @Nullable String alias, long round) {
         // Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a task's
         // sweeps mutually exclusive; that exclusion lives where every trigger passes through.
-        if (configService.dailyCeiling().isPresent() || !inFlight.add(taskId)) {
+        if (configService.startsStopped() || !inFlight.add(taskId)) {
             return;
         }
         configService.startTaken();

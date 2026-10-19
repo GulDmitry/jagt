@@ -19,7 +19,7 @@ Accepted 2026-10-19. Adds to [0043](0043-act-stops-itself-after-three-bad-ending
   and `MasterShip`), tracker intake (`IntakeJob`), auto-review sweeps (`AutoReviewScheduler`).
 - Not counted: ticket close, Master judge reads (`MasterReviewJob`, `MasterAnswerJob`), `TicketPrefetchJob`.
 - At `maxStartsPerDay` (default 50) the file `starts-stopped` holds the date and the number beside `state.json`.
-  `ConfigService` reads `act` as `judge` while it stands; intake and auto-review start nothing.
+  `ActStops`, which answers both stops, makes `ConfigService` read `act` as `judge` while it stands; intake and auto-review start nothing.
 - It lifts on the next local day, or by the header's `act stopped`, the one chip 0043 made; its hover names the cause.
 - A human press is never refused.
 

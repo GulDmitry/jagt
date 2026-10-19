@@ -15,7 +15,7 @@ Accepted 2026-10-14. Adds to [0018](0018-the-master-judges-by-default.md).
 
 - Three tasks in a row the Master moved ending silent, in a deploy conflict or reverted stop `act` (`MasterBrake`):
   it judges until the human presses `act stopped` in the header. A deploy resets the count.
-- The stop is the file `act-stopped` beside `state.json`, read by `ConfigService` as `judge`: it outlives a restart,
+- The stop is the file `act-stopped` beside `state.json`, read as `judge` through `ActStops`: it outlives a restart,
   the count does not.
 
 ## Rejected

@@ -45,7 +45,7 @@ public class IntakeJob implements Job {
     @Override
     public void run() {
         TrackerConfig tracker = configService.load().tracker();
-        if (!tracker.modeOrOff().takes() || !tracker.missing().isEmpty() || configService.dailyCeiling().isPresent()) {
+        if (!tracker.modeOrOff().takes() || !tracker.missing().isEmpty() || configService.startsStopped()) {
             return;
         }
         // Stamped as the tracker's so the record says who chose each repository, which is what a later
@@ -55,7 +55,7 @@ public class IntakeJob implements Job {
                 return;
             }
             configService.startTaken();
-            if (configService.dailyCeiling().isPresent()) {
+            if (configService.startsStopped()) {
                 return;
             }
         }

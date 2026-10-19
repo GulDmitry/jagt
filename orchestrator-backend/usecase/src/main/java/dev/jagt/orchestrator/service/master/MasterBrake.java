@@ -64,6 +64,10 @@ public class MasterBrake {
         endings.stream().sorted(Comparator.comparingLong(Ending::at)).forEach(this::count);
     }
 
+    public boolean stopped() {
+        return Files.exists(paths.actStopped());
+    }
+
     /** True where it was stopped. */
     public synchronized boolean restore() {
         strikes.clear();

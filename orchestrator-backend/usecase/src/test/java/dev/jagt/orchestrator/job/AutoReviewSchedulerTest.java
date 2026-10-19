@@ -248,7 +248,7 @@ class AutoReviewSchedulerTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-        when(config.dailyCeiling()).thenReturn(java.util.OptionalInt.of(50));
+        when(config.startsStopped()).thenReturn(true);
 
         new AutoReviewScheduler(state, config, sweep, mock(Notifications.class), Runnable::run).run();
 
