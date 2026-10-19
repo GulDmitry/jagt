@@ -22,8 +22,7 @@ export async function refresh() {
       phases: data.phases || [],
       autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
       jobs: data.jobs,
-      actStopped: data.actStopped,
-      dailyCeiling: data.dailyCeiling || 0,
+      actStop: data.actStop,
       masterMode: data.masterMode,
       offers: data.offers || {},
     });

@@ -7,7 +7,9 @@ import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.BranchStrategy;
+import dev.jagt.orchestrator.service.ActStop;
 import dev.jagt.orchestrator.service.TaskViews;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +30,7 @@ import java.util.Map;
 public class BoardApiController {
 
     public record Board(List<TaskView> tasks, List<String> projects, String autoReview,
-                        boolean autoReviewEnabled, Jobs.Summary jobs, boolean actStopped, int dailyCeiling,
+                        boolean autoReviewEnabled, Jobs.Summary jobs, @Nullable ActStop actStop,
                         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases,
                         Map<String, List<String>> offers, String masterMode) {
     }
@@ -43,7 +45,7 @@ public class BoardApiController {
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                jobs.summary(System.currentTimeMillis()), snapshot.actStopped(), snapshot.dailyCeiling(), BranchStrategy.choices(),
+                jobs.summary(System.currentTimeMillis()), snapshot.actStop(), BranchStrategy.choices(),
                 Phase.choices(),
                 offers(snapshot.tasks()), snapshot.masterMode());
     }

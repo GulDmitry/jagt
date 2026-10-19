@@ -56,10 +56,13 @@ export function render(tasks, showing) {
   masterChip.textContent = 'Master: act';
   masterChip.dataset.tip = 'the Master presses the buttons you would; the Master report says what it may do';
   renderJobs();
-  actChip.hidden = !store.actStopped();
-  actChip.dataset.tip = store.dailyCeiling()
-    ? `${store.dailyCeiling()} unattended starts today, so it only judges and nothing starts unasked until tomorrow; press to lift it`
-    : 'three tasks the Master moved ended badly in a row, so it only judges now; press to give it act back';
+  const stop = store.actStop();
+  actChip.hidden = !stop;
+  actChip.dataset.tip = {
+    STRIKES: 'three tasks the Master moved ended badly in a row, so it only judges now; press to give it act back',
+    DAILY_CEILING: `${stop?.ceiling} unattended starts today, so it only judges and nothing starts unasked until tomorrow; press to lift it`,
+    UNREADABLE: 'the file starts-stopped cannot be read, so it only judges and nothing starts unasked; press to remove it',
+  }[stop?.cause] || '';
   renderEmpty(tasks.length, showing);
   phaseBar.hidden = tasks.length === 0;
   const perPhase = filters.narrowed(tasks);

@@ -28,7 +28,7 @@ public class TaskViews {
 
     /** One render's worth of answers, read from the configuration ONCE so two reads cannot disagree mid-render. */
     public record Snapshot(List<TaskView> tasks, AutoReviewCadence cadence, List<String> projects,
-                           boolean actStopped, int dailyCeiling, String masterMode) {
+                           @Nullable ActStop actStop, String masterMode) {
     }
 
     public Snapshot snapshot() {
@@ -46,8 +46,8 @@ public class TaskViews {
                 .map(entry -> TaskView.of(entry.getKey(), entry.getValue(), rounds.of(entry.getValue(), config),
                         cadence.watch(entry.getValue(), now), deployBranches))
                 .toList();
-        return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()), stop.isPresent(),
-                stop.map(ActStop::ceiling).orElse(0), config.master().modeOrDefault().id());
+        return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()), stop.orElse(null),
+                config.master().modeOrDefault().id());
     }
 
     public List<TaskView> all() {

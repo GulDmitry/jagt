@@ -302,6 +302,15 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
+    void namesTheUnreadableStopFileOnTheActStoppedChip() throws Exception {
+        java.nio.file.Files.writeString(root.resolve("starts-stopped"), "garbage\n");
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#act-stopped")).hasAttribute("data-tip", Pattern.compile("starts-stopped cannot be read"));
+    }
+
+    @Test
     void anOpenTipOnTheJobsChipFollowsItsCountdownThroughARepaint() {
         breakable.breakIt();
         long now = System.currentTimeMillis();

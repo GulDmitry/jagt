@@ -2,7 +2,7 @@
 
 import {bothNames} from './format.js';
 
-let data = {tasks: [], projects: [], autoReview: {summary: '', enabled: false}, jobs: null, actStopped: false, dailyCeiling: 0,
+let data = {tasks: [], projects: [], autoReview: {summary: '', enabled: false}, jobs: null, actStop: null,
   masterMode: 'off',
   verbs: [],
   branchStrategies: [], phases: [], offers: {}};
@@ -13,8 +13,7 @@ export const branchStrategies = () => data.branchStrategies;
 export const phases = () => data.phases;
 export const autoReview = () => data.autoReview;
 export const jobs = () => data.jobs;
-export const actStopped = () => data.actStopped;
-export const dailyCeiling = () => data.dailyCeiling;
+export const actStop = () => data.actStop;
 export const masterMode = () => data.masterMode;
 export const verbs = () => data.verbs;
 export const offersOn = (task) => data.offers[task.id] || [];

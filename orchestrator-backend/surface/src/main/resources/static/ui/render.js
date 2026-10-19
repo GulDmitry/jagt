@@ -50,7 +50,7 @@ export function render() {
   // Wide, the open task stands on screen whether picked or not, so it is seen; narrow, only once opened.
   seen.note(tasks, selection.paneShown() ? open : null);
   glance.render({waiting: tasks.filter((task) => task.attention === 'REQUIRED').length,
-    broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || store.actStopped()});
+    broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || Boolean(store.actStop())});
   watch(tasks, Boolean(store.jobs()?.failing));
   board.classList.toggle('open', selection.isOpen());
   const rowVerb = shown.flatMap((task) => task.actions || []).find((action) => action.onRow);
