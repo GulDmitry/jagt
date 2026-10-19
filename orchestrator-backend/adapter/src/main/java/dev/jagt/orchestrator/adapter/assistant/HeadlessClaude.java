@@ -85,32 +85,20 @@ class HeadlessClaude {
         JsonNode firstEnvelope = first.envelope();
         Optional<JsonNode> answer = firstEnvelope != null ? answerOf(firstEnvelope, label, schema) : Optional.empty();
         if (firstEnvelope == null || answer.isPresent()) {
-            return new Answer<>(answer, first.usage(), first.budgetFailure());
+            return new Answer<>(answer, first.usage(), first.cause());
         }
         // The CLI at times hands back the model's prose without the object its schema tool validated.
         Reply second = call(prompt + RETRY_REASON, schema, label, kind, timeout);
         JsonNode secondEnvelope = second.envelope();
         return new Answer<>(secondEnvelope != null ? answerOf(secondEnvelope, label, schema) : Optional.empty(),
-                first.usage().plus(second.usage()), second.budgetFailure());
+                first.usage().plus(second.usage()), second.cause());
     }
 
     /** A failed call carries no envelope, only its cause: asking again would not mend it. */
-    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause, boolean overBudget) {
-
-        Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
-            this(envelope, usage, cause, false);
-        }
+    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
 
         static Reply failed(TokenUsage usage, String cause) {
-            return new Reply(null, usage, cause, false);
-        }
-
-        static Reply overBudget(TokenUsage usage, String cause) {
-            return new Reply(null, usage, cause, true);
-        }
-
-        String budgetFailure() {
-            return overBudget ? cause : "";
+            return new Reply(null, usage, cause);
         }
     }
 
@@ -239,7 +227,7 @@ class HeadlessClaude {
                     .addKeyValue("effect", "answer discarded")
                     .addKeyValue("fix", "orchestrator.assistant.maxCostUsd")
                     .log();
-            return Reply.overBudget(usage, cause);
+            return Reply.failed(usage, cause);
         }
         if (result.exitCode() != 0 || envelope == null) {
             log.atWarn().setMessage("assistant call failed")

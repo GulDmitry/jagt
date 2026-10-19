@@ -527,4 +527,18 @@ class HeadlessClaudeTest {
         assertThat(answer.facts()).isEmpty();
         assertThat(answer.failure()).startsWith("spend ceiling reached");
     }
+
+    @Test
+    void aCallThatExitsWithoutAnEnvelopeFailsNamingItsCauseInsteadOfAnsweringEmpty() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(2, "", "claude: not logged in"));
+
+        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class))
+                .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        assertThat(answer.facts()).isEmpty();
+        assertThat(answer.failure()).isEqualTo("exit 2");
+    }
 }
