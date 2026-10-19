@@ -92,10 +92,6 @@ public class MasterReview {
     /** {@code findings} are the lines above the verdict, headings left out. */
     public record Verdict(Kind kind, List<String> findings, long writtenAt, String ownDiff) {
 
-        public Verdict(Kind kind, List<String> findings, long writtenAt) {
-            this(kind, findings, writtenAt, "");
-        }
-
         /** Ready beside anything but the one line saying nothing is wrong is a finding waved through. */
         static Verdict of(String word, List<String> findings, long writtenAt, String ownDiff) {
             String said = word.strip();
