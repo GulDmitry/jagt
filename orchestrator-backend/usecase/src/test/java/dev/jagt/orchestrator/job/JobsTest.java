@@ -12,11 +12,35 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class JobsTest {
+
+    @Test
+    void runsNoJobOnTheScheduleBeforeTheStartHasPassedItsChecks() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("master-feed");
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        jobs.tick();
+
+        verify(job, never()).run();
+    }
+
+    @Test
+    void runsJobsOnTheScheduleOnceTheStartHasPassedItsChecks() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("master-feed");
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        jobs.startTicking();
+        jobs.tick();
+
+        verify(job).run();
+    }
 
     @Test
     void holdsAJobBackUntilItsIntervalHasPassed() {

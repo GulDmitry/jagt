@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.job;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +43,7 @@ public class Jobs {
     private final Map<String, Job> jobs = new LinkedHashMap<>();
     private final Map<String, Run> runs = new LinkedHashMap<>();
     private final Executor workers;
+    private volatile boolean ready;
 
     public Jobs(List<Job> declared, @Qualifier("jobWorkers") Executor workers) {
         this.workers = workers;
@@ -94,8 +97,16 @@ public class Jobs {
         run.nextAt = 0;
     }
 
+    @EventListener(ApplicationReadyEvent.class)
+    void startTicking() {
+        ready = true;
+    }
+
     @Scheduled(fixedDelay = 1000)
     public void tick() {
+        if (!ready) {
+            return;
+        }
         tick(System.currentTimeMillis());
     }
 
