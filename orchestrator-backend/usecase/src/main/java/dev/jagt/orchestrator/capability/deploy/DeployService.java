@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +34,6 @@ public class DeployService {
     private final StateService stateService;
     private final DeployTargets deployTargets;
     private final GitDeploy gitDeploy;
-    private final EditorDriver editorDriver;
 
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
@@ -73,8 +71,6 @@ public class DeployService {
             } catch (RuntimeException e) {
                 return stoppedPartWay(taskId, targets, i, e);
             }
-            // A human who opened the worktree to resolve a conflict is left with a dead editor entry otherwise.
-            editorDriver.forgetProject(GitDeploy.deployWorktreePath(target.path(), taskId));
         }
         if (!blocked.isEmpty()) {
             return notFinished(taskId, merged, blocked, Objects.requireNonNull(obstacle));

@@ -28,7 +28,7 @@ Master's token, in `.mcp.json`; Codex reads `AGENTS.md` and `.codex/config.toml`
 - Root detection: the nearest parent holding `jagt.yml.dist` **or** `mcp_client.js` (`OrchestratorPaths`);
   `ORCHESTRATOR_ROOT` overrides.
 - `initialize_task` copies gitignored IDE and local files best-effort
-  (`WorktreeFiles.copyProjectFiles(…, editor.projectFiles())`, `copyLocalFiles`); the per-project
+  (`WorktreeFiles.copyProjectFiles(…, PROJECT_FILES)`, `copyLocalFiles`); the per-project
   `worktree.copyGlobs`, default `["**/.env"]`, are config, not code.
 
 ## `state.json`

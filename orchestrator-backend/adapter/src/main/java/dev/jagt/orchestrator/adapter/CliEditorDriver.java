@@ -4,28 +4,17 @@ import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
-import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class CliEditorDriver implements EditorDriver, StartupCheck {
 
     private final ProcessRunner processRunner;
@@ -34,7 +23,8 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
     @Override
     public List<Problem> problems() {
         return Stream.of(problems(properties.editorCommand(), "orchestrator.editor-command"),
-                        problems(properties.editorDiffCommand(), "orchestrator.editor-diff-command"))
+                        diffIsSet() ? problems(properties.editorDiffCommand(), "orchestrator.editor-diff-command")
+                                : List.<Problem>of())
                 .flatMap(List::stream).toList();
     }
 
@@ -54,23 +44,22 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         processRunner.runDetached(null, command);
     }
 
+    private boolean diffIsSet() {
+        List<String> diff = properties.editorDiffCommand();
+        return diff != null && !diff.isEmpty();
+    }
+
     @Override
     public void openDiff(Path left, Path right) {
+        if (!diffIsSet()) {
+            throw new IllegalStateException("orchestrator.editor-diff-command is not set — the editor opens a"
+                    + " worktree but cannot compare two folders; set it to a folder-diff launcher such as"
+                    + " [idea, diff] or [meld].");
+        }
         List<String> command = launcher(properties.editorDiffCommand(), "orchestrator.editor-diff-command");
         command.add(left.toString());
         command.add(right.toString());
         processRunner.runDetached(null, command);
-    }
-
-    @Override
-    public Set<String> residue() {
-        return Set.of(".idea", ".run", ".vscode", ".fleet");
-    }
-
-    @Override
-    public List<String> projectFiles() {
-        return List.of(".run", ".idea/runConfigurations", ".idea/dataSources.xml", ".idea/dataSources.local.xml",
-                ".idea/dataSources");
     }
 
     /** The sentence names the key to set, not the binary the human never chose. */
@@ -87,120 +76,5 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         List<String> command = new ArrayList<>(configured);
         command.set(0, binary);
         return command;
-    }
-
-    /** Best-effort and IMMEDIATE only: a live IDE holds this list in memory and flushes it back on its next save
-     *  or exit, resurrecting the entry. */
-    @Override
-    public void forgetProject(Path worktreePath) {
-        String userHome = System.getProperty("user.home");
-        rewriteRecentProjects(userHome, xml -> pruneRecentProjects(xml, userHome, worktreePath));
-    }
-
-    @Override
-    public void forgetDeadWorktrees(List<WorktreeLocation> locations) {
-        if (locations.isEmpty()) {
-            return;
-        }
-        String userHome = System.getProperty("user.home");
-        rewriteRecentProjects(userHome,
-                xml -> removeEntries(xml, deadWorktreeKeys(xml, userHome, locations, Files::isDirectory)));
-    }
-
-    private void rewriteRecentProjects(String userHome, Function<String, String> prune) {
-        for (Path jetBrains : jetBrainsConfigDirs(userHome)) {
-            if (Files.isDirectory(jetBrains)) {
-                rewriteRecentProjectsIn(jetBrains, prune);
-            }
-        }
-    }
-
-    /** Both locations are probed rather than switched on an OS flag: only one exists on a given machine. */
-    static List<Path> jetBrainsConfigDirs(String userHome) {
-        return List.of(Path.of(userHome, "Library", "Application Support", "JetBrains"),
-                Path.of(userHome, ".config", "JetBrains"));
-    }
-
-    private void rewriteRecentProjectsIn(Path jetBrains, Function<String, String> prune) {
-        try (var ideDirs = Files.newDirectoryStream(jetBrains)) {
-            for (Path ideDir : ideDirs) {
-                Path recent = ideDir.resolve("options").resolve("recentProjects.xml");
-                if (!Files.isRegularFile(recent)) {
-                    continue;
-                }
-                try {
-                    String xml = Files.readString(recent);
-                    String pruned = prune.apply(xml);
-                    if (!pruned.equals(xml)) {
-                        Path tmp = recent.resolveSibling(recent.getFileName() + ".jagt.tmp");
-                        try {
-                            Files.writeString(tmp, pruned);
-                            Files.move(tmp, recent, StandardCopyOption.REPLACE_EXISTING,
-                                    StandardCopyOption.ATOMIC_MOVE);
-                        } finally {
-                            Files.deleteIfExists(tmp);
-                        }
-                        log.atInfo().setMessage("jetbrains recent projects pruned")
-                                .addKeyValue("file", recent)
-                                .log();
-                    }
-                } catch (IOException e) {
-                    log.atDebug().setMessage("jetbrains prune failed")
-                            .addKeyValue("file", recent)
-                            .addKeyValue("cause", e.toString())
-                            .log();
-                }
-            }
-        } catch (IOException e) {
-            log.atDebug().setMessage("jetbrains config scan failed")
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        }
-    }
-
-    private static final Pattern ENTRY_KEY = Pattern.compile("<entry key=\"([^\"]*)\"");
-
-    /** JetBrains stores the path either absolute or with a {@code $USER_HOME$} macro, so both forms are tried. */
-    static String pruneRecentProjects(String xml, String userHome, Path worktree) {
-        String abs = worktree.toAbsolutePath().normalize().toString();
-        List<String> keys = new ArrayList<>(List.of(abs));
-        if (abs.startsWith(userHome)) {
-            keys.add("$USER_HOME$" + abs.substring(userHome.length()));
-        }
-        return removeEntries(xml, keys);
-    }
-
-    static List<String> deadWorktreeKeys(String xml, String userHome,
-                                         List<WorktreeLocation> locations, Predicate<Path> dirExists) {
-        List<String> keys = new ArrayList<>();
-        Matcher m = ENTRY_KEY.matcher(xml);
-        while (m.find()) {
-            String rawKey = m.group(1);
-            Path path = Path.of(rawKey.replace("$USER_HOME$", userHome)).toAbsolutePath().normalize();
-            if (!dirExists.test(path) && isJagtWorktree(path, locations)) {
-                keys.add(rawKey);
-            }
-        }
-        return keys;
-    }
-
-    private static boolean isJagtWorktree(Path path, List<WorktreeLocation> locations) {
-        Path parent = path.getParent();
-        String name = path.getFileName().toString();
-        for (WorktreeLocation loc : locations) {
-            if (loc.parentDir().equals(parent)
-                    && (name.endsWith("-" + loc.projectKey()) || name.endsWith("-deploy"))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static String removeEntries(String xml, Collection<String> rawKeys) {
-        String out = xml;
-        for (String key : rawKeys) {
-            out = out.replaceAll("(?s)\\s*<entry key=\"" + Pattern.quote(key) + "\"[^>]*>.*?</entry>", "");
-        }
-        return out;
     }
 }

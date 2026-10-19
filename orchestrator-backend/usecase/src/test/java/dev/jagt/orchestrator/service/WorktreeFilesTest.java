@@ -1,14 +1,12 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -31,6 +29,20 @@ class WorktreeFilesTest {
     }
 
     @Test
+    void keepsTheFileTheWorktreeAlreadyHoldsRatherThanOverwriteATrackedOne(@TempDir Path root) throws Exception {
+        Path project = root.resolve("repo");
+        Files.createDirectories(project.resolve(".editor"));
+        Files.writeString(project.resolve(".editor").resolve("db.xml"), "<local/>");
+        Path worktree = root.resolve("ABC-1-repo");
+        Files.createDirectories(worktree.resolve(".editor"));
+        Files.writeString(worktree.resolve(".editor").resolve("db.xml"), "<tracked/>");
+
+        WorktreeFiles.copyProjectFiles(project, worktree, List.of(".editor/db.xml"));
+
+        assertThat(worktree.resolve(".editor").resolve("db.xml")).hasContent("<tracked/>");
+    }
+
+    @Test
     void doesNotFailWhenTheProjectHasNoneOfTheEditorsFiles(@TempDir Path root) {
         Path project = root.resolve("repo");
         Path worktree = root.resolve("ABC-1-repo");
@@ -43,16 +55,13 @@ class WorktreeFilesTest {
     @Test
     void copiesNoLocalFileOutOfWhatTheEditorWrote(@TempDir Path root) throws Exception {
         Path base = root.resolve("base");
-        Files.createDirectories(base.resolve(".editor"));
-        Files.writeString(base.resolve(".editor/.env"), "IGNORED=1");
+        Files.createDirectories(base.resolve(".idea"));
+        Files.writeString(base.resolve(".idea/.env"), "IGNORED=1");
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
-        EditorDriver editor = mock(EditorDriver.class);
-        when(editor.residue()).thenReturn(Set.of(".editor"));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), editor);
-
-        assertThat(wt.resolve(".editor/.env")).doesNotExist();
+        assertThat(wt.resolve(".idea/.env")).doesNotExist();
     }
 
     @Test
@@ -67,7 +76,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"), mock(EditorDriver.class));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"));
 
         assertThat(wt.resolve("app/.env")).exists().hasContent("SECRET=1");
         assertThat(wt.resolve("lib/key.pem")).exists().hasContent("PEM");
@@ -83,7 +92,7 @@ class WorktreeFilesTest {
         Files.createDirectories(wt);
         Files.writeString(wt.resolve(".env"), "AS COMMITTED");
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), mock(EditorDriver.class));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
 
         assertThat(wt.resolve(".env")).hasContent("AS COMMITTED");
     }
@@ -96,7 +105,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), mock(EditorDriver.class));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
 
         assertThat(wt.resolve(".env")).exists().hasContent("SECRET=1");
     }
@@ -109,7 +118,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("vendor/**"), mock(EditorDriver.class));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("vendor/**"));
 
         assertThat(wt.resolve("vendor")).doesNotExist();
     }
@@ -119,7 +128,7 @@ class WorktreeFilesTest {
         Files.createDirectories(gitCommonDir.resolve("info"));
         Files.writeString(gitCommonDir.resolve("info").resolve("exclude"), "*.local\n");
 
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), mock(EditorDriver.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .contains("*.local", "task_context.md", "plan.md", "master-review.md", "AGENTS.md", ".jagt/");
@@ -130,26 +139,23 @@ class WorktreeFilesTest {
         AgentRuntime runtime = mock(AgentRuntime.class);
         when(runtime.statusExclusions()).thenReturn(List.of(".acme.json", ".acme/"));
 
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, runtime, mock(EditorDriver.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, runtime);
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .contains(".acme.json", ".acme/");
     }
 
     @Test
-    void keepsTheEditorsCopiedFilesOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir) throws Exception {
-        EditorDriver editor = mock(EditorDriver.class);
-        when(editor.projectFiles()).thenReturn(List.of(".editor/runs"));
+    void keepsTheIdeFilesCopiedIntoAWorktreeOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir) throws Exception {
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
 
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), editor);
-
-        assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude"))).contains(".editor/runs");
+        assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude"))).contains(".run", ".idea/runConfigurations", ".vscode/launch.json");
     }
 
     @Test
     void addsNothingTwiceWhenTheProjectIsInitialisedAgain(@TempDir Path gitCommonDir) throws Exception {
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), mock(EditorDriver.class));
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), mock(EditorDriver.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .containsOnlyOnce("task_context.md");

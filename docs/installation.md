@@ -74,7 +74,7 @@ on: 24 h of polling one request costs $3–$7.
 ```yaml
 orchestrator:
   platform: linux         # selects the notifier and the kitty driver
-  editorCommand: [idea]   # or [code]
+  editorCommand: [idea]   # or [code]; editorDiffCommand is optional
 ```
 
 `platform` is not detected: it defaults to `macos`, and jagt refuses to start when it is not what the machine

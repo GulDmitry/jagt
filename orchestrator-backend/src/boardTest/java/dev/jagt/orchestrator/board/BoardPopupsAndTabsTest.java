@@ -17,7 +17,6 @@ import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,21 +76,21 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
     @Test
     void aFailedJobOpensFromTheHeaderAsATableWhoseRowRunsItNow() {
-        doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
+        breakable.breakIt();
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        jobs.runNow("idecleanup");
+        jobs.runNow("breakable");
         page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
 
         page.locator("#jobs-pulse").click();
-        assertThat(page.locator("table.jobs tr.failed")).containsText("idecleanup");
+        assertThat(page.locator("table.jobs tr.failed")).containsText("breakable");
         assertThat(page.locator("table.jobs[aria-label=housekeeping] tbody tr").first()).hasClass(Pattern.compile("failed"));
-        page.locator("table.jobs button[data-job=idecleanup]").click();
+        page.locator("table.jobs button[data-job=breakable]").click();
 
-        assertThat(page.locator("#toasts .toast").last()).containsText("idecleanup runs within a second");
+        assertThat(page.locator("#toasts .toast").last()).containsText("breakable runs within a second");
     }
 
     @Test
@@ -324,7 +323,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
     @Test
     void theJobsTableTurnsAFailedJobRedWithoutReopeningTheReport() {
-        doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
+        breakable.breakIt();
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -332,12 +331,12 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         page.locator("#show-jobs").click();
         assertThat(page.locator("table.jobs tr.failed")).hasCount(0);
 
-        jobs.runNow("idecleanup");
+        jobs.runNow("breakable");
         page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
 
-        assertThat(page.locator("table.jobs tr.failed")).containsText("idecleanup");
+        assertThat(page.locator("table.jobs tr.failed")).containsText("breakable");
     }
 
     @Test

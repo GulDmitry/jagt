@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.TaskName;
-import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -21,7 +20,6 @@ import java.util.Objects;
 public class GitDeploy {
 
     private final GitCommands git;
-    private final EditorDriver editor;
 
     /**
      * Merges the task branch into the deploy branch and pushes, in a worktree cut from {@code origin/<target>} so
@@ -209,7 +207,6 @@ public class GitDeploy {
                     .addKeyValue("cause", "the deploy was reverted")
                     .log();
             git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch(sourceBranch));
-            editor.forgetProject(deployWorktree);
         });
     }
 
@@ -326,7 +323,7 @@ public class GitDeploy {
         List<String> kept;
         try (var entries = Files.list(path)) {
             kept = entries.map(entry -> entry.getFileName().toString())
-                    .filter(name -> !WorktreeNoise.isResidue(name, editor))
+                    .filter(name -> !WorktreeNoise.isResidue(name))
                     .sorted().toList();
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read the deploy worktree path " + path, e);

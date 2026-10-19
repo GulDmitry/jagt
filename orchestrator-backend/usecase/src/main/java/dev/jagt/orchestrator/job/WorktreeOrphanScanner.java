@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.service.WorktreeFiles;
 import dev.jagt.orchestrator.service.WorktreeNoise;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskRepo;
-import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +60,6 @@ public class WorktreeOrphanScanner implements Job {
     private final ConfigService configService;
     private final StateService stateService;
     private final Notifications notifications;
-    private final EditorDriver editor;
 
     /** One WARN per leftover directory, plus a single desktop ping for whoever never opens the log. */
     @Override
@@ -128,13 +126,13 @@ public class WorktreeOrphanScanner implements Job {
             Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return WorktreeNoise.isResidue(dir.getFileName().toString(), editor)
+                    return WorktreeNoise.isResidue(dir.getFileName().toString())
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (attrs.size() == 0 || WorktreeNoise.isResidue(file.getFileName().toString(), editor)) {
+                    if (attrs.size() == 0 || WorktreeNoise.isResidue(file.getFileName().toString())) {
                         return FileVisitResult.CONTINUE;
                     }
                     onlyIdeFiles[0] = false;
@@ -256,7 +254,7 @@ public class WorktreeOrphanScanner implements Job {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     String name = dir.getFileName().toString();
-                    return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name, editor)
+                    return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name)
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 

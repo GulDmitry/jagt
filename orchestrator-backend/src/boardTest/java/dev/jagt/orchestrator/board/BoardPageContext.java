@@ -4,6 +4,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Playwright;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
+import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -27,13 +29,48 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=",
                 "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false",
                 "orchestrator.usage-limits.enabled=false"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Import(BoardPageContext.BreakableJob.class)
 abstract class BoardPageContext {
+
+    static class BreakableJob implements Job {
+        private volatile boolean broken;
+
+        void breakIt() {
+            broken = true;
+        }
+
+        @Override
+        public String id() {
+            return "breakable";
+        }
+
+        @Override
+        public String describe() {
+            return "fails once broken";
+        }
+
+        @Override
+        public Duration every() {
+            return Duration.ofMinutes(1);
+        }
+
+        @Override
+        public void run() {
+            if (broken) {
+                throw new IllegalStateException("job broken");
+            }
+        }
+    }
+
+    @Autowired
+    BreakableJob breakable;
 
     @TempDir
     static Path root;

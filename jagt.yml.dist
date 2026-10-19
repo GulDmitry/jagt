@@ -33,7 +33,8 @@ orchestrator:
 
   # Any CLI launcher; the worktree path is appended. NOT `open -a`, which activates the app but opens nothing.
   editorCommand: ["idea"]
-  editorDiffCommand: ["idea", "diff"]     # two paths are appended: <left> <right>
+  editorDiffCommand: ["idea", "diff"]     # optional; two paths are appended: <left> <right>
+  # VS Code: editorCommand: ["code"], editorDiffCommand: ["meld"] (brew install --cask meld) — VS Code compares no folders
 
   # ── The viewer ─────────────────────────────────────────────────────────────────────────────────────────────
   openTerminalWindow: true  # false: never open a kitty window; attach to the tmux session yourself

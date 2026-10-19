@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service;
 
 
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
@@ -26,6 +25,11 @@ public final class WorktreeFiles {
     public static final List<String> OWN_FILES =
             Stream.concat(Stream.of(".jagt"), Artifact.fileNames().stream()).toList();
 
+    /** Kept out of git by the project, so a fresh worktree lacks them; copied when present, never over a tracked file. */
+    public static final List<String> PROJECT_FILES = List.of(".run", ".idea/runConfigurations",
+            ".idea/dataSources.xml", ".idea/dataSources.local.xml", ".idea/dataSources",
+            ".vscode/launch.json", ".vscode/settings.json", ".vscode/tasks.json");
+
     private WorktreeFiles() {
     }
 
@@ -41,10 +45,10 @@ public final class WorktreeFiles {
      * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude only
      * affects untracked files, so a project's own tracked instruction files are unaffected.
      */
-    public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime, EditorDriver editor) {
+    public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime) {
         Stream<String> plumbing = Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, ".jagt/");
         List<String> entries = Stream.of(plumbing, Artifact.fileNames().stream(),
-                runtime.statusExclusions().stream(), editor.projectFiles().stream())
+                runtime.statusExclusions().stream(), PROJECT_FILES.stream())
                 .flatMap(names -> names).distinct().toList();
         try {
             Path exclude = gitCommonDir.resolve("info").resolve("exclude");
@@ -66,7 +70,7 @@ public final class WorktreeFiles {
         }
     }
 
-    /** Best-effort; an absent path is a no-op. */
+    /** Best-effort; an absent path is a no-op, and a file the worktree already holds is tracked, so it stays. */
     public static void copyProjectFiles(Path projectPath, Path worktreePath, List<String> paths) {
         for (String path : paths) {
             copyTree(projectPath.resolve(path), worktreePath.resolve(path), worktreePath);
@@ -74,8 +78,7 @@ public final class WorktreeFiles {
     }
 
     /** Gitignored local files the run configs reference but git omits. Best-effort; heavy directories skipped. */
-    public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs,
-                                      EditorDriver editor) {
+    public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
         var matchers = localFileMatchers(globs);
         if (matchers.isEmpty()) {
             return;
@@ -85,7 +88,7 @@ public final class WorktreeFiles {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     String name = dir.getFileName().toString();
-                    return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name, editor)
+                    return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name)
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 
@@ -157,7 +160,7 @@ public final class WorktreeFiles {
 
     private static void copyTree(Path source, Path target, Path worktreePath) {
         if (Files.isRegularFile(source)) {
-            copyFile(source, target);
+            copyAbsent(source, target);
             return;
         }
         if (!Files.isDirectory(source)) {
@@ -169,7 +172,7 @@ public final class WorktreeFiles {
                 if (Files.isDirectory(from)) {
                     mkdirs(to);
                 } else {
-                    copyFile(from, to);
+                    copyAbsent(from, to);
                 }
             });
         } catch (IOException e) {
@@ -178,6 +181,12 @@ public final class WorktreeFiles {
                     .addKeyValue("to", worktreePath)
                     .addKeyValue("cause", e.getMessage())
                     .log();
+        }
+    }
+
+    private static void copyAbsent(Path from, Path to) {
+        if (!Files.exists(to)) {
+            copyFile(from, to);
         }
     }
 

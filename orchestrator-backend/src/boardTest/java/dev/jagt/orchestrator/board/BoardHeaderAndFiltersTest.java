@@ -11,8 +11,6 @@ import java.time.Duration;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 
 class BoardHeaderAndFiltersTest extends BoardPageContext {
 
@@ -293,13 +291,13 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
     @Test
     void anOpenTipOnTheJobsChipFollowsItsCountdownThroughARepaint() {
-        doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
+        breakable.breakIt();
         long now = System.currentTimeMillis();
         Page page = session.newPage();
         page.clock().setFixedTime(now - Duration.ofSeconds(630).toMillis());
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        jobs.runNow("idecleanup");
+        jobs.runNow("breakable");
         page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now).build());

@@ -90,7 +90,7 @@ The jobs SHALL show as rows grouped by whom each serves, with the server's words
 next run sits in the row's hover. Each row's Run now sends `run <job>`.
 
 #### Scenario: Running a job by hand
-- **WHEN** the human presses Run now on idecleanup
+- **WHEN** the human presses Run now on jarwatch
 - **THEN** it runs within a second, and the toast says so
 
 ### Requirement: A project is added from the board

@@ -128,7 +128,6 @@ adding their counts and dating the dropped wording (`RoutingMemory.merge`).
 ### Requirement: Jobs that keep the machine tidy
 Each of these jobs SHALL do its one thing unasked:
 - `jarwatch`: each minute, tells you the jar this process runs from was rebuilt underneath it.
-- `idecleanup`: each minute, drops worktrees that are gone from the editor's recent-projects list.
 - `orphanscan`: at startup, deletes jagt's own worktree residue and warns about leftovers holding work or secrets.
 
 #### Scenario: A husk of a worktree

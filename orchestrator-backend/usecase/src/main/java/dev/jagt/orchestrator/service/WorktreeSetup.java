@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.AgentWorktree;
-import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
@@ -22,7 +21,6 @@ public class WorktreeSetup {
     private final OrchestratorPaths paths;
     private final ConfigService configService;
     private final SubAgentBriefing briefing;
-    private final EditorDriver editor;
 
     /** Heavy LSP plugins spawn a ~1-2GB server per worktree, so a RAM-constrained setup can opt out. */
     @Value("${orchestrator.agent-disabled-plugins:}")
@@ -37,7 +35,7 @@ public class WorktreeSetup {
         Path worktreePath = repo.worktreePath();
         // Asked while the worktree holds nothing but the checkout: jagt's own links look the same afterwards.
         Path systemKnowledge = agentRuntime.systemKnowledgeFile(worktreePath);
-        WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir(), agentRuntime, editor);
+        WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir(), agentRuntime);
         WorktreeHooks.install(worktreePath, request.taskId());
         // Which files exist and what is in them belongs to the runtime.
         agentRuntime.provisionWorktree(AgentWorktree.of(worktreePath, paths.root())
@@ -46,9 +44,9 @@ public class WorktreeSetup {
                 .withAllowedTools(agentAllowedTools)
                 .withSandbox(WorktreeSandbox.of(configService.load().agent().sandboxOrDefault(), repos,
                         Path.of(System.getProperty("user.home")))));
-        WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, editor.projectFiles());
+        WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, WorktreeFiles.PROJECT_FILES);
         WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,
-                configService.load().worktree().copyGlobsOrDefault(), editor);
+                configService.load().worktree().copyGlobsOrDefault());
         WorktreeFiles.write(systemKnowledge, briefing.of(request, repo, repos,
                 configService.load().agent().autoplanOrDefault()));
         // The instructions live where the session reads them, and a relay writes to that same one worktree.

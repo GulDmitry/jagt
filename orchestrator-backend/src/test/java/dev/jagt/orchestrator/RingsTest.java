@@ -103,14 +103,26 @@ class RingsTest {
 
     @Test
     void theVendorIsNamedOnlyAtTheEdge() {
-        List<String> vendors = List.of("claude", "codex", "kitty", "tmux", "intellij", "jetbrains", ".idea",
-                ".vscode", ".fleet", "jira", "gitlab", "github", "anthropic", "openai", "mcp__");
+        List<String> vendors = List.of("claude", "codex", "kitty", "tmux", "intellij", "jetbrains", "jira", "gitlab",
+                "github", "anthropic", "openai", "mcp__");
         Pattern keysNamingAVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession");
 
         assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)
                 .filter(path -> !path.toString().contains("/adapter/"))
                 .filter(path -> vendors.stream().anyMatch(keysNamingAVendorByDesign.matcher(read(path))
                         .replaceAll("").toLowerCase(Locale.ROOT)::contains))
+                .map(Path::getFileName)).isEmpty();
+    }
+
+    @Test
+    void anIdesFolderIsNamedOnlyWhereAWorktreeIsFilled() {
+        List<String> ideFolders = List.of(".idea", ".vscode", ".fleet");
+        List<String> worktreeFilling = List.of("WorktreeNoise.java", "WorktreeFiles.java");
+
+        assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)
+                .filter(path -> !path.toString().contains("/adapter/"))
+                .filter(path -> !worktreeFilling.contains(path.getFileName().toString()))
+                .filter(path -> ideFolders.stream().anyMatch(read(path)::contains))
                 .map(Path::getFileName)).isEmpty();
     }
 
