@@ -17,14 +17,26 @@ public class SubAgentBriefing {
 
     private final PromptTemplates prompts;
 
-    public String of(NewTask request, NewRepo repo, List<NewRepo> repos) {
+    public String of(NewTask request, NewRepo repo, List<NewRepo> repos,
+                     ConfigService.ConfigFile.AutoplanConfig autoplan) {
         String taskId = request.taskId();
         return prompts.subAgentContext().formatted(
                 taskId,
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
                 repo.worktreePath(),
                 alsoYours(repo, repos),
+                autoplanSentence(autoplan),
                 taskId, baseBranches(repos), deployBranches(repos));
+    }
+
+    private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {
+        return autoplan.enabledOrDefault()
+                ? (" AUTOPLAN is on: before your first edit, plan first (PLAN MODE) if the task changes more than %d"
+                + " files, two of its requirements contradict, one contradicts what the code guarantees, a term it"
+                + " rests on has no definition, or you would settle unasked what changes the code. `plan.md`'s first"
+                + " line and your PLAN_PENDING message: `planned first: autoplan is on (agent.autoplan in jagt.yml),"
+                + " <the criterion>`.").formatted(autoplan.filesOrDefault())
+                : "";
     }
 
     private static String baseBranches(List<NewRepo> repos) {

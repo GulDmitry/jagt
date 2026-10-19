@@ -107,10 +107,14 @@ public class ConfigService {
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
         public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds,
-                                  @Nullable SandboxConfig sandbox) {
+                                  @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null, null);
+                return new AgentConfig(null, null, null, null);
+            }
+
+            public AutoplanConfig autoplanOrDefault() {
+                return autoplan == null ? AutoplanConfig.defaults() : autoplan;
             }
 
             public SandboxConfig sandboxOrDefault() {
@@ -125,6 +129,23 @@ public class ConfigService {
             /** How often every running session is looked at; the cadence for one whose harness reports NOTHING. */
             public int probeSecondsOrDefault() {
                 return probeSeconds == null || probeSeconds <= 0 ? 600 : probeSeconds;
+            }
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record AutoplanConfig(@Nullable Boolean enabled, @Nullable Integer files) {
+
+            public static AutoplanConfig defaults() {
+                return new AutoplanConfig(null, null);
+            }
+
+            public boolean enabledOrDefault() {
+                return enabled != null && enabled;
+            }
+
+            public int filesOrDefault() {
+                return files == null || files <= 0 ? 10 : files;
             }
         }
 
