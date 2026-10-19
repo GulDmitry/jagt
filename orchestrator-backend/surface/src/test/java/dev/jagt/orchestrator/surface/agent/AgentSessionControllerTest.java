@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.agent;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.service.SessionWakes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
@@ -14,10 +15,13 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AgentSessionControllerTest {
+
+    private final SessionWakes wakes = mock(SessionWakes.class);
 
     @Test
     void recordsTheReportAgainstTheTaskRunningInThatWorktree() {
@@ -26,12 +30,49 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, reports).report("waiting", "/wt/ABC-1-proj",
+        new AgentSessionController(state, reports, wakes).report("waiting", "/wt/ABC-1-proj",
                 new SessionHookReport("/logs/session.jsonl", "compact", null));
 
         verify(reports).record("ABC-1", SessionProbe.State.WAITING,
                 SessionReports.Report.defaults().withSessionLog(Path.of("/logs/session.jsonl"))
                         .withStartedBy("compact").withTask(task));
+    }
+
+    @Test
+    void reportsAUsageLimitStopAgainstTheTaskRunningInThatWorktree() {
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+
+        new AgentSessionController(state, reports, wakes).rateLimit("/wt/ABC-1-proj", null);
+
+        verify(reports).record("ABC-1", SessionProbe.State.IDLE, SessionReports.Report.defaults().withTask(task));
+        verify(wakes).arm("ABC-1");
+    }
+
+    @Test
+    void cancelsTheWakeWhenTheSessionReportsWorking() {
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+
+        new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj", null);
+
+        verify(wakes).cancel("ABC-1");
+    }
+
+    @Test
+    void keepsTheWakeWhenTheSessionReportsIdle() {
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+
+        new AgentSessionController(state, reports, wakes).report("idle", "/wt/ABC-1-proj", null);
+
+        verify(wakes, never()).cancel("ABC-1");
     }
 
     @Test
@@ -41,7 +82,7 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj", null);
+        new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj", null);
 
         verify(reports).record("ABC-1", SessionProbe.State.WORKING,
                 SessionReports.Report.defaults().withTask(task));
@@ -57,7 +98,7 @@ class AgentSessionControllerTest {
                 SessionReports.Report.defaults().withStartedBy("compact").withTask(task)))
                 .thenReturn("re-read task_context.md");
 
-        String answered = new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj",
+        String answered = new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj",
                 new SessionHookReport(null, "compact", null));
 
         assertThat(answered).isEqualTo("re-read task_context.md");
@@ -70,7 +111,7 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, reports).report("idle", "/wt/ABC-1-proj",
+        new AgentSessionController(state, reports, wakes).report("idle", "/wt/ABC-1-proj",
                 new SessionHookReport(null, null, "Claude needs your permission to use Bash"));
 
         verify(reports).record("ABC-1", SessionProbe.State.IDLE,
@@ -84,7 +125,7 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, reports).turnEnd("/wt/ABC-1-proj",
+        new AgentSessionController(state, reports, wakes).turnEnd("/wt/ABC-1-proj",
                 new SessionHookReport(null, null, null, true, java.util.List.of(Map.of("id", "b1"))));
 
         verify(reports).turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), true, true);
@@ -95,7 +136,7 @@ class AgentSessionControllerTest {
         StateService state = mock(StateService.class);
         when(state.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionReports.class))
+        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionReports.class), wakes)
                 .report("waiting", "/elsewhere", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("/elsewhere");
@@ -107,7 +148,7 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionReports.class))
+        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionReports.class), wakes)
                 .report("busy", "/wt/ABC-1-proj", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("busy");

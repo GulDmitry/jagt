@@ -306,6 +306,11 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 : "";
     }
 
+    /** Whether the human has an unsent draft in the task's window. */
+    public boolean composing(String taskId) {
+        return composing(agentSession(configService.load(), taskId), taskId);
+    }
+
     private String agentSession(ConfigService.ConfigFile config, String taskId) {
         String base = sessions.sessionName(config.viewer().session());
         return config.viewer().sharedView()

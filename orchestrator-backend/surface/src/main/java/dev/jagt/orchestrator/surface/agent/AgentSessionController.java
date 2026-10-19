@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.service.SessionWakes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class AgentSessionController {
 
     private final StateService stateService;
     private final SessionReports reports;
+    private final SessionWakes wakes;
 
     /** The harness feeds this answer back into the session's context, so it is written for the model. */
     @PostMapping(value = "/{state}", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -36,7 +38,11 @@ public class AgentSessionController {
                          @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
                          @RequestBody(required = false) SessionHookReport session) {
         var task = task(cwd);
-        return reports.record(task.getKey(), reported(state), read(task, session));
+        SessionProbe.State reported = reported(state);
+        if (reported == SessionProbe.State.WORKING) {
+            wakes.cancel(task.getKey());
+        }
+        return reports.record(task.getKey(), reported, read(task, session));
     }
 
     /** Answered in the CLI's own words where the turn may not end yet, and with nothing where it may. */
@@ -46,6 +52,15 @@ public class AgentSessionController {
         var task = task(cwd);
         SessionHookReport said = session == null ? SessionHookReport.none() : session;
         return reports.turnEnded(task.getKey(), read(task, said), said.sentOn(), said.pausedOnBackgroundWork());
+    }
+
+    @PostMapping(value = "/rate-limit", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String rateLimit(@RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+                            @RequestBody(required = false) SessionHookReport session) {
+        var task = task(cwd);
+        reports.record(task.getKey(), SessionProbe.State.IDLE, read(task, session));
+        wakes.arm(task.getKey());
+        return "";
     }
 
     private Map.Entry<String, TaskState> task(String cwd) {

@@ -270,6 +270,24 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void reportsATurnEndedOnAUsageLimitThroughItsOwnEvent(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+
+        new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                .provisionWorktree(AgentWorktree.of(worktree, root));
+
+        var hook = new JsonMapper()
+                .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
+                .path("hooks").path("StopFailure").path(0);
+        assertThat(hook.path("matcher").asString("")).isEqualTo("rate_limit");
+        assertThat(hook.path("hooks").path(0).path("command").asString(""))
+                .contains("/api/agent/session/rate-limit", worktree.toString());
+    }
+
+    @Test
     void refusesATurnEndInTheShapeClaudeReadsAsKeepGoing() {
         String refusal = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),

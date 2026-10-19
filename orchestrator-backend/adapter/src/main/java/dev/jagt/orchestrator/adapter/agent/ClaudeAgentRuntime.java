@@ -283,6 +283,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                 .map(event -> hook(event.getKey(), hooks.command(worktree, event.getValue()))),
                         SessionHooks.turnEnd("claude").stream()
                                 .map(event -> hook(event, hooks.command(worktree, "turn-end"))),
+                        SessionHooks.rateLimitStop("claude").stream()
+                                .map(event -> """
+                                        %s: [{"matcher": %s, "hooks": [{"type": "command", "command": %s,\
+                                         "timeout": 5}]}]"""
+                                        .formatted(quoted(event), quoted(SessionHooks.rateLimitMatcher("claude")),
+                                                quoted(hooks.command(worktree, "rate-limit")))),
                         // Scoped to the one tool that can push: a hook on all of them would sit in front of
                         // every step the agent takes.
                         SessionHooks.gate("claude").stream()

@@ -24,8 +24,11 @@ final class SessionHooks {
     private static final String COMPACTED_START = "compacted-start";
     private static final String BLOCKING_NOTIFICATION = "blocking-notification";
     private static final String TURN_END = "turn-end";
+    private static final String RATE_LIMIT_STOP = "rate-limit-stop";
+    private static final String RATE_LIMIT_MATCHER = "rate-limit-matcher";
     private static final java.util.Set<String> NOT_A_STATE =
-            java.util.Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END);
+            java.util.Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END, RATE_LIMIT_STOP,
+                    RATE_LIMIT_MATCHER);
 
     /** The event this CLI answers with allow or deny, or nothing where it has none. */
     static Optional<String> gate(String runtime) {
@@ -35,6 +38,16 @@ final class SessionHooks {
     /** The event ending every turn, answered with whether the turn may end, or nothing where it has none. */
     static Optional<String> turnEnd(String runtime) {
         return Optional.ofNullable(declared(runtime).getProperty(TURN_END));
+    }
+
+    /** The event ending a turn on a usage limit, or nothing where this CLI has none. */
+    static Optional<String> rateLimitStop(String runtime) {
+        return Optional.ofNullable(declared(runtime).getProperty(RATE_LIMIT_STOP));
+    }
+
+    /** What that event carries when the cause is a usage limit. */
+    static String rateLimitMatcher(String runtime) {
+        return declared(runtime).getProperty(RATE_LIMIT_MATCHER, "");
     }
 
     /** What this CLI calls a start that follows a compaction, or blank where it says nothing about starts. */

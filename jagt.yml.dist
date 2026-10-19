@@ -160,6 +160,7 @@ orchestrator:
     every: 30m
     thresholds: [80, 95]      # % of a window, each told once per window period
     paidThresholds: [80, 95]  # % of paid usage's monthly limit; the first paid spend is always told
+    wakeOnReset: false        # say one line to a session that stopped on a full window, when it resets
 
   # ── Safety ─────────────────────────────────────────────────────────────────────────────────────────────────
   startupChecks: true     # refuse to start when part of the installation is missing
