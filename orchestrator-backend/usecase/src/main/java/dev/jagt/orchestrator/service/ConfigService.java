@@ -145,7 +145,7 @@ public class ConfigService {
             }
 
             public int filesOrDefault() {
-                return files == null || files <= 0 ? 10 : files;
+                return files == null || files <= 0 ? 30 : files;
             }
         }
 

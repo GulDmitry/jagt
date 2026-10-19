@@ -55,7 +55,7 @@ orchestrator:
     #   excludedCommands: []   # run outside it beside git's remote verbs and ssh, e.g. "~/bin/db-tunnel *"
     # autoplan:           # a session plans first, unasked, when its task is large or unclear; the plan says why
     #   enabled: false
-    #   files: 10         # "large": it changes more files than this
+    #   files: 30         # "large": it changes more files than this
 
   claude:
     command: claude       # also used by the headless reads, which stay Claude whichever agent runs the tasks
