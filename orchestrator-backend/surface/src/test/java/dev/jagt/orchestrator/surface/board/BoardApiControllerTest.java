@@ -89,7 +89,7 @@ class BoardApiControllerTest {
     void reportsTheProjectsAlongsideTheTasks() {
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
                 new AutoReviewCadence(false, Duration.ofHours(24), 10, 60),
-                List.of("demo"), false, "off"));
+                List.of("demo"), false, 0, "off"));
 
         var board = api.tasks();
 
@@ -100,7 +100,7 @@ class BoardApiControllerTest {
     void saysWhetherTheUnattendedPollRunsAtAllEvenWithNoTasks() {
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
                 new AutoReviewCadence(true, Duration.ofHours(24), 10, 60),
-                List.of(), false, "off"));
+                List.of(), false, 0, "off"));
 
         var board = api.tasks();
 
@@ -125,7 +125,7 @@ class BoardApiControllerTest {
         TaskView quiet = TaskView.of("ABC-2", TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),
                 false, null, Map.of());
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(drafted, quiet),
-                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60), List.of("demo"), false, "off"));
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60), List.of("demo"), false, 0, "off"));
 
         var offers = board.tasks().offers();
 

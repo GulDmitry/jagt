@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ class ConflictHandOff {
 
     private final AgentSessions sessions;
     private final CommandService commands;
+    private final ConfigService config;
     private final Map<String, String> asked = new ConcurrentHashMap<>();
 
     void handle(String taskId, DeployConflicts.WaitingConflict conflict) {
@@ -29,6 +31,7 @@ class ConflictHandOff {
             log.atInfo().setMessage("master finishes deploy").addKeyValue("task", taskId)
                     .addKeyValue("worktree", conflict.worktree()).log();
             OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, TaskAction.DEPLOY));
+            config.startTaken();
             return;
         }
         String brief = brief(taskId, conflict.worktree());

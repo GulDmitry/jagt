@@ -161,4 +161,30 @@ class ConfigServiceTest {
     void grantsTheMasterNoRightWhileItOnlyJudges(MasterRight right) {
         assertThat(MasterConfig.defaults().withMode("judge").may(right)).isFalse();
     }
+
+    @Test
+    void readsActAsJudgeWhileTodaysDailyCeilingStands(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
+        Files.writeString(root.resolve("starts-stopped"), java.time.LocalDate.now() + " 50\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+
+        assertThat(mode).isEqualTo("judge");
+    }
+
+    @Test
+    void readsActAsActOnceTheDayOfTheDailyCeilingIsOver(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
+        Files.writeString(root.resolve("starts-stopped"), java.time.LocalDate.now().minusDays(1) + " 50\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+
+        assertThat(mode).isEqualTo("act");
+    }
 }

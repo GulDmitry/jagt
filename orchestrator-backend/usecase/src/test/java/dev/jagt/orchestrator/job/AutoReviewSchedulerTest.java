@@ -235,4 +235,41 @@ class AutoReviewSchedulerTest {
 
         verifyNoInteractions(sweep, notifications);
     }
+
+    @Test
+    void sweepsNothingWhileTheDailyCeilingStands(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
+        ReviewSweepService sweep = mock(ReviewSweepService.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        when(config.dailyCeiling()).thenReturn(java.util.OptionalInt.of(50));
+
+        new AutoReviewScheduler(state, config, sweep, mock(Notifications.class), Runnable::run).run();
+
+        verify(sweep, org.mockito.Mockito.never()).sweep("ABC-1");
+    }
+
+    @Test
+    void countsASweepItStartedAsAnUnattendedStart(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+
+        new AutoReviewScheduler(state, config, mock(ReviewSweepService.class), mock(Notifications.class),
+                Runnable::run).run();
+
+        verify(config).startTaken();
+    }
 }

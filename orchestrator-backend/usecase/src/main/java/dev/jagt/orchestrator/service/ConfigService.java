@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TrackerMode;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,15 +40,26 @@ import java.util.stream.Collectors;
  * omitted: {@link ConfigFile}'s accessors coalesce a missing one to its all-default instance.
  */
 @Service
-@RequiredArgsConstructor
 public class ConfigService {
+
+    @Autowired
+    public ConfigService(OrchestratorPaths paths, AgentRuntime agentRuntime, DailyStarts dailyStarts) {
+        this.paths = paths;
+        this.agentRuntime = agentRuntime;
+        this.dailyStarts = dailyStarts;
+    }
+
+    public ConfigService(OrchestratorPaths paths, AgentRuntime agentRuntime) {
+        this(paths, agentRuntime, new DailyStarts(paths));
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
     public record ConfigFile(Map<String, ProjectConfig> projects, @Nullable ViewerConfig viewer,
                              @Nullable CodeReviewConfig codeReview, @Nullable AgentConfig agent,
                              @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
-                             @Nullable MasterConfig master, @Nullable TrackerConfig tracker) {
+                             @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
+                             @Nullable Integer maxStartsPerDay) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -335,7 +347,12 @@ public class ConfigService {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null);
+        }
+
+        /** Unattended starts one local day may hold before the rest wait for tomorrow or for you. */
+        public int maxStartsPerDayOrDefault() {
+            return maxStartsPerDay == null || maxStartsPerDay <= 0 ? 50 : maxStartsPerDay;
         }
 
         // The raw field is still what the withers copy, so an omitted section stays null until set.
@@ -382,6 +399,7 @@ public class ConfigService {
     private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;
     private final AgentRuntime agentRuntime;
+    private final DailyStarts dailyStarts;
     private volatile @Nullable Parsed parsed;
 
     private record Parsed(FileVersion version, @Nullable Object section) {
@@ -399,7 +417,7 @@ public class ConfigService {
     /** Unset, the Master judges where the runtime reads the human's words, else is off; a stopped act judges. */
     private ConfigFile masterByDefault(ConfigFile config) {
         ConfigFile.MasterConfig master = config.master();
-        if (master.modeOrDefault() == MasterMode.ACT && actStopped()) {
+        if (master.modeOrDefault() == MasterMode.ACT && (actStopped() || dailyStarts.ceiling().isPresent())) {
             return config.withMaster(master.withMode(MasterMode.JUDGE.id()));
         }
         return master.mode() != null && !master.mode().isBlank() ? config : config.withMaster(master.withMode(
@@ -408,6 +426,16 @@ public class ConfigService {
 
     public boolean actStopped() {
         return Files.exists(paths.actStopped());
+    }
+
+    /** The ceiling a stop standing today was written at; empty once its day is over. */
+    public OptionalInt dailyCeiling() {
+        return dailyStarts.ceiling();
+    }
+
+    /** One unattended start taken; reaching the day's ceiling writes the stop. */
+    public void startTaken() {
+        dailyStarts.take(load().maxStartsPerDayOrDefault());
     }
 
     /** The names the human wrote under {@code orchestrator}, INCLUDING ones nothing binds — both readers drop those. */

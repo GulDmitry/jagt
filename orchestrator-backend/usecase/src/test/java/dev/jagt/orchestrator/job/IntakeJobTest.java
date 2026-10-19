@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.job;
 
+import static org.mockito.Mockito.times;
+import java.util.OptionalInt;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -57,5 +59,32 @@ class IntakeJobTest {
         job.run();
 
         verify(starts, never()).start(second);
+    }
+
+    @Test
+    void takesNothingOffTheTrackerWhileTheDailyCeilingStands() {
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
+        when(configService.dailyCeiling()).thenReturn(OptionalInt.of(50));
+
+        job.run();
+
+        verify(candidates, never()).waiting(any());
+    }
+
+    @Test
+    void countsEveryItemItStarted() {
+        IntakeCandidates.Ready first = new IntakeCandidates.Ready(TicketFacts.defaults().withKey("ABC-1"),
+                TokenUsage.NONE);
+        IntakeCandidates.Ready second = new IntakeCandidates.Ready(TicketFacts.defaults().withKey("ABC-2"),
+                TokenUsage.NONE);
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
+        when(candidates.waiting(any())).thenReturn(Optional.of(List.of(first, second)));
+        when(starts.start(any())).thenReturn(true);
+
+        job.run();
+
+        verify(configService, times(2)).startTaken();
     }
 }

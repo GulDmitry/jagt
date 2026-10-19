@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigService;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -20,10 +21,11 @@ class ConflictHandOffTest {
 
     private final AgentSessions sessions = mock(AgentSessions.class);
     private final CommandService commands = mock(CommandService.class);
+    private final ConfigService config = mock(ConfigService.class);
 
     @Test
     void handsAConflictToTheSession() {
-        new ConflictHandOff(sessions, commands).handle("ABC-42",
+        new ConflictHandOff(sessions, commands, config).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false));
 
         verify(sessions).relayIfChanged(eq("ABC-42"), contains("/src/ABC-42-deploy"));
@@ -32,7 +34,7 @@ class ConflictHandOffTest {
 
     @Test
     void asksOncePerConflictEvenWhereAnotherRelayOverwroteTheAsk() {
-        ConflictHandOff handOff = new ConflictHandOff(sessions, commands);
+        ConflictHandOff handOff = new ConflictHandOff(sessions, commands, config);
         DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false);
 
         handOff.handle("ABC-42", conflict);
@@ -43,9 +45,17 @@ class ConflictHandOffTest {
 
     @Test
     void finishesTheDeployOnceTheResolutionIsStagedInFull() {
-        new ConflictHandOff(sessions, commands).handle("ABC-42",
+        new ConflictHandOff(sessions, commands, config).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), true));
 
         verify(commands).execute("ABC-42", TaskAction.DEPLOY);
+    }
+
+    @Test
+    void countsTheDeployItFinishedAsAnUnattendedStart() {
+        new ConflictHandOff(sessions, commands, config).handle("ABC-42",
+                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), true));
+
+        verify(config).startTaken();
     }
 }

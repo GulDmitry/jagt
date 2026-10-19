@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
@@ -21,6 +22,7 @@ class MasterPress {
 
     private final CommandService commands;
     private final HumanPaths humanPaths;
+    private final ConfigService config;
     private final Map<String, String> left = new ConcurrentHashMap<>();
 
     /** False where the press was left to the human. */
@@ -39,6 +41,7 @@ class MasterPress {
         // Through the same door a human's press uses, so an illegal move is refused rather than taken, and
         // stamped as the Master's so what a verb does on its behalf can differ from what it does on yours.
         OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, action));
+        config.startTaken();
         return true;
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.service.DailyStarts;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class ActCommand implements GlobalCommand {
 
     private final MasterBrake brake;
+    private final DailyStarts dailyStarts;
 
     @Override
     public String id() {
@@ -22,12 +24,14 @@ public class ActCommand implements GlobalCommand {
 
     @Override
     public String hint() {
-        return "give the Master back the buttons it stopped pressing after three bad endings in a row";
+        return "give the Master back the buttons it stopped pressing, and lift the day\u2019s ceiling on unattended starts";
     }
 
     @Override
     public String run(String tail) {
-        return brake.restore() ? "act restored: the Master presses again where `master.mode` is act"
+        boolean stopped = brake.restore();
+        stopped |= dailyStarts.lift();
+        return stopped ? "act restored: the Master presses again where `master.mode` is act"
                 : "act was not stopped";
     }
 }

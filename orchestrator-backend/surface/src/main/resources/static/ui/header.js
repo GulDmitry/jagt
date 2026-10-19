@@ -57,6 +57,9 @@ export function render(tasks, showing) {
   masterChip.dataset.tip = 'the Master presses the buttons you would; the Master report says what it may do';
   renderJobs();
   actChip.hidden = !store.actStopped();
+  actChip.dataset.tip = store.dailyCeiling()
+    ? `${store.dailyCeiling()} unattended starts today, so it only judges and nothing starts unasked until tomorrow; press to lift it`
+    : 'three tasks the Master moved ended badly in a row, so it only judges now; press to give it act back';
   renderEmpty(tasks.length, showing);
   phaseBar.hidden = tasks.length === 0;
   const perPhase = filters.narrowed(tasks);
