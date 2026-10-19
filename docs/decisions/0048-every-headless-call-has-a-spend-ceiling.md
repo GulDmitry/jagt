@@ -11,11 +11,12 @@ Accepted 2026-10-19.
 - [0024](0024-every-headless-call-is-metered-where-it-runs.md) books a call after it returns; nothing stopped one mid-run.
 - Metered intake calls 2026-10-16..18 (`usage-by-day.jsonl`): $0.04 to $0.08 on average, 95 calls.
 - Headless transcripts, 1331 runs priced at list: the largest single run cost $0.234.
+- A Master review runs `--no-session-persistence` on the role's model: no transcript, no per-call record.
 
 ## Decision
 
 - `HeadlessClaude.run`, the one path of every headless call, passes the CLI's `--max-budget-usd`.
-- One key, `orchestrator.assistant.maxCostUsd`, defaults to 0.70: the largest run times 3, rounded.
+- One key, `orchestrator.assistant.maxCostUsd`, defaults to 5.00: a guard against a runaway call, above an Opus review of a large diff.
 - The CLI ends such a run with `subtype: error_max_budget_usd`; it maps to a failure naming the ceiling.
 
 ## Rejected

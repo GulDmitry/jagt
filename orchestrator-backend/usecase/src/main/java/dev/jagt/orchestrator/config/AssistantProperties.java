@@ -14,7 +14,7 @@ public record AssistantProperties(String settingSources, @Nullable String model,
                                   List<String> allowedTools, String mcpConfig,
                                   Map<AssistantCallKind, String> mcpConfigByKind, double maxCostUsd) {
 
-    public static final double DEFAULT_MAX_COST_USD = 0.70;
+    public static final double DEFAULT_MAX_COST_USD = 5.00;
 
     public AssistantProperties {
         settingSources = settingSources == null || settingSources.isBlank() ? "user,project,local" : settingSources;

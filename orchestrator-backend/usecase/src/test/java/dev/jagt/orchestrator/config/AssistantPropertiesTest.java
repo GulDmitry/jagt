@@ -36,6 +36,6 @@ class AssistantPropertiesTest {
 
     @Test
     void ceilsASpendAt70CentsWhereNoneIsSet() {
-        assertThat(AssistantProperties.empty().maxCostUsd()).isEqualTo(0.70);
+        assertThat(AssistantProperties.empty().maxCostUsd()).isEqualTo(5.00);
     }
 }

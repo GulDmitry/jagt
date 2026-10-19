@@ -90,7 +90,7 @@ orchestrator:
   assistant:
     model: haiku                        # blank inherits your own; the reads are mechanical
     settingSources: user,project,local  # NOT `project` alone: the call runs from a temp dir, which has none
-    maxCostUsd: 0.70                    # a headless call stops at this spend and its read fails naming it
+    maxCostUsd: 5.00                    # a headless call stops at this spend and its read fails naming it
     # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # a bare server gives a read its get*/list*/search*/
     #                     # read*/fetch*/find*/describe*/lookup* tools, a full tool name that tool too; the Master's
     #                     # review calls these alone, and with none it loads no server
