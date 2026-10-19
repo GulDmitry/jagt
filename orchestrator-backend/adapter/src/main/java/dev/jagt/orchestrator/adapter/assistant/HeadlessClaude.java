@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -50,6 +51,7 @@ class HeadlessClaude {
     static final String STRUCTURED_OUTPUT = "StructuredOutput";
     static final String RETRY_REASON = "\n\nYour last reply was prose without the " + STRUCTURED_OUTPUT
             + " call: answer through " + STRUCTURED_OUTPUT + " alone.";
+    private static final String BUDGET_SUBTYPE = "error_max_budget_usd";
     private static final int MAX_CAUSE = 400;
     private static final Pattern FENCE = Pattern.compile("```(?:json)?\\s*(\\{.*?})\\s*```", Pattern.DOTALL);
 
@@ -83,20 +85,32 @@ class HeadlessClaude {
         JsonNode firstEnvelope = first.envelope();
         Optional<JsonNode> answer = firstEnvelope != null ? answerOf(firstEnvelope, label, schema) : Optional.empty();
         if (firstEnvelope == null || answer.isPresent()) {
-            return new Answer<>(answer, first.usage());
+            return new Answer<>(answer, first.usage(), first.budgetFailure());
         }
         // The CLI at times hands back the model's prose without the object its schema tool validated.
         Reply second = call(prompt + RETRY_REASON, schema, label, kind, timeout);
         JsonNode secondEnvelope = second.envelope();
         return new Answer<>(secondEnvelope != null ? answerOf(secondEnvelope, label, schema) : Optional.empty(),
-                first.usage().plus(second.usage()));
+                first.usage().plus(second.usage()), second.budgetFailure());
     }
 
     /** A failed call carries no envelope, only its cause: asking again would not mend it. */
-    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
+    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause, boolean overBudget) {
+
+        Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
+            this(envelope, usage, cause, false);
+        }
 
         static Reply failed(TokenUsage usage, String cause) {
-            return new Reply(null, usage, cause);
+            return new Reply(null, usage, cause, false);
+        }
+
+        static Reply overBudget(TokenUsage usage, String cause) {
+            return new Reply(null, usage, cause, true);
+        }
+
+        String budgetFailure() {
+            return overBudget ? cause : "";
         }
     }
 
@@ -153,7 +167,9 @@ class HeadlessClaude {
         String fence = UUID.randomUUID().toString();
         // A one-shot's prompt is never read again past its minutes, so the 1h TTL's double write price buys nothing.
         List<String> fenced = new ArrayList<>(List.of("env", "FORCE_PROMPT_CACHING_5M=1"));
-        fenced.addAll(cmd);
+        fenced.add(cmd.getFirst());
+        fenced.addAll(List.of("--max-budget-usd", String.format(Locale.ROOT, "%.2f", assistant.maxCostUsd())));
+        fenced.addAll(cmd.subList(1, cmd.size()));
         fenced.addAll(readOnlyTools.fence(fence, scope));
         Reply reply;
         Optional<String> unheard;
@@ -214,6 +230,16 @@ class HeadlessClaude {
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", oneLine(denials.toString()))
                     .log();
+        }
+        if (envelope != null && BUDGET_SUBTYPE.equals(envelope.path("subtype").asString(""))) {
+            String cause = "spend ceiling reached: " + envelope.path("errors").path(0).asString("");
+            log.atError().setMessage("assistant call over budget")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("cause", oneLine(cause))
+                    .addKeyValue("effect", "answer discarded")
+                    .addKeyValue("fix", "orchestrator.assistant.maxCostUsd")
+                    .log();
+            return Reply.overBudget(usage, cause);
         }
         if (result.exitCode() != 0 || envelope == null) {
             log.atWarn().setMessage("assistant call failed")

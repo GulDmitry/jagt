@@ -12,7 +12,9 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "orchestrator.assistant")
 public record AssistantProperties(String settingSources, @Nullable String model,
                                   List<String> allowedTools, String mcpConfig,
-                                  Map<AssistantCallKind, String> mcpConfigByKind) {
+                                  Map<AssistantCallKind, String> mcpConfigByKind, double maxCostUsd) {
+
+    public static final double DEFAULT_MAX_COST_USD = 0.70;
 
     public AssistantProperties {
         settingSources = settingSources == null || settingSources.isBlank() ? "user,project,local" : settingSources;
@@ -20,6 +22,7 @@ public record AssistantProperties(String settingSources, @Nullable String model,
         // A list would be bound by splitting a scalar on commas, which cuts a declaration written inline in half.
         mcpConfig = mcpConfig == null ? "" : mcpConfig;
         mcpConfigByKind = mcpConfigByKind == null ? Map.of() : Map.copyOf(mcpConfigByKind);
+        maxCostUsd = maxCostUsd > 0 ? maxCostUsd : DEFAULT_MAX_COST_USD;
     }
 
     /**
@@ -33,6 +36,6 @@ public record AssistantProperties(String settingSources, @Nullable String model,
     }
 
     public static AssistantProperties empty() {
-        return new AssistantProperties("", null, List.of(), "", Map.of());
+        return new AssistantProperties("", null, List.of(), "", Map.of(), 0);
     }
 }

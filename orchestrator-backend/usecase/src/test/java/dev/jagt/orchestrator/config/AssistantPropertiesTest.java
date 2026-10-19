@@ -33,4 +33,9 @@ class AssistantPropertiesTest {
     void inheritsTheHumansOwnConfigurationWhereNothingIsPinnedAtAll() {
         assertThat(AssistantProperties.empty().mcpConfigFor(AssistantCallKind.TICKET_READ)).isEmpty();
     }
+
+    @Test
+    void ceilsASpendAt70CentsWhereNoneIsSet() {
+        assertThat(AssistantProperties.empty().maxCostUsd()).isEqualTo(0.70);
+    }
 }

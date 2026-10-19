@@ -63,3 +63,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0045 Bounded stores](0045-every-store-jagt-writes-has-a-ceiling.md)
 - [0046 Preact, no build](0046-the-board-renders-preact-components-with-no-build.md)
 - [0047 The editor is a launcher](0047-the-editor-is-a-launcher.md)
+- [0048 Spend ceiling](0048-every-headless-call-has-a-spend-ceiling.md)

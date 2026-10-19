@@ -496,4 +496,35 @@ class HeadlessClaudeTest {
 
         assertThat(HeadlessClaude.usageOf(envelope).measuredStarts()).isZero();
     }
+
+    @Test
+    void holdsEveryCallToTheConfiguredSpendCeiling() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+
+        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withMaxCostUsd(1.5),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class))
+                .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--max-budget-usd", "1.50");
+    }
+
+    @Test
+    void aCallThatReachesTheSpendCeilingFailsNamingItInsteadOfAnsweringEmpty() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(1,
+                """
+                {"type":"result","subtype":"error_max_budget_usd","is_error":true,\
+                "errors":["Reached maximum budget ($0.70)"],"total_cost_usd":0.71}""", ""));
+
+        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class))
+                .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        assertThat(answer.facts()).isEmpty();
+        assertThat(answer.failure()).startsWith("spend ceiling reached");
+    }
 }
