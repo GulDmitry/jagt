@@ -13,6 +13,15 @@ then removes the worktrees and branches. A test reading the repository's own fil
 helpers (`TextBudgetTest.mainSources`, `ConfigReferenceTest.javaFilesUnder` …). A shared **fake** of a production
 seam (`ScriptedProcesses`) is allowed, a shared builder is not.
 
+### One constructor, the one production calls
+
+- **Every constructor in `main` is called from `main`** (`ProductionConstructorTest`). Exempt: a record's canonical
+  constructor, the only constructor of a Spring bean, a private one.
+- A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies
+  is a collaborator, supplied by `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies
+  is a constant, and the test writes the volume that reaches it.
+- Why: a second constructor builds in tests a class production never builds, and it sidesteps `MockCeilingTest`.
+
 ### Bare binary names, and a concurrent unit suite
 
 - An external binary is configured by **bare name**; `adapter/Executables` resolves it against PATH, install

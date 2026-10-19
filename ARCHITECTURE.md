@@ -140,6 +140,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
 | `Processes` | `adapter/ProcessRunner` |
+| `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam |
 | `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
@@ -262,7 +263,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
 | `:surface` | `surface/` | `:core`, `:usecase` |
-| root | `OrchestratorApplication`, `FlowWiring`, `application.yml` | all four — the assembly |
+| root | `OrchestratorApplication`, `FlowWiring`, `RuntimeWiring`, `application.yml` | all four — the assembly |
 
 - Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git,
   `lsof`, binaries), `:surface:test`, and the root's own few that assert what the install ships.
@@ -272,5 +273,7 @@ that points outward does not compile. Two folders inside one module it cannot se
   `linuxDriverTest` (Linux binaries, container), `promptEval` and `masterEval` (the assistant's CLI, and tokens).
 - `./gradlew test e2eTest boardTest` is everything runnable here; `./gradlew build stageJar && java -jar
   build/libs/jagt-run.jar` starts the board.
+- **A bean has one constructor**, the one a test calls too: what varies — a clock, a pool, a policy, a host fact — is
+  a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`ProductionConstructorTest`).
 - `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names
   `adapter/Executables`.
