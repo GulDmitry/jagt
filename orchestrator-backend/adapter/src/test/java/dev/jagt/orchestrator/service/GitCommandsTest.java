@@ -12,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,6 +39,7 @@ class GitCommandsTest {
         Path dir = Files.createDirectories(root.resolve("held"));
         Files.writeString(dir.resolve("kept.txt"), "held by a process");
         Files.setPosixFilePermissions(dir, PosixFilePermissions.fromString("r-xr-xr-x"));
+        assumeFalse(Files.isWritable(dir));
         WorktreeProcesses reaper = mock(WorktreeProcesses.class);
         GitCommands git = new GitCommands(mock(Processes.class), reaper);
 
