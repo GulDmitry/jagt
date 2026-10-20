@@ -5,8 +5,11 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.List;
 
@@ -298,10 +301,11 @@ class GitDeployTest {
         Files.writeString(deployWorktree.resolve("f.txt"), "resolved");
         runner.run(deployWorktree, t, List.of("git", "add", "f.txt"));
 
-        git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        String merged = git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:f.txt")).stdout()).contains("resolved");
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(merged);
         assertThat(deployWorktree).doesNotExist();
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
     }
@@ -892,7 +896,8 @@ class GitDeployTest {
 
         assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("conflicts with work done there since the deploy");
+                .hasMessageContaining("conflicts with work done there since the deploy")
+                .hasMessageContaining("could not revert");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(devTip);
@@ -927,5 +932,177 @@ class GitDeployTest {
                 .hasMessageContaining("Author identity unknown");
 
         assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    }
+
+    @Test
+    void dropsTheDeployWorktreeAndSaysSoWhenDevMovedPastWhatItHeldBeforeThePush(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        Path hook = repo.resolve(".git/hooks/pre-push");
+        Files.writeString(hook, "#!/bin/sh\nc=$(git commit-tree HEAD^{tree} -p HEAD -m later) && git push -q --no-verify origin \"$c:refs/heads/dev\"\n");
+        Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitDeploy.NothingToDeployException.class)
+                .hasMessageContaining("Nothing left to push");
+
+        assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "--verify", "--quiet", "jagt-deploy-ABC-1"))
+                .exitCode()).isNotZero();
+    }
+
+    @Test
+    void keepsTheDeployWorktreeAndNamesGitsRefusalWhenDevMovedUnderTheMerge(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        Path hook = repo.resolve(".git/hooks/pre-push");
+        Files.writeString(hook, "#!/bin/sh\nc=$(git commit-tree origin/dev^{tree} -p origin/dev -m other) && git push -q --no-verify origin \"$c:refs/heads/dev\"\n");
+        Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(IllegalStateException.class)
+                .isNotInstanceOf(GitDeploy.NothingToDeployException.class)
+                .hasMessageContaining("Deploy push to dev was rejected")
+                .hasMessageContaining("failed to update ref");
+
+        assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
+    }
+
+    @Test
+    void revertsThroughARevertPathAStaleRunLeftBehind(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        Files.createDirectories(dir.resolve("ABC-1-revert"));
+        Files.writeString(dir.resolve("ABC-1-revert").resolve("stale.txt"), "left by a run that died");
+
+        String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge);
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(revert);
+        assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+    }
+
+    @Test
+    void namesGitsRefusalWhenDevMovedWhileTheRevertWasBeingMade(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        Path hook = repo.resolve(".git/hooks/pre-push");
+        Files.writeString(hook, "#!/bin/sh\nc=$(git commit-tree origin/dev^{tree} -p origin/dev -m other) && git push -q --no-verify origin \"$c:refs/heads/dev\"\n");
+        Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
+
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Revert push to dev was rejected")
+                .hasMessageContaining("failed to update ref");
+    }
+
+    @Test
+    void readsADeployConflictAsResolvedOnceTheHumanCommittedTheMergeByHand(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("feature.txt"), "dev change");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitDeploy.MergeConflictException.class);
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        Files.writeString(deployWorktree.resolve("feature.txt"), "resolved");
+        runner.run(deployWorktree, t, List.of("git", "add", "feature.txt"));
+        runner.run(deployWorktree, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "resolved"));
+
+        boolean resolved = git.deployResolved(repo, "ABC-1", "dev");
+
+        assertThat(resolved).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"0123456789abcdef,01234567", "abc1234,abc1234", "NIL,null"}, nullValues = "NIL")
+    void showsAShaAsItsFirstEightCharactersAndAMissingOneAsNull(String sha, String shown) {
+        assertThat(GitDeploy.shortSha(sha)).isEqualTo(shown);
     }
 }

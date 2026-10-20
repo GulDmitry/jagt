@@ -256,4 +256,62 @@ class WorktreeInspectionTest {
                 "ABC-40", "ABC-41", "main");
         assertThat(WorktreeInspection.branchNames("")).isEmpty();
     }
+
+    @Test
+    void identifiesTheOwnDiffWhileOnlyJagtsOwnFilesAreUntracked(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("a.txt"), "1\n");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Files.writeString(repo.resolve("task_context.md"), "the round brief");
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.ownDiffId(repo, repo, "main")).isPresent();
+    }
+
+    @Test
+    void countsNoLinesForAnAgentFileThatTurnedBinary(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\n");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Files.write(repo.resolve("AGENTS.md"), new byte[] {0, 1, 2, 0});
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        int added = git.agentFileLinesAdded(repo, repo, "main");
+
+        assertThat(added).isZero();
+    }
+
+    @Test
+    void readsAFileRenamedIntoJagtsOwnFileAsNoUncommittedWork(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("brief.md"), "the round brief");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "mv", "brief.md", "task_context.md"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
+    }
 }
