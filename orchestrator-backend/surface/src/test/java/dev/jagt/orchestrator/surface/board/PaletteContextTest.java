@@ -70,6 +70,16 @@ class PaletteContextTest {
     }
 
     @Test
+    void refusesABlankProposal(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
+
+        assertThat(board.existingTask("  ")).isNull();
+    }
+
+    @Test
     void refusesAProposedTaskThatDoesNotExist(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())

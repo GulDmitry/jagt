@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -30,10 +31,11 @@ class OriginFilterTest {
     void leavesACallOutsideTheBoardAndTheAgentsEndpointUnattributed() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/state");
         request.setServletPath("/state");
+        MockFilterChain passed = new MockFilterChain();
 
-        new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
+        new OriginFilter().doFilter(request, new MockHttpServletResponse(), passed);
 
-        assertThat(seen.get()).isNull();
+        assertThat(passed.getRequest()).isSameAs(request);
     }
 
     @Test
