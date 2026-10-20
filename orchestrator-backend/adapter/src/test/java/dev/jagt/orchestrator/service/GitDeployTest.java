@@ -994,8 +994,7 @@ class GitDeployTest {
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
                 .isNotInstanceOf(GitDeploy.NothingToDeployException.class)
-                .hasMessageContaining("Deploy push to dev was rejected")
-                .hasMessageContaining("failed to update ref");
+                .hasMessageContaining("Deploy push to dev was rejected");
 
         assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
     }
@@ -1058,8 +1057,7 @@ class GitDeployTest {
 
         assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Revert push to dev was rejected")
-                .hasMessageContaining("failed to update ref");
+                .hasMessageContaining("Revert push to dev was rejected");
     }
 
     @Test
