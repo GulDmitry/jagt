@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.BranchStrategy;
@@ -20,6 +22,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -178,5 +182,59 @@ class TaskProvisioningTest {
         assertThatThrownBy(() -> NewTask.builder("ABC-1", " ").alsoIn(List.of("web")).build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("needs the project its session runs in");
+    }
+    @Test
+    void tellsTheCallerWhereTheAgentRunsAndWhatItWasCutFrom() {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+
+        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
+
+        assertThat(answer).isEqualTo("ABC-1 is a1 — agent running on ABC-1 from origin/main.");
+    }
+
+    @Test
+    void tellsTheCallerTheTaskWasResumedAndNotCutFromABase() {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+
+        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").branchStrategy("resume").build());
+
+        assertThat(answer).isEqualTo("ABC-1 is a1 — agent running on ABC-1 (resumed).");
+    }
+
+    @Test
+    void tellsTheCallerWhereToApproveThePlanOfATaskStartedInPlanMode() {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+
+        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
+
+        assertThat(answer).endsWith(" Plan mode: approve its plan in the agent window (focus a1).");
+    }
+
+    @Test
+    void keepsTheTaskRegisteredAndSaysSoWhenItsAgentSessionFailsToStart() {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+        doThrow(new IllegalStateException("no tmux")).when(sessions).startAgent(any(), any(), any(), anyBoolean());
+
+        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
+
+        assertThat(answer).isEqualTo("Task ABC-1 registered and worktree created at /ABC-1-proj, but the agent session"
+                + " failed to start: no tmux Fix the cause and call open_task_tab(\"ABC-1\") — do NOT call"
+                + " initialize_task again.");
+        assertThat(state.task("ABC-1")).isPresent();
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"https://tracker/ABC-1,https://tracker/ABC-1", "'   ',"})
+    void registersTheTicketLinkOnlyWhereOneWasGiven(String given, String registered) {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+
+        provisioning.initializeTask(NewTask.builder("ABC-1", "proj").ticketUrl(given).build());
+
+        assertThat(state.task("ABC-1").orElseThrow().ticketUrl()).isEqualTo(registered);
     }
 }

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
@@ -99,5 +100,51 @@ class TaskLauncherTest {
         assertThat(refused.created()).isFalse();
         assertThat(refused.reason()).isEqualTo(Launched.Reason.NOTHING_TO_DO);
         verifyNoInteractions(launches);
+    }
+    @Test
+    void answersWhatTheTicketLaunchAnsweredForARequestNamingATicket() {
+        LaunchRequest request = LaunchRequest.of("ABC-42");
+        when(launches.ticket(request, null)).thenReturn(Launched.created("ABC-42", "started"));
+
+        assertThat(launcher.launch(request)).isEqualTo(Launched.created("ABC-42", "started"));
+    }
+
+    @Test
+    void answersWhatTheWrittenLaunchAnsweredForARequestCarryingOnlyWords() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        LaunchRequest request = LaunchRequest.defaults().withProject("group-a").withNotes("tighten the parser");
+        when(launches.written(request, List.of("group-a"))).thenReturn(Launched.created("tighten-the-parser", "started"));
+
+        assertThat(launcher.launch(request)).isEqualTo(Launched.created("tighten-the-parser", "started"));
+    }
+
+    @Test
+    void answersWhatTheTicketLaunchAnsweredForAnItemIntakeAlreadyRead() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        LaunchRequest request = LaunchRequest.of("ABC-42").withProject("group-a");
+        Answer<TicketFacts> read = new Answer<>(Optional.of(TicketFacts.defaults().withKey("ABC-42")), TokenUsage.NONE);
+        when(launches.ticket(request, List.of("group-a"), read)).thenReturn(Launched.created("ABC-42", "started"));
+
+        assertThat(launcher.launch(request, read)).isEqualTo(Launched.created("ABC-42", "started"));
+    }
+
+    @Test
+    void answersWhatTheWrittenLaunchAnsweredForATypedLine() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        when(launches.written(any(), eq(List.of("group-a")))).thenReturn(Launched.created("tighten-the-parser", "started"));
+
+        assertThat(launcher.launchLine("group-a tighten the parser")).isEqualTo(Launched.created("tighten-the-parser", "started"));
+    }
+
+    @Test
+    void skipsEmptyEntriesInAListOfProjects() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+
+        assertThat(launcher.resolveProjects("api, ,web")).containsExactly("api", "web");
     }
 }

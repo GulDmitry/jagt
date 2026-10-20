@@ -125,4 +125,17 @@ class TaskResumeTest {
                 .hasMessageContaining("resume needs the request url");
         verifyNoInteractions(projects, registration);
     }
+    @Test
+    void answersWithTheTaskTheRegistrationCreatedForTheRequest() {
+        when(projects.of("https://host/group/proj/-/merge_requests/425")).thenReturn("proj");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "main",
+                        "PROJ-1 Excel export")), TokenUsage.NONE));
+        when(registration.register("PROJ-1", "proj", "https://host/group/proj/-/merge_requests/425",
+                "PROJ-1 Excel export", "main")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
+
+        Launched launched = resume.resume("https://host/group/proj/-/merge_requests/425");
+
+        assertThat(launched).isEqualTo(Launched.created("PROJ-1", "Resumed PROJ-1"));
+    }
 }

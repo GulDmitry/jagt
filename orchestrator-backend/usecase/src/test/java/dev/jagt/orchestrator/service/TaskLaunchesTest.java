@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
@@ -228,5 +230,65 @@ class TaskLaunchesTest {
         assertThat(refused.created()).isFalse();
         assertThat(refused.reason()).isEqualTo(Launched.Reason.NO_BRANCH_NAME);
         verifyNoInteractions(provisioning);
+    }
+    @Test
+    void answersTheTaskItCreatedWithWhatProvisioningSaidForATicket() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-1");
+        when(placement.read("ABC-1")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(placement.place(eq("ABC-1"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("demo")));
+        when(provisioning.initializeTask(any())).thenReturn("started");
+
+        Launched launched = launches.ticket(LaunchRequest.of("ABC-1").withProject("demo"), List.of("demo"));
+
+        assertThat(launched).isEqualTo(Launched.created("ABC-1", "started"));
+    }
+
+    @Test
+    void answersTheTaskItCreatedForAnItemTheCallerAlreadyRead() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-1");
+        when(worktrees.strategyForExisting("ABC-1", "demo")).thenReturn(BranchStrategy.FRESH);
+        when(placement.place(eq("ABC-1"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("demo")));
+        when(provisioning.initializeTask(any())).thenReturn("started");
+
+        Launched launched = launches.ticket(LaunchRequest.of("ABC-1").withProject("demo"), List.of("demo"),
+                new Answer<>(Optional.of(item), TokenUsage.NONE));
+
+        assertThat(launched).isEqualTo(Launched.created("ABC-1", "started"));
+    }
+
+    @Test
+    void answersTheTaskItCreatedForWhatTheHumanWrote() {
+        when(worktrees.freeTaskName("split-the-invoice-mailer", List.of("group-a")))
+                .thenReturn("split-the-invoice-mailer");
+        when(provisioning.initializeTask(any())).thenReturn("started");
+
+        Launched launched = launches.written(LaunchRequest.defaults().withProject("group-a")
+                .withNotes("Split the invoice mailer"), List.of("group-a"));
+
+        assertThat(launched).isEqualTo(Launched.created("split-the-invoice-mailer", "started"));
+    }
+
+    @Test
+    void asksOnlyTheProjectsTheCallerChoseWhetherALeftoverBranchExists() {
+        when(worktrees.existingBranchProject("ABC-9", List.of("api"))).thenReturn("api");
+
+        String out = launches.ticket(LaunchRequest.of("ABC-9"), List.of("api")).message();
+
+        assertThat(out).contains("already exists in api");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"80, 80, false", "81, 80, true"})
+    void titlesATypedTaskInAtMostEightyCharactersAndMarksACut(int length, int kept, boolean cut) {
+        String words = "a".repeat(length);
+        when(worktrees.freeTaskName(any(), any())).thenReturn("a-task");
+
+        launches.written(LaunchRequest.defaults().withProject("group-a").withNotes(words), List.of("group-a"));
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue().title()).isEqualTo("a".repeat(kept) + (cut ? "…" : ""));
     }
 }

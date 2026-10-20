@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Refusal;
@@ -275,5 +276,102 @@ class NewTaskWorktreesTest {
                 .hasMessageContaining("does not exist on web's origin");
 
         verify(git, never()).createWorktree(any(), any(), any(), any(), any());
+    }
+    @Test
+    void findsTheProjectHoldingABranchOfTheTaskAmongEveryConfiguredProjectWhenNoneIsNamed() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of())))));
+        when(git.branchExists(Path.of("/web"), "ABC-1")).thenReturn(true);
+
+        assertThat(worktrees.existingBranchProject("ABC-1", null)).isEqualTo("web");
+    }
+
+    @Test
+    void asksOnlyTheProjectsItWasGivenWhereTheBranchLivesInAnother() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of())))));
+        when(git.branchExists(Path.of("/web"), "ABC-1")).thenReturn(true);
+
+        assertThat(worktrees.existingBranchProject("ABC-1", List.of("api"))).isNull();
+    }
+
+    @Test
+    void stepsOverNineteenTakenNamesToTheTwentiethBeforeGivingUp() throws Exception {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Files.writeString(root.resolve("state.json"), """
+                {"tasks":{"mailer":{},"mailer-2":{},"mailer-3":{},"mailer-4":{},"mailer-5":{},"mailer-6":{},
+                "mailer-7":{},"mailer-8":{},"mailer-9":{},"mailer-10":{},"mailer-11":{},"mailer-12":{},
+                "mailer-13":{},"mailer-14":{},"mailer-15":{},"mailer-16":{},"mailer-17":{},"mailer-18":{},
+                "mailer-19":{}}}""");
+
+        assertThat(worktrees.freeTaskName("mailer", List.of("proj"))).isEqualTo("mailer-20");
+    }
+
+    @Test
+    void refusesToStepOverTwentyTakenNames() throws Exception {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Files.writeString(root.resolve("state.json"), """
+                {"tasks":{"mailer":{},"mailer-2":{},"mailer-3":{},"mailer-4":{},"mailer-5":{},"mailer-6":{},
+                "mailer-7":{},"mailer-8":{},"mailer-9":{},"mailer-10":{},"mailer-11":{},"mailer-12":{},
+                "mailer-13":{},"mailer-14":{},"mailer-15":{},"mailer-16":{},"mailer-17":{},"mailer-18":{},
+                "mailer-19":{},"mailer-20":{}}}""");
+
+        assertThatThrownBy(() -> worktrees.freeTaskName("mailer", List.of("proj")))
+                .isInstanceOf(Refusal.class)
+                .hasMessage("20 tasks are already called 'mailer' — open the line with different words");
+    }
+
+    @Test
+    void refusesAProjectKeyThatIsNotPlainBeforeTouchingGit() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(Map.of("bad key",
+                new ProjectConfig(root.resolve("repo").toString(), "origin/main", null, List.of())));
+
+        assertThatThrownBy(() -> worktrees.cut(NewTask.builder("ABC-42", "bad key").build(), configured,
+                BranchStrategy.FRESH))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Argument 'projectKey' must match");
+        verifyNoInteractions(git);
+    }
+
+    @Test
+    void trustsWhatGitObeysAroundTheWorktreesJustCut() {
+        NewRepo repo = new NewRepo("api", new ProjectConfig("/api", "origin/main", null, List.of()), Path.of("/api"),
+                Path.of("/ABC-1-api"), Path.of("/api/.git"), "origin/main", "git@host:api.git", true);
+        when(git.gitState(List.of(Path.of("/ABC-1-api")))).thenReturn(Map.of("core.editor in /api/.git/config", "a1"));
+
+        assertThat(worktrees.trust(List.of(repo))).isEqualTo(GitTrust.of(Map.of("core.editor in /api/.git/config", "a1")));
+    }
+
+    @Test
+    void trustsNothingWhereGitStateCannotBeRead() {
+        NewRepo repo = new NewRepo("api", new ProjectConfig("/api", "origin/main", null, List.of()), Path.of("/api"),
+                Path.of("/ABC-1-api"), Path.of("/api/.git"), "origin/main", "git@host:api.git", true);
+        when(git.gitState(any())).thenThrow(new IllegalStateException("git rev-parse failed"));
+
+        assertThat(worktrees.trust(List.of(repo))).isNull();
+    }
+
+    @Test
+    void removesTheBranchItCreatedAndLeavesTheRepositoryAloneWhenARegistrationFailedAfterTheCut() {
+        NewRepo repo = new NewRepo("api", new ProjectConfig("/api", "origin/main", null, List.of()), Path.of("/api"),
+                Path.of("/ABC-1-api"), Path.of("/api/.git"), "origin/main", "git@host:api.git", true);
+
+        worktrees.uncut(NewTask.builder("ABC-1", "api").build(), List.of(repo), BranchStrategy.FRESH);
+
+        verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-1-api"), "ABC-1");
+        verify(git, never()).reattach(any(), any());
+    }
+
+    @Test
+    void keepsTheResumedBranchAndGivesTheRepositoryBackWhenARegistrationFailedAfterTheCut() {
+        NewRepo repo = new NewRepo("api", new ProjectConfig("/api", "origin/main", null, List.of()), Path.of("/api"),
+                Path.of("/ABC-1-api"), Path.of("/api/.git"), "origin/main", "git@host:api.git", true);
+
+        worktrees.uncut(NewTask.builder("ABC-1", "api").build(), List.of(repo), BranchStrategy.RESUME);
+
+        verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-1-api"), null);
+        verify(git).reattach(Path.of("/api"), "ABC-1");
     }
 }

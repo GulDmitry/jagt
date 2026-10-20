@@ -283,4 +283,34 @@ class SessionProbeTest {
 
         assertThat(silence).map(SessionProbe.Silence::since).contains(9_000_000L);
     }
+    @Test
+    void callsASessionSilentAtExactlyTheThresholdOfQuiet() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        SessionHost sessions = mock(SessionHost.class);
+        when(sessions.lastWindowActivityMillis(any(), anyString())).thenReturn(0L);
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_700_000L).build();
+
+        Optional<SessionProbe.Silence> silence = new SessionProbe(config, sessions, mock(AgentRuntime.class))
+                .of("ABC-1", task, 300_000, 10_000_000);
+
+        assertThat(silence).map(SessionProbe.Silence::since).contains(9_700_000L);
+    }
+
+    @Test
+    void keepsTheEndedTurnWhenTheWindowPrintedNothingAfterIt() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        SessionHost sessions = mock(SessionHost.class);
+        when(sessions.lastWindowActivityMillis(any(), anyString())).thenReturn(9_000_000L);
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_000_000L).build();
+        SessionProbe probe = new SessionProbe(config, sessions, mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.IDLE, null, 9_000_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
+                .map(SessionProbe.Silence::detail).contains("its turn ended and nothing has moved since");
+    }
 }

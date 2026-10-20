@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.ProjectConfig;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -107,5 +109,17 @@ class TaskViewsTest {
                 .listing();
 
         assertThat(listing).isEqualTo("no tasks");
+    }
+    @Test
+    void asksForTheDeployConfirmationNamingEachRepositorysDeployBranch() {
+        when(stateService.tasks()).thenReturn(Map.of("ABC-1",
+                TaskState.builder("proj", "/wt/ABC-1", TaskStatus.REVIEW_PENDING).build()));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
+
+        assertThat(views).singleElement().extracting("confirmations").asInstanceOf(InstanceOfAssertFactories.MAP)
+                .containsEntry("deploy", "Deploy ABC-1?\n\nThis merges and pushes:\nproj → dev");
     }
 }
