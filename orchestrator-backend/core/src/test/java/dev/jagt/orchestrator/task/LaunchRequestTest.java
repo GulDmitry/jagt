@@ -85,4 +85,20 @@ class LaunchRequestTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("usage: do <ticket|url>");
     }
+
+    @Test
+    void readsABranchAfterFromEvenWhenNothingFollowsIt() {
+        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 from release", Set.of("demo"));
+
+        assertThat(typed.baseBranch()).isEqualTo("release");
+        assertThat(typed.notes()).isNull();
+    }
+
+    @Test
+    void readsAProjectTokenWithATrailingCommaAsThatProject() {
+        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo, keep going", Set.of("demo"));
+
+        assertThat(typed.project()).isEqualTo("demo,");
+        assertThat(typed.notes()).isEqualTo("keep going");
+    }
 }

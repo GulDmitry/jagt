@@ -47,4 +47,28 @@ class TokenUsageTest {
         assertThat(total.calls()).isEqualTo(2);
         assertThat(total.measuredStarts()).isEqualTo(1);
     }
+
+    @Test
+    void addsUpCostAndStartCountsOfRepeatedCalls() {
+        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0.25).asStart()
+                .plus(TokenUsage.ofCall(500, 9_000, 10, 0.5).asStart());
+
+        assertThat(total.costUsd()).isEqualTo(0.75);
+        assertThat(total.coldStarts()).isEqualTo(1);
+        assertThat(total.warmStarts()).isEqualTo(1);
+        assertThat(total.measuredStarts()).isEqualTo(2);
+    }
+
+    @Test
+    void marksNothingAsAStartWhenNoCallWasMade() {
+        assertThat(TokenUsage.NONE.asStart()).isEqualTo(TokenUsage.NONE);
+    }
+
+    @Test
+    void callsAStartWarmWhenItSpentOnlyOutputTokens() {
+        TokenUsage start = TokenUsage.ofCall(0, 0, 10, 0).asStart();
+
+        assertThat(start.coldStarts()).isZero();
+        assertThat(start.warmStarts()).isEqualTo(1);
+    }
 }

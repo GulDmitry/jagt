@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -245,5 +246,161 @@ class TaskStateTest {
                 .approved(true).pipelineStatus("success").build();
 
         assertThat(task.withMrUrl("https://host/mr/1").approved()).isTrue();
+    }
+
+    @Test
+    void reportsItsHistoryAsCappedOnlyOnceFiftyStepsAreHeld() {
+        List<StatusChange> fortyNine = IntStream.range(0, 49)
+                .mapToObj(i -> new StatusChange(TaskStatus.IN_PROGRESS, i, null)).toList();
+        List<StatusChange> fifty = IntStream.range(0, 50)
+                .mapToObj(i -> new StatusChange(TaskStatus.IN_PROGRESS, i, null)).toList();
+
+        assertThat(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).history(fortyNine).build()
+                .historyAtCap()).isFalse();
+        assertThat(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).history(fifty).build()
+                .historyAtCap()).isTrue();
+    }
+
+    @Test
+    void keepsAllFiftyMovesWhenTheFiftiethIsRecorded() {
+        List<StatusChange> fortyNine = IntStream.range(0, 49)
+                .mapToObj(i -> new StatusChange(TaskStatus.IN_PROGRESS, i, null)).toList();
+        TaskState almostFull = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).history(fortyNine).build();
+
+        TaskState moved = almostFull.withStatus(TaskStatus.REVIEW_PENDING, "done");
+
+        assertThat(moved.history()).hasSize(50);
+        assertThat(moved.history().getFirst().at()).isZero();
+    }
+
+    @Test
+    void countsOneRoundForEveryEntryIntoCiPolling() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1, null),
+                        new StatusChange(TaskStatus.CI_POLLING, 2, null),
+                        new StatusChange(TaskStatus.IN_PROGRESS, 3, null),
+                        new StatusChange(TaskStatus.CI_POLLING, 4, null))).build();
+
+        assertThat(task.rounds()).isEqualTo(2);
+    }
+
+    @Test
+    void stampsWhoCausedTheLastStepAndNoOtherStep() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1, ActionOrigin.BOARD),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, 2, null))).build();
+
+        TaskState stamped = task.withLastChangeOrigin(ActionOrigin.TRACKER);
+
+        assertThat(stamped.history()).extracting(StatusChange::origin)
+                .containsExactly(ActionOrigin.BOARD, ActionOrigin.TRACKER);
+    }
+
+    @Test
+    void stampsNobodyOnATaskThatHasNoStepYet() {
+        TaskState task = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"NEW","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
+
+        assertThat(task.withLastChangeOrigin(ActionOrigin.BOARD)).isSameAs(task);
+    }
+
+    @Test
+    void countsEveryRefusalPerGuardAcrossRefusals() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
+
+        TaskState refused = task.refused(Guard.STATUS_REPORT).refused(Guard.STATUS_REPORT)
+                .refused(Guard.GIT_STATE);
+
+        assertThat(refused.refusals()).containsEntry(Guard.STATUS_REPORT, 2).containsEntry(Guard.GIT_STATE, 1);
+    }
+
+    @Test
+    void clearsTheSilenceReasonWhenTheSilenceStampIsZero() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
+
+        TaskState silent = task.withSilentSince(5, "no report");
+        TaskState spoke = silent.withSilentSince(0, "no report");
+
+        assertThat(silent.silentBecause()).isEqualTo("no report");
+        assertThat(spoke.silentBecause()).isNull();
+        assertThat(spoke.agentIsSilent()).isFalse();
+    }
+
+    @Test
+    void takesTheProjectDefaultBaseBranchOnlyWhereTheTaskNamedNone() {
+        TaskState own = TaskState.builder("proj", "/wt", TaskStatus.NEW).baseBranch("release").build();
+        TaskState blank = TaskState.builder("proj", "/wt", TaskStatus.NEW).baseBranch(" ").build();
+        TaskState none = TaskState.builder("proj", "/wt", TaskStatus.NEW).build();
+
+        assertThat(own.baseBranchOr("main")).isEqualTo("release");
+        assertThat(blank.baseBranchOr("main")).isEqualTo("main");
+        assertThat(none.baseBranchOr("main")).isEqualTo("main");
+    }
+
+    @Test
+    void followsTheConfigDefaultForAutoReviewOnlyWhereTheTaskSetNone() {
+        TaskState on = TaskState.builder("proj", "/wt", TaskStatus.NEW).autoReview(true).build();
+        TaskState off = TaskState.builder("proj", "/wt", TaskStatus.NEW).autoReview(false).build();
+        TaskState unset = TaskState.builder("proj", "/wt", TaskStatus.NEW).build();
+
+        assertThat(on.autoReviewEnabled(false)).isTrue();
+        assertThat(off.autoReviewEnabled(true)).isFalse();
+        assertThat(unset.autoReviewEnabled(true)).isTrue();
+        assertThat(unset.autoReviewEnabled(false)).isFalse();
+    }
+
+    @Test
+    void findsTheReviewRequestOfOneProjectAndNoneForAProjectWithoutOne() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php").withMrUrl("https://host/php/mr/1"),
+                TaskRepo.of("java", "/wt/java"), TaskRepo.of("web", "/wt/web").withMrUrl(" ")),
+                TaskStatus.REVIEW_PENDING).build();
+
+        assertThat(task.reviewRequestOf("php")).contains("https://host/php/mr/1");
+        assertThat(task.reviewRequestOf("java")).isEmpty();
+        assertThat(task.reviewRequestOf("web")).isEmpty();
+    }
+
+    @Test
+    void recordsOneRoundForAShipAcrossRepositoriesCarryingTheSessionRepositoryLink() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
+                TaskStatus.REVIEW_PENDING).build();
+
+        TaskState shipped = task.withReviewRound(Map.of("php", "https://host/php/mr/1",
+                "java", "https://host/java/mr/2"));
+
+        assertThat(shipped.repo("php").orElseThrow().mrUrl()).isEqualTo("https://host/php/mr/1");
+        assertThat(shipped.repo("java").orElseThrow().mrUrl()).isEqualTo("https://host/java/mr/2");
+        assertThat(shipped.mrUrl()).isEqualTo("https://host/php/mr/1");
+    }
+
+    @Test
+    void leavesTheTaskAloneWhenAShipLandedInNoRepository() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
+
+        assertThat(task.withReviewRound(Map.of())).isSameAs(task);
+    }
+
+    @Test
+    void addsMeteredUsageToWhatWasMeteredBefore() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withUsageAdded(TokenUsage.ofCall(10, 0, 5, 0)).withUsageAdded(TokenUsage.ofCall(20, 0, 5, 0));
+
+        assertThat(task.usageOrNone().calls()).isEqualTo(2);
+        assertThat(task.usageOrNone().inputTokens()).isEqualTo(30);
+    }
+
+    @Test
+    void keepsTheLastPollTheRemoteUrlAndTheDeployCommitItWasGiven() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
+                TaskStatus.DEPLOYED).build();
+
+        TaskState noted = task.withLastPolledAt(42).withRemoteUrl("java", "git@host:g/java.git")
+                .withDeployCommit("cafe1234");
+
+        assertThat(noted.lastPolledAt()).isEqualTo(42);
+        assertThat(noted.repo("java").orElseThrow().remoteUrl()).isEqualTo("git@host:g/java.git");
+        assertThat(noted.repo("php").orElseThrow().remoteUrl()).isNull();
+        assertThat(noted.deployCommit()).isEqualTo("cafe1234");
     }
 }

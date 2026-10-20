@@ -40,4 +40,29 @@ class ProjectConfigTest {
 
         assertThat(project.deploysIntoTheBaseBranch()).isTrue();
     }
+
+    @ParameterizedTest
+    @CsvSource({"main,dev", "main,''", "'',main", "origin/main,origin/dev"})
+    void doesNotDeployIntoTheBaseBranchWhenTheDeployBranchIsAnotherOrBlank(String base, String deploy) {
+        var project = new ProjectConfig("/repos/parser", base, deploy, List.of());
+
+        assertThat(project.deploysIntoTheBaseBranch()).isFalse();
+    }
+
+    @Test
+    void writesTheBaseBranchAsALocalName() {
+        var project = new ProjectConfig("/repos/parser", "origin/main", "dev", List.of());
+
+        assertThat(project.baseBranchName()).isEqualTo("main");
+    }
+
+    @Test
+    void listsTheHumanPathsTheInstallWroteAndNoneWhereItWroteNone() {
+        var declared = new ProjectConfig("/repos/parser", "main", "dev", List.of(), List.of(), null,
+                List.of("db/migration/**"));
+        var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
+
+        assertThat(declared.humanPathsOrNone()).containsExactly("db/migration/**");
+        assertThat(undeclared.humanPathsOrNone()).isEmpty();
+    }
 }

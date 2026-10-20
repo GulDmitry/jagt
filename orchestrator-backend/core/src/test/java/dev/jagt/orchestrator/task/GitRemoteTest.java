@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,5 +33,11 @@ class GitRemoteTest {
     @Test
     void readsNothingOutOfABlankRemote() {
         assertThat(GitRemote.projectPath(" ")).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"https://example.com", "nowhere"})
+    void readsNothingOutOfARemoteWithNoPathPart(String remote) {
+        assertThat(GitRemote.projectPath(remote)).isNull();
     }
 }

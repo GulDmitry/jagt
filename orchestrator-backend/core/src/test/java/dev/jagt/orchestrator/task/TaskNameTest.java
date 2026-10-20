@@ -6,6 +6,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TaskNameTest {
 
@@ -66,5 +68,41 @@ class TaskNameTest {
     @Test
     void namesNothingWhenTheLineCarriesNoWordABranchCanUse() {
         assertThat(TaskName.from("!!! ???")).isNull();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"ABC-42,true", "a1-7,true", "ABC42,false", "ABC-,false", "42-ABC,false", "https://tracker/ABC-42,false"})
+    void takesABareIssueKeyForATicketAndNothingParsedOutOfAUrl(String name, boolean ticket) {
+        assertThat(TaskName.isTicketKey(name)).isEqualTo(ticket);
+    }
+
+    @Test
+    void keepsAnOpeningLineOfExactlyTheWrittenLengthWhole() {
+        assertThat(TaskName.from("abcdefgh abcdefgh abcdefgh abcdefgh abcd"))
+                .isEqualTo("abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcd");
+    }
+
+    @Test
+    void cutsALongOpeningWordWhereItHasNoWholeWordToCutAt() {
+        assertThat(TaskName.from("x".repeat(50))).isEqualTo("x".repeat(40));
+    }
+
+    @Test
+    void refusesToRequireANameGitWouldRefuse() {
+        assertThatThrownBy(() -> TaskName.require("a b", "task"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Argument 'task'")
+                .hasMessageContaining("' ' is not allowed")
+                .hasMessageContaining("got: a b");
+    }
+
+    @Test
+    void acceptsARequiredNameGitAccepts() {
+        assertThatCode(() -> TaskName.require("ABC-42", "task")).doesNotThrowAnyException();
+    }
+
+    @Test
+    void namesAnEmptyNameAsEmpty() {
+        assertThat(TaskName.unusableReason("")).isEqualTo("it is empty");
     }
 }
