@@ -30,6 +30,35 @@ class SystemHostTest {
                 .isNull();
     }
 
+    @Test
+    void seesAShellOnPathAndNoSuchBinary() {
+        SystemHost host = new SystemHost();
+
+        assertThat(host.onPath("sh")).isTrue();
+        assertThat(host.onPath("jagt-no-such-binary")).isFalse();
+    }
+
+    @Test
+    void handsBackTheBareNameOfABinaryNothingHas() {
+        assertThat(new SystemHost().resolve("jagt-no-such-binary")).isEqualTo("jagt-no-such-binary");
+    }
+
+    @Test
+    void readsAnEnvironmentVariableTheProcessHasAndNotOneItLacks() {
+        SystemHost host = new SystemHost();
+
+        assertThat(host.env("PATH")).isPresent();
+        assertThat(host.env("JAGT_NO_SUCH_VARIABLE")).isEmpty();
+    }
+
+    @Test
+    void knowsTheUsersHomeAndTheOperatingSystem() {
+        SystemHost host = new SystemHost();
+
+        assertThat(host.home()).isAbsolute();
+        assertThat(host.osName()).isNotBlank();
+    }
+
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"does-not-exist.jar", "classes"})

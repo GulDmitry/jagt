@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -162,5 +164,55 @@ class ProcessRunnerTest {
         } finally {
             launched.destroyForcibly();
         }
+    }
+
+    @Test
+    void answersTheExitCodeAndBothStreamsOfACommandThatFailed() {
+        var result = new ProcessRunner().run(null, Duration.ofSeconds(5),
+                List.of("sh", "-c", "echo out; echo err >&2; exit 3"));
+
+        assertThat(result.exitCode()).isEqualTo(3);
+        assertThat(result.stdout()).isEqualTo("out");
+        assertThat(result.stderr()).isEqualTo("err");
+    }
+
+    @Test
+    void runsTheCommandInTheDirectoryItWasGiven(@TempDir Path dir) throws Exception {
+        var result = new ProcessRunner().run(dir, Duration.ofSeconds(5), List.of("pwd"));
+
+        assertThat(Path.of(result.stdout()).toRealPath()).isEqualTo(dir.toRealPath());
+    }
+
+    @Test
+    void handsTheCommandTheEnvironmentItWasGiven() {
+        var result = new ProcessRunner().run(null, Duration.ofSeconds(5), Map.of("JAGT_PROBE", "on"),
+                List.of("sh", "-c", "echo $JAGT_PROBE"));
+
+        assertThat(result.stdout()).isEqualTo("on");
+    }
+
+    @Test
+    void namesTheCommandThatCouldNotStart() {
+        assertThatThrownBy(() -> new ProcessRunner().run(null, Duration.ofSeconds(5),
+                List.of("jagt-no-such-binary")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Failed to start command: jagt-no-such-binary");
+    }
+
+    @Test
+    void keepsTheCallersInterruptSetAfterKillingTheCommand(@TempDir Path dir) throws Exception {
+        Path pid = dir.resolve("pid");
+        AtomicBoolean stillInterrupted = new AtomicBoolean();
+        Thread caller = Thread.startVirtualThread(() -> {
+            catchThrowable(() -> new ProcessRunner().run(null, Duration.ofSeconds(30),
+                    List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")));
+            stillInterrupted.set(Thread.currentThread().isInterrupted());
+        });
+        await().ignoreExceptions().atMost(Duration.ofSeconds(5)).until(() -> Files.readString(pid).endsWith("\n"));
+
+        caller.interrupt();
+        caller.join(5_000);
+
+        assertThat(stillInterrupted).isTrue();
     }
 }

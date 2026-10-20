@@ -85,4 +85,22 @@ class ExecutablesTest {
     void countsAnUnsetCommandAsSomethingNobodyMaySpawn(String resolved) {
         assertThat(Executables.unresolved(resolved)).isTrue();
     }
+
+    @Test
+    void findsALauncherInsideABundleInstalledForTheUserAlone() {
+        assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
+                path -> path.toString().equals("/Users/me/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"),
+                dir -> dir.toString().equals("/Users/me/Applications")
+                        ? List.of(Path.of("/Users/me/Applications/IntelliJ IDEA.app"))
+                        : List.of()))
+                .isEqualTo("/Users/me/Applications/IntelliJ IDEA.app/Contents/MacOS/idea");
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "  "})
+    void searchesNoUserDirectoryWhereTheHomeIsUnknown(String home) {
+        assertThat(Executables.resolve("idea", "/usr/bin", home, path -> false, dir -> List.of()))
+                .isEqualTo("idea");
+    }
 }
