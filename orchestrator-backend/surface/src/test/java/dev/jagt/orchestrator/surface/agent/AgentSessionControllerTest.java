@@ -147,6 +147,20 @@ class AgentSessionControllerTest {
     }
 
     @Test
+    void answersTheTurnEndWithTheVerdictOfTheReports() {
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+        when(reports.turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false))
+                .thenReturn("{\"decision\": \"block\"}");
+
+        String answered = new AgentSessionController(state, reports, wakes).turnEnd("/wt/ABC-1-proj", null);
+
+        assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
+    }
+
+    @Test
     void refusesAReportFromADirectoryNoTaskRunsIn() {
         StateService state = mock(StateService.class);
         when(state.findByWorktree("/elsewhere")).thenReturn(Optional.empty());

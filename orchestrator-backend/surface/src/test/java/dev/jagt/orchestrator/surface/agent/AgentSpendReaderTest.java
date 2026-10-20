@@ -117,6 +117,20 @@ class AgentSpendReaderTest {
     }
 
     @Test
+    void chargesNothingWhenTheGrownLogHoldsNoCompleteCallYet(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, "x".repeat(350));
+        when(stateService.task("ABC-42")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
+                        .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(1, 0, 1, 0), log.toString(), 300))));
+        when(sessionLog.spent(eq(log), eq(300L), eq(50L))).thenReturn(new SessionLog.Spent(TokenUsage.NONE, 300));
+
+        new AgentSpendReader(stateService, sessionLog).charge("ABC-42", log);
+
+        verify(stateService, never()).updateTask(eq("ABC-42"), any());
+    }
+
+    @Test
     void chargesNothingWhenTheLogHasNotGrownSinceTheLastRead(@TempDir Path dir) throws IOException {
         Path log = dir.resolve("session.jsonl");
         Files.writeString(log, "x".repeat(300));

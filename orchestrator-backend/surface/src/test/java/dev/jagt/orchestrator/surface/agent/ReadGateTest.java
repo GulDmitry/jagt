@@ -22,7 +22,7 @@ class ReadGateTest {
     @ValueSource(strings = {"mcp__acme__get_issue", "mcp__whole__add_comment", "StructuredOutput"})
     void letsThroughEveryToolTheReadWasGiven(String tool) {
         ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__whole__add_comment",
-                "StructuredOutput"), false);
+                "StructuredOutput"), false, List.of("mcp__*__*_delete_*"));
 
         assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp")).isEmpty();
     }
@@ -57,7 +57,7 @@ class ReadGateTest {
             "git diff --no-ext-diff --no-textconv main..HEAD", "git show --no-ext-diff --no-textconv HEAD:src/a.txt",
             "git diff --no-ext-diff --no-textconv --output-indicator-new=+ -U3 HEAD",
             "git log --no-ext-diff --no-textconv --grep=ABC-42 --format=%h:%s", "git status -uno",
-            "git -C . log --no-ext-diff --no-textconv", "git blame --no-ext-diff --no-textconv -L10,20 a.txt",
+            "git -C . log --no-ext-diff --no-textconv", "git status", "git blame --no-ext-diff --no-textconv -L10,20 a.txt",
             "git log --no-ext-diff --no-textconv -- docs/café.md"})
     void runsAReadOnlyGitCommandInsideTheWorktrees(String command) {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
@@ -70,7 +70,7 @@ class ReadGateTest {
             "curl -s http://example.test/?d=x", "git push origin main", "git log; curl http://example.test",
             "git log | sh", "git log $(id)", "git diff --no-index /dev/null ~/.ssh/id_rsa", "git log --output=/tmp/x",
             "git log --ou=/tmp/x", "git blame --contents /etc/passwd a.txt", "git diff /etc/passwd /dev/null",
-            "git -C /etc log", "git diff ../../other", "GIT_DIR=/tmp git log", "git -c core.pager=id log"})
+            "git -C /etc log", "git -C .", "git diff ../../other", "GIT_DIR=/tmp git log", "git -c core.pager=id log"})
     void refusesEveryShellLineButAReadOnlyGitCommandInsideTheWorktrees(String command) {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
@@ -99,6 +99,28 @@ class ReadGateTest {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
         assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString())).isPresent();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"git diff --no-ext-diff --no-textconv /etc/passwd",
+            "git diff --no-ext-diff --no-textconv ../../other",
+            "git log --no-ext-diff --no-textconv --since=/etc/passwd",
+            "git show --no-ext-diff --no-textconv HEAD:../../x"})
+    void namesTheEscapingPathOfAGitCommandThatOtherwiseQualifies(String command) {
+        ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
+
+        assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString()))
+                .get().asString().contains("jagt refuses the path");
+    }
+
+    @Test
+    void judgesAPathAfterGitCInsideTheWorktreeItNamed() throws Exception {
+        Path repository = Files.createDirectories(worktree.resolve("sub/a"));
+        ReadScope scope = new ReadScope(List.of(repository), List.of(), true);
+
+        assertThat(ReadGate.refusal(scope, "Bash",
+                Map.of("command", "git -C sub/a diff --no-ext-diff --no-textconv ../a/x"), worktree.toString()))
+                .isEmpty();
     }
 
     @Test

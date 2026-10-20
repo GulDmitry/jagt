@@ -20,6 +20,17 @@ class ReadGateControllerTest {
     }
 
     @Test
+    void refusesAToolTheHeldReadWasNotGiven() {
+        ReadScopes scopes = new ReadScopes();
+        scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));
+
+        var answered = new ReadGateController(scopes).gate("f1",
+                new ReadGateController.ToolCall("WebFetch", Map.of(), "/tmp"));
+
+        assertThat(answered.getBody()).extractingByKey("hookSpecificOutput").asString().contains("deny");
+    }
+
+    @Test
     void answersAToolTheReadWasGivenWithNothing() {
         ReadScopes scopes = new ReadScopes();
         scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));

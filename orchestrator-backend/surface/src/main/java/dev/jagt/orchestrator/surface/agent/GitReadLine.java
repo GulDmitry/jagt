@@ -116,7 +116,7 @@ final class GitReadLine {
     }
 
     private static boolean insideEveryPathOf(ReadScope read, Path repository, String value) {
-        return Stream.of(value.split("[=:,]")).filter(piece -> piece.startsWith("/") || piece.startsWith("~")
+        return Stream.of(value.split("[=:,]")).filter(piece -> piece.startsWith("/")
                 || ReadGate.PARENT.matcher(piece).find()).allMatch(piece -> ReadGate.inside(read, repository, piece));
     }
 

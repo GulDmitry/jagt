@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.contains;
@@ -32,11 +33,12 @@ class TurnEndsTest {
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
 
-    @Test
-    void letsATurnEndThatReportedAfterItBegan() {
+    @ParameterizedTest
+    @ValueSource(longs = {2_000L, 3_000L})
+    void letsATurnEndThatReportedSinceItBegan(long reportedAt) {
         when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .lastActiveTimestamp(3_000L).build();
+                .lastActiveTimestamp(reportedAt).build();
 
         String answered = new TurnEnds(probe, runtime, config).answer("ABC-1", task, false, false);
 
