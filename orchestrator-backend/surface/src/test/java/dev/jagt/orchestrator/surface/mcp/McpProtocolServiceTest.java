@@ -29,6 +29,8 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -164,6 +166,80 @@ class McpProtocolServiceTest {
         assertThat(result.path("structuredContent").path("retryable").asBoolean()).isFalse();
         assertThat(result.path("content").get(0).path("text").asString())
                 .isEqualTo("Error (business, not retryable): branch ABC-1 is checked out elsewhere");
+    }
+
+    @Test
+    void tellsTheAgentATransientFailureIsWorthRepeating(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+                NoArguments.class, (said, caller) -> MessageContext.NONE,
+                (said, caller) -> { throw new UncheckedIOException(new IOException("state.json locked")); });
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(failing));
+
+        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null, true).orElseThrow().path("result");
+
+        assertThat(result.path("structuredContent").path("retryable").asBoolean()).isTrue();
+        assertThat(result.path("content").get(0).path("text").asString()).startsWith("Error (transient, retryable): ");
+    }
+
+    @Test
+    void answersWhatAToolReturnedAsTheTextOfItsResult(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpTools echoing = tools -> tools.tool("echo", Audience.ANYONE, NoArguments.schema("answers"),
+                NoArguments.class, (said, caller) -> MessageContext.NONE, (said, caller) -> "all done");
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(echoing));
+
+        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"echo\",\"arguments\":{}}}"), null, true).orElseThrow().path("result");
+
+        assertThat(result.path("content").get(0).path("text").asString()).isEqualTo("all done");
+    }
+
+    @Test
+    void answersAnInitializeWithTheProtocolVersionTheClientAsked(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of());
+
+        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\","
+                + "\"params\":{\"protocolVersion\":\"2025-03-26\"}}"), null, true).orElseThrow().path("result");
+
+        assertThat(result.path("protocolVersion").asString()).isEqualTo("2025-03-26");
+        assertThat(result.path("serverInfo").path("name").asString()).isEqualTo("jagt-orchestrator");
+    }
+
+    @Test
+    void answersAMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of());
+
+        JsonNode error = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"resources/list\"}"),
+                null, true).orElseThrow().path("error");
+
+        assertThat(error.path("code").asInt()).isEqualTo(-32601);
+        assertThat(error.path("message").asString()).contains("resources/list");
+    }
+
+    @Test
+    void refusesAnUnknownCallersNotificationWithAnErrorCarryingNoId(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of());
+
+        JsonNode response = protocol.handle(mapper.readTree(
+                "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"), "/nowhere", false).orElseThrow();
+
+        assertThat(response.path("error").path("code").asInt()).isEqualTo(McpProtocolService.UNKNOWN_CALLER);
+        assertThat(response.path("id").isNull()).isTrue();
     }
 
     @Test

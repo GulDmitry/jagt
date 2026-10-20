@@ -12,6 +12,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -21,7 +22,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class McpControllerTest {
@@ -79,6 +83,42 @@ class McpControllerTest {
         mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void answersANotificationWithNoContent() throws Exception {
+        McpProtocolService protocol = mock(McpProtocolService.class);
+        when(protocol.handle(any(), any(), anyBoolean())).thenReturn(Optional.empty());
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(protocol, mock(StateService.class),
+                new JsonMapper(), mock(MasterToken.class))).build();
+
+        mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void answersMalformedJsonWithAParseErrorNotAServerError(@TempDir Path root) throws Exception {
+        JsonMapper mapper = new JsonMapper();
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(mapper, paths);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state,
+                List.of()), state, mapper, new MasterToken(paths))).build();
+
+        mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON).content("{\"jsonrpc\":"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32700));
+    }
+
+    @Test
+    void servesTheStateTheBoardHolds() throws Exception {
+        StateService state = mock(StateService.class);
+        when(state.read()).thenReturn(new StateService.StateFile(Map.of()));
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(mock(McpProtocolService.class), state,
+                new JsonMapper(), mock(MasterToken.class))).build();
+
+        mvc.perform(get("/state")).andExpect(status().isOk()).andExpect(content().json("{\"tasks\":{}}"));
     }
 
     @Test

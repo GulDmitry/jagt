@@ -86,10 +86,24 @@ class McpToolScopeTest {
         Registered registered = new Registered();
         new DeployTools(commands).declare(registered);
         ToolHandler handler = registered.handlers.get("deploy_task");
+        when(commands.execute("ABC-1", TaskAction.DEPLOY)).thenReturn("deployed ABC-1");
 
-        handler.call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), null);
+        String answered = handler.call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), null);
 
-        verify(commands).execute("ABC-1", TaskAction.DEPLOY);
+        assertThat(answered).isEqualTo("deployed ABC-1");
+    }
+
+    @Test
+    void letsTheMasterRevertADeployBecauseItRunsInNoWorktree() {
+        CommandService commands = mock(CommandService.class);
+        Registered registered = new Registered();
+        new DeployTools(commands).declare(registered);
+        ToolHandler handler = registered.handlers.get("revert_task");
+        when(commands.execute("ABC-1", TaskAction.REVERT)).thenReturn("reverted ABC-1");
+
+        String answered = handler.call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), null);
+
+        assertThat(answered).isEqualTo("reverted ABC-1");
     }
 
     @Test
@@ -117,10 +131,28 @@ class McpToolScopeTest {
         Registered registered = new Registered();
         new StatusTools(statusReports, ownReports, new CallerScope(mock(StateService.class))).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");
+        when(ownReports.report(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1")))
+                .thenReturn("recorded for MINE-1");
 
-        handler.call(new JsonMapper().readTree("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
+        String answered = handler.call(
+                new JsonMapper().readTree("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
 
-        verify(ownReports).report(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1"));
+        assertThat(answered).isEqualTo("recorded for MINE-1");
+    }
+
+    @Test
+    void notifiesTheHumanWithTheTitleAndLineTheCallerGave() {
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
+        when(statusReports.notifyUser("jagt", "round addressed")).thenReturn("notified");
+        Registered registered = new Registered();
+        new StatusTools(statusReports, mock(OwnStatusReports.class), new CallerScope(mock(StateService.class)))
+                .declare(registered);
+        ToolHandler handler = registered.handlers.get("notify_user");
+
+        String answered = handler.call(new JsonMapper().readTree("{\"title\":\"jagt\",\"message\":\"round addressed\"}"),
+                "MINE-1");
+
+        assertThat(answered).isEqualTo("notified");
     }
 
     @Test
@@ -175,10 +207,11 @@ class McpToolScopeTest {
         Registered registered = new Registered();
         new IdeTools(commands, new CallerScope(mock(StateService.class))).declare(registered);
         ToolHandler handler = registered.handlers.get("open_in_ide");
+        when(commands.execute("MINE-1", action)).thenReturn("opened MINE-1");
 
-        handler.call(new JsonMapper().readTree("{\"mode\":\"" + mode + "\"}"), "MINE-1");
+        String answered = handler.call(new JsonMapper().readTree("{\"mode\":\"" + mode + "\"}"), "MINE-1");
 
-        verify(commands).execute("MINE-1", action);
+        assertThat(answered).isEqualTo("opened MINE-1");
     }
 
     @Test
@@ -188,11 +221,80 @@ class McpToolScopeTest {
         Registered registered = new Registered();
         new SessionTools(sessions, commands).declare(registered);
         ToolHandler handler = registered.handlers.get("focus_task");
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("focused ABC-1");
 
-        handler.call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), null);
+        String answered = handler.call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), null);
 
-        verify(commands).execute("ABC-1", TaskAction.FOCUS);
+        assertThat(answered).isEqualTo("focused ABC-1");
         verifyNoInteractions(sessions);
+    }
+
+    @Test
+    void opensATaskTabInTheModeTheMasterNamed() {
+        AgentSessions sessions = mock(AgentSessions.class);
+        when(sessions.openTaskTab("ABC-1", "plan")).thenReturn("tab open for ABC-1");
+        Registered registered = new Registered();
+        new SessionTools(sessions, mock(CommandService.class)).declare(registered);
+        ToolHandler handler = registered.handlers.get("open_task_tab");
+
+        String answered = handler.call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"mode\":\"plan\"}"), null);
+
+        assertThat(answered).isEqualTo("tab open for ABC-1");
+    }
+
+    @Test
+    void closesATaskTabForTheMaster() {
+        AgentSessions sessions = mock(AgentSessions.class);
+        when(sessions.closeTaskTab("ABC-1")).thenReturn("tab closed for ABC-1");
+        Registered registered = new Registered();
+        new SessionTools(sessions, mock(CommandService.class)).declare(registered);
+        ToolHandler handler = registered.handlers.get("close_task_tab");
+
+        String answered = handler.call(new JsonMapper().readTree("{\"taskId\":\"ABC-1\"}"), null);
+
+        assertThat(answered).isEqualTo("tab closed for ABC-1");
+    }
+
+    @Test
+    void writesTheInstructionsTheMasterGaveToTheTasksContext() {
+        AgentSessions sessions = mock(AgentSessions.class);
+        when(sessions.writeTaskContext("ABC-1", "commit and push")).thenReturn("context written for ABC-1");
+        Registered registered = new Registered();
+        new SessionTools(sessions, mock(CommandService.class)).declare(registered);
+        ToolHandler handler = registered.handlers.get("write_task_context");
+
+        String answered = handler.call(
+                new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"instructions\":\"commit and push\"}"), null);
+
+        assertThat(answered).isEqualTo("context written for ABC-1");
+    }
+
+    @Test
+    void listsEveryTaskForTheMaster() {
+        TaskViews taskViews = mock(TaskViews.class);
+        when(taskViews.listing()).thenReturn("ABC-1 IN_PROGRESS");
+        Registered registered = new Registered();
+        new TaskLifecycleTools(mock(TaskProvisioning.class), taskViews, mock(ConfigService.class))
+                .declare(registered);
+        ToolHandler handler = registered.handlers.get("list_tasks");
+
+        String answered = handler.call(new JsonMapper().readTree("{}"), null);
+
+        assertThat(answered).isEqualTo("ABC-1 IN_PROGRESS");
+    }
+
+    @Test
+    void initializesATaskForTheMasterAndAnswersWhatProvisioningSaid() {
+        TaskProvisioning provisioning = mock(TaskProvisioning.class);
+        when(provisioning.initializeTask(any())).thenReturn("ABC-2 initialized");
+        Registered registered = new Registered();
+        new TaskLifecycleTools(provisioning, mock(TaskViews.class), mock(ConfigService.class)).declare(registered);
+        ToolHandler handler = registered.handlers.get("initialize_task");
+
+        String answered = handler.call(
+                new JsonMapper().readTree("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\"}"), null);
+
+        assertThat(answered).isEqualTo("ABC-2 initialized");
     }
 
     @Test
