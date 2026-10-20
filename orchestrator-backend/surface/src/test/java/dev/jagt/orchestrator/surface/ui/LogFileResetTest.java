@@ -5,6 +5,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.boot.support.EnvironmentPostProcessorApplicationListener;
 import org.springframework.mock.env.MockEnvironment;
@@ -18,6 +22,7 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(OutputCaptureExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock("loopback-ports")
 class LogFileResetTest {
@@ -76,6 +81,39 @@ class LogFileResetTest {
         }
 
         assertThat(log).content().contains("the running instance's own record");
+    }
+
+    @Test
+    void clearsTheLogWhenTheConfiguredPortIsNotANumber(@TempDir Path root) throws IOException {
+        Path log = root.resolve("jagt.log");
+        Files.writeString(log, "yesterday\n");
+
+        boolean cleared = new LogFileReset().apply(new MockEnvironment()
+                .withProperty("logging.file.name", log.toString())
+                .withProperty("server.port", "eighty"));
+
+        assertThat(cleared).isTrue();
+        assertThat(log).doesNotExist();
+    }
+
+    @Test
+    @ResourceLock(Resources.SYSTEM_ERR)
+    void tellsTheHumanWhichLogItCouldNotClearAndStillStarts(@TempDir Path root, CapturedOutput output)
+            throws IOException {
+        Path stuck = Files.createDirectories(root.resolve("jagt.log"));
+        Files.writeString(stuck.resolve("inside"), "keeps the directory from being deleted");
+        int freePort;
+        try (ServerSocket probe = new ServerSocket()) {
+            probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+            freePort = probe.getLocalPort();
+        }
+
+        boolean cleared = new LogFileReset().apply(new MockEnvironment()
+                .withProperty("logging.file.name", stuck.toString())
+                .withProperty("server.port", String.valueOf(freePort)));
+
+        assertThat(cleared).isTrue();
+        assertThat(output.getErr()).contains("Could not clear " + stuck);
     }
 
     @Test
