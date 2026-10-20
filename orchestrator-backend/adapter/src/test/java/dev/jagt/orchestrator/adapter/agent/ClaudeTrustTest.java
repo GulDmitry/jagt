@@ -25,7 +25,7 @@ class ClaudeTrustTest {
     void aSuiteRunTrustsItsWorktreesInsideTheBuildNeverInTheHumansConfig() {
         Path configFile = ClaudeTrust.configFile();
 
-        assertThat(configFile).startsWith(Path.of("").toAbsolutePath());
+        assertThat(configFile).startsWithRaw(Path.of("").toAbsolutePath());
     }
 
     @Test
