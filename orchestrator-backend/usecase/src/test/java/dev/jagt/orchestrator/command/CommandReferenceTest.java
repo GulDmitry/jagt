@@ -69,4 +69,21 @@ class CommandReferenceTest {
         assertThat(CommandReference.verbs(List.of(drafts))).filteredOn(verb -> verb.id().equals("drafts"))
                 .singleElement().extracting(CommandReference.Verb::aboutOneTask).isEqualTo(true);
     }
+
+    @Test
+    void alignsEveryHintInOneColumn() {
+        List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
+
+        assertThat(lines).contains("  spend [since]                what the calls cost");
+    }
+
+    @Test
+    void separatesAUsageAsWideAsTheColumnFromItsHintByOneSpace() {
+        GlobalCommand wide = new Declared("wide", "the hint", List.of("abcdefghij abcdefghij abcdefg"), true, false,
+                200);
+
+        List<String> lines = List.of(CommandReference.text(List.of(wide)).split("\n"));
+
+        assertThat(lines).contains("  abcdefghij abcdefghij abcdefg the hint");
+    }
 }

@@ -180,4 +180,52 @@ class ReviewRepliesReportTest {
 
         assertThat(out).isEqualTo("no drafted review replies: no task is carrying a review_replies.md.");
     }
+
+    @Test
+    void showsOnlyTheNamedTasksDraftsAndNoBlankLineBetweenTheHeaderAndTheFirstComment(@TempDir Path root)
+            throws IOException {
+        Path first = Files.createDirectories(root.resolve("wt1"));
+        Path second = Files.createDirectories(root.resolve("wt2"));
+        Files.writeString(first.resolve("review_replies.md"), """
+                ## src/One.java:1
+                > first task comment
+                FIXED - done in the first.
+                """);
+        Files.writeString(second.resolve("review_replies.md"), """
+                ## src/Two.java:2
+                > second task comment
+                FIXED - done in the second.
+                """);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a1").build());
+        state.putTask("ABC-2", TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a2").build());
+
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview())), state,
+                new ReviewDrafts(config)).render("a2");
+
+        assertThat(out).contains("nothing is posted until `ship a2`\n\n  1 · FIXED · src/Two.java:2")
+                .doesNotContain("first task comment");
+    }
+
+    @Test
+    void saysNoRoundIsHoldingDraftsWhereTheFileHoldsOnlyBlankLines(@TempDir Path root) throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("wt"));
+        Files.writeString(worktree.resolve("review_replies.md"), "  \n\n");
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a1").build());
+
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview())), state,
+                new ReviewDrafts(config)).render("");
+
+        assertThat(out).isEqualTo("no drafted review replies: no task is carrying a review_replies.md.");
+    }
 }

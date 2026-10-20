@@ -150,4 +150,9 @@ class MasterRecordTest {
 
         assertThat(record.seen().disagreed()).isZero();
     }
+
+    @Test
+    void addsEveryKindOfDisagreementIntoOneCount() {
+        assertThat(new MasterRecord.Seen(9, 5, 1, 1, 2, 3).disagreed()).isEqualTo(6);
+    }
 }

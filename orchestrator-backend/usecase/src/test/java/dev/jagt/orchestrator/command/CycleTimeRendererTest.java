@@ -108,4 +108,58 @@ class CycleTimeRendererTest {
 
         assertThat(out).contains("(no task has a status history yet)").doesNotContain("ROUNDS");
     }
+
+    @Test
+    void addsUpAgeAndAgentTimeAcrossTasksAndNamesTheAgentsAsSlowest() {
+        Map<String, TaskState> tasks = Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                        .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, NOW - 4 * HOUR, null))).build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                        .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, NOW - 6 * HOUR, null))).build());
+
+        String out = new CycleTimeRenderer().render(tasks, NOW);
+
+        assertThat(out.lines().filter(line -> line.startsWith("all tasks")).findFirst().orElseThrow())
+                .containsSubsequence("10h", "0m", "10h", "0m");
+        assertThat(out).contains("the agents have been the slowest step: 10h of the 10h anyone has held these tasks (100%)");
+    }
+
+    @Test
+    void addsUpCodeHostTimeAcrossTasksAndNamesTheCodeHostAsSlowest() {
+        Map<String, TaskState> tasks = Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null))).build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null))).build());
+
+        String out = new CycleTimeRenderer().render(tasks, NOW);
+
+        assertThat(out.lines().filter(line -> line.startsWith("all tasks")).findFirst().orElseThrow())
+                .containsSubsequence("8h", "0m", "0m", "8h");
+        assertThat(out).contains("the code host has been the slowest step: 8h of the 8h anyone has held these tasks (100%)");
+    }
+
+    @Test
+    void leavesATaskWithoutAHistoryOutOfTheTableAndTheAverage() {
+        Map<String, TaskState> tasks = Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null))).build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).history(List.of()).build());
+
+        String out = new CycleTimeRenderer().render(tasks, NOW);
+
+        assertThat(out).doesNotContain("ABC-2").contains("1.0 per task");
+    }
+
+    @Test
+    void readsTheClockAtTheMomentItIsAskedWhenNoTimeIsGiven() {
+        Map<String, TaskState> tasks = Map.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .history(List.of(new StatusChange(TaskStatus.CI_POLLING, System.currentTimeMillis() - 3 * HOUR, null)))
+                .build());
+
+        String out = new CycleTimeRenderer().render(tasks);
+
+        assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
+                .containsSubsequence("3h", "0m", "0m", "3h");
+    }
 }

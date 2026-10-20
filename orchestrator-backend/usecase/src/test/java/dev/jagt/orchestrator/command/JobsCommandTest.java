@@ -56,4 +56,10 @@ class JobsCommandTest {
         assertThat(rendered).contains("archive-logs")
                 .contains("\n                last run failed: java.lang.IllegalStateException: disk full");
     }
+
+    @Test
+    void saysNothingRunsUnattendedWhereNoJobIsRegistered() {
+        assertThat(JobsCommand.render(List.of(), 1_700_000_000_000L))
+                .isEqualTo("no jobs registered — nothing runs unattended.");
+    }
 }

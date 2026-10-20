@@ -10,6 +10,10 @@ class TokenFormatTest {
     @ParameterizedTest
     @CsvSource({
             "0,0",
+            "1000,1.0k",
+            "9950,10k",
+            "999500,1.0M",
+            "9950000,10M",
             "812,812",
             "4800,4.8k",
             "9940,9.9k",

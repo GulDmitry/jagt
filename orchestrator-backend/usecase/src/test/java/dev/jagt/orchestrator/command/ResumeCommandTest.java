@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.Launched;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -20,9 +21,10 @@ class ResumeCommandTest {
     void resumesTheRequestTheUrlNames() {
         when(launcher.resume("https://host/mr/42")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
-        command.run("https://host/mr/42");
+        String answer = command.run("https://host/mr/42");
 
         verify(launcher).resume("https://host/mr/42");
+        assertThat(answer).isEqualTo("Resumed PROJ-1");
     }
 
     @Test
@@ -48,5 +50,14 @@ class ResumeCommandTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("usage: resume <request-url>");
         verifyNoInteractions(launcher);
+    }
+
+    @Test
+    void resumesTheRequestWhateverSpacePadsItsUrl() {
+        when(launcher.resume("https://host/mr/42")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
+
+        command.run("  https://host/mr/42  ");
+
+        verify(launcher).resume("https://host/mr/42");
     }
 }

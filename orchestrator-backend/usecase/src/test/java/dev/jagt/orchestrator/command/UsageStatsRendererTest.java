@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.AgentSpend;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
@@ -139,5 +141,45 @@ class UsageStatsRendererTest {
                 .endsWith("1/3");
         assertThat(out.lines().filter(l -> l.startsWith("review sweep")).findFirst().orElseThrow())
                 .endsWith("?");
+    }
+
+    @Test
+    void listsTheAgentSessionsBiggestFirstAndTotalsThem(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()
+                .withAgentSpend(new AgentSpend(TokenUsage.ofCall(25_000, 0, 100, 0.05), Map.of())));
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a2").build()
+                .withAgentSpend(new AgentSpend(TokenUsage.ofCall(900_000, 0, 5_000, 1.80), Map.of())));
+        state.putTask("ABC-3", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a3").build());
+        String out = new UsageStatsRenderer(new UsageTracker(state, mock(UsageLedger.class)),
+                new UsageLimits(Optional.empty())).render(state.tasks());
+
+        assertThat(out).contains("AGENT SESSION", "agents");
+        assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
+        assertThat(out).doesNotContain("ABC-3");
+    }
+
+    @Test
+    void showsNoAgentSessionsWhereNoAgentSpentAnything(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        String out = new UsageStatsRenderer(new UsageTracker(state, mock(UsageLedger.class)),
+                new UsageLimits(Optional.empty())).render(state.tasks());
+
+        assertThat(out).doesNotContain("AGENT SESSION");
+    }
+
+    @Test
+    void averagesTheSessionsTokensOverItsCalls(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
+        tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
+
+        assertThat(out).contains("average per call: 5.0k tokens");
     }
 }

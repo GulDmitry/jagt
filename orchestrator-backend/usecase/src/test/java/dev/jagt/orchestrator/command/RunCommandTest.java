@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.command;
 import dev.jagt.orchestrator.job.Jobs;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,9 +16,10 @@ class RunCommandTest {
 
     @Test
     void asksForTheJobItNamesToRunNow() {
-        command.run(" intake ");
+        String answer = command.run(" intake ");
 
         verify(jobs).runNow("intake");
+        assertThat(answer).isEqualTo("intake runs within a second; `jobs` shows when it ran");
     }
 
     @Test
