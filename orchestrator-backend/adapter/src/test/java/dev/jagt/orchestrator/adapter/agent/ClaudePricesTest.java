@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 class ClaudePricesTest {
 
@@ -19,5 +21,12 @@ class ClaudePricesTest {
     })
     void picksTheMostSpecificFamilyTheModelIdNames(String model, ClaudePrices expected) {
         assertThat(ClaudePrices.of(model)).contains(expected);
+    }
+
+    @Test
+    void pricesEachTokenKindAtItsOwnRatePerMillion() {
+        double cost = ClaudePrices.SONNET.costOf(2_000_000, 1_000_000, 1_000_000, 10_000_000, 1_000_000);
+
+        assertThat(cost).isCloseTo(3 * 2 + 3.75 + 6 + 3 + 15, within(1e-9));
     }
 }

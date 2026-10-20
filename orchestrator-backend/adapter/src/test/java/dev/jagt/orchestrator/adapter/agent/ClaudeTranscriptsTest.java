@@ -90,4 +90,42 @@ class ClaudeTranscriptsTest {
 
         assertThat(said).isEmpty();
     }
+
+    @Test
+    void readsNoSignOfTheSessionFromAFileThatIsNotALog(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("session.jsonl"), "{\"entrypoint\":\"cli\"}"),
+                FileTime.fromMillis(1_700_000_000_000L));
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("notes.txt"), "{\"entrypoint\":\"cli\"}"),
+                FileTime.fromMillis(1_700_000_600_000L));
+
+        long at = ClaudeTranscripts.lastEntryMillis(root, Path.of("/wt/ABC-1-proj"));
+
+        assertThat(at).isEqualTo(1_700_000_000_000L);
+    }
+
+    @Test
+    void leavesOutWhatWasTypedInAFileThatIsNotALog(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("notes.txt"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"do it"}}
+                """);
+
+        var said = ClaudeTranscripts.humanSaid(root, Path.of("/wt/ABC-1-proj"), Set.of());
+
+        assertThat(said).contains(List.of());
+    }
+
+    @Test
+    void namesTheNewestLogOfTheSessionAndNoOtherFile(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("session.jsonl"), "{}"),
+                FileTime.fromMillis(1_700_000_000_000L));
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("notes.txt"), "{}"),
+                FileTime.fromMillis(1_700_000_600_000L));
+
+        var newest = ClaudeTranscripts.newestLog(root, Path.of("/wt/ABC-1-proj"));
+
+        assertThat(newest).contains(logs.resolve("session.jsonl"));
+    }
 }

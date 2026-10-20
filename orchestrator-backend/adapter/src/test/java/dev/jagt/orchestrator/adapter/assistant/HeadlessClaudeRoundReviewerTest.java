@@ -274,4 +274,68 @@ class HeadlessClaudeRoundReviewerTest {
 
         verify(reads).fence(any(), eq(new ReadScope(List.of(Path.of("/w/ABC-42")), List.of("StructuredOutput"), true)));
     }
+
+    @Test
+    void addsEveryWorktreeButTheFirstToTheDirectoriesTheReviewMayRead() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42"),
+                Path.of("/w/ABC-42-api")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--add-dir", "/w/ABC-42-api")
+                .filteredOn("--add-dir"::equals).hasSize(1);
+    }
+
+    @Test
+    void pinsTheModelTheRoundAsksFor() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), "opus"));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--model", "opus");
+    }
+
+    @Test
+    void leavesTheModelToTheCliWhenTheRoundAsksForNone() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).doesNotContain("--model");
+    }
+
+    @Test
+    void readsTheVerdictFindingsAndPremisesOfTheStructuredAnswer() {
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+                {"structured_output":{"verdict":"changes","question":"which way?",
+                 "findings":[{"file":"A.java","issue":"leaks","pattern":"P1","severity":" BLOCKER "}],
+                 "premises":[{"claim":"it is pure","provenBy":"A.java"}]}}
+                """, ""));
+
+        var answer = reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        assertThat(answer.facts()).contains(new RoundReviewer.Judgement("", "changes",
+                List.of(new RoundReviewer.Finding("A.java", "leaks", "P1", "blocker")), "which way?",
+                List.of(new RoundReviewer.Premise("it is pure", "A.java"))));
+    }
+
+    @Test
+    void answersAFailureWhenTheEnvelopeCarriesNoStructuredObject() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"result\":\"looks fine\"}", ""));
+
+        var answer = reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        assertThat(answer.facts()).contains(
+                RoundReviewer.Judgement.failed("the review answered nothing readable"));
+    }
 }

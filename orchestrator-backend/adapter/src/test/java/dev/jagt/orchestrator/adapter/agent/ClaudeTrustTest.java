@@ -70,11 +70,13 @@ class ClaudeTrustTest {
     @Test
     void dropsTheEntryOfARetiredWorktree() {
         String updated = ClaudeTrust.forgotten(
-                "{\"projects\": {\"/wt/ABC-42\": {\"hasTrustDialogAccepted\": true}}}", "/wt/ABC-42");
+                "{\"projects\": {\"/wt/ABC-42\": {\"hasTrustDialogAccepted\": true}, \"/other\": {}}}",
+                "/wt/ABC-42");
 
-        boolean present = new JsonMapper().readTree(updated).path("projects").has("/wt/ABC-42");
+        var projects = new JsonMapper().readTree(updated).path("projects");
 
-        assertThat(present).isFalse();
+        assertThat(projects.has("/wt/ABC-42")).isFalse();
+        assertThat(projects.has("/other")).isTrue();
     }
 
     @Test
@@ -82,5 +84,52 @@ class ClaudeTrustTest {
         String updated = ClaudeTrust.forgotten("{\"projects\": {\"/other\": {}}}", "/wt/ABC-42");
 
         assertThat(updated).isNull();
+    }
+
+    @Test
+    void keysTheEntryByTheRealPathOfAWorktreeReachedThroughALink(@TempDir Path home) throws Exception {
+        Path real = Files.createDirectory(home.resolve("real"));
+        Path link = Files.createSymbolicLink(home.resolve("link"), real);
+        Path config = home.resolve(".claude.json");
+
+        ClaudeTrust.accept(config, link);
+
+        var projects = new JsonMapper().readTree(Files.readString(config)).path("projects");
+        assertThat(projects.has(real.toRealPath().toString())).isTrue();
+        assertThat(projects.size()).isEqualTo(1);
+    }
+
+    @Test
+    void keysTheEntryOfADeletedWorktreeByItsParentsRealPath(@TempDir Path home) throws Exception {
+        Path real = Files.createDirectory(home.resolve("real"));
+        Path link = Files.createSymbolicLink(home.resolve("link"), real);
+        Path config = home.resolve(".claude.json");
+
+        ClaudeTrust.accept(config, link.resolve("gone"));
+
+        var projects = new JsonMapper().readTree(Files.readString(config)).path("projects");
+        assertThat(projects.has(real.toRealPath().resolve("gone").toString())).isTrue();
+        assertThat(projects.size()).isEqualTo(1);
+    }
+
+    @Test
+    void keysTheEntryOfADeletedRelativeWorktreeByItsOwnPath(@TempDir Path home) throws Exception {
+        Path config = home.resolve(".claude.json");
+
+        ClaudeTrust.accept(config, Path.of("no-such-worktree-anywhere"));
+
+        var projects = new JsonMapper().readTree(Files.readString(config)).path("projects");
+        assertThat(projects.has("no-such-worktree-anywhere")).isTrue();
+    }
+
+    @Test
+    void forgetsTheEntryOfAWorktreeThatStillExists(@TempDir Path home) throws Exception {
+        Path worktree = Files.createDirectory(home.resolve("wt"));
+        Path config = home.resolve(".claude.json");
+        ClaudeTrust.accept(config, worktree);
+
+        ClaudeTrust.forget(config, worktree);
+
+        assertThat(new JsonMapper().readTree(Files.readString(config)).path("projects").size()).isZero();
     }
 }

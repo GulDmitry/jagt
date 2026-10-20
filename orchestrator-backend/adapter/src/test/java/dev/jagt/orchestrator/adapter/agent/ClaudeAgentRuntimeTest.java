@@ -340,4 +340,54 @@ class ClaudeAgentRuntimeTest {
 
         assertThat(runtime.holdsDraft(screen.translateEscapes())).isEqualTo(draft);
     }
+
+    @Test
+    void pinsTheModelAskedForAsOneShellArgument() {
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+
+        assertThat(runtime.launchCommand(Path.of("/wt"), true, " opus "))
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --permission-mode plan --model 'opus' 'go'");
+    }
+
+    @Test
+    void leavesTheModelToTheCliWhenNoneIsAskedFor() {
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+
+        assertThat(runtime.launchCommand(Path.of("/wt"), false, "  "))
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
+    }
+
+    @Test
+    void skipsBlankPluginsInGeneratedAgentSettings() {
+        String json = ClaudeAgentRuntime.settingsJson(null, List.of("  ", "jdtls-lsp@claude-plugins-official"), null, null);
+
+        var plugins = new JsonMapper().readTree(json).path("enabledPlugins");
+
+        assertThat(plugins.size()).isEqualTo(1);
+        assertThat(plugins.has("jdtls-lsp@claude-plugins-official")).isTrue();
+    }
+
+    @Test
+    void skipsBlankToolsInGeneratedAgentSettings() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, List.of("  ", " mcp__host__open_request "), null);
+
+        List<String> allow = new ArrayList<>();
+        new JsonMapper().readTree(json).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
+
+        assertThat(allow).containsExactly("mcp__jagt-orchestrator", "Bash(git:*)", "mcp__host__open_request");
+    }
+
+    @Test
+    void fallsBackToTheCliNameWhereTheConfiguredCommandIsBlank() {
+        assertThat(new ClaudeProperties("  ").command()).isEqualTo("claude");
+    }
+
+    @Test
+    void keepsAConfiguredCommand() {
+        assertThat(new ClaudeProperties("/opt/bin/claude").command()).isEqualTo("/opt/bin/claude");
+    }
 }

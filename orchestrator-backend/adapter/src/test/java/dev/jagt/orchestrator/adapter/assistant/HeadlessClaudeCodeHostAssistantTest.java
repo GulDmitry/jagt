@@ -173,4 +173,36 @@ class HeadlessClaudeCodeHostAssistantTest {
         assertThat(facts).isPresent();
         assertThat(facts.get().pipelineFailure()).hasSize(2001).endsWith("…");
     }
+
+    @Test
+    void relaysAFailureLogOfExactlyTheLimitWhole() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
+                "pipelineFailure":"LOG","openedAt":"","threads":[]}}""".replace("LOG", "x".repeat(2000)), ""));
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().pipelineFailure()).isEqualTo("x".repeat(2000));
+    }
+
+    @Test
+    void relaysAThreadOfExactlyTheLimitWhole() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
+                        + "\"openedAt\":\"\",\"threads\":[\"" + "x".repeat(2000) + "\"]}}", ""));
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().threads()).containsExactly("x".repeat(2000));
+    }
 }

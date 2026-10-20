@@ -58,4 +58,49 @@ class HeadlessClaudeTrackerAssistantTest {
         assertThat(facts.get().title()).isEqualTo("Widget layout is off");
         assertThat(facts.get().labels()).containsExactly("backend");
     }
+
+    @Test
+    void listsTheKeysTheSearchAnsweredWithoutBlanksOrPadding() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"keys\":[\" ABC-1 \",\"\",\"ABC-2\"]}}", ""));
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var keys = assistant.findCandidates("assignee = currentUser()").facts();
+
+        assertThat(keys).contains(List.of("ABC-1", "ABC-2"));
+    }
+
+    @Test
+    void tellsTheNextAnswerWhatTheLastOneGotWrong() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        assistant.readTicket("ABC-42", List.of("the url was empty", "the key was lowercase"));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).anyMatch(argument -> argument.endsWith(
+                "\n\nYour last answer was refused:\n- the url was empty\n- the key was lowercase"
+                        + "\nAnswer again, fixing every one of those."));
+    }
+
+    @Test
+    void addsNoCorrectionToAFirstAnswer() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        assistant.readTicket("ABC-42", List.of());
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).noneMatch(argument -> argument.contains("Your last answer was refused"));
+    }
 }

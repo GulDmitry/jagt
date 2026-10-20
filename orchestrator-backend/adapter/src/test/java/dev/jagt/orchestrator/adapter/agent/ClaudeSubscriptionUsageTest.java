@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.Map;
 
@@ -49,5 +51,21 @@ class ClaudeSubscriptionUsageTest {
         var answer = new ClaudeSubscriptionUsage(credentials, endpoint).read();
 
         assertThat(answer).isEqualTo(new SubscriptionUsage.NoSubscription());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "403, http 403, 'http 403, running claude refreshes the token'",
+            "500, http 500, http 500",
+    })
+    void asksForANewLoginOnlyWhenTheTokenWasRefused(int status, String cause, String expected) {
+        ClaudeCredentials credentials = mock(ClaudeCredentials.class);
+        UsageEndpoint endpoint = mock(UsageEndpoint.class);
+        when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", ""));
+        when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(status, cause));
+
+        var answer = new ClaudeSubscriptionUsage(credentials, endpoint).read();
+
+        assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable(expected));
     }
 }

@@ -210,4 +210,14 @@ class CodexAgentRuntimeTest {
 
         assertThat(runtime.problems()).extracting(Problem::key).doesNotContain("orchestrator.agent.cli");
     }
+
+    @Test
+    void fallsBackToTheCliNameWhereTheConfiguredCommandIsBlank() {
+        assertThat(new CodexProperties("  ").command()).isEqualTo("codex");
+    }
+
+    @Test
+    void keepsAConfiguredCommand() {
+        assertThat(new CodexProperties("/opt/bin/codex").command()).isEqualTo("/opt/bin/codex");
+    }
 }

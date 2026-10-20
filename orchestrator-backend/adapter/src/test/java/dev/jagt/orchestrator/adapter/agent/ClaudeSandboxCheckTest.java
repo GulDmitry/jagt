@@ -35,4 +35,18 @@ class ClaudeSandboxCheckTest {
 
         assertThat(problems).isEmpty();
     }
+
+    @Test
+    void reportsNothingOnLinuxOnceBothRelaysAreInstalled() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults());
+        Host host = mock(Host.class);
+        when(host.onPath("bwrap")).thenReturn(true);
+        when(host.onPath("socat")).thenReturn(true);
+
+        List<Problem> problems = new ClaudeSandboxCheck(OrchestratorProperties.defaults().withPlatform("linux"),
+                config, host).problems();
+
+        assertThat(problems).isEmpty();
+    }
 }

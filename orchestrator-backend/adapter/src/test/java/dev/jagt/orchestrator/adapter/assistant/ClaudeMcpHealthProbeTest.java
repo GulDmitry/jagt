@@ -19,6 +19,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -95,5 +97,79 @@ class ClaudeMcpHealthProbeTest {
 
         assertThat(broken).isEmpty();
         verifyNoInteractions(runner);
+    }
+
+    @Test
+    void listsEveryServerTheCliKnowsByNameConnectedOrNot() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+                context7: npx -y @upstash/context7-mcp - ✔ Connected
+                acme tracker: https://mcp.example.com/mcp (HTTP) - ! Needs authentication
+                """, ""));
+
+        var servers = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+                .servers();
+
+        assertThat(servers).contains(List.of("context7", "acme tracker"));
+    }
+
+    @Test
+    void asksTheCliOnlyOnceWhileItsAnswerIsFresh() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+                context7: npx -y @upstash/context7-mcp - ✔ Connected
+                """, ""));
+        var probe = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty());
+
+        probe.brokenServers();
+        probe.servers();
+
+        verify(runner, times(1)).run(any(Path.class), any(Duration.class), any());
+    }
+
+    @Test
+    void listsAllEightBrokenServersWithoutAMoreLine() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+                s1: cmd - ✘ Failed to connect
+                s2: cmd - ✘ Failed to connect
+                s3: cmd - ✘ Failed to connect
+                s4: cmd - ✘ Failed to connect
+                s5: cmd - ✘ Failed to connect
+                s6: cmd - ✘ Failed to connect
+                s7: cmd - ✘ Failed to connect
+                s8: cmd - ✘ Failed to connect
+                """, ""));
+
+        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+                .brokenServers();
+
+        assertThat(broken).contains(List.of("s1 (Failed to connect)", "s2 (Failed to connect)",
+                "s3 (Failed to connect)", "s4 (Failed to connect)", "s5 (Failed to connect)",
+                "s6 (Failed to connect)", "s7 (Failed to connect)", "s8 (Failed to connect)"));
+    }
+
+    @Test
+    void capsTheBrokenListAtEightAndCountsTheRest() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+                s1: cmd - ✘ Failed to connect
+                s2: cmd - ✘ Failed to connect
+                s3: cmd - ✘ Failed to connect
+                s4: cmd - ✘ Failed to connect
+                s5: cmd - ✘ Failed to connect
+                s6: cmd - ✘ Failed to connect
+                s7: cmd - ✘ Failed to connect
+                s8: cmd - ✘ Failed to connect
+                s9: cmd - ✘ Failed to connect
+                s10: cmd - ✘ Failed to connect
+                """, ""));
+
+        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+                .brokenServers();
+
+        assertThat(broken).contains(List.of("s1 (Failed to connect)", "s2 (Failed to connect)",
+                "s3 (Failed to connect)", "s4 (Failed to connect)", "s5 (Failed to connect)",
+                "s6 (Failed to connect)", "s7 (Failed to connect)", "s8 (Failed to connect)", "and 2 more"));
     }
 }

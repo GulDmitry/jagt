@@ -83,4 +83,11 @@ class ClaudeUsageJsonTest {
 
         assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable("usage answer carried no window"));
     }
+
+    @Test
+    void answersUnreadableWhenTheAnswerIsNotJson() {
+        var answer = ClaudeUsageJson.parse("<html>");
+
+        assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable("usage answer is not JSON"));
+    }
 }

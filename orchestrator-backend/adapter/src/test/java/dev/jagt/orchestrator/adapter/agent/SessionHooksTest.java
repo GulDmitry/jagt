@@ -20,4 +20,26 @@ class SessionHooksTest {
     void declaresOnlyStatesTheOrchestratorAnswersTo() {
         assertThat(SessionHooks.of("claude").values()).isSubsetOf("waiting", "gone", "idle", "working");
     }
+
+    @Test
+    void namesTheErrorWordThatMeansAUsageLimit() {
+        assertThat(SessionHooks.rateLimitError("claude")).isEqualTo("rate_limit");
+    }
+
+    @Test
+    void namesTheEndReasonsANewStartFollowsAtOnce() {
+        assertThat(SessionHooks.continuingEnds("claude")).containsExactlyInAnyOrder("clear", "resume");
+    }
+
+    @Test
+    void namesTheStartThatFollowsACompaction() {
+        assertThat(SessionHooks.compactedStart("claude")).isEqualTo("compact");
+    }
+
+    @Test
+    void saysNothingForARuntimeThatShipsNoHooks() {
+        assertThat(SessionHooks.rateLimitError("a-cli-that-ships-no-hooks")).isEmpty();
+        assertThat(SessionHooks.continuingEnds("a-cli-that-ships-no-hooks")).isEmpty();
+        assertThat(SessionHooks.compactedStart("a-cli-that-ships-no-hooks")).isEmpty();
+    }
 }

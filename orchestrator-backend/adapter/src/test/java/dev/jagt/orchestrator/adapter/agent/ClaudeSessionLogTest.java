@@ -175,4 +175,31 @@ class ClaudeSessionLogTest {
 
         assertThat(new ClaudeSessionLog().spent(log, mark, Files.size(log) - mark).usage().measuredStarts()).isZero();
     }
+
+    @Test
+    void countsOnlyWhatLiesPastTheMark(@TempDir Path dir) throws IOException {
+        String before = """
+                {"type":"assistant","message":{"usage":{"input_tokens":5,"output_tokens":10}}}
+                """;
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, before + """
+                {"type":"assistant","message":{"usage":{"input_tokens":7,"output_tokens":20}}}
+                """);
+        long mark = before.getBytes().length;
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, mark, Files.size(log) - mark);
+
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 7, 0, 20, 0));
+        assertThat(spent.upTo()).isEqualTo(Files.size(log));
+    }
+
+    @Test
+    void movesTheMarkPastALeadingBlankLine(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, "\n{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tok");
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.upTo()).isEqualTo(1);
+    }
 }
