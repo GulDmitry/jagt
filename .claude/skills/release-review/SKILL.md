@@ -14,7 +14,8 @@ Range: the last `Release` commit to `HEAD` unless one is named (`git log --grep=
      `reopens` or `breaks` class like any other finding.
    - The range's diff, and the files it touches in full.
 2. **One reviewer per dimension**: architecture (kinds, rings, collaborators), security (the guards), tests
-   (RED-proven, light, necessary), specs and docs (each says what the code does), onboarding (a light model, from
+   (RED-proven, light, necessary; `./gradlew pitest`, each new survivor judged: real gap, equivalent or dead
+   code), specs and docs (each says what the code does), onboarding (a light model, from
    a fresh clone and `README.md` alone, starts jagt, adds a project and configures it; each stumble or guess is a finding).
 3. **A finding names its class**, or it is dropped:
    - `new` — no rule, record or commit subject in the range covers it;

@@ -96,8 +96,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 
 ## Tests
 
-- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval` and
-  `masterEval` are asked for by name.
+- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval`,
+  `masterEval` and `pitest` are asked for by name.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
 - Run `./gradlew boardTest` after any change to `static/`.
