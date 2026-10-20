@@ -70,4 +70,27 @@ class TrackerCloseTest {
         assertThat(close.closes("ABC-42", task)).isFalse();
         verify(changes, never()).uncommitted(any());
     }
+
+    @Test
+    void chargesTheTokensTheTrackerReadCost() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
+        TokenUsage spent = new TokenUsage(2, 120, 0, 30, 0);
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.empty(), spent));
+
+        close.closes("ABC-42", task);
+
+        verify(tickets).charge("ABC-42", spent);
+    }
+
+    @Test
+    void leavesATaskOpenWhoseItemHasNotReachedTheClosingStage() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget")
+                .withUrl("https://tracker/ABC-42").withTrackerStatus("In Progress");
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(workflow.closesWork(item)).thenReturn(false);
+
+        assertThat(close.closes("ABC-42", task)).isFalse();
+        verify(changes, never()).uncommitted(any());
+    }
 }

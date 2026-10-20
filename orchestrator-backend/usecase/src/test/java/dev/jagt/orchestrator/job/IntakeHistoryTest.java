@@ -14,6 +14,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,5 +53,13 @@ class IntakeHistoryTest {
         history.turnAway("ABC-42", "nothing routes it");
 
         verify(notifications, times(1)).send(any(Notification.class));
+    }
+
+    @Test
+    void tellsAHumanHowToStartATurnedAwayItemByHand() {
+        history.turnAway("ABC-42", "nothing routes it");
+
+        verify(notifications).send(argThat(sent -> "intake cannot start ABC-42".equals(sent.title())
+                && "nothing routes it — start it by hand with `do ABC-42 <project>`".equals(sent.body())));
     }
 }

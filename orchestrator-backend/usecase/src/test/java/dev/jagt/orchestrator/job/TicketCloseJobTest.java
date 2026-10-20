@@ -149,4 +149,24 @@ class TicketCloseJobTest {
 
         verify(commands, never()).execute(anyString(), any());
     }
+
+    @Test
+    void leavesTheSixthHandedOverTaskUnaskedWithinOnePoll(@TempDir Path root) {
+        StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
+        stateService.putTask("ABC-1", task);
+        stateService.putTask("ABC-2", task);
+        stateService.putTask("ABC-3", task);
+        stateService.putTask("ABC-4", task);
+        stateService.putTask("ABC-5", task);
+        stateService.putTask("ABC-6", task);
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+
+        job.run();
+
+        verify(close, never()).closes("ABC-6", task);
+    }
 }

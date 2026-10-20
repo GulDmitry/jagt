@@ -272,4 +272,61 @@ class AutoReviewSchedulerTest {
 
         verify(config).startTaken();
     }
+
+    @Test
+    void pollsTheMomentTheMinimumIntervalHasExactlyElapsed() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(NOW)
+                .lastPolledAt(NOW - Duration.ofMinutes(10).toMillis()).build();
+
+        assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW)).isEqualTo(AutoReviewScheduler.Action.POLL);
+    }
+
+    @Test
+    void tapsTheHumanAtTheFirstUnreadableRound(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
+        ReviewSweepService sweep = mock(ReviewSweepService.class);
+        when(sweep.sweep("ABC-1")).thenReturn(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+
+        new AutoReviewScheduler(state, config, sweep, notifications, Runnable::run).run();
+
+        verify(notifications).send(argThat(sent -> sent.body().contains("read failed")));
+    }
+
+    @Test
+    void pingsAgainForARoundWhoseTaskLeftAutoReviewAndCameBack(@TempDir Path root) {
+        long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true).mrCreatedAt(window).build());
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                mock(ReviewSweepService.class), notifications, Runnable::run);
+        scheduler.run();
+
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                .mrUrl("http://mr/1").autoReview(true).mrCreatedAt(window).build());
+        scheduler.run();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true).mrCreatedAt(window).build());
+        scheduler.run();
+
+        verify(notifications, times(2)).send(
+                argThat(sent -> sent.topic() == Notification.Topic.AGENT && "ABC-1".equals(sent.taskId())));
+    }
 }

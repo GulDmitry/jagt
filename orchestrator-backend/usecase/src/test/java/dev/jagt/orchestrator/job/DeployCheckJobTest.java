@@ -64,4 +64,27 @@ class DeployCheckJobTest {
 
         verify(sessions, never()).relayIfChanged(anyString(), anyString());
     }
+
+    @Test
+    void namesAnEightCharacterCommitWhole() {
+        when(state.tasks()).thenReturn(Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
+                .withDeployCommit("proj", "01234567")));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+
+        job.run();
+
+        verify(sessions).relayIfChanged(eq("ABC-42"), contains("- proj: 01234567 on dev"));
+    }
+
+    @Test
+    void asksNothingOfADeployedTaskWhoseDeployLeftNoCommit() {
+        when(state.tasks()).thenReturn(Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+
+        job.run();
+
+        verify(sessions, never()).relayIfChanged(anyString(), anyString());
+    }
 }

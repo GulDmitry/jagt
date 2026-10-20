@@ -34,8 +34,9 @@ class IntakeStartTest {
         when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed("api"));
         when(launcher.launch(any(), any())).thenReturn(Launched.created("ABC-42", "started"));
 
-        starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
+        assertThat(goesOn).isTrue();
         verify(launcher).launch(LaunchRequest.of("ABC-42").withProject("api"),
                 new Answer<>(Optional.of(item), TokenUsage.NONE));
     }
@@ -45,8 +46,9 @@ class IntakeStartTest {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
         when(routing.projectFor(item)).thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
 
-        starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
+        assertThat(goesOn).isTrue();
         verify(history).turnAway(eq("ABC-42"), anyString());
         verify(launcher, never()).launch(any(), any());
     }
@@ -73,5 +75,17 @@ class IntakeStartTest {
         assertThat(goesOn).isFalse();
         verify(history, never()).turnAway(anyString(), anyString());
         verify(launcher, never()).launch(any(), any());
+    }
+
+    @Test
+    void turnsAwayAnItemTheLauncherDeclinedAndGoesOnToTheNext() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed("api"));
+        when(launcher.launch(any(), any())).thenReturn(Launched.refused("ABC-42 is already a task"));
+
+        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+
+        assertThat(goesOn).isTrue();
+        verify(history).turnAway("ABC-42", "ABC-42 is already a task");
     }
 }

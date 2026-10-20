@@ -21,7 +21,9 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -317,5 +319,43 @@ class WorktreeOrphanScannerTest {
 
         assertThat(scanner.scan()).singleElement()
                 .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
+    }
+
+    @Test
+    void pingsTheCountOfCopiedSecretsLeftInAnOrphan(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
+        Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+
+        new WorktreeOrphanScanner(config, state, notifications).run();
+
+        verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())
+                && "1 copied secret file(s) left on disk — see the log".equals(sent.body())));
+    }
+
+    @Test
+    void pingsThatAnOrphanHoldingWorkWasLeftByACrashedTask(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
+        Files.writeString(orphan.resolve("notes.txt"), "unsaved work");
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+
+        new WorktreeOrphanScanner(config, state, notifications).run();
+
+        verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())
+                && "left over from a crashed or abandoned task — see the log".equals(sent.body())));
     }
 }

@@ -106,4 +106,83 @@ class UsageAlertsTest {
 
         assertThat(told).extracting(Notification::title).containsExactly("paid usage at 80% of its limit");
     }
+
+    @Test
+    void tellsAThresholdTheWindowReadsExactly() {
+        var alerts = new UsageAlerts(List.of(80), List.of(), ZoneOffset.UTC);
+
+        var told = alerts.after(new Snapshot(List.of(new Window("5h", 80, RESET)), Optional.empty()), NOW);
+
+        assertThat(told).extracting(Notification::title).containsExactly("5h window at 80%");
+    }
+
+    @Test
+    void tellsWhenAWindowResetsAndHowToReadItsBody() {
+        var alerts = new UsageAlerts(List.of(80), List.of(), ZoneOffset.UTC);
+
+        var told = alerts.after(new Snapshot(List.of(new Window("5h", 81, RESET),
+                new Window("week", 81, Optional.empty())), Optional.empty()), NOW);
+
+        assertThat(told).extracting(Notification::body).containsExactly("resets Sat 16:00", "no reset reported");
+    }
+
+    @Test
+    void tellsPaidThresholdAgainAfterTheSpendReadsBelowItAndRisesBack() {
+        var alerts = new UsageAlerts(List.of(), List.of(80), ZoneOffset.UTC);
+        alerts.after(new Snapshot(List.of(), Optional.of(
+                new Paid(Optional.of(new BigDecimal("410")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
+        alerts.after(new Snapshot(List.of(), Optional.of(
+                new Paid(Optional.of(new BigDecimal("100")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
+
+        var told = alerts.after(new Snapshot(List.of(), Optional.of(
+                new Paid(Optional.of(new BigDecimal("420")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
+
+        assertThat(told).extracting(Notification::title).contains("paid usage at 80% of its limit");
+    }
+
+    @Test
+    void tellsPaidUsageStartedWhenItsBalanceFalls() {
+        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        alerts.after(new Snapshot(List.of(), Optional.of(
+                new Paid(Optional.empty(), Optional.empty(), "USD", Optional.of(new BigDecimal("50"))))), NOW);
+
+        var told = alerts.after(new Snapshot(List.of(), Optional.of(
+                new Paid(Optional.empty(), Optional.empty(), "USD", Optional.of(new BigDecimal("49"))))), NOW);
+
+        assertThat(told).extracting(Notification::title).containsExactly("paid usage started");
+    }
+
+    @Test
+    void staysSilentWhenPaidSpendAndBalanceAreUnchanged() {
+        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var paid = new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD",
+                Optional.of(new BigDecimal("50")));
+        alerts.after(new Snapshot(List.of(), Optional.of(paid)), NOW);
+
+        var told = alerts.after(new Snapshot(List.of(), Optional.of(paid)), NOW);
+
+        assertThat(told).isEmpty();
+    }
+
+    @Test
+    void tellsPaidUsageStartedAgainWhenTheNextWindowRunsOut() {
+        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var paid = new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD", Optional.empty());
+        alerts.after(new Snapshot(List.of(new Window("5h", 100, RESET)), Optional.of(paid)), NOW);
+
+        var told = alerts.after(new Snapshot(List.of(new Window("5h", 100,
+                Optional.of(Instant.parse("2026-10-10T21:00:00Z")))), Optional.of(paid)), NOW);
+
+        assertThat(told).extracting(Notification::title).containsExactly("paid usage started");
+    }
+
+    @Test
+    void staysSilentOnPaidThresholdsWhenTheMonthlyLimitIsZero() {
+        var alerts = new UsageAlerts(List.of(), List.of(80), ZoneOffset.UTC);
+
+        var told = alerts.after(new Snapshot(List.of(), Optional.of(
+                new Paid(Optional.of(new BigDecimal("5")), Optional.of(BigDecimal.ZERO), "USD", Optional.empty()))), NOW);
+
+        assertThat(told).isEmpty();
+    }
 }

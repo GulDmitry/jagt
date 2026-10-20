@@ -12,6 +12,8 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -24,6 +26,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,9 +45,10 @@ class MasterVerdictsTest {
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
 
+        assertThat(moved).isFalse();
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("the guard is inverted"));
         verify(ship, never()).ship(anyString(), any());
     }
@@ -59,9 +63,10 @@ class MasterVerdictsTest {
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
 
+        assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
     }
 
@@ -74,8 +79,9 @@ class MasterVerdictsTest {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("keep v2 beside v3"))).thenReturn(true);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
-        verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
 
+        assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
                 .returns(TaskStatus.IN_PROGRESS, TaskState::status)
                 .returns("master answered the question", TaskState::message);
@@ -170,9 +176,10 @@ class MasterVerdictsTest {
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("- [qa] Foo.java — the delay is never pinned (unguarded delay)"), 7, ""), acting);
 
+        assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("outcome=question — reviewer: These findings"
                 + " came back 2 rounds running, neither fixed nor disputed:"
                 + " - [qa] Foo.java — the delay is never pinned (unguarded delay) [repeat]");
@@ -205,8 +212,10 @@ class MasterVerdictsTest {
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""), acting);
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+                acting);
 
+        assertThat(moved).isTrue();
         verify(ship).ship("ABC-1", task);
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
     }
@@ -253,8 +262,10 @@ class MasterVerdictsTest {
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""), acting);
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+                acting);
 
+        assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
                 .returns(TaskStatus.IN_PROGRESS, TaskState::status)
                 .returns("master: the plan holds", TaskState::message);
@@ -303,9 +314,10 @@ class MasterVerdictsTest {
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
                 List.of("Foo.java drops v2", "Add v3 beside v2, or replace it?"), 1, ""), acting);
 
+        assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
                 .returns(TaskStatus.IN_PROGRESS, TaskState::status)
                 .returns("outcome=question — reviewer: Add v3 beside v2, or replace it?", TaskState::message);
@@ -326,5 +338,106 @@ class MasterVerdictsTest {
 
         assertThat(moved).isFalse();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    }
+
+    @Test
+    void asksTheHumanNothingWhenTheSessionAlreadyHoldsTheStalledRoundsQuestion(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned")).thenReturn(true);
+        when(decisions.returned(task, 7, true)).thenReturn(2);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("- [qa] Foo.java — the delay is never pinned"), 7, ""), acting);
+
+        assertThat(moved).isFalse();
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    }
+
+    @Test
+    void countsARoundAsRepeatedOnlyWhenEveryFindingRepeatsAnEarlierOne(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned")).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("- [qa] Foo.java — the delay is never pinned", "- [developer] Bar.java:3 — a new finding"), 7, ""),
+                acting);
+
+        verify(decisions).returned(task, 7, false);
+    }
+
+    @Test
+    void recordsWhatTheMasterDecidedSoALaterRoundDoesNotReopenIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        verdicts.answered("ABC-1", task, "keep v2?", "keep v2\nbeside v3", false);
+
+        verify(decisions).record(task, "- asked: keep v2? — decided: keep v2 beside v3");
+        verify(decisions).answered(task);
+    }
+
+    @Test
+    void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
+
+        assertThat(moved).isFalse();
+        verify(decisions, never()).record(any(), anyString());
+    }
+
+    @Test
+    void opensATaskOnlyForTheLinesOfTheAnswerThatAskForOne(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        verdicts.answered("ABC-1", task, "a second request?", "keep v2 beside v3\ndo proj drop the old keys", false);
+
+        verify(ship, times(1)).open(anyString());
+    }
+
+    @Test
+    void reportsAnAnswerCountOverTheTreeAsTheDecisionsHoldIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        when(decisions.answersOverThisTree(task)).thenReturn(3);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        assertThat(verdicts.answersOverThisTree(task)).isEqualTo(3);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1,false", "2,true", "3,true"})
+    void callsAReviewStalledFromTheSecondRepeatedRoundOn(int repeated, boolean stalled, @TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        when(decisions.repeatedRounds(task)).thenReturn(repeated);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        assertThat(verdicts.stalled(task)).isEqualTo(stalled);
     }
 }

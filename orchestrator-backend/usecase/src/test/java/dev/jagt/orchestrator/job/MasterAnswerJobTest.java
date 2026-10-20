@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -109,5 +110,55 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void answersNothingForASessionThatIsWorkingAndAsksNothing(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).message("working").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+
+        new MasterAnswerJob(state, config, panel, verdicts).run();
+
+        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void asksThePanelOnceAboutAQuestionItsAnswerCouldNotBeActedOn(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("outcome=question — keep v2?").build();
+        state.putTask("ABC-1", asking);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.empty());
+        MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts);
+
+        job.run();
+        job.run();
+
+        verify(panel, times(1)).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void asksThePanelOnceAboutAQuestionWhoseAnswerTheSessionRefused(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("outcome=question — keep v2?").build();
+        state.putTask("ABC-1", asking);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of("keep v2"));
+        when(verdicts.answered(anyString(), any(), anyString(), anyString(), anyBoolean())).thenReturn(false);
+        MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts);
+
+        job.run();
+        job.run();
+
+        verify(panel, times(1)).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
 }
