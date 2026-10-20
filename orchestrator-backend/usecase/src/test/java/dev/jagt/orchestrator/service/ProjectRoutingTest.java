@@ -198,6 +198,41 @@ class ProjectRoutingTest {
     }
 
     @Test
+    void tellsTheRouterWhatEachRepositoryIs() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), Clock.systemUTC());
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
+        ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
+
+        routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
+
+        verify(assistant).routeProject(asked.capture());
+        assertThat(asked.getValue().projects()).containsOnly(Map.entry("api", "/api"), Map.entry("web", "/web"));
+    }
+
+    @Test
+    void asksNothingWhereOnlyAnotherItemWasPlacedByTheRouter() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), Clock.systemUTC());
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+        memory.remember("ABC items about quote import", "web");
+        when(finished.all()).thenReturn(List.of(
+                FinishedTask.of("ABC-42", TaskState.builder("web", "/wt", TaskStatus.DONE).title("Quote import")
+                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD))).build(), 2L),
+                FinishedTask.of("ABC-7", TaskState.builder("web", "/wt", TaskStatus.DONE).title("Other")
+                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER))).build(), 2L)));
+
+        routing.placedByHand("ABC-42", "api");
+
+        verify(assistant, never()).staleRule(anyString(), anyString(), any());
+    }
+
+    @Test
     void leavesTheItemForAHumanWhenTheRouterNamedARepositoryJagtDoesNotHave() {
         RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString())), Clock.systemUTC());

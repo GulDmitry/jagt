@@ -138,10 +138,17 @@ class ToolGateTest {
             "cd /wt && gh api graphql --raw-field query=x", "gh pr merge 12 --admin", "glab mr merge 12",
             "gh repo edit --default-branch x", "gh", "/usr/local/bin/gh release create v1",
             "GH_TOKEN=x gh pr merge 12", "env -u GH_HOST gh pr merge 12", "xargs -n 1 gh pr close",
-            "command 'gh' pr merge 12"})
+            "command 'gh' pr merge 12", "gh pr", "gh api -X"})
     void refusesWritingToTheCodeHostPastThePush(String command) {
         assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");
+    }
+
+    @Test
+    void namesEveryReadAHostCliMayRunInItsRefusal() {
+        assertThat(ToolGate.refusal("gh pr merge 1", "ABC-42", 8290)).get().asString().contains(
+                "(auth status, ci list/status, issue list/status/view, mr diff/list/view,"
+                        + " pr checks/diff/list/status/view, repo view, run list/view, api GET)");
     }
 
     @ParameterizedTest
@@ -171,7 +178,8 @@ class ToolGateTest {
     @ValueSource(strings = {"gh api repos/o/r/pulls", "gh api -X GET repos/o/r", "glab api --method get projects/1",
             "gh pr view 7", "glab mr view 7", "gh -R o/r pr view 1", "gh --repo o/r pr list", "time gh --repo=o/r pr view 1",
             "gh api repos/o/r/pulls --paginate --jq .[].number", "gh api -i -H Accept:x repos/o/r",
-            "env gh pr view 1", "env GH_TOKEN=x gh pr view 1", "env GH_PAGER= gh pr view 1", "env -u GH_TOKEN gh pr list"})
+            "env gh pr view 1", "env GH_TOKEN=x gh pr view 1", "env GH_PAGER= gh pr view 1", "env -u GH_TOKEN gh pr list",
+            "gh api repos/o/r --jq"})
     void letsTheCodeHostBeRead(String command) {
         assertThat(ToolGate.refusal(command, "ABC-42", 8290)).isEmpty();
     }

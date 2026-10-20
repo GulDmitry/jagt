@@ -159,8 +159,9 @@ class AgentSessionsTest {
         when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions.writeTaskContext("ABC-1", "new instructions");
+        String answer = sessions.writeTaskContext("ABC-1", "new instructions");
 
+        assertThat(answer).contains("the human is typing in the agent's window");
         verify(tmux, after(1500).never()).nudgeTaskWindow(anyString(), anyString(), anyString());
     }
 
@@ -216,8 +217,10 @@ class AgentSessionsTest {
                 .thenReturn(OptionalLong.of(1_700_000_000_000L));
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
+        String answer = sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
+        assertThat(answer).isEqualTo("Instructions written to task_context.md; a fresh session was started to read"
+                + " them with task_notes.md.");
         verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
         verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
     }
@@ -252,6 +255,72 @@ class AgentSessionsTest {
 
         verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
         verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void relaysAHandedBackRoundWhoseBriefTheWorktreeDoesNotHold() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        boolean relayed = sessions.relayFreshIfChanged("ABC-1", "Review round for http://mr/1.");
+
+        assertThat(relayed).isTrue();
+    }
+
+    @Test
+    void leavesAHandedBackRoundAloneWhenItsBriefIsAlreadyInTheWorktree() throws Exception {
+        Files.writeString(root.resolve("task_context.md"), "Review round for http://mr/1.");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.relayFreshIfChanged("ABC-1", "Review round for http://mr/1.")).isFalse();
+        verifyNoInteractions(tmux);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"auto,''", "plan,' in PLAN MODE'"})
+    void namesTheSessionAndTheModeOfTheTabItStarted(String mode, String suffix) {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.openTaskTab("ABC-1", mode);
+
+        assertThat(answer).isEqualTo("New Claude session started for ABC-1 in tab 'ABC-1' of session 'jagt' (worktree "
+                + root + ")" + suffix);
+    }
+
+    @Test
+    void confirmsALineWasSaidToTheRunningAgent() {
+        state.putTask("ABC-1", TaskState.builder("demo", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", "answer 2 differently")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.say("ABC-1", "answer 2 differently")).isEqualTo("Said to the agent.");
+    }
+
+    @Test
+    void reportsAnAgentLiveOnlyWhileItsWindowRunsTheAgent() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.agentLive("ABC-1")).isFalse();
+    }
+
+    @Test
+    void reportsAnAgentLiveWhereItsWindowRunsTheAgent() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.agentLive("ABC-1")).isTrue();
     }
 
     @Test

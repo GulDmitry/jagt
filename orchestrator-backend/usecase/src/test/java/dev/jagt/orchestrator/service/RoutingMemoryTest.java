@@ -3,6 +3,9 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -140,6 +143,82 @@ class RoutingMemoryTest {
         assertThat(Files.readString(root.resolve("memory/routing.md"))).contains("quote import -> api #2")
                 .contains("# until 2026-10-07: importing quotes -> api, merged into: quote import")
                 .doesNotContain("importing quotes -> api #");
+    }
+
+    @Test
+    void saysTheMergeChangedTheFile() {
+        when(paths.root()).thenReturn(root);
+        RoutingMemory memory = new RoutingMemory(paths, Clock.systemUTC());
+        memory.remember("quote import", "api");
+        memory.remember("importing quotes", "api");
+
+        assertThat(memory.merge("quote import -> api", "importing quotes -> api")).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"'',api", "quote import,''"})
+    void remembersNothingWithoutBothAKeyAndAProject(String key, String project) {
+        when(paths.root()).thenReturn(root);
+        RoutingMemory memory = new RoutingMemory(paths, Clock.systemUTC());
+
+        boolean changed = memory.remember(key, project);
+
+        assertThat(changed).isFalse();
+        assertThat(root.resolve("memory/routing.md")).doesNotExist();
+    }
+
+    @Test
+    void retiresARuleOutOfUseKeepingItDated() throws IOException {
+        when(paths.root()).thenReturn(root);
+        Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
+        RoutingMemory memory = new RoutingMemory(paths, frozen);
+        memory.remember("quote import", "api");
+
+        boolean retired = memory.retire("quote import -> api");
+
+        assertThat(retired).isTrue();
+        assertThat(memory.rules()).isEmpty();
+        assertThat(Files.readString(root.resolve("memory/routing.md"))).contains("# until 2026-10-07: quote import -> api");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"unknown rule -> api", "no separator here"})
+    void retiresNothingItDoesNotHold(String rendered) {
+        when(paths.root()).thenReturn(root);
+        RoutingMemory memory = new RoutingMemory(paths, Clock.systemUTC());
+        memory.remember("quote import", "api");
+
+        assertThat(memory.retire(rendered)).isFalse();
+        assertThat(memory.rules()).containsExactly("quote import -> api");
+    }
+
+    @Test
+    void retiresNothingWhenGivenNoRule() {
+        when(paths.root()).thenReturn(root);
+
+        assertThat(new RoutingMemory(paths, Clock.systemUTC()).retire(null)).isFalse();
+    }
+
+    @Test
+    void keepsEveryRetiredRuleAcrossLaterWrites() throws IOException {
+        when(paths.root()).thenReturn(root);
+        Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
+        RoutingMemory memory = new RoutingMemory(paths, frozen);
+        memory.remember("quote import", "api");
+        memory.retire("quote import -> api");
+
+        memory.remember("invoice export", "web");
+
+        assertThat(Files.readString(root.resolve("memory/routing.md"))).contains("# until 2026-10-07: quote import -> api");
+    }
+
+    @Test
+    void readsARuleWhoseCountIsNotANumberAsOneWithNoCount() throws IOException {
+        when(paths.root()).thenReturn(root);
+        Files.createDirectories(root.resolve("memory"));
+        Files.writeString(root.resolve("memory/routing.md"), "quote import -> api #many\n");
+
+        assertThat(new RoutingMemory(paths, Clock.systemUTC()).rules()).containsExactly("quote import -> api #many");
     }
 
     @Test

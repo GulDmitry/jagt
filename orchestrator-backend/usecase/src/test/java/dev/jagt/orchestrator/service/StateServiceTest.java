@@ -330,6 +330,64 @@ class StateServiceTest {
     }
 
     @Test
+    void appliesAnUpdateToAnExistingTaskAndSaysSo(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        boolean updated = state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished"));
+
+        assertThat(updated).isTrue();
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DONE);
+    }
+
+    @Test
+    void saysSoWhenAnUpdateNamesNoTask(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+
+        assertThat(state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished"))).isFalse();
+    }
+
+    @Test
+    void resolvesAnAliasToItsOwnTaskIgnoringCase(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.NEW).alias("a1").build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.NEW).alias("a2").build());
+
+        assertThat(state.canonicalTaskId("A2")).isEqualTo("ABC-2");
+    }
+
+    @Test
+    void resolvesACallerToTheTaskWhoseWorktreeHoldsItNotTheFirstTask(@TempDir Path root) throws IOException {
+        Path first = Files.createDirectories(root.resolve("ABC-1"));
+        Path second = Files.createDirectories(root.resolve("ABC-2"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", first.toString(), TaskStatus.NEW).build());
+        state.putTask("ABC-2", TaskState.builder("proj", second.toString(), TaskStatus.NEW).build());
+
+        assertThat(state.findByWorktree(second.toString())).get().extracting(Map.Entry::getKey).isEqualTo("ABC-2");
+    }
+
+    @Test
+    void answersFromTheParseOfAStateFileWrittenByAnotherProcessWhileItHasNotMoved(@TempDir Path root) throws IOException {
+        Path stateFile = root.resolve("state.json");
+        String written = """
+                {"tasks":{"ABC-2":{"project":"proj","worktreePath":"/wt","status":"NEW","alias":"a2"}}}""";
+        Files.writeString(stateFile, written);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+        FileTime stamp = Files.getLastModifiedTime(stateFile);
+        state.tasks();
+        Files.writeString(stateFile, "x".repeat(written.length()));
+        Files.setLastModifiedTime(stateFile, stamp);
+
+        assertThat(state.tasks()).containsOnlyKeys("ABC-2");
+    }
+
+    @Test
     void forgetsTaskWhenItIsRemoved(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

@@ -90,7 +90,7 @@ class AgentStatusReportsTest {
 
         String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
-        assertThat(answer).startsWith("Task ABC-1 stays REVERTED");
+        assertThat(answer).startsWith("Task ABC-1 stays REVERTED").endsWith("Your line was recorded (done)");
         verify(notifications, never()).send(any());
     }
 
@@ -107,7 +107,8 @@ class AgentStatusReportsTest {
 
         String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
-        assertThat(answer).endsWith("the Master reads this round next; end your turn");
+        assertThat(answer).isEqualTo("Task ABC-1 -> REVIEW_PENDING (done); the Master reads this round next;"
+                + " end your turn");
     }
 
     @Test
