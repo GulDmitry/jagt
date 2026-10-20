@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -254,7 +255,8 @@ class GitWorktreesTest {
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
                 BranchStrategy.RESUME))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("push was refused");
+                .hasMessageContaining("push was refused")
+                .hasMessageContaining("the rebase was undone");
         assertThat(dir.resolve("wt")).doesNotExist();
         assertThat(git.branchExists(repo, "ABC-1")).isTrue();
     }
@@ -616,8 +618,9 @@ class GitWorktreesTest {
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
-        git.reattach(repo, "ABC-1");
+        String stopped = git.reattach(repo, "ABC-1");
 
+        assertThat(stopped).isNull();
         assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))
                 .stdout().strip()).isEqualTo("main");
     }
@@ -669,7 +672,8 @@ class GitWorktreesTest {
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
                 BranchStrategy.RESUME))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("elsewhere");
+                .hasMessageContaining("elsewhere")
+                .hasMessageContaining("free it there");
         assertThat(dir.resolve("wt")).doesNotExist();
     }
 
@@ -792,5 +796,281 @@ class GitWorktreesTest {
         String remote = git.remoteUrl(dir);
 
         assertThat(remote).isEqualTo("https://code.example/g/p.git");
+    }
+
+    @Test
+    void reattachesARepositoryDetachedAtTheBranchTipAndReportsNothingStopped(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "switch", "-q", "--detach"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        String stopped = git.reattach(repo, "ABC-1");
+
+        assertThat(stopped).isNull();
+        assertThat(runner.run(repo, timeout, List.of("git", "branch", "--show-current")).stdout().strip())
+                .isEqualTo("ABC-1");
+    }
+
+    @Test
+    void leavesADetachedRepositoryWhereItStandsWhenItIsNotAtTheBranchTip(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("f.txt"), "task work");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "work"));
+        runner.run(repo, timeout, List.of("git", "switch", "-q", "--detach", "HEAD~1"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        String stopped = git.reattach(repo, "ABC-1");
+
+        assertThat(stopped).isNull();
+        assertThat(runner.run(repo, timeout, List.of("git", "branch", "--show-current")).stdout().strip()).isEmpty();
+    }
+
+    @Test
+    void reportsWhyTheBranchCouldNotBePutBackWhenAnotherWorktreeNowHoldsIt(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "switch", "-q", "--detach"));
+        runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", dir.resolve("elsewhere").toString(), "ABC-1"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        String stopped = git.reattach(repo, "ABC-1");
+
+        assertThat(stopped).contains("ABC-1").contains("elsewhere");
+    }
+
+    @Test
+    void recreatesTheBranchWhenTheWorktreeHoldingItWasDeletedByHand(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "branch", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", dir.resolve("gone").toString(), "ABC-1"));
+        runner.run(dir, timeout, List.of("rm", "-rf", dir.resolve("gone").toString()));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
+
+        assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("base");
+        assertThat(runner.run(repo, timeout, List.of("git", "worktree", "list")).stdout()).doesNotContain("gone");
+    }
+
+    @Test
+    void leavesTheResumedBranchWithoutAnUpstreamEvenWhenItWasPushedWithOne(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "-u", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
+
+        assertThat(runner.run(dir.resolve("wt"), timeout,
+                List.of("git", "rev-parse", "--abbrev-ref", "ABC-1@{upstream}")).exitCode()).isNotZero();
+    }
+
+    @Test
+    void resumesABranchHoldingCommitsOriginHasNeverSeen(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        Files.writeString(repo.resolve("local.txt"), "only on this machine");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "local"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
+
+        assertThat(dir.resolve("wt").resolve("local.txt")).hasContent("only on this machine");
+    }
+
+    @Test
+    void refusesAResumeWhoseRebaseOntoTheTargetCannotStart(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("task.txt"), "the task's work");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        Files.writeString(repo.resolve("release.txt"), "shipped while the request waited");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "release"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Path hook = repo.resolve(".git/hooks/pre-rebase");
+        Files.writeString(hook, "#!/bin/sh\nexit 1\n");
+        Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                BranchStrategy.RESUME))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Rebasing 'ABC-1' onto origin/main failed");
+    }
+
+    @Test
+    void readsABranchAtOriginAsPresentOnlyOnceItWasPushed(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "branch", "ABC-1"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThat(git.remoteBranchExists(repo, "ABC-1")).isFalse();
+
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+
+        assertThat(git.remoteBranchExists(repo, "ABC-1")).isTrue();
+    }
+
+    @Test
+    void unregistersAWorktreeWhoseDirectoryWasDeletedByHandAndDeletesItsBranch(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-1", dir.resolve("wt").toString()));
+        runner.run(dir, timeout, List.of("rm", "-rf", dir.resolve("wt").toString()));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        git.removeWorktree(repo, dir.resolve("wt"), "ABC-1");
+
+        assertThat(runner.run(repo, timeout, List.of("git", "worktree", "list")).stdout()).doesNotContain("wt");
+        assertThat(git.branchExists(repo, "ABC-1")).isFalse();
+    }
+
+    @Test
+    void removesTheDeployWorktreeAndItsBranchWhenOneIsWaiting(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Path deploy = GitDeploy.deployWorktreePath(repo, "ABC-1");
+        runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", GitDeploy.deployBranch("ABC-1"),
+                deploy.toString(), "origin/main"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        git.removeDeployWorktreeIfPresent(repo, "ABC-1");
+
+        assertThat(GitDeploy.deployWorktreePath(repo, "ABC-1")).doesNotExist();
+        assertThat(git.branchExists(repo, GitDeploy.deployBranch("ABC-1"))).isFalse();
+    }
+
+    @Test
+    void discardsTheDiffCheckoutsOfARepositoryNobodyCanNameAnyMore(@TempDir Path dir) throws Exception {
+        Path first = DiffCheckouts.diffWorktreePaths("ABC-5", "gone").getFirst();
+        Path last = DiffCheckouts.diffWorktreePaths("ABC-5", "gone").getLast();
+        Files.createDirectories(first);
+        Files.writeString(first.resolve("f.txt"), "base");
+        Files.createDirectories(last);
+        Files.writeString(last.resolve("f.txt"), "task");
+        Processes runner = new ProcessRunner();
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        git.discardDiffWorktrees("ABC-5", "gone");
+
+        assertThat(first).doesNotExist();
+        assertThat(last).doesNotExist();
+    }
+
+    @Test
+    void namesTheCommonGitDirectoryOfARepository(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        Path common = git.gitCommonDir(repo);
+
+        assertThat(common).isEqualTo(repo.toRealPath().resolve(".git"));
     }
 }

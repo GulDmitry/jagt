@@ -133,4 +133,35 @@ class DiffCheckoutsTest {
         assertThat(apiSaid).isEqualTo("api base");
         assertThat(webSaid).isEqualTo("web base");
     }
+
+    @Test
+    void replacesALeftoverSnapshotOfTheTasksWorkWhenTheDiffIsOpenedAgain(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner));
+        GitWorktrees git = new GitWorktrees(commands);
+        DiffCheckouts diffs = new DiffCheckouts(commands);
+        Path wt = dir.resolve("wt");
+        git.createWorktree(repo, wt, "ABC-6", "origin/main", BranchStrategy.FRESH);
+        Files.writeString(wt.resolve("f.txt"), "task change");
+        Path leftover = DiffCheckouts.diffWorktreePaths("ABC-6", "proj").getLast();
+        Files.createDirectories(leftover);
+        Files.writeString(leftover.resolve("stale.txt"), "from a snapshot nobody removed");
+
+        Path clean = diffs.checkoutWorktreeCleanForDiff(wt, repo, "origin/main", "ABC-6", "proj");
+
+        String changed = Files.readString(clean.resolve("f.txt"));
+        boolean stale = Files.exists(clean.resolve("stale.txt"));
+        git.removeDiffWorktrees(repo, "ABC-6", "proj");
+        assertThat(changed).isEqualTo("task change");
+        assertThat(stale).isFalse();
+    }
 }
