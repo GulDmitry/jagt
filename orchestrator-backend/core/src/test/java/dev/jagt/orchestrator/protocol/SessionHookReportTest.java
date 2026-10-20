@@ -39,4 +39,33 @@ class SessionHookReportTest {
         assertThat(SessionHookReport.none().sessionLog()).isEmpty();
         assertThat(SessionHookReport.none().violations(MessageContext.NONE)).isEmpty();
     }
+
+    @Test
+    void readsAHookThatSentItsTurnEndingOnAndOneStillHoldingBackgroundWork() {
+        var said = new JsonMapper().readValue(
+                "{\"stop_hook_active\": true, \"background_tasks\": [{\"id\": \"bash-1\"}]}",
+                SessionHookReport.class);
+
+        assertThat(said.sentOn()).isTrue();
+        assertThat(said.pausedOnBackgroundWork()).isTrue();
+    }
+
+    @Test
+    void readsAHookThatSaidNeitherAsAStopWithNothingInFlight() {
+        var said = new JsonMapper().readValue("{\"stop_hook_active\": false}", SessionHookReport.class);
+
+        assertThat(said.sentOn()).isFalse();
+        assertThat(said.pausedOnBackgroundWork()).isFalse();
+        assertThat(SessionHookReport.none().sentOn()).isFalse();
+    }
+
+    @Test
+    void readsBlankFieldsAsLeftOutSoABlankLogPathNamesNoLog() {
+        var said = new SessionHookReport("  ", "  ", "  ");
+
+        assertThat(said.transcriptPath()).isNull();
+        assertThat(said.source()).isNull();
+        assertThat(said.message()).isNull();
+        assertThat(said.sessionLog()).isEmpty();
+    }
 }

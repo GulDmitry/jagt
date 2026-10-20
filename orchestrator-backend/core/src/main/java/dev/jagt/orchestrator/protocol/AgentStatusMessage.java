@@ -170,8 +170,10 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
     /** The request this report is about, wherever it was written: the named field, the map, or the message. */
     private @Nullable String link(List<String> projectsOnTask) {
         if (!reviewRequests.isEmpty()) {
-            @Nullable String sessionRepo = projectsOnTask.isEmpty() ? null : projectsOnTask.get(0);
-            return reviewRequests.getOrDefault(sessionRepo, reviewRequests.values().iterator().next());
+            if (!projectsOnTask.isEmpty() && reviewRequests.containsKey(projectsOnTask.get(0))) {
+                return reviewRequests.get(projectsOnTask.get(0));
+            }
+            return reviewRequests.values().iterator().next();
         }
         if (reviewRequestUrl != null && !reviewRequestUrl.isBlank()) {
             return reviewRequestUrl.strip();

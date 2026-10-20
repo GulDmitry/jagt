@@ -71,4 +71,37 @@ class PlanProbesTest {
 
         assertThat(read.violations()).singleElement().asString().contains("at most 10 probes, not 11");
     }
+
+    @Test
+    void readsAQuotedWordWithSpacesAsOneWordWhicheverQuoteGroupsIt() {
+        PlanProbes.Read read = PlanProbes.of("```probes\ncommand sh -c \"git status\"\ncommand echo 'a b' \"c d\"\n```\n");
+
+        assertThat(read.violations()).isEmpty();
+        assertThat(read.probes()).containsExactly(
+                Probe.specified(Probe.Kind.COMMAND, List.of("sh", "-c", "git status"), 0),
+                Probe.specified(Probe.Kind.COMMAND, List.of("echo", "a b", "c d"), 0));
+    }
+
+    @Test
+    void refusesALineWithAnUnclosedDoubleQuote() {
+        PlanProbes.Read read = PlanProbes.of("```probes\ncommand echo \"unclosed\n```\n");
+
+        assertThat(read.probes()).isEmpty();
+        assertThat(read.violations()).singleElement().asString().contains("command echo \"unclosed");
+    }
+
+    @Test
+    void readsAnExitCodeUpToTheLargestAProcessCanGive() {
+        PlanProbes.Read read = PlanProbes.of("```probes\ncommand exit=255 ./check\n```\n");
+
+        assertThat(read.probes()).containsExactly(Probe.specified(Probe.Kind.COMMAND, List.of("./check"), 255));
+    }
+
+    @Test
+    void acceptsExactlyTheCapOfProbes() {
+        PlanProbes.Read read = PlanProbes.of("```probes\n" + "ref main\n".repeat(10) + "```\n");
+
+        assertThat(read.violations()).isEmpty();
+        assertThat(read.probes()).hasSize(10);
+    }
 }

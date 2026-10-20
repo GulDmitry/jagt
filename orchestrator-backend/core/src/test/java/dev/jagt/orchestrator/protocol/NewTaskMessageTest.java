@@ -47,4 +47,27 @@ class NewTaskMessageTest {
 
         assertThat(said.violations(MessageContext.NONE)).isEmpty();
     }
+
+    @Test
+    void acceptsALaunchNamingEveryOptionInAnyCase() {
+        var said = new NewTaskMessage("ABC-42", "api", List.of("web"), "do it", "Widget layout is off",
+                "https://tracker/ABC-42", " PLAN ", " Recreate ", "release");
+
+        assertThat(said.violations(MessageContext.NONE)).isEmpty();
+    }
+
+    @Test
+    void refusesASessionModeThisMachineDoesNotHave() {
+        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, "turbo", null, null);
+
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("mode");
+    }
+
+    @Test
+    void readsBlankFieldsAsLeftOutSoALaunchOfBlanksIsRefusedForTheTwoItNeeds() {
+        var said = new NewTaskMessage(" ", " ", null, " ", " ", " ", " ", " ", " ");
+
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
+                .containsExactlyInAnyOrder("taskId", "projectKey");
+    }
 }

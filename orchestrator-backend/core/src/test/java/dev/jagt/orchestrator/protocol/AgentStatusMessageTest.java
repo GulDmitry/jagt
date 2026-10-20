@@ -106,4 +106,84 @@ class AgentStatusMessageTest {
         assertThat(accepted.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
         assertThat(accepted.detail()).isEqualTo("all handled");
     }
+
+    @Test
+    void refusesEveryRequestUnderAProjectTheTaskDoesNotHaveByNamingIt() {
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped")
+                .withReviewRequests(Map.of("nope", "https://host/mr/9"));
+
+        assertThat(said.violations(new MessageContext(List.of("api", "web")))).singleElement()
+                .satisfies(violation -> assertThat(violation.field()).isEqualTo("reviewRequests"))
+                .satisfies(violation -> assertThat(violation.expected())
+                        .isEqualTo("project 'nope' is not on this task; its projects are [api, web]"));
+    }
+
+    @Test
+    void acceptsARequestFiledUnderAProjectOfTheTask() {
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped")
+                .withReviewRequests(Map.of("web", "https://host/mr/9"));
+
+        assertThat(said.violations(new MessageContext(List.of("api", "web")))).isEmpty();
+    }
+
+    @Test
+    void leavesTheProjectsAloneWhenTheTaskIsNotKnown() {
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped")
+                .withReviewRequests(Map.of("nope", "https://host/mr/9"));
+
+        assertThat(said.violations(MessageContext.NONE)).isEmpty();
+    }
+
+    @Test
+    void readsTheLinkFromTheFieldTheMapAndTheMessageInThatOrder() {
+        var field = AgentStatusMessage.of("CI_POLLING", "see https://host/other").withReviewRequestUrl("  https://host/mr/1 ");
+        var message = AgentStatusMessage.of("CI_POLLING", "request https://host/mr/2 opened");
+        var neither = AgentStatusMessage.of("REVIEW_PENDING", "all handled");
+
+        assertThat(field.accepted(MessageContext.NONE).orElseThrow().link()).isEqualTo("https://host/mr/1");
+        assertThat(message.accepted(MessageContext.NONE).orElseThrow().link()).isEqualTo("https://host/mr/2");
+        assertThat(neither.accepted(MessageContext.NONE).orElseThrow().link()).isNull();
+    }
+
+    @Test
+    void readsTheOnlyRequestAsTheLinkWhenTheSessionsOwnRepositoryHasNone() {
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped")
+                .withReviewRequests(Map.of("web", "https://host/web/mr/2"));
+
+        assertThat(said.accepted(new MessageContext(List.of("api", "web"))).orElseThrow().link())
+                .isEqualTo("https://host/web/mr/2");
+    }
+
+    @Test
+    void readsTheOnlyRequestAsTheLinkWhenTheTaskIsNotKnown() {
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped")
+                .withReviewRequests(Map.of("web", "https://host/web/mr/2"));
+
+        assertThat(said.accepted(MessageContext.NONE).orElseThrow().link()).isEqualTo("https://host/web/mr/2");
+    }
+
+    @Test
+    void keepsEveryRequestTheReportNamedForTheRoundToRecord() {
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped")
+                .withReviewRequests(Map.of("api", "https://host/api/mr/1", "web", "https://host/web/mr/2"));
+
+        assertThat(said.accepted(new MessageContext(List.of("api", "web"))).orElseThrow().requests())
+                .containsOnlyKeys("api", "web");
+    }
+
+    @Test
+    void takesWhatTheOutcomeFieldClaimsOverWhatTheMessageOpensWith() {
+        var question = AgentStatusMessage.of("REVIEW_PENDING", "which one?").withOutcome(" Question ");
+        var none = AgentStatusMessage.of("REVIEW_PENDING", "all handled").withOutcome("no-changes");
+        var progress = AgentStatusMessage.of("REVIEW_PENDING", "outcome=question: x").withOutcome("progress");
+
+        assertThat(question.accepted(MessageContext.NONE).orElseThrow().claimed()).isEqualTo(AgentReport.QUESTION);
+        assertThat(none.accepted(MessageContext.NONE).orElseThrow().claimed()).isEqualTo(AgentReport.NO_CHANGES);
+        assertThat(progress.accepted(MessageContext.NONE).orElseThrow().claimed()).isEqualTo(AgentReport.PLAIN);
+    }
+
+    @Test
+    void acceptsNothingThatBrokeARule() {
+        assertThat(AgentStatusMessage.of("ALMOST_DONE", "x").accepted(MessageContext.NONE)).isEmpty();
+    }
 }

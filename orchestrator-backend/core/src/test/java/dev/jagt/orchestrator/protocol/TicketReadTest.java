@@ -55,4 +55,20 @@ class TicketReadTest {
 
         assertThat(TicketRead.violations("ABC-42", facts)).extracting(Violation::field).containsExactly("url");
     }
+
+    @Test
+    void asksNothingAboutTheKeyWhenNoReferenceWasGiven() {
+        var facts = TicketFacts.defaults().withExists(true).withKey("ABC-7").withTitle("Something")
+                .withUrl("https://tracker/ABC-7").withTrackerStatus("In Progress");
+
+        assertThat(TicketRead.violations(null, facts)).isEmpty();
+    }
+
+    @Test
+    void takesTheSameKeyInAnyCaseAndPadding() {
+        var facts = TicketFacts.defaults().withExists(true).withKey(" ABC-42 ").withTitle("Widget")
+                .withUrl("https://tracker/ABC-42").withTrackerStatus("In Progress");
+
+        assertThat(TicketRead.violations("abc-42", facts)).isEmpty();
+    }
 }
