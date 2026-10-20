@@ -165,4 +165,46 @@ class FlowEngineTest {
 
         assertThat(engine.run("a1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
     }
+
+    @Test
+    void failsLoudlyWhenAnActionTheRulesAllowHasNoCapabilityDeclared() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(), List.of()), sessions);
+
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("No capability declared for `focus`");
+    }
+
+    @Test
+    void keepsTheTaskMessageWhenTheOutcomeMovedItWithoutStampingOne() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new FixedCapability(TaskAction.SHIP,
+                Outcome.ok("ship ABC-1: request opened", null))), List.of()), sessions);
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+
+        engine.run("ABC-1", TaskAction.SHIP);
+
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState before = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).message("keep me").build();
+        assertThat(write.getValue().apply(before).message()).isEqualTo("keep me");
+    }
+
+    @Test
+    void shipsAStuckTaskAgainOnlyWhenItsAgentIsGoneAsTheProbeAnswersAtTheMomentOfTheRun() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
+        when(sessions.agentLive("ABC-1")).thenReturn(true);
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new NeverRunCapability(
+                TaskAction.SHIP)), List.of()), sessions);
+
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
+                .asInstanceOf(type(Refusal.class))
+                .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+    }
 }

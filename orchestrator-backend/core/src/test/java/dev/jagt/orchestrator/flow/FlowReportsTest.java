@@ -109,4 +109,81 @@ class FlowReportsTest {
         assertThat(after.status()).isEqualTo(TaskStatus.CI_POLLING);
         assertThat(after.mrUrl()).isEqualTo("http://host/1");
     }
+
+    @Test
+    void answersTrueAndTheStatusItFoundAndLeftWhenTheReportWasWritten() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            write.apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+            return true;
+        });
+
+        boolean accepted = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
+        var landed = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed", (was, task) -> task);
+
+        assertThat(accepted).isTrue();
+        assertThat(landed).contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING));
+    }
+
+    @Test
+    void answersFalseWhenTheTaskWasNotThereToWriteTheReportOn() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(false);
+
+        assertThat(reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed")).isFalse();
+    }
+
+    @Test
+    void landsAHandBackAtVerifyingWhileTheVerificationIsOwed() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            write.apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+            return true;
+        });
+
+        var landed = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed", (was, task) -> task,
+                task -> true);
+
+        assertThat(landed).contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING));
+    }
+
+    @Test
+    void tellsTheSessionWhyItsReportWasRefusedInTheStatusItIsIn() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            write.apply(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
+            return true;
+        });
+
+        assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.PLAN_PENDING, "a plan"))
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("already REVIEW_PENDING");
+    }
+
+    @Test
+    void answersWhatARoundReadFoundAndLeftWhenItMovedTheTask() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            write.apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+            return true;
+        });
+
+        var landed = reports.read("ABC-1", TaskStatus.APPROVED, "approved");
+
+        assertThat(landed).contains(new FlowReports.Landed(TaskStatus.CI_POLLING, TaskStatus.APPROVED));
+    }
+
+    @Test
+    void writesNothingWhenARoundReadFindsTheTaskWhereItAlreadyIs() {
+        AtomicReference<TaskState> written = new AtomicReference<>();
+        TaskState before = TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build();
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            written.set(write.apply(before));
+            return true;
+        });
+
+        reports.read("ABC-1", TaskStatus.APPROVED, "approved");
+
+        assertThat(written.get()).isSameAs(before);
+    }
 }

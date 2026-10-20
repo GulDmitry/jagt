@@ -42,4 +42,31 @@ class CapabilitiesTest {
 
         assertThat(capabilities.of(TaskAction.REVERT)).isEmpty();
     }
+
+    private record Wrapping(TaskAction action, int order) implements CapabilityInterceptor {
+
+        @Override
+        public Outcome around(String taskId, java.util.function.Supplier<Outcome> work) {
+            return work.get();
+        }
+    }
+
+    @Test
+    void wrapsAnActionOnlyInTheInterceptorsDeclaredForItInTheirOrder() {
+        Wrapping late = new Wrapping(TaskAction.DEPLOY, 20);
+        Wrapping early = new Wrapping(TaskAction.DEPLOY, 10);
+        Wrapping other = new Wrapping(TaskAction.SHIP, 0);
+        Capabilities capabilities = new Capabilities(List.of(), List.of(late, other, early));
+
+        assertThat(capabilities.around(TaskAction.DEPLOY)).containsExactly(early, late);
+    }
+
+    @Test
+    void namesWhoTookOverAnActionFromWhom() {
+        Capabilities capabilities = new Capabilities(List.of(
+                new Declared(TaskAction.DEPLOY, 0, "the built-in deploy"),
+                new Declared(TaskAction.DEPLOY, 10, "the install's own deploy")), List.of());
+
+        assertThat(capabilities.takeovers()).containsExactly("Declared takes over `deploy` from Declared");
+    }
 }

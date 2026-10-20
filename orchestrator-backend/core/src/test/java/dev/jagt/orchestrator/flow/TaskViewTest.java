@@ -215,4 +215,47 @@ class TaskViewTest {
 
         assertThat(view.deployed()).isTrue();
     }
+
+    @Test
+    void asksBeforeEveryPressThatCannotBeTakenBackNamingTheBranchEachRepositoryWrites() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"),
+                TaskRepo.of("java", "/wt/java")), TaskStatus.APPROVED).build(), false, AutoReviewWatch.none(),
+                Map.of("php", "main"));
+
+        assertThat(view.confirmations()).containsOnlyKeys("deploy", "revert", "done");
+        assertThat(view.confirmations().get("deploy"))
+                .contains("php → main").contains("java → no deployBranch in jagt.yml");
+    }
+
+    @Test
+    void carriesTheRequestAgeAndTheApprovalOnlyWhileARequestIsOpen() {
+        TaskState open = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).mrUrl("http://host/mr/1")
+                .requestOpenedAt(1_700_000_000_000L).approved(true).build();
+        TaskState none = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+                .requestOpenedAt(1_700_000_000_000L).approved(true).build();
+
+        TaskView withRequest = TaskView.of("ABC-1", open, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView withoutRequest = TaskView.of("ABC-1", none, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(withRequest.requestOpenedAt()).isEqualTo(1_700_000_000_000L);
+        assertThat(withRequest.approved()).isTrue();
+        assertThat(withoutRequest.requestOpenedAt()).isZero();
+        assertThat(withoutRequest.approved()).isNull();
+    }
+
+    @Test
+    void readsATaskWithNoWatchAsOneNothingPolls() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://host/mr/1").build(), false, null, Map.of("api", "dev"));
+
+        assertThat(view.owner()).isEqualTo(Owner.CI);
+    }
+
+    @Test
+    void namesTheMasterAsTheStatusLabelWhileItReadsTheRound() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).build(),
+                RoundState.NONE.withMasterReading(true), AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.statusLabel()).isEqualTo("master review");
+    }
 }

@@ -245,4 +245,128 @@ class FlowRulesTest {
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
         assertThat(move.primary()).isEqualTo(TaskAction.TRUST);
     }
+
+    @ParameterizedTest
+    @CsvSource({"true,false", "false,false", "true,true", "false,true"})
+    void stopsATaskWhoseRoundReadsRedWhateverElseItSays(boolean unresolved, boolean approved) {
+        assertThat(FlowRules.readReview(unresolved, approved, Pipeline.RED)).contains(TaskStatus.CI_FAILED);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"GREEN,false", "GREEN,true", "RUNNING,true", "NONE,false"})
+    void leavesATaskWhereItIsWhileAThreadIsStillOpen(Pipeline checks, boolean approved) {
+        assertThat(FlowRules.readReview(true, approved, checks)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"GREEN", "RUNNING", "UNKNOWN", "NONE"})
+    void approvesARoundWithNothingOpenWhateverTheChecksSaidShortOfRed(Pipeline checks) {
+        assertThat(FlowRules.readReview(false, true, checks)).contains(TaskStatus.APPROVED);
+    }
+
+    @Test
+    void reviewsACleanGreenRoundNobodyApprovedYet() {
+        assertThat(FlowRules.readReview(false, false, Pipeline.GREEN)).contains(TaskStatus.REVIEWED);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"RUNNING", "UNKNOWN", "NONE"})
+    void leavesACleanRoundWhoseChecksAreNotGreenWhereItIs(Pipeline checks) {
+        assertThat(FlowRules.readReview(false, false, checks)).isEmpty();
+    }
+
+    @Test
+    void handsAVerifiedRoundToTheHumanAndAFailedOneBackToItsSession() {
+        assertThat(FlowRules.verified(true)).isEqualTo(TaskStatus.REVIEW_PENDING);
+        assertThat(FlowRules.verified(false)).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void putsASessionHandedWorkBackAtWorkAndAResumedRequestOnItsChecks() {
+        assertThat(FlowRules.relayed()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(FlowRules.resumedOnARequest()).isEqualTo(TaskStatus.CI_POLLING);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"IN_PROGRESS,true", "NEW,false", "VERIFYING,false"})
+    void saysASessionIsAtWorkOnlyInProgress(TaskStatus status, boolean atWork) {
+        assertThat(FlowRules.atWork(status)).isEqualTo(atWork);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"DONE,true", "DEPLOYED,false", "REVERTED,false"})
+    void saysATaskIsClosedOnlyOnceDone(TaskStatus status, boolean closed) {
+        assertThat(FlowRules.closed(status)).isEqualTo(closed);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NEW,true", "IN_PROGRESS,true", "SHIPPING,true", "REVIEW_PENDING,false", "CI_POLLING,false"})
+    void watchesTheAgentOnlyWhereItIsExpectedToAct(TaskStatus status, boolean watched) {
+        assertThat(FlowRules.watched(status)).isEqualTo(watched);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"REVIEW_PENDING,true", "CI_FAILED,true", "IN_PROGRESS,false", "CI_POLLING,false"})
+    void handsBackOnlyWithAReviewPendingOrFailedChecks(TaskStatus status, boolean handsBack) {
+        assertThat(FlowRules.handsBack(status)).isEqualTo(handsBack);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"VERIFYING,true", "PLAN_PENDING,true", "REVIEW_PENDING,true", "IN_PROGRESS,false", "CI_FAILED,false"})
+    void headsAHandBackForTheMasterOnceItIsVerifyingOrWaitingToBeRead(TaskStatus status, boolean headed) {
+        assertThat(FlowRules.headedForTheMaster(status)).isEqualTo(headed);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"REVIEWED,true", "APPROVED,true", "CI_POLLING,false", "DEPLOYED,false"})
+    void letsTheMasterDeployOnlyARequestWaitingForOne(TaskStatus status, boolean deployed) {
+        assertThat(FlowRules.deployedByTheMaster(status)).isEqualTo(deployed);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"DEPLOYED,true", "APPROVED,false"})
+    void checksWhereItLandedOnlyOnceDeployed(TaskStatus status, boolean checked) {
+        assertThat(FlowRules.checkedWhereItLanded(status)).isEqualTo(checked);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"PLAN_PENDING,true", "REVIEW_PENDING,false"})
+    void holdsAPlanOnlyWhilePlanPending(TaskStatus status, boolean holds) {
+        assertThat(FlowRules.holdsAPlan(status)).isEqualTo(holds);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"DEPLOY_CONFLICT,true", "DEPLOYED,false"})
+    void conflictsInTheDeployWorktreeOnlyOnceDeployConflict(TaskStatus status, boolean conflicted) {
+        assertThat(FlowRules.conflictedInTheDeployWorktree(status)).isEqualTo(conflicted);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"APPROVED,true,false", "REVIEWED,false,true", "CI_FAILED,false,false"})
+    void tellsAnApprovedReadFromAReviewedOne(TaskStatus read, boolean approved, boolean reviewed) {
+        assertThat(FlowRules.approved(read)).isEqualTo(approved);
+        assertThat(FlowRules.reviewed(read)).isEqualTo(reviewed);
+    }
+
+    @Test
+    void mentionsAnActionTheTableHasARuleFor() {
+        assertThat(FlowRules.mentions(TaskAction.DEPLOY)).isTrue();
+    }
+
+    @Test
+    void leadsToEveryStatusAnActionCanEndIn() {
+        assertThat(FlowRules.targets()).contains(TaskStatus.DEPLOYED, TaskStatus.DEPLOY_CONFLICT,
+                TaskStatus.REVERTED);
+    }
+
+    @Test
+    void readsOnlyTheStatusesAHostRoundCanConclude() {
+        assertThat(FlowRules.reads()).containsExactlyInAnyOrder(TaskStatus.REVIEWED, TaskStatus.APPROVED,
+                TaskStatus.CI_FAILED);
+    }
+
+    @Test
+    void redirectsOnlyVerifying() {
+        assertThat(FlowRules.redirects()).containsExactly(TaskStatus.VERIFYING);
+    }
 }

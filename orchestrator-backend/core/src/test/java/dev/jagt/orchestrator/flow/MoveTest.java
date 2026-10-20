@@ -533,4 +533,38 @@ class MoveTest {
         assertThat(Move.forTask(TaskStatus.REVERTED, new Facts(true, false, () -> false, false), RoundState.NONE,
                 false).phase()).isEqualTo(Phase.DEPLOY);
     }
+
+    @Test
+    void asksTheHumanToCheckTheStoppedSessionWhereTheAgentWentSilent() {
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, new Facts(false, false, () -> false, false),
+                RoundState.NONE, true);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.ask()).isEqualTo("check the stopped session");
+    }
+
+    @Test
+    void asksTheHumanToAnswerTheSessionWhereItStoppedOnAQuestion() {
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, new Facts(false, false, () -> false, false),
+                RoundState.of("outcome=question — keep v2?", false), false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.ask()).isEqualTo("answer the session");
+    }
+
+    @Test
+    void asksTheHumanToReviewTheRoundWhereTheQuestionCameBackWithTheHandBack() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false),
+                RoundState.of("outcome=question — keep v2?", false), false);
+
+        assertThat(move.ask()).isEqualTo("review the round");
+    }
+
+    @Test
+    void asksNothingOfAHumanWhileTheAgentIsWorking() {
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, new Facts(false, false, () -> false, false),
+                RoundState.NONE, false);
+
+        assertThat(move.ask()).isNull();
+    }
 }
