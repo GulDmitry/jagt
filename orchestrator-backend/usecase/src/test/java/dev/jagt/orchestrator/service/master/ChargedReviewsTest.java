@@ -7,6 +7,8 @@ import dev.jagt.orchestrator.service.TrustedGitState;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,5 +55,13 @@ class ChargedReviewsTest {
 
         assertThat(judged.failure()).isEqualTo("core.fsmonitor in /r/.git/config added");
         verifyNoInteractions(reviewer);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void saysWhetherTheReaderLoadsAnMcpServerAsTheReaderDoes(boolean loads) {
+        when(reviewer.loadsMcpServer()).thenReturn(loads);
+
+        assertThat(new ChargedReviews(reviewer, usage, trusted).loadsMcpServer()).isEqualTo(loads);
     }
 }

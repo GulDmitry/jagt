@@ -35,4 +35,15 @@ class FindingMatchTest {
 
         assertThat(FindingMatch.repeats(finding, earlier)).isEqualTo(repeats);
     }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', textBlock = """
+            - [qa] Foo.java — x (add key) | true
+            - [qa] Foo.java — x (do it)   | false
+            """)
+    void countsOnlyWordsOfThreeLettersOrMoreWhenMatchingAPattern(String finding, boolean repeats) {
+        List<String> earlier = List.of(finding);
+
+        assertThat(FindingMatch.repeats(finding, earlier)).isEqualTo(repeats);
+    }
 }

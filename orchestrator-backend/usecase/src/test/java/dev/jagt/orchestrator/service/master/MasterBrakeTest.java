@@ -130,4 +130,89 @@ class MasterBrakeTest {
         assertThat(restored).isTrue();
         assertThat(root.resolve("act-stopped")).doesNotExist();
     }
+
+    @Test
+    void stopsActOnEndingsWrittenToTheStateAfterItStartedFollowing(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        MasterBrake brake = new MasterBrake(state, paths);
+        brake.follow();
+
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD))).build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD))).build());
+        state.putTask("ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD))).build());
+
+        assertThat(root.resolve("act-stopped")).exists();
+    }
+
+    @Test
+    void startsTheCountAgainWhereTheHumanRestoredActBetweenBadEndings(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+        brake.observe(Map.of("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD))).build(), "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD))).build()));
+        brake.restore();
+
+        brake.observe(Map.of("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD))).build(), "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD))).build(), "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD))).build()));
+
+        assertThat(root.resolve("act-stopped")).doesNotExist();
+    }
+
+    @Test
+    void startsTheCountAgainOnceItHasStoppedAct(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+        brake.observe(Map.of("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD))).build(), "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD))).build(), "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD))).build()));
+        Files.delete(root.resolve("act-stopped"));
+
+        brake.observe(Map.of("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD))).build(), "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD))).build(), "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD))).build(),
+                "ABC-4", TaskState.builder("proj", "/wt4", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 13, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 23, ActionOrigin.BOARD))).build(), "ABC-5", TaskState.builder("proj", "/wt5", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 14, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 24, ActionOrigin.BOARD))).build()));
+
+        assertThat(root.resolve("act-stopped")).doesNotExist();
+    }
+
+    @Test
+    void saysActWasNotStoppedWhereThereWasNothingToRestore(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+
+        boolean restored = brake.restore();
+
+        assertThat(restored).isFalse();
+    }
 }
