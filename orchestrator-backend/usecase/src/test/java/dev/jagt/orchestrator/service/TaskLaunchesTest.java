@@ -231,6 +231,7 @@ class TaskLaunchesTest {
         assertThat(refused.reason()).isEqualTo(Launched.Reason.NO_BRANCH_NAME);
         verifyNoInteractions(provisioning);
     }
+
     @Test
     void answersTheTaskItCreatedWithWhatProvisioningSaidForATicket() {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")

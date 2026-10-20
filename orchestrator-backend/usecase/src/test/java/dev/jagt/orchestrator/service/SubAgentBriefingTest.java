@@ -109,4 +109,35 @@ class SubAgentBriefingTest {
 
         assertThat(briefing).doesNotContain("AUTOPLAN");
     }
+
+    @Test
+    void namesTheOtherWorktreesOfATaskAndNotTheOneTheAgentRunsIn() {
+        NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+        NewRepo api = new NewRepo("api", new ProjectConfig("/repo/api", "origin/develop", "stage", List.of()),
+                Path.of("/repo/api"), Path.of("/w/ABC-42-api"), Path.of("/repo/api/.git"), "origin/develop",
+                "git@host:g/api.git", false);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").build(), web, List.of(web, api),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults());
+
+        assertThat(briefing).contains("- This task ALSO works in these worktrees")
+                .contains("  - api: /w/ABC-42-api (cut from origin/develop)")
+                .doesNotContain("  - web:");
+    }
+
+    @Test
+    void saysATaskWorksInOneRepositoryOnlyWhereItHasNoOther() {
+        NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").build(), web, List.of(web),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults());
+
+        assertThat(briefing).contains("- This task works in this repository only.").doesNotContain("ALSO works");
+    }
 }

@@ -104,4 +104,25 @@ class ReviewReaderTest {
         verify(mcp, never()).brokenServers();
     }
 
+    @Test
+    void asksAgainForARoundWhoseFailureLinesBelongToARunThatDidNotFail() {
+        when(assistant.readReview("https://host/g/p/-/merge_requests/7")).thenReturn(new Answer<>(
+                Optional.of(new ReviewFacts(true, false, "success", "lint failed", List.of(), 0)), TokenUsage.NONE));
+
+        new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+                .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+
+        verify(assistant, times(3)).readReview("https://host/g/p/-/merge_requests/7");
+    }
+
+    @Test
+    void asksAgainForAnOpenRequestThatNamesNoSourceBranch() {
+        when(assistant.readMergeRequest("https://host/g/p/-/merge_requests/7")).thenReturn(
+                new Answer<>(Optional.of(new MergeRequestFacts(true, "", "main", "t")), TokenUsage.NONE));
+
+        new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+                .readRequest("https://host/g/p/-/merge_requests/7");
+
+        verify(assistant, times(3)).readMergeRequest("https://host/g/p/-/merge_requests/7");
+    }
 }

@@ -75,4 +75,16 @@ class HandBackDueTest {
 
         assertThat(due.invalid(task)).isEmpty();
     }
+
+    @Test
+    void owesANoteForEachAgentFileLineTheTaskAddedThatTheNotesDoNotName(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("task_notes.md"), "notes");
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
+        WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
+        when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(1));
+        HandBackDue due = new HandBackDue(worktreeChanges, mock(Specs.class), mock(AgentRuntime.class));
+
+        assertThat(due.owed("ABC-1", task)).contains("task_notes.md names the gap for 0 of the 1 lines this task added"
+                + " to the project's agent file: one `agent-file:` line each");
+    }
 }

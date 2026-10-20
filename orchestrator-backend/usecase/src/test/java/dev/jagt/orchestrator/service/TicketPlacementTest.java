@@ -116,4 +116,23 @@ class TicketPlacementTest {
 
         verify(routing).placedByHand("ABC-123", "web");
     }
+
+    @Test
+    void readsATicketThroughTheTrackerReader() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-42");
+        Answer<TicketFacts> read = new Answer<>(Optional.of(item), TokenUsage.NONE);
+        when(tickets.read("ABC-42")).thenReturn(read);
+
+        assertThat(placement.read("ABC-42")).isSameAs(read);
+    }
+
+    @Test
+    void refusesAnItemTheReadAnsweredWithoutAKeyATitleOrALink() {
+        var outcome = placement.place("ABC-42", new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)),
+                TokenUsage.NONE), null);
+
+        assertThat(outcome).isEqualTo(new TicketPlacement.Refused(
+                "error: read incomplete: ABC-42 (no key, title or url) — no task created"));
+    }
 }

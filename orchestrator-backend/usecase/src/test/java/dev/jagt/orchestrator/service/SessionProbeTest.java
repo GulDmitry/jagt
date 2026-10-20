@@ -283,6 +283,7 @@ class SessionProbeTest {
 
         assertThat(silence).map(SessionProbe.Silence::since).contains(9_000_000L);
     }
+
     @Test
     void callsASessionSilentAtExactlyTheThresholdOfQuiet() {
         ConfigService config = mock(ConfigService.class);

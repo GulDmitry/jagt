@@ -125,6 +125,7 @@ class TaskResumeTest {
                 .hasMessageContaining("resume needs the request url");
         verifyNoInteractions(projects, registration);
     }
+
     @Test
     void answersWithTheTaskTheRegistrationCreatedForTheRequest() {
         when(projects.of("https://host/group/proj/-/merge_requests/425")).thenReturn("proj");

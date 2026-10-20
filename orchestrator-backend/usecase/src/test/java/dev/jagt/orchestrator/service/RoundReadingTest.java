@@ -161,4 +161,21 @@ class RoundReadingTest {
         assertThat(read).isInstanceOfSatisfying(RoundReading.Round.class, round -> assertThat(
                 round.facts().openedAt()).isEqualTo(1_700_000_000_000L));
     }
+
+    @Test
+    void ignoresARequestWhoseAgeIsUnknownWhenReportingHowLongTheReviewHasWaited() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder(List.of(TaskRepo.of("api", "/wt-api").withMrUrl("http://mr/1"),
+                        TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2")), TaskStatus.CI_POLLING)
+                .alias("a1").build()));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0)));
+        when(reviewReader.read("ABC-1", "http://mr/2"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L)));
+
+        var read = reading.read("ABC-1");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Round.class, round -> assertThat(
+                round.facts().openedAt()).isEqualTo(1_700_000_000_000L));
+    }
 }

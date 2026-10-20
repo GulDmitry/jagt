@@ -89,6 +89,7 @@ class WorktreeChangesTest {
 
         assertThat(added).isEmpty();
     }
+
     @Test
     void findsUncommittedChangesWhereAnyRepositoryHoldsThem() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));

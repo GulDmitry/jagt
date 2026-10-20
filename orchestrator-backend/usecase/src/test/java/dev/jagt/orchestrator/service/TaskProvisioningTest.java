@@ -183,6 +183,7 @@ class TaskProvisioningTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("needs the project its session runs in");
     }
+
     @Test
     void tellsTheCallerWhereTheAgentRunsAndWhatItWasCutFrom() {
         when(worktrees.cut(any(), any(), any())).thenReturn(List.of(

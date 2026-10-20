@@ -124,4 +124,10 @@ class AutoReviewCadenceTest {
     void stopsPollingOnceTheWindowHasElapsed() {
         assertThat(cadence.pollInterval(Duration.ofHours(24).plusMinutes(1))).isNull();
     }
+
+    @ParameterizedTest
+    @CsvSource({"true,auto-review on", "false,auto-review off"})
+    void summarisesWhetherAutoReviewIsOn(boolean enabled, String expected) {
+        assertThat(new AutoReviewCadence(enabled, Duration.ofHours(24), 10, 60).summary()).isEqualTo(expected);
+    }
 }

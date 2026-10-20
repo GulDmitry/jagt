@@ -101,6 +101,7 @@ class TaskLauncherTest {
         assertThat(refused.reason()).isEqualTo(Launched.Reason.NOTHING_TO_DO);
         verifyNoInteractions(launches);
     }
+
     @Test
     void answersWhatTheTicketLaunchAnsweredForARequestNamingATicket() {
         LaunchRequest request = LaunchRequest.of("ABC-42");

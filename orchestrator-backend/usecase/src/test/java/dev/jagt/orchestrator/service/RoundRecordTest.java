@@ -133,4 +133,19 @@ class RoundRecordTest {
 
         verifyNoInteractions(notifications);
     }
+
+    @Test
+    void keepsTheNewAgeOfTheRequestWhenNothingElseAboutTheRoundChanged() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("running").approved(false)
+                .requestOpenedAt(1_700_000_000_000L).build()));
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_500_000L));
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        assertThat(stamped.getValue()
+                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .requestOpenedAt()).isEqualTo(1_700_000_500_000L);
+    }
 }

@@ -277,6 +277,7 @@ class NewTaskWorktreesTest {
 
         verify(git, never()).createWorktree(any(), any(), any(), any(), any());
     }
+
     @Test
     void findsTheProjectHoldingABranchOfTheTaskAmongEveryConfiguredProjectWhenNoneIsNamed() {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(

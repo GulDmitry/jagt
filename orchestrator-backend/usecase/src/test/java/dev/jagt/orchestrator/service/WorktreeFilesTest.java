@@ -168,4 +168,55 @@ class WorktreeFilesTest {
 
         assertThat(WorktreeFiles.generated(runtime)).contains(".acme.json", "task_context.md");
     }
+
+    @Test
+    void startsTheFirstAdditionOnALineOfItsOwnWhereTheExcludeFileEndsWithoutANewline(@TempDir Path gitCommonDir) throws Exception {
+        Files.createDirectories(gitCommonDir.resolve("info"));
+        Files.writeString(gitCommonDir.resolve("info").resolve("exclude"), "*.local");
+
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
+
+        assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude"))).startsWith("*.local\n")
+                .doesNotContain("*.localmcp_client.js");
+    }
+
+    @Test
+    void leavesNoBlankLineBetweenWhatTheExcludeFileHeldAndWhatIsAdded(@TempDir Path gitCommonDir) throws Exception {
+        Files.createDirectories(gitCommonDir.resolve("info"));
+        Files.writeString(gitCommonDir.resolve("info").resolve("exclude"), "*.local\n");
+
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
+
+        assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude"))).startsWith("*.local\nmcp_client.js")
+                .doesNotContain("\n\n");
+    }
+
+    @Test
+    void copiesNoLocalFileThatNoGlobMatches(@TempDir Path root) throws Exception {
+        Path base = Files.createDirectories(root.resolve("base"));
+        Path wt = Files.createDirectories(root.resolve("wt"));
+        Files.writeString(base.resolve(".env"), "SECRET=1");
+        Files.writeString(base.resolve("notes.txt"), "mine");
+
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
+
+        assertThat(wt.resolve(".env")).exists();
+        assertThat(wt.resolve("notes.txt")).doesNotExist();
+    }
+
+    @Test
+    void readsNoMatcherFromABlankOrAbsentGlob() {
+        assertThat(WorktreeFiles.localFileMatchers(java.util.Arrays.asList("**/.env", null, " "))).hasSize(2);
+    }
+
+    @Test
+    void copiesAnEmptyDirectoryOfTheEditorsFilesToo(@TempDir Path root) throws Exception {
+        Path project = root.resolve("repo");
+        Files.createDirectories(project.resolve(".editor").resolve("runs").resolve("empty"));
+        Path worktree = root.resolve("ABC-1-repo");
+
+        WorktreeFiles.copyProjectFiles(project, worktree, List.of(".editor/runs"));
+
+        assertThat(worktree.resolve(".editor").resolve("runs").resolve("empty")).isDirectory();
+    }
 }

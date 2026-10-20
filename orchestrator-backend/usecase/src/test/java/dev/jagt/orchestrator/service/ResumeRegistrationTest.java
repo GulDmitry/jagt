@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -108,5 +109,14 @@ class ResumeRegistrationTest {
         registration.register("ABC-42", "proj", "https://host/mr/452", "ABC-42", "release/2");
 
         verify(tickets).charge("ABC-42", spent);
+    }
+
+    @Test
+    void answersTheTaskItResumedAndWhereItStands() {
+        Launched launched = registration.register("feature/widget-layout", "proj", "https://host/mr/455",
+                "Widget layout is off", "main");
+
+        assertThat(launched).isEqualTo(Launched.created("feature/widget-layout", "Resumed feature/widget-layout on its"
+                + " existing branch, linked https://host/mr/455; CI_POLLING — `sweep` or `deploy`."));
     }
 }

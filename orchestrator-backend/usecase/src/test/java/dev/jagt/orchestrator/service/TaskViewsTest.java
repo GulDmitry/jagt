@@ -110,6 +110,7 @@ class TaskViewsTest {
 
         assertThat(listing).isEqualTo("no tasks");
     }
+
     @Test
     void asksForTheDeployConfirmationNamingEachRepositorysDeployBranch() {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
