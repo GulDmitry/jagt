@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -103,5 +104,50 @@ class FinishedArtifactsTest {
             assertThat(new String(zip.getInputStream(zip.getEntry("20260101-ABC-0001/plan.md")).readAllBytes()))
                     .isEqualTo("the first plan");
         }
+    }
+
+    @Test
+    void keepsADocumentExactlyAsLargeAsTheSizeLimit(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-42-proj");
+        Files.createDirectories(worktree);
+        try (RandomAccessFile plan = new RandomAccessFile(worktree.resolve("plan.md").toFile(), "rw")) {
+            plan.setLength(10L * 1024 * 1024);
+        }
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
+                .alias("a1").title("a thing").build());
+
+        new FinishedArtifacts(state, paths).keep("ABC-42");
+
+        Path kept = Files.list(root.resolve("artifacts")).findFirst().orElseThrow();
+        assertThat(kept.resolve("plan.md")).hasSize(10L * 1024 * 1024);
+        assertThat(kept.resolve("plan.md.not-kept")).doesNotExist();
+    }
+
+    @Test
+    void countsOnlyTaskDirectoriesTowardsTheStoreBeingFull(@TempDir Path root) throws Exception {
+        IntStream.rangeClosed(1, 998).forEach(n -> {
+            try {
+                Files.createDirectories(root.resolve("artifacts/20260101-ABC-%04d".formatted(n)));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+        Files.writeString(root.resolve("artifacts/archive-20250101-0000.zip"), "an older archive");
+        Path worktree = root.resolve("ABC-42-proj");
+        Files.createDirectories(worktree);
+        Files.writeString(worktree.resolve("plan.md"), "the plan");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
+                .alias("a1").title("a thing").build());
+
+        new FinishedArtifacts(state, paths).keep("ABC-42");
+
+        assertThat(Files.list(root.resolve("artifacts")).filter(path -> path.toString().endsWith(".zip")).count())
+                .isEqualTo(1);
     }
 }

@@ -15,6 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -30,9 +31,10 @@ class SpecFoldTest {
                 .repos(List.of(TaskRepo.of("api", "/wt/api"), TaskRepo.of("web", "/wt/web"))).build());
         Specs specs = mock(Specs.class);
 
-        new SpecFold(state, specs).around("ABC-42", () -> Outcome.ok("shipped"));
+        Outcome outcome = new SpecFold(state, specs).around("ABC-42", () -> Outcome.ok("shipped"));
 
         verify(specs).fold(Path.of("/wt/web"), "ABC-42");
+        assertThat(outcome.message()).isEqualTo("shipped");
     }
 
     @Test

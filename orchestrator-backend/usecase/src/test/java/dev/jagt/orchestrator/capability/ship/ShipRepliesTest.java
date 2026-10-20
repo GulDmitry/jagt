@@ -31,4 +31,26 @@ class ShipRepliesTest {
 
         assertThat(step).contains("post each drafted reply");
     }
+
+    @Test
+    void leavesTheDraftedRepliesToTheHumanWherePostingWasTurnedOff() {
+        ConfigFile config = ConfigFile.defaults().withCodeReview(
+                ConfigFile.CodeReviewConfig.defaults().withPostReviewReplies(false));
+
+        String step = ShipService.repliesStep(config);
+
+        assertThat(step).isEqualTo("Do NOT post any replies — LEAVE review_replies.md untouched for the human"
+                + " to post.\n");
+    }
+
+    @Test
+    void postsOnlyToThreadsWhoseAuthorTheHumanNamed() {
+        ConfigFile config = ConfigFile.defaults().withCodeReview(
+                ConfigFile.CodeReviewConfig.defaults().withReviewReplyAuthors(List.of("jdoe", "bot")));
+
+        String step = ShipService.repliesStep(config);
+
+        assertThat(step).contains("post a drafted reply ONLY where the note its block answers is by an author"
+                + " matching (case-insensitive) any of: jdoe, bot");
+    }
 }

@@ -176,4 +176,19 @@ class MasterCheckTest {
 
         assertThat(check.problems()).isEmpty();
     }
+
+    @Test
+    void refusesAStepKeptForYourselfThatNamesNoStepTheMasterHolds(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md.dist"), "the shipped standards");
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withMaster(new MasterConfig("judge", null, null, List.of("ship", "teleport"), null)));
+        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                agentRuntime);
+
+        assertThat(check.problems()).singleElement().satisfies(problem -> {
+            assertThat(problem.key()).isEqualTo("orchestrator.master.mine");
+            assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
+        });
+    }
 }

@@ -224,4 +224,39 @@ class ShipServiceTest {
         assertThat(instruction)
                 .contains("reviewRequests={\"demo\": \"<its url>\", \"web\": \"<its url>\"}");
     }
+
+    @Test
+    void speaksOfOneRequestWhereOnlyOneRepositoryCarriesWork() {
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
+
+        Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
+
+        assertThat(outcome.message()).contains("until it reports the request").doesNotContain("requests");
+    }
+
+    @Test
+    void speaksOfRequestsWhereSeveralRepositoriesCarryWork() {
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).title("t")
+                .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
+                        TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build());
+
+        Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
+
+        assertThat(outcome.message()).contains("until it reports the requests");
+    }
+
+    @Test
+    void saysTheRepliesAreTheHumansToPostWherePostingWasTurnedOff() {
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
+                .withCodeReview(ConfigService.ConfigFile.CodeReviewConfig.defaults().withPostReviewReplies(false)));
+
+        Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
+
+        assertThat(outcome.message()).contains("review_replies.md is yours to post (postReviewReplies=false)");
+    }
 }

@@ -109,7 +109,7 @@ class DeployServiceTest {
         assertThat(worktree.resolve("task_context.md")).doesNotExist();
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
         assertThat(outcome.message()).contains(deployWorktree.toString())
-                .contains("nothing pushed").contains("deploy ABC-1");
+                .contains("nothing pushed").contains("deploy ABC-1").doesNotContain("Live on the deploy branch");
         assertThat(outcome.stamp()).contains(deployWorktree.toString());
     }
 
@@ -256,6 +256,7 @@ class DeployServiceTest {
 
         verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/api")), anyString(), anyString());
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.message()).contains("web into dev (f00dfeed)", "already on the deploy branch: api (cafebabe)");
     }
 
     @Test

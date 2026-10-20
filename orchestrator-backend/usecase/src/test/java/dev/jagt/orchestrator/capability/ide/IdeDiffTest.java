@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -30,9 +31,11 @@ class IdeDiffTest {
         when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
         when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
-        new IdeDiff(config, diffs, editor).open("ABC-1", task);
+        String opened = new IdeDiff(config, diffs, editor).open("ABC-1", task);
 
         verify(editor).openDiff(Path.of("/tmp/base"), Path.of("/tmp/clean"));
+        assertThat(opened).isEqualTo("Opened STATIC diff of ABC-1 (changes vs origin/main)"
+                + " — snapshot, does not refresh; re-run for a fresh one");
     }
 
     @Test
@@ -57,8 +60,9 @@ class IdeDiffTest {
         when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
         when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
-        new IdeDiff(config, diffs, editor).open("ABC-1", task);
+        String opened = new IdeDiff(config, diffs, editor).open("ABC-1", task);
 
+        assertThat(opened).contains("(api vs origin/main, web vs origin/next)");
         verify(diffs).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
         verify(diffs).checkoutBaseForDiff(Path.of("/web-repo"), "origin/next", "ABC-1", "web");
     }

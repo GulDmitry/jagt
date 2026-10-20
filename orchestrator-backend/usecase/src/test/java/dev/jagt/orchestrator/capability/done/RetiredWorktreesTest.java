@@ -70,4 +70,20 @@ class RetiredWorktreesTest {
 
         verify(sessions).forgetWorktree(Path.of("/wt"));
     }
+
+    @Test
+    void removesTheDeployWorktreeAnAbandonedConflictLeftBehind() {
+        new RetiredWorktrees(git, sessions).remove("ABC-1", List.of(TaskRepo.of("demo", "/wt")),
+                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())));
+
+        verify(git).removeDeployWorktreeIfPresent(Path.of("/repo"), "ABC-1");
+    }
+
+    @Test
+    void reportsNoMissingProjectWhereEveryRepositoryWasRemoved() {
+        boolean missing = new RetiredWorktrees(git, sessions).remove("ABC-1", List.of(TaskRepo.of("demo", "/wt")),
+                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())));
+
+        assertThat(missing).isFalse();
+    }
 }

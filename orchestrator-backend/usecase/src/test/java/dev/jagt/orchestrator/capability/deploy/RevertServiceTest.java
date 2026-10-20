@@ -67,7 +67,9 @@ class RevertServiceTest {
 
         assertThatThrownBy(() -> service.revert("a1"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("git revert -m 1");
+                .hasMessageContaining("git revert -m 1")
+                .hasMessageContaining("`git log --merges --grep ABC-1 origin/dev` to find")
+                .hasMessageNotContaining("` in proj");
         verify(git, never()).revertMergeAndPush(any(), anyString(), anyString(), anyString());
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
     }
@@ -279,5 +281,20 @@ class RevertServiceTest {
         service.revert("a1");
 
         verify(git).discardDeploy(Path.of("/repo"), "ABC-1");
+    }
+
+    @Test
+    void refusesToUndoADeployOntoABranchThatIsTheBaseBranch(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("proj", "cafebabe1234"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "main", null));
+        GitDeploy git = mock(GitDeploy.class);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
+
+        assertThatThrownBy(() -> service.revert("a1")).hasMessageContaining("deployBranch equals the base branch");
+        verify(git, never()).revertMergeAndPush(any(), anyString(), anyString(), anyString());
     }
 }

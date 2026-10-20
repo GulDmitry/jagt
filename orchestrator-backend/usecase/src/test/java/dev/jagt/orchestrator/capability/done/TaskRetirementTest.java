@@ -40,7 +40,7 @@ class TaskRetirementTest {
         order.verify(sessions).killWindows("ABC-1");
         order.verify(worktrees).remove(anyString(), any(), any());
         assertThat(state.task("ABC-1")).isEmpty();
-        assertThat(result).contains("Branch 'ABC-1' was kept");
+        assertThat(result).contains("Branch 'ABC-1' was kept").doesNotContain("agents window");
     }
 
     @Test
@@ -56,5 +56,19 @@ class TaskRetirementTest {
 
         assertThat(result).contains("worktree left on disk: project missing from jagt.yml");
         assertThat(state.task("ABC-1")).isEmpty();
+    }
+
+    @Test
+    void saysTheAgentsWindowWasClosedWithTheLastTask(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(sessions.closeViewerIfNoTasksLeft()).thenReturn(true);
+        TaskRetirement retirement = new TaskRetirement(state, config, sessions, worktrees);
+
+        String result = retirement.retire("a1");
+
+        assertThat(result).endsWith(". Last task gone — the agents window was closed.");
     }
 }
