@@ -5,7 +5,8 @@
 `./gradlew test` is the hermetic gate. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest`
 needs git + tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on
 `JAGT_IN_CONTAINER`); `promptEval` the assistant's CLI and tokens; `masterEval` those plus minutes;
-`pitest` of every ring is a mutation report a human reads, never a gate.
+`pitest` of every ring is a mutation report a human reads, never a gate;
+a task's change is checked with `-PpitestTargets=<its changed classes>`, the full run belongs to release-review and refresh.
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
 **every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app

@@ -130,13 +130,26 @@ configure(allprojects - project(':core')) {
 }
 
 // A report asked for by name, read by a human: never in `test`, `check` or `build`, and no threshold.
+def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'GitStates', 'GitCommands', 'WorktreeHooks', 'DiffCheckouts']
+    .collect { "dev.jagt.orchestrator.service.${it}" }
+
 configure(allprojects - project(':')) {
     apply plugin: 'info.solidsoft.pitest'
+    def pitestTargets = providers.gradleProperty('pitestTargets').map { it.split(',').toList() }
+    // Only `:adapter`'s real-git tests run the `:usecase` classes listed above, so `:adapter` mutates them and `:usecase` does not.
+    def ownTargets = project.path == ':adapter' ? ['dev.jagt.orchestrator.adapter.*'] + usecaseGitClasses : ['dev.jagt.*']
 
     pitest {
         pitestVersion = '1.30.1'
         junit5PluginVersion = '1.2.3'
-        targetClasses = ['dev.jagt.*']
+        targetClasses = pitestTargets.orElse(ownTargets)
+        targetTests = ['dev.jagt.*']
+        if (project.path == ':usecase') {
+            excludedClasses = usecaseGitClasses.collectMany { [it, it + '$*'] }
+        }
+        if (project.path == ':adapter') {
+            additionalMutableCodePaths = project(':usecase').sourceSets.main.output.classesDirs.files
+        }
         threads = Runtime.runtime.availableProcessors()
         outputFormats = ['HTML', 'XML']
         timestampedReports = false
