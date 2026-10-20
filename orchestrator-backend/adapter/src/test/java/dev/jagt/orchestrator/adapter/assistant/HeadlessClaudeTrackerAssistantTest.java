@@ -8,6 +8,9 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
@@ -18,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class HeadlessClaudeTrackerAssistantTest {
@@ -102,5 +106,46 @@ class HeadlessClaudeTrackerAssistantTest {
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).noneMatch(argument -> argument.contains("Your last answer was refused"));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "  "})
+    void readsNoTicketWithoutAReference(String ref) {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        assertThat(assistant.readTicket(ref, List.of()).facts()).isEmpty();
+        assertThat(assistant.readTicketText(ref).facts()).isEmpty();
+        verifyNoInteractions(runner);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "  "})
+    void searchesNoTrackerWithoutAQuery(String query) {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        assertThat(assistant.findCandidates(query).facts()).isEmpty();
+        verifyNoInteractions(runner);
+    }
+
+    @Test
+    void copiesTheTicketTextOutStrippedAndAnswersNothingForAnEmptyOne() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(
+                new Processes.Result(0, "{\"structured_output\":{\"text\":\"  # Summary\\nbody  \"}}", ""),
+                new Processes.Result(0, "{\"structured_output\":{\"text\":\"  \"}}", ""));
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var copied = assistant.readTicketText("ABC-42").facts();
+        var empty = assistant.readTicketText("ABC-42").facts();
+
+        assertThat(copied).contains("# Summary\nbody");
+        assertThat(empty).isEmpty();
     }
 }

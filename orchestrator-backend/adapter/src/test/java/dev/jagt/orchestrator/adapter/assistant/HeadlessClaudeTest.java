@@ -541,4 +541,19 @@ class HeadlessClaudeTest {
         assertThat(answer.facts()).isEmpty();
         assertThat(answer.failure()).isEqualTo("exit 2");
     }
+
+    @Test
+    void aCallThatNeverReturnedFailsNamingWhyAndBooksNoCost() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenThrow(new IllegalStateException("Command timed out after PT2M"));
+
+        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read ABC-42.",
+                TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        assertThat(answer.facts()).isEmpty();
+        assertThat(answer.failure()).isEqualTo("did not return: Command timed out after PT2M");
+        assertThat(answer.usage()).isEqualTo(TokenUsage.NONE);
+    }
 }

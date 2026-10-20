@@ -75,4 +75,19 @@ class JiraWorkflowTest {
                 .isEqualTo("the Jira issues matching the JQL: assignee = \"jdoe\" AND status ="
                         + " \"In Progress\"");
     }
+
+    @Test
+    void keepsWorkOpenOnAnyStageButTheOneTheInstallCallsDone() {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("both", "jira",
+                "jdoe", "In Progress", "Ready for Stage", null)));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
+                .withTrackerStatus("In Progress").withAssignee("jdoe");
+
+        assertThat(workflow.closesWork(item)).isFalse();
+    }
+
+    @Test
+    void namesItselfJiraSoTheInstallCanSelectIt() {
+        assertThat(workflow.id()).isEqualTo("jira");
+    }
 }

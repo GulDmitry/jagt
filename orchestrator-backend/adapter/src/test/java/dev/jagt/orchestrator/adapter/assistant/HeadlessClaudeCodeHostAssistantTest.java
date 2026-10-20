@@ -8,6 +8,9 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
@@ -18,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class HeadlessClaudeCodeHostAssistantTest {
@@ -204,5 +208,47 @@ class HeadlessClaudeCodeHostAssistantTest {
 
         assertThat(facts).isPresent();
         assertThat(facts.get().threads()).containsExactly("x".repeat(2000));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"ABC-42", "ftp://host/mr/9"})
+    void readsNoMergeRequestFromAnythingButAWebAddress(String mrUrl) {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        assertThat(assistant.readMergeRequest(mrUrl).facts()).isEmpty();
+        verifyNoInteractions(runner);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"ABC-42", "ftp://host/mr/9"})
+    void sweepsNoReviewFromAnythingButAWebAddress(String mrUrl) {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        assertThat(assistant.readReview(mrUrl).facts()).isEmpty();
+        verifyNoInteractions(runner);
+    }
+
+    @Test
+    void readsTheBranchesAndTheTitleOfAMergeRequest() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":true,\"sourceBranch\":\"ABC-42-fix\","
+                        + "\"targetBranch\":\"main\",\"title\":\"Fix the widget\"}}", ""));
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readMergeRequest("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().exists()).isTrue();
+        assertThat(facts.get().sourceBranch()).isEqualTo("ABC-42-fix");
+        assertThat(facts.get().targetBranch()).isEqualTo("main");
+        assertThat(facts.get().title()).isEqualTo("Fix the widget");
     }
 }

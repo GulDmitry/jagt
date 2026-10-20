@@ -115,4 +115,15 @@ class ReadOnlyToolsTest {
 
         assertThat(scopes.ask("f1")).isEmpty();
     }
+
+    @Test
+    void namesEveryCallTheFencedRunMade() {
+        ReadScopes scopes = new ReadScopes();
+        ReadOnlyTools tools = new ReadOnlyTools(mock(McpHealth.class), AssistantProperties.empty(), scopes,
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+        tools.fence("f1", new ReadScope(List.of(), List.of(), false));
+        scopes.hear("f1", "mcp__acme__get_issue", "ABC-42");
+
+        assertThat(tools.calls("f1")).containsExactly("mcp__acme__get_issue ABC-42");
+    }
 }
