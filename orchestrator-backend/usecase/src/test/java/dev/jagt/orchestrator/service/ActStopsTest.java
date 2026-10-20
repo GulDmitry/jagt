@@ -47,6 +47,18 @@ class ActStopsTest {
     }
 
     @Test
+    void stopsUnattendedStartsWhereTheDailyCeilingStands(@TempDir Path root) throws IOException {
+        Files.writeString(root.resolve("starts-stopped"), LocalDate.now() + " 50\n");
+
+        assertThat(stopsIn(root).startsStopped()).isTrue();
+    }
+
+    @Test
+    void liftsNothingWhereNoStopStands(@TempDir Path root) {
+        assertThat(stopsIn(root).lift()).isFalse();
+    }
+
+    @Test
     void liftsBothStops(@TempDir Path root) throws IOException {
         Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
         Files.writeString(root.resolve("starts-stopped"), LocalDate.now() + " 50\n");

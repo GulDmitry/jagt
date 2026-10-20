@@ -17,6 +17,11 @@ class OneLineTest {
     }
 
     @Test
+    void keepsTextWhoseLengthIsExactlyTheWidth() {
+        assertThat(OneLine.of("fixed", 5)).isEqualTo("fixed");
+    }
+
+    @Test
     void keepsAbsentTextAbsent() {
         assertThat(OneLine.of(null, 6)).isNull();
     }

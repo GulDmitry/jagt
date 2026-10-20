@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.Guard;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -51,6 +53,64 @@ class TrustedGitStateTest {
 
         assertThat(distrust).hasValueSatisfying(why -> assertThat(why).contains("core.fsmonitor in /r/.git/config added"));
         assertThat(state.task("ABC-42").orElseThrow().gitStateChanged()).isTrue();
+    }
+
+    @Test
+    void namesThreeChangesAndCountsTheRestWhereMoreChanged(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+                .gitTrust(GitTrust.of(Map.of())).build());
+        when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1", "b in /c", "1", "c in /c", "1", "d in /c", "1"));
+
+        Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+
+        assertThat(distrust).contains("git config or hooks changed since trusted: a in /c added; b in /c added;"
+                + " c in /c added; 1 more — trust adopts them");
+    }
+
+    @Test
+    void namesAllThreeChangesWithoutACountWhereExactlyThreeChanged(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+                .gitTrust(GitTrust.of(Map.of())).build());
+        when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1", "b in /c", "1", "c in /c", "1"));
+
+        Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+
+        assertThat(distrust).contains("git config or hooks changed since trusted: a in /c added; b in /c added;"
+                + " c in /c added — trust adopts them");
+    }
+
+    @Test
+    void readsNoWorktreeForARepoThatHasNone(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "", TaskStatus.APPROVED).build());
+        when(git.gitState(List.of())).thenReturn(Map.of("core.editor in /r/.git/config", "a1"));
+
+        new TrustedGitState(state, git).trust("ABC-42");
+
+        assertThat(state.task("ABC-42").orElseThrow().gitTrust())
+                .isEqualTo(GitTrust.of(Map.of("core.editor in /r/.git/config", "a1")));
+    }
+
+    @Test
+    void refusesToTrustATaskThatDoesNotExist(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+
+        assertThatThrownBy(() -> new TrustedGitState(state, git).trust("ABC-42"))
+                .isInstanceOf(Refusal.class);
+    }
+
+    @Test
+    void distrustsNothingForATaskThatDoesNotExist(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+
+        assertThat(new TrustedGitState(state, git).distrust("ABC-42")).isEmpty();
     }
 
     @Test

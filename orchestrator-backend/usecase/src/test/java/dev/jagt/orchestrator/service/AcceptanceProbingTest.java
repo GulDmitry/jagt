@@ -109,6 +109,29 @@ class AcceptanceProbingTest {
                 List.of(Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/guide.md"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(true);
+        assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("");
+    }
+
+    @Test
+    void keepsOnlyTheLastTwoThousandCharactersOfAnOutput(@TempDir Path worktree) {
+        when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
+                .thenReturn(new Processes.Result(1, "a" + "b".repeat(2_000), ""));
+
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+                List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
+
+        assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("exit 1\n" + "b".repeat(2_000));
+    }
+
+    @Test
+    void addsNoOutputToTheExitOfACommandThatPrintedNothing(@TempDir Path worktree) {
+        when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
+                .thenReturn(new Processes.Result(1, "", ""));
+
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+                List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
+
+        assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("exit 1");
     }
 
     @Test
@@ -129,5 +152,6 @@ class AcceptanceProbingTest {
                 List.of(Probe.specified(Probe.Kind.ARTIFACT, List.of("inside.md"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(false);
+        assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("it resolves outside the worktree");
     }
 }

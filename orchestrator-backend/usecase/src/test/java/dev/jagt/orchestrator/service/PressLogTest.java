@@ -78,6 +78,26 @@ class PressLogTest {
     }
 
     @Test
+    void acceptsABatchOfExactlyFiftyPresses() throws IOException {
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+
+        presses.record(Collections.nCopies(50, new Interaction(NOW, "flag", null)), NOW);
+
+        assertThat(Files.readAllLines(dir.resolve("interactions.jsonl"))).hasSize(50);
+    }
+
+    @Test
+    void acceptsAPressDatedExactlyADayBeforeNow() {
+        PressLog presses = new PressLog(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+
+        presses.record(List.of(new Interaction(NOW - 24L * 60 * 60 * 1000, "flag", null)), NOW);
+
+        assertThat(dir.resolve("interactions.jsonl")).exists();
+    }
+
+    @Test
     void writesNothingWhenSwitchedOff() {
         Path file = dir.resolve("interactions.jsonl");
         PressLog presses = new PressLog(new JsonMapper(),

@@ -13,6 +13,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
@@ -33,6 +34,18 @@ class UsageTrackerTest {
         assertThat(byKind).doesNotContainKey(AssistantCallKind.MR_READ);
         assertThat(tracker.session().calls()).isEqualTo(3);
         assertThat(tracker.session().inputTokens()).isEqualTo(86_000);
+    }
+
+    @Test
+    void booksEveryRecordedCallInTheLedger(@TempDir Path root) {
+        UsageLedger ledger = mock(UsageLedger.class);
+        UsageTracker tracker = new UsageTracker(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))), ledger);
+        TokenUsage usage = TokenUsage.ofCall(25_000, 0, 170, 0.05);
+
+        tracker.record(AssistantCallKind.MR_READ, usage);
+
+        verify(ledger).add(AssistantCallKind.MR_READ, usage);
     }
 
     @Test

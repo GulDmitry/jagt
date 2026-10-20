@@ -44,6 +44,37 @@ class TaskNotesTest {
     }
 
     @Test
+    void owesNothingWhenTheNotesAreExactlyAtTheirCap(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve("task_notes.md"), "x".repeat(16_000));
+
+        assertThat(TaskNotes.owed(worktree)).isEmpty();
+    }
+
+    @Test
+    void owesNothingWhenTheNotesAndTheRoundShareATimestamp(@TempDir Path worktree) throws Exception {
+        FileTime same = FileTime.from(Instant.parse("2026-01-01T10:00:00Z"));
+        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_notes.md"), "kept the retry"), same);
+        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_context.md"), "round 2"), same);
+
+        assertThat(TaskNotes.owed(worktree)).isEmpty();
+    }
+
+    @Test
+    void owesNothingWhenEveryLineTheTaskAddedToTheAgentFileIsNamed(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve("task_notes.md"), "agent-file: a\nagent-file: b\nagent-file: c\n");
+
+        assertThat(TaskNotes.agentFileOwed(worktree, 3)).isEmpty();
+    }
+
+    @Test
+    void countsOnlyTheAgentFileLinesOfTheNotes(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve("task_notes.md"), "kept the retry\nagent-file: a\n");
+
+        assertThat(TaskNotes.agentFileOwed(worktree, 2)).contains("task_notes.md names the gap for 1 of the 2 lines"
+                + " this task added to the project's agent file: one `agent-file:` line each");
+    }
+
+    @Test
     void owesAJustificationForEachLineTheTaskAddedToTheProjectsAgentFile(@TempDir Path worktree) throws Exception {
         Files.writeString(worktree.resolve("task_notes.md"), "agent-file: the build needs the local registry\n");
 

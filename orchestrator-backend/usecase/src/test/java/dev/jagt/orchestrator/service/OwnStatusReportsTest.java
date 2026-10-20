@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class OwnStatusReportsTest {
@@ -57,6 +58,23 @@ class OwnStatusReportsTest {
                 .isNotInstanceOf(Refusal.class)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("task_notes.md names the model 'gpt'");
+    }
+
+    @Test
+    void asksNoNotesOfAReportTheMasterDoesNotRead(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
+        when(statusReports.contextFor("ABC-1")).thenReturn(MessageContext.NONE);
+        AgentStatusMessage working = new AgentStatusMessage("IN_PROGRESS", "still going", null, null, Map.of());
+        when(statusReports.report(working, "ABC-1")).thenReturn("Task ABC-1 -> IN_PROGRESS");
+        HandBackDue due = mock(HandBackDue.class);
+        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports);
+
+        reports.report(working, "ABC-1");
+
+        verifyNoInteractions(due);
     }
 
     @Test
