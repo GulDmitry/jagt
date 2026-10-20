@@ -34,6 +34,28 @@ class BoardWriteFilterTest {
     }
 
     @Test
+    void admitsAWriteCarryingTheBoardsOrigin() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/tasks/say");
+        request.addHeader("Origin", "http://localhost:8290");
+        MockFilterChain chain = new MockFilterChain();
+
+        new BoardWriteFilter().doFilter(request, new MockHttpServletResponse(), chain);
+
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
+    void leavesTheAgentsMcpEndpointToItsToken() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
+        request.setServletPath("/mcp");
+        MockFilterChain chain = new MockFilterChain();
+
+        new BoardWriteFilter().doFilter(request, new MockHttpServletResponse(), chain);
+
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
     void leavesASessionsHookToItsWorktree() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/agent/session/gone");
         request.setServletPath("/api/agent/session/gone");

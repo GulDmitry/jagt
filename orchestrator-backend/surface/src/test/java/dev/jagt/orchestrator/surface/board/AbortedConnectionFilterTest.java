@@ -5,9 +5,12 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.spi.FilterReply;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketException;
 import java.util.stream.Stream;
@@ -38,10 +41,26 @@ class AbortedConnectionFilterTest {
 
         filter.installInto(context);
         boolean installed = context.getTurboFilterList().contains(filter);
+        boolean startedWhileInstalled = filter.isStarted();
         filter.removeFrom(context);
 
         assertThat(installed).isTrue();
+        assertThat(startedWhileInstalled).isTrue();
         assertThat(context.getTurboFilterList()).doesNotContain(filter);
+        assertThat(filter.isStarted()).isFalse();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void joinsTheJvmsLoggerContextWhenCreatedAndLeavesItWhenDestroyed() {
+        LoggerContext jvm = (LoggerContext) LoggerFactory.getILoggerFactory();
+
+        filter.install();
+        boolean installed = jvm.getTurboFilterList().contains(filter);
+        filter.uninstall();
+
+        assertThat(installed).isTrue();
+        assertThat(jvm.getTurboFilterList()).doesNotContain(filter);
     }
 
     @ParameterizedTest

@@ -3,12 +3,15 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Duration;
 import java.util.List;
@@ -94,6 +97,27 @@ class BoardApiControllerTest {
         var board = api.tasks();
 
         assertThat(board.projects()).containsExactly("demo");
+    }
+
+    @Test
+    void servesTheStatusOfEveryJobTheBackendRuns() {
+        Job poll = mock(Job.class);
+        when(poll.id()).thenReturn("poll-reviews");
+        BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
+                new GlobalCommands(List.of()), new Jobs(List.of(poll), Runnable::run));
+
+        assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
+    }
+
+    @Test
+    void handsTheBrowserTheStreamTheEventSourceOpened() {
+        TaskEventStream stream = mock(TaskEventStream.class);
+        SseEmitter browser = new SseEmitter(0L);
+        when(stream.open()).thenReturn(browser);
+        BoardApiController board = new BoardApiController(taskViews, stream, new GlobalCommands(List.of()),
+                new Jobs(List.of(), Runnable::run));
+
+        assertThat(board.events()).isSameAs(browser);
     }
 
     @Test

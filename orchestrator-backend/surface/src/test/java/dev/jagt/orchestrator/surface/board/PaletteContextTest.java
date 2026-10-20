@@ -43,6 +43,43 @@ class PaletteContextTest {
     }
 
     @Test
+    void namesATaskWithoutAnAliasByItsIdAlone(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        PaletteContext board = new PaletteContext(state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())));
+
+        CommandAssistant.Menu menu = board.menu();
+
+        assertThat(menu.tasks()).containsExactly("ABC-1");
+    }
+
+    @Test
+    void resolvesAProposedAliasToTheTaskItNames(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
+
+        assertThat(board.existingTask(" a1 ")).isEqualTo("ABC-1");
+    }
+
+    @Test
+    void refusesAProposedTaskThatDoesNotExist(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
+
+        assertThat(board.existingTask("ABC-99")).isNull();
+    }
+
+    @Test
     void offersTheModelOnlyTheWordsItMayAnswerWith(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())

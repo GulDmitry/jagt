@@ -28,7 +28,8 @@ class LoopbackFilterTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"https://evil.example", "null", "http://127.0.0.1:9999"})
+    @CsvSource({"https://evil.example", "null", "http://127.0.0.1:9999",
+            "http://bad host:8290"})
     void refusesARequestSentFromAnotherOrigin(String origin) throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
         request.setServerName("127.0.0.1");
