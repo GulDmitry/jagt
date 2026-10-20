@@ -22,6 +22,13 @@ class ClaudeTrustTest {
     }
 
     @Test
+    void aSuiteRunTrustsItsWorktreesInsideTheBuildNeverInTheHumansConfig() {
+        Path configFile = ClaudeTrust.configFile();
+
+        assertThat(configFile).startsWith(Path.of("").toAbsolutePath());
+    }
+
+    @Test
     void writesNothingWhenTheWorktreeIsAlreadyTrusted() {
         String updated = ClaudeTrust.accepted(
                 "{\"projects\": {\"/wt/ABC-42\": {\"hasTrustDialogAccepted\": true}}}", "/wt/ABC-42");

@@ -86,6 +86,11 @@ allprojects {
         task.doFirst { tmuxDir.mkdirs() }
     }
 
+    // Provisioning a worktree trusts it in the config Claude reads; the suites that log in as the human need theirs.
+    tasks.matching { it.name in ['test', 'pitest'] }.configureEach { task ->
+        task.environment 'CLAUDE_CONFIG_DIR', task.temporaryDir.absolutePath
+    }
+
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         maxHeapSize = '2g'
