@@ -155,6 +155,23 @@ class WatchdogServiceTest {
         assertThat(writes).hasValue(1);
     }
 
+    @Test
+    void writesNothingOnTheTicksOfATaskThatKeepsMoving(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        AtomicInteger writes = new AtomicInteger();
+        state.onChange(file -> writes.incrementAndGet());
+        WatchdogService watchdog = new WatchdogService(state, mock(Notifications.class), properties,
+                mock(SessionProbe.class));
+
+        watchdog.run();
+        watchdog.run();
+
+        assertThat(writes).hasValue(0);
+    }
+
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void watchesEveryStatusWhoseNextMoveIsTheAgentsOwnAndJagtIsNotHoldingItself(TaskStatus status) {

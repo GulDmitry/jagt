@@ -99,10 +99,7 @@ public class RunningJarWatch implements Job {
     }
 
     /** A rewrite, not a read: either fact changing is enough, and a file that VANISHED counts too. */
-    static boolean rewritten(@Nullable Stamp atStartup, @Nullable Stamp now) {
-        if (atStartup == null) {
-            return false;
-        }
+    static boolean rewritten(Stamp atStartup, @Nullable Stamp now) {
         return now == null || now.lastModified() != atStartup.lastModified() || now.size() != atStartup.size();
     }
 
