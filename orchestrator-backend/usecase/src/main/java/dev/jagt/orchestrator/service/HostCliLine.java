@@ -67,17 +67,26 @@ final class HostCliLine {
         List<String> words = shellWords(segment);
         int command = commandPosition(words);
         for (int at = 0; at < words.size(); at++) {
-            String word = words.get(at);
-            String next = at + 1 < words.size() ? words.get(at + 1) : "";
-            boolean glued = GLUED_REPO.matcher(next).matches();
-            boolean called = HOST_CLI.matcher(word).matches()
-                    && (at == command || GROUPS.contains(next) || glued || next.contains("{"));
-            int from = REPO_FLAGS.contains(next) ? at + 3 : glued ? at + 2 : at + 1;
-            if (called && !reads(words, from) || runsLines(words, at)) {
+            if (callsWrite(words, at, command) || runsLines(words, at)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean callsWrite(List<String> words, int at, int command) {
+        String next = at + 1 < words.size() ? words.get(at + 1) : "";
+        boolean glued = GLUED_REPO.matcher(next).matches();
+        boolean called = HOST_CLI.matcher(words.get(at)).matches()
+                && (at == command || GROUPS.contains(next) || glued || next.contains("{"));
+        return called && !reads(words, readsFrom(at, next, glued));
+    }
+
+    private static int readsFrom(int at, String next, boolean glued) {
+        if (REPO_FLAGS.contains(next)) {
+            return at + 3;
+        }
+        return glued ? at + 2 : at + 1;
     }
 
     private static int commandPosition(List<String> words) {
@@ -86,13 +95,18 @@ final class HostCliLine {
             if (ASSIGNMENT.matcher(words.get(at)).matches()) {
                 at++;
             } else if (WRAPPERS.contains(words.get(at).replaceFirst(".*/", ""))) {
-                at++;
-                while (at < words.size() && words.get(at).startsWith("-")) {
-                    at += WRAPPER_OPTION_WITH_VALUE.contains(words.get(at)) ? 2 : 1;
-                }
+                at = afterWrapperOptions(words, at + 1);
             } else {
                 break;
             }
+        }
+        return at;
+    }
+
+    private static int afterWrapperOptions(List<String> words, int from) {
+        int at = from;
+        while (at < words.size() && words.get(at).startsWith("-")) {
+            at += WRAPPER_OPTION_WITH_VALUE.contains(words.get(at)) ? 2 : 1;
         }
         return at;
     }

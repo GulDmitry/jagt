@@ -129,6 +129,11 @@ public class ProjectSetup {
 
     /** Refuses an entry the file could not hold, and leaves the file as it was when the result does not read. */
     public synchronized String add(Entry entry) {
+        check(entry);
+        return write(entry);
+    }
+
+    private void check(Entry entry) {
         if (entry.key() == null || !KEY.matcher(entry.key()).matches()) {
             throw new IllegalArgumentException("A key starts with a letter and holds letters, digits, - or _");
         }
@@ -149,6 +154,9 @@ public class ProjectSetup {
         if (!refused.isEmpty()) {
             throw new IllegalArgumentException(refused.get(0).text());
         }
+    }
+
+    private String write(Entry entry) {
         Path file = real(paths.configFile());
         Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try {
@@ -158,15 +166,7 @@ public class ProjectSetup {
             try {
                 configService.project(entry.key());
             } catch (RuntimeException unreadable) {
-                try {
-                    Files.move(Files.writeString(temp, before, StandardCharsets.UTF_8), file,
-                            StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                } catch (IOException cannotRestore) {
-                    throw new IllegalStateException(file.getFileName() + " did not read after the change and could"
-                            + " not be put back; fix it by hand: " + cannotRestore.getMessage(), cannotRestore);
-                }
-                throw new IllegalStateException(file.getFileName() + " did not read after the change, so it was put back: "
-                        + unreadable.getMessage(), unreadable);
+                putBack(file, temp, before, unreadable);
             }
             return "Added " + entry.key() + " to jagt.yml";
         } catch (IOException e) {
@@ -178,6 +178,18 @@ public class ProjectSetup {
                 // A left-over temporary file is overwritten by the next add.
             }
         }
+    }
+
+    private static void putBack(Path file, Path temp, String before, RuntimeException unreadable) {
+        try {
+            Files.move(Files.writeString(temp, before, StandardCharsets.UTF_8), file,
+                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException cannotRestore) {
+            throw new IllegalStateException(file.getFileName() + " did not read after the change and could"
+                    + " not be put back; fix it by hand: " + cannotRestore.getMessage(), cannotRestore);
+        }
+        throw new IllegalStateException(file.getFileName() + " did not read after the change, so it was put back: "
+                + unreadable.getMessage(), unreadable);
     }
 
     /** The file with the entry first under the {@code projects:} that is a direct child of {@code orchestrator:}. */

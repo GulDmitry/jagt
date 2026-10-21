@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CognitiveComplexityTest {
 
-    private static final int CEILING = 15;
+    private static final int CEILING = 12;
     private static final String RULESET = """
             <ruleset name="cognitive" xmlns="http://pmd.sourceforge.net/ruleset/2.0.0">
               <description>cognitive complexity</description>

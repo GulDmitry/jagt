@@ -1,4 +1,4 @@
-# 0053 — A method reads at cognitive complexity 15 at most
+# 0053 — A method reads at cognitive complexity 12 at most
 
 [← decisions](README.md) · rule: [`docs/rules/style.md`](../rules/style.md#code-quality)
 
@@ -14,7 +14,7 @@ Accepted 2026-10-21.
 ## Decision
 
 - `CognitiveComplexityTest` runs PMD's `CognitiveComplexity` over every ring's `main` inside `./gradlew test`.
-- A method above 15 fails the gate; every method is checked, not only a diff, in about a second.
+- A method above 12 fails the gate; every method is checked, not only a diff, in about a second.
 - The ceiling only falls: `refresh` lowers it in steps (15 → 12 → 10) once a handful stand above the next.
 
 ## Rejected

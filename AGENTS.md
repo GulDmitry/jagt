@@ -72,7 +72,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
 - **Three collaborators per class is the target, five the ceiling**, delegates included (`CollaboratorCeilingTest`):
   group them into a component, never add a field.
-- **A method reads at cognitive complexity 15 at most** (`CognitiveComplexityTest`): split it, never raise the number.
+- **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
 - **A test wiring over 3 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
   seam in `main` that only tests call (`ProductionConstructorTest`).

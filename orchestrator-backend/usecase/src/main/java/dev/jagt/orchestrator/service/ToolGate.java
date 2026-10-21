@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -72,34 +73,57 @@ public final class ToolGate {
         }
         String command = line.replace("\\\n", " ").replace("\\", "").replace("''", "").replace("\"\"", "");
         String unquotedLine = QUOTING.matcher(line).replaceAll("");
+        String branch = taskBranch;
+        return Stream.<Supplier<Optional<String>>>of(
+                        () -> reachesBoard(unquotedLine, boardPort),
+                        () -> writesToHost(command, unquotedLine, branch),
+                        () -> readsUnquoted(line, unquotedLine),
+                        () -> skipsPrePush(command, branch),
+                        () -> pushRefusal(line, command, branch))
+                .map(Supplier::get).flatMap(Optional::stream).findFirst();
+    }
+
+    private static Optional<String> reachesBoard(String unquotedLine, int boardPort) {
         if (board(boardPort).matcher(unquotedLine).find()) {
             return Optional.of("jagt refuses a line reaching its board or the Master's token: a session acts"
                     + " through its own MCP tools.");
         }
+        return Optional.empty();
+    }
+
+    private static Optional<String> writesToHost(String command, String unquotedLine, String taskBranch) {
         if (PLUMBING.matcher(unquotedLine).find()
                 || Stream.of(SEPARATORS.split(command)).anyMatch(HostCliLine::writes) || HostCliLine.writes(command)) {
             return Optional.of("jagt refuses writing to the code host from here: gh and glab only read ("
                     + HostCliLine.readsAllowed() + "). Push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
+        return Optional.empty();
+    }
+
+    private static Optional<String> readsUnquoted(String line, String unquotedLine) {
         if (UNREAD_QUOTING.matcher(line).find() && GIT_WORD.matcher(unquotedLine).find()) {
             return Optional.of("jagt refuses $'…' and $\"…\" on a git, gh or glab line: write it in plain quotes.");
         }
+        return Optional.empty();
+    }
+
+    private static Optional<String> skipsPrePush(String command, String taskBranch) {
         if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
                 || Stream.of(SEPARATORS.split(command)).anyMatch(ToolGate::configuresAPush))) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
+        return Optional.empty();
+    }
+
+    private static Optional<String> pushRefusal(String line, String command, String taskBranch) {
         boolean headIsTheTask = !HEAD_MOVES.matcher(command).find();
         String escapesQuoted = ESCAPED.matcher(line.replace("\\\n", " ").replace("''", "").replace("\"\"", ""))
                 .replaceAll("\"$1\"");
-        for (String segment : SEPARATORS.split(escapesQuoted)) {
-            Optional<String> refusal = pushIn(segment).flatMap(push -> refuse(push, taskBranch, headIsTheTask));
-            if (refusal.isPresent()) {
-                return refusal;
-            }
-        }
-        return Optional.empty();
+        return Stream.of(SEPARATORS.split(escapesQuoted))
+                .map(segment -> pushIn(segment).flatMap(push -> refuse(push, taskBranch, headIsTheTask)))
+                .flatMap(Optional::stream).findFirst();
     }
 
     /**

@@ -46,7 +46,7 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   smell is in the **production code** (`sob-ai:unit-testing` §5) — fix the code, never the fixture.
 - **A unit knows what it needs, never who uses it**, a comment included. `RingsTest` fails an inner module
   naming an outer type, review a caller named as a concept.
-- **Cognitive complexity 15 per method at most**, PMD's count of Sonar's metric (`CognitiveComplexityTest`,
+- **Cognitive complexity 12 per method at most**, PMD's count of Sonar's metric (`CognitiveComplexityTest`,
   [0053](../decisions/0053-a-method-reads-at-cognitive-complexity-fifteen-at-most.md)): over it, extract a named step.
   The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units

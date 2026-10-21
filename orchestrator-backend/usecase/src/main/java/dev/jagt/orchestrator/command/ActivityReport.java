@@ -62,17 +62,7 @@ public class ActivityReport {
             return "log file " + path + " is not structured JSON (logging.structured.format.file), so jagt"
                     + " cannot read its own entries back.\n";
         }
-        List<String> entries = new ArrayList<>();
-        for (int i = lines.size() - 1; i >= 0 && entries.size() < MAX_ENTRIES; i--) {
-            JsonNode event = parse(lines.get(i));
-            if (event == null) {
-                continue;
-            }
-            String task = text(event, "task");
-            if (task != null) {
-                entries.add(entry(event, task));
-            }
-        }
+        List<String> entries = taskEntries(lines);
         String rolled = rolledOver(path);
         if (entries.isEmpty()) {
             return "nothing about any task in the last " + TAIL_BYTES / 1024 + " KB of " + path + "."
@@ -80,6 +70,23 @@ public class ActivityReport {
         }
         return "what jagt did on its own — newest first, from " + path + ":\n\n"
                 + String.join("\n", entries) + "\n" + (rolled.isEmpty() ? "" : rolled.strip() + "\n");
+    }
+
+    private List<String> taskEntries(List<String> lines) {
+        List<String> entries = new ArrayList<>();
+        for (int i = lines.size() - 1; i >= 0 && entries.size() < MAX_ENTRIES; i--) {
+            String entry = taskEntry(lines.get(i));
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+        return entries;
+    }
+
+    private @Nullable String taskEntry(String line) {
+        JsonNode event = parse(line);
+        String task = event == null ? null : text(event, "task");
+        return event == null || task == null ? null : entry(event, task);
     }
 
     /** Rolled-over files are not read — they are gzipped — so their existence is reported instead. */
