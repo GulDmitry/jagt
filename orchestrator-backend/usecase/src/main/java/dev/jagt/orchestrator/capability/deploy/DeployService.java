@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static dev.jagt.orchestrator.service.DeployTargets.because;
@@ -45,41 +47,51 @@ public class DeployService {
         TaskState task = requireTask(taskId);
         List<Target> targets = deployTargets.all(task);
         targets.forEach(DeployTargets::requireDeployable);
-        Map<String, String> merged = new LinkedHashMap<>();
-        List<String> nothingToDo = new ArrayList<>();
-        List<String> blocked = new ArrayList<>();
-        GitDeploy.NothingToDeployException idle = null;
-        GitDeploy.ForeignDeployWorktreeException obstacle = null;
+        Landing landing = new Landing();
         int from = resumeFrom(task, taskId, targets);
         for (int i = from; i < targets.size(); i++) {
-            Target target = targets.get(i);
-            try {
-                String commit = gitDeploy.mergeIntoAndPush(target.path(), taskId, target.deployBranch());
-                merged.put(target.project(), commit);
-                stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), commit));
-            } catch (GitDeploy.NothingToDeployException e) {
-                nothingToDo.add(target.project());
-                idle = idle == null ? e : idle;
-                continue;
-            } catch (GitDeploy.ForeignDeployWorktreeException e) {
-                // The sibling holding the shared path is in this very list, so coming back beats refusing.
-                blocked.add(target.project());
-                obstacle = obstacle == null ? e : obstacle;
-                continue;
-            } catch (GitDeploy.MergeConflictException e) {
-                return handBackConflict(taskId, targets, i, e);
-            } catch (RuntimeException e) {
-                return stoppedPartWay(taskId, targets, i, e);
+            Optional<Outcome> stopped = land(taskId, targets, i, landing);
+            if (stopped.isPresent()) {
+                return stopped.get();
             }
         }
-        if (!blocked.isEmpty()) {
-            return notFinished(taskId, merged, blocked, Objects.requireNonNull(obstacle));
+        if (!landing.blocked.isEmpty()) {
+            return notFinished(taskId, landing.merged, landing.blocked, Objects.requireNonNull(landing.obstacle));
         }
         // Nothing landed and nothing resumed past means there was nothing to deploy at all.
-        if (merged.isEmpty() && idle != null && from == 0) {
-            throw idle;
+        if (landing.merged.isEmpty() && landing.idle != null && from == 0) {
+            throw landing.idle;
         }
-        return deployed(taskId, targets, from, merged, nothingToDo);
+        return deployed(taskId, targets, from, landing.merged, landing.nothingToDo);
+    }
+
+    private static final class Landing {
+        final Map<String, String> merged = new LinkedHashMap<>();
+        final List<String> nothingToDo = new ArrayList<>();
+        final List<String> blocked = new ArrayList<>();
+        GitDeploy.@Nullable NothingToDeployException idle;
+        GitDeploy.@Nullable ForeignDeployWorktreeException obstacle;
+    }
+
+    private Optional<Outcome> land(String taskId, List<Target> targets, int at, Landing landing) {
+        Target target = targets.get(at);
+        try {
+            String commit = gitDeploy.mergeIntoAndPush(target.path(), taskId, target.deployBranch());
+            landing.merged.put(target.project(), commit);
+            stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), commit));
+        } catch (GitDeploy.NothingToDeployException e) {
+            landing.nothingToDo.add(target.project());
+            landing.idle = landing.idle == null ? e : landing.idle;
+        } catch (GitDeploy.ForeignDeployWorktreeException e) {
+            // The sibling holding the shared path is in this very list, so coming back beats refusing.
+            landing.blocked.add(target.project());
+            landing.obstacle = landing.obstacle == null ? e : landing.obstacle;
+        } catch (GitDeploy.MergeConflictException e) {
+            return Optional.of(handBackConflict(taskId, targets, at, e));
+        } catch (RuntimeException e) {
+            return Optional.of(stoppedPartWay(taskId, targets, at, e));
+        }
+        return Optional.empty();
     }
 
     /**

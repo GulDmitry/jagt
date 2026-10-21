@@ -216,24 +216,7 @@ public class MasterPanel {
         List<String> advice = new ArrayList<>(skipped.stream().map(role -> "# skipped [" + role.name()
                 + "] no changed path matches " + String.join(", ", role.applies())).toList());
         for (int i = 0; i < roles.size(); i++) {
-            String role = roles.get(i).name();
-            Judgement said = judgements.get(i);
-            if (!said.failure().isBlank()) {
-                questions.add("The " + role + " could not read the round: " + OneLine.of(said.failure()));
-                continue;
-            }
-            said.findings().forEach(f -> (f.stops() ? lines : advice).add((f.stops() ? "- [" : "# advice [") + role
-                    + "] " + OneLine.of(f.file()) + " — " + (f.severity().equals("unproven") ? SHOW : "")
-                    + OneLine.of(f.issue())
-                    + (f.pattern().isBlank() ? "" : " (" + OneLine.of(f.pattern()) + ")")));
-            said.premises().stream().filter(p -> p.provenBy().isBlank())
-                    .forEach(p -> advice.add("# unproven [" + role + "] " + OneLine.of(p.claim())));
-            if (said.verdict().equals("question")) {
-                questions.add(said.question().isBlank() ? "The " + role + " asks, naming no question"
-                        : OneLine.of(said.question()));
-            } else if (!said.verdict().equals("ready") && said.findings().isEmpty()) {
-                lines.add("- [" + role + "] not ready, naming nothing");
-            }
+            readJudgement(roles.get(i).name(), judgements.get(i), lines, advice, questions);
         }
         StringBuilder file = new StringBuilder("# " + taskId + " — master review\n\n");
         advice.forEach(line -> file.append(line).append('\n'));
@@ -246,6 +229,29 @@ public class MasterPanel {
             return file.append("\nVERDICT: not ready\n").toString();
         }
         return file.append("nothing wrong\n\nVERDICT: ready\n").toString();
+    }
+
+    private static void readJudgement(String role, Judgement said, List<String> lines, List<String> advice,
+                                      List<String> questions) {
+        if (!said.failure().isBlank()) {
+            questions.add("The " + role + " could not read the round: " + OneLine.of(said.failure()));
+            return;
+        }
+        said.findings().forEach(f -> (f.stops() ? lines : advice).add(findingLine(role, f)));
+        said.premises().stream().filter(p -> p.provenBy().isBlank())
+                .forEach(p -> advice.add("# unproven [" + role + "] " + OneLine.of(p.claim())));
+        if (said.verdict().equals("question")) {
+            questions.add(said.question().isBlank() ? "The " + role + " asks, naming no question"
+                    : OneLine.of(said.question()));
+        } else if (!said.verdict().equals("ready") && said.findings().isEmpty()) {
+            lines.add("- [" + role + "] not ready, naming nothing");
+        }
+    }
+
+    private static String findingLine(String role, RoundReviewer.Finding f) {
+        return (f.stops() ? "- [" : "# advice [") + role + "] " + OneLine.of(f.file()) + " — "
+                + (f.severity().equals("unproven") ? SHOW : "") + OneLine.of(f.issue())
+                + (f.pattern().isBlank() ? "" : " (" + OneLine.of(f.pattern()) + ")");
     }
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,

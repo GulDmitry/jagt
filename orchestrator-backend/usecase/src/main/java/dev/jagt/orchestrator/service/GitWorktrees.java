@@ -33,65 +33,79 @@ public class GitWorktrees {
         // checkout-less local branch, so cutting from a local `main` inherits stale history.
         String base = "origin/" + baseBranch.replaceFirst("^origin/", "");
         git.locked(projectPath, () -> {
-            git.run(projectPath, List.of("git", "fetch", "--prune"))
-                    .expectSuccess("git fetch in " + projectPath);
-            // An unregistered worktree whose directory is still on disk makes `git worktree add` fail.
-            if (Files.exists(worktreePath)) {
-                log.atWarn().setMessage("stale worktree directory cleared")
-                        .addKeyValue("path", worktreePath)
-                        .addKeyValue("cause", "directory present")
-                        .log();
-                git.clearWorktreePath(projectPath, worktreePath);
+            fetchAndClearStale(projectPath, worktreePath);
+            if (!branchPresent(projectPath, branch)) {
+                cutNew(projectPath, worktreePath, branch, base, strategy);
+                return;
             }
-            boolean branchExists = git.run(projectPath,
-                    List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0;
-            if (branchExists) {
-                switch (strategy) {
-                    // A reopened ticket after a squash merge looks "unmerged" to git, and an aborted task may
-                    // hold unpushed work, so deleting silently is never safe.
-                    case FRESH -> throw new IllegalArgumentException("Branch '" + branch
-                            + "' already exists (previous run of this ticket). Decide what to do and retry with"
-                            + " branchStrategy: 'recreate' (old work merged/obsolete -> delete branch, start fresh"
-                            + " from " + base + ") or 'resume' (continue the existing branch and its commits).");
-                    case RECREATE -> {
-                        // The restore guards everything that follows: a `worktree add` failing afterwards
-                        // would leave the repository detached with the branch it was on already gone.
-                        Runnable restore = freeCheckout(projectPath, branch);
-                        run(restore, () -> {
-                            git.run(projectPath,
-                                            List.of("git", "branch", "-D", branch))
-                                    .expectSuccess("git branch -D " + branch);
-                            cutFrom(projectPath, worktreePath, branch, base);
-                        });
-                        return;
-                    }
-                    case RESUME -> {
-                        Runnable restore = freeCheckout(projectPath, branch);
-                        run(restore, () -> {
-                            Counts counts = countsAgainstOrigin(projectPath, branch);
-                            git.run(projectPath,
-                                            List.of("git", "worktree", "add", worktreePath.toString(), branch))
-                                    .expectSuccess("git worktree add (resume) " + worktreePath);
-                            run(() -> git.clearWorktreePath(projectPath, worktreePath), () -> {
-                                detachUpstream(projectPath, branch);
-                                fastForward(worktreePath, branch, counts.behind());
-                                // A branch holding commits origin has never seen is not jagt's to publish.
-                                if (counts.tracked() && counts.ahead() == 0) {
-                                    rebaseOntoTarget(worktreePath, branch, base);
-                                }
-                            });
-                        });
-                        return;
-                    }
-                }
-            }
-            cutFrom(projectPath, worktreePath, branch,
-                    strategy == BranchStrategy.RESUME ? resumeBase(projectPath, branch, base) : base);
-            if (strategy == BranchStrategy.RESUME) {
-                run(() -> git.removeWorktreeAndBranch(projectPath, worktreePath, branch),
-                        () -> rebaseOntoTarget(worktreePath, branch, base));
+            switch (strategy) {
+                // A reopened ticket after a squash merge looks "unmerged" to git, and an aborted task may
+                // hold unpushed work, so deleting silently is never safe.
+                case FRESH -> throw new IllegalArgumentException("Branch '" + branch
+                        + "' already exists (previous run of this ticket). Decide what to do and retry with"
+                        + " branchStrategy: 'recreate' (old work merged/obsolete -> delete branch, start fresh"
+                        + " from " + base + ") or 'resume' (continue the existing branch and its commits).");
+                case RECREATE -> recreate(projectPath, worktreePath, branch, base);
+                case RESUME -> resumeExisting(projectPath, worktreePath, branch, base);
             }
         });
+    }
+
+    private void fetchAndClearStale(Path projectPath, Path worktreePath) {
+        git.run(projectPath, List.of("git", "fetch", "--prune"))
+                .expectSuccess("git fetch in " + projectPath);
+        // An unregistered worktree whose directory is still on disk makes `git worktree add` fail.
+        if (Files.exists(worktreePath)) {
+            log.atWarn().setMessage("stale worktree directory cleared")
+                    .addKeyValue("path", worktreePath)
+                    .addKeyValue("cause", "directory present")
+                    .log();
+            git.clearWorktreePath(projectPath, worktreePath);
+        }
+    }
+
+    private boolean branchPresent(Path projectPath, String branch) {
+        return git.run(projectPath,
+                List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0;
+    }
+
+    private void recreate(Path projectPath, Path worktreePath, String branch, String base) {
+        // The restore guards everything that follows: a `worktree add` failing afterwards
+        // would leave the repository detached with the branch it was on already gone.
+        Runnable restore = freeCheckout(projectPath, branch);
+        run(restore, () -> {
+            git.run(projectPath,
+                            List.of("git", "branch", "-D", branch))
+                    .expectSuccess("git branch -D " + branch);
+            cutFrom(projectPath, worktreePath, branch, base);
+        });
+    }
+
+    private void resumeExisting(Path projectPath, Path worktreePath, String branch, String base) {
+        Runnable restore = freeCheckout(projectPath, branch);
+        run(restore, () -> {
+            Counts counts = countsAgainstOrigin(projectPath, branch);
+            git.run(projectPath,
+                            List.of("git", "worktree", "add", worktreePath.toString(), branch))
+                    .expectSuccess("git worktree add (resume) " + worktreePath);
+            run(() -> git.clearWorktreePath(projectPath, worktreePath), () -> {
+                detachUpstream(projectPath, branch);
+                fastForward(worktreePath, branch, counts.behind());
+                // A branch holding commits origin has never seen is not jagt's to publish.
+                if (counts.tracked() && counts.ahead() == 0) {
+                    rebaseOntoTarget(worktreePath, branch, base);
+                }
+            });
+        });
+    }
+
+    private void cutNew(Path projectPath, Path worktreePath, String branch, String base, BranchStrategy strategy) {
+        boolean resume = strategy == BranchStrategy.RESUME;
+        cutFrom(projectPath, worktreePath, branch, resume ? resumeBase(projectPath, branch, base) : base);
+        if (resume) {
+            run(() -> git.removeWorktreeAndBranch(projectPath, worktreePath, branch),
+                    () -> rebaseOntoTarget(worktreePath, branch, base));
+        }
     }
 
     /**

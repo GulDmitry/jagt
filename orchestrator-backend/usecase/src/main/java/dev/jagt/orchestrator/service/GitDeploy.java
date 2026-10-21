@@ -32,33 +32,15 @@ public class GitDeploy {
             String deployBranch = deployBranch(sourceBranch);
             git.run(projectPath, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            if (Files.isDirectory(deployWorktree)) {
-                if (hasDeployWorktree(projectPath, sourceBranch)) {
-                    if (humanWorkWaiting(deployWorktree, targetBranch)) {
-                        return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
-                    }
-                    discardDeployWorktree(projectPath, deployWorktree, deployBranch, targetBranch);
-                } else if (git.worktreeOwner(deployWorktree).isPresent()) {
-                    throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
-                } else {
-                    clearEditorResidue(deployWorktree);
-                }
+            if (Files.isDirectory(deployWorktree)
+                    && settleLeftover(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch)) {
+                return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
             }
             // Deploy is decoupled from review state: its ONLY precondition is work that was SHIPPED. What it
             // merges is the remote branch, which is what the request shows — a session may push HEAD under the
             // task's name from a local branch named otherwise, leaving that local ref moved by nobody.
             String source = "origin/" + sourceBranch;
-            if (git.run(projectPath,
-                    List.of("git", "rev-parse", "--verify", "--quiet", source)).exitCode() != 0) {
-                throw new NothingToDeployException("Nothing to deploy: branch '" + sourceBranch
-                        + "' was never pushed — ship it first.");
-            }
-            String ahead = git.run(projectPath,
-                            List.of("git", "rev-list", "--count", "origin/" + targetBranch + ".." + source))
-                    .expectSuccess("git rev-list count " + source).stdout().trim();
-            if ("0".equals(ahead)) {
-                throw new NothingToDeployException(sourceBranch, targetBranch);
-            }
+            requireWorkToDeploy(projectPath, source, sourceBranch, targetBranch);
             // A registration outlives a directory deleted by hand, and the add then refuses the branch as
             // still checked out.
             git.clearWorktreePath(projectPath, deployWorktree);
@@ -71,18 +53,53 @@ public class GitDeploy {
                     "--no-edit", "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch,
                     source));
             if (merge.exitCode() != 0) {
-                String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
-                // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer identity
-                // or a refusing hook, and calling those a conflict leaves a worktree the next deploy pushes.
-                if (unmergedPaths(deployWorktree).isBlank()) {
-                    git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
-                    throw new IllegalStateException("Could not merge " + sourceBranch + " into " + targetBranch
-                            + " — nothing was pushed and no conflict is waiting for you; git said: " + details);
-                }
-                throw new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
+                throw mergeFailure(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch,
+                        merge.stderr().isBlank() ? merge.stdout() : merge.stderr());
             }
             return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
         });
+    }
+
+    /** Whether human work waits in the leftover worktree; otherwise it is cleared, or refused when not this repository's. */
+    private boolean settleLeftover(Path projectPath, Path deployWorktree, String deployBranch, String sourceBranch,
+                                   String targetBranch) {
+        if (hasDeployWorktree(projectPath, sourceBranch)) {
+            if (humanWorkWaiting(deployWorktree, targetBranch)) {
+                return true;
+            }
+            discardDeployWorktree(projectPath, deployWorktree, deployBranch, targetBranch);
+        } else if (git.worktreeOwner(deployWorktree).isPresent()) {
+            throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
+        } else {
+            clearEditorResidue(deployWorktree);
+        }
+        return false;
+    }
+
+    private void requireWorkToDeploy(Path projectPath, String source, String sourceBranch, String targetBranch) {
+        if (git.run(projectPath,
+                List.of("git", "rev-parse", "--verify", "--quiet", source)).exitCode() != 0) {
+            throw new NothingToDeployException("Nothing to deploy: branch '" + sourceBranch
+                    + "' was never pushed — ship it first.");
+        }
+        String ahead = git.run(projectPath,
+                        List.of("git", "rev-list", "--count", "origin/" + targetBranch + ".." + source))
+                .expectSuccess("git rev-list count " + source).stdout().trim();
+        if ("0".equals(ahead)) {
+            throw new NothingToDeployException(sourceBranch, targetBranch);
+        }
+    }
+
+    private RuntimeException mergeFailure(Path projectPath, Path deployWorktree, String deployBranch,
+                                          String sourceBranch, String targetBranch, String details) {
+        // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer identity
+        // or a refusing hook, and calling those a conflict leaves a worktree the next deploy pushes.
+        if (unmergedPaths(deployWorktree).isBlank()) {
+            git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
+            return new IllegalStateException("Could not merge " + sourceBranch + " into " + targetBranch
+                    + " — nothing was pushed and no conflict is waiting for you; git said: " + details);
+        }
+        return new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
     }
 
     /**
