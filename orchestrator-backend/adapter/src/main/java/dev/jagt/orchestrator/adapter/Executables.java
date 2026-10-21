@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -52,13 +51,11 @@ public final class Executables {
     }
 
     static String resolve(@Nullable String configured, @Nullable String pathEnv, Predicate<Path> isExecutable) {
-        return resolve(configured, pathEnv, System.getProperty("user.home"), isExecutable,
-                Executables::bundlesIn);
+        return resolve(configured, pathEnv, System.getProperty("user.home"), isExecutable);
     }
 
     static String resolve(@Nullable String configured, @Nullable String pathEnv, @Nullable String userHome,
-                          Predicate<Path> isExecutable,
-                          Function<Path, List<Path>> bundles) {
+                          Predicate<Path> isExecutable) {
         String name = configured == null ? "" : configured.strip();
         if (name.isEmpty()) {
             return name;
@@ -78,20 +75,19 @@ public final class Executables {
         if (perUser != null) {
             return perUser;
         }
-        String bundled = inBundles(name, userHome, isExecutable, bundles);
+        String bundled = inBundles(name, userHome, isExecutable);
         return bundled != null ? bundled : name;
     }
 
     /** Not an {@code if macos}: a system without bundles holds none, and the search costs one listing. */
-    private static @Nullable String inBundles(String name, @Nullable String userHome, Predicate<Path> isExecutable,
-                                    Function<Path, List<Path>> bundles) {
+    private static @Nullable String inBundles(String name, @Nullable String userHome, Predicate<Path> isExecutable) {
         List<Path> appDirs = new ArrayList<>();
         APP_DIRS.forEach(dir -> appDirs.add(Path.of(dir)));
         if (userHome != null && !userHome.isBlank()) {
             appDirs.add(Path.of(userHome, "Applications"));
         }
         for (Path appDir : appDirs) {
-            for (Path bundle : bundles.apply(appDir)) {
+            for (Path bundle : bundlesIn(appDir)) {
                 Path candidate = bundle;
                 for (String segment : BUNDLE_BIN) {
                     candidate = candidate.resolve(segment);

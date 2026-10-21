@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.adapter;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,21 +44,10 @@ class ExecutablesTest {
     }
 
     @Test
-    void findsADesktopLauncherInsideItsApplicationBundle() {
-        assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
-                path -> path.toString().equals("/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"),
-                dir -> dir.toString().equals("/Applications")
-                        ? List.of(Path.of("/Applications/Notes.app"), Path.of("/Applications/IntelliJ IDEA.app"))
-                        : List.of()))
-                .isEqualTo("/Applications/IntelliJ IDEA.app/Contents/MacOS/idea");
-    }
-
-    @Test
     void findsALauncherInAPerUserScriptDirectory() {
         assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
                 path -> path.toString()
-                        .equals("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea"),
-                dir -> List.of()))
+                        .equals("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea")))
                 .isEqualTo("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea");
     }
 
@@ -87,20 +78,29 @@ class ExecutablesTest {
     }
 
     @Test
-    void findsALauncherInsideABundleInstalledForTheUserAlone() {
-        assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
-                path -> path.toString().equals("/Users/me/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"),
-                dir -> dir.toString().equals("/Users/me/Applications")
-                        ? List.of(Path.of("/Users/me/Applications/IntelliJ IDEA.app"))
-                        : List.of()))
-                .isEqualTo("/Users/me/Applications/IntelliJ IDEA.app/Contents/MacOS/idea");
+    void findsALauncherInsideABundleInstalledForTheUserAlone(@TempDir Path home) throws IOException {
+        Files.createDirectories(home.resolve("Applications").resolve("Notes.app"));
+        Path bundle = Files.createDirectories(home.resolve("Applications").resolve("IntelliJ IDEA.app"));
+
+        assertThat(Executables.resolve("idea", "/usr/bin", home.toString(),
+                path -> path.equals(bundle.resolve("Contents").resolve("MacOS").resolve("idea"))))
+                .isEqualTo(bundle.resolve("Contents").resolve("MacOS").resolve("idea").toString());
+    }
+
+    @Test
+    void looksForALauncherInApplicationBundlesAndInNoOtherDirectory(@TempDir Path home) throws IOException {
+        Files.createDirectories(home.resolve("Applications").resolve("Stray"));
+
+        assertThat(Executables.resolve("idea", "/usr/bin", home.toString(),
+                path -> path.startsWith(home) && path.endsWith(Path.of("Contents", "MacOS", "idea"))))
+                .isEqualTo("idea");
     }
 
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"", "  "})
     void searchesNoUserDirectoryWhereTheHomeIsUnknown(String home) {
-        assertThat(Executables.resolve("idea", "/usr/bin", home, path -> false, dir -> List.of()))
+        assertThat(Executables.resolve("idea", "/usr/bin", home, path -> false))
                 .isEqualTo("idea");
     }
 }
