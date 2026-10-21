@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class TicketCloseJob implements Job {
     private final StateService stateService;
     private final TrackerClose close;
     private final CommandService commands;
+    private final Clock clock;
     private final Map<String, Deferred> deferred = new ConcurrentHashMap<>();
 
     /**
@@ -73,7 +75,7 @@ public class TicketCloseJob implements Job {
         if (!tracker.modeOrOff().closes() || !tracker.missing().isEmpty()) {
             return;
         }
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         Duration every = Duration.ofMinutes(tracker.everyMinutesOrDefault());
         int asked = 0;
         for (Map.Entry<String, TaskState> entry : handedOver().entrySet()) {

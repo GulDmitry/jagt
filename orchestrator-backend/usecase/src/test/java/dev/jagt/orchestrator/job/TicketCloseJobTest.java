@@ -16,6 +16,10 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +41,7 @@ class TicketCloseJobTest {
         StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigFile.defaults());
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
         job.run();
 
@@ -51,7 +55,7 @@ class TicketCloseJobTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
         stateService.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
         job.run();
 
@@ -67,7 +71,7 @@ class TicketCloseJobTest {
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
         stateService.putTask("ABC-42", task);
         when(close.closes("ABC-42", task)).thenReturn(true);
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
         job.run();
 
@@ -87,7 +91,7 @@ class TicketCloseJobTest {
         stateService.putTask("ABC-6", task);
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
         job.run();
         job.run();
@@ -105,7 +109,7 @@ class TicketCloseJobTest {
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
         stateService.putTask("ABC-42", task);
         when(close.closes("ABC-42", task)).thenReturn(false);
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
         job.run();
         job.run();
@@ -125,7 +129,7 @@ class TicketCloseJobTest {
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
         stateService.putTask("ABC-42", stood);
         when(close.closes(anyString(), any())).thenReturn(false);
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
         job.run();
         stateService.putTask("ABC-42", moved);
 
@@ -143,7 +147,7 @@ class TicketCloseJobTest {
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
         stateService.putTask("ABC-42", task);
         when(close.closes("ABC-42", task)).thenReturn(false);
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
         job.run();
 
@@ -163,10 +167,58 @@ class TicketCloseJobTest {
         stateService.putTask("ABC-6", task);
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
-        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
         job.run();
 
         verify(close, never()).closes("ABC-6", task);
+    }
+
+    @Test
+    void asksAMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLong(@TempDir Path root) {
+        StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null))).build();
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", 10)));
+        stateService.putTask("ABC-42", task);
+        when(close.closes("ABC-42", task)).thenReturn(false);
+        Ticking clock = new Ticking();
+        TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, clock);
+
+        job.run();
+        clock.minutes(10);
+        job.run();
+        clock.minutes(19);
+        job.run();
+        clock.minutes(1);
+        job.run();
+
+        verify(close, times(3)).closes("ABC-42", task);
+    }
+
+    private static final class Ticking extends Clock {
+
+        private long millis = 1_000_000_000L;
+
+        void minutes(long minutes) {
+            millis += minutes * 60_000L;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return Instant.ofEpochMilli(millis);
+        }
     }
 }
