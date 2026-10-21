@@ -6,7 +6,7 @@ paths:
 ---
 
 Default to no comment; load `sob-ai:commenting` before writing one. Three collaborators per class, five is the ceiling.
-A unit never names who uses it.
+Cognitive complexity 15 per method at most. A unit never names who uses it.
 
 Full rules for comments, prose and the shape of a class: **[`docs/rules/style.md`](../../docs/rules/style.md)** —
 read it before changing behaviour here.

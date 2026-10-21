@@ -68,3 +68,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0050 Wake on reset](0050-a-session-stopped-on-a-full-window-is-woken-once.md)
 - [0051 One constructor](0051-a-class-has-one-constructor-and-tests-use-it.md)
 - [0052 Typed endings](0052-an-ending-says-which-one.md)
+- [0053 Cognitive complexity 15](0053-a-method-reads-at-cognitive-complexity-fifteen-at-most.md)
