@@ -124,13 +124,15 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj",
-                new SessionHookReport("relative/session.jsonl", "compact", null));
-        new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj",
                 new SessionHookReport("/logs/session.jsonl", "compact", null));
+        int warnedForAbsolute = log.list.size();
+        new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj",
+                new SessionHookReport("relative/session.jsonl", "compact", null));
         controllerLog.detachAppender(log);
 
         verify(reports).record("ABC-1", SessionProbe.State.WORKING,
                 SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+        assertThat(warnedForAbsolute).isZero();
         assertThat(List.copyOf(log.list)).filteredOn(event -> "session hook field dropped".equals(event.getMessage()))
                 .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
     }
