@@ -24,6 +24,11 @@ public class SystemHost implements Host {
     }
 
     @Override
+    public Path workingDir() {
+        return Path.of(System.getProperty("user.dir"));
+    }
+
+    @Override
     public Optional<String> env(String name) {
         return Optional.ofNullable(System.getenv(name));
     }

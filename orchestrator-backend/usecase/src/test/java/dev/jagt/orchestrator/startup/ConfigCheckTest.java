@@ -38,7 +38,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
-                new OrchestratorPaths(properties), mock(SessionHost.class)).problems()).isEmpty();
+                new OrchestratorPaths(properties), mock(SessionHost.class), new WorkingDirHost(root)).problems()).isEmpty();
     }
 
     @Test
@@ -48,7 +48,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
-                new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
+                new OrchestratorPaths(properties), mock(SessionHost.class), new WorkingDirHost(root)).problems())
                 .extracting(Problem::key)
                 .containsExactly("orchestrator.config-file");
     }
@@ -69,7 +69,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
-                new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
+                new OrchestratorPaths(properties), mock(SessionHost.class), new WorkingDirHost(root)).problems())
                 .extracting(Problem::key)
                 .containsExactly(expected);
     }
@@ -95,7 +95,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
-                new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
+                new OrchestratorPaths(properties), mock(SessionHost.class), new WorkingDirHost(root)).problems())
                 .extracting(Problem::key)
                 .containsExactly(expected);
     }
@@ -142,7 +142,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
-                new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
+                new OrchestratorPaths(properties), mock(SessionHost.class), new WorkingDirHost(root)).problems())
                 .singleElement().satisfies(problem -> {
                     assertThat(problem.key()).isEqualTo("orchestrator.config-file");
                     assertThat(problem.text()).contains("config.json is no longer read");
@@ -163,7 +163,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
-                new OrchestratorPaths(properties), mock(SessionHost.class)).problems()).isEmpty();
+                new OrchestratorPaths(properties), mock(SessionHost.class), new WorkingDirHost(root)).problems()).isEmpty();
     }
 
     @Test
@@ -182,7 +182,21 @@ class ConfigCheckTest {
         when(sessions.unaddressable("my.session")).thenReturn(Optional.of("holds a dot"));
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
-                new OrchestratorPaths(properties), sessions).problems())
+                new OrchestratorPaths(properties), sessions, new WorkingDirHost(root)).problems())
                 .extracting(Problem::key).containsExactly("orchestrator.viewer.tmuxSession");
+    }
+
+    @Test
+    void refusesAConfigDirectoryThatOutranksJagtYmlForEveryKeyItNames(@TempDir Path root) throws Exception {
+        Path shadowing = Files.writeString(Files.createDirectories(root.resolve("config")).resolve("application.yml"),
+                "orchestrator: {}\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(root.resolve("jagt.yml").toString())
+                .withStateFile(root.resolve("state.json").toString());
+
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
+                new OrchestratorPaths(properties), mock(SessionHost.class), new WorkingDirHost(root)).problems())
+                .containsExactly(new Problem("config/application.yml", shadowing + " outranks jagt.yml for every key it"
+                        + " names. Move what it holds into jagt.yml and delete it."));
     }
 }

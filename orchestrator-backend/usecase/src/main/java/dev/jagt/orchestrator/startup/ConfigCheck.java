@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
+import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.StartupCheck;
@@ -32,6 +33,7 @@ public class ConfigCheck implements StartupCheck {
     private final ConfigService configService;
     private final OrchestratorPaths paths;
     private final SessionHost sessions;
+    private final Host host;
 
     @Override
     public List<Problem> problems() {
@@ -89,8 +91,8 @@ public class ConfigCheck implements StartupCheck {
     }
 
     /** Spring reads {@code ./config/application.yml} above anything a launch hands it, so it outranks jagt.yml. */
-    private static List<Problem> shadowingConfigDir() {
-        Path shadowing = Path.of(System.getProperty("user.dir")).resolve("config").resolve("application.yml");
+    private List<Problem> shadowingConfigDir() {
+        Path shadowing = host.workingDir().resolve("config").resolve("application.yml");
         if (!Files.exists(shadowing)) {
             return List.of();
         }

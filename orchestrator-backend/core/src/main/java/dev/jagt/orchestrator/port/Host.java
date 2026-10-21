@@ -10,6 +10,9 @@ public interface Host {
 
     Path home();
 
+    /** The directory the JVM was started in. */
+    Path workingDir();
+
     Optional<String> env(String name);
 
     boolean onPath(String name);
