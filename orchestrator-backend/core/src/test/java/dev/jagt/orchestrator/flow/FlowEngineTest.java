@@ -207,4 +207,16 @@ class FlowEngineTest {
                 .asInstanceOf(type(Refusal.class))
                 .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
     }
+
+    @Test
+    void shipsAStuckTaskAgainWhenTheProbeSaysItsAgentIsGone() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
+        when(sessions.agentLive("ABC-1")).thenReturn(false);
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new FixedCapability(
+                TaskAction.SHIP, Outcome.ok("shipped again"))), List.of()), sessions);
+
+        assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("shipped again");
+    }
 }
