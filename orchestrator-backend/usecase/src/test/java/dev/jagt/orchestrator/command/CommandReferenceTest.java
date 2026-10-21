@@ -54,6 +54,21 @@ class CommandReferenceTest {
     }
 
     @Test
+    void ordersTwoCommandsOfTheSameRankByTheirIdWhateverOrderTheyWereDeclaredIn() {
+        GlobalCommand zeta = new Declared("zeta", "last by name", List.of("zeta"), false, false, 15);
+        GlobalCommand alpha = new Declared("alpha", "first by name", List.of("alpha"), false, false, 15);
+
+        assertThat(CommandReference.verbs(List.of(zeta, alpha))).extracting(CommandReference.Verb::id)
+                .containsSubsequence("alpha", "zeta");
+    }
+
+    @Test
+    void handsNoPartToACommandThatBelongsToNone() {
+        assertThat(CommandReference.verbs(List.of(SPEND))).filteredOn(verb -> verb.id().equals("spend"))
+                .singleElement().extracting(CommandReference.Verb::part).isNull();
+    }
+
+    @Test
     void printsAModifierUnderTheVerbItBelongsTo() {
         List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
 

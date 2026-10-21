@@ -175,4 +175,25 @@ class ActivityReportTest {
 
         assertThat(report).contains("relayed a brief").doesNotContain("null");
     }
+
+    @Test
+    void saysNothingAboutAnyTaskForALogHoldingOnlyBlankLines(@TempDir Path root) throws IOException {
+        Path log = root.resolve("jagt.log");
+        Files.writeString(log, "\n\n");
+
+        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+
+        assertThat(report).startsWith("nothing about any task").doesNotContain("not structured JSON");
+    }
+
+    @Test
+    void dropsTheLineTheWindowCutInTwoEvenWhereItsTailParsesAsAnEntry(@TempDir Path root) throws IOException {
+        Path log = root.resolve("jagt.log");
+        Files.writeString(log, "xxxxxxxxxx{\"message\":\"stale entry\",\"task\":\"OLD\"}\n"
+                + "{\"message\":\"" + "y".repeat(262077) + "\",\"task\":\"NEW\"}\n");
+
+        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+
+        assertThat(report).contains("NEW").doesNotContain("stale entry");
+    }
 }

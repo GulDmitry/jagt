@@ -162,4 +162,50 @@ class CycleTimeRendererTest {
         assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
                 .containsSubsequence("3h", "0m", "0m", "3h");
     }
+
+    @Test
+    void totalsTheRoundsOfAllTasksAsAPositiveNumber() {
+        Map<String, TaskState> tasks = Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null),
+                                new StatusChange(TaskStatus.CI_POLLING, NOW - 4 * HOUR, null)))
+                        .build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
+                        .build());
+
+        String out = new CycleTimeRenderer().render(tasks, NOW);
+
+        assertThat(out.lines().filter(line -> line.startsWith("all tasks")).findFirst().orElseThrow())
+                .endsWith(" 3");
+        assertThat(out).contains(" 1.5 per task");
+    }
+
+    @Test
+    void marksNoFigureAsAFloorWhileNoTaskHasLostItsOldestSteps() {
+        Map<String, TaskState> tasks = Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null))).build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null))).build());
+
+        String out = new CycleTimeRenderer().render(tasks, NOW);
+
+        assertThat(out).doesNotContain("+");
+    }
+
+    @Test
+    void marksTheTotalAsAFloorWhenOnlyTheSecondTaskLostItsOldestSteps() {
+        List<StatusChange> fifty = IntStream.range(0, 50)
+                .mapToObj(step -> new StatusChange(TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null))
+                .toList();
+        Map<String, TaskState> tasks = Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null))).build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).history(fifty).build());
+
+        String out = new CycleTimeRenderer().render(tasks, NOW);
+
+        assertThat(out).contains("aged out of its history");
+    }
 }
