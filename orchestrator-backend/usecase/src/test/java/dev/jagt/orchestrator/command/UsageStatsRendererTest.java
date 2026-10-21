@@ -21,7 +21,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,7 +97,7 @@ class UsageStatsRendererTest {
                         Optional.of(new BigDecimal("500")), "USD", Optional.empty())));
 
         String out = UsageStatsRenderer.limits(Optional.of(new UsageLimits.Reading(
-                new SubscriptionUsage.Read(snapshot), Instant.parse("2026-10-10T14:02:00Z"))), ZoneOffset.UTC);
+                new SubscriptionUsage.Read(snapshot), Instant.parse("2026-10-10T14:02:00Z"))));
 
         assertThat(out).contains("subscription limits, read Sat 14:02")
                 .containsPattern("5h +82%  Sat 16:00")
@@ -108,14 +107,14 @@ class UsageStatsRendererTest {
     @Test
     void saysCouldNotReadAndWhyWhenTheReadFailed() {
         String out = UsageStatsRenderer.limits(Optional.of(new UsageLimits.Reading(
-                new SubscriptionUsage.Unreadable("http 500"), Instant.parse("2026-10-10T14:02:00Z"))), ZoneOffset.UTC);
+                new SubscriptionUsage.Unreadable("http 500"), Instant.parse("2026-10-10T14:02:00Z"))));
 
         assertThat(out).isEqualTo("subscription limits, read Sat 14:02: could not read, http 500\n\n");
     }
 
     @Test
     void showsNoLimitsSectionBeforeAnythingWasRead() {
-        String out = UsageStatsRenderer.limits(Optional.empty(), ZoneOffset.UTC);
+        String out = UsageStatsRenderer.limits(Optional.empty());
 
         assertThat(out).isEmpty();
     }

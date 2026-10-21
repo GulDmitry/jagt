@@ -2,7 +2,7 @@
 
 ## Purpose
 
-What jagt asks of the machine it runs on, each only when `jagt.yml` asks for it.
+What jagt asks of the machine it runs on, each only when `jagt.yml` asks for it, and what it never takes from the machine: its locale and zone.
 
 ## Requirements
 

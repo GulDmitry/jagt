@@ -177,6 +177,8 @@ allprojects {
         systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
         // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
         systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
+    }
+    tasks.withType(Test).configureEach {
         systemProperty 'user.language', 'en'
         systemProperty 'user.country', 'US'
         systemProperty 'user.timezone', 'UTC'

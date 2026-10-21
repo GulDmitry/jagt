@@ -56,8 +56,7 @@ class BoardAssetsTest {
         List<Path> sources;
         try (Stream<Path> files = Files.walk(STATIC)) {
             sources = files.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$"))
-                    .filter(path -> !path.endsWith("mermaid.min.js")).toList();
+                    .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$")).toList();
         }
 
         assertThat(sources).isNotEmpty().noneMatch(source -> LOADED_FROM_OUTSIDE.matcher(read(source)).find());

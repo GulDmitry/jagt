@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -37,7 +36,7 @@ public class UsageStatsRenderer {
     private final UsageLimits limits;
 
     public String render(Map<String, TaskState> tasks) {
-        StringBuilder out = new StringBuilder(limits(limits.last(), ZoneOffset.UTC))
+        StringBuilder out = new StringBuilder(limits(limits.last()))
                 .append("token spend — jagt's own reads, then what the agent sessions burned\n\n");
         out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD", "COLD"));
 
@@ -96,11 +95,11 @@ public class UsageStatsRenderer {
         return out.toString();
     }
 
-    static String limits(Optional<UsageLimits.Reading> reading, ZoneId zone) {
+    static String limits(Optional<UsageLimits.Reading> reading) {
         if (reading.isEmpty()) {
             return "";
         }
-        String head = "subscription limits, read " + AT.format(reading.get().at().atZone(zone));
+        String head = "subscription limits, read " + AT.format(reading.get().at().atZone(ZoneOffset.UTC));
         return switch (reading.get().answer()) {
             case SubscriptionUsage.NoSubscription none ->
                     head + ": none, the agent CLI is signed in without a subscription\n\n";
@@ -110,7 +109,7 @@ public class UsageStatsRenderer {
                         .append(String.format(LIMIT_ROW, "WINDOW", "USED", "RESETS"));
                 snapshot.windows().forEach(window -> out.append(String.format(LIMIT_ROW, window.name(),
                         String.format(Locale.ROOT, "%.0f%%", window.percentUsed()),
-                        window.resetsAt().map(at -> AT.format(at.atZone(zone))).orElse("-"))));
+                        window.resetsAt().map(at -> AT.format(at.atZone(ZoneOffset.UTC))).orElse("-"))));
                 snapshot.paid().ifPresent(paid -> out.append(String.format(LIMIT_ROW, "paid usage", "",
                         UsageLimits.spent(paid))));
                 yield out.append('\n').toString();
