@@ -24,9 +24,11 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 | `TODO.md` (local, gitignored) | only what is still open; empty is normal |
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
+| [`docs/features.md`](docs/features.md) | what jagt does, one line each, linked to its spec |
 
 **An architectural decision gets its `docs/decisions/` record in the commit taking it.** **A behaviour change carries its
 `openspec/changes/<task>/`** ([`spec-changes`](openspec/specs/spec-changes/spec.md)).
+**A new capability adds its line to `docs/features.md`** (`FeaturesTest`).
 
 ## Read before you change
 

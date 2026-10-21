@@ -1,0 +1,193 @@
+# Features
+
+[← README](../README.md)
+
+Each line names one thing jagt does and links to the requirement that defines it; the spec is the truth, this is its index.
+
+## Acceptance probes
+[spec](../openspec/specs/acceptance-probes/spec.md)
+
+- **Declared probes** — A plan lists its acceptance checks as typed probes, never as prose.
+  [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-declares-its-probes-in-one-form)
+- **Probes run by jagt** — jagt runs the plan's probes itself before a hand-back and records what they printed.
+  [spec](../openspec/specs/acceptance-probes/spec.md#requirement-jagt-runs-the-probes-at-verifying)
+
+## Attention
+[spec](../openspec/specs/attention/spec.md)
+
+- **Questions come first** — A session that needs an answer says so before anything else, and the move becomes yours.
+  [spec](../openspec/specs/attention/spec.md#requirement-a-question-is-reported-first)
+- **Silence is noticed** — A stalled, crashed or waiting session is flagged on the board without you looking.
+  [spec](../openspec/specs/attention/spec.md#requirement-silence-is-stamped-by-the-watchdog)
+- **Attention tiers** — What needs you is ranked, counted in the header and filterable by whose move it is.
+  [spec](../openspec/specs/attention/spec.md#requirement-attention-tiers)
+- **Badge names the act** — Each badge says which action waits for you, with a sentence in its tooltip.
+  [spec](../openspec/specs/attention/spec.md#requirement-the-badge-names-the-act)
+
+## Board
+[spec](../openspec/specs/board/spec.md)
+
+- **One surface** — The board is the only surface; every card, button and gate reads the same rules.
+  [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
+- **Command palette** — Type a command, or free text that a model turns into one proposed command.
+  [spec](../openspec/specs/board/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
+- **Local only** — The board answers on the local machine only and refuses foreign writes.
+  [spec](../openspec/specs/board/spec.md#requirement-loopback-only)
+
+## Board workspace
+[spec](../openspec/specs/board-workspace/spec.md)
+
+- **One row per task** — Each task is a row with its status, age and checks, kept in its place.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row)
+- **Open task beside the list** — Pick a task and its detail opens next to the list.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
+- **Session tab** — Read the session's screen as it stands and type a line to it.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
+- **Files tab** — Read a task's plan, notes and sketch rendered, without opening its worktree.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
+- **Add a project** — Add a repository to the configuration from the board, never by hand.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-a-project-is-added-from-the-board)
+- **Run a job now** — Any unattended job can be started on the spot from its row.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
+- **Keys for verbs** — Every verb shows its key, and one that asks first asks on its key too.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key)
+
+## Git
+[spec](../openspec/specs/git/spec.md)
+
+- **Deploy and revert** — Only these two verbs write a shared branch; the base branch is never touched.
+  [spec](../openspec/specs/git/spec.md#requirement-only-deploy-and-revert-write-shared-branches)
+- **Revert** — A revert walks back what a deploy merged, or refuses with a recipe to finish by hand.
+  [spec](../openspec/specs/git/spec.md#requirement-revert-refuses-rather-than-guess)
+- **Ship** — Ship has the session commit, push and open or update its review request.
+  [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)
+- **Push guard** — A session cannot push off its task's branch, force, delete or skip hooks.
+  [spec](../openspec/specs/git/spec.md#requirement-push-guard-lives-in-the-worktree)
+- **Several repositories** — One task can span several repositories with a worktree in each.
+  [spec](../openspec/specs/git/spec.md#requirement-repositories-multiply-worktrees-not-agents)
+
+## Git trust
+[spec](../openspec/specs/git-trust/spec.md)
+
+- **Trust before credentials** — Git runs with your credentials only under config and hooks you have trusted.
+  [spec](../openspec/specs/git-trust/spec.md#requirement-git-with-the-humans-credentials-waits-for-trust)
+- **Adopting a change** — Only you adopt a changed config or hook, in every Master mode.
+  [spec](../openspec/specs/git-trust/spec.md#requirement-only-the-human-adopts-a-change)
+
+## Guards
+[spec](../openspec/specs/guards/spec.md)
+
+- **Refusals are counted** — Each guard refusal is counted on its task, so a gap reopens on a number.
+  [spec](../openspec/specs/guards/spec.md#requirement-a-refusal-is-counted-on-its-task)
+- **Writes stay inside the task** — A session's shell writes only inside its task's worktrees and the tool caches.
+  [spec](../openspec/specs/guards/spec.md#requirement-a-session-writes-only-inside-its-task)
+
+## Master
+[spec](../openspec/specs/master/spec.md)
+
+- **Master review** — A headless reader judges every handed-back round and writes its verdict for you.
+  [spec](../openspec/specs/master/spec.md#requirement-the-master-is-a-headless-run-per-role-not-a-window)
+- **Master brief** — The Master judges by a brief you can copy and edit.
+  [spec](../openspec/specs/master/spec.md#requirement-the-master-judges-by-a-brief)
+- **Master acts for you** — In `act` the Master ships and deploys for you; your word overrules it. Key: `orchestrator.master.mode`, off by default.
+  [spec](../openspec/specs/master/spec.md#requirement-in-act-the-master-moves-for-you)
+- **Lessons** — When you disagree with the Master, it offers a lesson and changes no brief.
+  [spec](../openspec/specs/master/spec.md#requirement-a-disagreement-offers-a-lesson-never-applies-one)
+
+## Platform
+[spec](../openspec/specs/platform/spec.md)
+
+- **Keep awake** — The machine stays awake while the Master acts, polls run or tasks are being taken. Key: `orchestrator.keepAwake`, off by default.
+  [spec](../openspec/specs/platform/spec.md#requirement-the-machine-stays-awake-only-when-asked)
+
+## Protocol
+[spec](../openspec/specs/protocol/spec.md)
+
+- **Reports validated once** — A session's report is checked at the door and every violation comes back together, typed.
+  [spec](../openspec/specs/protocol/spec.md#requirement-every-violation-at-once)
+- **Tickets through your MCP** — Tracker and code host are read through your own MCP servers; jagt holds no token.
+  [spec](../openspec/specs/protocol/spec.md#requirement-a-ticket-is-read-through-the-humans-mcp-servers)
+- **Tracker intake and close** — A ready ticket opens a task, and a done ticket closes it. Key: `orchestrator.tracker.mode`, off by default.
+  [spec](../openspec/specs/protocol/spec.md#requirement-tracker-stages-open-and-close-tasks)
+
+## Review
+[spec](../openspec/specs/review/spec.md)
+
+- **Review threads** — Each review thread is fixed, declined with a reason, or asked.
+  [spec](../openspec/specs/review/spec.md#requirement-the-brief-routes-each-thread)
+- **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
+  [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
+- **Take over a request** — An existing review request can be taken over by a new task.
+  [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
+- **Red round** — A failing pipeline stops the task and goes back to the session.
+  [spec](../openspec/specs/review/spec.md#requirement-a-red-round-stops-the-task)
+
+## Runtime
+[spec](../openspec/specs/runtime/spec.md)
+
+- **Sessions in tmux** — Each agent runs in a tmux window, and a kitty window attaches to it.
+  [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
+- **Viewer detaches** — Closing the viewer never stops a session.
+  [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
+- **Revive after a restart** — A restart brings the sessions back where they were.
+  [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
+- **Open in your editor** — Open a task's worktree or diff in the editor you configure.
+  [spec](../openspec/specs/runtime/spec.md#requirement-the-editor-is-a-launcher)
+
+## Session brief
+[spec](../openspec/specs/session-brief/spec.md)
+
+- **Autoplan** — A session plans first, unasked, when its task is large or unclear. Key: `orchestrator.agent.autoplan.enabled`, off by default.
+  [spec](../openspec/specs/session-brief/spec.md#requirement-autoplan)
+- **Visualize** — A session sketches a task worth a picture before its first edit. Key: `orchestrator.agent.visualize.enabled`, off by default.
+  [spec](../openspec/specs/session-brief/spec.md#requirement-visualize)
+
+## Spec changes
+[spec](../openspec/specs/spec-changes/spec.md)
+
+- **Spec change at hand-back** — A hand-back is refused until the task's spec change validates.
+  [spec](../openspec/specs/spec-changes/spec.md#requirement-a-hand-back-carries-a-valid-change)
+- **Spec fold at ship** — A ship archives the change and folds it into the specs in the same commit.
+  [spec](../openspec/specs/spec-changes/spec.md#requirement-a-ship-folds-the-change-into-the-specs)
+
+## Startup
+[spec](../openspec/specs/startup/spec.md)
+
+- **Install checks** — A missing part of the installation is refused at start, with no network.
+  [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
+- **One configuration file** — Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
+  [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
+
+## Task flow
+[spec](../openspec/specs/task-flow/spec.md)
+
+- **One table of statuses** — One table says which action is allowed in which status and where it leads.
+  [spec](../openspec/specs/task-flow/spec.md#requirement-one-table-owns-the-life-of-a-task)
+- **Verify before hand-back** — jagt runs the project's check command and sends a red run back to the session.
+  [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
+- **Deploy check** — Every deploy is checked where it landed, and a failure opens a new round.
+  [spec](../openspec/specs/task-flow/spec.md#requirement-every-deploy-is-checked-where-it-landed)
+- **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
+  [spec](../openspec/specs/task-flow/spec.md#requirement-starting-a-task)
+
+## Unattended work
+[spec](../openspec/specs/unattended-work/spec.md)
+
+- **Auto-review** — jagt polls an open request for comments, only reading and drafting. Key: `orchestrator.autoReview.enabled`, off by default.
+  [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
+- **Activity report** — A report of what jagt did unasked is read back from its own log.
+  [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-reads-jagts-own-log)
+- **Act brake** — `act` stops itself after repeated bad endings, and tells you.
+  [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
+- **Daily ceiling** — A daily ceiling bounds the work jagt starts without you.
+  [spec](../openspec/specs/unattended-work/spec.md#requirement-unattended-starts-have-a-daily-ceiling)
+
+## Usage limits
+[spec](../openspec/specs/usage-limits/spec.md)
+
+- **Limit warnings** — Subscription limits are told once per period and never block a task.
+  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-limit-is-told-once-per-period-never-gated)
+- **Wake on reset** — A session stopped on a full window gets one nudge when it resets. Key: `orchestrator.usageLimits.wakeOnReset`, off by default.
+  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-stop-on-a-full-window-arms-one-wake)
+- **Spend ceiling** — A headless read stops at a spend ceiling and fails naming it.
+  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-headless-run-has-a-spend-ceiling)

@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -85,7 +86,7 @@ class DocLinksTest {
             return List.of();
         }
         return withoutCodeBlocks(document).lines().filter(line -> line.matches("#{1,6} .*"))
-                .map(line -> line.replaceFirst("#+ ", "").trim().toLowerCase()
+                .map(line -> line.replaceFirst("#+ ", "").trim().toLowerCase(Locale.ROOT)
                         .replaceAll("[^\\p{L}\\p{N} _-]", "").replace(' ', '-'))
                 .toList();
     }

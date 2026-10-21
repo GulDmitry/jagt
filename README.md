@@ -39,6 +39,8 @@ flowchart LR
 - **jagt runs the checks itself**: a plan's acceptance probes, and a valid spec change before any hand-back.
 - **Any agent CLI, no token.** Tracker and code host are read through your own MCP.
 
+Everything jagt does, one line each and linked to its spec: [Features](docs/features.md).
+
 ## The session, and you
 
 | the agent session | you |
