@@ -84,6 +84,12 @@ export const onClick = ({action, report}) => {
       render();
       return;
     }
+    const file = event.target.closest('button[data-file]');
+    if (file) {
+      tabs.pick(file.dataset.task, file.dataset.file);
+      render();
+      return;
+    }
     const picked = event.target.closest('button[data-select]');
     if (picked) {
       selection.choose(picked.dataset.select);

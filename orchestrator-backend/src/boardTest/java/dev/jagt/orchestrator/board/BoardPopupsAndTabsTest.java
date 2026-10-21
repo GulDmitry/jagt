@@ -134,6 +134,39 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    void theFilesTabListsTheDocumentsThePresentWorktreeHoldsAndShowsTheOnePickedRendered() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-4-alpha"));
+        Files.writeString(worktree.resolve("plan.md"), "# The plan\n");
+        Files.writeString(worktree.resolve("task_visual.md"), "# The sketch\n\n| a | b |\n|---|---|\n| 1 | 2 |\n");
+        state.putTask("ABC-4", TaskState.builder("alpha", worktree.toString(), TaskStatus.IN_PROGRESS)
+                .alias("a4").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#pane .tabs button[data-tab=files]").click();
+        assertThat(page.locator("#pane .doc-names button[data-file=\"task_notes.md\"]")).hasCount(0);
+        assertThat(page.locator("#pane .doc h1")).hasText("The plan");
+        page.locator("#pane .doc-names button[data-file=task_visual\\.md]").click();
+
+        assertThat(page.locator("#pane .doc h1")).hasText("The sketch");
+        assertThat(page.locator("#pane .doc table td").first()).hasText("1");
+    }
+
+    @Test
+    void aMermaidFenceInAnOpenDocumentIsDrawnAsADiagram() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
+        Files.writeString(worktree.resolve("task_visual.md"), "```mermaid\nsequenceDiagram\nA->>B: go\n```\n");
+        state.putTask("ABC-5", TaskState.builder("alpha", worktree.toString(), TaskStatus.IN_PROGRESS)
+                .alias("a5").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#pane .tabs button[data-tab=files]").click();
+
+        assertThat(page.locator("#pane .doc .mermaid svg")).isVisible();
+    }
+
+    @Test
     void aVerbsKeyRunsItOnTheOpenTask() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

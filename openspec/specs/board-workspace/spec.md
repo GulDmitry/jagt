@@ -102,10 +102,12 @@ from, a key no project holds. It fills the fields the human has not typed. It wr
 - **WHEN** the human types the path of a plain folder and adds it
 - **THEN** the reading says it is not a git repository, the add is refused, and `jagt.yml` is unchanged
 
-### Requirement: The open task has three tabs
+### Requirement: The open task has four tabs
 The open task SHALL show its status history. It SHALL show its session's screen read without colour codes, with a
 line to tell the session. It SHALL show its drafted review replies, or that none are drafted. The replies tab reads the command whose `part`
-is `round`.
+is `round`. It SHALL show a Files tab listing the documents of the task (`Artifact`) present in its worktree now, and the one
+picked rendered. The tab reads the disk on request and stores nothing; it replaces opening the worktree in an editor or
+terminal to read `plan.md` or `task_notes.md`.
 
 #### Scenario: Reading the session
 - **WHEN** the human opens the Session tab
@@ -114,6 +116,26 @@ is `round`.
 #### Scenario: A blank screen
 - **WHEN** a window holds the session and its screen is blank
 - **THEN** the tab shows it blank; it says no window holds the session only when none does
+
+#### Scenario: Reading the documents of a task
+- **WHEN** the human opens the Files tab of a task whose worktree holds `plan.md` and `task_visual.md`
+- **THEN** both names are listed, the first is shown rendered, and picking the other shows it rendered
+
+#### Scenario: A document that is not there
+- **WHEN** the worktree holds no `task_visual.md`
+- **THEN** the Files tab does not list it
+
+#### Scenario: Text that would run
+- **WHEN** a document holds a raw `<script>` element
+- **THEN** it is shown as text and nothing runs
+
+#### Scenario: A diagram
+- **WHEN** a document holds a mermaid fence
+- **THEN** the Files tab draws it as a diagram, loading the diagram library only then
+
+#### Scenario: A name that is no document of a task
+- **WHEN** a read names a file that is not in `Artifact`
+- **THEN** it is refused as an unknown document, apart from an unknown task, an absent file and an unreadable one
 
 ### Requirement: A verb carries its key
 A verb SHALL carry the letter that runs it on the open task, drawn on its button, from the server; a verb that asks

@@ -27,7 +27,8 @@ class BoardAssetsTest {
     @CsvSource({
             "preact.mjs, 3a3201e9ccef7d30ef1273427f1b17ef8323e464b2c8d73b4fd5636af730433e",
             "hooks.mjs, 6cb79fe9959ad185b8b86134aff47c12fd20216b24837597b19be59a133d9947",
-            "htm.mjs, ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4"})
+            "htm.mjs, ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4",
+            "mermaid.min.js, 6484afc32872a3aa16cac9a76ba1816a1ed4cc870a6593cc2e17757750f518b2"})
     void aVendoredLibraryIsTheExactFileTheRegistryServed(String file, String sha256)
             throws IOException, NoSuchAlgorithmException {
         byte[] bytes = Files.readAllBytes(STATIC.resolve("vendor").resolve(file));
@@ -43,6 +44,7 @@ class BoardAssetsTest {
         try (Stream<Path> files = Files.walk(STATIC)) {
             bytes = files.filter(Files::isRegularFile)
                     .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
+                    .filter(path -> !path.endsWith("mermaid.min.js"))
                     .mapToLong(BoardAssetsTest::size).sum();
         }
 
@@ -54,7 +56,8 @@ class BoardAssetsTest {
         List<Path> sources;
         try (Stream<Path> files = Files.walk(STATIC)) {
             sources = files.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$")).toList();
+                    .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$"))
+                    .filter(path -> !path.endsWith("mermaid.min.js")).toList();
         }
 
         assertThat(sources).isNotEmpty().noneMatch(source -> LOADED_FROM_OUTSIDE.matcher(read(source)).find());

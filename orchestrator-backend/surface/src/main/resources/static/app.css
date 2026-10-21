@@ -75,6 +75,13 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
   margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--chip-bg); white-space: pre-wrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; max-height: 50vh; overflow: auto;
 }
+.doc-names { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.doc-names button[aria-pressed="true"] { border-color: var(--accent); }
+.doc { font-size: 13px; line-height: 1.5; max-height: 60vh; overflow: auto; }
+.doc pre { padding: 10px 12px; border-radius: 8px; background: var(--chip-bg); overflow: auto; font-size: 12px; }
+.doc table { border-collapse: collapse; }
+.doc th, .doc td { border: 1px solid var(--line); padding: 3px 8px; }
+.doc .mermaid { margin: 8px 0; white-space: pre; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .say { display: flex; gap: 8px; margin-top: 8px; }
 .say input { flex: 1; }
 .session p, .round p { margin: 0 0 6px; font-size: 12px; }

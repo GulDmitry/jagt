@@ -7,13 +7,30 @@ let tab = 'overview';
 let read = {key: null, shown: null, stale: false};
 let asked = 0;
 
+// Which document of each task its Files tab shows; a name that is not listed any more falls back to the first.
+const picked = new Map();
+
+const files = async (task) => {
+  const id = encodeURIComponent(task.id);
+  const names = await api(`/api/tasks/files?task=${id}`);
+  const name = names.includes(picked.get(task.id)) ? picked.get(task.id) : names[0];
+  const rendered = name ? await api(`/api/tasks/file?task=${id}&name=${encodeURIComponent(name)}`) : null;
+  return {names, name, html: rendered ? rendered.html : ''};
+};
+
 const sources = {
+  files,
   session: (task) => api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`)
     .catch((e) => ({held: true, shown: `could not read it: ${e.message}`})),
   round: (task, offer) => text(`/api/commands/${offer.id}?about=${encodeURIComponent(task.alias || task.id)}`),
 };
 
 export const current = () => tab;
+
+export const pick = (task, name) => {
+  picked.set(task, name);
+  forget();
+};
 
 // A press on Refresh, a push from the backend or the tick reads the open tab again.
 export const forget = () => {

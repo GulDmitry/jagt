@@ -69,3 +69,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0051 One constructor](0051-a-class-has-one-constructor-and-tests-use-it.md)
 - [0052 Typed endings](0052-an-ending-says-which-one.md)
 - [0053 Cognitive complexity 15](0053-a-method-reads-at-cognitive-complexity-fifteen-at-most.md)
+- [0054 Artifacts on the board](0054-a-tasks-artifacts-are-read-on-the-board.md)
