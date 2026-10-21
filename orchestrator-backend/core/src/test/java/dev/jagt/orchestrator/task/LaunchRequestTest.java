@@ -101,4 +101,21 @@ class LaunchRequestTest {
         assertThat(typed.project()).isEqualTo("demo,");
         assertThat(typed.notes()).isEqualTo("keep going");
     }
+
+    @Test
+    void readsAProjectTokenWithAnEmptyPartBetweenTwoCommasAsTheProjectsItNames() {
+        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,,php keep going", Set.of("demo", "php"));
+
+        assertThat(typed.project()).isEqualTo("demo,,php");
+        assertThat(typed.notes()).isEqualTo("keep going");
+    }
+
+    @Test
+    void startsFromTheTicketReferenceAloneWithNothingElseChosen() {
+        LaunchRequest request = LaunchRequest.of("ABC-1");
+
+        assertThat(request.ref()).isEqualTo("ABC-1");
+        assertThat(request.project()).isNull();
+        assertThat(request.notes()).isNull();
+    }
 }

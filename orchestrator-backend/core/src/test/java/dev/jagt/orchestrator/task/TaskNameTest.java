@@ -66,6 +66,11 @@ class TaskNameTest {
     }
 
     @Test
+    void namesNothingForATaskWhoseOpeningLineWasNeverGiven() {
+        assertThat(TaskName.from(null)).isNull();
+    }
+
+    @Test
     void namesNothingWhenTheLineCarriesNoWordABranchCanUse() {
         assertThat(TaskName.from("!!! ???")).isNull();
     }
