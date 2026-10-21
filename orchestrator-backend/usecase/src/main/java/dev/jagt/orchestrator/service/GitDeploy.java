@@ -71,7 +71,7 @@ public class GitDeploy {
         } else if (git.worktreeOwner(deployWorktree).isPresent()) {
             throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
         } else {
-            clearEditorResidue(deployWorktree);
+            requireOnlyEditorResidue(deployWorktree);
         }
         return false;
     }
@@ -333,10 +333,10 @@ public class GitDeploy {
 
     /**
      * A path that is no checkout cannot be another repository's conflict: it is jagt's own leftover, an editor
-     * having written its project files back into a directory git had emptied. That is deleted and the deploy goes
-     * on; anything else found there is left untouched and named.
+     * having written its project files back into a directory git had emptied. The deploy goes on and the
+     * path is cleared before the add; anything else found there is left untouched and named.
      */
-    private void clearEditorResidue(Path path) {
+    private void requireOnlyEditorResidue(Path path) {
         List<String> kept;
         try (var entries = Files.list(path)) {
             kept = entries.map(entry -> entry.getFileName().toString())
@@ -348,9 +348,6 @@ public class GitDeploy {
         if (!kept.isEmpty()) {
             throw new StaleDeployPathException(path, kept);
         }
-        log.atInfo().setMessage("editor leftover deleted")
-                .addKeyValue("path", path)
-                .log();
     }
 
     /** Where a revert is staged — separate from the deploy worktree, which may be sitting in a conflict. */
