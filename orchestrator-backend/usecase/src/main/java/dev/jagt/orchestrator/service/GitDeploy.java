@@ -351,7 +351,6 @@ public class GitDeploy {
         log.atInfo().setMessage("editor leftover deleted")
                 .addKeyValue("path", path)
                 .log();
-        git.forceDeleteDir(path);
     }
 
     /** Where a revert is staged — separate from the deploy worktree, which may be sitting in a conflict. */
