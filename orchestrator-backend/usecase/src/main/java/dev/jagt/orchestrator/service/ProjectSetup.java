@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -65,45 +66,65 @@ public class ProjectSetup {
     /** What the path is, and what its entry would most likely say. Writes nothing. */
     public Reading read(String rawPath) {
         Path path = Path.of(expand(rawPath)).toAbsolutePath().normalize();
-        List<Line> lines = new ArrayList<>();
         String key = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
+        Optional<String> notARepositoryRoot = problemWith(path);
+        if (notARepositoryRoot.isPresent()) {
+            return new Reading(List.of(new Line(false, notARepositoryRoot.get())), key, "", "", List.of());
+        }
+        List<Line> lines = new ArrayList<>();
+        lines.add(remoteLine(path));
+        String base = baseBranch(path);
+        lines.add(new Line(!base.isBlank(), base.isBlank() ? "no origin/main or origin/master to cut tasks from"
+                : "tasks are cut from " + base));
+        String deploy = exists(path, "origin/dev") ? "dev" : "";
+        boolean taken = taken(path);
+        lines.add(new Line(!taken, taken ? "a project already points here" : "no project points here yet"));
+        return new Reading(lines, key, base, deploy, verifyCommand(path));
+    }
+
+    private Optional<String> problemWith(Path path) {
         if (!Files.isDirectory(path)) {
-            lines.add(new Line(false, "no directory at " + path));
-            return new Reading(lines, key, "", "", List.of());
+            return Optional.of("no directory at " + path);
         }
         Processes.Result top = git(path, "rev-parse", "--show-toplevel");
         if (top.exitCode() != 0) {
             boolean notARepository = top.exitCode() == 128 && top.stderr().contains("not a git repository");
-            lines.add(new Line(false, notARepository ? "not a git repository"
-                    : "git could not read " + path + ": " + firstLine(top.stderr())));
-            return new Reading(lines, key, "", "", List.of());
+            return Optional.of(notARepository ? "not a git repository"
+                    : "git could not read " + path + ": " + firstLine(top.stderr()));
         }
         String toplevel = top.stdout().strip();
-        if (!real(Path.of(toplevel)).equals(real(path))) {
-            lines.add(new Line(false, "a folder inside the repository at " + toplevel + " — add that instead"));
-            return new Reading(lines, key, "", "", List.of());
-        }
+        return real(Path.of(toplevel)).equals(real(path)) ? Optional.empty()
+                : Optional.of("a folder inside the repository at " + toplevel + " — add that instead");
+    }
+
+    private Line remoteLine(Path path) {
         Processes.Result remote = git(path, "remote", "get-url", "origin");
         String origin = remote.stdout().strip();
         if (remote.exitCode() == 0 && !origin.isBlank()) {
-            lines.add(new Line(true, "a git repository, origin " + GitRemote.withoutCredentials(origin)));
-        } else if (remote.exitCode() == 0 || remote.exitCode() == 2 && remote.stderr().contains("No such remote")) {
-            lines.add(new Line(false, "no remote named origin"));
-        } else {
-            lines.add(new Line(false, "git could not read the remote of " + path + ": " + firstLine(remote.stderr())));
+            return new Line(true, "a git repository, origin " + GitRemote.withoutCredentials(origin));
         }
-        String base = gitOut(path, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+        if (remote.exitCode() == 0 || remote.exitCode() == 2 && remote.stderr().contains("No such remote")) {
+            return new Line(false, "no remote named origin");
+        }
+        return new Line(false, "git could not read the remote of " + path + ": " + firstLine(remote.stderr()));
+    }
+
+    private String baseBranch(Path path) {
+        return gitOut(path, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
                 .orElse(exists(path, "origin/main") ? "origin/main" : exists(path, "origin/master") ? "origin/master" : "");
-        lines.add(new Line(!base.isBlank(), base.isBlank() ? "no origin/main or origin/master to cut tasks from"
-                : "tasks are cut from " + base));
-        String deploy = exists(path, "origin/dev") ? "dev" : "";
+    }
+
+    private boolean taken(Path path) {
         Path real = real(path);
-        boolean taken = configService.load().projects().values().stream()
+        return configService.load().projects().values().stream()
                 .anyMatch(project -> real(Path.of(expand(project.path())).toAbsolutePath().normalize()).equals(real));
-        lines.add(new Line(!taken, taken ? "a project already points here" : "no project points here yet"));
-        List<String> verify = Files.exists(path.resolve("gradlew")) ? List.of("./gradlew", "test")
-                : Files.exists(path.resolve("package.json")) ? List.of("npm", "test") : List.of();
-        return new Reading(lines, key, base, deploy, verify);
+    }
+
+    private static List<String> verifyCommand(Path path) {
+        if (Files.exists(path.resolve("gradlew"))) {
+            return List.of("./gradlew", "test");
+        }
+        return Files.exists(path.resolve("package.json")) ? List.of("npm", "test") : List.of();
     }
 
     /** Refuses an entry the file could not hold, and leaves the file as it was when the result does not read. */
@@ -166,34 +187,41 @@ public class ProjectSetup {
             throw new IllegalArgumentException("jagt.yml holds no orchestrator: section");
         }
         String[] lines = file.substring(root.end()).split("\n", -1);
+        ProjectsLine found = projectsLine(lines);
+        int at = found.at();
+        String parent = found.parent();
+        String entryIndent = entryIndent(lines, at, parent);
+        lines[at] = parent + "projects:";
+        String block = block(entryIndent, entry, Path.of(expand(entry.path())).toAbsolutePath().normalize(),
+                entryIndent.substring(parent.length()));
+        lines[at] = lines[at] + "\n" + block.substring(0, block.length() - 1);
+        return file.substring(0, root.end()) + String.join("\n", lines);
+    }
+
+    private record ProjectsLine(int at, String parent) {
+    }
+
+    private static ProjectsLine projectsLine(String[] lines) {
         String child = null;
-        int at = -1;
         for (int i = 1; i < lines.length; i++) {
             String indent = indent(lines[i]);
             if (indent == null) continue;
             if (indent.isEmpty()) break;
             if (child == null) child = indent;
             if (indent.equals(child) && lines[i].strip().matches("projects:\\s*(\\{\\s*})?\\s*(#.*)?")) {
-                at = i;
-                break;
+                return new ProjectsLine(i, child);
             }
         }
-        if (at < 0) {
-            throw new IllegalArgumentException("jagt.yml holds no projects: under orchestrator: to add to");
-        }
-        String parent = java.util.Objects.requireNonNull(child);
-        String entryIndent = parent + parent;
+        throw new IllegalArgumentException("jagt.yml holds no projects: under orchestrator: to add to");
+    }
+
+    private static String entryIndent(String[] lines, int at, String parent) {
         for (int i = at + 1; i < lines.length; i++) {
             String indent = indent(lines[i]);
             if (indent == null) continue;
-            if (indent.length() > parent.length()) entryIndent = indent;
-            break;
+            return indent.length() > parent.length() ? indent : parent + parent;
         }
-        lines[at] = parent + "projects:";
-        String block = block(entryIndent, entry, Path.of(expand(entry.path())).toAbsolutePath().normalize(),
-                entryIndent.substring(parent.length()));
-        lines[at] = lines[at] + "\n" + block.substring(0, block.length() - 1);
-        return file.substring(0, root.end()) + String.join("\n", lines);
+        return parent + parent;
     }
 
     /** The leading spaces of a line that holds a key, or null for a blank or comment line. */

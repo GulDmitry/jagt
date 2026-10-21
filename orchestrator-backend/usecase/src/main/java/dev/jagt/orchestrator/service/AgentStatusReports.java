@@ -88,10 +88,21 @@ public class AgentStatusReports {
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         TaskStatus previous = written.previous();
         TaskStatus landed = written.now();
-        String alias = current.map(TaskState::alias).orElse(null);
         // An agent that stops to ask usually keeps its status, so the message is the only thing that changed.
         boolean askedNow = AgentReport.of(shortMessage) == AgentReport.QUESTION
                 && AgentReport.of(current.map(TaskState::message).orElse(null)) != AgentReport.QUESTION;
+        logChange(taskId, current.map(TaskState::alias).orElse(null), previous, landed, shortMessage, askedNow);
+        // A keep-alive says nothing new; a task handing control back, or stopping to ask, does.
+        boolean handedBack = landed != previous && FlowRules.handsBack(landed);
+        if (handedBack || askedNow) {
+            // Re-read: the same call may have LINKED the request, and the advice differs on whether one exists.
+            ping(taskId, stateService.task(taskId));
+        }
+        return answer(taskId, newStatus, landed, shortMessage);
+    }
+
+    private void logChange(String taskId, @Nullable String alias, TaskStatus previous, TaskStatus landed,
+                           @Nullable String shortMessage, boolean askedNow) {
         if (landed != previous) {
             log.atInfo().setMessage("agent status changed").addKeyValue("task", taskId)
                     .addKeyValue("alias", alias)
@@ -106,20 +117,18 @@ public class AgentStatusReports {
                     .addKeyValue("said", shortMessage)
                     .log();
         }
-        // A keep-alive says nothing new; a task handing control back, or stopping to ask, does.
-        boolean handedBack = landed != previous && FlowRules.handsBack(landed);
-        if (handedBack || askedNow) {
-            // Re-read: the same call may have LINKED the request, and the advice differs on whether one exists.
-            ping(taskId, stateService.task(taskId));
-        }
-        if (landed != newStatus && !FlowRules.awaitingVerification(landed)) {
+    }
+
+    private String answer(String taskId, TaskStatus asked, TaskStatus landed, @Nullable String shortMessage) {
+        String said = shortMessage == null ? "" : " (" + shortMessage + ")";
+        if (landed != asked && !FlowRules.awaitingVerification(landed)) {
             return "Task " + taskId + " stays " + landed + ": that one is a human's to move on from. Your line"
-                    + " was recorded" + (shortMessage == null ? "" : " (" + shortMessage + ")");
+                    + " was recorded" + said;
         }
         String next = FlowRules.awaitingVerification(landed)
                 ? "; verification runs first, and the Master reads this round once it passes; end your turn"
                 : "; the Master reads this round next; end your turn";
-        return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")")
+        return "Task " + taskId + " -> " + landed + said
                 + (FlowRules.headedForTheMaster(landed) && handBack.masterReads() ? next : "");
     }
 
