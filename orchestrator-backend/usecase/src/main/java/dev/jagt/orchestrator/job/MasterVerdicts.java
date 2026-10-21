@@ -38,26 +38,18 @@ public class MasterVerdicts {
     public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
                        ConfigService.ConfigFile.MasterConfig config) {
         boolean plan = FlowRules.holdsAPlan(task.status());
-        switch (verdict.kind()) {
-            case NOT_READY -> {
-                return returned(taskId, task, verdict, plan);
-            }
+        return switch (verdict.kind()) {
+            case NOT_READY -> returned(taskId, task, verdict, plan);
             case QUESTION -> {
                 decisions.returned(task, verdict.writtenAt(), false);
-                return ask(taskId, verdict.question());
+                yield ask(taskId, verdict.question());
             }
             case READY -> {
                 decisions.returned(task, verdict.writtenAt(), false);
-                if (plan) {
-                    return config.may(MasterRight.PLAN) && go(taskId);
-                }
-                if (!config.may(MasterRight.SHIP)) {
-                    return false;
-                }
-                return ship.ship(taskId, task);
+                yield plan ? config.may(MasterRight.PLAN) && go(taskId)
+                        : config.may(MasterRight.SHIP) && ship.ship(taskId, task);
             }
-        }
-        return false;
+        };
     }
 
     /** Repeats are relayed marked, never dropped; rounds of nothing but repeats end as the human's question. */

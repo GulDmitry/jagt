@@ -440,4 +440,48 @@ class MasterVerdictsTest {
 
         assertThat(verdicts.stalled(task)).isEqualTo(stalled);
     }
+
+    @ParameterizedTest
+    @CsvSource({"NOT_READY,REVIEW_PENDING", "QUESTION,REVIEW_PENDING", "READY,PLAN_PENDING"})
+    void movesNothingOfATaskThatIsGoneFromTheState(MasterReview.Kind kind, TaskStatus status, @TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(kind, List.of("Foo.java:12 wrong"), 1, ""),
+                acting);
+
+        assertThat(moved).isFalse();
+    }
+
+    @Test
+    void movesNothingOfAnAnsweredTaskThatIsGoneFromTheState(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
+
+        assertThat(moved).isFalse();
+    }
+
+    @Test
+    void movesNothingWhenTheShipWasNotOpened(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+                acting);
+
+        assertThat(moved).isFalse();
+    }
 }
