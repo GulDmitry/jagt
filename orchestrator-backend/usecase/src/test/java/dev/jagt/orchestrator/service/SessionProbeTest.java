@@ -341,4 +341,18 @@ class SessionProbeTest {
 
         assertThat(silence).isEmpty();
     }
+
+    @Test
+    void keepsAnEndedSessionWhenAnIdleNoticeFollowsIt() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_990_000L).build();
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.GONE, null, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.IDLE, null, 10_060_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_060_000))
+                .map(SessionProbe.Silence::reported).contains(SessionProbe.State.GONE);
+    }
 }
