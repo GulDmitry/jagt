@@ -5,7 +5,6 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * What creating a task needs, as one value. {@code baseBranch} is the per-task OVERRIDE of the project's configured
@@ -87,9 +86,7 @@ public record NewTask(String taskId, List<String> projectKeys, @Nullable String 
                 throw new IllegalArgumentException("A task needs the project its session runs in");
             }
             // Named twice is one worktree, not two, and the same repository cannot be cut for one task twice.
-            LinkedHashSet<String> named = projectKeys.stream()
-                    .filter(key -> key != null && !key.isBlank())
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            LinkedHashSet<String> named = new LinkedHashSet<>(projectKeys);
             return new NewTask(taskId, new ArrayList<>(named), instructions, mode, branchStrategy, baseBranch,
                     title, ticketUrl);
         }

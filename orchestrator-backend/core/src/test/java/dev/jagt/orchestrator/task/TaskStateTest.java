@@ -279,7 +279,8 @@ class TaskStateTest {
                 .history(List.of(new StatusChange(TaskStatus.NEW, 1, null),
                         new StatusChange(TaskStatus.CI_POLLING, 2, null),
                         new StatusChange(TaskStatus.IN_PROGRESS, 3, null),
-                        new StatusChange(TaskStatus.CI_POLLING, 4, null))).build();
+                        new StatusChange(TaskStatus.REVIEW_PENDING, 4, null),
+                        new StatusChange(TaskStatus.CI_POLLING, 5, null))).build();
 
         assertThat(task.rounds()).isEqualTo(2);
     }
@@ -402,5 +403,67 @@ class TaskStateTest {
         assertThat(noted.repo("java").orElseThrow().remoteUrl()).isEqualTo("git@host:g/java.git");
         assertThat(noted.repo("php").orElseThrow().remoteUrl()).isNull();
         assertThat(noted.deployCommit()).isEqualTo("cafe1234");
+    }
+
+    @Test
+    void listsOnlyTheRepositoriesThatCarryAProjectName() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of(null, "/wt/x"),
+                TaskRepo.of(" ", "/wt/y")), TaskStatus.IN_PROGRESS).build();
+
+        assertThat(task.projects()).containsExactly("php");
+    }
+
+    @Test
+    void seedsALegacyTaskWithoutAnActivityStampAtTheMomentItWasFirstMoved() {
+        TaskState legacy = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"IN_PROGRESS","lastActiveTimestamp":0,
+                 "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
+
+        TaskState moved = legacy.withStatus(TaskStatus.IN_PROGRESS, "ping", true);
+
+        assertThat(moved.history().getFirst().at()).isGreaterThan(1_700_000_000_000L);
+    }
+
+    @Test
+    void readsBackEveryFieldItWroteIncludingWhatAnEarlierFileCouldOmit() {
+        JsonMapper mapper = new JsonMapper();
+        TaskState written = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withChecksUnread()
+                .withProbes(List.of(Probe.specified(Probe.Kind.COMMAND, List.of("make"), 0)))
+                .refused(Guard.GIT_STATE);
+
+        TaskState read = mapper.readValue(mapper.writeValueAsString(written), TaskState.class);
+
+        assertThat(read.pipelineUnread()).isTrue();
+        assertThat(read.probes()).hasSize(1);
+        assertThat(read.refusals()).containsEntry(Guard.GIT_STATE, 1);
+        assertThat(read.history()).hasSize(1);
+    }
+
+    @Test
+    void recordsWhatJagtFoundAboutATaskWithoutCountingItAsTheAgentMoving() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).lastActiveTimestamp(1_000).build();
+        AgentSpend spend = AgentSpend.NONE.plus(TokenUsage.ofCall(10, 0, 5, 0), "log", 7);
+        GitTrust trust = GitTrust.of(Map.of("main", "abc"));
+        List<Probe> probes = List.of(Probe.specified(Probe.Kind.REF, List.of("main"), 0));
+
+        TaskState found = task.withAgentSpend(spend).withGitTrust(trust).withProbes(probes)
+                .withApproved(true).withChecksUnread();
+
+        assertThat(found.agentSpend()).isEqualTo(spend);
+        assertThat(found.gitTrust()).isEqualTo(trust);
+        assertThat(found.probes()).isEqualTo(probes);
+        assertThat(found.approved()).isTrue();
+        assertThat(found.pipelineUnread()).isTrue();
+        assertThat(found.lastActiveTimestamp()).isEqualTo(1_000);
+    }
+
+    @Test
+    void buildsATaskWhoseFirstRepositoryAlreadyHoldsItsRemote() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
+                TaskStatus.IN_PROGRESS).remoteUrl("git@host:g/php.git").build();
+
+        assertThat(task.remoteUrl()).isEqualTo("git@host:g/php.git");
+        assertThat(task.repo("java").orElseThrow().remoteUrl()).isNull();
     }
 }
