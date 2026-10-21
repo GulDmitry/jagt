@@ -19,7 +19,6 @@ public class TaskFilesController {
 
     private final TaskArtifacts artifacts;
 
-    /** The documents in the task's worktree now; one the agent has not written is not listed. */
     @GetMapping("/tasks/files")
     public List<String> files(@RequestParam("task") String taskId) {
         return artifacts.present(taskId);

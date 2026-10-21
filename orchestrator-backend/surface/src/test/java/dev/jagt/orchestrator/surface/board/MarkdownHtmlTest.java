@@ -21,6 +21,13 @@ class MarkdownHtmlTest {
     }
 
     @Test
+    void anImageIsItsAltTextSoTheBoardFetchesNothing() {
+        String html = MarkdownHtml.render("before ![the diagram](https://example.com/beacon.png) after");
+
+        assertThat(html).doesNotContain("<img").doesNotContain("example.com").contains("before the diagram after");
+    }
+
+    @Test
     void aMermaidFenceKeepsItsLanguageMarkerAndEscapedBodyForThePageToDraw() {
         String html = MarkdownHtml.render("```mermaid\nsequenceDiagram\nA->>B: <go>\n```");
 
