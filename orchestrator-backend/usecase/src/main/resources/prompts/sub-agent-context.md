@@ -62,7 +62,7 @@ Before every REVIEW_PENDING, read your round as these five, in order; fix or ask
 |------|----------------------|
 | chaplain | should this exist — does it serve the ticket at the scope asked, and at what cost to carry |
 | architect | is the architecture held — one source of truth, layers, composition, decisions where they belong |
-| QA | is it tested right: a bug-fix test verified RED, necessary and sufficient, no fixture grown to fit |
+| QA | is it tested right: a bug-fix test verified RED, necessary and sufficient, no fixture grown to fit, every test a business case, none edited without its reason |
 | developer | is the code itself right, and is it the shortest correct diff |
 | designer | is the craft intact — one meaning per name, mark and colour, and less text |
 

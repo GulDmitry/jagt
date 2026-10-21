@@ -16,6 +16,17 @@ after the task), so no test reaches the human's. A test reading the repository's
 helpers (`TextBudgetTest.mainSources`, `ConfigReferenceTest.javaFilesUnder` …). A shared **fake** of a production
 seam (`ScriptedProcesses`) is allowed, a shared builder is not.
 
+### Every test pins a business case
+
+- A test pins what a spec scenario, a ticket or a contract promises: a serialised answer's shape is one.
+- Code that only forwards or holds — a getter, a controller calling a service — gets no test of its own.
+  The business case passing through it covers it.
+- Editing a test's assertion or expected value, or deleting it, needs a reason in the commit message.
+- The reason is one of two: its scenario changed in the same commit, or it asserted what nothing promised.
+- A red run is the code's to fix. Rewriting the expectation to go green is never a reason.
+- Why: an edited test is the cheapest wrong fix, and a bug comes back through it
+  ([Approved Scenarios](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
+
 ### One constructor, the one production calls
 
 - **Every constructor in `main` is called from `main`** (`ProductionConstructorTest`). Exempt: a record's canonical
