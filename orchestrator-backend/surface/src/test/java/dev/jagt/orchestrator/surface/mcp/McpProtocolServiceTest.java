@@ -347,10 +347,11 @@ class McpProtocolServiceTest {
         McpProtocolService protocol = new McpProtocolService(mapper, state,
                 List.of(new DeployTools(mock(CommandService.class))));
 
-        JsonNode error = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\","
+        JsonNode response = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\","
                 + "\"params\":{\"name\":\"deploy_task\",\"arguments\":{\"taskId\":\"ABC-1\"}}}"), cwd, false)
-                .orElseThrow().path("error");
+                .orElseThrow();
 
-        assertThat(error.path("code").asInt()).isEqualTo(McpProtocolService.UNKNOWN_CALLER);
+        assertThat(response.path("error").path("code").asInt()).isEqualTo(McpProtocolService.UNKNOWN_CALLER);
+        assertThat(response.path("id").asInt()).isEqualTo(10);
     }
 }

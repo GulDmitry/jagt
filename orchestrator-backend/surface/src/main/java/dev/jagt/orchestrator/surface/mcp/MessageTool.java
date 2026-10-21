@@ -57,7 +57,6 @@ public final class MessageTool {
         Map<String, String> declared = Arrays.stream(message.getRecordComponents())
                 .collect(Collectors.toMap(component -> folded(component.getName()), RecordComponent::getName));
         return args.properties().stream().map(Map.Entry::getKey)
-                .filter(name -> !declared.containsValue(name))
                 .filter(name -> declared.containsKey(folded(name)) && !args.has(declared.get(folded(name))))
                 .map(name -> new Violation(name, "not a field; did you mean " + declared.get(folded(name)) + "?"))
                 .toList();

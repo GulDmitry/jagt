@@ -6,9 +6,17 @@ import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.SessionWakes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -101,6 +109,30 @@ class AgentSessionControllerTest {
 
         verify(reports).record("ABC-1", SessionProbe.State.WORKING,
                 SessionReports.Report.defaults().withTask(task));
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void dropsATranscriptPathItCannotBelieveAndSaysSoOnceInTheLog() {
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger controllerLog = (Logger) LoggerFactory.getLogger(AgentSessionController.class);
+        controllerLog.addAppender(log);
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+
+        new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj",
+                new SessionHookReport("relative/session.jsonl", "compact", null));
+        new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj",
+                new SessionHookReport("/logs/session.jsonl", "compact", null));
+        controllerLog.detachAppender(log);
+
+        verify(reports).record("ABC-1", SessionProbe.State.WORKING,
+                SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "session hook field dropped".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
     }
 
     @Test
