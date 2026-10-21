@@ -85,6 +85,10 @@ allprojects {
         task.environment 'TMUX_TMPDIR', tmuxDir.absolutePath
         task.environment.remove('TMUX')
         task.doFirst { tmuxDir.mkdirs() }
+        // Walking up from the working directory would reach the human's own stores.
+        def testRoot = task.project.layout.buildDirectory.dir("test-root/${task.name}").get().asFile
+        task.environment 'ORCHESTRATOR_ROOT', testRoot.absolutePath
+        task.doFirst { testRoot.mkdirs() }
     }
 
     // Provisioning a worktree trusts it in the config Claude reads; the suites that log in as the human need theirs.

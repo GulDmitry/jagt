@@ -33,4 +33,11 @@ class OrchestratorPathsTest {
 
         assertThat(new OrchestratorPaths(moved).configFile()).isEqualTo(pinned);
     }
+
+    @Test
+    void aTestJvmNeverResolvesTheHumansRoot() {
+        Path root = new OrchestratorPaths(OrchestratorProperties.defaults()).root();
+
+        assertThat(root).isEqualTo(Path.of(System.getenv("ORCHESTRATOR_ROOT")).toAbsolutePath().normalize());
+    }
 }

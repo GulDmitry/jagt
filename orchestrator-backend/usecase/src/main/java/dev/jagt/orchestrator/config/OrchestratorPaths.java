@@ -82,6 +82,10 @@ public class OrchestratorPaths {
     }
 
     private static Path findRoot() {
+        String env = System.getenv("ORCHESTRATOR_ROOT");
+        if (env != null && !env.isBlank()) {
+            return Path.of(env).toAbsolutePath().normalize();
+        }
         Path start = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
         for (Path dir = start; dir != null; dir = dir.getParent()) {
             for (String marker : ROOT_MARKERS) {
