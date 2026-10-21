@@ -17,6 +17,7 @@ import tools.jackson.databind.node.ObjectNode;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -34,11 +35,13 @@ public class McpProtocolService implements McpToolRegistry {
 
     private final ObjectMapper mapper;
     private final StateService stateService;
+    private final Clock clock;
     private final Map<String, ToolSpec> tools = new LinkedHashMap<>();
 
-    public McpProtocolService(ObjectMapper mapper, StateService stateService, List<McpTools> groups) {
+    public McpProtocolService(ObjectMapper mapper, StateService stateService, Clock clock, List<McpTools> groups) {
         this.mapper = mapper;
         this.stateService = stateService;
+        this.clock = clock;
         groups.forEach(group -> group.declare(this));
     }
 
@@ -98,9 +101,10 @@ public class McpProtocolService implements McpToolRegistry {
     /** Any MCP traffic from a registered worktree proves the agent is alive. */
     private @Nullable String keepAlive(@Nullable String callerCwd) {
         var caller = stateService.findByWorktree(callerCwd);
+        long now = clock.millis();
         caller.ifPresent(entry -> {
-            if (System.currentTimeMillis() - entry.getValue().lastActiveTimestamp() > KEEP_ALIVE_THROTTLE_MS) {
-                stateService.updateTask(entry.getKey(), TaskState::touched);
+            if (now - entry.getValue().lastActiveTimestamp() > KEEP_ALIVE_THROTTLE_MS) {
+                stateService.updateTask(entry.getKey(), task -> task.touched(now));
             }
         });
         return caller.map(Map.Entry::getKey).orElse(null);

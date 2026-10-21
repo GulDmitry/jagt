@@ -12,6 +12,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -28,7 +29,7 @@ class FinishedTasksTest {
         StateService state = new StateService(mapper, paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
                 .title("a thing").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class));
+        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
 
         finished.record("ABC-1");
         state.removeTask("ABC-1");
@@ -47,7 +48,7 @@ class FinishedTasksTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(mapper, paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class));
+        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
         finished.record("ABC-1");
         Files.writeString(root.resolve("finished.jsonl"),
                 Files.readString(root.resolve("finished.jsonl")) + "{ this is not json\n");
@@ -65,7 +66,7 @@ class FinishedTasksTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a2").build());
         state.putTask("ABC-3", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a3").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class));
+        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
         finished.record("ABC-1");
         finished.record("ABC-2");
         Files.writeString(root.resolve("finished.jsonl"), Files.readString(root.resolve("finished.jsonl"))

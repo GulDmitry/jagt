@@ -14,6 +14,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +28,7 @@ class ClaudeAgentRuntimeTest {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults()
                 .withAgentPrompt("Read AGENTS.md and work"), new ClaudeProperties("claude"),
                 new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false))
                 .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'Read AGENTS.md and work'");
@@ -37,7 +38,7 @@ class ClaudeAgentRuntimeTest {
     void startsTheAgentInPlanModeWhenTheHumanAskedToAgreeOnTheApproachFirst() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), true))
                 .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --permission-mode plan 'go'");
@@ -48,7 +49,7 @@ class ClaudeAgentRuntimeTest {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults()
                 .withAgentPrompt("go").withAgentRevivePrompt("pick up where you left off"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.reviveCommand(Path.of("/wt")))
                 .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --continue 'pick up where you left off'");
@@ -58,7 +59,7 @@ class ClaudeAgentRuntimeTest {
     void keepsAPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("it's fine"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false))
                 .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'it'\\''s fine'");
@@ -91,7 +92,7 @@ class ClaudeAgentRuntimeTest {
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
         var config = new JsonMapper().readTree(Files.readString(worktree.resolve(".mcp.json")))
@@ -109,7 +110,7 @@ class ClaudeAgentRuntimeTest {
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
         assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
@@ -122,7 +123,7 @@ class ClaudeAgentRuntimeTest {
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .provisionWorktree(AgentWorktree.of(worktree, root));
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "system knowledge");
 
@@ -137,7 +138,7 @@ class ClaudeAgentRuntimeTest {
 
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
         Path briefing = runtime.systemKnowledgeFile(worktree);
         runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
@@ -153,7 +154,7 @@ class ClaudeAgentRuntimeTest {
 
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
         Path briefing = runtime.systemKnowledgeFile(worktree);
         runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
@@ -172,7 +173,7 @@ class ClaudeAgentRuntimeTest {
 
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThatThrownBy(() -> runtime.systemKnowledgeFile(worktree))
                 .isInstanceOf(IllegalStateException.class)
@@ -264,7 +265,7 @@ class ClaudeAgentRuntimeTest {
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
         String command = new JsonMapper()
@@ -280,7 +281,7 @@ class ClaudeAgentRuntimeTest {
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
         String command = new JsonMapper()
@@ -296,7 +297,7 @@ class ClaudeAgentRuntimeTest {
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
         var hook = new JsonMapper()
@@ -311,7 +312,7 @@ class ClaudeAgentRuntimeTest {
     void refusesATurnEndInTheShapeClaudeReadsAsKeepGoing() {
         String refusal = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .refusedTurnEnd("report \"first\"");
 
         var answer = new JsonMapper().readTree(refusal);
@@ -323,7 +324,7 @@ class ClaudeAgentRuntimeTest {
     void showsTheHumanALineInTheFieldClaudeKeepsFromTheModel() {
         String line = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .toldTheHuman("with the \"Master\"");
 
         var answer = new JsonMapper().readTree(line);
@@ -337,7 +338,7 @@ class ClaudeAgentRuntimeTest {
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
         var gate = new JsonMapper().readTree(Files.readString(
@@ -356,7 +357,7 @@ class ClaudeAgentRuntimeTest {
     void tellsADraftTheHumanIsComposingFromTheSuggestionAndFromWhatTheyAlreadySent(String screen, boolean draft) {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults(), new ClaudeProperties("claude"),
                 new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.holdsDraft(screen.translateEscapes())).isEqualTo(draft);
     }
@@ -365,7 +366,7 @@ class ClaudeAgentRuntimeTest {
     void pinsTheModelAskedForAsOneShellArgument() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), true, " opus "))
                 .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --permission-mode plan --model 'opus' 'go'");
@@ -375,7 +376,7 @@ class ClaudeAgentRuntimeTest {
     void leavesTheModelToTheCliWhenNoneIsAskedFor() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false, "  "))
                 .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");

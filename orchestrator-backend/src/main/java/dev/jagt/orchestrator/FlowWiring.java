@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Clock;
 import java.util.List;
 
 @Configuration
@@ -44,12 +45,12 @@ public class FlowWiring {
     }
 
     @Bean
-    public FlowEngine flowEngine(TaskStore tasks, Capabilities capabilities, AgentPresence agents) {
-        return new FlowEngine(tasks, capabilities, agents);
+    public FlowEngine flowEngine(TaskStore tasks, Capabilities capabilities, AgentPresence agents, Clock clock) {
+        return new FlowEngine(tasks, capabilities, agents, clock);
     }
 
     @Bean
-    public FlowReports flowReports(TaskStore tasks) {
-        return new FlowReports(tasks);
+    public FlowReports flowReports(TaskStore tasks, Clock clock) {
+        return new FlowReports(tasks, clock);
     }
 }

@@ -212,9 +212,7 @@ class AgentSessionsTest {
     void startsAFreshSessionForNewInstructionsWhenTheConversationIdledPastItsCacheLifetime() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
-        when(agentRuntime.lastSessionActivity(root))
-                .thenReturn(OptionalLong.of(1_700_000_000_000L));
+        when(agentRuntime.pastContinuing(root)).thenReturn(true);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         String answer = sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
@@ -232,10 +230,7 @@ class AgentSessionsTest {
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
         when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
-        when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
-        when(agentRuntime.lastSessionActivity(root)).thenReturn(
-                OptionalLong.of(System.currentTimeMillis() - Duration.ofMinutes(10).toMillis()),
-                OptionalLong.of(1_700_000_000_000L));
+        when(agentRuntime.pastContinuing(root)).thenReturn(false, true);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
@@ -357,9 +352,7 @@ class AgentSessionsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
-        when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
-        when(agentRuntime.lastSessionActivity(root))
-                .thenReturn(OptionalLong.of(System.currentTimeMillis() - Duration.ofMinutes(10).toMillis()));
+        when(agentRuntime.pastContinuing(root)).thenReturn(false);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");

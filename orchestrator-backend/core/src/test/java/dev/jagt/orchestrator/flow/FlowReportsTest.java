@@ -10,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
@@ -25,7 +26,7 @@ import static org.mockito.Mockito.when;
 class FlowReportsTest {
 
     private final TaskStore stateService = mock(TaskStore.class);
-    private final FlowReports reports = new FlowReports(stateService);
+    private final FlowReports reports = new FlowReports(stateService, Clock.systemUTC());
 
     @Test
     void letsATaskSayItIsWaitingOnTheHuman() {
@@ -101,7 +102,7 @@ class FlowReportsTest {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
 
         reports.report("ABC-1", TaskStatus.CI_POLLING, "review request: http://host/1",
-                (was, task) -> task.withMrUrl("http://host/1"));
+                (was, task) -> task.withMrUrl("http://host/1", 2_000));
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.service.PressLog;
 import dev.jagt.orchestrator.service.PressLog.Interaction;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -19,14 +20,14 @@ class InteractionsControllerTest {
     void recordsTheBatchOfPressesThePageSent() {
         List<Interaction> sent = List.of(new Interaction(1_000L, "verb:ship", "REVIEW_PENDING"));
 
-        new InteractionsController(presses).record(new InteractionsController.Batch(sent));
+        new InteractionsController(presses, Clock.systemUTC()).record(new InteractionsController.Batch(sent));
 
         verify(presses).record(eq(sent), anyLong());
     }
 
     @Test
     void recordsAnEmptyBatchForABodyCarryingNoPresses() {
-        new InteractionsController(presses).record(new InteractionsController.Batch(null));
+        new InteractionsController(presses, Clock.systemUTC()).record(new InteractionsController.Batch(null));
 
         verify(presses).record(eq(List.of()), anyLong());
     }

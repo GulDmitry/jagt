@@ -553,7 +553,7 @@ class BoardCardTest extends BoardPageContext {
         page.locator("article .badge").focus();
         assertThat(page.locator("#tip")).containsText("approved: deploy or done");
 
-        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.DEPLOY_CONFLICT, "conflict"));
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.DEPLOY_CONFLICT, "conflict", System.currentTimeMillis()));
 
         assertThat(page.locator("#tip")).containsText("resolve the conflict");
     }

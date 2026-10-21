@@ -177,17 +177,16 @@ public record TaskState(
     }
 
     /** A status move — the ONE place history grows. */
-    public TaskState withStatus(TaskStatus status, @Nullable String message) {
-        return withStatus(status, message, false);
+    public TaskState withStatus(TaskStatus status, @Nullable String message, long now) {
+        return withStatus(status, message, false, now);
     }
 
     /**
      * {@code event} records a step even when the status is unchanged: true for something DONE to the task, false for
      * a task repeating itself, whose keep-alives would otherwise drown the real transitions.
      */
-    public TaskState withStatus(TaskStatus status, @Nullable String message, boolean event) {
-        long now = System.currentTimeMillis();
-        List<StatusChange> known = seededHistory();
+    public TaskState withStatus(TaskStatus status, @Nullable String message, boolean event, long now) {
+        List<StatusChange> known = seededHistory(now);
         boolean record = event || status != this.status;
         return toBuilder().status(status).lastActiveTimestamp(now).message(message).silentSince(0)
                 .silentBecause(null)
@@ -196,9 +195,8 @@ public record TaskState(
     }
 
     /** A NEW review round on one repository's request. The status that follows is not decided here. */
-    public TaskState withReviewRound(@Nullable String project, String reviewRequestUrl) {
-        long now = System.currentTimeMillis();
-        return relinked(project, reviewRequestUrl).lastActiveTimestamp(now)
+    public TaskState withReviewRound(@Nullable String project, String reviewRequestUrl, long now) {
+        return relinked(project, reviewRequestUrl, now).lastActiveTimestamp(now)
                 // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
                 .pipelineStatus(null).pipelineUnread(false).approved(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
@@ -207,28 +205,28 @@ public record TaskState(
     }
 
     /** The single-repo form: the round landed on the repo the agent works in. */
-    public TaskState withReviewRound(String reviewRequestUrl) {
-        return withReviewRound(primary().project(), reviewRequestUrl);
+    public TaskState withReviewRound(String reviewRequestUrl, long now) {
+        return withReviewRound(primary().project(), reviewRequestUrl, now);
     }
 
     /**
      * One ship, however many repositories it landed in: every URL goes on its own repo, and the round is recorded
      * ONCE, carrying the session repo's link.
      */
-    public TaskState withReviewRound(Map<String, String> urlByProject) {
+    public TaskState withReviewRound(Map<String, String> urlByProject, long now) {
         if (urlByProject.isEmpty()) {
             return this;
         }
         String primaryUrl = urlByProject.getOrDefault(primary().project(),
                 urlByProject.values().iterator().next());
-        return withMrUrls(urlByProject).withReviewRound(primary().project(), primaryUrl);
+        return withMrUrls(urlByProject, now).withReviewRound(primary().project(), primaryUrl, now);
     }
 
     /** Links each repository to its own request WITHOUT recording a round. */
-    public TaskState withMrUrls(Map<String, String> urlByProject) {
+    public TaskState withMrUrls(Map<String, String> urlByProject, long now) {
         TaskState linked = this;
         for (Map.Entry<String, String> request : urlByProject.entrySet()) {
-            linked = linked.withMrUrl(request.getKey(), request.getValue());
+            linked = linked.withMrUrl(request.getKey(), request.getValue(), now);
         }
         return linked;
     }
@@ -237,11 +235,11 @@ public record TaskState(
      * A task written before history existed is seeded with its current status at the last activity stamp, or
      * {@link #statusSince()} falls back to a stamp every keep-alive bumps.
      */
-    private List<StatusChange> seededHistory() {
+    private List<StatusChange> seededHistory(long now) {
         if (!history.isEmpty()) {
             return history;
         }
-        long since = lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis();
+        long since = lastActiveTimestamp > 0 ? lastActiveTimestamp : now;
         return List.of(new StatusChange(status, since, null));
     }
 
@@ -326,8 +324,8 @@ public record TaskState(
         return history.isEmpty() ? lastActiveTimestamp : history.get(history.size() - 1).at();
     }
 
-    public TaskState touched() {
-        return withStatus(status, message);
+    public TaskState touched(long now) {
+        return withStatus(status, message, now);
     }
 
     /** The merge commit a deploy created in THAT repo; the status move is a separate step. */
@@ -339,8 +337,8 @@ public record TaskState(
         return withDeployCommit(primary().project(), deployCommit);
     }
 
-    public TaskState withMrUrl(@Nullable String project, String mrUrl) {
-        return relinked(project, mrUrl).build();
+    public TaskState withMrUrl(@Nullable String project, String mrUrl, long now) {
+        return relinked(project, mrUrl, now).build();
     }
 
     /**
@@ -348,17 +346,17 @@ public record TaskState(
      * one as opened NOW — a request reaches here only as it is being opened. A {@code resume} adopting somebody
      * else's request is linked through the builder instead, and keeps its unknown age.
      */
-    private Builder relinked(@Nullable String project, String mrUrl) {
+    private Builder relinked(@Nullable String project, String mrUrl, long now) {
         List<TaskRepo> repos = mapRepo(project, repo -> repo.withMrUrl(mrUrl));
         if (repos.equals(this.repos)) {
             return toBuilder().repos(repos);
         }
-        return toBuilder().repos(repos).requestOpenedAt(System.currentTimeMillis())
+        return toBuilder().repos(repos).requestOpenedAt(now)
                 .pipelineStatus(null).pipelineUnread(false).approved(null);
     }
 
-    public TaskState withMrUrl(String mrUrl) {
-        return withMrUrl(primary().project(), mrUrl);
+    public TaskState withMrUrl(String mrUrl, long now) {
+        return withMrUrl(primary().project(), mrUrl, now);
     }
 
     public TaskState withRemoteUrl(String project, String remoteUrl) {
@@ -614,7 +612,7 @@ public record TaskState(
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
-                    lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
+                    lastActiveTimestamp, null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust,

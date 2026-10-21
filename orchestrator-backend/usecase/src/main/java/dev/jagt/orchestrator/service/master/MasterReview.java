@@ -66,9 +66,9 @@ public class MasterReview {
     }
 
     /** Makes the verdict answer the task as it stands now; false where the file could not be touched. */
-    public boolean restamp(TaskState task) {
+    public boolean restamp(TaskState task, long now) {
         try {
-            Files.setLastModifiedTime(file(task), FileTime.fromMillis(System.currentTimeMillis()));
+            Files.setLastModifiedTime(file(task), FileTime.fromMillis(now));
             return true;
         } catch (IOException | RuntimeException unwritable) {
             log.atWarn().setMessage("master review unstamped").addKeyValue("file", file(task))

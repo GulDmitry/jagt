@@ -18,6 +18,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
@@ -49,7 +50,7 @@ class WatchdogServiceTest {
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.WAITING, null)));
 
-        new WatchdogService(state, notifications, properties, probe).run();
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
         verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.WATCHDOG
                 && "ABC-1".equals(sent.taskId()) && "waiting for input".equals(sent.body())));
@@ -69,7 +70,7 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         SessionProbe probe = mock(SessionProbe.class);
 
-        new WatchdogService(state, mock(Notifications.class), properties, probe).run();
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).run();
 
         verify(probe, never()).of(anyString(), any(), anyLong(), anyLong());
     }
@@ -87,7 +88,7 @@ class WatchdogServiceTest {
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(1_000, reported, null)));
 
-        new WatchdogService(state, notifications, properties, probe).run();
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
         verifyNoInteractions(notifications);
     }
@@ -102,7 +103,7 @@ class WatchdogServiceTest {
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(4_000, SessionProbe.State.GONE, null)));
 
-        new WatchdogService(state, mock(Notifications.class), properties, probe).check("ABC-1");
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).check("ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().silentBecause()).isEqualTo("the session ended");
     }
@@ -117,7 +118,7 @@ class WatchdogServiceTest {
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(4_000, null, null)));
 
-        new WatchdogService(state, mock(Notifications.class), properties, probe).run();
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).run();
 
         assertThat(state.task("ABC-1").orElseThrow().silentSince()).isEqualTo(4_000);
     }
@@ -130,7 +131,7 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .silentSince(1_000).build());
 
-        new WatchdogService(state, mock(Notifications.class), properties, mock(SessionProbe.class)).run();
+        new WatchdogService(state, mock(Notifications.class), properties, mock(SessionProbe.class), Clock.systemUTC()).run();
 
         assertThat(state.task("ABC-1").orElseThrow().agentIsSilent()).isFalse();
     }
@@ -146,7 +147,7 @@ class WatchdogServiceTest {
                 .thenReturn(Optional.of(new SessionProbe.Silence(4_000, null, null)));
         AtomicInteger writes = new AtomicInteger();
         state.onChange(file -> writes.incrementAndGet());
-        WatchdogService watchdog = new WatchdogService(state, mock(Notifications.class), properties, probe);
+        WatchdogService watchdog = new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC());
 
         watchdog.run();
         watchdog.run();
@@ -164,7 +165,7 @@ class WatchdogServiceTest {
         AtomicInteger writes = new AtomicInteger();
         state.onChange(file -> writes.incrementAndGet());
         WatchdogService watchdog = new WatchdogService(state, mock(Notifications.class), properties,
-                mock(SessionProbe.class));
+                mock(SessionProbe.class), Clock.systemUTC());
 
         watchdog.run();
         watchdog.run();
@@ -191,7 +192,7 @@ class WatchdogServiceTest {
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)));
 
-        new WatchdogService(state, notifications, properties, probe).run();
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
         verify(notifications).send(argThat(sent -> "the session ended".equals(sent.body())));
     }
@@ -205,7 +206,7 @@ class WatchdogServiceTest {
                 .silentSince(1_000).build();
         state.putTask("ABC-1", decidedFrom.withSilentSince(5_000, "waiting for input"));
 
-        new WatchdogService(state, mock(Notifications.class), properties, mock(SessionProbe.class))
+        new WatchdogService(state, mock(Notifications.class), properties, mock(SessionProbe.class), Clock.systemUTC())
                 .stamp("ABC-1", decidedFrom, null);
 
         assertThat(state.task("ABC-1").orElseThrow().silentSince()).isEqualTo(5_000);
@@ -222,7 +223,7 @@ class WatchdogServiceTest {
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(1_000, null, null)));
 
-        new WatchdogService(state, notifications, properties, probe).run();
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
         verify(notifications).send(argThat(sent -> "no sign of life".equals(sent.body())));
     }
@@ -237,7 +238,7 @@ class WatchdogServiceTest {
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)));
-        WatchdogService watchdog = new WatchdogService(state, notifications, properties, probe);
+        WatchdogService watchdog = new WatchdogService(state, notifications, properties, probe, Clock.systemUTC());
 
         watchdog.run();
         watchdog.run();
@@ -253,8 +254,29 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         SessionProbe probe = mock(SessionProbe.class);
 
-        new WatchdogService(state, mock(Notifications.class), properties, probe).run();
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).run();
 
         verify(probe).keepOnly(Set.of("ABC-1"));
+    }
+
+    @Test
+    void alertsAgainTheMomentTheStaleWindowHasExactlyPassed(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)));
+        Clock clock = mock(Clock.class);
+        when(clock.millis()).thenReturn(10_000_000L, 10_299_999L, 10_300_000L);
+        WatchdogService watchdog = new WatchdogService(state, notifications, properties, probe, clock);
+
+        watchdog.run();
+        watchdog.run();
+        watchdog.run();
+
+        verify(notifications, times(2)).send(any());
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.macos;
 
+import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Processes;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 
@@ -28,7 +30,7 @@ class KittyTerminalDriverTest {
     @Test
     void bindsCyrillicPasteAndCopySoPastingWorksOnTheRussianLayout() {
         var driver = new KittyTerminalDriver(mock(ProcessRunner.class), OrchestratorProperties.defaults(),
-                mock(OsaScript.class), "kitty", "");
+                mock(OsaScript.class), new KittyOptions("kitty", ""), Clock.systemUTC());
 
         assertThat(driver.platformOptions())
                 .containsSequence("-o", "map=cmd+м paste_from_clipboard")
@@ -38,7 +40,7 @@ class KittyTerminalDriverTest {
     @Test
     void keepsTheLatinDefaultsInsteadOfRemappingCmdVWhichWouldDropKittysAsciiFallback() {
         var driver = new KittyTerminalDriver(mock(ProcessRunner.class), OrchestratorProperties.defaults(),
-                mock(OsaScript.class), "kitty", "");
+                mock(OsaScript.class), new KittyOptions("kitty", ""), Clock.systemUTC());
 
         assertThat(driver.platformOptions()).doesNotContain("map=cmd+v paste_from_clipboard",
                 "map=cmd+c copy_to_clipboard");
@@ -49,7 +51,7 @@ class KittyTerminalDriverTest {
         OsaScript osaScript = mock(OsaScript.class);
 
         new KittyTerminalDriver(mock(ProcessRunner.class), OrchestratorProperties.defaults(), osaScript,
-                "kitty", "").bringToFront();
+                new KittyOptions("kitty", ""), Clock.systemUTC()).bringToFront();
 
         verify(osaScript).run("tell application \"kitty\" to activate");
     }
@@ -59,7 +61,7 @@ class KittyTerminalDriverTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         var driver = new KittyTerminalDriver(runner,
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(false),
-                mock(OsaScript.class), "kitty", "");
+                mock(OsaScript.class), new KittyOptions("kitty", ""), Clock.systemUTC());
 
         driver.openViewer("agents", "agents", Path.of("/work/tree"));
 
@@ -72,7 +74,7 @@ class KittyTerminalDriverTest {
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", ""));
         var driver = new KittyTerminalDriver(runner,
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
-                mock(OsaScript.class), "/k/kitty", "");
+                mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
         driver.openViewer("agents", "agents", Path.of("/work/tree"));
 
@@ -88,7 +90,7 @@ class KittyTerminalDriverTest {
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
         var driver = new KittyTerminalDriver(runner,
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
-                mock(OsaScript.class), "/k/kitty", "");
+                mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
         driver.openViewer("agents", "agents tab", Path.of("/work/tree"));
 
@@ -105,7 +107,7 @@ class KittyTerminalDriverTest {
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
         var driver = new KittyTerminalDriver(runner,
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
-                mock(OsaScript.class), "/k/kitty", "");
+                mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
         driver.openViewer("agents", "agents", Path.of("/work/tree"));
         driver.openViewer("agents", "agents", Path.of("/work/tree"));
@@ -119,7 +121,7 @@ class KittyTerminalDriverTest {
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
         var driver = new KittyTerminalDriver(runner,
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
-                mock(OsaScript.class), "/k/kitty", "");
+                mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
         driver.openViewer("agents", "agents", Path.of("/work/tree"));
         driver.openViewer("others", "others", Path.of("/work/tree"));
@@ -132,7 +134,7 @@ class KittyTerminalDriverTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         OsaScript osaScript = mock(OsaScript.class);
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", ""));
-        var driver = new KittyTerminalDriver(runner, OrchestratorProperties.defaults(), osaScript, "/k/kitty", "");
+        var driver = new KittyTerminalDriver(runner, OrchestratorProperties.defaults(), osaScript, new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
         var revealed = driver.reveal("agents");
 
@@ -145,7 +147,7 @@ class KittyTerminalDriverTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         OsaScript osaScript = mock(OsaScript.class);
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
-        var driver = new KittyTerminalDriver(runner, OrchestratorProperties.defaults(), osaScript, "/k/kitty", "");
+        var driver = new KittyTerminalDriver(runner, OrchestratorProperties.defaults(), osaScript, new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
         var revealed = driver.reveal("agents");
 
@@ -160,7 +162,7 @@ class KittyTerminalDriverTest {
     void closesTheViewerByTheSocketOnlyItsInstanceHolds() {
         ProcessRunner runner = mock(ProcessRunner.class);
         var driver = new KittyTerminalDriver(runner, OrchestratorProperties.defaults(), mock(OsaScript.class),
-                "/k/kitty", "");
+                new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
         driver.closeViewerWindow("agents");
 

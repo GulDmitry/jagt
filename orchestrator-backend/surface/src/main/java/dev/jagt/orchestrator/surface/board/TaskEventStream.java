@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,12 +31,13 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
     private final AtomicBoolean broadcastQueued = new AtomicBoolean();
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();
     private volatile boolean closing;
-    private final String started = Long.toString(System.currentTimeMillis(), 36);
+    private final String started;
 
-    public TaskEventStream(StateService stateService,
+    public TaskEventStream(StateService stateService, Clock clock,
                            @Qualifier("boardBroadcaster") ScheduledExecutorService broadcaster) {
         this.stateService = stateService;
         this.broadcaster = broadcaster;
+        this.started = Long.toString(clock.millis(), 36);
     }
 
     @PostConstruct

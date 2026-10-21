@@ -12,6 +12,7 @@ import tools.jackson.databind.json.JsonMapper;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -45,6 +46,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     private final ClaudeProperties claude;
     private final McpEndpoint mcp;
     private final HookEndpoint hooks;
+    private final Clock clock;
 
     @Override
     public String displayName() {
@@ -77,8 +79,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     /** The prompt cache's lifetime: https://code.claude.com/docs/en/prompt-caching#cache-lifetime */
     @Override
-    public Optional<Duration> continuesWithin() {
-        return Optional.of(CACHE_LIFETIME);
+    public boolean pastContinuing(Path worktree) {
+        return clock.millis() - lastSessionActivity(worktree).orElse(0) > CACHE_LIFETIME.toMillis();
     }
 
     @Override

@@ -2,11 +2,12 @@ package dev.jagt.orchestrator.adapter.macos;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.AbstractKittyTerminalDriver;
+import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.List;
 
 /** Raising the app needs an AppleScript activate: kitty's own {@code focus-window} moves focus WITHIN the
@@ -28,9 +29,8 @@ public class KittyTerminalDriver extends AbstractKittyTerminalDriver {
     private final OsaScript osaScript;
 
     public KittyTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties, OsaScript osaScript,
-                               @Value("${orchestrator.kitty-command:kitty}") String kittyCommand,
-                               @Value("${orchestrator.kitty-font-size:}") String kittyFontSize) {
-        super(processRunner, properties, kittyCommand, kittyFontSize);
+                               KittyOptions options, Clock clock) {
+        super(processRunner, properties, options, clock);
         this.osaScript = osaScript;
     }
 

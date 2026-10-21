@@ -15,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -32,7 +33,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview())));
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 
@@ -51,7 +52,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview())));
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 
@@ -99,7 +100,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview())));
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 

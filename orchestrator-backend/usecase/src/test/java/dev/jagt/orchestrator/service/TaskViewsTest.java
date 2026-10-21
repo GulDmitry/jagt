@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +33,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC()).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(true);
     }
@@ -43,7 +44,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC()).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
     }
@@ -55,7 +56,7 @@ class TaskViewsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
 
-        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC()).all();
 
         assertThat(views).singleElement().extracting("statusLabel").isEqualTo("master review");
     }
@@ -66,7 +67,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.CI_POLLING).build()));
         when(configService.load()).thenThrow(new IllegalStateException("jagt.yml is not valid YAML"));
 
-        var snapshot = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).snapshot();
+        var snapshot = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC()).snapshot();
 
         assertThat(snapshot.tasks()).hasSize(1);
         assertThat(snapshot.cadence().enabled()).isFalse();
@@ -79,7 +80,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.DONE).build()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC()).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
     }
@@ -93,7 +94,7 @@ class TaskViewsTest {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        String listing = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()))
+        String listing = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC())
                 .listing();
 
         assertThat(listing).isEqualTo("ABC-1 [REVIEW_PENDING] Fix the login — ready | /wt/ABC-1 https://host/mr/7"
@@ -105,7 +106,7 @@ class TaskViewsTest {
         when(stateService.tasks()).thenReturn(Map.of());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        String listing = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()))
+        String listing = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC())
                 .listing();
 
         assertThat(listing).isEqualTo("no tasks");
@@ -118,7 +119,7 @@ class TaskViewsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 
-        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview()), Clock.systemUTC()).all();
 
         assertThat(views).singleElement().extracting("confirmations").asInstanceOf(InstanceOfAssertFactories.MAP)
                 .containsEntry("deploy", "Deploy ABC-1?\n\nThis merges and pushes:\nproj → dev");

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -50,7 +51,7 @@ class TaskProvisioningTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString());
         state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        provisioning = new TaskProvisioning(config, state, worktrees, sessions);
+        provisioning = new TaskProvisioning(config, state, worktrees, sessions, Clock.systemUTC());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     }
 

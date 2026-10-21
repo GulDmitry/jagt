@@ -2,27 +2,22 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Duration;
 
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Polls the request of every task that HAS one through the SHARED {@link ReviewSweepService}, so an unattended
@@ -30,7 +25,6 @@ import java.util.concurrent.RejectedExecutionException;
  * {@link AutoReviewCadence#polls}.
  */
 @Service
-@Slf4j
 public class AutoReviewScheduler implements Job {
     @Override
     public String id() {
@@ -56,21 +50,18 @@ public class AutoReviewScheduler implements Job {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final ReviewSweepService reviewSweep;
+    private final AutoReviewPolls polls;
     private final Notifications notifications;
-    private final Executor executor;
-    private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
+    private final Clock clock;
     private final Set<String> windowElapsedNotified = ConcurrentHashMap.newKeySet();
-    private final Set<String> unreadableNotified = ConcurrentHashMap.newKeySet();
 
-    public AutoReviewScheduler(StateService stateService, ConfigService configService,
-                               ReviewSweepService reviewSweep, Notifications notifications,
-                               @Qualifier("autoReviewSweeps") Executor executor) {
+    public AutoReviewScheduler(StateService stateService, ConfigService configService, AutoReviewPolls polls,
+                               Notifications notifications, Clock clock) {
         this.stateService = stateService;
         this.configService = configService;
-        this.reviewSweep = reviewSweep;
+        this.polls = polls;
         this.notifications = notifications;
-        this.executor = executor;
+        this.clock = clock;
     }
 
     @Override
@@ -79,16 +70,16 @@ public class AutoReviewScheduler implements Job {
         if (!cadence.enabled()) {
             return;
         }
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         var tasks = stateService.tasks();
         // A task RETIRED while out for review never leaves that status, so its marker would never be dropped.
         windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
-        unreadableNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
+        polls.rearmUnreadable(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
         tasks.forEach((taskId, task) -> {
             // A task the poller has no business with any more re-arms its window-elapsed ping.
             if (!cadence.polls(task)) {
                 windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
-                unreadableNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
+                polls.rearmUnreadable(marker -> marker.startsWith(taskId + "@"));
                 return;
             }
             switch (decide(task, cadence, now)) {
@@ -116,51 +107,13 @@ public class AutoReviewScheduler implements Job {
     }
 
     private void poll(String taskId, @Nullable String alias, long round) {
-        // Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a task's
-        // sweeps mutually exclusive; that exclusion lives where every trigger passes through.
-        if (configService.startsStopped() || !inFlight.add(taskId)) {
+        if (configService.startsStopped()) {
             return;
         }
-        configService.startTaken();
-        log.atInfo().setMessage("auto-review poll due").addKeyValue("task", taskId)
-                .addKeyValue("alias", alias)
-                .log();
-        try {
-            executor.execute(() -> pollNow(taskId, round));
-        } catch (RejectedExecutionException e) {
-            // Submission itself failed. Caught NARROWLY: an exception from the sweep landing here would leave
-            // lastPolledAt unadvanced under a same-thread executor, re-running the sweep forever.
-            inFlight.remove(taskId);
-            log.atWarn().setMessage("auto-review poll not scheduled")
-                    .addKeyValue("task", taskId)
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        }
-    }
-
-    private void pollNow(String taskId, long round) {
-        try {
-            ReviewSweepService.SweepResult result = OriginContext.as(ActionOrigin.AUTO_REVIEW,
-                    () -> reviewSweep.sweep(taskId));
-            // A round nobody could read is the one outcome an unattended poll must not keep to itself: the
-            // retries are spent, and every further tick would say the same thing to the same log.
-            if (result.kind() == ReviewSweepService.SweepResult.Kind.UNREADABLE
-                    && unreadableNotified.add(taskId + "@" + round)) {
-                notifications.send(Notification.fromAgent(taskId, "auto-review", result.message()));
-            }
-        } catch (RuntimeException e) {
-            log.atWarn().setMessage("auto-review sweep failed")
-                    .addKeyValue("task", taskId)
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        } finally {
-            // Release the marker LAST and unconditionally: stamping the poll writes state.json and can throw,
-            // and losing the release would exclude this task from auto-review for the JVM's life.
-            try {
-                stateService.updateTask(taskId, t -> t.withLastPolledAt(System.currentTimeMillis()));
-            } finally {
-                inFlight.remove(taskId);
-            }
+        boolean started = polls.start(taskId, alias, round,
+                () -> stateService.updateTask(taskId, t -> t.withLastPolledAt(clock.millis())));
+        if (started) {
+            configService.startTaken();
         }
     }
 }

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 
@@ -23,7 +24,7 @@ class JobsTest {
     void runsNoJobOnTheScheduleBeforeTheStartHasPassedItsChecks() {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("master-feed");
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.tick();
 
@@ -34,7 +35,7 @@ class JobsTest {
     void runsJobsOnTheScheduleOnceTheStartHasPassedItsChecks() {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("master-feed");
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.startTicking();
         jobs.tick();
@@ -47,7 +48,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
         jobs.tick(60_000);
@@ -60,7 +61,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
         jobs.tick(61_001);
@@ -73,7 +74,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
         jobs.tick(61_000);
@@ -86,7 +87,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1)).thenThrow(new IllegalStateException("config unreadable"));
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
         jobs.tick(1_000);
 
         assertThat(jobs.statuses(2_000)).extracting(Jobs.Status::every).containsExactly(Duration.ofMinutes(1));
@@ -97,7 +98,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("scan-orphans");
         when(job.every()).thenReturn(null);
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
         jobs.tick(5_000_000);
@@ -113,7 +114,7 @@ class JobsTest {
         doThrow(new IllegalStateException("disk full")).when(failing).run();
         Job healthy = mock(Job.class);
         when(healthy.id()).thenReturn("poll-reviews");
-        Jobs jobs = new Jobs(List.of(failing, healthy), Runnable::run);
+        Jobs jobs = new Jobs(List.of(failing, healthy), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
 
@@ -129,7 +130,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.serves()).thenReturn(serves);
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         assertThat(jobs.statuses(1_000)).singleElement().extracting(Jobs.Status::serves).isEqualTo(label);
     }
@@ -141,7 +142,7 @@ class JobsTest {
         Job second = mock(Job.class);
         when(second.id()).thenReturn("poll-reviews");
 
-        assertThatThrownBy(() -> new Jobs(List.of(first, second), Runnable::run))
+        assertThatThrownBy(() -> new Jobs(List.of(first, second), Runnable::run, Clock.systemUTC()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Two jobs declare the id 'poll-reviews'");
     }
@@ -151,7 +152,7 @@ class JobsTest {
         Job nameless = mock(Job.class);
         when(nameless.id()).thenReturn(" ");
 
-        assertThatThrownBy(() -> new Jobs(List.of(nameless), Runnable::run))
+        assertThatThrownBy(() -> new Jobs(List.of(nameless), Runnable::run, Clock.systemUTC()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("declares no id");
     }
@@ -162,7 +163,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         when(job.describe()).thenReturn("reads open review requests");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         assertThat(jobs.statuses(1_000))
                 .extracting(Jobs.Status::id, Jobs.Status::describe, Jobs.Status::every,
@@ -180,7 +181,7 @@ class JobsTest {
         Job later = mock(Job.class);
         when(later.id()).thenReturn("clean-recents");
         when(later.every()).thenReturn(Duration.ofHours(1));
-        Jobs jobs = new Jobs(List.of(soon, later), Runnable::run);
+        Jobs jobs = new Jobs(List.of(soon, later), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
 
@@ -193,7 +194,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
         doThrow(new IllegalStateException("host unreachable")).when(job).run();
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
 
@@ -205,7 +206,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenThrow(new IllegalStateException("config unreadable"));
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         jobs.tick(1_000);
         jobs.tick(2_000);
@@ -221,7 +222,7 @@ class JobsTest {
         Job healthy = mock(Job.class);
         when(healthy.id()).thenReturn("clean-recents");
         when(healthy.every()).thenReturn(Duration.ofHours(1));
-        Jobs jobs = new Jobs(List.of(mute, healthy), Runnable::run);
+        Jobs jobs = new Jobs(List.of(mute, healthy), Runnable::run, Clock.systemUTC());
 
         assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::every)
                 .containsExactly(tuple("poll-reviews", null), tuple("clean-recents", Duration.ofHours(1)));
@@ -232,7 +233,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(10));
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
         jobs.tick(1_000);
 
         jobs.runNow("poll-reviews");
@@ -245,7 +246,7 @@ class JobsTest {
     void refusesToRunNowAJobNobodyDeclared() {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
-        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        Jobs jobs = new Jobs(List.of(job), Runnable::run, Clock.systemUTC());
 
         assertThatThrownBy(() -> jobs.runNow("archive-logs"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -257,7 +258,7 @@ class JobsTest {
     void refusesToRunNowAJobThatIsAlreadyRunning() {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
-        Jobs jobs = new Jobs(List.of(job), work -> { });
+        Jobs jobs = new Jobs(List.of(job), work -> { }, Clock.systemUTC());
         jobs.tick(1_000);
 
         assertThatThrownBy(() -> jobs.runNow("poll-reviews"))

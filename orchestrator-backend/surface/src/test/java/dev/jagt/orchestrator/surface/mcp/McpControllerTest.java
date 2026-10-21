@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,7 +64,7 @@ class McpControllerTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(mapper, paths);
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state,
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state, Clock.systemUTC(),
                 List.of()), state, mapper, new MasterToken(paths))).build();
 
         mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON).header(MasterToken.HEADER, "0123abcd")
@@ -77,7 +78,7 @@ class McpControllerTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(mapper, paths);
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state,
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state, Clock.systemUTC(),
                 List.of()), state, mapper, new MasterToken(paths))).build();
 
         mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON)
@@ -103,7 +104,7 @@ class McpControllerTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(mapper, paths);
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state,
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state, Clock.systemUTC(),
                 List.of()), state, mapper, new MasterToken(paths))).build();
 
         mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON).content("{\"jsonrpc\":"))

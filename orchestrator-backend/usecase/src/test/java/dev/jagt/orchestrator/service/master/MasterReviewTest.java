@@ -123,16 +123,16 @@ class MasterReviewTest {
         Files.setLastModifiedTime(file, FileTime.fromMillis(1_000));
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        boolean restamped = reviews.restamp(task);
+        boolean restamped = reviews.restamp(task, 5_000);
 
         assertThat(restamped).isTrue();
-        assertThat(Files.getLastModifiedTime(file).toMillis()).isGreaterThan(1_000);
+        assertThat(Files.getLastModifiedTime(file).toMillis()).isEqualTo(5_000);
     }
 
     @Test
     void saysNothingWasStampedWhereNoVerdictFileExists(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.restamp(task)).isFalse();
+        assertThat(reviews.restamp(task, 5_000)).isFalse();
     }
 }

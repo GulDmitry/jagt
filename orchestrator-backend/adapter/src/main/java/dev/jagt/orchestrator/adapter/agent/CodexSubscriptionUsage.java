@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Map;
 
 @Component
@@ -20,10 +20,11 @@ public class CodexSubscriptionUsage implements SubscriptionUsage {
 
     private final CodexCredentials credentials;
     private final UsageEndpoint endpoint;
+    private final Clock clock;
 
     @Override
     public Answer read() {
-        Answer answer = switch (credentials.read(Instant.now())) {
+        Answer answer = switch (credentials.read(clock.instant())) {
             case OAuthCredential.None none -> new NoSubscription();
             case OAuthCredential.Failed failed -> new Unreadable(failed.cause());
             case OAuthCredential.Token token -> switch (endpoint.get(USAGE, Map.of(

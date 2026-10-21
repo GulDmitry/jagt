@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import org.jspecify.annotations.Nullable;
 
+import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -18,11 +19,13 @@ import java.util.function.Predicate;
  */
 public class FlowReports {
 
-    public FlowReports(TaskStore tasks) {
+    public FlowReports(TaskStore tasks, Clock clock) {
         this.tasks = tasks;
+        this.clock = clock;
     }
 
     private final TaskStore tasks;
+    private final Clock clock;
 
     /** The status a report found the task in, and the one it left it in. */
     public record Landed(TaskStatus previous, TaskStatus now) {
@@ -60,7 +63,7 @@ public class FlowReports {
             }
             TaskStatus now = FlowRules.reported(task.status(), status, verificationOwed.test(task));
             landed.set(new Landed(task.status(), now));
-            return alsoRecord.apply(task.status(), task.withStatus(now, message));
+            return alsoRecord.apply(task.status(), task.withStatus(now, message, clock.millis()));
         });
         Optional<String> why = Optional.ofNullable(refused.get())
                 .or(() -> FlowRules.reportable(status) ? Optional.empty() : FlowRules.refusedReport(status, status));
@@ -79,7 +82,7 @@ public class FlowReports {
         tasks.updateTask(taskId, task -> {
             TaskStatus now = FlowRules.readLands(task.status(), concluded);
             landed.set(new Landed(task.status(), now));
-            return now == task.status() ? task : task.withStatus(now, message);
+            return now == task.status() ? task : task.withStatus(now, message, clock.millis());
         });
         return Optional.ofNullable(landed.get());
     }

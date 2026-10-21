@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -40,13 +41,15 @@ public class FinishedTasks {
     private final ObjectMapper mapper;
     private final StateService stateService;
     private final MasterReview reviews;
+    private final Clock clock;
     private final Path file;
 
     public FinishedTasks(ObjectMapper mapper, StateService stateService, OrchestratorPaths paths,
-                         MasterReview reviews) {
+                         MasterReview reviews, Clock clock) {
         this.mapper = mapper;
         this.stateService = stateService;
         this.reviews = reviews;
+        this.clock = clock;
         this.file = paths.stateFile().resolveSibling("finished.jsonl");
     }
 
@@ -57,7 +60,7 @@ public class FinishedTasks {
      */
     public void record(String taskId) {
         stateService.task(taskId).ifPresent(task -> append(FinishedTask.of(taskId, task,
-                System.currentTimeMillis(), reviews.of(task).map(MasterReview.Verdict::said).orElse(null))));
+                clock.millis(), reviews.of(task).map(MasterReview.Verdict::said).orElse(null))));
     }
 
     /** Newest first. A line written by an older jagt that no longer parses is skipped, never fatal. */

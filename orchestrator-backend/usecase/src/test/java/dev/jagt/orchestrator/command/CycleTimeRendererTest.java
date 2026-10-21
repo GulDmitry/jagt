@@ -151,17 +151,6 @@ class CycleTimeRendererTest {
         assertThat(out).doesNotContain("ABC-2").contains("1.0 per task");
     }
 
-    @Test
-    void readsTheClockAtTheMomentItIsAskedWhenNoTimeIsGiven() {
-        Map<String, TaskState> tasks = Map.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .history(List.of(new StatusChange(TaskStatus.CI_POLLING, System.currentTimeMillis() - 3 * HOUR, null)))
-                .build());
-
-        String out = new CycleTimeRenderer().render(tasks);
-
-        assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
-                .containsSubsequence("3h", "0m", "0m", "3h");
-    }
 
     @Test
     void totalsTheRoundsOfAllTasksAsAPositiveNumber() {

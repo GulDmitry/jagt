@@ -16,6 +16,7 @@ import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,7 +43,7 @@ class TaskEventStreamTest {
     void handsTheBroadcastOffInsteadOfWritingOnTheThreadThatChangedTheState() {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = new TaskEventStream(stateService, broadcaster);
+        TaskEventStream stream = new TaskEventStream(stateService, Clock.systemUTC(), broadcaster);
         stream.followStateChanges();
         ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
         verify(stateService).onChange(listener.capture());
@@ -57,7 +58,7 @@ class TaskEventStreamTest {
     void keepsOnlyOnePendingBroadcastForABurstOfChanges() {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = new TaskEventStream(stateService, broadcaster);
+        TaskEventStream stream = new TaskEventStream(stateService, Clock.systemUTC(), broadcaster);
         stream.followStateChanges();
         ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
         verify(stateService).onChange(listener.capture());
@@ -75,14 +76,14 @@ class TaskEventStreamTest {
 
     @Test
     void handsEachBrowserItsOwnStream() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), Clock.systemUTC(), mock(ScheduledExecutorService.class));
 
         assertThat(stream.open()).isNotSameAs(stream.open());
     }
 
     @Test
     void endsEveryBoardConnectionWhenTheBackendShutsDown() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), Clock.systemUTC(), mock(ScheduledExecutorService.class));
         SseEmitter browser = stream.open();
 
         stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
@@ -92,7 +93,7 @@ class TaskEventStreamTest {
 
     @Test
     void handsBackAnAlreadyEndedStreamToATabThatReconnectsDuringShutdown() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), Clock.systemUTC(), mock(ScheduledExecutorService.class));
         stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
 
         assertThatIllegalStateException().isThrownBy(() -> stream.open().send("reconnected"));
@@ -100,7 +101,7 @@ class TaskEventStreamTest {
 
     @Test
     void endsAConnectionWhoseWriteFailedInsteadOfMerelyForgettingIt() {
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ScheduledExecutorService.class));
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), Clock.systemUTC(), mock(ScheduledExecutorService.class));
         AtomicBoolean ended = new AtomicBoolean();
         SseEmitter gone = new SseEmitter(0L) {
             @Override
@@ -121,7 +122,7 @@ class TaskEventStreamTest {
 
     @Test
     void namesTheRunAndBeatsOnceToABrowserThatOpens() {
-        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class),
+        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), Clock.systemUTC(),
                 mock(ScheduledExecutorService.class)));
 
         SseEmitter browser = stream.open();
@@ -134,7 +135,7 @@ class TaskEventStreamTest {
     void tellsEveryOpenBrowserThatTheStateChanged() {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = spy(new TaskEventStream(stateService, broadcaster));
+        TaskEventStream stream = spy(new TaskEventStream(stateService, Clock.systemUTC(), broadcaster));
         stream.followStateChanges();
         ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
         verify(stateService).onChange(listener.capture());
@@ -151,7 +152,7 @@ class TaskEventStreamTest {
     @Test
     void beatsEveryOpenBrowserWhenTheHeartbeatFires() {
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), broadcaster));
+        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), Clock.systemUTC(), broadcaster));
         stream.followStateChanges();
         SseEmitter browser = stream.open();
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
@@ -167,7 +168,7 @@ class TaskEventStreamTest {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
         doThrow(new RejectedExecutionException("stopping")).doNothing().when(broadcaster).execute(any());
-        TaskEventStream stream = new TaskEventStream(stateService, broadcaster);
+        TaskEventStream stream = new TaskEventStream(stateService, Clock.systemUTC(), broadcaster);
         stream.followStateChanges();
         ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
         verify(stateService).onChange(listener.capture());
@@ -181,7 +182,7 @@ class TaskEventStreamTest {
     @Test
     void stopsTheBroadcasterWithoutInterruptingAWriteWhenTheBackendShutsDown() {
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = new TaskEventStream(mock(StateService.class), broadcaster);
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class), Clock.systemUTC(), broadcaster);
 
         stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
 
@@ -192,7 +193,7 @@ class TaskEventStreamTest {
     @Test
     void beatsNoBrowserItEndedAtShutdown() {
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), broadcaster));
+        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), Clock.systemUTC(), broadcaster));
         stream.followStateChanges();
         SseEmitter browser = stream.open();
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
@@ -207,12 +208,12 @@ class TaskEventStreamTest {
     @Test
     void beatsNoBrowserWhoseConnectionCompleted() throws Exception {
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), broadcaster));
+        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), Clock.systemUTC(), broadcaster));
         stream.followStateChanges();
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
         verify(broadcaster).scheduleAtFixedRate(heartbeat.capture(), anyLong(), anyLong(), any());
         MvcResult opened = MockMvcBuilders.standaloneSetup(new BoardApiController(mock(TaskViews.class), stream,
-                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run))).build()
+                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC())).build()
                 .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream")).andReturn();
         MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
 
@@ -225,12 +226,12 @@ class TaskEventStreamTest {
     @Test
     void beatsNoBrowserWhoseConnectionTimedOut() throws Exception {
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), broadcaster));
+        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), Clock.systemUTC(), broadcaster));
         stream.followStateChanges();
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
         verify(broadcaster).scheduleAtFixedRate(heartbeat.capture(), anyLong(), anyLong(), any());
         MvcResult opened = MockMvcBuilders.standaloneSetup(new BoardApiController(mock(TaskViews.class), stream,
-                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run))).build()
+                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC())).build()
                 .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream")).andReturn();
         MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
 
@@ -243,12 +244,12 @@ class TaskEventStreamTest {
     @Test
     void beatsNoBrowserWhoseConnectionFailed() throws Exception {
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), broadcaster));
+        TaskEventStream stream = spy(new TaskEventStream(mock(StateService.class), Clock.systemUTC(), broadcaster));
         stream.followStateChanges();
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
         verify(broadcaster).scheduleAtFixedRate(heartbeat.capture(), anyLong(), anyLong(), any());
         MvcResult opened = MockMvcBuilders.standaloneSetup(new BoardApiController(mock(TaskViews.class), stream,
-                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run))).build()
+                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC())).build()
                 .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream")).andReturn();
         MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
 
@@ -262,7 +263,7 @@ class TaskEventStreamTest {
     void beatsEveryOpenBoardOnTheConfiguredInterval() {
         StateService stateService = mock(StateService.class);
         ScheduledExecutorService broadcaster = mock(ScheduledExecutorService.class);
-        TaskEventStream stream = new TaskEventStream(stateService, broadcaster);
+        TaskEventStream stream = new TaskEventStream(stateService, Clock.systemUTC(), broadcaster);
 
         stream.followStateChanges();
 

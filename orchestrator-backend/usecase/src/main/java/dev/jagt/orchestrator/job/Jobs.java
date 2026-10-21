@@ -8,6 +8,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,10 +44,12 @@ public class Jobs {
     private final Map<String, Job> jobs = new LinkedHashMap<>();
     private final Map<String, Run> runs = new LinkedHashMap<>();
     private final Executor workers;
+    private final Clock clock;
     private volatile boolean ready;
 
-    public Jobs(List<Job> declared, @Qualifier("jobWorkers") Executor workers) {
+    public Jobs(List<Job> declared, @Qualifier("jobWorkers") Executor workers, Clock clock) {
         this.workers = workers;
+        this.clock = clock;
         for (Job job : declared) {
             if (job.id() == null || job.id().isBlank()) {
                 throw new IllegalStateException(job.getClass().getSimpleName() + " declares no id");
@@ -107,7 +110,7 @@ public class Jobs {
         if (!ready) {
             return;
         }
-        tick(System.currentTimeMillis());
+        tick(clock.millis());
     }
 
     void tick(long now) {

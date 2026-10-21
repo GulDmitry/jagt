@@ -15,7 +15,7 @@ Accepted 2026-10-21.
 ## Decision
 
 - `OrchestratorApplication.main` sets `Locale.ENGLISH` and UTC first; the suite runs with `en`, `US` and `UTC` too.
-- `RuntimeWiring.clock()` is `Clock.systemUTC()`; no main code asks the machine for a zone, a locale or the local time.
+- `RuntimeWiring.clock()` is `Clock.systemUTC()`, the one read of the time: no main code asks the machine for its clock, zone or locale.
 - One module, `static/core/time.js`, formats every board time in `en-GB` UTC; the full one ends in `UTC`.
 - `EnglishAndUtcTest` and `BoardAssetsTest` fail the gate on a call that reads the machine or the browser.
 

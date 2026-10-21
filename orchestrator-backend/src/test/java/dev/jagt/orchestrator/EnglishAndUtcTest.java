@@ -26,4 +26,14 @@ class EnglishAndUtcTest {
     void noCodeReadsTheMachinesZoneLocaleOrLocalTime(String owner, String method) {
         noClasses().should().callMethod(owner, method).check(CODE);
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "java.lang.System, currentTimeMillis",
+            "java.time.Instant, now",
+            "java.time.Clock, systemUTC"})
+    void noCodeReadsTheTimeButThroughTheClockBean(String owner, String method) {
+        noClasses().that().doNotHaveFullyQualifiedName(RuntimeWiring.class.getName())
+                .should().callMethod(owner, method).check(CODE);
+    }
 }

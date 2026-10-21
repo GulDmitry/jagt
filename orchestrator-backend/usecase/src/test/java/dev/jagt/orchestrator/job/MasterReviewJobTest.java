@@ -58,7 +58,8 @@ class MasterReviewJobTest {
     @Test
     void handsARoundThatCameBackAndNobodyJudgedToTheMastersPanel(@TempDir Path root) {
         StateService state = stateIn(root);
-        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build();
+        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
+                .lastActiveTimestamp(2_000L).build();
         state.putTask("ABC-1", back);
         ConfigService.ConfigFile.MasterConfig master = master("judge");
 
@@ -95,7 +96,8 @@ class MasterReviewJobTest {
     @Test
     void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain(@TempDir Path root) throws IOException {
         StateService state = stateIn(root);
-        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build();
+        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
+                .lastActiveTimestamp(2_000L).build();
         state.putTask("ABC-1", back);
         Files.writeString(root.resolve(MasterReview.FILE), "VERDICT: ready\n");
         ConfigService.ConfigFile.MasterConfig master = master("act");
@@ -110,7 +112,8 @@ class MasterReviewJobTest {
     @Test
     void asksAgainWhenTheOnlyVerdictPredatesTheHandBack(@TempDir Path root) throws IOException {
         StateService state = stateIn(root);
-        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build();
+        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
+                .lastActiveTimestamp(2_000L).build();
         state.putTask("ABC-1", back);
         Path file = root.resolve(MasterReview.FILE);
         Files.writeString(file, "VERDICT: ready\n");

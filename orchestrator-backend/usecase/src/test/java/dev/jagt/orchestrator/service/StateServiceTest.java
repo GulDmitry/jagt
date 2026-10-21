@@ -79,7 +79,7 @@ class StateServiceTest {
         AtomicInteger changes = new AtomicInteger();
         state.onChange(written -> changes.incrementAndGet());
 
-        boolean found = state.updateTask("NOPE-1", TaskState::touched);
+        boolean found = state.updateTask("NOPE-1", task -> task.touched(2_000));
 
         assertThat(found).isFalse();
         assertThat(changes).hasValue(0);
@@ -93,7 +93,7 @@ class StateServiceTest {
         AtomicInteger changes = new AtomicInteger();
         state.onChange(written -> changes.incrementAndGet());
 
-        state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.IN_PROGRESS, "working"));
+        state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.IN_PROGRESS, "working", 2_000));
         state.removeTask("ABC-1");
 
         assertThat(changes).hasValue(2);
@@ -292,7 +292,7 @@ class StateServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
         OriginContext.as(ActionOrigin.BOARD,
-                () -> state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.SHIPPING, "shipping")));
+                () -> state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.SHIPPING, "shipping", 2_000)));
 
         assertThat(state.task("ABC-1").orElseThrow().history())
                 .extracting(StatusChange::status, StatusChange::origin)
@@ -306,7 +306,7 @@ class StateServiceTest {
         OriginContext.as(ActionOrigin.BOARD,
                 () -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build()));
 
-        OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", TaskState::touched));
+        OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
 
         assertThat(state.task("ABC-1").orElseThrow().history())
                 .extracting(StatusChange::origin)
@@ -322,7 +322,7 @@ class StateServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(stateFile.toString())));
 
-        OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", TaskState::touched));
+        OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
 
         assertThat(state.task("ABC-1").orElseThrow().history())
                 .extracting(StatusChange::status, StatusChange::origin)
@@ -335,7 +335,7 @@ class StateServiceTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
-        boolean updated = state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished"));
+        boolean updated = state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished", 2_000));
 
         assertThat(updated).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DONE);
@@ -346,7 +346,7 @@ class StateServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
 
-        assertThat(state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished"))).isFalse();
+        assertThat(state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished", 2_000))).isFalse();
     }
 
     @Test

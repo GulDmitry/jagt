@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.SessionProbe;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.time.Clock;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -21,7 +22,7 @@ class SessionSignsTest {
 
     @Test
     void hasTheTaskJudgedAtOnceRatherThanOnTheNextSweep() {
-        new SessionSigns(probe, watchdog, agentSpend).record("ABC-1", SessionProbe.State.WORKING, null, null);
+        new SessionSigns(probe, watchdog, agentSpend, Clock.systemUTC()).record("ABC-1", SessionProbe.State.WORKING, null, null);
 
         verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WORKING), isNull(), anyLong());
         verify(watchdog).check("ABC-1");
@@ -29,7 +30,7 @@ class SessionSignsTest {
 
     @Test
     void believesTheLogFileTheSessionNamedAndCountsWhatItSpent() {
-        new SessionSigns(probe, watchdog, agentSpend)
+        new SessionSigns(probe, watchdog, agentSpend, Clock.systemUTC())
                 .record("ABC-1", SessionProbe.State.WAITING, null, Path.of("/logs/session.jsonl"));
 
         verify(probe).logAt("ABC-1", Path.of("/logs/session.jsonl"));

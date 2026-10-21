@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.StartupCheck;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,14 +28,16 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     protected final String kittyCommand;
     private final OrchestratorProperties properties;
     private final String kittyFontSize;
+    private final Clock clock;
     private final ConcurrentHashMap<String, Long> openedAt = new ConcurrentHashMap<>();
 
     protected AbstractKittyTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties,
-                                          String kittyCommand, String kittyFontSize) {
+                                          KittyOptions options, Clock clock) {
         this.processRunner = processRunner;
         this.properties = properties;
-        this.kittyCommand = Executables.resolve(kittyCommand);
-        this.kittyFontSize = kittyFontSize;
+        this.kittyCommand = Executables.resolve(options.command());
+        this.kittyFontSize = options.fontSize();
+        this.clock = clock;
     }
 
     @Override
@@ -56,7 +59,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
                     .log();
             return;
         }
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         if (now - openedAt.getOrDefault(tmuxSession, 0L) < ATTACH_GRACE_MS) {
             return;
         }

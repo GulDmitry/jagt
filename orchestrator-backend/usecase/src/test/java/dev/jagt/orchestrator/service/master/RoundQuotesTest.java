@@ -8,6 +8,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,7 +20,7 @@ class RoundQuotesTest {
 
     private final RoundFacts facts = mock(RoundFacts.class);
     private final MasterReview reviews = new MasterReview();
-    private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews, Clock.systemUTC());
 
     @Test
     void keepsAReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) throws Exception {
@@ -75,7 +76,7 @@ class RoundQuotesTest {
         when(facts.notes(task)).thenReturn("disputed: the guard is right");
         when(decisions.of(task)).thenReturn("- asked: keep v2? — decided: keep it");
 
-        var read = new RoundQuotes(facts, decisions, reviews).round("ABC-1", task);
+        var read = new RoundQuotes(facts, decisions, reviews, Clock.systemUTC()).round("ABC-1", task);
 
         assertThat(read).contains(new MasterPanel.RoundRead("Summary: accept v3 calls", "+int x;\n",
                 "- asked: keep v2? — decided: keep it", List.of("keep v2"), "disputed: the guard is right"));
@@ -91,7 +92,7 @@ class RoundQuotesTest {
         when(facts.notes(task)).thenReturn("disputed: the guard is right");
         when(decisions.of(task)).thenReturn("");
 
-        var read = new RoundQuotes(facts, decisions, reviews).plan("ABC-1", task);
+        var read = new RoundQuotes(facts, decisions, reviews, Clock.systemUTC()).plan("ABC-1", task);
 
         assertThat(read).contains(new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of("keep v2"),
                 "disputed: the guard is right"));
@@ -104,7 +105,7 @@ class RoundQuotesTest {
         when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
         when(decisions.of(task)).thenReturn("- settled");
 
-        var read = new RoundQuotes(facts, decisions, reviews).question(task);
+        var read = new RoundQuotes(facts, decisions, reviews, Clock.systemUTC()).question(task);
 
         assertThat(read).contains(new MasterPanel.RoundRead("", "", "- settled", List.of("keep v2"), ""));
     }

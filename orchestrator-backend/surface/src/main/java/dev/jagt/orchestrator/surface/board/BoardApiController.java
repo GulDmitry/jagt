@@ -22,6 +22,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.time.Clock;
 import java.util.Map;
 
 @RestController
@@ -39,13 +40,14 @@ public class BoardApiController {
     private final TaskEventStream events;
     private final GlobalCommands globals;
     private final Jobs jobs;
+    private final Clock clock;
 
     @GetMapping("/tasks")
     public Board tasks() {
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                jobs.summary(System.currentTimeMillis()), snapshot.actStop(), BranchStrategy.choices(),
+                jobs.summary(clock.millis()), snapshot.actStop(), BranchStrategy.choices(),
                 Phase.choices(),
                 offers(snapshot.tasks()), snapshot.masterMode());
     }
@@ -64,7 +66,7 @@ public class BoardApiController {
 
     @GetMapping("/jobs")
     public List<Jobs.Status> jobs() {
-        return jobs.statuses(System.currentTimeMillis());
+        return jobs.statuses(clock.millis());
     }
 
     @GetMapping("/commands")

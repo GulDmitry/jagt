@@ -313,7 +313,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         page.locator("#pane .tabs button[data-tab=session]").click();
         assertThat(page.locator("#pane .session .screen")).hasText("compiling");
 
-        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().touched());
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().touched(System.currentTimeMillis()));
         verify(sessions, timeout(5000).times(2)).screen("ABC-1");
 
         assertThat(page.locator("#pane .session .screen")).hasText("compiling");

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.Map;
 
 @Component
@@ -14,10 +15,11 @@ public class StatsReport {
     private final StateService stateService;
     private final UsageStatsRenderer usage;
     private final CycleTimeRenderer cycleTimes;
+    private final Clock clock;
 
     /** One read for both sections: a task retired between them would leave the halves describing different sets. */
     public String render() {
         Map<String, TaskState> tasks = stateService.tasks();
-        return usage.render(tasks) + "\n" + cycleTimes.render(tasks);
+        return usage.render(tasks) + "\n" + cycleTimes.render(tasks, clock.millis());
     }
 }

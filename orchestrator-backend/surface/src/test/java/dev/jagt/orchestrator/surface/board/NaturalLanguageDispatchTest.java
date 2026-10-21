@@ -24,6 +24,7 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,7 +52,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("review", "a1", "", "the human said review")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
         when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
 
         String result = dispatch.interpret("what does the review say on a1");
@@ -71,7 +72,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("ship", "a1", "", "the only task about layout")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
         when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
 
         String result = dispatch.interpret("push the layout one for review");
@@ -91,7 +92,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("deploy", "a1", "", "asked to release it")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
         when(commands.execute("ABC-1", TaskAction.DEPLOY)).thenThrow(new Refusal(
                 Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available for ABC-1 (it is REVIEW_PENDING)"));
 
@@ -115,7 +116,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("ship", "ABC-99", "", "guessed")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         String result = dispatch.interpret("ship the other one");
 
@@ -135,7 +136,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("rm-rf", "a1", "", "")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         String result = dispatch.interpret("nuke it");
 
@@ -155,7 +156,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("none", "", "", "two tasks mention login")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         String result = dispatch.interpret("ship the login one");
 
@@ -175,7 +176,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("do", "", "ABC-42", "a new ticket")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
         when(launcher.launch(LaunchRequest.of("ABC-42")))
                 .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
@@ -196,7 +197,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("resume", "", "https://host/mr/42", "an existing merge request")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
         when(launcher.resume("https://host/mr/42")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
         assertThat(dispatch.interpret("take over this MR https://host/mr/42"))
@@ -215,7 +216,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("resume", "", "ABC-1", "no url given")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         assertThat(dispatch.interpret("resume that thing"))
                 .contains("no review-request URL was named");
@@ -234,7 +235,7 @@ class NaturalLanguageDispatchTest {
         CommandAssistant assistant = (text, tasks) -> new Answer<>(
                 Optional.of(new CommandProposal("do", "", "", "no ticket in the request")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         String result = dispatch.interpret("start a new task");
 
@@ -253,7 +254,7 @@ class NaturalLanguageDispatchTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         CommandAssistant assistant = (text, tasks) -> Answer.unavailable();
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         assertThat(dispatch.interpret("do something")).contains("Could not reach the assistant");
         verifyNoInteractions(commands, launcher);
@@ -270,7 +271,7 @@ class NaturalLanguageDispatchTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         assertThat(dispatch.interpret("   ")).isEqualTo("Nothing to interpret.");
         verifyNoInteractions(commands, launcher);
@@ -287,7 +288,7 @@ class NaturalLanguageDispatchTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         assertThat(dispatch.interpret("shipp"))
                 .contains("Unknown command 'shipp'");
@@ -305,7 +306,7 @@ class NaturalLanguageDispatchTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview()))), commands, launcher);
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
 
         assertThat(dispatch.interpret("prune all")).contains("jagt has no `prune`");
         assertThat(dispatch.interpret("prune")).contains("jagt has no `prune`");

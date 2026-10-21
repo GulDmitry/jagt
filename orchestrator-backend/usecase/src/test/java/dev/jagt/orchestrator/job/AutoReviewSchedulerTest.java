@@ -17,7 +17,10 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -93,7 +96,8 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-        new AutoReviewScheduler(state, config, sweep, notifications, Runnable::run).run();
+        new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC()).run();
 
         verify(sweep).sweep("ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().lastPolledAt()).isBetween(before, System.currentTimeMillis());
@@ -114,8 +118,8 @@ class AutoReviewSchedulerTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, sweep, notifications,
-                Runnable::run);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC());
 
         scheduler.run();
         state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
@@ -137,8 +141,8 @@ class AutoReviewSchedulerTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, sweep,
-                notifications, Runnable::run);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC());
 
         scheduler.run();
         scheduler.run();
@@ -160,7 +164,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                mock(ReviewSweepService.class), notifications, Runnable::run);
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, Runnable::run), notifications, Clock.systemUTC());
         scheduler.run();
 
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -187,7 +191,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                mock(ReviewSweepService.class), notifications, Runnable::run);
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, Runnable::run), notifications, Clock.systemUTC());
         scheduler.run();
 
         state.removeTask("ABC-1");
@@ -214,7 +218,8 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-        new AutoReviewScheduler(state, config, sweep, mock(Notifications.class), Runnable::run).run();
+        new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, mock(Notifications.class), Runnable::run), mock(Notifications.class), Clock.systemUTC()).run();
 
         verify(sweep).sweep("ABC-1");
     }
@@ -231,7 +236,8 @@ class AutoReviewSchedulerTest {
         ConfigService disabled = mock(ConfigService.class);
         when(disabled.load()).thenReturn(ConfigFile.defaults());
 
-        new AutoReviewScheduler(state, disabled, sweep, notifications, Runnable::run).run();
+        new AutoReviewScheduler(state, disabled,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC()).run();
 
         verifyNoInteractions(sweep, notifications);
     }
@@ -250,7 +256,8 @@ class AutoReviewSchedulerTest {
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         when(config.startsStopped()).thenReturn(true);
 
-        new AutoReviewScheduler(state, config, sweep, mock(Notifications.class), Runnable::run).run();
+        new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, mock(Notifications.class), Runnable::run), mock(Notifications.class), Clock.systemUTC()).run();
 
         verify(sweep, org.mockito.Mockito.never()).sweep("ABC-1");
     }
@@ -267,8 +274,8 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-        new AutoReviewScheduler(state, config, mock(ReviewSweepService.class), mock(Notifications.class),
-                Runnable::run).run();
+        new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(mock(ReviewSweepService.class), mock(Notifications.class), Runnable::run), mock(Notifications.class), Clock.systemUTC()).run();
 
         verify(config).startTaken();
     }
@@ -299,7 +306,8 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-        new AutoReviewScheduler(state, config, sweep, notifications, Runnable::run).run();
+        new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC()).run();
 
         verify(notifications).send(argThat(sent -> sent.body().contains("read failed")));
     }
@@ -316,7 +324,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                mock(ReviewSweepService.class), notifications, Runnable::run);
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, Runnable::run), notifications, Clock.systemUTC());
         scheduler.run();
 
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE)
@@ -343,8 +351,8 @@ class AutoReviewSchedulerTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, mock(ReviewSweepService.class),
-                notifications, Runnable::run);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, Runnable::run), notifications, Clock.systemUTC());
 
         scheduler.run();
         scheduler.run();
@@ -369,8 +377,8 @@ class AutoReviewSchedulerTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, sweep, notifications,
-                Runnable::run);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC());
 
         scheduler.run();
         state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
@@ -395,8 +403,8 @@ class AutoReviewSchedulerTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, sweep, notifications,
-                Runnable::run);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC());
         scheduler.run();
 
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE)
@@ -407,5 +415,23 @@ class AutoReviewSchedulerTest {
         scheduler.run();
 
         verify(notifications, times(2)).send(argThat(sent -> sent.body().contains("read failed")));
+    }
+
+    @Test
+    void stampsThePollAtTheInstantTheClockGave(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true).mrCreatedAt(999_998_200_000L)
+                .lastPolledAt(999_998_200_000L).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000_000_000L), ZoneOffset.UTC);
+
+        new AutoReviewScheduler(state, config, new AutoReviewPolls(mock(ReviewSweepService.class),
+                mock(Notifications.class), Runnable::run), mock(Notifications.class), clock).run();
+
+        assertThat(state.task("ABC-1").orElseThrow().lastPolledAt()).isEqualTo(1_000_000_000_000L);
     }
 }

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -72,7 +73,7 @@ class InterceptedCapabilityTest {
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
         FlowEngine engine = new FlowEngine(tasks,
-                new Capabilities(List.of(new Ships(log)), List.of(new Announces(log, 2), new Announces(log, 1))), agents);
+                new Capabilities(List.of(new Ships(log)), List.of(new Announces(log, 2), new Announces(log, 1))), agents, Clock.systemUTC());
 
         engine.run("ABC-1", TaskAction.SHIP);
 
@@ -85,7 +86,7 @@ class InterceptedCapabilityTest {
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
         FlowEngine engine = new FlowEngine(tasks,
-                new Capabilities(List.of(new Ships(log)), List.of(new Refuses())), agents);
+                new Capabilities(List.of(new Ships(log)), List.of(new Refuses())), agents, Clock.systemUTC());
 
         assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
                 .isInstanceOf(IllegalStateException.class)
@@ -99,7 +100,7 @@ class InterceptedCapabilityTest {
         when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
-        FlowEngine engine = new FlowEngine(tasks, new Capabilities(List.of(new Ships(log)), List.of()), agents);
+        FlowEngine engine = new FlowEngine(tasks, new Capabilities(List.of(new Ships(log)), List.of()), agents, Clock.systemUTC());
 
         assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: done");
         assertThat(log).containsExactly("shipped");

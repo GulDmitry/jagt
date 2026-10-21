@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.time.Clock;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +25,7 @@ class ClaudeSubscriptionUsageTest {
         when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", ""));
         when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Body("{}"));
 
-        new ClaudeSubscriptionUsage(credentials, endpoint).read();
+        new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
         verify(endpoint).get(eq(ClaudeSubscriptionUsage.USAGE),
                 eq(Map.of("Authorization", "Bearer tok-abc", "anthropic-beta", "oauth-2025-04-20")));
@@ -37,7 +38,7 @@ class ClaudeSubscriptionUsageTest {
         when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", ""));
         when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(401, "http 401"));
 
-        var answer = new ClaudeSubscriptionUsage(credentials, endpoint).read();
+        var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
         assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable("http 401, running claude refreshes the token"));
     }
@@ -48,7 +49,7 @@ class ClaudeSubscriptionUsageTest {
         UsageEndpoint endpoint = mock(UsageEndpoint.class);
         when(credentials.read(any())).thenReturn(new OAuthCredential.None());
 
-        var answer = new ClaudeSubscriptionUsage(credentials, endpoint).read();
+        var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
         assertThat(answer).isEqualTo(new SubscriptionUsage.NoSubscription());
     }
@@ -64,7 +65,7 @@ class ClaudeSubscriptionUsageTest {
         when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", ""));
         when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(status, cause));
 
-        var answer = new ClaudeSubscriptionUsage(credentials, endpoint).read();
+        var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
         assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable(expected));
     }

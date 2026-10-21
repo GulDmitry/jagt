@@ -144,9 +144,11 @@ public class AgentStatusReports {
                         next.reviewRequestOf(request.getKey()).filter(request.getValue()::equals).isPresent()));
         boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
         if (!requestsByProject.isEmpty()) {
-            return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
+            return newRound ? next.withReviewRound(requestsByProject, next.lastActiveTimestamp())
+                    : next.withMrUrls(requestsByProject, next.lastActiveTimestamp());
         }
-        return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
+        return newRound ? next.withReviewRound(url, next.lastActiveTimestamp())
+                : next.withMrUrl(url, next.lastActiveTimestamp());
     }
 
     /** Read as the plan is put up, not after: what VERIFYING runs is what was ratified. */

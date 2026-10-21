@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.linux;
 
+import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import dev.jagt.orchestrator.port.TerminalDriver;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 
@@ -28,7 +30,7 @@ class LinuxKittyTerminalDriverLinuxTest {
 
     private LinuxKittyTerminalDriver driver() {
         return new LinuxKittyTerminalDriver(runner, OrchestratorProperties.defaults()
-                .withOpenTerminalWindow(true).withTmuxCommand("tmux"), "kitty", "");
+                .withOpenTerminalWindow(true).withTmuxCommand("tmux"), new KittyOptions("kitty", ""), Clock.systemUTC());
     }
 
     private String socket() {

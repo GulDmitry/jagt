@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 
+import java.time.Clock;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -14,15 +15,17 @@ import java.util.function.Supplier;
  */
 public class FlowEngine {
 
-    public FlowEngine(TaskStore tasks, Capabilities capabilities, AgentPresence agents) {
+    public FlowEngine(TaskStore tasks, Capabilities capabilities, AgentPresence agents, Clock clock) {
         this.tasks = tasks;
         this.capabilities = capabilities;
         this.agents = agents;
+        this.clock = clock;
     }
 
     private final TaskStore tasks;
     private final Capabilities capabilities;
     private final AgentPresence agents;
+    private final Clock clock;
 
     /** Runs {@code action} on the task and returns what to show the human. */
     public String run(String taskIdOrAlias, TaskAction action) {
@@ -57,7 +60,7 @@ public class FlowEngine {
             TaskStatus moved = next.orElse(was);
             // Recorded even when the status is unchanged: a second round onto the same request happened.
             tasks.updateTask(taskId, task -> task.withStatus(moved,
-                    outcome.stamp() == null ? task.message() : outcome.stamp(), true));
+                    outcome.stamp() == null ? task.message() : outcome.stamp(), true, clock.millis()));
         }
         if (outcome.kind().refuses()) {
             throw new IllegalStateException(outcome.message(), outcome.cause());

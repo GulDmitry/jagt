@@ -82,10 +82,10 @@ class BoardConnectionTest extends BoardPageContext {
             held.add(route);
         });
         page.waitForRequest("**/api/tasks", () -> state.putTask("ABC-1",
-                state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "older")));
+                state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis())));
         page.waitForCondition(() -> held.size() == 1);
         page.waitForRequest("**/api/tasks", () -> state.putTask("ABC-1",
-                state.task("ABC-1").orElseThrow().withStatus(TaskStatus.CI_POLLING, "newer")));
+                state.task("ABC-1").orElseThrow().withStatus(TaskStatus.CI_POLLING, "newer", System.currentTimeMillis())));
         page.waitForCondition(() -> held.size() == 2);
         held.get(1).fulfill(new Route.FulfillOptions().setResponse(read.get(1)));
         assertThat(page.locator("article .status")).containsText("out for review");
@@ -110,7 +110,7 @@ class BoardConnectionTest extends BoardPageContext {
                 .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Focus").setExact(true));
         focus.focus();
 
-        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done", System.currentTimeMillis()));
 
         assertThat(page.locator("#tasks .row .status")).containsText(new String[]{"agent working", "review"});
         assertThat(focus).isFocused();
@@ -165,7 +165,7 @@ class BoardConnectionTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("article .status").focus();
 
-        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done", System.currentTimeMillis()));
 
         assertThat(page.locator("article .status")).containsText("review");
         assertThat(page.locator("article .status")).isFocused();
@@ -183,7 +183,7 @@ class BoardConnectionTest extends BoardPageContext {
         page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".status").focus();
         assertThat(page.locator("#tip")).containsText("shared branch");
 
-        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done", System.currentTimeMillis()));
 
         assertThat(page.locator("#tasks .row .status")).containsText(new String[]{"agent working", "review"});
         assertThat(page.locator("#tip")).isVisible();

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Clock;
 import java.util.List;
 
 @RestController
@@ -19,10 +20,11 @@ public class InteractionsController {
     }
 
     private final PressLog presses;
+    private final Clock clock;
 
     @PostMapping("/api/interactions")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void record(@RequestBody Batch batch) {
-        presses.record(batch.presses() == null ? List.of() : batch.presses(), System.currentTimeMillis());
+        presses.record(batch.presses() == null ? List.of() : batch.presses(), clock.millis());
     }
 }

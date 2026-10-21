@@ -45,11 +45,12 @@ public interface AgentRuntime {
     }
 
     /**
-     * How long a conversation stays worth continuing: past it the CLI rereads the whole history uncached, so new
-     * work goes to a fresh session reading the task's files. EMPTY where a conversation is always continued.
+     * Whether the worktree's conversation is past its worth continuing: the CLI rereads the whole history
+     * uncached, so new work goes to a fresh session reading the task's files. False where a conversation is
+     * always continued.
      */
-    default Optional<Duration> continuesWithin() {
-        return Optional.empty();
+    default boolean pastContinuing(Path worktree) {
+        return false;
     }
 
     /** The model names a session may ask for, a closed list of aliases; EMPTY where this runtime cannot be told. */

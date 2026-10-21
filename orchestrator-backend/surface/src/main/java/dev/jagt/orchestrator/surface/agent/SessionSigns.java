@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.time.Clock;
 
 /** A session's sign of life, the verdict on it, and what it has spent. */
 @Service
@@ -16,13 +17,14 @@ public class SessionSigns {
     private final SessionProbe probe;
     private final WatchdogService watchdog;
     private final AgentSpendReader agentSpend;
+    private final Clock clock;
 
     /** {@code sessionLog} is the file the session appends to, or null where none was named. */
     public void record(String taskId, SessionProbe.State state, @Nullable String cause, @Nullable Path sessionLog) {
         if (sessionLog != null) {
             probe.logAt(taskId, sessionLog);
         }
-        probe.report(taskId, state, cause, System.currentTimeMillis());
+        probe.report(taskId, state, cause, clock.millis());
         watchdog.check(taskId);
         // Off this thread: a read of the log, or the state lock a sweep holds, must not delay the answer.
         if (sessionLog != null) {

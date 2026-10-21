@@ -7,6 +7,7 @@ import org.jspecify.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +26,7 @@ public class TaskViews {
     private final StateService stateService;
     private final ConfigService configService;
     private final Rounds rounds;
+    private final Clock clock;
 
     /** One render's worth of answers, read from the configuration ONCE so two reads cannot disagree mid-render. */
     public record Snapshot(List<TaskView> tasks, AutoReviewCadence cadence, List<String> projects,
@@ -39,7 +41,7 @@ public class TaskViews {
         ConfigService.ConfigFile config = readableConfig();
         Optional<ActStop> stop = configService.actStop();
         AutoReviewCadence cadence = AutoReviewCadence.from(config.autoReview());
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
         config.projects().forEach((key, project) -> deployBranches.put(key, project.deployBranch()));
         List<TaskView> views = tasks.entrySet().stream()

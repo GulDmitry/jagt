@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.job.Jobs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import java.util.List;
 public class JobsCommand implements GlobalCommand {
 
     private final Jobs jobs;
+    private final Clock clock;
 
     @Override
     public String id() {
@@ -40,7 +42,7 @@ public class JobsCommand implements GlobalCommand {
 
     @Override
     public String run(String tail) {
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         return render(jobs.statuses(now), now);
     }
 

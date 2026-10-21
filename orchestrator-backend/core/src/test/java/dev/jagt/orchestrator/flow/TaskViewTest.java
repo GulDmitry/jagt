@@ -138,7 +138,7 @@ class TaskViewTest {
     @Test
     void theHistorySaysEachStatusInTheBoardsWords() {
         TaskState started = TaskState.builder("api", "/api-wt", TaskStatus.NEW).alias("a1").build();
-        TaskView view = TaskView.of("ABC-1", started.withStatus(TaskStatus.IN_PROGRESS, "working"), false,
+        TaskView view = TaskView.of("ABC-1", started.withStatus(TaskStatus.IN_PROGRESS, "working", 2_000), false,
                 AutoReviewWatch.none(), Map.of("api", "dev"));
 
         assertThat(view.history()).extracting(TaskView.Step::label).endsWith("agent working");

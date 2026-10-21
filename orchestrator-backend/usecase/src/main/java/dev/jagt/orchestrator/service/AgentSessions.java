@@ -204,7 +204,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         // A file on disk doesn't wake a running agent session — nudge it directly.
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
-        if (fresh || pastContinuing(Path.of(task.worktreePath()))) {
+        if (fresh || agentRuntime.pastContinuing(Path.of(task.worktreePath()))) {
             startFresh(taskId, task, config, fresh ? "the round was already handed back"
                     : "conversation idle past its cache lifetime");
             return "Instructions written to task_context.md; a fresh session was started to read them with"
@@ -259,7 +259,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                     Thread.sleep(DRAFT_POLL);
                 }
                 stateService.task(taskId).ifPresent(task -> {
-                    if (pastContinuing(Path.of(task.worktreePath()))) {
+                    if (agentRuntime.pastContinuing(Path.of(task.worktreePath()))) {
                         startFresh(taskId, task, configService.load(), "conversation idle past its cache lifetime");
                     } else if (running(session, taskId)) {
                         sessions.nudgeTaskWindow(session, taskId, NUDGE);
@@ -277,13 +277,6 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias()).addKeyValue("cause", cause).log();
         openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
-    }
-
-    private boolean pastContinuing(Path worktree) {
-        return agentRuntime.continuesWithin()
-                .filter(within -> System.currentTimeMillis()
-                        - agentRuntime.lastSessionActivity(worktree).orElse(0) > within.toMillis())
-                .isPresent();
     }
 
     /** One monitor per task id, so relays to one task serialise while different tasks never wait on each other. */

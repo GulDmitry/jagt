@@ -104,7 +104,7 @@ class BoardWorkspaceTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#tasks .row")).hasCount(2);
 
-        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done", System.currentTimeMillis()));
 
         assertThat(page.locator("#tasks .row-title.changed")).hasCount(1);
         page.locator("#tasks .row:has-text(\"a2\") .pick").click();
@@ -122,7 +122,7 @@ class BoardWorkspaceTest extends BoardPageContext {
         assertThat(first.locator("#tasks .row")).hasCount(2);
         first.close();
 
-        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done", System.currentTimeMillis()));
         Page again = session.newPage();
         again.navigate("http://localhost:" + port + "/");
 
@@ -246,7 +246,7 @@ class BoardWorkspaceTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#tasks .row")).hasCount(1);
 
-        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.IN_PROGRESS, "back to work"));
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.IN_PROGRESS, "back to work", System.currentTimeMillis()));
 
         assertThat(page.locator("#tasks .row-title.changed")).hasCount(1);
     }

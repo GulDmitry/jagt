@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +34,7 @@ public class WatchdogService implements Job {
     private final Notifications notifications;
     private final OrchestratorProperties properties;
     private final SessionProbe probe;
+    private final Clock clock;
     private final Map<String, Long> lastAlertAt = new ConcurrentHashMap<>();
 
     @Override
@@ -65,7 +67,7 @@ public class WatchdogService implements Job {
 
     @Override
     public void run() {
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         Map<String, TaskState> tasks = stateService.tasks();
         probe.keepOnly(tasks.keySet());
         tasks.forEach((taskId, task) -> verdict(taskId, task, now));
@@ -73,7 +75,7 @@ public class WatchdogService implements Job {
 
     /** One task on its own, for a session that just reported itself and must not wait out the interval. */
     public void check(String taskId) {
-        stateService.task(taskId).ifPresent(task -> verdict(taskId, task, System.currentTimeMillis()));
+        stateService.task(taskId).ifPresent(task -> verdict(taskId, task, clock.millis()));
     }
 
     private void verdict(String taskId, TaskState task, long now) {

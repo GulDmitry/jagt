@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ public class TaskProvisioning {
     private final StateService stateService;
     private final NewTaskWorktrees worktrees;
     private final AgentSessions agentSessions;
+    private final Clock clock;
 
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
@@ -40,7 +42,7 @@ public class TaskProvisioning {
             try {
                 stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
                                 TaskStatus.NEW)
-                        .lastActiveTimestamp(System.currentTimeMillis()).alias(alias)
+                        .lastActiveTimestamp(clock.millis()).alias(alias)
                         .title(request.title())
                         .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank()
                                 ? null : request.ticketUrl())

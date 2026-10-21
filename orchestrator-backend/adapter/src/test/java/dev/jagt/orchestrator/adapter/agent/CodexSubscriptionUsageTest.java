@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.time.Clock;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +25,7 @@ class CodexSubscriptionUsageTest {
         when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", "acct-42"));
         when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Body("{}"));
 
-        new CodexSubscriptionUsage(credentials, endpoint).read();
+        new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
         verify(endpoint).get(eq(CodexSubscriptionUsage.USAGE),
                 eq(Map.of("Authorization", "Bearer tok-abc", "ChatGPT-Account-Id", "acct-42")));
@@ -42,7 +43,7 @@ class CodexSubscriptionUsageTest {
         when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", "acct-42"));
         when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(status, cause));
 
-        var answer = new CodexSubscriptionUsage(credentials, endpoint).read();
+        var answer = new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
         assertThat(answer).isEqualTo(new SubscriptionUsage.Unreadable(expected));
     }
@@ -53,7 +54,7 @@ class CodexSubscriptionUsageTest {
         UsageEndpoint endpoint = mock(UsageEndpoint.class);
         when(credentials.read(any())).thenReturn(new OAuthCredential.None());
 
-        var answer = new CodexSubscriptionUsage(credentials, endpoint).read();
+        var answer = new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
         assertThat(answer).isInstanceOf(SubscriptionUsage.NoSubscription.class);
     }
