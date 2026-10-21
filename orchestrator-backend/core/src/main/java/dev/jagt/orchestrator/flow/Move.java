@@ -89,10 +89,6 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
             return null;
         }
         String act = act(status, hasReviewRequest, round, agentSilent);
-        // A status that reached the tier with no act of its own must not wear the word "null" on a card.
-        if (act == null) {
-            return null;
-        }
         return attention == Attention.OPTIONAL ? "you can " + act : act;
     }
 

@@ -84,6 +84,7 @@ class MoveTest {
         assertThat(move.primary()).isEqualTo(TaskAction.SWEEP);
         assertThat(move.hint())
                 .isEqualTo("nothing is polling this round; sweep reads the comments and checks now");
+        assertThat(move.ask()).isEqualTo("read the review");
     }
 
     @Test
@@ -114,6 +115,7 @@ class MoveTest {
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
         assertThat(move.hint()).contains("ship opens the review request");
+        assertThat(move.ask()).isEqualTo("open the review request");
     }
 
     @Test
@@ -123,6 +125,7 @@ class MoveTest {
                 false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.ask()).isEqualTo("post the drafted replies");
     }
 
     @Test
