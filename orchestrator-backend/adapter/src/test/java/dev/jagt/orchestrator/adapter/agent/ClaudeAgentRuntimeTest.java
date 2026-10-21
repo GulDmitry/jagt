@@ -65,6 +65,26 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void trustsAProvisionedWorktreeSoNoDialogStopsTheSessionAndForgetsItOnceRetired(@TempDir Path root)
+            throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-7-proj"));
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+        String key = worktree.toRealPath().toString();
+
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root));
+        boolean trusted = new JsonMapper().readTree(Files.readString(ClaudeTrust.configFile()))
+                .path("projects").path(key).path("hasTrustDialogAccepted").asBoolean(false);
+        runtime.retireWorktree(worktree);
+        boolean remembered = new JsonMapper().readTree(Files.readString(ClaudeTrust.configFile()))
+                .path("projects").has(key);
+
+        assertThat(trusted).isTrue();
+        assertThat(remembered).isFalse();
+    }
+
+    @Test
     void declaresTheJagtMcpServerOverHttpWithThisWorktreeAsTheCaller(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();

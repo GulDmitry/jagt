@@ -128,4 +128,32 @@ class ClaudeTranscriptsTest {
 
         assertThat(newest).contains(logs.resolve("session.jsonl"));
     }
+
+    @Test
+    void readsWhatTheHumanTypedWhereTheCliSplitItIntoTextBlocks(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":[{"type":"text","text":"do "},{"type":"text","text":"it"}]}}
+                """);
+
+        var said = ClaudeTranscripts.humanSaid(root, Path.of("/wt/ABC-1-proj"), Set.of());
+
+        assertThat(said).contains(List.of("do it"));
+    }
+
+    @Test
+    void readsNoSignOfTheSessionFromALogItCannotRead(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.setLastModifiedTime(Files.createDirectories(logs.resolve("unreadable.jsonl")),
+                FileTime.fromMillis(1_700_000_600_000L));
+
+        long at = ClaudeTranscripts.lastEntryMillis(root, Path.of("/wt/ABC-1-proj"));
+
+        assertThat(at).isZero();
+    }
+
+    @Test
+    void aSuiteRunReadsSessionLogsFromInsideTheBuildNeverFromTheHumansHome() {
+        assertThat(ClaudeTranscripts.projectsDir()).startsWithRaw(Path.of("").toAbsolutePath());
+    }
 }

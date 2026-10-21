@@ -121,18 +121,20 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0,
-                "@1 XABC-1\n@2 ABC-1\n@3 ABC-1\n", ""));
+                "@1 XABC-1\n@2 ABC-1\n@3 ABC-1\n@4 ABC-1\n", ""));
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("kill-window") && command.contains("@2")))).thenReturn(new Processes.Result(0, "", ""));
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
-                command.contains("kill-window") && command.contains("@3")))).thenReturn(new Processes.Result(1, "", "gone"));
+                command.contains("kill-window") && command.contains("@3")))).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("kill-window") && command.contains("@4")))).thenReturn(new Processes.Result(1, "", "gone"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         int killed = host.killTaskWindows("jagt", "ABC-1");
 
-        assertThat(killed).isEqualTo(1);
+        assertThat(killed).isEqualTo(2);
         ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).noneMatch(command -> command.contains("@1"));
@@ -170,7 +172,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0,
                 "@1 100 1700000000 XABC-1\n@2 200 1700000500 ABC-1\n", ""));
-        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 terminal, mock(AgentRuntime.class));
 
@@ -180,7 +182,7 @@ class TmuxSessionHostTest {
         ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).anySatisfy(command ->
-                assertThat(command).containsSequence("select-window", "-t", "@2"));
+                assertThat(command).startsWith("/opt/jagt/tmux", "select-window", "-t", "@2"));
         verify(terminal).openViewer(eq("jagt"), eq("agents"), any());
     }
 
@@ -384,6 +386,60 @@ class TmuxSessionHostTest {
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).anySatisfy(command ->
                 assertThat(command).containsSequence("kill-window", "-t", "@4"));
+    }
+
+    @Test
+    void opensTheViewerWhereATaskWindowIsOpenedAndNoClientIsAttached() {
+        Processes processes = mock(Processes.class);
+        TerminalDriver terminal = mock(TerminalDriver.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-clients")))).thenReturn(new Processes.Result(0, "", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                terminal, mock(AgentRuntime.class));
+
+        host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+
+        verify(terminal).openViewer(eq("jagt"), eq("agents"), any());
+    }
+
+    @Test
+    void revivesTheTaskInAWindowRunningTheRuntimesReviveCommand() {
+        Processes processes = mock(Processes.class);
+        AgentRuntime agent = mock(AgentRuntime.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        when(agent.reviveCommand(Path.of("/wt/ABC-1"))).thenReturn("agent --continue");
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), agent);
+
+        host.reviveTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"));
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).anySatisfy(command -> {
+            assertThat(command).containsSequence("new-window", "-P");
+            assertThat(command.getLast()).contains("agent --continue");
+        });
+    }
+
+    @Test
+    void createsTheSessionForTheFeedWhereNoneExistsYet() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("has-session")))).thenReturn(new Processes.Result(1, "", "no session"));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.keepFeedWindow("jagt", "master-feed", Path.of("/feeds/master.log"));
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).anySatisfy(command ->
+                assertThat(command).containsSequence("new-session", "-d", "-s", "jagt"));
     }
 
     @Test

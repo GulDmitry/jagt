@@ -1,10 +1,21 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AbstractKittyTerminalDriverTest {
 
@@ -50,5 +61,29 @@ class AbstractKittyTerminalDriverTest {
                 List.of("-o", "map=cmd+м paste_from_clipboard"));
 
         assertThat(cmd).containsSequence("-o", "map=cmd+м paste_from_clipboard");
+    }
+
+    @Test
+    void opensATabInTheViewerInstanceListeningOnTheSessionsOwnSocket() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(isNull(), any(Duration.class), any())).thenReturn(new Processes.Result(0, "", ""));
+        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true).withTmuxCommand("tmux"), "kitty", "") {
+            @Override
+            protected List<String> platformOptions() {
+                return List.of();
+            }
+
+            @Override
+            public void bringToFront() {
+            }
+        };
+
+        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(runner, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        String socket = "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-agents");
+        assertThat(commands.getAllValues()).anySatisfy(command -> assertThat(command)
+                .containsSequence("@", "--to", socket, "launch", "--type=tab"));
     }
 }

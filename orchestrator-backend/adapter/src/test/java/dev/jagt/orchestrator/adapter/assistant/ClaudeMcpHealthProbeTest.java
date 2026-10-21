@@ -114,6 +114,19 @@ class ClaudeMcpHealthProbeTest {
     }
 
     @Test
+    void readsTheVerdictOfAServerWhoseFailureDetailItselfHoldsADash() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+                acme tracker: https://mcp.example.com/mcp (HTTP) - ✘ Failed to connect — HTTP 401 - unauthorized
+                """, ""));
+
+        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+                .brokenServers();
+
+        assertThat(broken).contains(List.of("acme tracker (Failed to connect)"));
+    }
+
+    @Test
     void asksTheCliOnlyOnceWhileItsAnswerIsFresh() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
@@ -122,8 +135,9 @@ class ClaudeMcpHealthProbeTest {
         var probe = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty());
 
         probe.brokenServers();
-        probe.servers();
+        var servers = probe.servers();
 
+        assertThat(servers).contains(List.of("context7"));
         verify(runner, times(1)).run(any(Path.class), any(Duration.class), any());
     }
 

@@ -145,4 +145,18 @@ class CodexCredentialsTest {
 
         assertThat(credential).isEqualTo(new OAuthCredential.Failed("auth file unreadable IOException"));
     }
+
+    @Test
+    void readsATokenWhoseClaimsCannotBeDecodedAsCarryingNoAccount() {
+        var credential = CodexCredentials.parse("{\"tokens\": {\"access_token\": \"h.!!!.s\"}}", NOW);
+
+        assertThat(credential).isEqualTo(new OAuthCredential.Failed("stored login names no account"));
+    }
+
+    @Test
+    void neverPrintsTheTokenItHolds() {
+        var token = new OAuthCredential.Token("secret-access-token", "acct-1");
+
+        assertThat(token.toString()).doesNotContain("secret-access-token").doesNotContain("acct-1");
+    }
 }

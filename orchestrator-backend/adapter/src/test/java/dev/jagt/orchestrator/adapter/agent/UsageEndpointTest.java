@@ -140,4 +140,17 @@ class UsageEndpointTest {
         assertThat(reply).isInstanceOfSatisfying(UsageEndpoint.Refused.class,
                 refused -> assertThat(refused.status()).isEqualTo(UsageEndpoint.NOT_SENT));
     }
+
+    @Test
+    void refusesWithoutSendingAndKeepsTheInterruptWhereTheCallerWasInterrupted() {
+        var endpoint = new UsageEndpoint(HttpClient.newHttpClient(),
+                Clock.fixed(Instant.parse("2026-10-10T12:00:00Z"), ZoneOffset.UTC));
+
+        Thread.currentThread().interrupt();
+        var reply = endpoint.get(URI.create("http://127.0.0.1:9/usage"), Map.of());
+        boolean stillInterrupted = Thread.interrupted();
+
+        assertThat(reply).isEqualTo(new UsageEndpoint.Refused(UsageEndpoint.NOT_SENT, "interrupted"));
+        assertThat(stillInterrupted).isTrue();
+    }
 }
