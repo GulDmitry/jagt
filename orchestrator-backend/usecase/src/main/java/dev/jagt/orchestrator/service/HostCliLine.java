@@ -49,7 +49,8 @@ final class HostCliLine {
             "cs", "at", "-R", "--repo", "--hostname");
     private static final Set<String> REPO_FLAGS = Set.of("-R", "--repo", "--hostname");
     private static final Pattern GLUED_REPO = Pattern.compile("-R.+|--(repo|hostname)=.+");
-    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh", "mksh", "csh", "tcsh",
+    private static final int WRITE = -1;
+    private static final Set<String> SHELLS =Set.of("sh", "bash", "zsh", "dash", "ksh", "mksh", "csh", "tcsh",
             "fish", "watch", "ssh", "su", "sudo", "flock", "script");
 
     private HostCliLine() {
@@ -115,65 +116,96 @@ final class HostCliLine {
 
     private static boolean reads(List<String> words, int from) {
         String command = from < words.size() ? words.get(from) : "";
-        if (!"api".equals(command)) {
-            return from + 1 < words.size() && HOST_READS.getOrDefault(command, Set.of()).contains(words.get(from + 1))
-                    && words.subList(from + 2, words.size()).stream().noneMatch(SHOWS_A_TOKEN);
-        }
-        for (int at = from + 1; at < words.size(); at++) {
-            String word = words.get(at);
-            if (!word.startsWith("-")) {
+        return "api".equals(command) ? readsApi(words, from) : readsGroup(words, from, command);
+    }
+
+    private static boolean readsGroup(List<String> words, int from, String command) {
+        return from + 1 < words.size() && HOST_READS.getOrDefault(command, Set.of()).contains(words.get(from + 1))
+                && words.subList(from + 2, words.size()).stream().noneMatch(SHOWS_A_TOKEN);
+    }
+
+    private static boolean readsApi(List<String> words, int start) {
+        for (int at = start; at < words.size(); at++) {
+            if (!words.get(at).startsWith("-")) {
                 continue;
             }
-            Matcher method = HOST_METHOD.matcher(word);
-            if (method.matches()) {
-                String named = method.group(2).isEmpty() && at + 1 < words.size() ? words.get(++at) : method.group(2);
-                if (!"GET".equalsIgnoreCase(named)) {
-                    return false;
-                }
-            } else if (API_READ_VALUED.contains(word)) {
-                if (++at < words.size() && METHOD_OVERRIDE.matcher(words.get(at)).lookingAt()) {
-                    return false;
-                }
-            } else if (!API_READ_FLAGS.contains(word.replaceFirst("=.*", ""))) {
+            at = apiOptionEnd(words, at);
+            if (at == WRITE) {
                 return false;
             }
         }
         return true;
     }
 
+    /** The index of the last word the read option at {@code at} consumed, or {@code WRITE} when it makes a write. */
+    private static int apiOptionEnd(List<String> words, int at) {
+        String word = words.get(at);
+        Matcher method = HOST_METHOD.matcher(word);
+        if (method.matches()) {
+            boolean detached = method.group(2).isEmpty() && at + 1 < words.size();
+            String named = detached ? words.get(at + 1) : method.group(2);
+            return "GET".equalsIgnoreCase(named) ? at : WRITE;
+        }
+        if (API_READ_VALUED.contains(word)) {
+            boolean overridden = at + 1 < words.size() && METHOD_OVERRIDE.matcher(words.get(at + 1)).lookingAt();
+            return overridden ? WRITE : at + 1;
+        }
+        return API_READ_FLAGS.contains(word.replaceFirst("=.*", "")) ? at : WRITE;
+    }
+
     /** An unclosed quote keeps its mark, so what follows it never reads as a bare word. */
     private static List<String> shellWords(String segment) {
-        List<String> words = new ArrayList<>();
-        StringBuilder word = new StringBuilder();
-        char quote = 0;
-        boolean inWord = false;
+        Words words = new Words();
         for (char c : segment.toCharArray()) {
+            words.read(c);
+        }
+        return words.finish();
+    }
+
+    private static final class Words {
+        private final List<String> words = new ArrayList<>();
+        private final StringBuilder word = new StringBuilder();
+        private char quote;
+        private boolean inWord;
+
+        void read(char c) {
             if (quote != 0) {
-                if (c == quote) {
-                    quote = 0;
-                } else {
-                    word.append(c);
-                }
+                readQuoted(c);
             } else if (c == '\'' || c == '"') {
                 quote = c;
                 inWord = true;
             } else if (Character.isWhitespace(c)) {
-                if (inWord) {
-                    words.add(word.toString());
-                    word.setLength(0);
-                    inWord = false;
-                }
+                endWord();
             } else {
                 word.append(c);
                 inWord = true;
             }
         }
-        if (quote != 0) {
-            word.insert(0, quote);
+
+        private void readQuoted(char c) {
+            if (c == quote) {
+                quote = 0;
+            } else {
+                word.append(c);
+            }
         }
-        if (inWord) {
-            words.add(word.toString());
+
+        private void endWord() {
+            if (inWord) {
+                words.add(word.toString());
+                word.setLength(0);
+                inWord = false;
+            }
         }
-        return words;
+
+        List<String> finish() {
+            if (quote != 0) {
+                word.insert(0, quote);
+            }
+            if (inWord) {
+                words.add(word.toString());
+            }
+            return words;
+        }
     }
 }

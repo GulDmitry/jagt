@@ -67,16 +67,13 @@ final class GitReadLine {
                     + " spaces, no quote, ~, ^, brace, glob, %G or anything around it. For a revision write a SHA,"
                     + " A..B, A...B, --skip=N -n 1.");
         }
-        int at = 1;
-        Path repository = here;
-        if ("-C".equals(words.get(at)) && words.size() > 3) {
-            if (!ReadGate.isRoot(read, here, words.get(at + 1))) {
-                return Optional.of("jagt refuses git -C on anything but one of the round's worktrees: a repository"
-                        + " the diff committed would run its own config.");
-            }
-            repository = here.resolve(words.get(at + 1));
-            at += 2;
+        boolean elsewhere = "-C".equals(words.get(1)) && words.size() > 3;
+        if (elsewhere && !ReadGate.isRoot(read, here, words.get(2))) {
+            return Optional.of("jagt refuses git -C on anything but one of the round's worktrees: a repository"
+                    + " the diff committed would run its own config.");
         }
+        Path repository = elsewhere ? here.resolve(words.get(2)) : here;
+        int at = elsewhere ? 3 : 1;
         String subcommand = words.get(at);
         Set<String> options = OPTIONS.get(subcommand);
         if (options == null) {
@@ -87,6 +84,11 @@ final class GitReadLine {
             return Optional.of("jagt refuses git " + subcommand + " in a read without --no-ext-diff --no-textconv:"
                     + " a repository's config would run a program.");
         }
+        return argumentRefusal(read, repository, subcommand, options, arguments);
+    }
+
+    private static Optional<String> argumentRefusal(ReadScope read, Path repository, String subcommand,
+                                                    Set<String> options, List<String> arguments) {
         boolean paths = false;
         for (String argument : arguments) {
             paths |= "--".equals(argument);

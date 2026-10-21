@@ -42,31 +42,38 @@ public record LaunchRequest(@Nullable String ref, @Nullable String project, @Nul
             throw new IllegalArgumentException("usage: " + GRAMMAR);
         }
         String ref = isProjects(tail.get(0), projectKeys) ? null : tail.remove(0);
-        String mode = null;
-        String project = null;
-        String strategy = null;
-        String baseBranch = null;
-        while (!tail.isEmpty()) {
-            String head = tail.get(0);
-            if (mode == null && head.equals("plan")) {
-                mode = "plan";
-            } else if (project == null && isProjects(head, projectKeys)) {
-                project = head;
-            } else if (strategy == null && BranchStrategy.ids().contains(head)) {
-                strategy = head;
-            } else if (baseBranch == null && head.equals("from")) {
-                if (tail.size() < 2 || tail.get(1).isBlank()) {
-                    throw new IllegalArgumentException("usage: " + GRAMMAR
-                            + " — `from` needs the branch to start from");
-                }
-                baseBranch = tail.remove(1);
-            } else {
-                break;
-            }
+        LaunchRequest request = defaults().withRef(ref);
+        for (LaunchRequest next = consumeModifier(request, tail, projectKeys); next != null;
+             next = consumeModifier(request, tail, projectKeys)) {
+            request = next;
             tail.remove(0);
         }
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch, String.join(" ", tail).strip())
-                .normalized();
+        return request.withNotes(String.join(" ", tail).strip()).normalized();
+    }
+
+    private static @Nullable LaunchRequest consumeModifier(LaunchRequest request, List<String> tail,
+                                                           Set<String> projectKeys) {
+        if (tail.isEmpty()) {
+            return null;
+        }
+        String head = tail.get(0);
+        if (request.mode() == null && head.equals("plan")) {
+            return request.withMode("plan");
+        }
+        if (request.project() == null && isProjects(head, projectKeys)) {
+            return request.withProject(head);
+        }
+        if (request.strategy() == null && BranchStrategy.ids().contains(head)) {
+            return request.withStrategy(head);
+        }
+        if (request.baseBranch() == null && head.equals("from")) {
+            if (tail.size() < 2 || tail.get(1).isBlank()) {
+                throw new IllegalArgumentException("usage: " + GRAMMAR
+                        + " — `from` needs the branch to start from");
+            }
+            return request.withBaseBranch(tail.remove(1));
+        }
+        return null;
     }
 
     /** Every comma-separated key must be configured, so a note that happens to hold a comma stays a note. */

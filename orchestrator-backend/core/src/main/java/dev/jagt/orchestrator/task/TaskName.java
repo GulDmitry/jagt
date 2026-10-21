@@ -2,7 +2,9 @@ package dev.jagt.orchestrator.task;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
@@ -29,6 +31,21 @@ public final class TaskName {
 
     /** A bare issue key like {@code ABC-123}, as opposed to a url — never parsed OUT of one. */
     private static final Pattern TICKET_KEY = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
+
+    private record Refusal(Predicate<String> applies, String reason) {
+    }
+
+    private static final List<Refusal> REFUSALS = List.of(
+            new Refusal(name -> name.startsWith("-"), "it starts with '-'"),
+            new Refusal(name -> name.startsWith("/") || name.endsWith("/"), "it starts or ends with '/'"),
+            new Refusal(name -> name.contains("//"), "it has an empty part ('//')"),
+            new Refusal(name -> name.endsWith("."), "it ends with '.'"),
+            new Refusal(name -> name.contains(".."), "'..' is not allowed"),
+            new Refusal(name -> name.startsWith(".") || name.contains("/."), "a part of it starts with '.'"),
+            new Refusal(name -> name.endsWith(".lock") || name.contains(".lock/"),
+                    "a part of it ends with '.lock'"),
+            new Refusal(name -> name.contains("@{"), "'@{' is not allowed"),
+            new Refusal(name -> name.length() > MAX, "it is longer than " + MAX + " characters"));
 
     private TaskName() {
     }
@@ -90,34 +107,8 @@ public final class TaskName {
         if (offender != null) {
             return "'" + offender + "' is not allowed";
         }
-        if (name.startsWith("-")) {
-            return "it starts with '-'";
-        }
-        if (name.startsWith("/") || name.endsWith("/")) {
-            return "it starts or ends with '/'";
-        }
-        if (name.contains("//")) {
-            return "it has an empty part ('//')";
-        }
-        if (name.endsWith(".")) {
-            return "it ends with '.'";
-        }
-        if (name.contains("..")) {
-            return "'..' is not allowed";
-        }
-        if (name.startsWith(".") || name.contains("/.")) {
-            return "a part of it starts with '.'";
-        }
-        if (name.endsWith(".lock") || name.contains(".lock/")) {
-            return "a part of it ends with '.lock'";
-        }
-        if (name.contains("@{")) {
-            return "'@{' is not allowed";
-        }
-        if (name.length() > MAX) {
-            return "it is longer than " + MAX + " characters";
-        }
-        return "git reserves that name";
+        return REFUSALS.stream().filter(refusal -> refusal.applies().test(name)).map(Refusal::reason)
+                .findFirst().orElse("git reserves that name");
     }
 
     private static boolean refusedByGit(int codePoint) {
