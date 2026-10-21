@@ -138,7 +138,8 @@ class ToolGateTest {
             "cd /wt && gh api graphql --raw-field query=x", "gh pr merge 12 --admin", "glab mr merge 12",
             "gh repo edit --default-branch x", "gh", "/usr/local/bin/gh release create v1",
             "GH_TOKEN=x gh pr merge 12", "env -u GH_HOST gh pr merge 12", "xargs -n 1 gh pr close",
-            "command 'gh' pr merge 12", "gh pr", "gh api -X"})
+            "command 'gh' pr merge 12", "gh pr", "gh api -X", "GH_TOKEN=x gh frob", "env -u GH_HOST gh frob",
+            "env -i gh frob"})
     void refusesWritingToTheCodeHostPastThePush(String command) {
         assertThat(ToolGate.refusal(command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");

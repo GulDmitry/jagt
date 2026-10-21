@@ -517,4 +517,21 @@ class ProjectSetupTest {
                         path: "%s"
                 """.formatted(repo));
     }
+
+    @Test
+    void refusesARepositoryByTheFirstThingThatIsWrongWithItNotByWhatIsFine() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+        doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
+                null))).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("no origin/main or origin/master to cut tasks from");
+    }
 }

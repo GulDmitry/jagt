@@ -398,4 +398,25 @@ class StateServiceTest {
         assertThat(removed).isTrue();
         assertThat(state.task("ABC-1")).isEmpty();
     }
+
+    @Test
+    void saysNothingWasRemovedWhereTheTaskIsNotThere(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
+
+        boolean removed = state.removeTask("ABC-9");
+
+        assertThat(removed).isFalse();
+        assertThat(state.task("ABC-1")).isPresent();
+    }
+
+    @Test
+    void findsNoTaskForADirectoryThatIsNoWorktreeAndDoesNotExist(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt/gone", TaskStatus.DONE).build());
+
+        assertThat(state.findByWorktree("/elsewhere/gone")).isEmpty();
+    }
 }
