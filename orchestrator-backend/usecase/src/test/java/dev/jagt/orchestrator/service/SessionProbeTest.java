@@ -314,4 +314,31 @@ class SessionProbeTest {
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
                 .map(SessionProbe.Silence::detail).contains("its turn ended and nothing has moved since");
     }
+
+    @Test
+    void saysWhenTheCurrentTurnBeganAsTheLastTimeTheSessionReportedItselfMoving() {
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.WORKING, null, 4_200L);
+
+        assertThat(probe.turnStartedAt("ABC-1")).isEqualTo(4_200L);
+    }
+
+    @Test
+    void asksTheWindowOnceTheLastSignIsExactlyAThresholdOld() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        SessionHost sessions = mock(SessionHost.class);
+        when(sessions.lastWindowActivityMillis(any(), anyString())).thenReturn(9_990_000L);
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.lastSessionActivity(any())).thenReturn(OptionalLong.of(9_700_000L));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_700_000L).build();
+
+        Optional<SessionProbe.Silence> silence = new SessionProbe(config, sessions, runtime)
+                .of("ABC-1", task, 300_000, 10_000_000);
+
+        assertThat(silence).isEmpty();
+    }
 }

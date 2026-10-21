@@ -104,4 +104,19 @@ class TaskNotesTest {
     void ignoresTheModelLineWhenTheRuntimeCannotChoose() {
         assertThat(TaskNotes.unknownModel("next-model: gpt", mock(AgentRuntime.class))).isEmpty();
     }
+
+    @Test
+    void owesTheNotesToBeReadableWhenTheyCannotBeRead(@TempDir Path worktree) throws Exception {
+        Path notes = Files.writeString(worktree.resolve("task_notes.md"), "kept the retry");
+        assertThat(notes.toFile().setReadable(false)).isTrue();
+
+        assertThat(TaskNotes.owed(worktree)).hasValueSatisfying(owed -> assertThat(owed)
+                .startsWith("could not read task_notes.md: "));
+    }
+
+    @Test
+    void owesTheNotesToBeReadableWhenTheAgentFileLinesCannotBeCounted(@TempDir Path worktree) {
+        assertThat(TaskNotes.agentFileOwed(worktree, 1)).hasValueSatisfying(owed -> assertThat(owed)
+                .startsWith("could not read task_notes.md: "));
+    }
 }

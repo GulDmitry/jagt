@@ -148,4 +148,25 @@ class TaskLauncherTest {
 
         assertThat(launcher.resolveProjects("api, ,web")).containsExactly("api", "web");
     }
+
+    @Test
+    void placesWrittenWordsInTheOnlyConfiguredProjectWhenNoneIsNamed() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
+        LaunchRequest request = LaunchRequest.defaults().withNotes("tidy the logs");
+
+        launcher.launch(request);
+
+        verify(launches).written(request, List.of("api"));
+    }
+
+    @Test
+    void asksWhichProjectWhenWrittenWordsNameNoneAndSeveralAreConfigured() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+
+        assertThatThrownBy(() -> launcher.launch(LaunchRequest.defaults().withNotes("tidy the logs")))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("specify one");
+    }
 }

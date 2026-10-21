@@ -178,4 +178,34 @@ class RoundReadingTest {
         assertThat(read).isInstanceOfSatisfying(RoundReading.Round.class, round -> assertThat(
                 round.facts().openedAt()).isEqualTo(1_700_000_000_000L));
     }
+
+    @Test
+    void readsTheOneRequestOfASingleRepositoryTaskAsItsRound() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
+        ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of("rename x"), 7);
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(facts));
+
+        var read = reading.read("ABC-1");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Round.class, round -> {
+            assertThat(round.mrUrl()).isEqualTo("http://mr/1");
+            assertThat(round.facts()).isEqualTo(facts);
+        });
+    }
+
+    @Test
+    void refusesARoundWhoseRequestTheHostSaysDoesNotExist() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(false, false, "", "", List.of(), 0)));
+
+        var read = reading.read("ABC-1");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Refused.class, refused -> {
+            assertThat(refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
+            assertThat(refused.result().message()).isEqualTo("error: no such request: http://mr/1 (the host says so)");
+        });
+    }
 }

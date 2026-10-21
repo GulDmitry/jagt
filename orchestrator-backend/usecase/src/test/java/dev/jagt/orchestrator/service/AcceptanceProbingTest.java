@@ -154,4 +154,15 @@ class AcceptanceProbingTest {
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(false);
         assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("it resolves outside the worktree");
     }
+
+    @Test
+    void failsAFileThatCannotBeResolvedSayingJagtCouldNotReadIt(@TempDir Path worktree) throws IOException {
+        Files.createSymbolicLink(worktree.resolve("loop.md"), worktree.resolve("loop.md"));
+
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+                List.of(Probe.specified(Probe.Kind.ARTIFACT, List.of("loop.md"), 0)));
+
+        assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(false);
+        assertThat(probed).singleElement().extracting(Probe::excerpt).asString().startsWith("jagt could not read it: ");
+    }
 }

@@ -100,4 +100,17 @@ class ReviewDraftsTest {
 
         assertThat(spent).isFalse();
     }
+
+    @Test
+    void announcesRepliesDraftedForTheOpenRoundWhenAskedWithoutTheConfiguration(@TempDir Path worktree) throws IOException {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Files.setLastModifiedTime(Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
+                FileTime.fromMillis(3_000));
+
+        boolean pending = new ReviewDrafts(config).pending(TaskState.builder("api", worktree.toString(),
+                TaskStatus.REVIEW_PENDING).mrCreatedAt(2_000).build(), TaskStatus.REVIEW_PENDING);
+
+        assertThat(pending).isTrue();
+    }
 }
