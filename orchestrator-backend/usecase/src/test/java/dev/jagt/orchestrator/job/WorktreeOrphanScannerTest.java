@@ -16,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -357,5 +358,58 @@ class WorktreeOrphanScannerTest {
 
         verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())
                 && "left over from a crashed or abandoned task — see the log".equals(sent.body())));
+    }
+
+    @Test
+    void leavesTheDeployDirectoryOfALiveTaskWhileItHoldsARealCheckout(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+        Files.createDirectories(root.resolve("ABC-41-deploy").resolve(".git"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+
+        assertThat(scanner.scan()).isEmpty();
+    }
+
+    @Test
+    void stillFindsALeftoverWhenALiveTaskHasNotCutAWorktreeInOneOfItsRepositories(@TempDir Path root)
+            throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-41", TaskState.builder(List.of(TaskRepo.of("demo", null)), TaskStatus.IN_PROGRESS).build());
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+
+        assertThat(scanner.scan()).singleElement().satisfies(found -> assertThat(found.path()).isEqualTo(orphan));
+    }
+
+    @Test
+    void reportsAnEmptyHuskItCouldNotDeleteInsteadOfCallingItGone(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path husk = Files.createDirectories(root.resolve("ABC-49-demo"));
+        Files.createFile(husk.resolve("empty"));
+        Files.setPosixFilePermissions(husk, PosixFilePermissions.fromString("r-xr-xr-x"));
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+
+        new WorktreeOrphanScanner(config, state, notifications).run();
+
+        verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())));
     }
 }
