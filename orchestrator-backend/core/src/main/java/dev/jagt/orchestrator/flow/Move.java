@@ -105,12 +105,12 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         if (ownerOf(status) == Owner.AGENT && agentSilent) {
             return "check the stopped session";
         }
+        return actOf(status, hasReviewRequest, round);
+    }
+
+    private static @Nullable String actOf(TaskStatus status, boolean hasReviewRequest, RoundState round) {
         return switch (status) {
-            case REVIEW_PENDING -> switch (round.report()) {
-                case NO_CHANGES -> !hasReviewRequest ? "open the review request"
-                        : round.draftedReplies() ? "post the drafted replies" : "read the review";
-                case QUESTION, PLAIN -> "review and ship";
-            };
+            case REVIEW_PENDING -> reviewPendingAct(hasReviewRequest, round);
             case CI_POLLING -> hasReviewRequest ? "read the review" : "focus the agent";
             case CI_FAILED -> hasReviewRequest ? "relay the failed checks" : "focus the agent";
             case REVERTED -> hasReviewRequest ? "ship a fix" : "focus the agent";
@@ -121,6 +121,14 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
             case PLAN_PENDING -> "read the plan";
             // Unreachable: both ways an agent gives these up are answered above.
             case NEW, IN_PROGRESS, VERIFYING, SHIPPING, DEPLOYED, DONE -> null;
+        };
+    }
+
+    private static String reviewPendingAct(boolean hasReviewRequest, RoundState round) {
+        return switch (round.report()) {
+            case NO_CHANGES -> !hasReviewRequest ? "open the review request"
+                    : round.draftedReplies() ? "post the drafted replies" : "read the review";
+            case QUESTION, PLAIN -> "review and ship";
         };
     }
 
@@ -179,19 +187,16 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         if (masterReading(status, round)) {
             return null;
         }
+        return primaryOf(status, hasReviewRequest, round.report(), round.draftedReplies(), polled);
+    }
+
+    private static @Nullable TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, AgentReport report,
+                                        boolean draftedReplies, boolean polled) {
         return switch (status) {
             case NEW, PLAN_PENDING, IN_PROGRESS, VERIFYING, SHIPPING -> TaskAction.FOCUS;
-            // Shipping a round that changed nothing commits nothing, unless replies wait or no request exists yet.
-            case REVIEW_PENDING -> switch (round.report()) {
-                // Nothing polling means nothing will read the threads this round waits on, so the read is the move.
-                case NO_CHANGES -> round.draftedReplies() || !hasReviewRequest ? TaskAction.SHIP
-                        : polled ? null : TaskAction.SWEEP;
-                // A question never reaches here: it is answered above, from whatever status it was asked.
-                case QUESTION, PLAIN -> TaskAction.SHIP;
-            };
+            case REVIEW_PENDING -> reviewPendingPrimary(hasReviewRequest, report, draftedReplies, polled);
             case CI_POLLING, CI_FAILED -> hasReviewRequest ? TaskAction.SWEEP : TaskAction.FOCUS;
-            // Nothing is highlighted while a poller watches for the approval: a highlight would read as approved.
-            case REVIEWED -> !hasReviewRequest ? TaskAction.DONE : polled ? null : TaskAction.SWEEP;
+            case REVIEWED -> reviewedPrimary(hasReviewRequest, polled);
             // With no request there is nothing to land.
             case APPROVED -> hasReviewRequest ? TaskAction.DEPLOY : TaskAction.DONE;
             case DEPLOY_CONFLICT -> TaskAction.DEPLOY;
@@ -200,6 +205,26 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
             case REVERTED -> hasReviewRequest ? TaskAction.SHIP : TaskAction.FOCUS;
             case DONE -> null;
         };
+    }
+
+    // Shipping a round that changed nothing commits nothing, unless replies wait or no request exists yet.
+    private static @Nullable TaskAction reviewPendingPrimary(boolean hasReviewRequest, AgentReport report,
+                                                   boolean draftedReplies, boolean polled) {
+        return switch (report) {
+            // Nothing polling means nothing will read the threads this round waits on, so the read is the move.
+            case NO_CHANGES -> draftedReplies || !hasReviewRequest ? TaskAction.SHIP
+                    : polled ? null : TaskAction.SWEEP;
+            // A question never reaches here: it is answered above, from whatever status it was asked.
+            case QUESTION, PLAIN -> TaskAction.SHIP;
+        };
+    }
+
+    // Nothing is highlighted while a poller watches for the approval: a highlight would read as approved.
+    private static @Nullable TaskAction reviewedPrimary(boolean hasReviewRequest, boolean polled) {
+        if (!hasReviewRequest) {
+            return TaskAction.DONE;
+        }
+        return polled ? null : TaskAction.SWEEP;
     }
 
     /** One line of prose, for a hint line or a button tooltip. */
@@ -221,32 +246,12 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
             case NEW, IN_PROGRESS -> "agent is working; no action required";
             case VERIFYING -> "jagt is running this project's checks";
             case PLAN_PENDING -> "a plan is waiting in `plan.md`; read it, then tell the session to go";
-            case REVIEW_PENDING -> switch (round.report()) {
-                case NO_CHANGES -> !hasReviewRequest
-                        ? "no code changed this round; ship opens the review request"
-                        : round.draftedReplies()
-                                ? "no code changed; ship posts the drafted replies and nothing else"
-                                : polled
-                                        ? "nothing to ship; the open threads are the reviewer's move"
-                                        : "nothing is polling this round; sweep reads the comments and checks"
-                                                + " now";
-                case QUESTION, PLAIN -> "read the diff (ide), then ship";
-            };
+            case REVIEW_PENDING -> reviewPendingHint(hasReviewRequest, round, polled);
             case SHIPPING -> "agent is committing and pushing; wait";
-            // A ship is not offered without a request (`FlowRules` gates it on one), so neither is it advised.
-            case CI_POLLING -> !hasReviewRequest
-                    ? "no review request on this task; focus the agent"
-                    : polled
-                            ? "waiting for comments and checks; sweep reads them now"
-                            : "nothing is polling this round; sweep reads the comments and checks now";
+            case CI_POLLING -> ciPollingHint(hasReviewRequest, polled);
             case CI_FAILED -> hasReviewRequest ? "sweep relays the failure to the agent"
                     : "no review request to read the failure from; focus the agent";
-            // The checks are NOT asserted here: a red run on a round that came back clean leaves the status alone.
-            case REVIEWED -> !hasReviewRequest
-                    ? "nothing to approve: no request on this task; focus the agent, or done to close"
-                    : polled
-                            ? "nothing unresolved: waiting for an approval — deploy without one, or done"
-                            : "nothing is polling for the approval; sweep reads it now";
+            case REVIEWED -> reviewedHint(hasReviewRequest, polled);
             case APPROVED -> "approved: deploy or done";
             case DEPLOY_CONFLICT -> "resolve the conflict in the deploy worktree (ide), git add, then deploy";
             case DEPLOYED -> "done closes the task; ship again to deploy further changes";
@@ -254,5 +259,43 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                     : "the deploy was reverted and no request is open; focus the agent";
             case DONE -> "closed";
         };
+    }
+
+    private static String reviewPendingHint(boolean hasReviewRequest, RoundState round, boolean polled) {
+        return switch (round.report()) {
+            case NO_CHANGES -> noChangesHint(hasReviewRequest, round.draftedReplies(), polled);
+            case QUESTION, PLAIN -> "read the diff (ide), then ship";
+        };
+    }
+
+    private static String noChangesHint(boolean hasReviewRequest, boolean draftedReplies, boolean polled) {
+        if (!hasReviewRequest) {
+            return "no code changed this round; ship opens the review request";
+        }
+        if (draftedReplies) {
+            return "no code changed; ship posts the drafted replies and nothing else";
+        }
+        return polled ? "nothing to ship; the open threads are the reviewer's move" : notPollingHint();
+    }
+
+    // A ship is not offered without a request (`FlowRules` gates it on one), so neither is it advised.
+    private static String ciPollingHint(boolean hasReviewRequest, boolean polled) {
+        if (!hasReviewRequest) {
+            return "no review request on this task; focus the agent";
+        }
+        return polled ? "waiting for comments and checks; sweep reads them now" : notPollingHint();
+    }
+
+    // The checks are NOT asserted here: a red run on a round that came back clean leaves the status alone.
+    private static String reviewedHint(boolean hasReviewRequest, boolean polled) {
+        if (!hasReviewRequest) {
+            return "nothing to approve: no request on this task; focus the agent, or done to close";
+        }
+        return polled ? "nothing unresolved: waiting for an approval — deploy without one, or done"
+                : "nothing is polling for the approval; sweep reads it now";
+    }
+
+    private static String notPollingHint() {
+        return "nothing is polling this round; sweep reads the comments and checks now";
     }
 }
