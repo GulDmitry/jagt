@@ -466,4 +466,11 @@ class TaskStateTest {
         assertThat(task.remoteUrl()).isEqualTo("git@host:g/php.git");
         assertThat(task.repo("java").orElseThrow().remoteUrl()).isNull();
     }
+
+    @Test
+    void startsTheHistoryOfATaskCreatedWithoutAnActivityStampAtTheClock() {
+        TaskState created = TaskState.builder("proj", "/wt", TaskStatus.NEW).lastActiveTimestamp(0).build();
+
+        assertThat(created.history().getFirst().at()).isGreaterThan(1_700_000_000_000L);
+    }
 }
