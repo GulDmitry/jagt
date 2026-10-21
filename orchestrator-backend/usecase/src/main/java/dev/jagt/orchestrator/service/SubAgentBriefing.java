@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.task.NewRepo;
+import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.NewTask;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,8 @@ public class SubAgentBriefing {
     private final PromptTemplates prompts;
 
     public String of(NewTask request, NewRepo repo, List<NewRepo> repos,
-                     ConfigService.ConfigFile.AutoplanConfig autoplan) {
+                     ConfigService.ConfigFile.AutoplanConfig autoplan,
+                     ConfigService.ConfigFile.VisualizeConfig visualize) {
         String taskId = request.taskId();
         return prompts.subAgentContext().formatted(
                 taskId,
@@ -26,6 +28,7 @@ public class SubAgentBriefing {
                 repo.worktreePath(),
                 alsoYours(repo, repos),
                 autoplanSentence(autoplan),
+                visualizeSentence(visualize),
                 taskId, baseBranches(repos), deployBranches(repos));
     }
 
@@ -36,6 +39,16 @@ public class SubAgentBriefing {
                 + " rests on has no definition, or you would settle unasked what changes the code. `plan.md`'s first"
                 + " line and your PLAN_PENDING message: `planned first: autoplan is on (agent.autoplan in jagt.yml),"
                 + " <the criterion>`.").formatted(autoplan.filesOrDefault())
+                : "";
+    }
+
+    private static String visualizeSentence(ConfigService.ConfigFile.VisualizeConfig visualize) {
+        return visualize.enabledOrDefault()
+                ? " VISUALIZE is on: while analysing the task, where you decide whether to plan first, judge whether"
+                + " it is worth a picture. A two-line bug fix is not. If it is, write `" + Artifact.VISUAL.fileName()
+                + "` in the worktree before your first edit. A frontend change gets an ASCII sketch of each screen,"
+                + " one fenced block per screen. A backend change gets Mermaid (class, sequence or ER diagram, in a"
+                + " mermaid fence) and markdown tables. Pictures over prose."
                 : "";
     }
 

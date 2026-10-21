@@ -25,7 +25,9 @@ public enum Artifact {
     /** What the unattended reviewer concluded about the round, and the verdict jagt reads back. */
     REVIEW("master-review.md"),
     /** What earlier rounds of this task decided, which a later reader does not reopen without a blocking reason. */
-    DECISIONS("master-decisions.md");
+    DECISIONS("master-decisions.md"),
+    /** What the agent sketched of the change, before its first edit: screens, diagrams, tables. */
+    VISUAL("task_visual.md");
 
     private final String fileName;
 

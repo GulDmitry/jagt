@@ -59,6 +59,9 @@ orchestrator:
     # autoplan:           # a session plans first, unasked, when its task is large or unclear; the plan says why
     #   enabled: false
     #   files: 30         # "large": it changes more files than this
+    # visualize:          # a session sketches a task worth a picture in task_visual.md: ASCII for a screen, Mermaid
+    #                     # for the backend; the board's Files tab shows it
+    #   enabled: false
 
   claude:
     command: claude       # also used by the headless reads, which stay Claude whichever agent runs the tasks

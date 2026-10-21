@@ -113,14 +113,19 @@ public class ConfigService {
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
         public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds,
-                                  @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan) {
+                                  @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan,
+                                  @Nullable VisualizeConfig visualize) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null, null, null);
+                return new AgentConfig(null, null, null, null, null);
             }
 
             public AutoplanConfig autoplanOrDefault() {
                 return autoplan == null ? AutoplanConfig.defaults() : autoplan;
+            }
+
+            public VisualizeConfig visualizeOrDefault() {
+                return visualize == null ? VisualizeConfig.defaults() : visualize;
             }
 
             public SandboxConfig sandboxOrDefault() {
@@ -152,6 +157,19 @@ public class ConfigService {
 
             public int filesOrDefault() {
                 return files == null || files <= 0 ? 30 : files;
+            }
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record VisualizeConfig(@Nullable Boolean enabled) {
+
+            public static VisualizeConfig defaults() {
+                return new VisualizeConfig(null);
+            }
+
+            public boolean enabledOrDefault() {
+                return enabled != null && enabled;
             }
         }
 

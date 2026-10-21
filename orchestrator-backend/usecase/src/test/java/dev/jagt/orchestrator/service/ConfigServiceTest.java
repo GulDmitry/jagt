@@ -364,4 +364,10 @@ class ConfigServiceTest {
         assertThat(MasterConfig.defaults().withBrief("my-brief.md").briefOrDefault()).isEqualTo("my-brief.md");
         assertThat(MasterConfig.defaults().withBrief(" ").briefOrDefault()).isEqualTo("master-brief.md");
     }
+
+    @Test
+    void visualizeIsOffUnlessTheHumanTurnedItOn() {
+        assertThat(AgentConfig.defaults().visualizeOrDefault().enabledOrDefault()).isFalse();
+        assertThat(ConfigFile.VisualizeConfig.defaults().withEnabled(true).enabledOrDefault()).isTrue();
+    }
 }
