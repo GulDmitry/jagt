@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +21,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsOnlyTheHighestThresholdAWindowJumpedPast() {
-        var alerts = new UsageAlerts(List.of(80, 95), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(80, 95), List.of());
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 96, RESET)), Optional.empty()), NOW);
 
@@ -31,7 +30,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsAThresholdOncePerWindowPeriod() {
-        var alerts = new UsageAlerts(List.of(80), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(80), List.of());
         alerts.after(new Snapshot(List.of(new Window("week", 81, RESET)), Optional.empty()), NOW);
 
         var told = alerts.after(new Snapshot(List.of(new Window("week", 84, RESET)), Optional.empty()), NOW);
@@ -41,7 +40,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsAThresholdOnceWhenTheSameResetIsReportedWithDifferentFractions() {
-        var alerts = new UsageAlerts(List.of(80), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(80), List.of());
         alerts.after(new Snapshot(List.of(new Window("5h", 81,
                 Optional.of(Instant.parse("2026-10-10T16:00:00.574417Z")))), Optional.empty()), NOW);
 
@@ -53,7 +52,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsTheThresholdAgainInTheNextPeriod() {
-        var alerts = new UsageAlerts(List.of(80), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(80), List.of());
         alerts.after(new Snapshot(List.of(new Window("5h", 81, RESET)), Optional.empty()), NOW);
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 85,
@@ -64,7 +63,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsPaidUsageStartedWhenAWindowRunsOutWithPaidUsageEnabled() {
-        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of());
         var paid = new Paid(Optional.of(BigDecimal.ZERO), Optional.of(new BigDecimal("500")), "USD", Optional.empty());
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 100, RESET)), Optional.of(paid)), NOW);
@@ -75,7 +74,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsPaidUsageStartedWhenItsSpendRisesWithNoWindowRunOut() {
-        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of());
         alerts.after(new Snapshot(List.of(new Window("week", 40, RESET)), Optional.of(
                 new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
 
@@ -87,7 +86,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsPaidUsageStartedOnceWhileTheSameWindowStaysRunOut() {
-        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of());
         alerts.after(new Snapshot(List.of(new Window("5h", 100, RESET)), Optional.of(
                 new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
 
@@ -99,7 +98,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsPaidUsageCrossingAThresholdOfItsMonthlyLimit() {
-        var alerts = new UsageAlerts(List.of(), List.of(80), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of(80));
 
         var told = alerts.after(new Snapshot(List.of(new Window("week", 40, RESET)), Optional.of(
                 new Paid(Optional.of(new BigDecimal("410")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
@@ -109,7 +108,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsAThresholdTheWindowReadsExactly() {
-        var alerts = new UsageAlerts(List.of(80), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(80), List.of());
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 80, RESET)), Optional.empty()), NOW);
 
@@ -118,7 +117,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsWhenAWindowResetsAndHowToReadItsBody() {
-        var alerts = new UsageAlerts(List.of(80), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(80), List.of());
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 81, RESET),
                 new Window("week", 81, Optional.empty())), Optional.empty()), NOW);
@@ -128,7 +127,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsPaidThresholdAgainAfterTheSpendReadsBelowItAndRisesBack() {
-        var alerts = new UsageAlerts(List.of(), List.of(80), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of(80));
         alerts.after(new Snapshot(List.of(), Optional.of(
                 new Paid(Optional.of(new BigDecimal("410")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
         alerts.after(new Snapshot(List.of(), Optional.of(
@@ -142,7 +141,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsPaidUsageStartedWhenItsBalanceFalls() {
-        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of());
         alerts.after(new Snapshot(List.of(), Optional.of(
                 new Paid(Optional.empty(), Optional.empty(), "USD", Optional.of(new BigDecimal("50"))))), NOW);
 
@@ -154,7 +153,7 @@ class UsageAlertsTest {
 
     @Test
     void staysSilentWhenPaidSpendAndBalanceAreUnchanged() {
-        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of());
         var paid = new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD",
                 Optional.of(new BigDecimal("50")));
         alerts.after(new Snapshot(List.of(), Optional.of(paid)), NOW);
@@ -166,7 +165,7 @@ class UsageAlertsTest {
 
     @Test
     void tellsPaidUsageStartedAgainWhenTheNextWindowRunsOut() {
-        var alerts = new UsageAlerts(List.of(), List.of(), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of());
         var paid = new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD", Optional.empty());
         alerts.after(new Snapshot(List.of(new Window("5h", 100, RESET)), Optional.of(paid)), NOW);
 
@@ -178,7 +177,7 @@ class UsageAlertsTest {
 
     @Test
     void staysSilentOnPaidThresholdsWhenTheMonthlyLimitIsZero() {
-        var alerts = new UsageAlerts(List.of(), List.of(80), ZoneOffset.UTC);
+        var alerts = new UsageAlerts(List.of(), List.of(80));
 
         var told = alerts.after(new Snapshot(List.of(), Optional.of(
                 new Paid(Optional.of(new BigDecimal("5")), Optional.of(BigDecimal.ZERO), "USD", Optional.empty()))), NOW);

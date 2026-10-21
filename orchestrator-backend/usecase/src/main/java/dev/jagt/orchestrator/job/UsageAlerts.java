@@ -12,7 +12,6 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -36,14 +35,12 @@ class UsageAlerts {
 
     private final List<Integer> thresholds;
     private final List<Integer> paidThresholds;
-    private final ZoneId zone;
     private final Map<String, String> firedIn = new HashMap<>();
     private @Nullable Paid previous;
 
-    UsageAlerts(List<Integer> thresholds, List<Integer> paidThresholds, ZoneId zone) {
+    UsageAlerts(List<Integer> thresholds, List<Integer> paidThresholds) {
         this.thresholds = thresholds.stream().sorted(Comparator.reverseOrder()).toList();
         this.paidThresholds = paidThresholds.stream().sorted(Comparator.reverseOrder()).toList();
-        this.zone = zone;
     }
 
     List<Notification> after(Snapshot snapshot, Instant now) {
@@ -52,7 +49,7 @@ class UsageAlerts {
             String period = periodOf(window.resetsAt());
             crossed("window|" + window.name(), window.percentUsed(), thresholds, period).ifPresent(level ->
                     due.add(Notification.usage(window.name() + " window at " + level + "%",
-                            window.resetsAt().map(at -> "resets " + AT.format(at.atZone(zone)))
+                            window.resetsAt().map(at -> "resets " + AT.format(at.atZone(ZoneOffset.UTC)))
                                     .orElse("no reset reported"))));
         }
         snapshot.paid().ifPresent(paid -> {

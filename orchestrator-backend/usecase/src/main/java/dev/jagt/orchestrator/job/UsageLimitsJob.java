@@ -26,7 +26,7 @@ public class UsageLimitsJob implements Job {
         this.limits = limits;
         this.notifications = notifications;
         this.every = properties.every();
-        this.alerts = new UsageAlerts(properties.thresholds(), properties.paidThresholds(), clock.getZone());
+        this.alerts = new UsageAlerts(properties.thresholds(), properties.paidThresholds());
         this.clock = clock;
     }
 
