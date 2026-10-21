@@ -67,4 +67,14 @@ class HumanPathsTest {
         assertThat(touched).isEmpty();
         verifyNoInteractions(changes);
     }
+
+    @Test
+    void keepsTheStepWithTheHumanWhereTheTaskNamesAProjectNobodyConfigured() {
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
+        when(configService.project("demo")).thenThrow(new IllegalArgumentException("no project demo"));
+
+        Optional<String> touched = new HumanPaths(configService, changes).touched(task);
+
+        assertThat(touched).contains(HumanPaths.UNREAD);
+    }
 }

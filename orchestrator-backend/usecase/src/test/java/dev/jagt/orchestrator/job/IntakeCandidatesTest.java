@@ -107,4 +107,16 @@ class IntakeCandidatesTest {
         assertThat(candidates.waiting(Set.of())).contains(List.of(new IntakeCandidates.Ready(item,
                 TokenUsage.NONE)));
     }
+
+    @Test
+    void buysNoSixthReadWithinOnePoll() {
+        when(workflow.candidateQuery()).thenReturn("whatever is ready");
+        when(assistant.findCandidates("whatever is ready")).thenReturn(new Answer<>(
+                Optional.of(List.of("ABC-1", "ABC-2", "ABC-3", "ABC-4", "ABC-5", "ABC-6")), TokenUsage.NONE));
+        when(tickets.read(anyString())).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
+
+        candidates.waiting(Set.of());
+
+        verify(tickets, never()).read("ABC-6");
+    }
 }

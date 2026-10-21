@@ -69,6 +69,30 @@ class JobsTest {
     }
 
     @Test
+    void runsAJobAgainThatVeryTickItsIntervalHasExactlyPassed() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        when(job.every()).thenReturn(Duration.ofMinutes(1));
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        jobs.tick(1_000);
+        jobs.tick(61_000);
+
+        verify(job, times(2)).run();
+    }
+
+    @Test
+    void reportsTheLastIntervalAJobNamedWhenItCanNoLongerSayIt() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        when(job.every()).thenReturn(Duration.ofMinutes(1)).thenThrow(new IllegalStateException("config unreadable"));
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        jobs.tick(1_000);
+
+        assertThat(jobs.statuses(2_000)).extracting(Jobs.Status::every).containsExactly(Duration.ofMinutes(1));
+    }
+
+    @Test
     void runsAJobWithNoIntervalOnceAndThenReportsNoNextRun() {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("scan-orphans");
