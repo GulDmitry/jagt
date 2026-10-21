@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -40,7 +41,12 @@ public class SystemHost implements Host {
 
     @Override
     public String resolve(String name) {
-        return Executables.resolve(name);
+        return Executables.resolve(name, applicationDirs());
+    }
+
+    @Override
+    public List<Path> applicationDirs() {
+        return Executables.applicationDirs(System.getProperty("user.home"));
     }
 
     @Override

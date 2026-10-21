@@ -25,7 +25,6 @@ public final class Executables {
             List.of("Library", "Application Support", "JetBrains", "Toolbox", "scripts"),
             List.of(".local", "share", "JetBrains", "Toolbox", "scripts"));
 
-    private static final List<String> APP_DIRS = List.of("/Applications");
     private static final String BUNDLE_SUFFIX = ".app";
     private static final List<String> BUNDLE_BIN = List.of("Contents", "MacOS");
 
@@ -33,7 +32,19 @@ public final class Executables {
     }
 
     public static String resolve(@Nullable String configured) {
-        return resolve(configured, System.getenv("PATH"), Executables::isExecutableFile);
+        return resolve(configured, applicationDirs(System.getProperty("user.home")));
+    }
+
+    public static String resolve(@Nullable String configured, List<Path> applicationDirs) {
+        return resolve(configured, System.getenv("PATH"), System.getProperty("user.home"),
+                Executables::isExecutableFile, applicationDirs);
+    }
+
+    /** Where application bundles are installed: the system's, and the user's own when the home is known. */
+    public static List<Path> applicationDirs(@Nullable String userHome) {
+        return userHome == null || userHome.isBlank()
+                ? List.of(Path.of("/Applications"))
+                : List.of(Path.of("/Applications"), Path.of(userHome, "Applications"));
     }
 
     /** True when {@link #resolve} found nothing and handed the bare name back. */
@@ -51,11 +62,12 @@ public final class Executables {
     }
 
     static String resolve(@Nullable String configured, @Nullable String pathEnv, Predicate<Path> isExecutable) {
-        return resolve(configured, pathEnv, System.getProperty("user.home"), isExecutable);
+        return resolve(configured, pathEnv, System.getProperty("user.home"), isExecutable,
+                applicationDirs(System.getProperty("user.home")));
     }
 
     static String resolve(@Nullable String configured, @Nullable String pathEnv, @Nullable String userHome,
-                          Predicate<Path> isExecutable) {
+                          Predicate<Path> isExecutable, List<Path> applicationDirs) {
         String name = configured == null ? "" : configured.strip();
         if (name.isEmpty()) {
             return name;
@@ -75,18 +87,13 @@ public final class Executables {
         if (perUser != null) {
             return perUser;
         }
-        String bundled = inBundles(name, userHome, isExecutable);
+        String bundled = inBundles(name, applicationDirs, isExecutable);
         return bundled != null ? bundled : name;
     }
 
     /** Not an {@code if macos}: a system without bundles holds none, and the search costs one listing. */
-    private static @Nullable String inBundles(String name, @Nullable String userHome, Predicate<Path> isExecutable) {
-        List<Path> appDirs = new ArrayList<>();
-        APP_DIRS.forEach(dir -> appDirs.add(Path.of(dir)));
-        if (userHome != null && !userHome.isBlank()) {
-            appDirs.add(Path.of(userHome, "Applications"));
-        }
-        for (Path appDir : appDirs) {
+    private static @Nullable String inBundles(String name, List<Path> applicationDirs, Predicate<Path> isExecutable) {
+        for (Path appDir : applicationDirs) {
             for (Path bundle : bundlesIn(appDir)) {
                 Path candidate = bundle;
                 for (String segment : BUNDLE_BIN) {

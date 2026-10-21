@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +48,8 @@ class ExecutablesTest {
     void findsALauncherInAPerUserScriptDirectory() {
         assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
                 path -> path.toString()
-                        .equals("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea")))
+                        .equals("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea"),
+                List.of()))
                 .isEqualTo("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea");
     }
 
@@ -78,29 +80,34 @@ class ExecutablesTest {
     }
 
     @Test
-    void findsALauncherInsideABundleInstalledForTheUserAlone(@TempDir Path home) throws IOException {
-        Files.createDirectories(home.resolve("Applications").resolve("Notes.app"));
-        Path bundle = Files.createDirectories(home.resolve("Applications").resolve("IntelliJ IDEA.app"));
+    void findsALauncherThatSitsOnlyInsideItsApplicationBundle(@TempDir Path applications) throws IOException {
+        Files.createDirectories(applications.resolve("Notes.app"));
+        Path bundle = Files.createDirectories(applications.resolve("IntelliJ IDEA.app"));
+        Path launcher = bundle.resolve("Contents").resolve("MacOS").resolve("idea");
 
-        assertThat(Executables.resolve("idea", "/usr/bin", home.toString(),
-                path -> path.equals(bundle.resolve("Contents").resolve("MacOS").resolve("idea"))))
-                .isEqualTo(bundle.resolve("Contents").resolve("MacOS").resolve("idea").toString());
+        assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me", launcher::equals, List.of(applications)))
+                .isEqualTo(launcher.toString());
     }
 
     @Test
-    void looksForALauncherInApplicationBundlesAndInNoOtherDirectory(@TempDir Path home) throws IOException {
-        Files.createDirectories(home.resolve("Applications").resolve("Stray"));
+    void looksForALauncherInApplicationBundlesAndInNoOtherDirectory(@TempDir Path applications) throws IOException {
+        Files.createDirectories(applications.resolve("Stray"));
 
-        assertThat(Executables.resolve("idea", "/usr/bin", home.toString(),
-                path -> path.startsWith(home) && path.endsWith(Path.of("Contents", "MacOS", "idea"))))
+        assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
+                path -> path.endsWith(Path.of("Contents", "MacOS", "idea")), List.of(applications)))
                 .isEqualTo("idea");
+    }
+
+    @Test
+    void searchesTheUsersOwnApplicationsBesideTheSystemOnes() {
+        assertThat(Executables.applicationDirs("/Users/me"))
+                .containsExactly(Path.of("/Applications"), Path.of("/Users/me/Applications"));
     }
 
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"", "  "})
     void searchesNoUserDirectoryWhereTheHomeIsUnknown(String home) {
-        assertThat(Executables.resolve("idea", "/usr/bin", home, path -> false))
-                .isEqualTo("idea");
+        assertThat(Executables.applicationDirs(home)).containsExactly(Path.of("/Applications"));
     }
 }
