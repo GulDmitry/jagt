@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.capability.ship;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Outcome;
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Specs;
 import dev.jagt.orchestrator.service.StateService;
@@ -49,5 +50,10 @@ class SpecFoldTest {
         assertThatThrownBy(() -> new SpecFold(state, specs).around("ABC-42", () -> {
             throw new AssertionError("shipped");
         })).isInstanceOf(IllegalStateException.class).hasMessage("openspec/changes/abc-42 does not validate");
+    }
+
+    @Test
+    void foldsOnlyForTheShipVerb() {
+        assertThat(new SpecFold(mock(StateService.class), mock(Specs.class)).action()).isEqualTo(TaskAction.SHIP);
     }
 }

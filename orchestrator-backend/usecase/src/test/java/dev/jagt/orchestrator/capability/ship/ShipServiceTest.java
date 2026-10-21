@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
+import dev.jagt.orchestrator.flow.Refusal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -212,7 +214,8 @@ class ShipServiceTest {
         String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
                 List.of(new ShipService.Target("demo", "/wt", "dev", false)), "");
 
-        assertThat(instruction).contains("CI_POLLING and reviewRequestUrl=<the url>");
+        assertThat(instruction).contains("CI_POLLING and reviewRequestUrl=<the url>")
+                .doesNotContain("half-shipped");
     }
 
     @Test
@@ -258,5 +261,13 @@ class ShipServiceTest {
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
 
         assertThat(outcome.message()).contains("review_replies.md is yours to post (postReviewReplies=false)");
+    }
+
+    @Test
+    void refusesATaskThatIsNotThereNamingIt() {
+        assertThatThrownBy(() -> new ShipService(stateService, configService, sessions, changes).ship("ABC-9"))
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("No task ABC-9")
+                .extracting("code").isEqualTo(Refusal.Code.NO_SUCH_TASK);
     }
 }

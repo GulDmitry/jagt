@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.flow.Refusal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InOrder;
@@ -296,5 +297,18 @@ class RevertServiceTest {
 
         assertThatThrownBy(() -> service.revert("a1")).hasMessageContaining("deployBranch equals the base branch");
         verify(git, never()).revertMergeAndPush(any(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void refusesATaskThatIsNotThereNamingIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        GitDeploy git = mock(GitDeploy.class);
+        RevertService service = new RevertService(state, new DeployTargets(mock(ConfigService.class), git), git);
+
+        assertThatThrownBy(() -> service.revert("ABC-9"))
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("No task ABC-9")
+                .extracting("code").isEqualTo(Refusal.Code.NO_SUCH_TASK);
     }
 }

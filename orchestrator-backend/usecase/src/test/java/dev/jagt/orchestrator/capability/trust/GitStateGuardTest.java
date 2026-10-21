@@ -40,4 +40,9 @@ class GitStateGuardTest {
 
         assertThat(outcome.message()).isEqualTo("shipped");
     }
+
+    @Test
+    void refusesBeforeAnyOtherCheckRuns() {
+        assertThat(new GitStateGuard(TaskAction.DEPLOY, trusted).order()).isNegative();
+    }
 }

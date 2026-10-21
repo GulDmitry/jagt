@@ -110,7 +110,7 @@ class DeployServiceTest {
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
         assertThat(outcome.message()).contains(deployWorktree.toString())
                 .contains("nothing pushed").contains("deploy ABC-1").doesNotContain("Live on the deploy branch");
-        assertThat(outcome.stamp()).contains(deployWorktree.toString());
+        assertThat(outcome.stamp()).isEqualTo("resolve conflict in " + deployWorktree);
     }
 
     @Test
@@ -277,7 +277,8 @@ class DeployServiceTest {
         Outcome outcome = deploys.deploy("a1");
 
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
-        assertThat(outcome.message()).contains("web into dev (f00dfeed)", "nothing to deploy in api", "DEPLOYED");
+        assertThat(outcome.message()).contains("web into dev (f00dfeed)", "nothing to deploy in api", "DEPLOYED")
+                .doesNotContain("api into dev");
     }
 
     @Test
@@ -361,5 +362,18 @@ class DeployServiceTest {
                 .hasMessageContaining("web")
                 .hasMessageContaining("deployBranch");
         verifyNoInteractions(git);
+    }
+
+    @Test
+    void refusesATaskThatIsNotThereNamingIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        GitDeploy git = mock(GitDeploy.class);
+        DeployService deploys = new DeployService(state, new DeployTargets(mock(ConfigService.class), git), git);
+
+        assertThatThrownBy(() -> deploys.deploy("ABC-9"))
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("No task ABC-9")
+                .extracting("code").isEqualTo(Refusal.Code.NO_SUCH_TASK);
     }
 }
