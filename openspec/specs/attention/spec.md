@@ -26,10 +26,7 @@ An agent MUST report `outcome=question` before the human sees the question, rule
 ### Requirement: Silence is stamped by the watchdog
 `WatchdogService` SHALL stamp silence from `service/SessionProbe` (`TaskState.silentSince`, `TaskState.silentBecause`):
 token limit, crash, unanswered prompt, a turn the CLI ended on an API error, or `SessionProbe.State.IDLE` at the shared
-threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overruled at `NEW`. A failed turn needs no
-threshold and names the CLI's own error word. A session ended for a reason declared as `continuing-end` is recorded as
-`IDLE`, not as gone. It MUST watch every status whose `Move.ownerOf` is AGENT but `VERIFYING`, which jagt holds
-(`WatchdogServiceTest`).
+threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overruled at `NEW`.
 
 #### Scenario: Silent stop
 - **WHEN** a session stops unannounced
@@ -49,11 +46,15 @@ threshold and names the CLI's own error word. A session ended for a reason decla
 
 #### Scenario: A turn ends on an API error
 - **WHEN** the CLI ends a turn on an API error and names `overloaded`
-- **THEN** NEEDS YOU at once, saying its turn failed: overloaded
+- **THEN** NEEDS YOU at once with no threshold, saying its turn failed: overloaded, the CLI's own error word
 
 #### Scenario: A session is cleared or resumed
 - **WHEN** a session ends with a reason declared as `continuing-end`
-- **THEN** no stop is stamped and no banner is sent
+- **THEN** it is recorded as `IDLE`, not as gone; no stop is stamped and no banner is sent
+
+#### Scenario: A status jagt holds
+- **WHEN** a task is in a status whose `Move.ownerOf` is AGENT
+- **THEN** the watchdog watches it, but not `VERIFYING`, which jagt holds (`WatchdogServiceTest`)
 
 ### Requirement: A hook reports, the watchdog decides
 Blocking wording MUST be declared, never matched: `blocking-notification` in the runtime's properties →
