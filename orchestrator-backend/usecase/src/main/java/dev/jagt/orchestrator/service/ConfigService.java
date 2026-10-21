@@ -114,10 +114,10 @@ public class ConfigService {
         @With
         public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds,
                                   @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan,
-                                  @Nullable VisualizeConfig visualize) {
+                                  @Nullable VisualizeConfig visualize, @Nullable DiagnoseConfig diagnose) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null, null, null, null);
+                return new AgentConfig(null, null, null, null, null, null);
             }
 
             public AutoplanConfig autoplanOrDefault() {
@@ -126,6 +126,10 @@ public class ConfigService {
 
             public VisualizeConfig visualizeOrDefault() {
                 return visualize == null ? VisualizeConfig.defaults() : visualize;
+            }
+
+            public DiagnoseConfig diagnoseOrDefault() {
+                return diagnose == null ? DiagnoseConfig.defaults() : diagnose;
             }
 
             public SandboxConfig sandboxOrDefault() {
@@ -166,6 +170,19 @@ public class ConfigService {
 
             public static VisualizeConfig defaults() {
                 return new VisualizeConfig(null);
+            }
+
+            public boolean enabledOrDefault() {
+                return enabled != null && enabled;
+            }
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record DiagnoseConfig(@Nullable Boolean enabled) {
+
+            public static DiagnoseConfig defaults() {
+                return new DiagnoseConfig(null);
             }
 
             public boolean enabledOrDefault() {

@@ -36,7 +36,7 @@ class WorktreeSetupTest {
         NewTask request = NewTask.builder("ABC-1", "repo").instructions("Implement ABC-1.").build();
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(runtime.systemKnowledgeFile(worktree)).thenReturn(knowledge);
-        when(briefing.of(any(), any(), any(), any(), any())).thenReturn("the briefing");
+        when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
         new WorktreeSetup(runtime, paths, config, briefing).fill(request, repo, List.of(repo));
@@ -56,7 +56,7 @@ class WorktreeSetupTest {
         NewTask request = NewTask.builder("ABC-1", "repo").instructions("Implement ABC-1.").build();
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(runtime.systemKnowledgeFile(worktree)).thenReturn(knowledge);
-        when(briefing.of(any(), any(), any(), any(), any())).thenReturn("the briefing");
+        when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
         new WorktreeSetup(runtime, paths, config, briefing).fill(request, repo, List.of(repo));
@@ -75,7 +75,7 @@ class WorktreeSetupTest {
         NewTask request = NewTask.builder("ABC-1", "repo").instructions(" ").build();
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(runtime.systemKnowledgeFile(worktree)).thenReturn(knowledge);
-        when(briefing.of(any(), any(), any(), any(), any())).thenReturn("the briefing");
+        when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
         new WorktreeSetup(runtime, paths, config, briefing).fill(request, repo, List.of(repo));
@@ -96,7 +96,7 @@ class WorktreeSetupTest {
         NewTask request = NewTask.builder("ABC-1", "repo").build();
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(runtime.systemKnowledgeFile(worktree)).thenReturn(worktree.resolve("AGENTS.md"));
-        when(briefing.of(any(), any(), any(), any(), any())).thenReturn("the briefing");
+        when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
         new WorktreeSetup(runtime, paths, config, briefing).fill(request, repo, List.of(repo));

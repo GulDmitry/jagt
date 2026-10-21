@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -42,6 +43,24 @@ class CycleTimeRendererTest {
         String out = new CycleTimeRenderer().render(tasks, NOW);
 
         assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow()).endsWith("2");
+    }
+
+    @Test
+    void countsUnderByYouOnlyTheMovesAHumanMadeOnTheTask() {
+        Map<String, TaskState> tasks = Map.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, NOW - 9 * HOUR, ActionOrigin.BOARD),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, NOW - 8 * HOUR, ActionOrigin.MCP),
+                        new StatusChange(TaskStatus.IN_PROGRESS, NOW - 7 * HOUR, ActionOrigin.BOARD),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, NOW - 6 * HOUR, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, ActionOrigin.PALETTE)))
+                .build());
+
+        String out = new CycleTimeRenderer().render(tasks, NOW);
+
+        assertThat(out).contains("BY YOU");
+        assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
+                .containsPattern("\\s3\\s+\\d+$");
+        assertThat(out).contains("by you counts the moves a human made on the task");
     }
 
     @Test

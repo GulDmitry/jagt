@@ -53,6 +53,7 @@ and the palette's verb list. A launch creating no task is refused.
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`
 - **THEN** `stats` splits each open task's time: human, agent, host
+- **AND** `stats` counts per task the moves a human made, `BY YOU`
 - **AND** `stats` adds a `COLD` column, starts that read no cache as `3/40`, `?` where usage has no cache field
 - **AND** `master` the Master's verdicts the human overrode: passed then reverted or never deployed, failed then
   deployed

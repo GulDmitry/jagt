@@ -100,6 +100,10 @@ line in `master-review.md`. Its findings SHALL go back to the session, in any mo
 - **WHEN** findings are only unguarded, noise or an unproven premise
 - **THEN** the round is ready
 
+#### Scenario: A bug test red for another reason
+- **WHEN** a bug fix's test fails before the fix, but not with the signal the report names
+- **THEN** it is wrong, and the round is not ready
+
 #### Scenario: A glossary nit
 - **WHEN** a reader finds only a term used against the glossary
 - **THEN** it is noise and the round is ready

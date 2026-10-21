@@ -62,6 +62,8 @@ orchestrator:
     # visualize:          # a session sketches a task worth a picture in task_visual.md: ASCII for a screen, Mermaid
     #                     # for the backend; the board's Files tab shows it
     #   enabled: false
+    # diagnose:           # a session diagnoses a bug from facts and a control before it reads code for a cause
+    #   enabled: false
 
   claude:
     command: claude       # also used by the headless reads, which stay Claude whichever agent runs the tasks

@@ -49,7 +49,8 @@ public class WorktreeSetup {
                 configService.load().worktree().copyGlobsOrDefault());
         WorktreeFiles.write(systemKnowledge, briefing.of(request, repo, repos,
                 configService.load().agent().autoplanOrDefault(),
-                configService.load().agent().visualizeOrDefault()));
+                configService.load().agent().visualizeOrDefault(),
+                configService.load().agent().diagnoseOrDefault()));
         // The instructions live where the session reads them, and a relay writes to that same one worktree.
         if (repo.primary() && request.instructions() != null && !request.instructions().isBlank()) {
             WorktreeFiles.write(worktreePath.resolve(Artifact.CONTEXT.fileName()), request.instructions());

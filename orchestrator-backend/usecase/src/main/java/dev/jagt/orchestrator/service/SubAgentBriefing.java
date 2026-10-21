@@ -20,7 +20,8 @@ public class SubAgentBriefing {
 
     public String of(NewTask request, NewRepo repo, List<NewRepo> repos,
                      ConfigService.ConfigFile.AutoplanConfig autoplan,
-                     ConfigService.ConfigFile.VisualizeConfig visualize) {
+                     ConfigService.ConfigFile.VisualizeConfig visualize,
+                     ConfigService.ConfigFile.DiagnoseConfig diagnose) {
         String taskId = request.taskId();
         return prompts.subAgentContext().formatted(
                 taskId,
@@ -29,6 +30,7 @@ public class SubAgentBriefing {
                 alsoYours(repo, repos),
                 autoplanSentence(autoplan),
                 visualizeSentence(visualize),
+                diagnoseSentence(diagnose),
                 taskId, baseBranches(repos), deployBranches(repos));
     }
 
@@ -49,6 +51,17 @@ public class SubAgentBriefing {
                 + "` in the worktree before your first edit. A frontend change gets an ASCII sketch of each screen,"
                 + " one fenced block per screen. A backend change gets Mermaid (class, sequence or ER diagram, in a"
                 + " mermaid fence) and markdown tables. Pictures over prose."
+                : "";
+    }
+
+    private static String diagnoseSentence(ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+        return diagnose.enabledOrDefault()
+                ? " DIAGNOSE: a bug is diagnosed from facts before code. Gather the report's evidence (error, logs,"
+                + " profile, versions) and a control: the same case working, or failing louder for a known cause."
+                + " A signal is what the broken case shows and the control does not. A cause stands only when it fits"
+                + " every fact, each cited; when none fits, re-check a fact, then split, merge or combine causes, then"
+                + " read one layer down (logs, network, process, kernel). A repro counts only when it shows the"
+                + " report's signal."
                 : "";
     }
 

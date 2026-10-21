@@ -143,6 +143,8 @@ Each line names one thing jagt does and links to the requirement that defines it
   [spec](../openspec/specs/session-brief/spec.md#requirement-autoplan)
 - **Visualize** — A session sketches a task worth a picture before its first edit. Key: `orchestrator.agent.visualize.enabled`, off by default.
   [spec](../openspec/specs/session-brief/spec.md#requirement-visualize)
+- **Diagnose** — A session diagnoses a bug from facts and a control before code. Key: `orchestrator.agent.diagnose.enabled`, off by default.
+  [spec](../openspec/specs/session-brief/spec.md#requirement-diagnose)
 
 ## Spec changes
 [spec](../openspec/specs/spec-changes/spec.md)

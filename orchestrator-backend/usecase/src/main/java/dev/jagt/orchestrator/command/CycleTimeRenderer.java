@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.Owner;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import org.springframework.stereotype.Component;
 
@@ -17,10 +19,10 @@ import java.util.Map;
 public class CycleTimeRenderer {
 
     static final int TASK_W = 18;
-    private static final String ROW = "%-" + TASK_W + "s %7s %7s %9s %7s %7s%n";
+    private static final String ROW = "%-" + TASK_W + "s %7s %7s %9s %7s %7s %7s%n";
 
-    private record Clock(String taskId, long age, long onYou, long onAgent, long onCi, int rounds,
-                         boolean partial) {
+    private record Clock(String taskId, long age, long onYou, long onAgent, long onCi, int byYou,
+                         int rounds, boolean partial) {
 
         long held() {
             return onYou + onAgent + onCi;
@@ -44,26 +46,28 @@ public class CycleTimeRenderer {
         if (clocks.isEmpty()) {
             return out.append("(no task has a status history yet)\n").toString();
         }
-        out.append(String.format(ROW, "TASK", "AGE", "ON YOU", "ON AGENT", "ON CI", "ROUNDS"));
-        clocks.forEach(clock -> out.append(row(clock, clock.taskId(), String.valueOf(clock.rounds()))));
+        out.append(String.format(ROW, "TASK", "AGE", "ON YOU", "ON AGENT", "ON CI", "BY YOU", "ROUNDS"));
+        clocks.forEach(clock -> out.append(row(clock, clock.taskId())));
 
         Clock all = summed(clocks);
-        out.append('\n').append(row(all, "all tasks", String.valueOf(all.rounds())));
+        out.append('\n').append(row(all, "all tasks"));
 
         return out.append('\n').append(slowestStep(all))
                 .append(String.format(Locale.ROOT, "a round is one trip out for review — the ship that pushed"
                                 + " it, and the verdict that came back; %.1f per task.%n",
                         all.rounds() / (double) clocks.size()))
+                .append("by you counts the moves a human made on the task; fewer is a task the agents and the Master"
+                        + " carried.\n")
                 .append(all.partial() ? "a + marks a task whose oldest steps have aged out of its history,"
                         + " so its age and rounds are floors.\n" : "")
                 .toString();
     }
 
-    private static String row(Clock clock, String label, String rounds) {
+    private static String row(Clock clock, String label) {
         return String.format(ROW, label,
                 clock.floor(DurationFormat.compact(clock.age())), DurationFormat.compact(clock.onYou()),
                 DurationFormat.compact(clock.onAgent()), DurationFormat.compact(clock.onCi()),
-                clock.floor(rounds));
+                clock.floor(String.valueOf(clock.byYou())), clock.floor(String.valueOf(clock.rounds())));
     }
 
     private static String slowestStep(Clock all) {
@@ -79,17 +83,24 @@ public class CycleTimeRenderer {
     }
 
     private static Clock summed(List<Clock> clocks) {
-        return clocks.stream().reduce(new Clock("all tasks", 0, 0, 0, 0, 0, false),
+        return clocks.stream().reduce(new Clock("all tasks", 0, 0, 0, 0, 0, 0, false),
                 (total, clock) -> new Clock(total.taskId(), total.age() + clock.age(),
                         total.onYou() + clock.onYou(), total.onAgent() + clock.onAgent(),
-                        total.onCi() + clock.onCi(), total.rounds() + clock.rounds(),
+                        total.onCi() + clock.onCi(), total.byYou() + clock.byYou(),
+                        total.rounds() + clock.rounds(),
                         total.partial() || clock.partial()));
+    }
+
+    private static int byYou(List<StatusChange> history) {
+        return (int) history.stream()
+                .filter(step -> step.origin() == ActionOrigin.BOARD || step.origin() == ActionOrigin.PALETTE)
+                .count();
     }
 
     private static Clock clockOf(String taskId, TaskState task, long now) {
         Map<Owner, Long> byOwner = HeldTime.byOwner(task.history(), now);
         return new Clock(taskId, Math.max(0, now - task.history().getFirst().at()),
                 byOwner.getOrDefault(Owner.YOU, 0L), byOwner.getOrDefault(Owner.AGENT, 0L),
-                byOwner.getOrDefault(Owner.CI, 0L), task.rounds(), task.historyAtCap());
+                byOwner.getOrDefault(Owner.CI, 0L), byYou(task.history()), task.rounds(), task.historyAtCap());
     }
 }
