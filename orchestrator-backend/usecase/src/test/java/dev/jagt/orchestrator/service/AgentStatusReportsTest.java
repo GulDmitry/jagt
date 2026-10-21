@@ -690,4 +690,39 @@ class AgentStatusReportsTest {
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("| tee out.log");
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
     }
+
+    @Test
+    void keepsThePollingWindowWhileTheAgentRepeatsEveryRepositorysRequest(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", "https://host/proj/mr/9", null),
+                        new TaskRepo("web", "/wt-web", "git@host:web.git", "https://host/web/mr/3", null)))
+                .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        reports.report(new AgentStatusMessage("CI_POLLING", "still waiting", null, null, Map.of("proj", "https://host/proj/mr/9", "web", "https://host/web/mr/3")), "ABC-1");
+
+        TaskState reported = state.task("ABC-1").orElseThrow();
+        assertThat(reported.mrCreatedAt()).isEqualTo(1_000L);
+        assertThat(reported.lastPolledAt()).isEqualTo(9_000L);
+    }
+
+    @Test
+    void tapsTheHumanWithTheTitleAndMessageTheAgentGaveAndSaysSo(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        String answer = reports.notifyUser("jagt", "round addressed");
+
+        ArgumentCaptor<Notification> sent = ArgumentCaptor.forClass(Notification.class);
+        verify(notifications).send(sent.capture());
+        assertThat(sent.getValue().title()).isEqualTo("jagt");
+        assertThat(sent.getValue().body()).isEqualTo("round addressed");
+        assertThat(answer).isEqualTo("Notification sent");
+    }
 }

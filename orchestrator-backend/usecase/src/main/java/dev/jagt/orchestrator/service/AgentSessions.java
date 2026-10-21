@@ -47,8 +47,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private final ConcurrentHashMap<String, Object> relayLocks = new ConcurrentHashMap<>();
     private final Set<String> draftWaits = ConcurrentHashMap.newKeySet();
 
-    public String startAgent(String taskId, @Nullable String alias, Path worktreePath, boolean planMode) {
-        return openTab(taskId, alias, worktreePath, configService.load(), planMode);
+    public void startAgent(String taskId, @Nullable String alias, Path worktreePath, boolean planMode) {
+        openTab(taskId, alias, worktreePath, configService.load(), planMode);
     }
 
     /** What provisioning wrote outside the worktree is the runtime's to undo, and only it knows what that was. */
@@ -56,8 +56,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         agentRuntime.retireWorktree(worktreePath);
     }
 
-    public int killWindows(String taskId) {
-        return sessions.killTaskWindows(agentSession(configService.load(), taskId), taskId);
+    public void killWindows(String taskId) {
+        sessions.killTaskWindows(agentSession(configService.load(), taskId), taskId);
     }
 
     /** Reserving the viewer is the default: one placed by hand should survive task cycles. */

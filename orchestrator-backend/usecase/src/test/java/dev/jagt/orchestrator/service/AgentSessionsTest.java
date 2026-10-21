@@ -463,4 +463,54 @@ class AgentSessionsTest {
         assertThat(sessions.closeViewerIfNoTasksLeft()).isTrue();
         verify(terminal).closeViewerWindow("jagt");
     }
+
+    @Test
+    void saysTheHumanIsComposingWhereTheWindowHoldsADraft() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"));
+        when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.composing("ABC-1")).isTrue();
+    }
+
+    @Test
+    void saysTheHumanIsNotComposingWhereTheWindowHoldsNoDraft() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.composing("ABC-1")).isFalse();
+    }
+
+    @Test
+    void nudgesAtOnceWhereTheScreenCannotBeReadSinceNoDraftIsKnown() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenThrow(new IllegalStateException("capture-pane failed"));
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE)).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.writeTaskContext("ABC-1", "new instructions");
+
+        assertThat(answer).contains("the agent was nudged");
+    }
+
+    @Test
+    void nudgesNothingOnceTheWindowIsGoneWhileTheHumanWasTyping() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING,
+                SessionHost.WindowState.AGENT_RUNNING, SessionHost.WindowState.MISSING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
+        when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.writeTaskContext("ABC-1", "new instructions");
+
+        verify(tmux, after(2500).never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
 }
