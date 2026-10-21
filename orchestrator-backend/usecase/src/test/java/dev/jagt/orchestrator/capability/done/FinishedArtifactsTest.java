@@ -14,6 +14,7 @@ import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.stream.IntStream;
 import java.util.zip.ZipFile;
 
@@ -33,7 +34,7 @@ class FinishedArtifactsTest {
         state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
                 .alias("a1").title("a thing").build());
 
-        new FinishedArtifacts(state, paths).keep("ABC-42");
+        new FinishedArtifacts(state, paths, Clock.systemUTC()).keep("ABC-42");
 
         Path kept = Files.list(root.resolve("artifacts")).findFirst().orElseThrow();
         assertThat(kept.getFileName().toString()).endsWith("-ABC-42");
@@ -51,7 +52,7 @@ class FinishedArtifactsTest {
         state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
                 .alias("a1").title("a thing").build());
 
-        new FinishedArtifacts(state, paths).keep("ABC-42");
+        new FinishedArtifacts(state, paths, Clock.systemUTC()).keep("ABC-42");
 
         assertThat(root.resolve("artifacts")).doesNotExist();
     }
@@ -67,7 +68,7 @@ class FinishedArtifactsTest {
         state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
                 .alias("a1").title("a thing").build());
 
-        new FinishedArtifacts(state, paths).keep("ABC-42");
+        new FinishedArtifacts(state, paths, Clock.systemUTC()).keep("ABC-42");
 
         Path kept = Files.list(root.resolve("artifacts")).findFirst().orElseThrow();
         assertThat(kept.resolve("plan.md")).doesNotExist();
@@ -93,7 +94,7 @@ class FinishedArtifactsTest {
         state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
                 .alias("a1").title("a thing").build());
 
-        new FinishedArtifacts(state, paths).keep("ABC-42");
+        new FinishedArtifacts(state, paths, Clock.systemUTC()).keep("ABC-42");
 
         Path archive = Files.list(root.resolve("artifacts"))
                 .filter(path -> path.toString().endsWith(".zip")).findFirst().orElseThrow();
@@ -119,7 +120,7 @@ class FinishedArtifactsTest {
         state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
                 .alias("a1").title("a thing").build());
 
-        new FinishedArtifacts(state, paths).keep("ABC-42");
+        new FinishedArtifacts(state, paths, Clock.systemUTC()).keep("ABC-42");
 
         Path kept = Files.list(root.resolve("artifacts")).findFirst().orElseThrow();
         assertThat(kept.resolve("plan.md")).hasSize(10L * 1024 * 1024);
@@ -145,7 +146,7 @@ class FinishedArtifactsTest {
         state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
                 .alias("a1").title("a thing").build());
 
-        new FinishedArtifacts(state, paths).keep("ABC-42");
+        new FinishedArtifacts(state, paths, Clock.systemUTC()).keep("ABC-42");
 
         assertThat(Files.list(root.resolve("artifacts")).filter(path -> path.toString().endsWith(".zip")).count())
                 .isEqualTo(1);

@@ -21,10 +21,15 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -433,5 +438,78 @@ class AutoReviewSchedulerTest {
                 mock(Notifications.class), Runnable::run), mock(Notifications.class), clock).run();
 
         assertThat(state.task("ABC-1").orElseThrow().lastPolledAt()).isEqualTo(1_000_000_000_000L);
+    }
+
+    @Test
+    void doesNotCountASubmissionTheExecutorRejectedAsAnUnattendedStart(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        Executor rejecting = work -> {
+            throw new RejectedExecutionException("pool closed");
+        };
+        Notifications notifications = mock(Notifications.class);
+
+        new AutoReviewScheduler(state, config, new AutoReviewPolls(mock(ReviewSweepService.class), notifications,
+                rejecting), notifications, Clock.systemUTC()).run();
+
+        verify(config, never()).startTaken();
+    }
+
+    @Test
+    void submitsATaskOnceWhileItsEarlierPollIsStillRunning(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        List<Runnable> queued = new ArrayList<>();
+        Notifications notifications = mock(Notifications.class);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, new AutoReviewPolls(
+                mock(ReviewSweepService.class), notifications, queued::add), notifications, Clock.systemUTC());
+
+        scheduler.run();
+        scheduler.run();
+
+        assertThat(queued).hasSize(1);
+        verify(config, times(1)).startTaken();
+    }
+
+    @Test
+    void tapsAgainForAnUnreadableRoundWhoseTaskWasRetiredAndCameBack(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build();
+        state.putTask("ABC-1", polling);
+        ReviewSweepService sweep = mock(ReviewSweepService.class);
+        when(sweep.sweep("ABC-1")).thenReturn(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(sweep, notifications, Runnable::run), notifications, Clock.systemUTC());
+        scheduler.run();
+
+        state.removeTask("ABC-1");
+        scheduler.run();
+        state.putTask("ABC-1", polling);
+        scheduler.run();
+
+        verify(notifications, times(2)).send(argThat(sent -> sent.body().contains("read failed")));
     }
 }
