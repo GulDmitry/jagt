@@ -72,8 +72,7 @@ public class MasterReviewJob implements Job {
         boolean questionsAnswered = config.may(MasterRight.ANSWER);
         // Asked LAST: a round holds this thread until every role answered, and verdicts already written go first.
         stateService.tasks().entrySet().stream()
-                .filter(entry -> reviewable(entry.getValue(), read.computeIfAbsent(entry.getKey(),
-                        taskId -> reviews.of(entry.getValue()))
+                .filter(entry -> reviewable(entry.getValue(), read.getOrDefault(entry.getKey(), Optional.empty())
                         .filter(written -> written.answers(entry.getValue())).isPresent(), questionsAnswered))
                 .findFirst()
                 .ifPresent(entry -> ask(entry.getKey(), entry.getValue(), config));

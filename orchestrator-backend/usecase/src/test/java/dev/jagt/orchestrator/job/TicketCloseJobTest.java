@@ -175,7 +175,7 @@ class TicketCloseJobTest {
     }
 
     @Test
-    void asksAMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLong(@TempDir Path root) {
+    void asksAMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLongThenAfterFourTimes(@TempDir Path root) {
         StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
@@ -193,6 +193,8 @@ class TicketCloseJobTest {
         clock.minutes(19);
         job.run();
         clock.minutes(1);
+        job.run();
+        clock.minutes(10);
         job.run();
 
         verify(close, times(3)).closes("ABC-42", task);

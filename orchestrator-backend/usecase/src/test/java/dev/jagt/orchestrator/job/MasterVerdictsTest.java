@@ -484,4 +484,20 @@ class MasterVerdictsTest {
 
         assertThat(moved).isFalse();
     }
+
+    @Test
+    void startsNothingOnAPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+        state.putTask("ABC-1", planned);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
+
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+                acting);
+
+        assertThat(moved).isFalse();
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+    }
 }
