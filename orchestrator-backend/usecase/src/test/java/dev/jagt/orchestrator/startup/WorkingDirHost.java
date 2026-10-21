@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.port.Host;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 record WorkingDirHost(Path workingDir) implements Host {
@@ -34,6 +35,11 @@ record WorkingDirHost(Path workingDir) implements Host {
 
     @Override
     public Optional<Path> jar() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Path> applicationDirs() {
         throw new UnsupportedOperationException();
     }
 }
