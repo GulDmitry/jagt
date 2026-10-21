@@ -97,4 +97,17 @@ class UsageLedgerTest {
         assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl")))
                 .contains("{\"period\":\"2026-09-01\",\"kind\":\"GONE_KIND\"}").hasSize(2);
     }
+
+    @Test
+    void dropsABlankLineInsteadOfKeepingItAsOneItCannotRead(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("usage-by-day.jsonl"), "\n\n");
+        UsageLedger ledger = new UsageLedger(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())),
+                Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
+
+        ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(1_000, 0, 10, 0.01));
+
+        assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl"))).singleElement().asString()
+                .contains("\"kind\":\"MASTER_REVIEW\"");
+    }
 }

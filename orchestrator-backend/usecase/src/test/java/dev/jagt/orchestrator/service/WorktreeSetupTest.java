@@ -16,6 +16,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class WorktreeSetupTest {
@@ -80,5 +81,30 @@ class WorktreeSetupTest {
         new WorktreeSetup(runtime, paths, config, briefing).fill(request, repo, List.of(repo));
 
         assertThat(worktree.resolve("task_context.md")).doesNotExist();
+    }
+
+    @Test
+    void equipsAFreshWorktreeWithTheProjectsUntrackedFilesAndTheGuardsThatKeepItSafe(@TempDir Path root)
+            throws Exception {
+        Path project = Files.createDirectories(root.resolve("repo"));
+        Files.writeString(Files.createDirectories(project.resolve(".vscode")).resolve("settings.json"), "{}");
+        Files.writeString(Files.createDirectories(project.resolve("app")).resolve(".env"), "KEY=1");
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
+        Path gitDir = Files.createDirectories(project.resolve(".git"));
+        NewRepo repo = new NewRepo("repo", new ProjectConfig(project.toString(), "origin/main", null, List.of()),
+                project, worktree, gitDir, "origin/main", "git@host:g/r.git", true);
+        NewTask request = NewTask.builder("ABC-1", "repo").build();
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(runtime.systemKnowledgeFile(worktree)).thenReturn(worktree.resolve("AGENTS.md"));
+        when(briefing.of(any(), any(), any(), any(), any())).thenReturn("the briefing");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+        new WorktreeSetup(runtime, paths, config, briefing).fill(request, repo, List.of(repo));
+
+        assertThat(worktree.resolve(".vscode/settings.json")).hasContent("{}");
+        assertThat(worktree.resolve("app/.env")).hasContent("KEY=1");
+        assertThat(worktree.resolve(".jagt/hooks/pre-push")).exists();
+        assertThat(gitDir.resolve("info/exclude")).content().contains("task_context.md");
+        verify(runtime).provisionWorktree(any());
     }
 }

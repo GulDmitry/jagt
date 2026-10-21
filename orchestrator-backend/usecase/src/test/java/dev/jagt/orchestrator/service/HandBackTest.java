@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import java.time.Clock;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.task.TaskState;
@@ -70,5 +71,28 @@ class HandBackTest {
         HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
         assertThat(handBack.masterReads()).isEqualTo(expected);
+    }
+
+    @Test
+    void readsNoProbesAndFindsNoFaultWhereTheSessionPutUpNoPlanFile(@TempDir Path worktree) {
+        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+
+        PlanProbes.Read read = handBack.planProbes(TaskState.builder("proj", worktree.toString(),
+                TaskStatus.PLAN_PENDING).build());
+
+        assertThat(read.probes()).isEmpty();
+        assertThat(read.violations()).isEmpty();
+    }
+
+    @Test
+    void refusesAPlanFileJagtCannotRead(@TempDir Path worktree) throws IOException {
+        Path plan = Files.writeString(worktree.resolve("plan.md"), "1. tag v1");
+        assertThat(plan.toFile().setReadable(false)).isTrue();
+        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+
+        PlanProbes.Read read = handBack.planProbes(TaskState.builder("proj", worktree.toString(),
+                TaskStatus.PLAN_PENDING).build());
+
+        assertThat(read.violations()).singleElement().asString().contains("jagt could not read it");
     }
 }
