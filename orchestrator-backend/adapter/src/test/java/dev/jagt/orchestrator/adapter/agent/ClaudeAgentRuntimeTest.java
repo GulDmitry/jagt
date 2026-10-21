@@ -71,7 +71,8 @@ class ClaudeAgentRuntimeTest {
         Path worktree = Files.createDirectories(root.resolve("ABC-7-proj"));
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
         String key = worktree.toRealPath().toString();
 
         runtime.provisionWorktree(AgentWorktree.of(worktree, root));

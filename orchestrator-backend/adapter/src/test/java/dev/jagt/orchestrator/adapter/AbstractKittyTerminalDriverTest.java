@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 
@@ -67,7 +68,7 @@ class AbstractKittyTerminalDriverTest {
     void opensATabInTheViewerInstanceListeningOnTheSessionsOwnSocket() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(isNull(), any(Duration.class), any())).thenReturn(new Processes.Result(0, "", ""));
-        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true).withTmuxCommand("tmux"), "kitty", "") {
+        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true).withTmuxCommand("tmux"), new KittyOptions("kitty", ""), Clock.systemUTC()) {
             @Override
             protected List<String> platformOptions() {
                 return List.of();
