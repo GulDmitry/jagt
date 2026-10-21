@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BoardBannerTest {
 
     @Test
-    @ResourceLock(Resources.SYSTEM_OUT)
+    @ResourceLock(Resources.GLOBAL)
     void tellsTheHumanWhereTheBoardListens(CapturedOutput output) {
         new BoardBanner("8290").run(null);
 

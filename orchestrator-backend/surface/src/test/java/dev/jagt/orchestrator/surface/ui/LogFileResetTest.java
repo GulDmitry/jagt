@@ -97,7 +97,7 @@ class LogFileResetTest {
     }
 
     @Test
-    @ResourceLock(Resources.SYSTEM_ERR)
+    @ResourceLock(Resources.GLOBAL)
     void tellsTheHumanWhichLogItCouldNotClearAndStillStarts(@TempDir Path root, CapturedOutput output)
             throws IOException {
         Path stuck = Files.createDirectories(root.resolve("jagt.log"));
