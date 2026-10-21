@@ -28,10 +28,6 @@ public enum Phase {
         this.label = label;
     }
 
-    public String label() {
-        return label;
-    }
-
     public static List<Choice> choices() {
         return Arrays.stream(values()).map(phase -> new Choice(phase.name(), phase.label)).toList();
     }
