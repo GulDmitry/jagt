@@ -51,12 +51,13 @@ class TokenUsageTest {
     @Test
     void addsUpCostAndStartCountsOfRepeatedCalls() {
         TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0.25).asStart()
-                .plus(TokenUsage.ofCall(500, 9_000, 10, 0.5).asStart());
+                .plus(TokenUsage.ofCall(500, 9_000, 10, 0.5).asStart())
+                .plus(TokenUsage.ofCall(500, 0, 10, 0.25).asStart());
 
-        assertThat(total.costUsd()).isEqualTo(0.75);
-        assertThat(total.coldStarts()).isEqualTo(1);
+        assertThat(total.costUsd()).isEqualTo(1.0);
+        assertThat(total.coldStarts()).isEqualTo(2);
         assertThat(total.warmStarts()).isEqualTo(1);
-        assertThat(total.measuredStarts()).isEqualTo(2);
+        assertThat(total.measuredStarts()).isEqualTo(3);
     }
 
     @Test

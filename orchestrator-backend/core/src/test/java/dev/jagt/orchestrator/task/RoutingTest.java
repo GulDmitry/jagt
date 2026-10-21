@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,5 +69,15 @@ class RoutingTest {
 
         assertThat(pair.kept()).isEqualTo("labels carry it");
         assertThat(pair.duplicate()).isEmpty();
+    }
+
+    @Test
+    void carriesTheEvidenceItWasGiven() {
+        RoutingQuestion question = RoutingQuestion.defaults().withSuggested(List.of("api"))
+                .withPrecedents(List.of("ABC-1 went to api")).withRules(List.of("billing goes to api"));
+
+        assertThat(question.suggested()).containsExactly("api");
+        assertThat(question.precedents()).containsExactly("ABC-1 went to api");
+        assertThat(question.rules()).containsExactly("billing goes to api");
     }
 }

@@ -99,6 +99,25 @@ class FinishedTaskTest {
     }
 
     @Test
+    void measuresAgainstTheFirstDeployEvenWhenThatWasTheVeryFirstStep() {
+        var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE)
+                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, 2L, null),
+                        new StatusChange(TaskStatus.DEPLOYED, 3L, null))).build(), 4L);
+
+        assertThat(task.judgedBefore(TaskStatus.DEPLOYED)).isFalse();
+    }
+
+    @Test
+    void countsNoJudgementBeforeTheReviewRoundItself() {
+        var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE)
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1L, null),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, 2L, null))).build(), 3L);
+
+        assertThat(task.judgedBefore(TaskStatus.REVIEW_PENDING)).isFalse();
+    }
+
+    @Test
     void countsADeployAsNeverJudgedWhenNoReviewEverCameBack() {
         var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE)
                 .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null))).build(), 2L);

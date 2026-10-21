@@ -104,4 +104,13 @@ class PlanProbesTest {
         assertThat(read.violations()).isEmpty();
         assertThat(read.probes()).hasSize(10);
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ref main", "ref main2", "command echo 'a' \"b\" c", "command echo 'a' \"b\""})
+    void readsALineWhateverItsLengthSoLongAsItsQuotesAreClosed(String line) {
+        PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
+
+        assertThat(read.violations()).isEmpty();
+        assertThat(read.probes()).hasSize(1);
+    }
 }
