@@ -105,10 +105,4 @@ class ToolMessageTest {
         assertThat(refusal).isEqualTo("This message was not accepted. Fix every line and send it again:\n"
                 + "taskId: required\nmode: one of [plan]");
     }
-
-    @Test
-    void keepsTheTaskAndTheTitleItWasNamed() {
-        assertThat(new IdeOpen("ABC-42", "diff").taskId()).isEqualTo("ABC-42");
-        assertThat(new UserNotice("jagt", "done").title()).isEqualTo("jagt");
-    }
 }

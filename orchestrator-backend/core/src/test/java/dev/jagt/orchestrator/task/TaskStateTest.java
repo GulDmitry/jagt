@@ -459,15 +459,6 @@ class TaskStateTest {
     }
 
     @Test
-    void buildsATaskWhoseFirstRepositoryAlreadyHoldsItsRemote() {
-        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
-                TaskStatus.IN_PROGRESS).remoteUrl("git@host:g/php.git").build();
-
-        assertThat(task.remoteUrl()).isEqualTo("git@host:g/php.git");
-        assertThat(task.repo("java").orElseThrow().remoteUrl()).isNull();
-    }
-
-    @Test
     void startsTheHistoryOfATaskCreatedWithoutAnActivityStampAtTheClock() {
         TaskState created = TaskState.builder("proj", "/wt", TaskStatus.NEW).lastActiveTimestamp(0).build();
 

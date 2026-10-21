@@ -506,10 +506,6 @@ public record TaskState(
             return this;
         }
 
-        public Builder remoteUrl(@Nullable String remoteUrl) {
-            return firstRepo(repo -> repo.withRemoteUrl(remoteUrl));
-        }
-
         public Builder title(@Nullable String title) {
             this.title = title;
             return this;

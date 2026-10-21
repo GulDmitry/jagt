@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.task;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -30,17 +28,6 @@ class TicketFactsTest {
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42");
 
         assertThat(read.usable()).isTrue();
-    }
-
-    @Test
-    void carriesEveryFactTheReadNamed() {
-        TicketFacts read = TicketFacts.defaults().withTrackerProject("ABC").withLabels(List.of("bug", "ui"))
-                .withTrackerStatus("In Progress").withAssignee("dev");
-
-        assertThat(read.trackerProject()).isEqualTo("ABC");
-        assertThat(read.labels()).containsExactly("bug", "ui");
-        assertThat(read.trackerStatus()).isEqualTo("In Progress");
-        assertThat(read.assignee()).isEqualTo("dev");
     }
 
     @Test

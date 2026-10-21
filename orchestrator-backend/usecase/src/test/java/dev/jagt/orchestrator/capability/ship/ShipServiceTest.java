@@ -55,7 +55,7 @@ class ShipServiceTest {
     @Test
     void handsTheShipToTheAgentAndWaitsForTheRequestItOpens() {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git")
+                TaskStatus.REVIEW_PENDING)
                 .title("Widget layout is off").build());
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
@@ -69,7 +69,7 @@ class ShipServiceTest {
     @Test
     void namesTheTasksOwnBaseBranchAsWhatTheRequestMergesIntoWhenItHasOne() {
         stateService.putTask("ABC-7", TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t")
+                TaskStatus.REVIEW_PENDING).title("t")
                 .baseBranch("feature/parent").build());
 
         new ShipService(stateService, configService, sessions, changes).ship("ABC-7");
@@ -115,7 +115,7 @@ class ShipServiceTest {
     @Test
     void shipsNothingWhenNoRepositoryOfTheTaskHoldsWork() {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
+                TaskStatus.REVIEW_PENDING).title("t").build());
         when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
@@ -142,7 +142,7 @@ class ShipServiceTest {
     @Test
     void refusesASecondShipWhileTheFirstIsStillRunning() {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
+                TaskStatus.REVIEW_PENDING).title("t").build());
         ShipService shipService = new ShipService(stateService, configService, sessions, changes);
         AtomicReference<Outcome> reentrant = new AtomicReference<>();
         doAnswer(call -> {
@@ -228,7 +228,7 @@ class ShipServiceTest {
     @Test
     void speaksOfOneRequestWhereOnlyOneRepositoryCarriesWork() {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
+                TaskStatus.REVIEW_PENDING).title("t").build());
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
 
@@ -250,7 +250,7 @@ class ShipServiceTest {
     @Test
     void saysTheRepliesAreTheHumansToPostWherePostingWasTurnedOff() {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
+                TaskStatus.REVIEW_PENDING).title("t").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
                 .withCodeReview(ConfigService.ConfigFile.CodeReviewConfig.defaults().withPostReviewReplies(false)));
