@@ -59,7 +59,7 @@ public class CycleTimeRenderer {
                 .append("by you counts the moves a human made on the task; fewer is a task the agents and the Master"
                         + " carried.\n")
                 .append(all.partial() ? "a + marks a task whose oldest steps have aged out of its history,"
-                        + " so its age and rounds are floors.\n" : "")
+                        + " so its age, by you and rounds are floors.\n" : "")
                 .toString();
     }
 
