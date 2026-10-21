@@ -63,6 +63,21 @@ class BoardAssetsTest {
         assertThat(sources).isNotEmpty().noneMatch(source -> LOADED_FROM_OUTSIDE.matcher(read(source)).find());
     }
 
+    @Test
+    void noBoardScriptFormatsATimeInTheBrowsersLocaleOrZone() throws IOException {
+        List<Path> scripts;
+        try (Stream<Path> files = Files.walk(STATIC)) {
+            scripts = files.filter(Files::isRegularFile)
+                    .filter(path -> path.toString().matches(".*\\.m?js$"))
+                    .filter(path -> !path.startsWith(STATIC.resolve("vendor"))).toList();
+        }
+
+        assertThat(scripts).isNotEmpty()
+                .noneMatch(script -> read(script).contains("toLocale"))
+                .noneMatch(script -> read(script).contains("Intl.DateTimeFormat")
+                        && !read(script).contains("timeZone: 'UTC'"));
+    }
+
     private static long size(Path path) {
         try {
             return Files.size(path);

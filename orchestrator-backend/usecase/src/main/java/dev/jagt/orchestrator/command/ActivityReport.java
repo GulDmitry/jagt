@@ -14,7 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ public class ActivityReport {
     private static final int MAX_ENTRIES = 40;
     private static final int MAX_MESSAGE = 110;
     private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
-            .withZone(ZoneId.systemDefault());
+            .withZone(ZoneOffset.UTC);
 
     private final String logFile;
     private final JsonMapper json;

@@ -5,14 +5,13 @@ import {reportParts} from '../core/format.js';
 import {html} from './html.js';
 import {Report} from './Report.js';
 import {draw} from '../ui/mermaid.js';
+import {dayAndMinutes, minutes, sameDay} from '../core/time.js';
 
 export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'session', label: 'Session'},
   {id: 'round', label: 'Review round'}, {id: 'files', label: 'Files'}];
 
 // Today's steps by the clock alone; an older one by its day too.
-const when = (at, now) => (new Date(at).toDateString() === new Date(now).toDateString()
-  ? new Date(at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
-  : new Date(at).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}));
+const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
 
 const History = ({task, now}) => html`<section class="history" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
   <h2 class="group-head">status history</h2>

@@ -15,6 +15,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
@@ -60,7 +61,7 @@ public class FinishedArtifacts {
     }
 
     private void copy(String taskId, Path worktree) {
-        Path into = store.resolve(LocalDate.now().format(DAY) + "-" + TaskName.slug(taskId));
+        Path into = store.resolve(LocalDate.now(ZoneOffset.UTC).format(DAY) + "-" + TaskName.slug(taskId));
         try {
             for (String name : Artifact.fileNames()) {
                 Path artifact = worktree.resolve(name);
@@ -94,7 +95,7 @@ public class FinishedArtifacts {
             return;
         }
         List<Path> older = tasks.subList(0, tasks.size() / 2);
-        Path archive = store.resolve(ARCHIVE_PREFIX + LocalDateTime.now().format(STAMP) + ".zip");
+        Path archive = store.resolve(ARCHIVE_PREFIX + LocalDateTime.now(ZoneOffset.UTC).format(STAMP) + ".zip");
         try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(archive, StandardOpenOption.CREATE_NEW))) {
             for (Path task : older) {
                 zipInto(zip, task);

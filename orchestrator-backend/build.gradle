@@ -154,7 +154,7 @@ configure(allprojects - project(':')) {
         threads = Runtime.runtime.availableProcessors()
         outputFormats = ['HTML', 'XML']
         timestampedReports = false
-        jvmArgs = ['-Xshare:off', '-Duser.language=tr']
+        jvmArgs = ['-Xshare:off', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC']
     }
 
     tasks.named('pitest') { forkedTestEnv(it) }
@@ -177,8 +177,9 @@ allprojects {
         systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
         // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
         systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
-        // Turkish lowercases I to a dotless ı: a case change on the default locale fails here, not on a user's machine.
-        systemProperty 'user.language', 'tr'
+        systemProperty 'user.language', 'en'
+        systemProperty 'user.country', 'US'
+        systemProperty 'user.timezone', 'UTC'
     }
 }
 

@@ -76,6 +76,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - **A test wiring over 3 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
   seam in `main` that only tests call (`ProductionConstructorTest`).
+- **English and UTC only, set in `main`**: no code reads the machine's locale or zone (`EnglishAndUtcTest`, `BoardAssetsTest`).
 - **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsTest`).
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring and no Lombok.
 - **The board has no build step, no CDN and no external asset** ([`docs/rules/design.md`](docs/rules/design.md)).

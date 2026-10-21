@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Stream;
@@ -121,7 +122,7 @@ public class FinishedTasks {
     private void packOlderHalf() throws IOException {
         List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
         int kept = lines.size() / 2;
-        Path archive = file.resolveSibling("finished-" + LocalDateTime.now().format(STAMP) + ".jsonl.gz");
+        Path archive = file.resolveSibling("finished-" + LocalDateTime.now(ZoneOffset.UTC).format(STAMP) + ".jsonl.gz");
         try (Writer out = new OutputStreamWriter(new GZIPOutputStream(Files.newOutputStream(archive,
                 StandardOpenOption.CREATE_NEW)), StandardCharsets.UTF_8)) {
             out.write(String.join("\n", lines.subList(0, lines.size() - kept)) + "\n");

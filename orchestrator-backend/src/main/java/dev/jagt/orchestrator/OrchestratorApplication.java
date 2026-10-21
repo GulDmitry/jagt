@@ -9,6 +9,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.time.ZoneOffset;
+import java.util.Locale;
+import java.util.TimeZone;
+
 @SpringBootApplication
 @EnableScheduling
 @ConfigurationPropertiesScan
@@ -17,6 +21,8 @@ public class OrchestratorApplication {
     // A NoClassDefFoundError while a startup failure renders means the jar was rewritten in place under a
     // running JVM, not a class that needs preloading.
     public static void main(String[] args) {
+        Locale.setDefault(Locale.ENGLISH);
+        TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.UTC));
         try {
             application().run(withConfigFile(args));
         } catch (RuntimeException | Error failure) {

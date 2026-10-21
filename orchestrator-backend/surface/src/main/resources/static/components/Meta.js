@@ -2,6 +2,7 @@
 
 import {httpOnly} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
+import {full} from '../core/time.js';
 import {html} from './html.js';
 
 // The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
@@ -22,7 +23,7 @@ const classes = (...names) => names.filter(Boolean).join(' ');
 // `sole` is false for one link among several: the approval is every repository's, not one link's.
 const RequestChip = ({url, label, openedAt, task, sole, now}) => {
   const lines = [openedAt > 0
-    ? `review request; opened ${new Date(openedAt).toLocaleString()}`
+    ? `review request; opened ${full(openedAt)}`
     : 'review request; the next sweep will date it'];
   const approved = sole && task.approved;
   if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');

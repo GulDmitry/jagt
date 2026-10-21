@@ -48,7 +48,7 @@ seam (`ScriptedProcesses`) is allowed, a shared builder is not.
   human's; a launcher found nowhere fails naming the config **key**.
 - JUnit parallel, methods **and** classes: no `@BeforeAll`, no mutable statics, every file under a `@TempDir`;
   anything competing for a **machine-wide** resource declares it (`@ResourceLock("loopback-ports")` +
-  `@Execution(SAME_THREAD)`). Only this suite is parallel; it runs in Turkish, so case changes take `Locale.ROOT`.
+  `@Execution(SAME_THREAD)`). Only this suite is parallel; it runs in English and UTC, as production does.
 - **A test that asserts on a log line takes `@ResourceLock(Resources.GLOBAL)`**: else its appender captures a
   concurrent test's events and the `Logger` cast races SLF4J's start-up.
 

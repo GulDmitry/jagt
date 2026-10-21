@@ -99,6 +99,8 @@ Each line names one thing jagt does and links to the requirement that defines it
 
 - **Keep awake** — The machine stays awake while the Master acts, polls run or tasks are being taken. Key: `orchestrator.keepAwake`, off by default.
   [spec](../openspec/specs/platform/spec.md#requirement-the-machine-stays-awake-only-when-asked)
+- **English and UTC** — Every time on the board and in a report is UTC and every text English, whatever the machine's or browser's locale.
+  [spec](../openspec/specs/platform/spec.md#requirement-jagt-shows-every-time-in-utc-and-every-text-in-english)
 
 ## Protocol
 [spec](../openspec/specs/protocol/spec.md)

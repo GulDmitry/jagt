@@ -51,6 +51,8 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
+- **English and UTC only**, set in `main` ([0055](../decisions/0055-jagt-speaks-english-and-keeps-utc.md)):
+  `EnglishAndUtcTest` and `BoardAssetsTest` fail a call that reads the machine's or the browser's locale or zone.
 - **Lombok carries the mechanical boilerplate and nothing else**: `@RequiredArgsConstructor`, `@Slf4j`,
   `@With` for a record's positional copy-withers (`@With` and `@Builder` work on records).
   By hand when not mechanical: `OrchestratorPaths`' validating constructor, `TaskState.withStatus` stamping history,

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Locale;
@@ -36,7 +37,7 @@ public class UsageStatsRenderer {
     private final UsageLimits limits;
 
     public String render(Map<String, TaskState> tasks) {
-        StringBuilder out = new StringBuilder(limits(limits.last(), ZoneId.systemDefault()))
+        StringBuilder out = new StringBuilder(limits(limits.last(), ZoneOffset.UTC))
                 .append("token spend — jagt's own reads, then what the agent sessions burned\n\n");
         out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD", "COLD"));
 
