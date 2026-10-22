@@ -72,3 +72,5 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0054 Artifacts on the board](0054-a-tasks-artifacts-are-read-on-the-board.md)
 - [0055 English and UTC](0055-jagt-speaks-english-and-keeps-utc.md)
 - [0056 A report changes nothing](0056-a-report-to-jagt-changes-nothing.md)
+- [0057 Edit tools write where the shell may](0057-the-edit-tools-write-where-the-shell-may.md)
+- [0058 A test never reaches the terminal](0058-a-test-never-reaches-the-developers-terminal.md)
