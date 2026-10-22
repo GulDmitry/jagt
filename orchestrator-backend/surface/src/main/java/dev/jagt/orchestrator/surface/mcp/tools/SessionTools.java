@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.surface.mcp.Audience;
+import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -23,24 +24,24 @@ public class SessionTools implements McpTools {
 
     @Override
     public void declare(McpToolRegistry tools) {
-        tools.tool("open_task_tab", Audience.MASTER, SessionStart.SCHEMA, SessionStart.class,
+        tools.tool("open_task_tab", Audience.MASTER, Effect.CHANGES, SessionStart.SCHEMA, SessionStart.class,
                 (said, caller) -> MessageContext.NONE,
                 (said, caller) -> sessions.openTaskTab(said.taskId(), said.mode()));
 
-        tools.tool("close_task_tab", Audience.MASTER, TaskRef.schema("Close a task's tab and kill its agent"
+        tools.tool("close_task_tab", Audience.MASTER, Effect.CHANGES, TaskRef.schema("Close a task's tab and kill its agent"
                         + " session (e.g. when the task is finished). Worktree and state entry are kept: only"
                         + " the human's done retires a task."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> sessions.closeTaskTab(said.taskId()));
 
-        tools.tool("focus_task", Audience.MASTER, TaskRef.schema("Bring the task's agent window to the user's"
+        tools.tool("focus_task", Audience.MASTER, Effect.CHANGES, TaskRef.schema("Bring the task's agent window to the user's"
                         + " screen: select its tab and raise the viewer. A running session is kept; one that is"
                         + " down is re-entered, keeping what it knew where it can. Returns what the human still"
                         + " has to do to see it."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> commands.execute(said.taskId(), TaskAction.FOCUS));
 
-        tools.tool("write_task_context", Audience.MASTER, TaskInstructions.SCHEMA, TaskInstructions.class,
+        tools.tool("write_task_context", Audience.MASTER, Effect.CHANGES, TaskInstructions.SCHEMA, TaskInstructions.class,
                 (said, caller) -> MessageContext.NONE,
                 (said, caller) -> sessions.writeTaskContext(said.taskId(),
                         said.instructions()));

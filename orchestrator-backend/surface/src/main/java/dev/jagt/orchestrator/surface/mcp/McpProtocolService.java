@@ -30,7 +30,7 @@ public class McpProtocolService implements McpToolRegistry {
     /** Answered on a 401, so a client minting its header anew asks again. */
     public static final int UNKNOWN_CALLER = -32001;
 
-    private record ToolSpec(String name, Audience audience, JsonNode schema, ToolHandler handler) {
+    private record ToolSpec(String name, Audience audience, Effect effect, JsonNode schema, ToolHandler handler) {
     }
 
     private final ObjectMapper mapper;
@@ -45,8 +45,9 @@ public class McpProtocolService implements McpToolRegistry {
         groups.forEach(group -> group.declare(this));
     }
 
-    private void register(String name, Audience audience, String schemaJson, ToolHandler handler) {
-        if (tools.putIfAbsent(name, new ToolSpec(name, audience, mapper.readTree(schemaJson), handler)) != null) {
+    private void register(String name, Audience audience, Effect effect, String schemaJson, ToolHandler handler) {
+        if (tools.putIfAbsent(name,
+                new ToolSpec(name, audience, effect, mapper.readTree(schemaJson), handler)) != null) {
             throw new IllegalStateException("Two MCP tool groups both declare '" + name + "'");
         }
     }
@@ -128,6 +129,7 @@ public class McpProtocolService implements McpToolRegistry {
             ObjectNode tool = list.addObject();
             tool.put("name", spec.name());
             tool.put("description", spec.schema().path("description").asString(""));
+            tool.putObject("annotations").put("readOnlyHint", spec.effect() == Effect.REPORTS);
             ObjectNode schema = (ObjectNode) spec.schema().deepCopy();
             schema.remove("description");
             tool.set("inputSchema", schema);
@@ -137,10 +139,11 @@ public class McpProtocolService implements McpToolRegistry {
 
     /** The one place a message is read off the wire and judged, so no tool can be the one that forgot. */
     @Override
-    public <T extends Message> void tool(String name, Audience audience, Schema schema, Class<T> message,
-                                         BiFunction<T, @Nullable String, MessageContext> context,
+    public <T extends Message> void tool(String name, Audience audience, Effect effect, Schema schema,
+                                         Class<T> message, BiFunction<T, @Nullable String, MessageContext> context,
                                          MessageHandler<T> handler) {
-        register(name, audience, schema.json(), MessageTool.of(mapper, name, audience, message, context, handler));
+        register(name, audience, effect, schema.json(),
+                MessageTool.of(mapper, name, audience, message, context, handler));
     }
 
     private JsonNode callTool(JsonNode message, @Nullable String callerTaskId) {

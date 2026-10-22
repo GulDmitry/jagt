@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.surface.mcp.Audience;
+import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.ToolHandler;
@@ -48,8 +49,8 @@ class McpToolScopeTest {
         private final Map<String, ToolHandler> handlers = new HashMap<>();
 
         @Override
-        public <T extends Message> void tool(String name, Audience audience, Schema schema, Class<T> message,
-                                             BiFunction<T, String, MessageContext> context,
+        public <T extends Message> void tool(String name, Audience audience, Effect effect, Schema schema,
+                                             Class<T> message, BiFunction<T, String, MessageContext> context,
                                              MessageHandler<T> handler) {
             handlers.put(name, MessageTool.of(new JsonMapper(), name, audience, message, context, handler));
         }

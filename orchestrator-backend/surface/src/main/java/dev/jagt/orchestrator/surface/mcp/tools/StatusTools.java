@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.mcp.tools;
 
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.surface.mcp.Audience;
+import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;
@@ -29,13 +30,13 @@ public class StatusTools implements McpTools {
 
     @Override
     public void declare(McpToolRegistry tools) {
-        tools.tool("update_agent_status", Audience.ANYONE, AgentStatusMessage.SCHEMA, AgentStatusMessage.class,
+        tools.tool("update_agent_status", Audience.ANYONE, Effect.REPORTS, AgentStatusMessage.SCHEMA, AgentStatusMessage.class,
                 (said, caller) -> statusReports.contextFor(taskOf(said, caller)),
                 (said, caller) -> caller == null
                         ? statusReports.report(said, taskOf(said, caller))
                         : ownReports.report(said, taskOf(said, caller)));
 
-        tools.tool("notify_user", Audience.ANYONE, UserNotice.SCHEMA, UserNotice.class,
+        tools.tool("notify_user", Audience.ANYONE, Effect.REPORTS, UserNotice.SCHEMA, UserNotice.class,
                 (said, caller) -> MessageContext.NONE,
                 (said, caller) -> statusReports.notifyUser(said.title(), said.message()));
     }

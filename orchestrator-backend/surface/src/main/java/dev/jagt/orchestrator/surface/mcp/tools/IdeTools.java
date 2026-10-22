@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.surface.mcp.Audience;
+import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;
@@ -21,7 +22,7 @@ public class IdeTools implements McpTools {
 
     @Override
     public void declare(McpToolRegistry tools) {
-        tools.tool("open_in_ide", Audience.ANYONE, IdeOpen.SCHEMA, IdeOpen.class, (said, caller) -> MessageContext.NONE,
+        tools.tool("open_in_ide", Audience.ANYONE, Effect.REPORTS, IdeOpen.SCHEMA, IdeOpen.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> commands.execute(callerScope.resolve(said.taskId(), caller),
                         said.diff() ? TaskAction.DIFF : TaskAction.IDE));
     }

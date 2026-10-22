@@ -71,3 +71,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0053 Cognitive complexity 12](0053-a-method-reads-at-cognitive-complexity-fifteen-at-most.md)
 - [0054 Artifacts on the board](0054-a-tasks-artifacts-are-read-on-the-board.md)
 - [0055 English and UTC](0055-jagt-speaks-english-and-keeps-utc.md)
+- [0056 A report changes nothing](0056-a-report-to-jagt-changes-nothing.md)

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.surface.mcp.Audience;
+import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.task.NewTask;
@@ -27,7 +28,7 @@ public class TaskLifecycleTools implements McpTools {
 
     @Override
     public void declare(McpToolRegistry tools) {
-        tools.tool("initialize_task", Audience.MASTER, NewTaskMessage.SCHEMA, NewTaskMessage.class,
+        tools.tool("initialize_task", Audience.MASTER, Effect.CHANGES, NewTaskMessage.SCHEMA, NewTaskMessage.class,
                 (said, caller) -> MessageContext.NONE,
                 (said, caller) -> provisioning.initializeTask(NewTask.builder(said.taskId(), said.projectKey())
                         .alsoIn(said.alsoProjects())
@@ -39,13 +40,13 @@ public class TaskLifecycleTools implements McpTools {
                         .ticketUrl(said.ticketUrl())
                         .build()));
 
-        tools.tool("list_tasks", Audience.MASTER, NoArguments.schema("Every task, one per line: its id, status,"
+        tools.tool("list_tasks", Audience.MASTER, Effect.REPORTS, NoArguments.schema("Every task, one per line: its id, status,"
                         + " title, last message, each worktree with its review request, its alias and the verbs"
                         + " legal for it now."),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> taskViews.listing());
 
-        tools.tool("list_projects", Audience.MASTER, NoArguments.schema("Every project jagt works on, one per line:"
+        tools.tool("list_projects", Audience.MASTER, Effect.REPORTS, NoArguments.schema("Every project jagt works on, one per line:"
                         + " its key (what initialize_task's projectKey takes), what it is, and the labels placing an"
                         + " item in it."),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,

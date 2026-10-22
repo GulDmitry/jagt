@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
+import dev.jagt.orchestrator.surface.mcp.tools.IdeTools;
 import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;
 import dev.jagt.orchestrator.surface.mcp.tools.StatusTools;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -112,7 +113,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> { throw new IllegalStateException(); });
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
@@ -134,7 +135,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools refusing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+        McpTools refusing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> { throw new IllegalArgumentException("CI_POLLING cannot be reported"); });
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(refusing));
@@ -154,7 +155,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> { throw new IllegalStateException("branch ABC-1 is checked out elsewhere"); });
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
@@ -174,7 +175,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> { throw new UncheckedIOException(new IOException("state.json locked")); });
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
@@ -191,7 +192,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools echoing = tools -> tools.tool("echo", Audience.ANYONE, NoArguments.schema("answers"),
+        McpTools echoing = tools -> tools.tool("echo", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("answers"),
                 NoArguments.class, (said, caller) -> MessageContext.NONE, (said, caller) -> "all done");
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(echoing));
 
@@ -288,6 +289,44 @@ class McpProtocolServiceTest {
 
         assertThat(listed).extracting(tool -> tool.path("name").asString())
                 .containsExactly("deploy_task", "revert_task");
+    }
+
+    @Test
+    void marksEveryToolATaskSeesReadOnlySoAReadOnlyClientLetsItReport(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .alias("a1").build());
+        CallerScope scope = new CallerScope(state);
+        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
+                List.of(new StatusTools(mock(AgentStatusReports.class), mock(OwnStatusReports.class), scope),
+                        new IdeTools(mock(CommandService.class), scope),
+                        new DeployTools(mock(CommandService.class))));
+
+        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
+                root.toString(), false).orElseThrow().path("result").path("tools");
+
+        assertThat(listed).extracting(tool -> tool.path("name").asString())
+                .containsExactlyInAnyOrder("update_agent_status", "notify_user", "open_in_ide");
+        assertThat(listed).extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(false))
+                .containsOnly(true);
+    }
+
+    @Test
+    void marksATaskThatWritesASharedBranchAsChangingSomething(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
+                List.of(new DeployTools(mock(CommandService.class))));
+
+        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
+                null, true).orElseThrow().path("result").path("tools");
+
+        assertThat(listed).filteredOn(tool -> tool.path("name").asString().equals("deploy_task"))
+                .extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(true))
+                .containsExactly(false);
     }
 
     @Test
