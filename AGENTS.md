@@ -137,6 +137,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - **Nothing else acts unasked but on a stage the tracker reports**: intake opens a task, the close ends one,
   both `ActionOrigin.TRACKER` and off by default. The auto-review loop reads and drafts, its gate in the
   outcome rather than the trigger. The base branch stays read-only for all three.
+- **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer
+  (`TaskOpeningDoorsTest`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A
   task contradicting what the code guarantees is such a question, asked before the code picks a side. It is

@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-07.
+Accepted 2026-10-07. The Master opening it: superseded by [0066](0066-only-the-human-opens-a-task.md).
 
 ## Context
 

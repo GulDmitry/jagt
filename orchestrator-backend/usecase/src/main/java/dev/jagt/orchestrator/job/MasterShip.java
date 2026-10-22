@@ -12,14 +12,9 @@ public class MasterShip {
 
     private final ShipDue due;
     private final MasterPress press;
-    private final MasterOpen opener;
 
     /** False where nothing was pressed. */
     public boolean ship(String taskId, TaskState task) {
         return due.due(taskId, task) && press.press(taskId, task, TaskAction.SHIP);
-    }
-
-    public String open(String line) {
-        return opener.open(line);
     }
 }

@@ -109,36 +109,6 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void opensATaskForWorkTheMasterMovedToABranchOfItsOwn(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        when(ship.open("proj drop the old keys from main")).thenReturn("drop-the-old-keys started");
-        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, sessions));
-
-        verdicts.answered("ABC-1", task, "a second request?", "do proj drop the old keys from main", false);
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), contains("drop-the-old-keys started"));
-    }
-
-    @Test
-    void opensNoTaskWhereTheMasterAnswersAQuestionItAskedItself(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build();
-        state.putTask("ABC-1", task);
-        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, sessions));
-
-        verdicts.answered("ABC-1", task, "outcome=question — reviewer: it also drops the cache; own task?",
-                "do proj drop the cache from main", false);
-
-        verify(ship, never()).open(anyString());
-    }
-
-    @Test
     void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
@@ -500,7 +470,7 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void opensATaskOnlyForTheLinesOfTheAnswerThatAskForOne(@TempDir Path root) {
+    void opensNoTaskWhenTheMastersAnswerHoldsADoLine(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
@@ -508,9 +478,9 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, sessions));
 
-        verdicts.answered("ABC-1", task, "a second request?", "keep v2 beside v3\ndo proj drop the old keys", false);
+        verdicts.answered("ABC-1", task, "a second request?", "do proj drop the old keys from main", false);
 
-        verify(ship, times(1)).open(anyString());
+        verify(sessions).relayIfChanged(eq("ABC-1"), contains("Not opened: only the human opens a task."));
     }
 
     @Test

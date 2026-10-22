@@ -157,18 +157,13 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 - **WHEN** a later reviewer meets it
 - **THEN** only a blocking reason reopens it
 
-### Requirement: Another branch is another task
-In `act` work needing another branch SHALL be its own task, opened by the Master's line
-`do <project> <what to do…> from <branch>` (`MasterShip.open`), the session told what opened; a `from`, `into` or
-`onto` the deploy branch, or answering the reviewer's own question, SHALL open nothing.
+### Requirement: Another branch is another task, opened by you
+Work needing another branch SHALL be its own task, and the Master SHALL open none: a `do` line in its answer opens
+nothing, the session told only you open a task. Tracker intake is yours, configured.
 
-#### Scenario: Work asked onto the deploy branch
-- **WHEN** its `do` line says `into dev`
-- **THEN** nothing opens; that merge is the task's own `deploy`, once `REVIEWED`
-
-#### Scenario: The Master answers its own question
-- **WHEN** a `do` line answers the reviewer's own question
-- **THEN** nothing opens; what it found unasked is yours
+#### Scenario: The Master's answer holds a `do` line
+- **WHEN** in `act` it answers a session with `do proj drop the old keys from main`
+- **THEN** no task opens; the session names the work in its closing report
 
 ### Requirement: A disagreement offers a lesson, never applies one
 The `master` report SHALL offer a `master-lesson` run for the latest task you reverted after a pass or deployed after

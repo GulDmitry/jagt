@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
-import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -109,10 +108,7 @@ public class MasterVerdicts {
 
     /** The Master's answer to a question, and the task back at work on it. */
     public boolean answered(String taskId, TaskState task, String question, String decision, boolean freshSession) {
-        boolean ownQuestion = AgentReport.withoutMarker(question).startsWith(REVIEWER);
-        String opened = decision.lines().filter(line -> line.startsWith(DO))
-                .map(line -> "\n" + (ownQuestion ? NOT_OPENED : ship.open(line.substring(DO.length()))))
-                .collect(Collectors.joining());
+        String opened = decision.lines().anyMatch(line -> line.startsWith(DO)) ? "\n" + NOT_OPENED : "";
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
         boolean told = FlowRules.awaitsItsInstruction(task.status())
                 ? sessions.relayUnder(taskId, answer + "\n\nApply it, then carry on with the instruction above.")
@@ -140,7 +136,7 @@ public class MasterVerdicts {
     }
 
     private static final String REPEAT = " [repeat]";
-    private static final String NOT_OPENED = "Not opened: work the Master found unasked is the human's to open.";
+    private static final String NOT_OPENED = "Not opened: only the human opens a task.";
 
     /** Ahead of the reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
     private static final String ROUND_RETURNED = "The review of your round came back NOT READY. Each line below is a"

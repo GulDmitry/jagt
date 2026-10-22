@@ -81,3 +81,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0063 A stalled deploy conflict is the human's](0063-a-stalled-deploy-conflict-is-the-humans.md)
 - [0064 A plan you asked for is yours](0064-a-plan-the-human-asked-for-is-theirs.md)
 - [0065 One contract for jagt's own texts](0065-jagts-own-texts-and-loops-are-held-to-one-contract.md)
+- [0066 Only you open a task](0066-only-the-human-opens-a-task.md)

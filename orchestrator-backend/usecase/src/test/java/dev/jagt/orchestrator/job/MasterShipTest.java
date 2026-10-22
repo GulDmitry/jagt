@@ -17,7 +17,6 @@ class MasterShipTest {
 
     private final ShipDue due = mock(ShipDue.class);
     private final MasterPress press = mock(MasterPress.class);
-    private final MasterOpen opener = mock(MasterOpen.class);
 
     @Test
     void shipsATaskThatHoldsWork() {
@@ -25,7 +24,7 @@ class MasterShipTest {
         when(due.due("ABC-1", task)).thenReturn(true);
         when(press.press("ABC-1", task, TaskAction.SHIP)).thenReturn(true);
 
-        boolean shipped = new MasterShip(due, press, opener).ship("ABC-1", task);
+        boolean shipped = new MasterShip(due, press).ship("ABC-1", task);
 
         assertThat(shipped).isTrue();
     }
@@ -34,7 +33,7 @@ class MasterShipTest {
     void leavesATaskNoShipIsDueOnForTheHuman() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
 
-        boolean shipped = new MasterShip(due, press, opener).ship("ABC-1", task);
+        boolean shipped = new MasterShip(due, press).ship("ABC-1", task);
 
         assertThat(shipped).isFalse();
         verify(press, never()).press(anyString(), any(), any());
