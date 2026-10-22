@@ -105,6 +105,23 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void letsTheSessionEditWhereverItsShellMayWrite(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+
+        new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
+                .provisionWorktree(AgentWorktree.of(worktree, root)
+                        .withSandbox(Sandbox.on(List.of(Path.of("/w/ABC-1"), Path.of("/notes")), List.of())));
+
+        List<String> allow = new ArrayList<>();
+        new JsonMapper().readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+                .path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
+        assertThat(allow).contains("Edit(//w/ABC-1/**)", "Edit(//notes/**)");
+    }
+
+    @Test
     void leavesNoStdioProxyInTheWorktree(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();

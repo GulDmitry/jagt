@@ -162,7 +162,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                     worktree.path().resolve(SYSTEM_KNOWLEDGE_FILE));
         }
         write(worktree.path().resolve(".claude").resolve("settings.local.json"),
-                settingsJson(worktree.outputStyle(), worktree.disabledPlugins(), worktree.allowedTools(),
+                settingsJson(worktree.outputStyle(), worktree.disabledPlugins(),
+                        Stream.concat(worktree.allowedTools().stream(), editRules(worktree.sandbox())).toList(),
                         hooksJson(worktree.path()) + sandboxJson(worktree.sandbox())));
         ClaudeTrust.accept(ClaudeTrust.configFile(), worktree.path());
     }
@@ -265,6 +266,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public String toldTheHuman(String line) {
         return "{\"systemMessage\": " + quoted(line) + "}";
+    }
+
+    /** The sandbox binds the shell alone; Claude's edit tools ask outside the working directory without a rule. */
+    private static Stream<String> editRules(Sandbox sandbox) {
+        return sandbox.writable().stream().map(path -> "Edit(/" + path.toAbsolutePath() + "/**)");
     }
 
     /**
