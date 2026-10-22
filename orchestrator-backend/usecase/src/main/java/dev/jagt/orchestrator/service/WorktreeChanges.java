@@ -93,11 +93,11 @@ public class WorktreeChanges {
         }
     }
 
-    /** Whether a ship would carry anything: a request already open, or work some repository holds. */
+    /** Whether a ship would carry anything: work some repository holds. An open request alone is not that. */
     public boolean anyToShip(TaskState task) {
-        return task.repos().stream().anyMatch(repo -> repo.hasReviewRequest()
-                || holdsWork(Objects.requireNonNull(repo.project()), Objects.requireNonNull(repo.worktreePath()),
-                        targetBranch(task, configService.project(Objects.requireNonNull(repo.project())).baseBranch())));
+        return task.repos().stream().anyMatch(repo -> holdsWork(Objects.requireNonNull(repo.project()),
+                Objects.requireNonNull(repo.worktreePath()),
+                targetBranch(task, configService.project(Objects.requireNonNull(repo.project())).baseBranch())));
     }
 
     /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */

@@ -167,12 +167,12 @@ class WorktreeChangesTest {
     }
 
     @Test
-    void shipsATaskWhoseRequestIsAlreadyOpenThoughNoRepositoryHoldsNewWork() {
+    void shipsNothingWhereARequestIsOpenButNoRepositoryHoldsNewWork() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
         TaskState task = TaskState.builder(List.of(new TaskRepo("demo", "/wt", null, "https://host/demo/-/merge_requests/1", null)),
                 TaskStatus.REVIEW_PENDING).build();
 
-        assertThat(new WorktreeChanges(configService, inspection).anyToShip(task)).isTrue();
+        assertThat(new WorktreeChanges(configService, inspection).anyToShip(task)).isFalse();
     }
 
     @Test
