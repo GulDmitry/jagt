@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -36,11 +37,13 @@ class DeployConflictsTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
+        when(git.deployProgress(Path.of("/src/web"), "ABC-1")).thenReturn(new ConflictWatch.Progress(0, 2, "d"));
         DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
 
         var conflicts = service.waiting();
 
         assertThat(conflicts).containsExactly(Map.entry("ABC-1",
-                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-deploy"), true)));
+                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-deploy"), true,
+                        new ConflictWatch.Progress(0, 2, "d"))));
     }
 }

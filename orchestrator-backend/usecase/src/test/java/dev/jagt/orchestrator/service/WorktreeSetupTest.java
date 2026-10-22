@@ -47,6 +47,23 @@ class WorktreeSetupTest {
     }
 
     @Test
+    void letsTheSessionReachTheDeployWorktreeItsConflictsWouldWaitIn(@TempDir Path root) throws Exception {
+        Path project = Files.createDirectories(root.resolve("repo"));
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
+        NewRepo repo = new NewRepo("repo", new ProjectConfig(project.toString(), "origin/main", "dev", List.of()),
+                project, worktree, Files.createDirectories(project.resolve(".git")), "origin/main", "git@host:g/r.git", true);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(runtime.systemKnowledgeFile(worktree)).thenReturn(worktree.resolve("AGENTS.md"));
+        when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+        new WorktreeSetup(runtime, paths, config, briefing).fill(NewTask.builder("ABC-1", "repo").build(), repo,
+                List.of(repo));
+
+        verify(runtime).admit(worktree, root.resolve("ABC-1-deploy"));
+    }
+
+    @Test
     void writesNoInstructionsIntoTheWorktreeOfARepositoryTheSessionDoesNotRunIn(@TempDir Path root) throws Exception {
         Path project = Files.createDirectories(root.resolve("repo"));
         Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));

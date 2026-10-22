@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.TaskName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +10,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -122,6 +128,34 @@ public class GitDeploy {
         return hasDeployWorktree(projectPath, sourceBranch) && unmergedPaths(deployWorktree).isBlank()
                 && git.run(deployWorktree, List.of("git", "diff", "--quiet")).exitCode() == 0
                 && (mergeInProgress(deployWorktree) || resolutionCommitted(deployWorktree, targetBranch));
+    }
+
+    /** Where the resolution in this task's deploy worktree stands; any edit, staged or not, changes the digest. */
+    public ConflictWatch.Progress deployProgress(Path projectPath, String sourceBranch) {
+        Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+        String status = git.run(deployWorktree, List.of("git", "status", "--porcelain"))
+                .expectSuccess("git status in " + deployWorktree).stdout();
+        String diff = git.run(deployWorktree, List.of("git", "diff"))
+                .expectSuccess("git diff in " + deployWorktree).stdout();
+        List<String> paths = status.lines().filter(line -> line.length() > 2).toList();
+        int unmerged = (int) paths.stream().filter(GitDeploy::unmerged).count();
+        int staged = (int) paths.stream().filter(line -> !unmerged(line) && "MADRC".indexOf(line.charAt(0)) >= 0)
+                .count();
+        return new ConflictWatch.Progress(unmerged, staged, sha256(status + "\0" + diff));
+    }
+
+    private static boolean unmerged(String statusLine) {
+        String code = statusLine.substring(0, 2);
+        return code.indexOf('U') >= 0 || code.equals("AA") || code.equals("DD");
+    }
+
+    private static String sha256(String text) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(text.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException missing) {
+            throw new IllegalStateException(missing);
+        }
     }
 
     /** A conflicted path already added is the human's work, and no press of theirs throws it away. */
@@ -313,6 +347,14 @@ public class GitDeploy {
 
     public static String deployBranch(String sourceBranch) {
         return "jagt-deploy-" + sourceBranch;
+    }
+
+    /** Every deploy worktree a task of these repositories can stand in, each once. */
+    public static List<Path> deployWorktreePaths(List<NewRepo> repos, String sourceBranch) {
+        return repos.stream()
+                .filter(repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
+                .map(repo -> deployWorktreePath(repo.projectPath(), sourceBranch))
+                .distinct().toList();
     }
 
     public static Path deployWorktreePath(Path projectPath, String sourceBranch) {

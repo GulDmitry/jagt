@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.service.DeployTargets;
 
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.ConflictWatch;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,12 +24,16 @@ public class DeployConflicts {
     public Map<String, WaitingConflict> waiting() {
         Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
         stateService.tasks().forEach((taskId, task) -> deployTargets.stopped(task, taskId)
-                .ifPresent(target -> waiting.put(taskId, new WaitingConflict(
-                        GitDeploy.deployWorktreePath(target.path(), taskId),
-                        gitDeploy.deployResolved(target.path(), taskId, target.deployBranch())))));
+                .ifPresent(target -> waiting.put(taskId, conflict(taskId, target))));
         return waiting;
     }
 
-    public record WaitingConflict(Path worktree, boolean resolved) {
+    private WaitingConflict conflict(String taskId, DeployTargets.Target target) {
+        Path worktree = GitDeploy.deployWorktreePath(target.path(), taskId);
+        return new WaitingConflict(worktree, gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()),
+                gitDeploy.deployProgress(target.path(), taskId));
+    }
+
+    public record WaitingConflict(Path worktree, boolean resolved, ConflictWatch.Progress progress) {
     }
 }

@@ -44,6 +44,21 @@ class SubAgentBriefingTest {
     }
 
     @Test
+    void listsTheDeployWorktreeAConflictIsHandedOverInAsTheSessionsOwn() {
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(briefing).contains("- Also yours while jagt hands you a deploy conflict there: /repo/ABC-42-deploy.");
+    }
+
+    @Test
     void namesTheDeployBranchOfEveryRepositoryOfTheTask() {
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",

@@ -1,61 +1,60 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.task.ConflictWatch;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ConflictHandOffTest {
 
     private final AgentSessions sessions = mock(AgentSessions.class);
-    private final CommandService commands = mock(CommandService.class);
-    private final ConfigService config = mock(ConfigService.class);
+    private final ConflictStall stall = mock(ConflictStall.class);
+    private final ConflictFinish finish = mock(ConflictFinish.class);
 
     @Test
-    void handsAConflictToTheSession() {
-        new ConflictHandOff(sessions, commands, config).handle("ABC-42",
-                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false));
+    void handsAConflictToTheSessionAsAWorktreeOfItsOwn() {
+        new ConflictHandOff(sessions, stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
+                Path.of("/src/ABC-42-deploy"), false, new ConflictWatch.Progress(7, 0, "d")));
 
-        verify(sessions).relayIfChanged(eq("ABC-42"), contains("/src/ABC-42-deploy"));
-        verify(commands, never()).execute(anyString(), any());
+        verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-deploy"));
+        verify(sessions).writeTaskContext(eq("ABC-42"), contains("/src/ABC-42-deploy"));
     }
 
     @Test
-    void asksOncePerConflictEvenWhereAnotherRelayOverwroteTheAsk() {
-        ConflictHandOff handOff = new ConflictHandOff(sessions, commands, config);
-        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false);
+    void handsAConflictOnlyOnce() {
+        when(stall.handed("ABC-42")).thenReturn(true);
 
-        handOff.handle("ABC-42", conflict);
-        handOff.handle("ABC-42", conflict);
+        new ConflictHandOff(sessions, stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
+                Path.of("/src/ABC-42-deploy"), false, new ConflictWatch.Progress(7, 0, "d")));
 
-        verify(sessions, times(1)).relayIfChanged(eq("ABC-42"), anyString());
+        verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
+    }
+
+    @Test
+    void watchesAHandedConflictForProgress() {
+        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"),
+                false, new ConflictWatch.Progress(7, 0, "d"));
+        when(stall.handed("ABC-42")).thenReturn(true);
+
+        new ConflictHandOff(sessions, stall, finish).handle("ABC-42", conflict);
+
+        verify(stall).watch("ABC-42", conflict);
     }
 
     @Test
     void finishesTheDeployOnceTheResolutionIsStagedInFull() {
-        new ConflictHandOff(sessions, commands, config).handle("ABC-42",
-                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), true));
+        new ConflictHandOff(sessions, stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
+                Path.of("/src/ABC-42-deploy"), true, new ConflictWatch.Progress(0, 7, "d")));
 
-        verify(commands).execute("ABC-42", TaskAction.DEPLOY);
-    }
-
-    @Test
-    void countsTheDeployItFinishedAsAnUnattendedStart() {
-        new ConflictHandOff(sessions, commands, config).handle("ABC-42",
-                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), true));
-
-        verify(config).startTaken();
+        verify(finish).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
     }
 }

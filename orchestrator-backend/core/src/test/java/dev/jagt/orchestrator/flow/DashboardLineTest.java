@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.junit.jupiter.api.Test;
@@ -73,6 +74,18 @@ class DashboardLineTest {
                 .message("resolve conflict in /repos/ABC-1-deploy").build();
 
         assertThat(DashboardLine.forTask(task, null).text()).startsWith("NEEDS YOU: ").contains("ABC-1-deploy");
+    }
+
+    @Test
+    void saysWhereAndSinceWhenADeployConflictStoppedMoving() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT).lastActiveTimestamp(1_000)
+                .message("resolve conflict in /src/ABC-42-deploy")
+                .conflict(ConflictWatch.handed(1_000, "/src/ABC-42-deploy", new ConflictWatch.Progress(7, 0, "d"), 1_000)
+                        .toldAt(1_201_000))
+                .build();
+
+        assertThat(DashboardLine.forTask(task, null).text()).isEqualTo("NEEDS YOU: the deploy conflict stopped moving:"
+                + " 7 paths unmerged, 0 staged in /src/ABC-42-deploy, unchanged since 1970-01-01T00:00:00Z");
     }
 
     @Test

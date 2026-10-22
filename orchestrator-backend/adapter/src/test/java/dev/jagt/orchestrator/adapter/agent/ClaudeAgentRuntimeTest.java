@@ -122,6 +122,76 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void letsARunningSessionReachADirectoryThatAppearedSinceItStarted(@TempDir Path root) throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
+        Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root));
+
+        AgentRuntime.Admission admission = runtime.admit(worktree, deploy);
+
+        var permissions = new JsonMapper().readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+                .path("permissions");
+        List<String> allow = new ArrayList<>();
+        permissions.path("allow").forEach(n -> allow.add(n.asString("")));
+        List<String> directories = new ArrayList<>();
+        permissions.path("additionalDirectories").forEach(n -> directories.add(n.asString("")));
+        assertThat(admission).isEqualTo(AgentRuntime.Admission.GRANTED);
+        assertThat(allow).contains("mcp__jagt-orchestrator", "Edit(/" + deploy.toRealPath() + "/**)");
+        assertThat(directories).containsExactly(deploy.toRealPath().toString());
+    }
+
+    @Test
+    void letsASandboxedSessionWriteInADirectoryItWasAdmittedTo(@TempDir Path root) throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
+        Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root)
+                .withSandbox(Sandbox.on(List.of(Path.of("/w/ABC-1")), List.of())));
+
+        runtime.admit(worktree, deploy);
+
+        List<String> writable = new ArrayList<>();
+        new JsonMapper().readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+                .path("sandbox").path("filesystem").path("allowWrite").forEach(n -> writable.add(n.asString("")));
+        assertThat(writable).containsExactly("/w/ABC-1", deploy.toRealPath().toString());
+    }
+
+    @Test
+    void grantsADirectoryNotThereYetAsAPathRuleAlone(@TempDir Path root) throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root));
+
+        runtime.admit(worktree, Path.of("/src/ABC-1-deploy"));
+
+        var permissions = new JsonMapper().readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+                .path("permissions");
+        List<String> allow = new ArrayList<>();
+        permissions.path("allow").forEach(n -> allow.add(n.asString("")));
+        assertThat(allow).contains("Read(//src/ABC-1-deploy/**)", "Edit(//src/ABC-1-deploy/**)");
+        assertThat(permissions.has("additionalDirectories")).isFalse();
+    }
+
+    @Test
+    void admitsNothingWhereItProvisionedNothing(@TempDir Path root) throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        AgentRuntime.Admission admission = runtime.admit(worktree, Path.of("/src/ABC-1-deploy"));
+
+        assertThat(admission).isEqualTo(AgentRuntime.Admission.UNPROVISIONED);
+    }
+
+    @Test
     void leavesNoStdioProxyInTheWorktree(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();

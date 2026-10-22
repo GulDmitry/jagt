@@ -142,6 +142,10 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         };
     }
 
+    public AgentRuntime.Admission admit(String taskId, Path directory) {
+        return agentRuntime.admit(Path.of(requireTask(stateService.canonicalTaskId(taskId)).worktreePath()), directory);
+    }
+
     public String writeTaskContext(String taskId, String instructions) {
         return relay(taskId, instructions, false);
     }

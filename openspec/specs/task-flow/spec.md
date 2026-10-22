@@ -79,12 +79,20 @@ file other relays overwrite; how anything reaches it is the session's. Green MUS
 - **THEN** the task is `IN_PROGRESS`
 
 ### Requirement: In act a deploy conflict is the session's
-`DeployConflictJob` SHALL hand the session the deploy worktree once per conflict; a resolution staged in full MUST
-finish the press the human made ([0013](../../../docs/decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
+`DeployConflictJob` SHALL hand the session the deploy worktree once per deploy press, its own in its brief and its CLI
+(`AgentRuntime.admit`); staged in full it MUST finish the press ([0013](../../../docs/decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
 
 #### Scenario: A conflict where the Master acts
 - **WHEN** the session stages its resolution in full
 - **THEN** jagt finishes the deploy
+
+### Requirement: A stalled deploy conflict is the human's
+A handed conflict unchanged for `conflictStallMinutes` SHALL tell the human once. Its card SHALL name the paths unmerged,
+where and since when, across a restart (`TaskState.conflict`, [0062](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)).
+
+#### Scenario: A conflict nobody works
+- **WHEN** ABC-42's deploy worktree has not changed for `conflictStallMinutes`
+- **THEN** one banner, and the card says NEEDS YOU with its unmerged paths, its worktree and since when
 
 ### Requirement: Statuses a report cannot move
 A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT`
@@ -110,16 +118,14 @@ work serves several statuses. Its sentence MAY name the status; nothing parses i
 - **THEN** only `flow/` and its record match
 
 ### Requirement: PARTIAL refuses
-`PARTIAL` SHALL be the one refusing outcome, stamped on the task first and thrown second: a shared branch holding
-half a change must be recorded, not merely complained about.
+`PARTIAL` SHALL be the one refusing outcome, stamped on the task first and thrown second: half a change is recorded.
 
 #### Scenario: Half a change lands
 - **WHEN** a capability returns `PARTIAL`
 - **THEN** the task is stamped, then it throws
 
 ### Requirement: Starting a task
-`do` SHALL cut a branch from the project's base into its own worktree, an agent in it. At most 24 tasks SHALL be
-open (`NewTaskWorktrees.MAX_TASKS`).
+`do` SHALL cut a branch from the project's base into its own worktree, an agent in it; at most 24 open (`NewTaskWorktrees.MAX_TASKS`).
 
 #### Scenario: New ticket
 - **WHEN** you run `do ABC-42`, or `do ABC-42 <project>`
@@ -161,10 +167,6 @@ a session's write to any file but `plan.md`, `task_visual.md` and `task_notes.md
 #### Scenario: Approved on the board
 - **WHEN** you press `approve-plan` on a task at `PLAN_PENDING`
 - **THEN** the gate opens and the session is told the plan holds and the task is `IN_PROGRESS`
-
-#### Scenario: A plan the Master sends back
-- **WHEN** the Master reads a plan NOT READY
-- **THEN** the gate stays closed
 
 #### Scenario: A task that needs no plan
 - **WHEN** an autoplan session reports `IN_PROGRESS` with `outcome=no_plan`

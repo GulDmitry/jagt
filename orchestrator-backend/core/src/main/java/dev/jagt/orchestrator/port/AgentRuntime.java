@@ -92,6 +92,17 @@ public interface AgentRuntime {
     /** Writes what this agent needs to run in a fresh worktree, once per task, before the agent starts. */
     void provisionWorktree(AgentWorktree worktree);
 
+    /**
+     * Lets the session of {@code worktree} read and edit {@code directory} as well, a session already running
+     * included; a directory not there yet is granted as far as this CLI allows.
+     */
+    default Admission admit(Path worktree, Path directory) {
+        return Admission.UNSUPPORTED;
+    }
+
+    /** {@code UNPROVISIONED}: the worktree holds none of this CLI's settings to widen. */
+    enum Admission { GRANTED, UNSUPPORTED, UNPROVISIONED }
+
     /** Undoes what {@link #provisionWorktree} wrote OUTSIDE the worktree; the worktree itself is deleted for it. */
     default void retireWorktree(Path worktree) {
     }

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.task.ConflictWatch;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -21,7 +22,8 @@ class DeployConflictJobTest {
 
     @Test
     void handsEachWaitingConflictOnWhereTheMasterActs() {
-        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false);
+        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false,
+                new ConflictWatch.Progress(7, 0, "d"));
         when(config.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
         when(conflicts.waiting()).thenReturn(Map.of("ABC-42", conflict));
 

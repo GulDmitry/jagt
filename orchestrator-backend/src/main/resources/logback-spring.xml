@@ -50,6 +50,7 @@ rolls daily and keeps a week of archives. `LogFileReset` empties the backend log
     <logger name="dev.jagt.orchestrator.job.MasterPress"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.job.MasterOpen"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.job.ConflictHandOff"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.ConflictFinish"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterPanel"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterBriefs"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterDecisions"><appender-ref ref="MASTER"/></logger>

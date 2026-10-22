@@ -169,6 +169,8 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
 - **Deploy check** — Every deploy is checked where it landed, and a failure opens a new round.
   [spec](../openspec/specs/task-flow/spec.md#requirement-every-deploy-is-checked-where-it-landed)
+- **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
+  [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
   [spec](../openspec/specs/task-flow/spec.md#requirement-starting-a-task)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
@@ -181,9 +183,8 @@
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
 - **Activity report** — A report of what jagt did unasked is read back from its own log.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-reads-jagts-own-log)
-- **Act brake** — `act` stops itself after repeated bad endings, and tells you.
+- **Act brake, daily ceiling** — `act` stops itself after repeated bad endings, and tells you; a daily ceiling bounds what jagt starts without you.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
-- **Daily ceiling** — A daily ceiling bounds the work jagt starts without you.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-unattended-starts-have-a-daily-ceiling)
 - **Loop stop** — A task whose rounds resolve nothing, or that ships too often, is stopped until you lift it.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)

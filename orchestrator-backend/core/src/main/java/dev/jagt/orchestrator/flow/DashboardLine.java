@@ -1,11 +1,13 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The one contextual line under a task — empty whenever the status and the next move already answer, so a
@@ -35,6 +37,11 @@ public final class DashboardLine {
         // moving its task.
         if (report == AgentReport.QUESTION && task.status() != TaskStatus.DONE) {
             return needsInput(message);
+        }
+        Optional<ConflictWatch> conflict = task.currentConflict().filter(ConflictWatch::stalled);
+        if (conflict.isPresent()) {
+            return new Line(Kind.YOURS, "NEEDS YOU: the deploy conflict stopped moving: "
+                    + Objects.requireNonNull(conflict.get().told()).reason());
         }
         return switch (task.status()) {
             case CI_FAILED -> problem(orDefault(message, "checks failed"));

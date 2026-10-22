@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,7 +29,7 @@ public class SubAgentBriefing {
                 taskId,
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
                 repo.worktreePath(),
-                alsoYours(repo, repos),
+                alsoYours(repo, repos) + deployWorktrees(taskId, repos),
                 planFirstSentence(request.mode()),
                 autoplanSentence(autoplan),
                 visualizeSentence(visualize),
@@ -98,6 +99,13 @@ public class SubAgentBriefing {
         return repos.stream()
                 .map(repo -> "`" + branch.apply(repo) + "`" + (ofTheTask == 1 ? "" : " (" + repo.project() + ")"))
                 .collect(Collectors.joining(", "));
+    }
+
+    private static String deployWorktrees(String taskId, List<NewRepo> repos) {
+        String paths = GitDeploy.deployWorktreePaths(repos, taskId).stream().map(Path::toString)
+                .collect(Collectors.joining(", "));
+        return paths.isBlank() ? "" : "\n- Also yours while jagt hands you a deploy conflict there: " + paths
+                + ". Finishing that merge (edit, `git add`) is not a `git merge` of yours.";
     }
 
     /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */

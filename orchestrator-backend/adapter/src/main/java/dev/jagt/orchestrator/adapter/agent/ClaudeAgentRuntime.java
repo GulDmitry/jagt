@@ -9,8 +9,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -230,6 +235,55 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                 allowedTools == null ? Stream.empty() : allowedTools.stream())
                         .filter(tool -> tool != null && !tool.isBlank())
                         .map(tool -> quoted(tool.strip())).collect(Collectors.joining(", ")));
+    }
+
+    /**
+     * Claude rereads its settings files during a session. A path rule matches before the directory exists; an
+     * additional directory and a sandbox write path are only granted once it does.
+     */
+    @Override
+    public Admission admit(Path worktree, Path directory) {
+        Path file = worktree.resolve(".claude").resolve("settings.local.json");
+        if (!Files.isRegularFile(file)) {
+            return Admission.UNPROVISIONED;
+        }
+        ObjectNode settings = (ObjectNode) JSON.readTree(read(file));
+        boolean present = Files.isDirectory(directory);
+        String path = (present ? real(directory) : directory.toAbsolutePath().normalize()).toString();
+        ObjectNode permissions = settings.withObjectProperty("permissions");
+        addOnce(permissions.withArrayProperty("allow"), "Read(/" + path + "/**)");
+        addOnce(permissions.withArrayProperty("allow"), "Edit(/" + path + "/**)");
+        if (present) {
+            addOnce(permissions.withArrayProperty("additionalDirectories"), path);
+            if (settings.path("sandbox").path("enabled").asBoolean(false)) {
+                addOnce(settings.withObjectProperty("sandbox").withObjectProperty("filesystem")
+                        .withArrayProperty("allowWrite"), path);
+            }
+        }
+        write(file, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(settings));
+        return Admission.GRANTED;
+    }
+
+    private static void addOnce(ArrayNode values, String value) {
+        if (values.valueStream().noneMatch(node -> value.equals(node.asString()))) {
+            values.add(value);
+        }
+    }
+
+    private static Path real(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot resolve " + path, e);
+        }
+    }
+
+    private static String read(Path file) {
+        try {
+            return Files.readString(file);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot read " + file, e);
+        }
     }
 
     @Override

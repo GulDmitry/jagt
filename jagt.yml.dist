@@ -1,7 +1,7 @@
 # jagt — your whole configuration, and the only file there is: `cp jagt.yml.dist jagt.yml`, then fill in ONE
 # project. Every other key already has the value shown and can stay commented out.
-# `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview`, `master`, `tracker`, `maxStartsPerDay` and
-# `loopBreaker` are re-read on every access; every other key is read once, at startup.
+# `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview`, `master`, `tracker`, `maxStartsPerDay`,
+# `loopBreaker` and `conflictStallMinutes` are re-read on every access; every other key is read once, at startup.
 
 orchestrator:
 
@@ -28,6 +28,8 @@ orchestrator:
   loopBreaker:             # stops a task jagt suspects it is looping on, whoever asked; only your `lift` resumes it
     stalledRounds: 3       # rounds relayed running that resolved no thread and left the same job failing (at most 19)
     ships: 4               # ships within autoReview.windowHours; the next one jagt would press unasked stops the task
+  conflictStallMinutes: 20 # in act, a deploy conflict its session was handed whose worktree has not changed this long:
+                           # you get one banner, and the card says how many paths are unmerged, where, since when
   keepAwake: false         # true: macOS stays awake while the Master acts, auto-review polls or `take` runs
   interactionLog: true     # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`
   # kittyCommand: kitty   # if the binary is not on PATH

@@ -56,7 +56,8 @@ public class ConfigService {
                              @Nullable CodeReviewConfig codeReview, @Nullable AgentConfig agent,
                              @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
                              @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
-                             @Nullable Integer maxStartsPerDay, @Nullable LoopBreakerConfig loopBreaker) {
+                             @Nullable Integer maxStartsPerDay, @Nullable LoopBreakerConfig loopBreaker,
+                             @Nullable Integer conflictStallMinutes) {
 
         /** Read as at most {@code LoopWatch.MAX_ROUNDS - 1} stalled rounds, the most a task's trail can hold. */
         @JsonIgnoreProperties(ignoreUnknown = true)
@@ -398,12 +399,16 @@ public class ConfigService {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null);
         }
 
         /** Unattended starts one local day may hold before the rest wait for tomorrow or for you. */
         public int maxStartsPerDayOrDefault() {
             return maxStartsPerDay == null || maxStartsPerDay <= 0 ? 50 : maxStartsPerDay;
+        }
+
+        public Duration conflictStallOrDefault() {
+            return Duration.ofMinutes(conflictStallMinutes == null || conflictStallMinutes <= 0 ? 20 : conflictStallMinutes);
         }
 
         /** The ship ceiling counts over the auto-review window. */

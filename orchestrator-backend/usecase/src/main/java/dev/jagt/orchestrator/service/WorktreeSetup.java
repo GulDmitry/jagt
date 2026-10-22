@@ -44,6 +44,8 @@ public class WorktreeSetup {
                 .withAllowedTools(agentAllowedTools)
                 .withSandbox(WorktreeSandbox.of(configService.load().agent().sandboxOrDefault(), repos,
                         Path.of(System.getProperty("user.home")))));
+        GitDeploy.deployWorktreePaths(repos, request.taskId())
+                .forEach(deployWorktree -> agentRuntime.admit(worktreePath, deployWorktree));
         WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, WorktreeFiles.PROJECT_FILES);
         WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,
                 configService.load().worktree().copyGlobsOrDefault());
