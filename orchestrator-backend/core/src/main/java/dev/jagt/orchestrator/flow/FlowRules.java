@@ -46,6 +46,12 @@ public final class FlowRules {
                 .on(Outcome.Kind.RELAYED, TaskStatus.SHIPPING)
                 .add();
 
+        // The plan holds: the session is told to start on it, which is the one way out of a plan.
+        rule(TaskAction.APPROVE_PLAN)
+                .from(TaskStatus.PLAN_PENDING)
+                .on(Outcome.Kind.RELAYED, TaskStatus.IN_PROGRESS)
+                .add();
+
         // Reading a review round decides nothing by itself: what it found is REPORTED.
         rule(TaskAction.SWEEP)
                 .fromAny()

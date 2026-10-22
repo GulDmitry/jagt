@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class MasterVerdicts {
     private final MasterShip ship;
     private final FlowReports reports;
     private final MasterDecisions decisions;
+    private final PlanApproval approval;
 
     private static final String DO = "do ";
     private static final String REVIEWER = "reviewer: ";
@@ -82,8 +84,7 @@ public class MasterVerdicts {
     }
 
     private boolean go(String taskId) {
-        if (!sessions.relayIfChanged(taskId, "The Master read plan.md against the ticket, standing in for the human:"
-                + " the plan holds. Start on it.")) {
+        if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human")) {
             return false;
         }
         log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).log();

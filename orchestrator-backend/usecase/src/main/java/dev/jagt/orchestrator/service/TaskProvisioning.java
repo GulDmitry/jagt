@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class TaskProvisioning {
                         .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
                         .autoReview(config.autoReview().enabledOrDefault())
                         .gitTrust(worktrees.trust(repos))
+                        .planGate(gateOf(plan, config))
                         .build());
             } catch (RuntimeException e) {
                 worktrees.uncut(request, repos, strategy);
@@ -69,7 +71,14 @@ public class TaskProvisioning {
         return taskId + " is " + alias + " — agent running on " + taskId
                 + (strategy == BranchStrategy.RESUME ? " (resumed)" : " from " + session.baseBranch())
                 + alsoIn(repos) + "."
-                + (plan ? " Plan mode: approve its plan in the agent window (focus " + alias + ")." : "");
+                + (plan ? " Plan mode: read plan.md, then approve-plan " + alias + "." : "");
+    }
+
+    private static PlanGate gateOf(boolean planMode, ConfigService.ConfigFile config) {
+        if (planMode) {
+            return PlanGate.REQUIRED;
+        }
+        return config.agent().autoplanOrDefault().enabledOrDefault() ? PlanGate.CLOSED : PlanGate.OPEN;
     }
 
     private static String alsoIn(List<NewRepo> repos) {

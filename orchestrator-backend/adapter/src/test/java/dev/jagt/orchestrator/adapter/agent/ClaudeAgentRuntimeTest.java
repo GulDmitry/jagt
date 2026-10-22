@@ -35,13 +35,13 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
-    void startsTheAgentInPlanModeWhenTheHumanAskedToAgreeOnTheApproachFirst() {
+    void startsNoCliPlanModeWhenThePlanIsAskedFirstBecauseTheBoardApprovesIt() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), true))
-                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --permission-mode plan 'go'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
     }
 
     @Test
@@ -350,7 +350,7 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
-    void writesTheGateAsAHookOnTheShellToolAlone(@TempDir Path root) throws Exception {
+    void writesTheGateAsAHookOnTheShellAndTheFileWritingTools(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
@@ -362,7 +362,7 @@ class ClaudeAgentRuntimeTest {
         var gate = new JsonMapper().readTree(Files.readString(
                         worktree.resolve(".claude/settings.local.json")))
                 .path("hooks").path("PreToolUse").path(0);
-        assertThat(gate.path("matcher").asString("")).isEqualTo("Bash");
+        assertThat(gate.path("matcher").asString("")).isEqualTo("Bash|Edit|Write|MultiEdit|NotebookEdit");
         assertThat(gate.path("hooks").path(0).path("command").asString(""))
                 .contains("/api/agent/tool", worktree.toString());
     }
@@ -387,7 +387,7 @@ class ClaudeAgentRuntimeTest {
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), true, " opus "))
-                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --permission-mode plan --model 'opus' 'go'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --model 'opus' 'go'");
     }
 
     @Test

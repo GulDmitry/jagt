@@ -173,6 +173,8 @@ Each line names one thing jagt does and links to the requirement that defines it
   [spec](../openspec/specs/task-flow/spec.md#requirement-every-deploy-is-checked-where-it-landed)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
   [spec](../openspec/specs/task-flow/spec.md#requirement-starting-a-task)
+- **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
+  [spec](../openspec/specs/task-flow/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
 
 ## Unattended work
 [spec](../openspec/specs/unattended-work/spec.md)

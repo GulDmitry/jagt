@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -725,5 +726,35 @@ class AgentStatusReportsTest {
         assertThat(sent.getValue().title()).isEqualTo("jagt");
         assertThat(sent.getValue().body()).isEqualTo("round addressed");
         assertThat(answer).isEqualTo("Notification sent");
+    }
+
+    @Test
+    void opensThePlanGateWhenAnAutoplanSessionReportsThatTheTaskNeedsNoPlan(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.CLOSED).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "one file, no contradiction", "no_plan", null, Map.of()),
+                "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+    }
+
+    @Test
+    void keepsThePlanGateWhenASessionOpenedInPlanModeReportsThatTheTaskNeedsNoPlan(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.REQUIRED).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        assertThatThrownBy(() -> reports.report(
+                new AgentStatusMessage("IN_PROGRESS", "one file", "no_plan", null, Map.of()), "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("outcome");
+        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
     }
 }

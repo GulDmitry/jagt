@@ -26,7 +26,7 @@ in a project saw the code and a commit message, nothing of what was decided. jag
 
 - The `/opsx:*` commands driving the cycle: a prompted convention, one vendor's, where a refusal is a hard contract.
 - Archiving after `deploy`: jagt would have to write the task branch itself.
-- Gating PLAN_PENDING: a session in plan mode cannot write the change.
+- Gating PLAN_PENDING: a plan lists the change, written after approval ([0059](0059-plan-first-is-jagts-gate-not-the-clis-plan-mode.md)).
 - Specs without code anchors, as OpenSpec advises: the anchor is how a reader finds the enforcer.
 
 ## Reopen when

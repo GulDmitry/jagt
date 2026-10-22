@@ -106,7 +106,38 @@ class SubAgentBriefingTest {
                         ConfigService.ConfigFile.VisualizeConfig.defaults(),
                         ConfigService.ConfigFile.DiagnoseConfig.defaults());
 
-        assertThat(briefing).contains("plan first (PLAN MODE) if the task changes more than 12 files");
+        assertThat(briefing).contains("plan first if the task changes more than 12 files")
+                .contains("report IN_PROGRESS with outcome `no_plan`");
+    }
+
+    @Test
+    void tellsTheSessionToPlanFirstWhenTheTaskWasOpenedInPlanMode() {
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").mode("plan").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(briefing).contains("PLAN FIRST: the human asked for a plan.");
+    }
+
+    @Test
+    void saysNothingOfPlanningFirstWhenTheTaskWasOpenedInAutoMode() {
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").mode("auto").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(briefing).doesNotContain("PLAN FIRST");
     }
 
     @Test
@@ -171,7 +202,7 @@ class SubAgentBriefingTest {
                         ConfigService.ConfigFile.VisualizeConfig.defaults().withEnabled(true),
                         ConfigService.ConfigFile.DiagnoseConfig.defaults());
 
-        assertThat(briefing).contains("write `task_visual.md` in the worktree before your first edit")
+        assertThat(briefing).contains("write `task_visual.md` in the worktree as part of the plan when you plan first, else before your first edit")
                 .contains("A two-line bug fix is not.");
     }
 

@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -206,13 +207,46 @@ class TaskProvisioningTest {
     }
 
     @Test
-    void tellsTheCallerWhereToApproveThePlanOfATaskStartedInPlanMode() {
+    void tellsTheCallerToApproveThePlanOnTheBoardOfATaskStartedInPlanMode() {
         when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
                 new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
 
         String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
 
-        assertThat(answer).endsWith(" Plan mode: approve its plan in the agent window (focus a1).");
+        assertThat(answer).endsWith(" Plan mode: read plan.md, then approve-plan a1.");
+    }
+
+    @Test
+    void requiresThePlanOfATaskStartedInPlanModeWhateverAutoplanSays() {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+
+        provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
+
+        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+    }
+
+    @Test
+    void closesThePlanGateOfAnAutoModeTaskWhenAutoplanIsOn() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withAgent(
+                ConfigService.ConfigFile.AgentConfig.defaults().withAutoplan(
+                        ConfigService.ConfigFile.AutoplanConfig.defaults().withEnabled(true))));
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+
+        provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
+
+        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.CLOSED);
+    }
+
+    @Test
+    void leavesThePlanGateOpenOfAnAutoModeTaskWhenAutoplanIsOff() {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+
+        provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
+
+        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
     }
 
     @Test

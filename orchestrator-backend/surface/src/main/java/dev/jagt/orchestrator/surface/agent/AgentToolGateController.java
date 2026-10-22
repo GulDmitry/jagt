@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.agent;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.jagt.orchestrator.service.PlanFirst;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.service.ToolGate;
@@ -15,16 +16,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /** A gate that failed closed would make a stopped backend look like a rule, so anything not refused answers nothing. */
 @RestController
 @Slf4j
 public class AgentToolGateController {
 
-    /** Only a shell command can push; every other tool is answered with nothing. */
+    /** Only a shell command can push; every other tool is answered with nothing, but a write while a plan waits. */
     private static final String SHELL_TOOL = "Bash";
+    private static final Set<String> WRITE_TOOLS = Set.of("edit", "write", "multiedit", "notebookedit");
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ToolCall(@JsonProperty("tool_name") @Nullable String toolName,
@@ -33,6 +37,11 @@ public class AgentToolGateController {
         @Nullable String command() {
             Object command = toolInput == null ? null : toolInput.get("command");
             return command == null ? null : command.toString();
+        }
+
+        @Nullable String file() {
+            Object file = toolInput == null ? null : toolInput.getOrDefault("file_path", toolInput.get("notebook_path"));
+            return file == null ? null : file.toString();
         }
     }
 
@@ -47,7 +56,13 @@ public class AgentToolGateController {
     public ResponseEntity<Map<String, Object>> gate(
             @RequestHeader(value = "X-Working-Directory", required = false) @Nullable String cwd,
             @RequestBody(required = false) @Nullable ToolCall call, HttpServletRequest request) {
-        if (call == null || !SHELL_TOOL.equalsIgnoreCase(call.toolName())) {
+        if (call == null || call.toolName() == null) {
+            return ResponseEntity.noContent().build();
+        }
+        if (WRITE_TOOLS.contains(call.toolName().toLowerCase(Locale.ROOT))) {
+            return planFirst(cwd, call);
+        }
+        if (!SHELL_TOOL.equalsIgnoreCase(call.toolName())) {
             return ResponseEntity.noContent().build();
         }
         // A directory no task owns has no branch a push could be refused against.
@@ -59,6 +74,17 @@ public class AgentToolGateController {
                     log.atInfo().setMessage("session line refused").addKeyValue("task", taskBranch).log();
                     return ResponseEntity.ok(denied(reason));
                 })
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    private ResponseEntity<Map<String, Object>> planFirst(@Nullable String cwd, ToolCall call) {
+        return stateService.findByWorktree(cwd)
+                .flatMap(owner -> PlanFirst.refusal(owner.getValue(), call.file()).map(reason -> {
+                    stateService.updateTask(owner.getKey(), task -> task.refused(Guard.PLAN_FIRST));
+                    log.atInfo().setMessage("write refused").addKeyValue("task", owner.getKey())
+                            .addKeyValue("cause", "plan not approved").addKeyValue("file", call.file()).log();
+                    return ResponseEntity.ok(denied(reason));
+                }))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 

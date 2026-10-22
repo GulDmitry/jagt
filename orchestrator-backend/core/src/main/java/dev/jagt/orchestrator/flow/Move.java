@@ -241,7 +241,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent is working; no action required";
             case VERIFYING -> "jagt is running this project's checks";
-            case PLAN_PENDING -> "a plan is waiting in `plan.md`; read it, then tell the session to go";
+            case PLAN_PENDING -> "a plan is waiting in `plan.md`; read it, then approve it";
             case REVIEW_PENDING -> reviewPendingHint(hasReviewRequest, round, polled);
             case SHIPPING -> "agent is committing and pushing; wait";
             case CI_POLLING -> ciPollingHint(hasReviewRequest, polled);

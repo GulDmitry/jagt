@@ -69,7 +69,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, null, null, null, List.of());
+                "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, null, null, null, List.of(), PlanGate.OPEN);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -112,7 +112,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null,
-                null, null, List.of(), null, null, List.of());
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
@@ -455,5 +455,14 @@ class TaskStateTest {
         assertThat(found.approved()).isTrue();
         assertThat(found.pipelineUnread()).isTrue();
         assertThat(found.lastActiveTimestamp()).isEqualTo(1_000);
+    }
+
+    @Test
+    void readsAFileWrittenBeforeThePlanGateExistedAsNothingToWaitFor() {
+        TaskState legacy = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"NEW","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
+
+        assertThat(legacy.planGate()).isEqualTo(PlanGate.OPEN);
     }
 }

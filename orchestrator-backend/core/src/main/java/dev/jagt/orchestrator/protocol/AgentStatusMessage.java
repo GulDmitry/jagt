@@ -29,7 +29,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                                  @Nullable String taskId) implements Message {
 
     /** The wire spelling of what a report says about a round; absent falls back to a marker in the message. */
-    public static final Set<String> OUTCOMES = Set.of("progress", "question", "no_changes");
+    public static final Set<String> OUTCOMES = Set.of("progress", "question", "no_changes", "no_plan");
 
     private static final Pattern URL = Pattern.compile("https?://\\S+");
 
@@ -50,7 +50,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                             + " `no_changes` = a review round edited no code (all comments already handled, or"
                             + " you pushed back on every one), `progress` = anything else. Checked where it can"
                             + " be: report no_changes over an edited worktree and it is recorded as a round with"
-                            + " a diff.")
+                            + " a diff, `no_plan` = autoplan only: with status IN_PROGRESS, the task meets none of"
+                            + " its criteria, so no plan comes first (the message is the reason).")
             .text("reviewRequestUrl", "The review request this report is about. Required with CI_POLLING (jagt"
                     + " links it, and the board is where the human follows it).")
             .pairs("reviewRequests", "One request URL per project key, for a task spanning several repositories:"
@@ -112,6 +113,12 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         if (outcome != null && !OUTCOMES.contains(normalised(outcome))) {
             found.add(new Violation("outcome", "one of " + OUTCOMES + ", or left out"));
         }
+        if (noPlan() && context.planRequired()) {
+            found.add(new Violation("outcome", "not no_plan: this task was opened in plan mode, so its plan comes first"));
+        }
+        if (noPlan() && parsedStatus() != TaskStatus.IN_PROGRESS) {
+            found.add(new Violation("status", "IN_PROGRESS with no_plan"));
+        }
         if (!reviewRequests.isEmpty() && reviewRequestUrl != null) {
             found.add(new Violation("reviewRequests", "given instead of reviewRequestUrl, never beside it"));
         }
@@ -135,7 +142,11 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             return Optional.empty();
         }
         return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), detail(),
-                link(context.projectsOnTask()), reviewRequests));
+                link(context.projectsOnTask()), reviewRequests, noPlan()));
+    }
+
+    private boolean noPlan() {
+        return outcome != null && "no_plan".equals(normalised(outcome));
     }
 
     /** What this report says about a round: the typed field first, the marker the message opens with second. */

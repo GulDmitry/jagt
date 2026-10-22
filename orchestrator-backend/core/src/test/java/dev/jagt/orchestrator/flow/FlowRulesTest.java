@@ -19,6 +19,21 @@ class FlowRulesTest {
     }
 
     @Test
+    void offersApprovePlanAtAPendingPlanAndAtNoOtherStatus() {
+        Facts facts = new Facts(false, false, () -> false, false);
+
+        assertThat(FlowRules.allowed(TaskStatus.PLAN_PENDING, facts)).contains(TaskAction.APPROVE_PLAN);
+        assertThat(java.util.Arrays.stream(TaskStatus.values()).filter(status -> status != TaskStatus.PLAN_PENDING)
+                .filter(status -> FlowRules.allows(status, TaskAction.APPROVE_PLAN, facts))).isEmpty();
+    }
+
+    @Test
+    void movesAnApprovedPlanBackToWorkOnceTheSessionIsTold() {
+        assertThat(FlowRules.next(TaskStatus.PLAN_PENDING, TaskAction.APPROVE_PLAN, Outcome.Kind.RELAYED))
+                .contains(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
     void shipsAStuckTaskAgainOnlyOnceTheAgentThatWasPushingItIsGone() {
         assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(false, false,
                 () -> false, false))).isTrue();

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.NewTask;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,19 +29,27 @@ public class SubAgentBriefing {
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
                 repo.worktreePath(),
                 alsoYours(repo, repos),
+                planFirstSentence(request.mode()),
                 autoplanSentence(autoplan),
                 visualizeSentence(visualize),
                 diagnoseSentence(diagnose),
                 taskId, baseBranches(repos), deployBranches(repos));
     }
 
+    private static String planFirstSentence(@Nullable String mode) {
+        return "plan".equalsIgnoreCase(mode)
+                ? " PLAN FIRST: the human asked for a plan. Plan before your first edit, as above."
+                : "";
+    }
+
     private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {
         return autoplan.enabledOrDefault()
-                ? (" AUTOPLAN is on: before your first edit, plan first (PLAN MODE) if the task changes more than %d"
+                ? (" AUTOPLAN is on: before your first edit, plan first if the task changes more than %d"
                 + " files, two of its requirements contradict, one contradicts what the code guarantees, a term it"
                 + " rests on has no definition, or you would settle unasked what changes the code. `plan.md`'s first"
                 + " line and your PLAN_PENDING message: `planned first: autoplan is on (agent.autoplan in jagt.yml),"
-                + " <the criterion>`.").formatted(autoplan.filesOrDefault())
+                + " <the criterion>`. If the task meets none of them, report IN_PROGRESS with outcome `no_plan` and"
+                + " the reason before your first edit.").formatted(autoplan.filesOrDefault())
                 : "";
     }
 
@@ -48,8 +57,8 @@ public class SubAgentBriefing {
         return visualize.enabledOrDefault()
                 ? " VISUALIZE is on: while analysing the task, where you decide whether to plan first, judge whether"
                 + " it is worth a picture. A two-line bug fix is not. If it is, write `" + Artifact.VISUAL.fileName()
-                + "` in the worktree before your first edit. A frontend change gets an ASCII sketch of each screen,"
-                + " one fenced block per screen. A backend change gets Mermaid (class, sequence or ER diagram, in a"
+                + "` in the worktree as part of the plan when you plan first, else before your first edit. A frontend"
+                + " change gets an ASCII sketch of each screen, one fenced block per screen. A backend change gets Mermaid (class, sequence or ER diagram, in a"
                 + " mermaid fence) and markdown tables. Pictures over prose."
                 : "";
     }

@@ -59,7 +59,8 @@ public record TaskState(
         // Null until first recorded.
         @Nullable GitTrust gitTrust,
         // What the last plan submitted declared, each with its last result once VERIFYING ran it.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Probe> probes
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Probe> probes,
+        PlanGate planGate
 ) {
 
     /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
@@ -104,7 +105,9 @@ public record TaskState(
             @JsonProperty("history") @Nullable List<StatusChange> history,
             @JsonProperty("refusals") @Nullable Map<Guard, Integer> refusals,
             @JsonProperty("gitTrust") @Nullable GitTrust gitTrust,
-            @JsonProperty("probes") @Nullable List<Probe> probes) {
+            @JsonProperty("probes") @Nullable List<Probe> probes,
+            // Absent in a file written before the gate existed, which reads as nothing to wait for.
+            @JsonProperty("planGate") @Nullable PlanGate planGate) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -113,7 +116,7 @@ public record TaskState(
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
                 pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
-                probes == null ? List.of() : probes);
+                probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate);
     }
 
     @JsonIgnore
@@ -423,6 +426,11 @@ public record TaskState(
         return toBuilder().probes(probes).build();
     }
 
+    /** Does NOT touch lastActiveTimestamp: the gate moves by a human's word or by the session declaring no plan. */
+    public TaskState withPlanGate(PlanGate planGate) {
+        return toBuilder().planGate(planGate).build();
+    }
+
     /** Does NOT touch lastActiveTimestamp: metering is not agent activity. */
     public TaskState withUsageAdded(TokenUsage added) {
         return toBuilder().usage(usageOrNone().plus(added)).build();
@@ -444,7 +452,8 @@ public record TaskState(
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
                 .approved(approved)
-                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes);
+                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
+                .planGate(planGate);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -473,6 +482,7 @@ public record TaskState(
         private Map<Guard, Integer> refusals = Map.of();
         private @Nullable GitTrust gitTrust;
         private List<Probe> probes = List.of();
+        private PlanGate planGate = PlanGate.OPEN;
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -609,6 +619,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder planGate(PlanGate planGate) {
+            this.planGate = planGate;
+            return this;
+        }
+
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
@@ -616,7 +631,7 @@ public record TaskState(
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust,
-                    probes);
+                    probes, planGate);
         }
     }
 }

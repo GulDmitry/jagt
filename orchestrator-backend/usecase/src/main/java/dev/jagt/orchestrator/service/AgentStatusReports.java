@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.protocol.Reported;
 import dev.jagt.orchestrator.protocol.Violation;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
@@ -68,7 +69,8 @@ public class AgentStatusReports {
 
     /** What the rules may ask about the task this message is about. */
     public MessageContext contextFor(String taskId) {
-        return new MessageContext(known(taskId));
+        return new MessageContext(known(taskId), stateService.task(taskId)
+                .filter(task -> task.planGate() == PlanGate.REQUIRED).isPresent());
     }
 
     /** The task's repositories, primary first: which link a human follows first is the session's own. */
@@ -86,6 +88,9 @@ public class AgentStatusReports {
         FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage,
                 (was, next) -> planned(was, linked(was, next, url, requestsByProject)), handBack::verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
+        if (said.noPlan()) {
+            stateService.updateTask(taskId, task -> task.withPlanGate(PlanGate.OPEN));
+        }
         TaskStatus previous = written.previous();
         TaskStatus landed = written.now();
         // An agent that stops to ask usually keeps its status, so the message is the only thing that changed.

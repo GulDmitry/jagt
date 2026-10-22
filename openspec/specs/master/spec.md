@@ -54,7 +54,7 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that holds and answer a question. It SHALL
+With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and answer a question. It SHALL
 deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps
 (`task/MasterRight`) the human's, and a project's `humanPaths` a task's ship and deploy where it changes a path they name
 (`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.

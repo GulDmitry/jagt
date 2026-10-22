@@ -14,6 +14,8 @@ import java.util.Set;
  */
 public enum TaskAction {
 
+    APPROVE_PLAN(85, Group.FLOW, "approve-plan", "Approve plan",
+            "tell the session the plan holds: it starts on the change the plan lists"),
     SHIP(30, Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
     SWEEP(10, Group.FLOW, "sweep", "Check review",
             "read the checks and open threads, relay them to the agent"),

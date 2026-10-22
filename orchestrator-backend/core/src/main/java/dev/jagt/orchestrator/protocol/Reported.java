@@ -14,7 +14,7 @@ import java.util.Map;
  * carries.
  */
 public record Reported(TaskStatus status, AgentReport claimed, @Nullable String detail, @Nullable String link,
-                       Map<String, String> requests) {
+                       Map<String, String> requests, boolean noPlan) {
 
     public Reported {
         requests = requests == null ? Map.of() : Map.copyOf(requests);

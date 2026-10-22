@@ -16,6 +16,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 | `ReadGate` | each call of a headless read and the Master's reviewer | allow-list, fails closed | nothing: it is the boundary |
 | `BoardWriteFilter` | every board write but `/mcp` and `/api/agent/` | allow-list | the Master's token, same-user trust |
 | `ToolGate` | a session's shell line or a plan's command probe | block-list over one line | the worktree's `pre-push` |
+| `PlanFirst` | a session's file write while its plan waits | allow-list: `plan.md`, `task_visual.md`, `task_notes.md` | the human, who reads the diff |
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
 | `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit | the code host's branch protection |
 | `GitStateGuard` | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |
@@ -49,5 +50,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 | A headless answer in prose, its object in a fence and no schema call made | such an answer carries a tool's output |
 | An MCP read sends its arguments out; a local server's read verb reads outside the worktrees | a read tool writes, or one named takes a path |
 | An excluded command, the Edit tool, an MCP server, a Unix socket | a write lands outside the task so |
+| A file written through the shell while the plan waits: `tee`, `sed -i`, a redirect | shell writes during planning are seen in practice |
+| A runtime declaring no `gate` event: Codex keeps its read-only sandbox for a plan | its CLI gains a hook jagt can answer |
 
 Known to refuse: `git -C` on a worktree whose path holds a space. Reopen when a round's second worktree has one.

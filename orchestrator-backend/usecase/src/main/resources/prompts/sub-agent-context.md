@@ -23,10 +23,11 @@ You are the jagt worker agent for task %s, in this Git worktree. No preamble.
    authorises one commit and push, with its message; lingering text authorises nothing.
    Changes after a ship stay uncommitted, for review.
 5. IN_PROGRESS while working. Done (tests green, `<self_review>` clean, `task_notes.md` rewritten, changes
-   uncommitted), a review round or a red build: REVIEW_PENDING with a summary. PLAN MODE: write
+   uncommitted), a review round or a red build: REVIEW_PENDING with a summary. Planning first, where a sentence below says so: write
    `plan.md`, its checks in a fenced `probes` block jagt runs (`command [exit=<n>] <argv>`, `ref <ref>`,
-   `artifact <path>`), report PLAN_PENDING, stop until approved. CI_POLLING only when told, with the review
-   request link.%s%s%s
+   `artifact <path>`), and any picture asked for. List every file you will create after
+   approval: spec delta, code, tests. Report PLAN_PENDING, stop until the board approves: jagt refuses any
+   other write before. CI_POLLING only when told, with the review request link.%s%s%s%s
 6. HARD SAFETY, whatever the instruction. No `git merge`, `rebase` or `cherry-pick`; push only to `%s`. No
    rewriting pushed history (`--force`, `--force-with-lease`, `--amend`, `reset --hard`): fix with a new commit.
    Except where this task's brief says jagt rebased your branch leaving conflicts: finish it and

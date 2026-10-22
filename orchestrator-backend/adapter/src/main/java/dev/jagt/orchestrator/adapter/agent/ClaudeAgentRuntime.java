@@ -66,7 +66,6 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public String launchCommand(Path worktree, boolean planMode, String model, @Nullable String prompt) {
         return COMPACT_ENV + claude.command()
-                + (planMode ? " --permission-mode plan" : "")
                 + (model == null || model.isBlank() ? "" : " --model " + shellQuote(model.strip()))
                 + " " + shellQuote(prompt);
     }
@@ -303,11 +302,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                 .map(event -> hook(event, hooks.command(worktree, "turn-end"))),
                         SessionHooks.turnFailure("claude").stream()
                                 .map(event -> hook(event, hooks.command(worktree, "turn-failure"))),
-                        // Scoped to the one tool that can push: a hook on all of them would sit in front of
-                        // every step the agent takes.
+                        // Scoped to the tools that can push or write a file: a hook on all of them would sit in
+                        // front of every step the agent takes.
                         SessionHooks.gate("claude").stream()
                                 .map(event -> """
-                                        %s: [{"matcher": "Bash", "hooks": [{"type": "command", "command": %s,\
+                                        %s: [{"matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit", "hooks": [{"type": "command", "command": %s,\
                                          "timeout": 5}]}]"""
                                         .formatted(quoted(event), quoted(hooks.gateCommand(worktree)))))
                 .flatMap(stream -> stream)
