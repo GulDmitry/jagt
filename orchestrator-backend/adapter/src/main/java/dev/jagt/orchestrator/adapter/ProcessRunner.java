@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.Processes;
 
+import dev.jagt.orchestrator.service.OneLine;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -95,7 +96,7 @@ public class ProcessRunner implements Processes {
         log.atInfo().setMessage("process launched")
                 .addKeyValue("pid", launched.pid())
                 .addKeyValue("session", ownSession ? "own" : "jagt")
-                .addKeyValue("cmd", String.join(" ", command))
+                .addKeyValue("cmd", OneLine.clipped(String.join(" ", command)))
                 .log();
         launched.onExit().thenAccept(ended -> log.atInfo().setMessage("process ended")
                 .addKeyValue("pid", ended.pid())

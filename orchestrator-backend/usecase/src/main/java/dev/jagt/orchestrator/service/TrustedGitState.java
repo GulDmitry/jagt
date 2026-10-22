@@ -71,7 +71,7 @@ public class TrustedGitState {
                 + " — trust adopts them";
         stateService.updateTask(taskId, current -> current.withGitTrust(trusted.withChanged(changed)).refused(Guard.GIT_STATE));
         log.atWarn().setMessage("git state changed").addKeyValue("task", taskId)
-                .addKeyValue("cause", String.join("; ", differences))
+                .addKeyValue("cause", OneLine.clipped(String.join("; ", differences)))
                 .addKeyValue("effect", "task parked").log();
         return Optional.of(changed);
     }

@@ -163,7 +163,7 @@ public class RoutingMemory {
             if (split < 0) {
                 log.atWarn().setMessage("routing rule unreadable")
                         .addKeyValue("file", file())
-                        .addKeyValue("cause", "no '" + SEPARATOR.strip() + "' in: " + read)
+                        .addKeyValue("cause", OneLine.clipped("no '" + SEPARATOR.strip() + "' in: " + read))
                         .log();
                 continue;
             }

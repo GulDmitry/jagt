@@ -22,6 +22,13 @@ class OneLineTest {
     }
 
     @Test
+    void clipsTextToFourHundredCharactersWithTheCutMarked() {
+        String clipped = OneLine.clipped("a".repeat(1000));
+
+        assertThat(clipped).hasSize(400).endsWith("a…");
+    }
+
+    @Test
     void keepsAbsentTextAbsent() {
         assertThat(OneLine.of(null, 6)).isNull();
     }

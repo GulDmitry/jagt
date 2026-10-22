@@ -160,7 +160,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                     + id + " — restart the agent, then say it again.");
         }
         log.atInfo().setMessage("line said to agent").addKeyValue("task", id)
-                .addKeyValue("alias", task.alias()).addKeyValue("said", line).log();
+                .addKeyValue("alias", task.alias()).addKeyValue("said", OneLine.clipped(line)).log();
         return "Said to the agent.";
     }
 
@@ -201,7 +201,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         log.atInfo().setMessage("instructions relayed").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias())
                 .addKeyValue("chars", instructions.length())
-                .addKeyValue("said", instructions.lines().findFirst().orElse("(empty)"))
+                .addKeyValue("said", OneLine.clipped(instructions.lines().findFirst().orElse("(empty)")))
                 .log();
         // A file on disk doesn't wake a running agent session — nudge it directly.
         ConfigService.ConfigFile config = configService.load();

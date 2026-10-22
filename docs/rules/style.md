@@ -39,6 +39,8 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 - **ERROR** jagt could not do it · **WARN** it degraded, skipped or fell back · **INFO** a state change a
   human wants to see · **DEBUG** internal.
 - INFO is for work nobody watched; a verb a human pressed logs nothing — `activity` reads that convention back.
+- **Above DEBUG a line stays one line**: text jagt did not write — stderr, a model's words, a command, a list —
+  goes through `OneLine.clipped`; the whole of it, when worth keeping, is a DEBUG line of its own.
 
 ## Code quality
 

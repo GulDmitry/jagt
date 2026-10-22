@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.service.OneLine;
 import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Problem;
@@ -74,7 +75,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
             if (launch.exitCode() != 0) {
                 log.atWarn().setMessage("kitty tab open failed")
                         .addKeyValue("session", tmuxSession)
-                        .addKeyValue("cause", launch.stderr())
+                        .addKeyValue("cause", OneLine.clipped(launch.stderr()))
                         .log();
             }
             return;
@@ -84,7 +85,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
         if (open.exitCode() != 0) {
             log.atWarn().setMessage("kitty launch failed")
                     .addKeyValue("session", tmuxSession)
-                    .addKeyValue("cause", open.stderr())
+                    .addKeyValue("cause", OneLine.clipped(open.stderr()))
                     .addKeyValue("fix", tmux + " attach -t " + tmuxSession)
                     .log();
         }

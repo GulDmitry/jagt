@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.Processes;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -459,6 +460,23 @@ class HeadlessClaudeTest {
                 .flatExtracting(ILoggingEvent::getKeyValuePairs)
                 .extracting(pair -> pair.key + "=" + pair.value)
                 .contains("ref=ABC-42", "calls={Bash=2, Read=1}");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsRatherThanErrsWhenTheReadWasDeniedACallAndAnsweredAnyway() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":false},\"permission_denials\":[{\"tool_name\":\"Bash\"}]}", ""));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
+
+        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+                mock(ReadOnlyTools.class)).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant tool calls denied".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
     }
 
     @Test

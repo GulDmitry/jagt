@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -28,10 +29,10 @@ class MasterOpen {
 
     String open(String line) {
         if (namesTheDeployBranch(line)) {
-            log.atWarn().setMessage("master open refused").addKeyValue("line", line).log();
+            log.atWarn().setMessage("master open refused").addKeyValue("line", OneLine.clipped(line)).log();
             return "Not opened: work on the deploy branch is the task's own `deploy`, once its request is green.";
         }
-        log.atInfo().setMessage("master opens a task").addKeyValue("line", line).log();
+        log.atInfo().setMessage("master opens a task").addKeyValue("line", OneLine.clipped(line)).log();
         return launcher.launchLine(line).message();
     }
 

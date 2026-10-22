@@ -165,7 +165,7 @@ public class GitWorktrees {
             log.atWarn().setMessage("branch restore failed")
                     .addKeyValue("repo", repository)
                     .addKeyValue("branch", branch)
-                    .addKeyValue("cause", why)
+                    .addKeyValue("cause", OneLine.clipped(why))
                     .log();
             return why;
         });
@@ -262,7 +262,7 @@ public class GitWorktrees {
             log.atWarn().setMessage("resume rebase conflicted")
                     .addKeyValue("branch", branch)
                     .addKeyValue("target", target)
-                    .addKeyValue("cause", rebased.stderr().strip())
+                    .addKeyValue("cause", OneLine.clipped(rebased.stderr()))
                     .addKeyValue("effect", "left in the worktree for the session to resolve")
                     .log();
             return;
@@ -377,7 +377,7 @@ public class GitWorktrees {
                 log.atWarn().setMessage("git worktree remove failed")
                         .addKeyValue("path", worktreePath)
                         .addKeyValue("exit", removed.exitCode())
-                        .addKeyValue("cause", removed.stderr())
+                        .addKeyValue("cause", OneLine.clipped(removed.stderr()))
                         .addKeyValue("effect", "pruned and deleted")
                         .log();
                 git.run(projectPath, List.of("git", "worktree", "prune"));
@@ -389,7 +389,7 @@ public class GitWorktrees {
                 if (branch.exitCode() != 0) {
                     log.atWarn().setMessage("git branch delete failed")
                             .addKeyValue("branch", branchToDelete)
-                            .addKeyValue("cause", branch.stderr())
+                            .addKeyValue("cause", OneLine.clipped(branch.stderr()))
                             .log();
                 }
             }

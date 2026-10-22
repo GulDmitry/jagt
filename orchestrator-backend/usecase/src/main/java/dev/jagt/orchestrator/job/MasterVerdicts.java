@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -101,7 +102,8 @@ public class MasterVerdicts {
                 + " in this window. Then report IN_PROGRESS, apply the answer uncommitted, and hand the round back.")) {
             return false;
         }
-        log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", question).log();
+        log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
+                .log();
         return reports.report(taskId, FlowRules.relayed(), "outcome=question — " + REVIEWER + question);
     }
 
@@ -120,8 +122,8 @@ public class MasterVerdicts {
         if (freshSession) {
             sessions.openTaskTab(taskId, null);
         }
-        log.atInfo().setMessage("master answered").addKeyValue("task", taskId).addKeyValue("question", question)
-                .addKeyValue("decision", decision).log();
+        log.atInfo().setMessage("master answered").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
+                .addKeyValue("decision", OneLine.clipped(decision)).log();
         return reports.report(taskId, FlowRules.relayed(), "master answered the question");
     }
 

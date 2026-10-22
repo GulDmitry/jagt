@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
+import dev.jagt.orchestrator.service.OneLine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -59,7 +60,7 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
         }
         log.atInfo().setMessage("worktree processes reaped")
                 .addKeyValue("path", worktree)
-                .addKeyValue("cmd", String.join(",", reaped.stream().map(Reapable::command).toList()))
+                .addKeyValue("cmd", OneLine.clipped(String.join(",", reaped.stream().map(Reapable::command).toList())))
                 .log();
     }
 

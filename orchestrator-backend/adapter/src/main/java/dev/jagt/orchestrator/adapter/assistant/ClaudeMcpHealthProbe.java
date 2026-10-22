@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.OneLine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -103,7 +104,7 @@ class ClaudeMcpHealthProbe implements McpHealth {
             log.atError().setMessage("mcp probe failed")
                     .addKeyValue("cmd", claude.command() + " mcp list")
                     .addKeyValue("exit", result.exitCode())
-                    .addKeyValue("cause", result.stderr().isBlank() ? result.stdout() : result.stderr())
+                    .addKeyValue("cause", OneLine.clipped(result.stderr().isBlank() ? result.stdout() : result.stderr()))
                     .log();
             return Optional.empty();
         }
@@ -115,7 +116,7 @@ class ClaudeMcpHealthProbe implements McpHealth {
         if (servers.isEmpty()) {
             log.atError().setMessage("mcp probe listed no server")
                     .addKeyValue("cmd", claude.command() + " mcp list")
-                    .addKeyValue("cause", result.stdout().strip())
+                    .addKeyValue("cause", OneLine.clipped(result.stdout()))
                     .log();
             return Optional.empty();
         }

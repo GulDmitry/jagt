@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.WorktreeHooks;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -110,7 +111,7 @@ public class TmuxSessionHost implements SessionHost {
         if (rename.exitCode() != 0) {
             log.atWarn().setMessage("tmux window rename failed")
                     .addKeyValue("window", name)
-                    .addKeyValue("cause", rename.stderr())
+                    .addKeyValue("cause", OneLine.clipped(rename.stderr()))
                     .log();
         }
         return windowId;
@@ -195,7 +196,7 @@ public class TmuxSessionHost implements SessionHost {
                     log.atWarn().setMessage("tmux kill-window failed")
                             .addKeyValue("window", id)
                             .addKeyValue("task", taskId)
-                            .addKeyValue("cause", kill.stderr())
+                            .addKeyValue("cause", OneLine.clipped(kill.stderr()))
                             .log();
                 }
             }
@@ -265,7 +266,7 @@ public class TmuxSessionHost implements SessionHost {
         if (options.exitCode() != 0) {
             log.atWarn().setMessage("tmux session options failed")
                     .addKeyValue("session", session)
-                    .addKeyValue("cause", options.stderr())
+                    .addKeyValue("cause", OneLine.clipped(options.stderr()))
                     .log();
         }
     }

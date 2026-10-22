@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.agent;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.protocol.Violation;
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.SessionWakes;
 import dev.jagt.orchestrator.service.StateService;
@@ -77,7 +78,7 @@ public class AgentSessionController {
         if (!violations.isEmpty()) {
             log.atWarn().setMessage("session hook field dropped")
                     .addKeyValue("task", task.getKey())
-                    .addKeyValue("cause", violations.toString())
+                    .addKeyValue("cause", OneLine.clipped(violations.toString()))
                     .log();
         }
         return SessionReports.Report.defaults()

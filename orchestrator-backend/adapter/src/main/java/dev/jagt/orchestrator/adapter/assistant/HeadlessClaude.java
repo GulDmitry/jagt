@@ -55,7 +55,6 @@ class HeadlessClaude {
     static final String RETRY_REASON = "\n\nYour last reply was prose without the " + STRUCTURED_OUTPUT
             + " call: answer through " + STRUCTURED_OUTPUT + " alone.";
     private static final String BUDGET_SUBTYPE = "error_max_budget_usd";
-    private static final int MAX_CAUSE = 400;
     private static final Pattern FENCE = Pattern.compile("```(?:json)?\\s*(\\{.*?})\\s*```", Pattern.DOTALL);
 
     private final ProcessRunner processRunner;
@@ -225,7 +224,7 @@ class HeadlessClaude {
         }
         JsonNode denials = envelope == null ? null : envelope.path("permission_denials");
         if (denials != null && denials.isArray() && !denials.isEmpty()) {
-            log.atError().setMessage("assistant tool calls denied")
+            log.atWarn().setMessage("assistant tool calls denied")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", oneLine(denials.toString()))
                     .log();
@@ -260,7 +259,7 @@ class HeadlessClaude {
 
     /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */
     private static @Nullable String oneLine(@Nullable String value) {
-        return OneLine.of(value == null ? "" : value.replace('"', '\''), MAX_CAUSE);
+        return OneLine.clipped(value == null ? "" : value.replace('"', '\''));
     }
 
     private @Nullable JsonNode parseEnvelope(String stdout, String label) {

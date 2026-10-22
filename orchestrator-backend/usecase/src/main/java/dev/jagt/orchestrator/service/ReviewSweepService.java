@@ -45,7 +45,7 @@ public class ReviewSweepService {
             String alias = stateService.task(taskId).map(TaskState::alias).orElse(null);
             log.atInfo().setMessage("sweep done").addKeyValue("task", taskId).addKeyValue("alias", alias)
                     .addKeyValue("outcome", result.kind())
-                    .addKeyValue("said", result.message())
+                    .addKeyValue("said", OneLine.clipped(result.message()))
                     .log();
             return result;
         } finally {

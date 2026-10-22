@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
@@ -99,7 +100,7 @@ public class WatchdogService implements Job {
         lastAlertAt.put(taskId, now);
         log.atWarn().setMessage("task stopped")
                 .addKeyValue("task", taskId)
-                .addKeyValue("said", said)
+                .addKeyValue("said", OneLine.clipped(said))
                 .addKeyValue("cause", silence.get().reported())
                 .addKeyValue("silent", (now - silence.get().since()) / 60_000)
                 .log();
