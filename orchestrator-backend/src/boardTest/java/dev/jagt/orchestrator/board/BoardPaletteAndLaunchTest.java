@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.board;
 
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.RequestOptions;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
 
@@ -75,6 +78,21 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
         assertThat(page.locator("#palette-state")).hasClass(Pattern.compile("\\bbad\\b"));
         assertThat(page.locator("#palette-state")).containsText("no task");
+    }
+
+    @Test
+    void thePaletteJudgesALineTypedBeforeTheCommandsArrivedOnceTheyDo() {
+        List<Route> verbs = new ArrayList<>();
+        Page page = session.newPage();
+        page.route("**/api/commands", verbs::add);
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("ship nope");
+
+        verbs.get(0).resume();
+
+        assertThat(page.locator("#palette-state")).hasClass(Pattern.compile("\\bbad\\b"));
     }
 
     @Test

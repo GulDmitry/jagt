@@ -66,9 +66,13 @@ if (deepLink) {
 async function loadVerbs() {
   await refreshVerbs();
   palette.refreshSuggestions();
+  palette.judge();
   menu.render();
   render();
 }
+
+// A line typed while the board was still being read is judged again against what arrived.
+const readBoard = () => refresh().then(palette.judge);
 
 // A new run reloads the page, but not under a form someone is filling in.
 function reloadOnceNoDialogIsOpen() {
@@ -100,7 +104,7 @@ function listen() {
     retryIn = 1000;
     connected(true);
     loadVerbs();
-    refresh();
+    readBoard();
   });
   // A connection a sleeping laptop dropped stays open to the page: two missed beats are what says it is gone.
   events.addEventListener('beat', (beat) => {
@@ -112,7 +116,7 @@ function listen() {
     }, Number(beat.data) * 2.5);
   });
   // An open report is read again on the same signal: the round it shows may be the thing that changed.
-  events.addEventListener('changed', () => { tabs.forget(); refresh(); repaintReport(); });
+  events.addEventListener('changed', () => { tabs.forget(); readBoard(); repaintReport(); });
   // A refused connect is final for an EventSource; only a new one tries again.
   events.onerror = () => {
     clearTimeout(silence);
