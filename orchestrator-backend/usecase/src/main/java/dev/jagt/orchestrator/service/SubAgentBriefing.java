@@ -59,7 +59,8 @@ public class SubAgentBriefing {
                 + " it is worth a picture. A two-line bug fix is not. If it is, write `" + Artifact.VISUAL.fileName()
                 + "` in the worktree as part of the plan when you plan first, else before your first edit. A frontend"
                 + " change gets an ASCII sketch of each screen, one fenced block per screen. A backend change gets Mermaid (class, sequence or ER diagram, in a"
-                + " mermaid fence) and markdown tables. Pictures over prose."
+                + " mermaid fence) and markdown tables; no `;` in a Mermaid label, where it ends the statement."
+                + " Pictures over prose."
                 : "";
     }
 

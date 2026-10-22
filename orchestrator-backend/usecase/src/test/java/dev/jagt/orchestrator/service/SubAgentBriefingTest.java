@@ -207,6 +207,21 @@ class SubAgentBriefingTest {
     }
 
     @Test
+    void warnsThatASemicolonEndsAMermaidStatementWhenVisualizeIsOn() {
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults().withEnabled(true),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(briefing).contains("no `;` in a Mermaid label, where it ends the statement");
+    }
+
+    @Test
     void saysNothingOfAPictureWhenVisualizeIsLeftAtItsDefault() {
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
