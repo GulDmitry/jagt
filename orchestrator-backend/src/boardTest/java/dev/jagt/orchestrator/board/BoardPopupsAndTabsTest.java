@@ -4,6 +4,7 @@ import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.Launched;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
@@ -286,6 +288,20 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
         assertThat(page.locator("#tasks .row .badge.problem")).hasCount(1);
         assertThat(page.locator("#pane .history")).containsText("checks failed");
+    }
+
+    @Test
+    void theStatusHistoryReadsNewestFirst() {
+        long now = System.currentTimeMillis();
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_FAILED).alias("a1").lastActiveTimestamp(now).history(List.of(
+                        new StatusChange(TaskStatus.IN_PROGRESS, now - 3_600_000, null),
+                        new StatusChange(TaskStatus.CI_FAILED, now - 60_000, null))).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#pane .history li").first()).containsText("checks failed");
     }
 
     @Test

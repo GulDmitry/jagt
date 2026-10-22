@@ -15,7 +15,7 @@ const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
 
 const History = ({task, now}) => html`<section class="history" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
   <h2 class="group-head">status history</h2>
-  <ol>${(task.history || []).map((step) => html`<li>
+  <ol>${[...(task.history || [])].reverse().map((step) => html`<li>
     <span class="age">${when(step.at, now)}</span> ${step.label || step.status}${
       step.origin ? html` <span class="muted">${step.origin.toLowerCase().replace('_', '-')}</span>` : ''}
   </li>`)}</ol>
