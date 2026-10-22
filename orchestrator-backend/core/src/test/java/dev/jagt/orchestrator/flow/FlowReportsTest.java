@@ -84,17 +84,45 @@ class FlowReportsTest {
                 .isEqualTo(TaskStatus.APPROVED);
     }
 
-    @Test
-    void recordsAStartingAgentsLineWithoutTakingARevertedDeployOffTheRecord() {
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVERTED", "DEPLOY_CONFLICT"})
+    void keepsTheLineOfAStatusAHumanHoldsWhenItsSessionReports(TaskStatus held) {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
 
-        reports.report("ABC-1", TaskStatus.IN_PROGRESS, "picking the task back up");
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, "no changes: clean worktree");
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());
-        TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.REVERTED).build());
-        assertThat(after.status()).isEqualTo(TaskStatus.REVERTED);
-        assertThat(after.message()).isEqualTo("picking the task back up");
+        TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", held)
+                .message("deploy ABC-1: conflict in Foo.java").build());
+        assertThat(after.status()).isEqualTo(held);
+        assertThat(after.message()).isEqualTo("deploy ABC-1: conflict in Foo.java");
+    }
+
+    @Test
+    void putsAQuestionOnTheCardOfAStatusAHumanHolds() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
+
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, "awaiting: keep both sides of Foo.java?");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
+                .message("deploy ABC-1: conflict in Foo.java").build());
+        assertThat(after.message()).isEqualTo("awaiting: keep both sides of Foo.java?");
+    }
+
+    @Test
+    void leavesTheLineToTheHeldStatusOnceItsQuestionIsBehind() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
+
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, "resolving the merge");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
+                .message("awaiting: keep both sides of Foo.java?").build());
+        assertThat(after.message()).isNull();
     }
 
     @Test

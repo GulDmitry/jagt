@@ -69,6 +69,14 @@ public class MasterAnswerJob implements Job {
     }
 
     private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+        if (AgentReport.asksForAPermission(task.message())) {
+            log.atInfo().setMessage("master answer withheld").addKeyValue("task", taskId)
+                    .addKeyValue("cause", "a permission only the human grants")
+                    .addKeyValue("effect", "the question waits for the human")
+                    .log();
+            unanswered.put(taskId, task.message());
+            return;
+        }
         int given = verdicts.answersOverThisTree(task);
         boolean stalled = verdicts.stalled(task);
         if (given >= MasterDecisions.RUNAWAY || stalled) {

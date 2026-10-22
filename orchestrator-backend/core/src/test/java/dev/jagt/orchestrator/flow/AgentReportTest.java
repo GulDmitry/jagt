@@ -23,6 +23,16 @@ class AgentReportTest {
     }
 
     @Test
+    void readsAQuestionForAPermissionByItsMarker() {
+        assertThat(AgentReport.asksForAPermission("awaiting permission: edits in the deploy worktree denied")).isTrue();
+    }
+
+    @Test
+    void keepsAnOrdinaryQuestionOutOfThePermissionsOnlyTheHumanGrants() {
+        assertThat(AgentReport.asksForAPermission("awaiting: keep both sides of Foo.java?")).isFalse();
+    }
+
+    @Test
     void keepsAProseSentenceThatOnlyStartsLikeAMarkerAsPlain() {
         assertThat(AgentReport.of("no changesets were needed")).isEqualTo(AgentReport.PLAIN);
     }

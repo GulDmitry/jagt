@@ -54,6 +54,14 @@ plan gate ([task-flow](../task-flow/spec.md)). For a task opened in `plan` mode 
 - **WHEN** a session of a `plan`-mode task reports `outcome=no_plan`
 - **THEN** it is refused as a violation and the plan gate stays closed
 
+### Requirement: A session may say only the human can unblock it
+`update_agent_status` SHALL take `outcome=permission`: a question stopped on a call the CLI denied, written
+`awaiting permission` into the line, which nothing standing in for the human answers ([master](../master/spec.md)).
+
+#### Scenario: Edits denied in the deploy worktree
+- **WHEN** a session reports `outcome=permission`
+- **THEN** the card reads `NEEDS INPUT: permission: …` and the Master leaves it to you
+
 ### Requirement: Every violation at once
 Validation SHALL report every violation at once, never first-failure, each naming the field and what was expected.
 `startup/StartupValidation` refuses a bad install the same way.

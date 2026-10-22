@@ -139,6 +139,12 @@ public class AgentStatusReports {
                     .addKeyValue("status", landed)
                     .addKeyValue("said", shortMessage)
                     .log();
+        } else if (FlowRules.holdsItsLine(landed) && AgentReport.of(shortMessage) != AgentReport.QUESTION) {
+            log.atInfo().setMessage("agent line held off the card").addKeyValue("task", taskId)
+                    .addKeyValue("alias", alias)
+                    .addKeyValue("status", landed)
+                    .addKeyValue("said", shortMessage == null ? "" : shortMessage)
+                    .log();
         }
     }
 
@@ -253,7 +259,8 @@ public class AgentStatusReports {
             claimed = AgentReport.PLAIN;
         }
         return switch (claimed) {
-            case QUESTION -> marked("awaiting", Objects.requireNonNull(detail));
+            case QUESTION -> marked(said.permission() ? "awaiting permission" : "awaiting",
+                    Objects.requireNonNull(detail));
             case NO_CHANGES -> marked("no changes", Objects.requireNonNull(detail));
             case PLAIN -> detail;
         };

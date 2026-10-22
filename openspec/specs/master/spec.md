@@ -54,10 +54,10 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and answer a question. It SHALL
-deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps
-(`task/MasterRight`) the human's, and a project's `humanPaths` a task's ship and deploy where it changes a path they name
-(`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
+With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
+answer a question. A permission stays yours. It SHALL deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`);
+`master.mine` SHALL keep named steps (`task/MasterRight`) the human's, and a project's `humanPaths` a task's ship
+and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: Green with every thread closed
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
@@ -74,6 +74,10 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours
+
+#### Scenario: A session asks for a permission
+- **WHEN** it reports `outcome=permission`, stopped on a call its CLI denied
+- **THEN** the Master never answers: no model grants a right, so the question is yours
 
 #### Scenario: Questions repeat over an unchanged tree
 - **WHEN** they repeat

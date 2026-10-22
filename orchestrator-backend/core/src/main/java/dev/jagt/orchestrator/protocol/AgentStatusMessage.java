@@ -29,7 +29,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                                  @Nullable String taskId) implements Message {
 
     /** The wire spelling of what a report says about a round; absent falls back to a marker in the message. */
-    public static final Set<String> OUTCOMES = Set.of("progress", "question", "no_changes", "no_plan");
+    public static final Set<String> OUTCOMES = Set.of("progress", "question", "permission", "no_changes",
+            "no_plan");
 
     private static final Pattern URL = Pattern.compile("https?://\\S+");
 
@@ -47,6 +48,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             .choice("outcome", OUTCOMES,
                     "What this report says about the work, in jagt's own words rather than yours:"
                             + " `question` = you have STOPPED and need the human (the message is the question),"
+                            + " `permission` = the same, stopped on a call your CLI denied: only the human grants"
+                            + " it (the message names the call),"
                             + " `no_changes` = a review round edited no code (all comments already handled, or"
                             + " you pushed back on every one), `progress` = anything else. Checked where it can"
                             + " be: report no_changes over an edited worktree and it is recorded as a round with"
@@ -142,7 +145,11 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             return Optional.empty();
         }
         return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), detail(),
-                link(context.projectsOnTask()), reviewRequests, noPlan()));
+                link(context.projectsOnTask()), reviewRequests, noPlan(), permission()));
+    }
+
+    private boolean permission() {
+        return outcome != null && "permission".equals(normalised(outcome));
     }
 
     private boolean noPlan() {
@@ -155,7 +162,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             return AgentReport.of(message);
         }
         return switch (normalised(outcome)) {
-            case "question" -> AgentReport.QUESTION;
+            case "question", "permission" -> AgentReport.QUESTION;
             case "no_changes" -> AgentReport.NO_CHANGES;
             default -> AgentReport.PLAIN;
         };

@@ -63,7 +63,8 @@ public class FlowReports {
             }
             TaskStatus now = FlowRules.reported(task.status(), status, verificationOwed.test(task));
             landed.set(new Landed(task.status(), now));
-            return alsoRecord.apply(task.status(), task.withStatus(now, message, clock.millis()));
+            String line = FlowRules.holdsItsLine(task.status()) ? held(task.message(), message) : message;
+            return alsoRecord.apply(task.status(), task.withStatus(now, line, clock.millis()));
         });
         Optional<String> why = Optional.ofNullable(refused.get())
                 .or(() -> FlowRules.reportable(status) ? Optional.empty() : FlowRules.refusedReport(status, status));
@@ -71,6 +72,14 @@ public class FlowReports {
             throw Refusal.byState(why.get());
         }
         return Optional.ofNullable(landed.get());
+    }
+
+    /** A question still reaches the card; once one is behind, the line falls back to the status's own. */
+    private static @Nullable String held(@Nullable String shown, @Nullable String said) {
+        if (AgentReport.of(said) == AgentReport.QUESTION) {
+            return said;
+        }
+        return AgentReport.of(shown) == AgentReport.QUESTION ? null : shown;
     }
 
     /**

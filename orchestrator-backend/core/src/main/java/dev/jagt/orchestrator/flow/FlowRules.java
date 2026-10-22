@@ -178,7 +178,7 @@ public final class FlowRules {
      * The status a report actually lands on. A task at REVERTED KEEPS it: what came back out of a shared branch is
      * a human's to move on from; one at DEPLOY_CONFLICT keeps it until the deploy finishes. The report is ACCEPTED
      * rather than refused — an agent's protocol is to keep saying what it is doing, and a status it cannot report
-     * is a session whose every call errors.
+     * is a session whose every call errors. Such a status keeps its line too ({@link #holdsItsLine}).
      */
     public static TaskStatus reported(TaskStatus from, TaskStatus to) {
         return reported(from, to, false);
@@ -193,6 +193,11 @@ public final class FlowRules {
             return from;
         }
         return verificationOwed && to == TaskStatus.REVIEW_PENDING ? TaskStatus.VERIFYING : to;
+    }
+
+    /** Whether a report leaves the task's line alone, a question aside: the status's own fact is the human's. */
+    public static boolean holdsItsLine(TaskStatus status) {
+        return HELD_AGAINST_A_REPORT.contains(status);
     }
 
     /** What a read of the review round can conclude, which only the host's round read may land. */

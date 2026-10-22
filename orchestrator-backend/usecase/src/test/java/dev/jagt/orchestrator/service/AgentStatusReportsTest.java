@@ -365,6 +365,22 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void marksAQuestionStoppedOnADeniedCallAsAPermissionOnlyTheHumanGrants(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "edits in the deploy worktree denied", "permission", null,
+                Map.of()), "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().message())
+                .isEqualTo("awaiting permission: edits in the deploy worktree denied");
+    }
+
+    @Test
     void notifiesHumanWhenAgentStopsToAskWithoutLeavingTheStatusItWasWorkingIn(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

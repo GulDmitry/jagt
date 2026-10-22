@@ -77,3 +77,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0059 Plan first is jagt's gate](0059-plan-first-is-jagts-gate-not-the-clis-plan-mode.md)
 - [0060 The Session tab stays beside focus](0060-the-session-tab-stays-beside-focus.md)
 - [0061 jagt stops its own loop](0061-jagt-stops-a-task-it-suspects-it-is-looping.md)
+- [0062 A permission is the human's to grant](0062-a-permission-is-the-humans-to-grant.md)

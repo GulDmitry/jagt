@@ -24,6 +24,13 @@ public enum AgentReport {
             "(?i)^\\s*(?:outcome\\s*[:=]\\s*(?:question|no[ _-]changes|progress)"
                     + "|awaiting|no[ _-]changes)\\b[\\s:.]*(?:[–—-]\\s+)?");
 
+    private static final Pattern PERMISSION = Pattern.compile("(?i)^\\s*awaiting\\s+permission\\b");
+
+    /** A question asking for a right only the human can grant, which nobody standing in for them may answer. */
+    public static boolean asksForAPermission(@Nullable String message) {
+        return PERMISSION.matcher(message == null ? "" : message).find();
+    }
+
     public static AgentReport of(@Nullable String message) {
         var matcher = MARKER.matcher(message == null ? "" : message);
         if (!matcher.find()) {
