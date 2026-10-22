@@ -80,6 +80,10 @@ answer a question. A permission, and a plan asked for in `plan` mode, stay yours
 - **WHEN** a plan holds and `mine` is unset, or names `plan`, or the task was opened in `plan` mode
 - **THEN** it approves nothing; the plan waits for your `approve-plan`
 
+#### Scenario: An answer while jagt's instruction waits
+- **WHEN** it answers at `SHIPPING` or `DEPLOY_CONFLICT`
+- **THEN** the answer goes under the ship or hand-off in `task_context.md`, which still stands
+
 #### Scenario: A session asks for a permission
 - **WHEN** it reports `outcome=permission`, stopped on a call its CLI denied
 - **THEN** the Master never answers: no model grants a right, so the question is yours

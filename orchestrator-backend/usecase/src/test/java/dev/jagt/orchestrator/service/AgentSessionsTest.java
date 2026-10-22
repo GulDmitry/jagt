@@ -422,6 +422,34 @@ class AgentSessionsTest {
     }
 
     @Test
+    void keepsAPendingInstructionAboveWhatIsRelayedUnderIt() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-42-demo"));
+        Files.writeString(worktree.resolve("task_context.md"), "Resolve the conflict in /src/ABC-42-deploy.");
+        state.putTask("ABC-42", TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.relayUnder("ABC-42", "Keep both imports.");
+
+        assertThat(Files.readString(worktree.resolve("task_context.md")))
+                .contains("Resolve the conflict in /src/ABC-42-deploy.", "Keep both imports.");
+    }
+
+    @Test
+    void replacesTheEarlierAdditionUnderAPendingInstructionSoTheFileStaysBounded() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-42-demo"));
+        Files.writeString(worktree.resolve("task_context.md"), "Resolve the conflict in /src/ABC-42-deploy.");
+        state.putTask("ABC-42", TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+        sessions.relayUnder("ABC-42", "Keep both imports.");
+
+        sessions.relayUnder("ABC-42", "Drop the old import.");
+
+        assertThat(Files.readString(worktree.resolve("task_context.md")))
+                .contains("Resolve the conflict in /src/ABC-42-deploy.", "Drop the old import.")
+                .doesNotContain("Keep both imports.");
+    }
+
+    @Test
     void leavesTheAgentAloneWhenTheRoundIsTheOneItWasAlreadyHanded() throws Exception {
         Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
         Files.writeString(worktree.resolve("task_context.md"), "Review round for http://mr/1.\nComment: rename x");

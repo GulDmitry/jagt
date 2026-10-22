@@ -113,8 +113,12 @@ public class MasterVerdicts {
         String opened = decision.lines().filter(line -> line.startsWith(DO))
                 .map(line -> "\n" + (ownQuestion ? NOT_OPENED : ship.open(line.substring(DO.length()))))
                 .collect(Collectors.joining());
-        if (!sessions.relayIfChanged(taskId, "The Master answered your question, standing in for the human:\n"
-                + decision + opened + "\n\nReport IN_PROGRESS, apply it, and hand the round back as usual.")) {
+        String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
+        boolean told = FlowRules.awaitsItsInstruction(task.status())
+                ? sessions.relayUnder(taskId, answer + "\n\nApply it, then carry on with the instruction above.")
+                : sessions.relayIfChanged(taskId, answer + "\n\nReport IN_PROGRESS, apply it, and hand the round back"
+                        + " as usual.");
+        if (!told) {
             return false;
         }
         decisions.record(task, "- asked: " + question + " — decided: " + decision.replace('\n', ' '));

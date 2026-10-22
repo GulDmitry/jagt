@@ -94,6 +94,21 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
+        state.putTask("ABC-42", task);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, sessions));
+
+        verdicts.answered("ABC-42", task, "keep both imports?", "keep both imports", false);
+
+        verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"));
+        verify(sessions, never()).relayIfChanged(eq("ABC-42"), anyString());
+    }
+
+    @Test
     void opensATaskForWorkTheMasterMovedToABranchOfItsOwn(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

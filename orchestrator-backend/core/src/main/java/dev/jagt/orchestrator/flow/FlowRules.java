@@ -314,6 +314,11 @@ public final class FlowRules {
         return status == TaskStatus.DEPLOY_CONFLICT;
     }
 
+    /** Waiting on an instruction jagt relayed, which nothing else written to the session may replace. */
+    public static boolean awaitsItsInstruction(TaskStatus status) {
+        return AWAITING_ITS_INSTRUCTION.contains(status);
+    }
+
     /** A round read that found the request approved. */
     public static boolean approved(TaskStatus read) {
         return read == TaskStatus.APPROVED;
@@ -347,6 +352,9 @@ public final class FlowRules {
     private static final Set<TaskStatus> WAITING_FOR_A_DEPLOY = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
 
     private static final Set<TaskStatus> HELD_AGAINST_A_REPORT = EnumSet.of(TaskStatus.REVERTED,
+            TaskStatus.DEPLOY_CONFLICT);
+
+    private static final Set<TaskStatus> AWAITING_ITS_INSTRUCTION = EnumSet.of(TaskStatus.SHIPPING,
             TaskStatus.DEPLOY_CONFLICT);
 
     private static final Set<TaskStatus> READ_FROM_THE_HOST = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
