@@ -115,7 +115,7 @@ allprojects {
             def stop = tasks.register("${testName}StopTmux", Exec) {
                 environment 'TMUX_TMPDIR', tmuxDir.absolutePath
                 environment.remove('TMUX')
-                commandLine 'sh', '-c', 'tmux kill-server 2>/dev/null; rm -rf "$TMUX_TMPDIR"; true'
+                commandLine 'sh', rootProject.file('gradle/stop-test-tmux.sh').absolutePath
             }
             tasks.named(testName) { finalizedBy stop }
         }
@@ -181,6 +181,11 @@ allprojects {
         systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
         // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
         systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
+        // The gate never reaches the developer's own terminal: a booted context finds no tmux and no kitty to run.
+        systemProperty 'orchestrator.tmux-command', 'jagt-test-no-tmux'
+        systemProperty 'orchestrator.kitty-command', 'jagt-test-no-kitty'
+        environment.remove('KITTY_LISTEN_ON')
+        environment.remove('KITTY_WINDOW_ID')
     }
     tasks.withType(Test).configureEach {
         systemProperty 'user.language', 'en'
