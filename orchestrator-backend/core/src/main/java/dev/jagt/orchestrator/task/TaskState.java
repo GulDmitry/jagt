@@ -426,6 +426,10 @@ public record TaskState(
         return toBuilder().probes(probes).build();
     }
 
+    public TaskState withBaseBranch(String baseBranch) {
+        return toBuilder().baseBranch(baseBranch).build();
+    }
+
     /** Does NOT touch lastActiveTimestamp: the gate moves by a human's word or by the session declaring no plan. */
     public TaskState withPlanGate(PlanGate planGate) {
         return toBuilder().planGate(planGate).build();

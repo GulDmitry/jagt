@@ -972,6 +972,35 @@ class GitWorktreesTest {
     }
 
     @Test
+    void readsAWorktreeAsStandingOnABranchOnlyOnceItsHeadHoldsWhatOriginHasThere(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        Path other = dir.resolve("other");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), other.toString()));
+        runner.run(other, timeout, List.of("git", "checkout", "-qb", "ABC-41"));
+        Files.writeString(other.resolve("g.txt"), "stacked on");
+        runner.run(other, timeout, List.of("git", "add", "."));
+        runner.run(other, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "ABC-41"));
+        runner.run(other, timeout, List.of("git", "push", "-q", "origin", "ABC-41"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThat(git.standsOn(repo, "ABC-41")).isFalse();
+
+        runner.run(repo, timeout, List.of("git", "reset", "-q", "--hard", "origin/ABC-41"));
+
+        assertThat(git.standsOn(repo, "ABC-41")).isTrue();
+    }
+
+    @Test
     void readsABranchAtOriginAsPresentOnlyOnceItWasPushed(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

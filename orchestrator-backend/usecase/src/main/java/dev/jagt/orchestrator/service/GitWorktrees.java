@@ -352,6 +352,14 @@ public class GitWorktrees {
         });
     }
 
+    /** Whether HEAD holds the branch as origin has it now: fetched first, since a branch stacked on moves. */
+    public boolean standsOn(Path worktreePath, String branch) {
+        return git.locked(worktreePath, () -> git.run(worktreePath, List.of("git", "fetch", "origin",
+                "+refs/heads/" + branch + ":refs/remotes/origin/" + branch)).exitCode() == 0
+                && git.run(worktreePath, List.of("git", "merge-base", "--is-ancestor", "origin/" + branch, "HEAD"))
+                .exitCode() == 0);
+    }
+
     /** Asked over the network, not of {@code refs/remotes}: a just-pushed branch is absent until the next fetch. */
     public boolean remoteBranchExists(Path projectPath, String branch) {
         return git.locked(projectPath, () -> git.run(projectPath,
