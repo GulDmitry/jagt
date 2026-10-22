@@ -24,6 +24,8 @@ seam (`ScriptedProcesses`) is allowed, a shared builder is not.
 - Editing a test's assertion or expected value, or deleting it, needs a reason in the commit message.
 - The reason is one of two: its scenario changed in the same commit, or it asserted what nothing promised.
 - A red run is the code's to fix. Rewriting the expectation to go green is never a reason.
+- **A move is pinned by where it lands**: a report a unit sends is asserted once as the status it lands on,
+  through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
 - Why: an edited test is the cheapest wrong fix, and a bug comes back through it
   ([Approved Scenarios](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
 

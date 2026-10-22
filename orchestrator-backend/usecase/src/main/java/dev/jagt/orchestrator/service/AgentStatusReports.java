@@ -53,8 +53,19 @@ public class AgentStatusReports {
 
     /** A verification run's own verdict, which owes no further run. */
     public String verified(boolean passed, String message, String taskId) {
-        AgentStatusMessage said = new AgentStatusMessage(FlowRules.verified(passed).name(), message, null, null, Map.of());
-        return report(accepted(said, taskId), taskId, task -> false);
+        TaskStatus verdict = FlowRules.verified(passed);
+        AgentStatusMessage said = new AgentStatusMessage(verdict.name(), message, null, null, Map.of());
+        String answer = report(accepted(said, taskId), taskId, task -> false);
+        TaskStatus landed = stateService.task(taskId).map(TaskState::status).orElse(null);
+        // A measured verdict the flow turns aside leaves the task held, and the run repeats with nothing to say why.
+        if (landed != verdict) {
+            log.atError().setMessage("verdict not landed")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("status", landed)
+                    .addKeyValue("cause", "verdict " + verdict + " turned aside")
+                    .log();
+        }
+        return answer;
     }
 
     /**
