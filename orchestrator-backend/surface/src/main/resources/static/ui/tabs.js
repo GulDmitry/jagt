@@ -7,10 +7,10 @@ let tab = 'overview';
 let read = {key: null, shown: null, stale: false};
 let asked = 0;
 
-// Which document of each task its Files tab shows; a name that is not listed any more falls back to the first.
+// Which document of each task its Artifacts tab shows; a name that is not listed any more falls back to the first.
 const picked = new Map();
 
-const files = async (task) => {
+const artifacts = async (task) => {
   const id = encodeURIComponent(task.id);
   const names = await api(`/api/tasks/files?task=${id}`);
   const name = names.includes(picked.get(task.id)) ? picked.get(task.id) : names[0];
@@ -19,7 +19,7 @@ const files = async (task) => {
 };
 
 const sources = {
-  files,
+  artifacts,
   session: (task) => api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`)
     .catch((e) => ({held: true, shown: `could not read it: ${e.message}`})),
   round: (task, offer) => text(`/api/commands/${offer.id}?about=${encodeURIComponent(task.alias || task.id)}`),

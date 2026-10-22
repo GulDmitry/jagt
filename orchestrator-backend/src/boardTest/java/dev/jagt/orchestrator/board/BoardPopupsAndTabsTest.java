@@ -134,7 +134,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
-    void theFilesTabListsTheDocumentsThePresentWorktreeHoldsAndShowsTheOnePickedRendered() throws Exception {
+    void theArtifactsTabListsTheDocumentsThePresentWorktreeHoldsAndShowsTheOnePickedRendered() throws Exception {
         Path worktree = Files.createDirectories(root.resolve("ABC-4-alpha"));
         Files.writeString(worktree.resolve("plan.md"), "# The plan\n");
         Files.writeString(worktree.resolve("task_visual.md"), "# The sketch\n\n| a | b |\n|---|---|\n| 1 | 2 |\n");
@@ -143,7 +143,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
 
-        page.locator("#pane .tabs button[data-tab=files]").click();
+        page.locator("#pane .tabs button[data-tab=artifacts]").click();
         assertThat(page.locator("#pane .doc-names button[data-file=\"task_notes.md\"]")).hasCount(0);
         assertThat(page.locator("#pane .doc h1")).hasText("The plan");
         page.locator("#pane .doc-names button[data-file=task_visual\\.md]").click();
@@ -161,9 +161,20 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
 
-        page.locator("#pane .tabs button[data-tab=files]").click();
+        page.locator("#pane .tabs button[data-tab=artifacts]").click();
 
         assertThat(page.locator("#pane .doc .mermaid svg")).isVisible();
+    }
+
+    @Test
+    void theOpenTaskTabsStandInTheOrderTheyAreUsed() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#pane .tabs button")).hasText(new String[] {"Overview", "Review round", "Artifacts", "Session"});
     }
 
     @Test

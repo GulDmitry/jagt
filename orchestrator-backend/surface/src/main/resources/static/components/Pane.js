@@ -7,8 +7,8 @@ import {Report} from './Report.js';
 import {draw} from '../ui/mermaid.js';
 import {dayAndMinutes, minutes, sameDay} from '../core/time.js';
 
-export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'session', label: 'Session'},
-  {id: 'round', label: 'Review round'}, {id: 'files', label: 'Files'}];
+export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'round', label: 'Review round'},
+  {id: 'artifacts', label: 'Artifacts'}, {id: 'session', label: 'Session'}];
 
 // Today's steps by the clock alone; an older one by its day too.
 const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
@@ -38,7 +38,7 @@ const Round = ({shown, offered}) => html`<section class="round" role="tabpanel" 
 </section>`;
 
 // `shown` is what the tab read, `{names, name, html}`, or null while it reads; `html` is rendered by the server.
-const Files = ({task, shown}) => html`<section class="files" role="tabpanel" id="panel-files" aria-labelledby="tab-files">
+const Artifacts = ({task, shown}) => html`<section class="artifacts" role="tabpanel" id="panel-artifacts" aria-labelledby="tab-artifacts">
   ${shown === null ? html`<p class="muted">reading…</p>`
     : !shown.names.length ? html`<p class="muted">No document of this task is in its worktree.</p>`
       : html`<div class="doc-names">${shown.names.map((name) => html`<button data-file=${name} data-task=${task.id}
@@ -52,7 +52,7 @@ export const Pane = ({card, tab, shown}) => html`<section id="pane" aria-label="
   <div role="tablist" class="tabs">${TABS.map((one) => html`<button role="tab" data-tab=${one.id} id=${`tab-${one.id}`}
     aria-selected=${String(one.id === tab)} aria-controls=${one.id === tab ? `panel-${one.id}` : undefined}>${one.label}</button>`)}</div>
   ${tab === 'session' ? html`<${Session} task=${card.task} shown=${shown}/>`
-    : tab === 'files' ? html`<${Files} task=${card.task} shown=${shown}/>`
+    : tab === 'artifacts' ? html`<${Artifacts} task=${card.task} shown=${shown}/>`
     : tab === 'round' ? html`<${Round} shown=${shown}
       offered=${card.offers.some((offer) => offer.part === 'round')}/>`
     : html`<${History} task=${card.task} now=${card.now}/>`}
