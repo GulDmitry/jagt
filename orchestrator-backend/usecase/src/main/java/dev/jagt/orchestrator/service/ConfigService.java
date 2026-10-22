@@ -253,8 +253,8 @@ public class ConfigService {
             }
 
             /** Steps a human keeps for themselves, by name; anything not named here the Master holds in `act`. */
-            public List<String> mineOrNone() {
-                return mine == null ? List.of() : mine;
+            public List<String> mineOrDefault() {
+                return mine == null ? List.of(MasterRight.PLAN.id()) : mine;
             }
 
             /** The name this list had before it was written from the human's side; refused rather than ignored. */
@@ -265,7 +265,7 @@ public class ConfigService {
             /** Whether the session may do this, which in any mode but `act` is never. */
             public boolean may(MasterRight right) {
                 return modeOrDefault() == MasterMode.ACT
-                        && mineOrNone().stream().noneMatch(named -> MasterRight.of(named)
+                        && mineOrDefault().stream().noneMatch(named -> MasterRight.of(named)
                                 .filter(right::equals).isPresent());
             }
 

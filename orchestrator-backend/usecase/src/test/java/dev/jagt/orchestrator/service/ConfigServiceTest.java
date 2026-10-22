@@ -170,6 +170,11 @@ class ConfigServiceTest {
     }
 
     @Test
+    void keepsApprovingAPlanTheHumansWhileNoStepIsNamedAsTheirs() {
+        assertThat(MasterConfig.defaults().withMode("act").may(MasterRight.PLAN)).isFalse();
+    }
+
+    @Test
     void readsActAsJudgeWhileTodaysDailyCeilingStands(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");

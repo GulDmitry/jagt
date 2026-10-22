@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.mcp.McpController;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.command.GlobalCommands;
-import dev.jagt.orchestrator.surface.ui.LogFileReset;
+import dev.jagt.orchestrator.surface.ui.LogFileRoll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -57,8 +57,8 @@ class OrchestratorApplicationTest {
     }
 
     @Test
-    void launchesWithTheLogFileResetListenerRegistered() {
+    void launchesWithTheLogFileRollListenerRegistered() {
         assertThat(OrchestratorApplication.application().getListeners())
-                .hasAtLeastOneElementOfType(LogFileReset.class);
+                .hasAtLeastOneElementOfType(LogFileRoll.class);
     }
 }

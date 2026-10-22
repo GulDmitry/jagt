@@ -49,7 +49,7 @@ public class MasterVerdicts {
             }
             case READY -> {
                 decisions.returned(task, verdict.writtenAt(), false);
-                yield plan ? config.may(MasterRight.PLAN) && go(taskId)
+                yield plan ? config.may(MasterRight.PLAN) && !task.planGate().keptForTheHuman() && go(taskId)
                         : config.may(MasterRight.SHIP) && ship.ship(taskId, task);
             }
         };

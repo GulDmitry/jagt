@@ -79,3 +79,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0061 jagt stops its own loop](0061-jagt-stops-a-task-it-suspects-it-is-looping.md)
 - [0062 A permission is the human's to grant](0062-a-permission-is-the-humans-to-grant.md)
 - [0063 A stalled deploy conflict is the human's](0063-a-stalled-deploy-conflict-is-the-humans.md)
+- [0064 A plan you asked for is yours](0064-a-plan-the-human-asked-for-is-theirs.md)

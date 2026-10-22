@@ -11,22 +11,23 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * One run, one log: runs in the gap after {@code application.yml} is read and before the appender opens the
+ * This run's log, the previous run's in {@code .1}: runs in the gap after {@code application.yml} is read and before the appender opens the
  * file. Registered by hand rather than declared — {@code bootJar} hoists {@code META-INF/spring/…imports} to
  * the jar root, which is not on the executable jar's classpath.
  */
-public class LogFileReset implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
+public class LogFileRoll implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
         apply(event.getEnvironment());
     }
 
-    /** @return whether this run cleared the log; false means it deliberately left the file alone. */
+    /** @return whether this run rolled the log; false means it deliberately left the file alone. */
     boolean apply(ConfigurableEnvironment environment) {
         List<String> configured = Stream.of("logging.file.name", "logging.master.name")
                 .map(key -> environment.getProperty(key, ""))
@@ -35,8 +36,7 @@ public class LogFileReset implements ApplicationListener<ApplicationEnvironmentP
         if (configured.isEmpty()) {
             return false;
         }
-        // Another jagt already holds the file open: unlinking it leaves that appender writing to a path
-        // nothing recreates.
+        // Another jagt already holds the file open: moving it leaves that appender writing to the archive.
         if (portTaken(environment.getProperty("server.port", "8290"))) {
             return false;
         }
@@ -58,30 +58,31 @@ public class LogFileReset implements ApplicationListener<ApplicationEnvironmentP
         }
     }
 
-    /** Best-effort: a log that cannot be cleared is not a reason to refuse to start. */
+    /** Best-effort: a log that cannot be rolled is not a reason to refuse to start. */
     static void start(Path logFile) {
         Path absolute = logFile.toAbsolutePath().normalize();
         Path directory = absolute.getParent();
         Path fileName = absolute.getFileName();
-        if (directory == null || fileName == null) {
+        if (directory == null || fileName == null || !Files.isDirectory(directory)) {
             return;
         }
         String name = fileName.toString();
+        Path previous = directory.resolve(name + ".1");
         try {
-            Files.deleteIfExists(absolute);
-            if (!Files.isDirectory(directory)) {
-                return;                       // logback creates it moments later; there is nothing to sweep yet
+            if (Files.exists(absolute)) {
+                Files.move(absolute, previous, StandardCopyOption.REPLACE_EXISTING);
             }
             try (Stream<Path> siblings = Files.list(directory)) {
-                List<Path> archives = siblings
+                List<Path> strays = siblings
                         .filter(sibling -> sibling.getFileName().toString().startsWith(name + "."))
+                        .filter(sibling -> !sibling.equals(previous))
                         .toList();
-                for (Path archive : archives) {
-                    Files.deleteIfExists(archive);
+                for (Path stray : strays) {
+                    Files.deleteIfExists(stray);
                 }
             }
         } catch (IOException | RuntimeException e) {
-            Console.problem("Could not clear " + absolute + ": " + e.getMessage());
+            Console.problem("Could not roll " + absolute + ": " + e.getMessage());
         }
     }
 

@@ -275,7 +275,7 @@ class MasterVerdictsTest {
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("the plan holds. Start on it."))).thenReturn(true);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, sessions));
 
@@ -290,20 +290,40 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void opensThePlanGateWhenTheMasterFindsThePlanHolds(@TempDir Path root) {
+    void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-                .planGate(PlanGate.REQUIRED).build();
+                .planGate(PlanGate.CLOSED).build();
         state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, sessions));
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""), acting);
 
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+    }
+
+    @Test
+    void leavesAPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+                .planGate(PlanGate.REQUIRED).build();
+        state.putTask("ABC-1", planned);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, sessions));
+
+        boolean moved = verdicts.act("ABC-1", planned,
+                new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""), acting);
+
+        assertThat(moved).isFalse();
+        assertThat(state.task("ABC-1").orElseThrow())
+                .returns(TaskStatus.PLAN_PENDING, TaskState::status)
+                .returns(PlanGate.REQUIRED, TaskState::planGate);
     }
 
     @Test

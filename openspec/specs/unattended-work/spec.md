@@ -87,12 +87,12 @@ Each unattended job SHALL be a `job/Job`: id, one line for the human, an interva
 - **WHEN** you open the activity report
 - **THEN** it lists jagt's unattended work on tasks, newest first
 
-### Requirement: One run, one log
-`logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/LogFileReset` SHALL empty the file before it opens.
+### Requirement: A restart keeps the run before
+`logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/LogFileRoll` SHALL roll the file into `.1` before it opens.
 
 #### Scenario: Restart
 - **WHEN** jagt starts
-- **THEN** the log holds this run only
+- **THEN** the log holds this run, its `.1` the run before
 
 ### Requirement: `act` stops itself after three bad endings
 Three tasks in a row the Master moved in `act` ending silent, in a deploy conflict or reverted SHALL stop `act`
@@ -104,7 +104,7 @@ Three tasks in a row the Master moved in `act` ending silent, in a deploy confli
 
 ### Requirement: Every Master step is seen in one window
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
-`jagt-master.log`, one line per Master step (`MasterFeedWindow`). Closed, it SHALL come back within seconds; each start empties the log.
+`jagt-master.log`, one line per Master step (`MasterFeedWindow`). Closed, it SHALL come back within seconds; each start rolls the log into `.1`.
 
 #### Scenario: You want to know why a window opened or closed
 - **WHEN** the Master answers, asks, returns, starts, ships, deploys, opens a task or stops `act`

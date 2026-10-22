@@ -2,7 +2,7 @@
 
 <!--
 Each log holds at most two files: past 10MB it rolls into `<log>.1`, replacing the last one. Boot's own appender
-rolls daily and keeps a week of archives. `LogFileReset` empties the backend log, the Master's and their `.1` at start.
+rolls daily and keeps a week of archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at start.
 -->
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>

@@ -55,9 +55,10 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 
 ### Requirement: In act the Master moves for you
 With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
-answer a question. A permission stays yours. It SHALL deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`);
-`master.mine` SHALL keep named steps (`task/MasterRight`) the human's, and a project's `humanPaths` a task's ship
-and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
+answer a question. A permission, and a plan asked for in `plan` mode, stay yours. It SHALL deploy a `REVIEWED` or
+`APPROVED` task once (`MasterDeployJob`). `master.mine` SHALL keep named steps (`task/MasterRight`) the human's,
+`[plan]` while unset; a project's `humanPaths` a task's ship and deploy where it changes a path they name
+(`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: Green with every thread closed
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
@@ -74,6 +75,10 @@ and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay 
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours
+
+#### Scenario: A plan in act
+- **WHEN** a plan holds and `mine` is unset, or names `plan`, or the task was opened in `plan` mode
+- **THEN** it approves nothing; the plan waits for your `approve-plan`
 
 #### Scenario: A session asks for a permission
 - **WHEN** it reports `outcome=permission`, stopped on a call its CLI denied

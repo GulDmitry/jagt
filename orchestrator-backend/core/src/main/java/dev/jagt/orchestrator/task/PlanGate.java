@@ -7,11 +7,15 @@ public enum PlanGate {
     OPEN,
     /** Opened by autoplan: approval opens it, and the session may declare the task needs no plan. */
     CLOSED,
-    /** Opened in plan mode: only an approval opens it. */
+    /** Asked for in plan mode: only the human's approval opens it. */
     REQUIRED;
 
     public static PlanGate of(boolean planMode, PlanGate otherwise) {
         return planMode ? REQUIRED : otherwise;
+    }
+
+    public boolean keptForTheHuman() {
+        return this == REQUIRED;
     }
 
     public boolean closed() {

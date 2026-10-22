@@ -102,7 +102,7 @@ class MasterCommandTest {
     @Test
     void saysYouKeptNothingBeyondTheStepsNoMasterHolds() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)));
         when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
 
         String report = new MasterCommand(configService, usage, record).run("");
