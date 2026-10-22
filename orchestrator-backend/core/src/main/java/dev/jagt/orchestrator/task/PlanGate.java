@@ -10,6 +10,10 @@ public enum PlanGate {
     /** Opened in plan mode: only an approval opens it. */
     REQUIRED;
 
+    public static PlanGate of(boolean planMode, PlanGate otherwise) {
+        return planMode ? REQUIRED : otherwise;
+    }
+
     public boolean closed() {
         return this != OPEN;
     }

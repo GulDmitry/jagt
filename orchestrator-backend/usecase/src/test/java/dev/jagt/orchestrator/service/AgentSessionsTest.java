@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TerminalDriver;
@@ -274,7 +275,7 @@ class AgentSessionsTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"auto,''", "plan,' in PLAN MODE'"})
+    @CsvSource(value = {"auto,''", "plan,'; it plans first, and the plan is approved on the board with approve-plan'"})
     void namesTheSessionAndTheModeOfTheTabItStarted(String mode, String suffix) {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
@@ -285,6 +286,17 @@ class AgentSessionsTest {
 
         assertThat(answer).isEqualTo("New Claude session started for ABC-1 in tab 'ABC-1' of session 'jagt' (worktree "
                 + root + ")" + suffix);
+    }
+
+    @Test
+    void reopeningInPlanModeClosesThePlanGate() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.openTaskTab("ABC-1", "plan");
+
+        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
     }
 
     @Test

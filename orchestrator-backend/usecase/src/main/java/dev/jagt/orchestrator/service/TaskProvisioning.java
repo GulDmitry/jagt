@@ -75,10 +75,8 @@ public class TaskProvisioning {
     }
 
     private static PlanGate gateOf(boolean planMode, ConfigService.ConfigFile config) {
-        if (planMode) {
-            return PlanGate.REQUIRED;
-        }
-        return config.agent().autoplanOrDefault().enabledOrDefault() ? PlanGate.CLOSED : PlanGate.OPEN;
+        boolean autoplan = config.agent().autoplanOrDefault().enabledOrDefault();
+        return PlanGate.of(planMode, autoplan ? PlanGate.CLOSED : PlanGate.OPEN);
     }
 
     private static String alsoIn(List<NewRepo> repos) {

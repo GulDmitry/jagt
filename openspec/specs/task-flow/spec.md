@@ -141,7 +141,7 @@ open (`NewTaskWorktrees.MAX_TASKS`).
 - **THEN** it is refused before anything is cut
 
 ### Requirement: Plan first is a gate jagt holds
-A task opened in `plan` mode, or with `agent.autoplan.enabled` on, SHALL hold its plan gate closed (`TaskState.planGate`):
+A task opened or reopened in `plan` mode, or with `agent.autoplan.enabled` on, SHALL hold its plan gate closed (`TaskState.planGate`):
 a session's write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused (`PlanFirst`).
 `approve-plan` at `PLAN_PENDING` and the Master's `go` SHALL open it and tell the session to start; a NOT READY SHALL NOT.
 
@@ -168,6 +168,10 @@ a session's write to any file but `plan.md`, `task_visual.md` and `task_notes.md
 #### Scenario: A task that needs no plan
 - **WHEN** an autoplan session reports `IN_PROGRESS` with `outcome=no_plan`
 - **THEN** the gate opens, and in `plan` mode the report is refused
+
+#### Scenario: A task reopened in plan mode
+- **WHEN** a task whose gate is open is reopened with `mode=plan`
+- **THEN** its gate is closed until `approve-plan`, and the answer says the plan is approved on the board
 
 ### Requirement: An existing branch is never lost
 Nothing SHALL be freed or moved until `recreate` or `resume` is picked for a branch that exists.

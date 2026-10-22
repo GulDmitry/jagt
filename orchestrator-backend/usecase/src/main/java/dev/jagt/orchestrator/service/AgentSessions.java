@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.TerminalDriver;
@@ -84,11 +85,12 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     public String openTaskTab(String taskId, @Nullable String mode) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(),
-                planMode(mode));
+        boolean plan = planMode(mode);
+        stateService.updateTask(taskId, was -> was.withPlanGate(PlanGate.of(plan, was.planGate())));
+        String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), plan);
         return "New " + agentRuntime.displayName() + " session started for " + taskId + " in tab '"
                 + taskId + "' of session '" + session + "' (worktree " + task.worktreePath() + ")"
-                + (planMode(mode) ? " in PLAN MODE" : "");
+                + (plan ? "; it plans first, and the plan is approved on the board with approve-plan" : "");
     }
 
     /** The worktree and the state entry stay. */
@@ -311,7 +313,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 : base + "-" + TaskName.slug(taskId);
     }
 
-    /** `plan` = the agent plans first and the human approves the plan in its window; `auto` = straight to work. */
+    /** `plan` = the agent plans first and the plan is approved on the board; `auto` = straight to work. */
     static boolean planMode(@Nullable String mode) {
         if (mode == null || mode.equalsIgnoreCase("auto")) {
             return false;
