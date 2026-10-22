@@ -175,7 +175,7 @@ wait is interrupted and when jagt stops. A detached launch SHALL be left running
 
 #### Scenario: jagt stops mid-run
 - **WHEN** jagt stops while it waits on a command
-- **THEN** the command is killed
+- **THEN** the command is killed, and its caller is told it was stopped (`Processes.Stopped`), never an exit code to judge
 
 ### Requirement: The editor is a launcher
 jagt SHALL open a worktree and a diff only through `editorCommand` and the optional `editorDiffCommand`, naming no editor.

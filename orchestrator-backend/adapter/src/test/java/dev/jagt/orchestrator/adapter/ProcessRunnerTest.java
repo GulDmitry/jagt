@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.port.Processes;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -18,6 +19,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,6 +103,21 @@ class ProcessRunnerTest {
 
         await().atMost(Duration.ofSeconds(5))
                 .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+    }
+
+    @Test
+    void tellsTheCallerItsCommandWasStoppedWithJagtRatherThanThatItFailed(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path pid = dir.resolve("pid");
+        AtomicReference<Throwable> answered = new AtomicReference<>();
+        Thread caller = Thread.startVirtualThread(() -> answered.set(catchThrowable(() -> runner.run(null,
+                Duration.ofSeconds(30), List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
+        await().ignoreExceptions().atMost(Duration.ofSeconds(5)).until(() -> Files.readString(pid).endsWith("\n"));
+
+        runner.destroyRunning();
+        caller.join(5_000);
+
+        assertThat(answered.get()).isInstanceOf(Processes.Stopped.class);
     }
 
     @Test

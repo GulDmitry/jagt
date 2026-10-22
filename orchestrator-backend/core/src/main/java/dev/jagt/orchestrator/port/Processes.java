@@ -25,6 +25,14 @@ public interface Processes {
         }
     }
 
+    /** The command was killed because jagt is stopping: no verdict on what it ran, so never a failure to relay. */
+    final class Stopped extends RuntimeException {
+
+        public Stopped(List<String> command) {
+            super("Stopped with jagt: " + String.join(" ", command));
+        }
+    }
+
     Result run(@Nullable Path workingDir, Duration timeout, List<String> command);
 
     Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command);

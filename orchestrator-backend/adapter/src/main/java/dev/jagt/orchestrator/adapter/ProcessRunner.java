@@ -28,6 +28,7 @@ public class ProcessRunner implements Processes {
     private static final Duration LAUNCH_CHECK = Duration.ofMillis(200);
 
     private final Set<Process> running = ConcurrentHashMap.newKeySet();
+    private final Set<Process> stopped = ConcurrentHashMap.newKeySet();
 
     @Override
     public Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
@@ -145,6 +146,9 @@ public class ProcessRunner implements Processes {
             }
             outThread.join(2_000);
             errThread.join(2_000);
+            if (stopped.remove(process)) {
+                throw new Processes.Stopped(command);
+            }
             return new Result(process.exitValue(), stdout.toString().trim(), stderr.toString().trim());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
@@ -164,6 +168,7 @@ public class ProcessRunner implements Processes {
     /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */
     @PreDestroy
     void destroyRunning() {
+        stopped.addAll(running);
         running.forEach(process -> destroyTree(process, "shutdown"));
     }
 
