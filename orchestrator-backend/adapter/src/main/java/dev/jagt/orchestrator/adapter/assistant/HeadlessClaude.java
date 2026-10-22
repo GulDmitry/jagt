@@ -171,7 +171,8 @@ class HeadlessClaude {
         log.atInfo().setMessage("assistant read")
                 .addKeyValue("ref", label)
                 .addKeyValue("kind", kind)
-                .addKeyValue("calls", calls)
+                // The schema's own call is the answer, not a source, and would print the whole reply.
+                .addKeyValue("calls", calls.stream().filter(call -> !call.startsWith(STRUCTURED_OUTPUT)).toList())
                 .log();
         // The schema's own tool call passes the hook, so an object no call reached jagt for ran unfenced.
         JsonNode replied = reply.envelope();

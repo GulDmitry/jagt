@@ -461,6 +461,28 @@ class HeadlessClaudeTest {
     }
 
     @Test
+    @ResourceLock(Resources.GLOBAL)
+    void leavesTheAnswerOutOfTheCallsItLogsBecauseItIsNoSource() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        ReadOnlyTools reads = mock(ReadOnlyTools.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        when(reads.calls(any())).thenReturn(List.of("mcp__acme__get_issue {issueIdOrKey=ABC-42}",
+                "StructuredOutput {text=# ABC-42 the whole ticket}"));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
+
+        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+                reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant read".equals(event.getMessage()))
+                .flatExtracting(ILoggingEvent::getKeyValuePairs)
+                .extracting(pair -> pair.key + "=" + pair.value)
+                .contains("calls=[mcp__acme__get_issue {issueIdOrKey=ABC-42}]");
+    }
+
+    @Test
     void holdsAReadToItsOwnReadsAndItsAnswerUntilItReturns() {
         ProcessRunner runner = mock(ProcessRunner.class);
         ReadOnlyTools reads = mock(ReadOnlyTools.class);
