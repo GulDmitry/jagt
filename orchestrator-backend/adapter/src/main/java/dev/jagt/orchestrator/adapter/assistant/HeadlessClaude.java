@@ -20,12 +20,15 @@ import org.jspecify.annotations.Nullable;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * One headless {@code claude -p} question, booked the moment it returns. Hardcodes no MCP server or path:
@@ -168,11 +171,18 @@ class HeadlessClaude {
             calls = readOnlyTools.calls(fence);
             unheard = readOnlyTools.lift(fence);
         }
+        // The schema's own call is the answer, not a source, and would print the whole reply.
+        List<String> sources = calls.stream().filter(call -> !call.startsWith(STRUCTURED_OUTPUT)).toList();
+        Map<String, Long> perTool = sources.stream().collect(Collectors.groupingBy(
+                call -> call.split(" ", 2)[0], LinkedHashMap::new, Collectors.counting()));
         log.atInfo().setMessage("assistant read")
                 .addKeyValue("ref", label)
                 .addKeyValue("kind", kind)
-                // The schema's own call is the answer, not a source, and would print the whole reply.
-                .addKeyValue("calls", calls.stream().filter(call -> !call.startsWith(STRUCTURED_OUTPUT)).toList())
+                .addKeyValue("calls", perTool)
+                .log();
+        log.atDebug().setMessage("assistant read calls")
+                .addKeyValue("ref", label)
+                .addKeyValue("calls", sources)
                 .log();
         // The schema's own tool call passes the hook, so an object no call reached jagt for ran unfenced.
         JsonNode replied = reply.envelope();

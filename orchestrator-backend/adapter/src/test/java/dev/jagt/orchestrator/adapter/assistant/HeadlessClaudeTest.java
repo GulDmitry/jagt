@@ -441,12 +441,13 @@ class HeadlessClaudeTest {
 
     @Test
     @ResourceLock(Resources.GLOBAL)
-    void logsEveryCallTheReadMadeSoItsAnswerCanBeTracedToItsSource() {
+    void countsTheCallsOfAReadByToolRatherThanPrintingWhatEachRead() {
         ProcessRunner runner = mock(ProcessRunner.class);
         ReadOnlyTools reads = mock(ReadOnlyTools.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        when(reads.calls(any())).thenReturn(List.of("mcp__acme__get_issue {issueIdOrKey=ABC-42}"));
+        when(reads.calls(any())).thenReturn(List.of("Bash {command=ls src}", "Read {file_path=src/Foo.java}",
+                "Bash {command=git diff --stat}"));
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
         ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
@@ -457,7 +458,7 @@ class HeadlessClaudeTest {
         assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant read".equals(event.getMessage()))
                 .flatExtracting(ILoggingEvent::getKeyValuePairs)
                 .extracting(pair -> pair.key + "=" + pair.value)
-                .contains("ref=ABC-42", "calls=[mcp__acme__get_issue {issueIdOrKey=ABC-42}]");
+                .contains("ref=ABC-42", "calls={Bash=2, Read=1}");
     }
 
     @Test
@@ -479,7 +480,7 @@ class HeadlessClaudeTest {
         assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant read".equals(event.getMessage()))
                 .flatExtracting(ILoggingEvent::getKeyValuePairs)
                 .extracting(pair -> pair.key + "=" + pair.value)
-                .contains("calls=[mcp__acme__get_issue {issueIdOrKey=ABC-42}]");
+                .contains("calls={mcp__acme__get_issue=1}");
     }
 
     @Test
