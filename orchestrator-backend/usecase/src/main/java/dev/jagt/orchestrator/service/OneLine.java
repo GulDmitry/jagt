@@ -7,7 +7,7 @@ import java.util.Objects;
 /** Text as one table row: whitespace flattened, cut to a width. */
 public final class OneLine {
 
-    private static final int CLIP = 400;
+    private static final int CLIP = 200;
 
     private OneLine() {
     }

@@ -22,10 +22,10 @@ class OneLineTest {
     }
 
     @Test
-    void clipsTextToFourHundredCharactersWithTheCutMarked() {
+    void clipsTextToTwoHundredCharactersWithTheCutMarked() {
         String clipped = OneLine.clipped("a".repeat(1000));
 
-        assertThat(clipped).hasSize(400).endsWith("a…");
+        assertThat(clipped).hasSize(200).endsWith("a…");
     }
 
     @Test
