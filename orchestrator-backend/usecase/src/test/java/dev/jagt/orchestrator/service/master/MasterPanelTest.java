@@ -868,7 +868,11 @@ class MasterPanelTest {
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-        when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of()));
+        CountDownLatch stillReviewing = new CountDownLatch(1);
+        when(reviews.review(eq("ABC-1"), any())).thenAnswer(call -> {
+            stillReviewing.await(2, TimeUnit.SECONDS);
+            return new Judgement("", "ready", List.of(), "", List.of());
+        });
         Thread.currentThread().interrupt();
 
         boolean written = new MasterPanel(reviews, briefs, quotes).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
