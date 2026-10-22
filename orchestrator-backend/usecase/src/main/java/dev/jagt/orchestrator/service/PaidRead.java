@@ -31,23 +31,29 @@ final class PaidRead {
             answer = ask.apply(corrections);
             spent = spent.plus(answer.usage());
             if (answer.facts().filter(usable).isPresent()) {
-                return new Answer<>(answer.facts(), spent, answer.failure());
+                return new Answer<>(answer.facts(), spent, answer.failure(), answer.refused());
             }
             corrections = answer.facts()
                     .map(facts -> violations.apply(facts).stream().map(Violation::toString).toList())
                     .orElse(List.of());
             log.atWarn().setMessage("paid read unusable")
                     .addKeyValue("ref", ref)
-                    .addKeyValue("cause", answer.facts().isEmpty() ? "no answer"
-                            : corrections.isEmpty() ? "not usable" : String.join("; ", corrections))
+                    .addKeyValue("cause", cause(answer, corrections))
                     .addKeyValue("attempt", attempt)
                     .addKeyValue("limit", policy.attempts())
                     .log();
-            if (policy.lastAttempt(attempt) || System.nanoTime() > deadline || !pause(policy)) {
+            if (answer.refused() || policy.lastAttempt(attempt) || System.nanoTime() > deadline || !pause(policy)) {
                 break;
             }
         }
-        return new Answer<>(answer.facts(), spent, answer.failure());
+        return new Answer<>(answer.facts(), spent, answer.failure(), answer.refused());
+    }
+
+    private static String cause(Answer<?> answer, List<String> corrections) {
+        if (answer.refused()) {
+            return answer.failure().isBlank() ? "the read gate refused a tool" : answer.failure();
+        }
+        return answer.facts().isEmpty() ? "no answer" : corrections.isEmpty() ? "not usable" : String.join("; ", corrections);
     }
 
     private static boolean pause(RetryPolicy policy) {

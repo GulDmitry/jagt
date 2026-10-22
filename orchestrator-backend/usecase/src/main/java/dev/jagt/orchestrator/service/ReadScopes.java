@@ -33,6 +33,7 @@ public class ReadScopes {
     private final Map<String, ReadScope> open = new ConcurrentHashMap<>();
     private final Set<String> asked = ConcurrentHashMap.newKeySet();
     private final Map<String, List<String>> heard = new ConcurrentHashMap<>();
+    private final Set<String> refused = ConcurrentHashMap.newKeySet();
 
     public void open(String fence, ReadScope scope) {
         open.put(fence, scope);
@@ -42,6 +43,7 @@ public class ReadScopes {
     public boolean close(String fence) {
         open.remove(fence);
         heard.remove(fence);
+        refused.remove(fence);
         return asked.remove(fence);
     }
 
@@ -55,6 +57,17 @@ public class ReadScopes {
         if (calls.size() < MAX_CALLS) {
             calls.add(line.length() <= MAX_LINE ? line : line.substring(0, MAX_LINE) + "…");
         }
+    }
+
+    /** The run under {@code fence} was refused a tool: asking it again meets the same refusal. */
+    public void refuse(String fence) {
+        if (open.containsKey(fence)) {
+            refused.add(fence);
+        }
+    }
+
+    public boolean refused(String fence) {
+        return refused.contains(fence);
     }
 
     public List<String> heard(String fence) {

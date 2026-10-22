@@ -33,6 +33,9 @@ class ReadOnlyTools {
     private static final List<String> READ_VERBS = List.of("get", "list", "search", "read", "fetch", "find",
             "describe", "lookup");
 
+    /** A read named by what it returns, not by a verb. */
+    private static final List<String> READ_NOUNS = List.of("discussions", "notes");
+
     /** Behind the fence, a second line: a write the human allowed everywhere is denied by its verb. */
     static final List<String> MCP_WRITES = Stream.concat(Stream.of("accept", "add", "approve", "archive", "assign",
                             "cancel", "click", "close", "comment", "create", "delete", "drag", "edit", "emulate",
@@ -71,6 +74,11 @@ class ReadOnlyTools {
         return scopes.heard(fence);
     }
 
+    /** Whether the fence refused a call of the run, asked before {@link #lift} forgets it. */
+    boolean refused(String fence) {
+        return scopes.refused(fence);
+    }
+
     /** Why the fence held nothing, where no call ever reached it: a managed policy may drop a hook unsaid. */
     Optional<String> lift(String fence) {
         return scopes.close(fence) ? Optional.empty() : Optional.of("no call reached the read gate");
@@ -98,7 +106,8 @@ class ReadOnlyTools {
     }
 
     private static Stream<String> readsOf(String server) {
-        return READ_VERBS.stream().map(verb -> server + "__" + verb + "*");
+        return Stream.concat(READ_VERBS.stream().map(verb -> server + "__" + verb + "*"),
+                READ_NOUNS.stream().map(noun -> server + "__*" + noun + "*"));
     }
 
     private List<String> declared(String pinned) {

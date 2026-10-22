@@ -29,4 +29,19 @@ class PaidReadTest {
         assertThat(asked).hasValue(1);
         assertThat(answer.facts()).isEmpty();
     }
+
+    @Test
+    void asksOnceWhenTheReadGateRefusedATool() {
+        AtomicInteger asked = new AtomicInteger();
+        RetryPolicy policy = new RetryPolicy(3, Duration.ofMillis(1), Duration.ofMinutes(2));
+
+        Answer<String> answer = PaidRead.untilUsable(policy, "ABC-1", corrections -> {
+            asked.incrementAndGet();
+            return new Answer<>(Optional.empty(), TokenUsage.NONE, "jagt refuses mcp__acme__tool", true);
+        }, facts -> List.of(), facts -> true);
+
+        assertThat(asked).hasValue(1);
+        assertThat(answer.refused()).isTrue();
+        assertThat(answer.failure()).isEqualTo("jagt refuses mcp__acme__tool");
+    }
 }

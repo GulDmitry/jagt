@@ -75,7 +75,7 @@ class HeadlessClaude {
                 .addKeyValue("ref", label)
                 .addKeyValue("cause", failure)
                 .log();
-        return Answer.failed(answer.usage(), failure);
+        return new Answer<>(Optional.empty(), answer.usage(), failure, answer.refused());
     }
 
     Answer<JsonNode> read(String prompt, String schema, String label, AssistantCallKind kind) {
@@ -87,17 +87,25 @@ class HeadlessClaude {
         JsonNode firstEnvelope = first.envelope();
         Optional<JsonNode> answer = firstEnvelope != null ? answerOf(firstEnvelope, label, schema) : Optional.empty();
         if (firstEnvelope == null || answer.isPresent()) {
-            return new Answer<>(answer, first.usage(), first.cause());
+            return new Answer<>(answer, first.usage(), first.cause(), first.refused());
         }
         // The CLI at times hands back the model's prose without the object its schema tool validated.
         Reply second = call(prompt + RETRY_REASON, schema, label, kind, timeout);
         JsonNode secondEnvelope = second.envelope();
         return new Answer<>(secondEnvelope != null ? answerOf(secondEnvelope, label, schema) : Optional.empty(),
-                first.usage().plus(second.usage()), second.cause());
+                first.usage().plus(second.usage()), second.cause(), first.refused() || second.refused());
     }
 
     /** A failed call carries no envelope, only its cause: asking again would not mend it. */
-    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
+    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause, boolean refused) {
+
+        Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
+            this(envelope, usage, cause, false);
+        }
+
+        Reply refusedByGate(boolean gate) {
+            return new Reply(envelope, usage, cause, refused || gate);
+        }
 
         static Reply failed(TokenUsage usage, String cause) {
             return new Reply(null, usage, cause);
@@ -164,10 +172,12 @@ class HeadlessClaude {
         Reply reply;
         Optional<String> unheard;
         List<String> calls;
+        boolean refused;
         try {
             reply = booked(cwd, timeout, fenced, kind, label);
         } finally {
             calls = readOnlyTools.calls(fence);
+            refused = readOnlyTools.refused(fence);
             unheard = readOnlyTools.lift(fence);
         }
         // The schema's own call is the answer, not a source, and would print the whole reply.
@@ -194,7 +204,7 @@ class HeadlessClaude {
                     .log();
             return Reply.failed(reply.usage(), "unfenced: " + unheard.get());
         }
-        return reply;
+        return reply.refusedByGate(refused);
     }
 
     private Reply booked(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {

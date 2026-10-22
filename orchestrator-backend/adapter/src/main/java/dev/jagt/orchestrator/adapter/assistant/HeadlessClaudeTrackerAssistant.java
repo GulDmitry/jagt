@@ -70,7 +70,7 @@ public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
                 + "Respond directly, no preamble.";
         Answer<String> read = claude.read(prompt, TicketText.SCHEMA.json(), ticketRef,
                 AssistantCallKind.MASTER_REVIEW).map(n -> n.path("text").asString("").strip());
-        return new Answer<>(read.facts().filter(text -> !text.isEmpty()), read.usage(), read.failure());
+        return new Answer<>(read.facts().filter(text -> !text.isEmpty()), read.usage(), read.failure(), read.refused());
     }
 
     @Override

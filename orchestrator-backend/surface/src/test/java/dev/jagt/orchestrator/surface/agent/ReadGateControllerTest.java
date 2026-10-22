@@ -31,6 +31,16 @@ class ReadGateControllerTest {
     }
 
     @Test
+    void marksTheFenceRefusedOnceAToolIsRefusedUnderIt() {
+        ReadScopes scopes = new ReadScopes();
+        scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));
+
+        new ReadGateController(scopes).gate("f1", new ReadGateController.ToolCall("WebFetch", Map.of(), "/tmp"));
+
+        assertThat(scopes.refused("f1")).isTrue();
+    }
+
+    @Test
     void answersAToolTheReadWasGivenWithNothing() {
         ReadScopes scopes = new ReadScopes();
         scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));

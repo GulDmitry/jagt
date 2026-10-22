@@ -38,6 +38,7 @@ public class ReadGateController {
                 : scopes.ask(fence)
                         .map(scope -> ReadGate.refusal(scope, call.toolName(), call.toolInput(), call.cwd()))
                         .orElse(Optional.of("jagt refuses a call it holds no read for."));
+        refusal.ifPresent(reason -> scopes.refuse(fence));
         return refusal.map(reason -> ResponseEntity.ok(AgentToolGateController.denied(reason)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

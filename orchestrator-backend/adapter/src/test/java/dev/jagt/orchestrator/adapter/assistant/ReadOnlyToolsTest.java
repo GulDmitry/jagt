@@ -32,6 +32,24 @@ class ReadOnlyToolsTest {
                         "mcp__plugin_acme_tracker__query*");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"mcp__gitlab__mr_discussions", "mcp__gitlab__get_merge_request_notes",
+            "mcp__gitlab__issue_notes"})
+    void allowsAReadNamedByTheDiscussionsOrNotesItReturns(String tool) {
+        var pinned = AssistantProperties.empty().withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
+
+        List<String> allowed = new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), null).allowed(AssistantCallKind.MR_READ);
+
+        assertThat(allowed).anyMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"mcp__gitlab__save_note", "mcp__gitlab__create_note", "mcp__gitlab__resolve_discussions"})
+    void refusesAWriteWhoseNameHoldsDiscussionsOrNotes(String tool) {
+        assertThat(ReadOnlyTools.MCP_WRITES)
+                .anyMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
+    }
+
     @Test
     void allowsTheReadsOfTheDeclaredServersWhenTheServersArePinned() {
         var pinned = AssistantProperties.empty().withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");

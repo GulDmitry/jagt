@@ -8,9 +8,14 @@ import java.util.function.Function;
 /**
  * One question to a model plus what it cost. Empty {@code facts} = unavailable or failed; the usage is reported all
  * the same, a call that failed having been paid for. {@code failure} is the read's own sentence for what stopped
- * it, blank where none was given.
+ * it, blank where none was given. {@code refused} marks a read stopped by a tool the read gate refused: the same
+ * question is refused again.
  */
-public record Answer<T>(Optional<T> facts, TokenUsage usage, String failure) {
+public record Answer<T>(Optional<T> facts, TokenUsage usage, String failure, boolean refused) {
+
+    public Answer(Optional<T> facts, TokenUsage usage, String failure) {
+        this(facts, usage, failure, false);
+    }
 
     public Answer(Optional<T> facts, TokenUsage usage) {
         this(facts, usage, "");
@@ -27,6 +32,6 @@ public record Answer<T>(Optional<T> facts, TokenUsage usage, String failure) {
 
     /** Shapes the facts while carrying the cost through untouched. */
     public <R> Answer<R> map(Function<? super T, ? extends R> mapper) {
-        return new Answer<>(facts.map(mapper), usage, failure);
+        return new Answer<>(facts.map(mapper), usage, failure, refused);
     }
 }

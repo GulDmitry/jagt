@@ -55,7 +55,7 @@ public class ReviewReader {
                 corrections -> assistant.readMergeRequest(reviewRequestUrl),
                 MergeRequestRead::violations, facts -> MergeRequestRead.violations(facts).isEmpty());
         return new Answer<>(paidRead(answer.facts(), MergeRequestFacts::exists, reviewRequestUrl),
-                answer.usage(), answer.failure());
+                answer.usage(), answer.failure(), answer.refused());
     }
 
     public void charge(String taskId, TokenUsage usage) {
