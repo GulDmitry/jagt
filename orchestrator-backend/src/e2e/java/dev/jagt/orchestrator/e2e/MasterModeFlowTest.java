@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.CodeHostAssistant;
 import dev.jagt.orchestrator.port.McpHealth;
@@ -207,12 +208,55 @@ class MasterModeFlowTest {
         awaitTold("did not deploy");
 
         Path resolveIn = GitDeploy.deployWorktreePath(repo(), TASK);
+        assertThat(Files.readString(worktree().resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).lines())
+                .anySatisfy(line -> assertThat(line).contains("Also yours", resolveIn.toString()));
         Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
         E2eWorkspace.git(resolveIn, "add", "widget.txt");
 
         assertThat(awaitTask(task -> task.status() == TaskStatus.DEPLOYED).status()).isEqualTo(TaskStatus.DEPLOYED);
         assertThat(E2eWorkspace.git(workspace.resolve("origin.git"), "log", "-1", "--format=%s", "dev"))
                 .contains("Merge branch '" + TASK + "' into dev");
+    }
+
+    @Test
+    void answersAQuestionAtADeployConflictUnderTheHandOffItLeavesStanding() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
+        judges(new Judgement("", "ready", List.of(), "", List.of()));
+        handBackTheFirstRound();
+        shipsTheRoundTheMasterShipped();
+        E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
+        act("sweep");
+        awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+        awaitTold("did not deploy");
+        judges(new Judgement("", "ready",
+                List.of(new Finding("", "keep both lines", "decided", "advice")), "", List.of()));
+
+        post("/mcp", """
+                {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                 "params": {"name": "update_agent_status",
+                            "arguments": {"status": "IN_PROGRESS", "message": "keep both lines?",
+                                          "outcome": "question"}}}""",
+                Map.of("X-Working-Directory", worktree().toString()));
+
+        awaitTold("keep both lines");
+        assertThat(Files.readString(worktree().resolve("task_context.md"))).contains("did not deploy");
+        assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    }
+
+    @Test
+    void leavesAPermissionTheSessionAsksForToTheHuman() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.questions().findFirst().orElseThrow());
+        judges(new Judgement("", "ready",
+                List.of(new Finding("", "go ahead", "decided", "advice")), "", List.of()));
+        provisioning.initializeTask(NewTask.builder(TASK, "proj").instructions("Fix the widget")
+                .title("Widget layout is off").build());
+
+        agentReports("IN_PROGRESS", "may I write outside the worktree?", ", \"outcome\": \"permission\"");
+
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
+        assertThat(asked()).isFalse();
+        assertThat(task().message()).startsWith("awaiting permission");
+        assertThat(Files.readString(worktree().resolve("task_context.md"))).isEqualTo("Fix the widget");
     }
 
     private void judges(Judgement judgement) {

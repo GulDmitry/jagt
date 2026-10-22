@@ -25,6 +25,8 @@ class TextBudgetTest {
     private static final int PAGE = 200;
     private static final int MAP = 500;
     private static final int WIDTH = 150;
+    private static final String PROMPT_RULE = " — a prompt: compress it, then run promptEval and masterEval"
+            + " (docs/rules/testing.md)";
 
     @Test
     void aDecisionIsOneRecordOfFiftyLines() {
@@ -41,7 +43,7 @@ class TextBudgetTest {
     @Test
     void aPageReadWholeStaysUnderTwoHundredLines() {
         assertThat(pages()).allSatisfy(page ->
-                assertThat(lines(page)).describedAs("%s", page).hasSizeLessThanOrEqualTo(PAGE));
+                assertThat(lines(page)).describedAs("%s%s", page, prompt(page)).hasSizeLessThanOrEqualTo(PAGE));
     }
 
     @Test
@@ -64,7 +66,7 @@ class TextBudgetTest {
 
         assertThat(read.stream().flatMap(document -> sentences(document).stream()
                 .filter(sentence -> sentence.split("\\s+").length > 25)
-                .map(sentence -> document.getFileName() + ": " + sentence))).isEmpty();
+                .map(sentence -> document.getFileName() + ": " + sentence + prompt(document)))).isEmpty();
     }
 
     @Test
@@ -86,6 +88,10 @@ class TextBudgetTest {
         assertThat(markdownIn(PROMPTS)).isNotEmpty();
         assertThat(specs()).hasSizeGreaterThan(5);
         assertThat(mainSources().count()).isGreaterThan(100);
+    }
+
+    private static String prompt(Path document) {
+        return document.startsWith(PROMPTS) ? PROMPT_RULE : "";
     }
 
     private static List<Path> pages() {

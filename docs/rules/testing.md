@@ -2,11 +2,11 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest`
-needs git + tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on
-`JAGT_IN_CONTAINER`); `promptEval` the assistant's CLI and tokens; `masterEval` those plus minutes;
-`pitest` of every ring is a mutation report a human reads, never a gate;
-a task's change is checked with `-PpitestTargets=<its changed classes>`, the full run belongs to release-review and refresh.
+`./gradlew test` is the hermetic gate, and **a cached green is not a run**: before a commit it is
+`./gradlew test --rerun-tasks`. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest` needs git +
+tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`);
+`promptEval` the assistant's CLI and tokens; `masterEval` those plus minutes; `pitest` of every ring is a mutation report
+a human reads, never a gate: a change runs `-PpitestTargets=<its changed classes>`, the full run is release-review's and refresh's.
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
 **every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app
@@ -79,6 +79,10 @@ seam (`ScriptedProcesses`) is allowed, a shared builder is not.
   change to the mapping prompt, a `TaskAction`'s hint, the task-list shape or the model.
 - `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped
   `master-brief.md.dist`. Run it when either changes; a defect it passed: `master-lesson`.
+- **A change under `prompts/` runs `promptEval` and `masterEval` before its commit**; no eval reads the session brief
+  yet, so `SessionBriefContractTest` holds each relayed text naming a worktree or a git operation to what it grants.
+- Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,
+  the deploy check.
 
 ### Linux, and one set of steps per host
 

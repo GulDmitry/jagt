@@ -101,7 +101,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 ## Tests
 
 - The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval`,
-  `masterEval` and `pitest` are asked for by name.
+  `masterEval` and `pitest` are asked for by name. **A cached green is not a run**: before a commit, `--rerun-tasks`.
+- **A change under `prompts/` runs `promptEval` and `masterEval`** before its commit.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
 - **Every test pins a business case, and changes only for a reason the commit names**: its scenario changed, or it
