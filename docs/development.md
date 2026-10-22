@@ -61,7 +61,8 @@ and the MCP servers its reads need.
 3. Tag the bump commit: `git tag vX.Y.Z`.
 4. Push the tag: `git push origin vX.Y.Z`.
 
-The `jar` job builds `jagt-X.Y.Z.jar` and creates or updates the GitHub release for that tag with it attached.
+The `jar` job builds `jagt-X.Y.Z.jar`; the `release` job attaches it to that tag's GitHub release only once every
+suite is green.
 Nothing else is published — jagt is on no package manager.
 
 ## Where things go

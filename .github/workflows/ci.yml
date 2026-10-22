@@ -37,13 +37,11 @@ jobs:
           name: unit-test-report
           path: orchestrator-backend/build/reports/tests/test
 
-  # The jar itself, downloadable: every run keeps it for 30 days, and a `v*` tag also attaches it to a GitHub
+  # The jar itself, downloadable: every run keeps it for 30 days; `release` below attaches it to a tag's GitHub
   # release, which is the only URL somebody without a GitHub login can fetch. One fat jar, no platform in it.
   jar:
     name: runnable jar
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -63,19 +61,31 @@ jobs:
           name: jagt-jar
           path: ${{ steps.jar.outputs.asset }}
           retention-days: 30
+
+  # A tag's release waits for every suite: a jar the tests failed is never published.
+  release:
+    name: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [unit, jar, linux, board, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
+        with:
+          name: jagt-jar
+          path: ${{ github.workspace }}/release
       # gh, not a third-party action: it ships on the runner and needs no token beyond the one already here.
-      # The path is absolute here on purpose: every `run:` step starts in orchestrator-backend, while the
-      # artifact action wants it workspace-relative.
       - name: attach it to the release
-        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-          ASSET: ${{ github.workspace }}/${{ steps.jar.outputs.asset }}
         run: |
+          asset=$(ls "$GITHUB_WORKSPACE"/release/jagt-*.jar)
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
+            gh release upload "$GITHUB_REF_NAME" "$asset" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" "$ASSET" --generate-notes --verify-tag
+            gh release create "$GITHUB_REF_NAME" "$asset" --generate-notes --verify-tag
           fi
 
   linux:
