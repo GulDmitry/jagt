@@ -43,10 +43,9 @@ gives for its `flow/Outcome`.
 - **THEN** its outcome sets the status
 
 ### Requirement: Door two takes a reported status
-`flow/FlowReports` SHALL take a status a session reports over MCP, refused unless `FlowRules.refusedReport` allows
-it. `REVIEWED` and `APPROVED` MUST land only through `FlowReports.read`, the host's round read. The
-refusal MUST own the reason the agent acts on: no task talks itself onto a shared branch, out of one, closed, or
-past its review.
+`flow/FlowReports` SHALL take a status a session reports over MCP, refused unless `FlowRules.refusedReport` allows it.
+`REVIEWED` and `APPROVED` MUST land only through `FlowReports.read`, the host's round read. The refusal MUST own the
+reason the agent acts on: no task talks itself onto a shared branch, out of one, closed, or past its review.
 
 #### Scenario: A forbidden report
 - **WHEN** `FlowRules.refusedReport` refuses an agent's report
@@ -88,17 +87,17 @@ file other relays overwrite; how anything reaches it is the session's. Green MUS
 
 ### Requirement: A stalled deploy conflict is the human's
 A handed conflict unchanged for `conflictStallMinutes` SHALL tell the human once. Its card SHALL name the paths unmerged,
-where and since when, across a restart (`TaskState.conflict`, [0062](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)).
+where and since when, across a restart (`TaskState.conflict`, [0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)).
 
 #### Scenario: A conflict nobody works
 - **WHEN** ABC-42's deploy worktree has not changed for `conflictStallMinutes`
 - **THEN** one banner, and the card says NEEDS YOU with its unmerged paths, its worktree and since when
 
 ### Requirement: Statuses a report cannot move
-A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT`
-until deployed: refusing errors every call of that session. Its card SHALL keep the status's line
-(`FlowRules.holdsItsLine`), the report's logged; a question alone reaches it, until the next report. A round read
-MUST leave a `DEPLOYED`, `DEPLOY_CONFLICT` or `DONE` task in place: shipped work never goes back to approval.
+A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT` until
+deployed: refusing errors every call of that session. Its card SHALL keep the status's line (`FlowRules.holdsItsLine`),
+the report's logged; a question alone reaches it, until the next report. A round read MUST leave a `DEPLOYED`,
+`DEPLOY_CONFLICT` or `DONE` task in place: shipped work never goes back to approval.
 
 #### Scenario: A report at a held status
 - **WHEN** a `DEPLOY_CONFLICT` task's agent reports `no changes`

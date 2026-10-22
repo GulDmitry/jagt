@@ -14,7 +14,7 @@
 ### Requirement: A stalled deploy conflict is the human's
 A handed conflict unchanged for `conflictStallMinutes` SHALL tell the human once. Its card SHALL name the paths
 unmerged, where and since when, across a restart
-(`TaskState.conflict`, [0062](../../../../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)).
+(`TaskState.conflict`, [0063](../../../../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)).
 
 #### Scenario: A conflict nobody works
 - **WHEN** ABC-42's deploy worktree has not changed for `conflictStallMinutes`
