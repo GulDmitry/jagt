@@ -24,6 +24,8 @@ public enum TaskAction {
             "revert the last deploy's merge commit and push; earlier deploys stay live"),
     TRUST(125, Group.FLOW, "trust", "Trust git",
             "adopt the git config and hooks jagt found changed, as they are now"),
+    LIFT(127, Group.FLOW, "lift", "Lift stop",
+            "lift jagt's stop on a suspected loop: auto-review and the Master may move this task again"),
     DONE(130, Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
     FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
     IDE(50, Group.TOOL, "ide", "Open IDE", "open every worktree in the IDE; its uncommitted-changes view is the live diff",
@@ -58,7 +60,7 @@ public enum TaskAction {
      * Verbs a human keeps even where the Master session acts for them. A task is opened by a person and closed
      * by one; what happens in between is the work, and the work is what the reviewer stands in for.
      */
-    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, DONE);
+    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, LIFT, DONE);
 
     /** The verb a task needs most often. */
     private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);

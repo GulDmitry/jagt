@@ -9,9 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TaskActionHandsTest {
 
     @Test
-    void keepsClosingATaskAndTrustingWhatItsGitObeysInAHumansHands() {
+    void keepsClosingATaskTrustingWhatItsGitObeysAndLiftingAStopInAHumansHands() {
         var kept = Arrays.stream(TaskAction.values()).filter(TaskAction::humanOnly).toList();
 
-        assertThat(kept).containsExactly(TaskAction.TRUST, TaskAction.DONE);
+        assertThat(kept).containsExactly(TaskAction.TRUST, TaskAction.LIFT, TaskAction.DONE);
     }
 }

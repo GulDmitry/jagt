@@ -28,6 +28,11 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                     FlowRules.allowed(status, facts), TaskAction.TRUST,
                     "git config or hooks changed since you trusted them; read the line, then trust");
         }
+        if (facts.loopStopped()) {
+            return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "lift the stop",
+                    FlowRules.allowed(status, facts), TaskAction.LIFT,
+                    "jagt stopped this task as a loop it suspects is its own bug; read the hover, then lift or close");
+        }
         boolean hasReviewRequest = facts.hasReviewRequest();
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());

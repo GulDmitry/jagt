@@ -7,9 +7,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,8 +16,8 @@ class RoundOutcomeTest {
 
     private final RoundRecord roundRecord = mock(RoundRecord.class);
     private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
-    private final AgentSessions sessions = mock(AgentSessions.class);
-    private final RoundOutcome outcome = new RoundOutcome(roundRecord, statusReports, sessions);
+    private final RoundRelay relay = mock(RoundRelay.class);
+    private final RoundOutcome outcome = new RoundOutcome(roundRecord, statusReports, relay);
 
     @Test
     void recordsTheRoundItJudges() {
@@ -74,36 +71,15 @@ class RoundOutcomeTest {
     }
 
     @Test
-    void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
-        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
+    void neverAdvancesARoundWithThreadsLeftEvenWhenApproved() {
+        ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of("coderabbit (a.java:3): rename x"), 0);
+        when(relay.relay("ABC-1", "http://mr/1", facts, "success")).thenReturn(
+                new ReviewSweepService.SweepResult(ReviewSweepService.SweepResult.Kind.RELAYED, "relayed"));
 
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "",
-                List.of("coderabbit (a.java:3): rename x"), 0));
+        var result = outcome.settle("ABC-1", "http://mr/1", facts);
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
-        verify(sessions).relayFreshIfChanged(eq("ABC-1"), contains("review_replies.md"));
         verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
         verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
-    }
-
-    @Test
-    void countsTheThreadsItRelayed() {
-        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
-
-        var result = outcome.settle("ABC-1", "http://mr/api, http://mr/web", new ReviewFacts(true, false,
-                "success", "", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"), 0));
-
-        assertThat(result.message()).contains("2 thread(s) relayed");
-    }
-
-    @Test
-    void reportsARoundUnchangedInsteadOfRelayingItASecondTime() {
-        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(false);
-
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "",
-                List.of("reviewer (a.java:3): drop the cache"), 0));
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNCHANGED);
-        assertThat(result.message()).contains("unchanged since the last relay");
     }
 }

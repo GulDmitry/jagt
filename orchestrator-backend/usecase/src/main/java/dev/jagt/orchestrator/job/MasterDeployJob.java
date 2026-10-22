@@ -49,7 +49,7 @@ public class MasterDeployJob implements Job {
         }
         stateService.tasks().forEach((taskId, task) -> {
             // Once per arrival, or a refused deploy is pressed again every tick.
-            if (!FlowRules.deployedByTheMaster(task.status())
+            if (!FlowRules.deployedByTheMaster(task.status()) || task.loopStopped()
                     || Long.valueOf(task.statusSince()).equals(pressed.put(taskId, task.statusSince()))) {
                 return;
             }

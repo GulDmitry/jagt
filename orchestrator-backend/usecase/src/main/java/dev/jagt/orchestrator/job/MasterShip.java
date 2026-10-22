@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,13 +10,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MasterShip {
 
-    private final WorktreeChanges changes;
+    private final ShipDue due;
     private final MasterPress press;
     private final MasterOpen opener;
 
     /** False where nothing was pressed. */
     public boolean ship(String taskId, TaskState task) {
-        return changes.anyToShip(task) && press.press(taskId, task, TaskAction.SHIP);
+        return due.due(taskId, task) && press.press(taskId, task, TaskAction.SHIP);
     }
 
     public String open(String line) {

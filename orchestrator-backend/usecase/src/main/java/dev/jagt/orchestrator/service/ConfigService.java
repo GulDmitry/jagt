@@ -5,6 +5,8 @@ import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.LoopBreaker;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -24,6 +26,7 @@ import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
 
 import java.nio.file.Files;
+import java.time.Duration;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +56,26 @@ public class ConfigService {
                              @Nullable CodeReviewConfig codeReview, @Nullable AgentConfig agent,
                              @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
                              @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
-                             @Nullable Integer maxStartsPerDay) {
+                             @Nullable Integer maxStartsPerDay, @Nullable LoopBreakerConfig loopBreaker) {
+
+        /** Read as at most {@code LoopWatch.MAX_ROUNDS - 1} stalled rounds, the most a task's trail can hold. */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record LoopBreakerConfig(@Nullable Integer stalledRounds, @Nullable Integer ships) {
+
+            public static LoopBreakerConfig defaults() {
+                return new LoopBreakerConfig(null, null);
+            }
+
+            public int stalledRoundsOrDefault() {
+                return stalledRounds == null || stalledRounds <= 0 ? 3
+                        : Math.min(stalledRounds, LoopWatch.MAX_ROUNDS - 1);
+            }
+
+            public int shipsOrDefault() {
+                return ships == null || ships <= 0 ? 4 : ships;
+            }
+        }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -376,12 +398,19 @@ public class ConfigService {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null);
         }
 
         /** Unattended starts one local day may hold before the rest wait for tomorrow or for you. */
         public int maxStartsPerDayOrDefault() {
             return maxStartsPerDay == null || maxStartsPerDay <= 0 ? 50 : maxStartsPerDay;
+        }
+
+        /** The ship ceiling counts over the auto-review window. */
+        public LoopBreaker loopBreakerOrDefault() {
+            LoopBreakerConfig config = loopBreaker == null ? LoopBreakerConfig.defaults() : loopBreaker;
+            return new LoopBreaker(config.stalledRoundsOrDefault(), config.shipsOrDefault(),
+                    Duration.ofHours(autoReview().windowHoursOrDefault()));
         }
 
         // The raw field is still what the withers copy, so an omitted section stays null until set.

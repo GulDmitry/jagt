@@ -9,6 +9,8 @@ import dev.jagt.orchestrator.flow.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.capability.LoopStopGuard;
+import dev.jagt.orchestrator.service.LoopGuard;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -42,6 +44,16 @@ public class FlowWiring {
     @Bean
     public CapabilityInterceptor revertGitGuard(TrustedGitState trusted) {
         return new GitStateGuard(TaskAction.REVERT, trusted);
+    }
+
+    @Bean
+    public CapabilityInterceptor shipLoopStop(LoopGuard loops) {
+        return new LoopStopGuard(TaskAction.SHIP, loops);
+    }
+
+    @Bean
+    public CapabilityInterceptor deployLoopStop(LoopGuard loops) {
+        return new LoopStopGuard(TaskAction.DEPLOY, loops);
     }
 
     @Bean

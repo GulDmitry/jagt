@@ -61,7 +61,7 @@ public class MasterReviewJob implements Job {
         }
         Map<String, Optional<MasterReview.Verdict>> read = new HashMap<>();
         stateService.tasks().forEach((taskId, task) -> {
-            if (!FlowRules.readByTheMaster(task.status())) {
+            if (!FlowRules.readByTheMaster(task.status()) || task.loopStopped()) {
                 return;
             }
             Optional<MasterReview.Verdict> verdict = reviews.of(task);
@@ -80,7 +80,7 @@ public class MasterReviewJob implements Job {
 
     /** A question the Master answers is the answer job's: reviewing its round ships around the question. */
     static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
-        return FlowRules.readByTheMaster(task.status()) && !judged
+        return FlowRules.readByTheMaster(task.status()) && !judged && !task.loopStopped()
                 && !(questionsAnswered && AgentReport.of(task.message()) == AgentReport.QUESTION);
     }
 

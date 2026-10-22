@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
@@ -49,6 +50,10 @@ public final class AutoReviewCadence {
     public AutoReviewWatch watch(TaskState task, long now) {
         if (!polls(task)) {
             return AutoReviewWatch.none();
+        }
+        LoopWatch.Stop stop = task.loopOrNone().stop();
+        if (stop != null) {
+            return AutoReviewWatch.loopStopped(stop);
         }
         if (!task.autoReviewEnabled(true)) {
             return AutoReviewWatch.offForTask();

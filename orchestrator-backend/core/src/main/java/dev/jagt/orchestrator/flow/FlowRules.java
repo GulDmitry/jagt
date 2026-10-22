@@ -89,6 +89,11 @@ public final class FlowRules {
                 .when((status, facts) -> facts.gitStateChanged())
                 .add();
 
+        rule(TaskAction.LIFT)
+                .fromAny()
+                .when((status, facts) -> facts.loopStopped())
+                .add();
+
         for (TaskAction action : ALWAYS) {
             rule(action).fromAny().add();
         }

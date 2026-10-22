@@ -1,8 +1,6 @@
 # Features
 
-[← README](../README.md)
-
-Each line names one thing jagt does and links to the requirement that defines it; the spec is the truth, this is its index.
+[← README](../README.md) · Each line names one thing jagt does and links to the requirement that defines it; the spec is the truth, this is its index.
 
 ## Acceptance probes
 [spec](../openspec/specs/acceptance-probes/spec.md)
@@ -187,6 +185,8 @@ Each line names one thing jagt does and links to the requirement that defines it
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
 - **Daily ceiling** — A daily ceiling bounds the work jagt starts without you.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-unattended-starts-have-a-daily-ceiling)
+- **Loop stop** — A task whose rounds resolve nothing, or that ships too often, is stopped until you lift it.
+  [spec](../openspec/specs/unattended-work/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
 
 ## Usage limits
 [spec](../openspec/specs/usage-limits/spec.md)

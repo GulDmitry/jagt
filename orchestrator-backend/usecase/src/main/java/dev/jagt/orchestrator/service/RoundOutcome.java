@@ -17,7 +17,7 @@ public class RoundOutcome {
 
     private final RoundRecord roundRecord;
     private final AgentStatusReports statusReports;
-    private final AgentSessions sessions;
+    private final RoundRelay relay;
 
     public SweepResult settle(String taskId, String mrUrl, ReviewFacts r) {
         // THIS round's own read is what decides and what is relayed; the word the CARD carries is the last one
@@ -40,12 +40,6 @@ public class RoundOutcome {
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved yet, not approved — waiting");
         }
-        if (!sessions.relayFreshIfChanged(taskId, RoundBrief.of(mrUrl, r, said))) {
-            return new SweepResult(SweepResult.Kind.UNCHANGED, "sweep " + taskId + ": "
-                    + r.threads().size() + " thread(s), checks " + said
-                    + " — unchanged since the last relay, so the agent was left alone");
-        }
-        return new SweepResult(SweepResult.Kind.RELAYED,
-                "sweep " + taskId + ": " + r.threads().size() + " thread(s) relayed, checks " + said);
+        return relay.relay(taskId, mrUrl, r, said);
     }
 }

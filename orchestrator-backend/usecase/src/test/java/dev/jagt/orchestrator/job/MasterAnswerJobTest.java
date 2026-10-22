@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -57,6 +58,21 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null,
                         List.of("answer"), null)));
+
+        new MasterAnswerJob(state, config, panel, verdicts).run();
+
+        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void leavesTheQuestionOfATaskJagtStoppedToTheHuman(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("outcome=question — keep v2?")
+                .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, 1L, "5 ships"))).build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
         new MasterAnswerJob(state, config, panel, verdicts).run();
 

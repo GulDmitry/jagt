@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -43,6 +44,18 @@ class AutoReviewCadenceTest {
                 .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(1L).build();
 
         assertThat(off.watch(task, 2L).state()).isEqualTo(AutoReviewWatch.State.NONE);
+    }
+
+    @Test
+    void stopsWatchingATaskJagtStoppedAndCarriesWhyIntoTheHover() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(1L)
+                .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, 2L, "5 ships in 24h"))).build();
+
+        AutoReviewWatch watch = cadence.watch(task, 3L);
+
+        assertThat(watch.state()).isEqualTo(AutoReviewWatch.State.LOOP_STOPPED);
+        assertThat(watch.note()).startsWith("5 ships in 24h").contains("lift or close");
     }
 
     @Test

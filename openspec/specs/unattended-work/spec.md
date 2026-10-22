@@ -42,8 +42,7 @@ Detection SHALL be deterministic — a cadence, a status, an open request; a new
 - **THEN** it stays `deployed`: a poll never moves work that went out
 
 ### Requirement: The polling window is per round
-The window SHALL run per round from `mrCreatedAt`, restamped on every entry into CI_POLLING and kept by a repeat, with
-`requestOpenedAt` the fallback.
+The window SHALL run per round from `mrCreatedAt`, restamped on each entry into CI_POLLING, kept by a repeat, else `requestOpenedAt`.
 
 #### Scenario: Polling stopped
 - **WHEN** the round outlives `autoReview.windowHours`
@@ -89,8 +88,7 @@ Each unattended job SHALL be a `job/Job`: id, one line for the human, an interva
 - **THEN** it lists jagt's unattended work on tasks, newest first
 
 ### Requirement: One run, one log
-`logback-spring.xml` SHALL drop Boot's rolling appender, and `surface/ui/LogFileReset` SHALL empty the file before that appender
-opens.
+`logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/LogFileReset` SHALL empty the file before it opens.
 
 #### Scenario: Restart
 - **WHEN** jagt starts
@@ -152,10 +150,9 @@ Each of these jobs SHALL do its one thing unasked:
 - **THEN** it runs at the next tick; a job already running, or one nobody declared, is refused
 
 ### Requirement: Unattended starts are counted per day
-jagt SHALL count the starts it makes unasked per local day, in memory, and the count SHALL begin at zero on a restart.
-A start is a Master move in `act` that starts work (`MasterPress`, `ConflictHandOff`), a tracker intake start
-(`IntakeJob`) or an auto-review sweep (`AutoReviewScheduler`). Closing a ticket, a Master judge read and a ticket
-prefetch SHALL NOT count.
+jagt SHALL count the starts it makes unasked per local day, in memory, from zero on a restart: a Master move in `act`
+that starts work (`MasterPress`, `ConflictHandOff`), a tracker intake start (`IntakeJob`) or an auto-review sweep
+(`AutoReviewScheduler`). Closing a ticket, a Master judge read and a ticket prefetch SHALL NOT count.
 
 #### Scenario: A ticket closed unasked
 - **WHEN** the tracker close ends a task
@@ -180,6 +177,23 @@ nothing; a human press SHALL never be refused. It SHALL lift on the next local d
 - **WHEN** you press `act stopped` while the daily stop stands
 - **THEN** it lifts and the count begins at zero
 
-#### Scenario: A human press
-- **WHEN** you press a verb while the daily stop stands
-- **THEN** it runs
+### Requirement: jagt stops a task it suspects it is looping
+`LoopGuard` SHALL stop a task after `loopBreaker.stalledRounds` (3) relayed rounds running that each left as many
+threads open and the same job failing. It SHALL stop one before the Master ships past `loopBreaker.ships` (4) within
+`autoReview.windowHours` since the last `lift`. Its status SHALL stay.
+
+#### Scenario: Rounds that resolve nothing
+- **WHEN** ABC-42 gets a fourth relayed round with 10 threads open and `unit-tests` failing, as the three before
+- **THEN** nothing is relayed, the card asks `lift the stop`, and one notification names the rounds
+
+#### Scenario: Ships with progress
+- **WHEN** ABC-42 shipped four times today while its threads fell from 10 to 5, and the Master would ship again
+- **THEN** it presses nothing and the hover says `ships in 24h: 4`
+
+### Requirement: A stopped task waits for your lift
+Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`LoopStopGuard`). The board
+SHALL ring it `jagt stopped`, its hover the evidence. Only a human's `lift` SHALL clear it and count anew.
+
+#### Scenario: You press a verb on a stopped task
+- **WHEN** you press `ship` or `deploy` on a stopped task
+- **THEN** it runs, and the stop stands until you press `lift`

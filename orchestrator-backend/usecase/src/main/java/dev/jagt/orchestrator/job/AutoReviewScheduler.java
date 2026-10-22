@@ -102,7 +102,7 @@ public class AutoReviewScheduler implements Job {
         return switch (watch.state()) {
             case WINDOW_ELAPSED -> Action.WINDOW_ELAPSED;
             case WATCHING -> watch.nextPollAt() <= now ? Action.POLL : Action.SKIP;
-            case NONE, OFF_FOR_TASK, NO_ROUND -> Action.SKIP;
+            case NONE, OFF_FOR_TASK, NO_ROUND, LOOP_STOPPED -> Action.SKIP;
         };
     }
 

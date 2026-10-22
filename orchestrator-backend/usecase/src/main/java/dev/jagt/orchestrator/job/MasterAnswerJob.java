@@ -65,7 +65,7 @@ public class MasterAnswerJob implements Job {
     }
 
     private static boolean asking(TaskState task) {
-        return Move.asking(task.status(), AgentReport.of(task.message()));
+        return Move.asking(task.status(), AgentReport.of(task.message())) && !task.loopStopped();
     }
 
     private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
