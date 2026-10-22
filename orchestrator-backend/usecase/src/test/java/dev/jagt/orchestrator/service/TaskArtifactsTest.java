@@ -40,6 +40,19 @@ class TaskArtifactsTest {
     }
 
     @Test
+    void listsThePlanAndTheSketchFirstAndTheReviewersNotesLast() throws Exception {
+        taskWithWorktree();
+        Files.writeString(worktree.resolve("master-review.md"), "verdict");
+        Files.writeString(worktree.resolve("master-decisions.md"), "decided");
+        Files.writeString(worktree.resolve("task_request.md"), "asked");
+        Files.writeString(worktree.resolve("task_visual.md"), "sketch");
+        Files.writeString(worktree.resolve("plan.md"), "# plan");
+
+        assertThat(artifacts.present("ABC-42")).containsExactly(
+                "plan.md", "task_visual.md", "task_request.md", "master-decisions.md", "master-review.md");
+    }
+
+    @Test
     void listsNothingForAWorktreeHoldingNoDocument() {
         taskWithWorktree();
 

@@ -106,7 +106,7 @@ from, a key no project holds. It fills the fields the human has not typed. It wr
 The open task SHALL have the tabs Overview, Review round, Artifacts and Session, in that order. Overview shows its status history.
 Session shows its session's screen read without colour codes, with a line to tell the session. Review round shows its drafted
 review replies, or that none are drafted. Artifacts lists the documents of the task (`Artifact`) present in its worktree now,
-the one picked rendered.
+in the order `Artifact` declares them, the one picked rendered.
 
 #### Scenario: Reading the session
 - **WHEN** the human opens the Session tab
@@ -123,6 +123,10 @@ the one picked rendered.
 #### Scenario: Reading the documents of a task
 - **WHEN** the human opens the Artifacts tab of a task whose worktree holds `plan.md` and `task_visual.md`
 - **THEN** both names are listed, the first is shown rendered, and picking the other shows it rendered
+
+#### Scenario: The plan first, the reviewer's notes last
+- **WHEN** the worktree holds `master-review.md`, `master-decisions.md`, `task_request.md`, `task_visual.md` and `plan.md`
+- **THEN** they are listed `plan.md`, `task_visual.md`, `task_request.md`, `master-decisions.md`, `master-review.md`
 
 #### Scenario: A Files tab replaces the worktree
 - **WHEN** the human opens the Artifacts tab

@@ -8,26 +8,28 @@ import java.util.List;
  * capability declares which of them it touches rather than being handed the content: the file on disk is what the
  * agent is editing, so a copy passed through a signature would drift from it.
  *
+ * <p>Declared in the order a human reads them: the plan and the sketch first, the reviewer's own notes last.
+ *
  * <p>The briefing is not here — which file holds it is {@code AgentRuntime}'s answer, not the task's.
  */
 public enum Artifact {
 
+    /** What the agent means to do, before it writes anything. */
+    PLAN("plan.md"),
+    /** What the agent sketched of the change, before its first edit: screens, diagrams, tables. */
+    VISUAL("task_visual.md"),
     /** The one instruction standing right now, and no older one. */
     CONTEXT("task_context.md"),
     /** What the task was opened with, which no relay overwrites. */
     REQUEST("task_request.md"),
-    /** What the agent means to do, before it writes anything. */
-    PLAN("plan.md"),
     /** What the agent learnt that the code and the history do not say, which a fresh session starts from. */
     NOTES("task_notes.md"),
     /** What the agent means to answer, before anything is posted. */
     REPLIES("review_replies.md"),
-    /** What the unattended reviewer concluded about the round, and the verdict jagt reads back. */
-    REVIEW("master-review.md"),
     /** What earlier rounds of this task decided, which a later reader does not reopen without a blocking reason. */
     DECISIONS("master-decisions.md"),
-    /** What the agent sketched of the change, before its first edit: screens, diagrams, tables. */
-    VISUAL("task_visual.md");
+    /** What the unattended reviewer concluded about the round, and the verdict jagt reads back. */
+    REVIEW("master-review.md");
 
     private final String fileName;
 
