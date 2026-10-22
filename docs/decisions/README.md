@@ -75,3 +75,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0057 Edit tools write where the shell may](0057-the-edit-tools-write-where-the-shell-may.md)
 - [0058 A test never reaches the terminal](0058-a-test-never-reaches-the-developers-terminal.md)
 - [0059 Plan first is jagt's gate](0059-plan-first-is-jagts-gate-not-the-clis-plan-mode.md)
+- [0060 The Session tab stays beside focus](0060-the-session-tab-stays-beside-focus.md)
