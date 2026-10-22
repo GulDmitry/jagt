@@ -81,7 +81,7 @@ orchestrator:
     model: haiku
     # A headless call stops at this many dollars; the read then fails naming the ceiling.
     max-cost-usd: 5.00
-    # Unset, a read may call only the get/list/search/read/fetch/query/find/describe/lookup tools of its servers.
+    # Unset, a read may call only the get/list/search/read/fetch/find/describe/lookup and discussions/notes tools of its servers.
     # allowed-tools: mcp__your-jira-mcp,mcp__your-gitlab-mcp   # these alone instead, the review's too
     # Declare the servers instead of inheriting them — one path, or the JSON itself. Settings still load, so a
     # declared file's ${ENV} placeholders and the model resolve as usual; only the server list is pinned.
