@@ -41,7 +41,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, sessions).run();
 
-        verify(statusReports).report(TaskStatus.REVIEW_PENDING, "verified", "ABC-1");
+        verify(statusReports).verified(true, "verified", "ABC-1");
         verify(sessions, never()).relayIfChanged(eq("ABC-1"), any());
     }
 
@@ -57,8 +57,8 @@ class VerifyJobTest {
 
         verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue()).contains("BUILD FAILED");
-        verify(statusReports).report(TaskStatus.IN_PROGRESS, "verification failed; relayed", "ABC-1");
-        verify(statusReports, never()).report(eq(TaskStatus.REVIEW_PENDING), any(), any());
+        verify(statusReports).verified(false, "verification failed; relayed", "ABC-1");
+        verify(statusReports, never()).verified(eq(true), any(), any());
     }
 
     @Test
@@ -87,7 +87,7 @@ class VerifyJobTest {
 
         verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue()).contains("artifact docs/guide.md — FAILED\nno such file").doesNotContain("ref main");
-        verify(statusReports).report(TaskStatus.IN_PROGRESS, "acceptance probe failed; relayed", "ABC-1");
+        verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().probes()).containsExactly(passed, failed);
     }
 }

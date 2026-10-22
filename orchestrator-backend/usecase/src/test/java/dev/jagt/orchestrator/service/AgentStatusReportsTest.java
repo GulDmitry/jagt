@@ -66,6 +66,22 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void handsAGreenVerificationToReviewRatherThanVerifyingItAgain(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of(),
+                        List.of("./gradlew", "test"), null, null))));
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
+
+        reports.verified(true, "verified", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    }
+
+    @Test
     void answersAReportOnAVanishedTaskAsAFactNotAFieldToFix(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

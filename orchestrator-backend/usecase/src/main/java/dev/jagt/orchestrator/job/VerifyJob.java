@@ -62,7 +62,7 @@ public class VerifyJob implements Job {
         Optional<String> failure = verification.failure(task);
         if (failure.isPresent()) {
             sessions.relayIfChanged(taskId, brief(failure.get()));
-            statusReports.report(FlowRules.verified(false), "verification failed; relayed", taskId);
+            statusReports.verified(false, "verification failed; relayed", taskId);
             return;
         }
         List<Probe> probed = verification.probed(taskId, task);
@@ -71,12 +71,12 @@ public class VerifyJob implements Job {
         }
         List<Probe> failed = probed.stream().filter(Probe::failed).toList();
         if (failed.isEmpty()) {
-            statusReports.report(FlowRules.verified(true), "verified", taskId);
+            statusReports.verified(true, "verified", taskId);
             return;
         }
         sessions.relayIfChanged(taskId, PROBES_FAILED + failed.stream().map(Probe::result)
                 .collect(Collectors.joining("\n\n")));
-        statusReports.report(FlowRules.verified(false), "acceptance probe failed; relayed", taskId);
+        statusReports.verified(false, "acceptance probe failed; relayed", taskId);
     }
 
     /** The plan was ratified with these probes, so the code is what changes; a new plan is the way to new probes. */

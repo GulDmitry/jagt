@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * What an agent says about its own task, and the one ping the human gets for it. WHICH task a caller may touch is
@@ -50,12 +51,18 @@ public class AgentStatusReports {
         return report(new AgentStatusMessage(status.name(), message, null, null, Map.of()), taskId);
     }
 
+    /** A verification run's own verdict, which owes no further run. */
+    public String verified(boolean passed, String message, String taskId) {
+        AgentStatusMessage said = new AgentStatusMessage(FlowRules.verified(passed).name(), message, null, null, Map.of());
+        return report(accepted(said, taskId), taskId, task -> false);
+    }
+
     /**
      * A message that reached the door. It is judged here as well as at the transport, because jagt's own reports
      * and a session's come through the same door and only one of them crossed a wire.
      */
     public String report(AgentStatusMessage said, String taskId) {
-        return report(accepted(said, taskId), taskId);
+        return report(accepted(said, taskId), taskId, handBack::verificationOwed);
     }
 
     private Reported accepted(AgentStatusMessage said, String taskId) {
@@ -78,7 +85,7 @@ public class AgentStatusReports {
         return stateService.task(taskId).map(TaskState::projects).orElse(List.of());
     }
 
-    private String report(Reported said, String taskId) {
+    private String report(Reported said, String taskId, Predicate<TaskState> verificationOwed) {
         Optional<TaskState> current = stateService.task(taskId);
         TaskStatus newStatus = said.status();
         Map<String, String> requestsByProject = said.requests();
@@ -86,7 +93,7 @@ public class AgentStatusReports {
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
         FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage,
-                (was, next) -> planned(was, linked(was, next, url, requestsByProject)), handBack::verificationOwed)
+                (was, next) -> planned(was, linked(was, next, url, requestsByProject)), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (said.noPlan()) {
             stateService.updateTask(taskId, task -> task.withPlanGate(PlanGate.OPEN));
