@@ -144,4 +144,14 @@ class MasterReviewJobTest {
 
         assertThat(reviewable).isTrue();
     }
+
+    @Test
+    void readsAPlanWhoseHandBackCarriesAQuestionTheMasterAnswers() {
+        TaskState planned = TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
+                .message("awaiting: plan revised, approve?").build();
+
+        boolean reviewable = MasterReviewJob.reviewable(planned, false, true);
+
+        assertThat(reviewable).isTrue();
+    }
 }

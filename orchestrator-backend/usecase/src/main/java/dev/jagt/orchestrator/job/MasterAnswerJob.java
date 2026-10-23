@@ -70,24 +70,22 @@ public class MasterAnswerJob implements Job {
     }
 
     /** What no prose answer settles: a right only the human grants, a repository jagt attaches, a plan. */
-    private static Optional<String> humans(TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+    private static Optional<String> humans(TaskState task) {
         if (AgentReport.asksForAPermission(task.message())) {
             return Optional.of("a permission only the human grants");
         }
         if (task.asksForARepository()) {
             return Optional.of("a repository jagt attaches");
         }
-        boolean humansPlan = FlowRules.holdsAPlan(task.status())
-                && (!config.may(MasterRight.PLAN) || task.planGate().keptForTheHuman());
-        return humansPlan ? Optional.of("a plan only the human approves") : Optional.empty();
+        return FlowRules.holdsAPlan(task.status()) ? Optional.of("the plan review answers it") : Optional.empty();
     }
 
     private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        Optional<String> humans = humans(task, config);
+        Optional<String> humans = humans(task);
         if (humans.isPresent()) {
             log.atInfo().setMessage("master answer withheld").addKeyValue("task", taskId)
                     .addKeyValue("cause", humans.get())
-                    .addKeyValue("effect", "the question waits for the human")
+                    .addKeyValue("effect", "no answer is written here")
                     .log();
             unanswered.put(taskId, task.message());
             return;

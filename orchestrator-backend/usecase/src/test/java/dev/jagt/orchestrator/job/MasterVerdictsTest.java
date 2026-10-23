@@ -347,6 +347,26 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+                .message("awaiting: admins only or every user?").build();
+        state.putTask("ABC-1", planned);
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, sessions));
+
+        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY,
+                List.of("the endpoint is for admins only, as the ticket says"), 1, ""), acting);
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), contains("answered your question"));
+        verify(sessions).relayIfChanged(eq("ABC-1"), contains("the endpoint is for admins only, as the ticket says"));
+        verify(sessions).relayIfChanged(eq("ABC-1"), contains("the plan holds. Start on it."));
+    }
+
+    @Test
     void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

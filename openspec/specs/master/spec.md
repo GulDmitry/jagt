@@ -55,11 +55,11 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 
 ### Requirement: In act the Master moves for you
 With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
-answer a question. It SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`). A permission, and a
-plan asked for in `plan` mode, stay yours. It SHALL deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`).
-`master.mine` SHALL keep named steps (`task/MasterRight`) the human's,
-`[plan]` while unset; a project's `humanPaths` a task's ship and deploy where it changes a path they name
-(`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
+answer a question. It SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`). A permission, and
+a plan asked for in `plan` mode, stay yours. It SHALL deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`).
+`master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`
+a task's ship and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the
+Master's `done` is refused.
 
 #### Scenario: Green with every thread closed
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
@@ -92,7 +92,11 @@ plan asked for in `plan` mode, stay yours. It SHALL deploy a `REVIEWED` or `APPR
 #### Scenario: A plan in act
 - **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
 - **THEN** it approves nothing; the plan waits for your `approve-plan`
-- **AND** a question asked at that `PLAN_PENDING` is never answered; the plan and its question wait for you
+
+#### Scenario: A plan handed back with a question
+- **WHEN** a session hands back `PLAN_PENDING` with a question, whatever `mine` holds
+- **THEN** the Master reviews the plan; the question is answered by that review, not by an answer without the plan
+- **AND** a `ready` verdict sends its findings first, then approves only where it may
 
 #### Scenario: An answer while jagt's instruction waits
 - **WHEN** it answers at `SHIPPING` or `DEPLOY_CONFLICT`
@@ -191,10 +195,6 @@ A verdict SHALL store no identifier when a role could not read the round, and a 
 - **WHEN** ABC-42 is rebased onto a moved base and handed back with the same own diff
 - **THEN** no role reads it; the last ready verdict stands
 
-#### Scenario: The session replied to a not-ready round
-- **WHEN** ABC-42 is handed back with the same own diff after a not-ready verdict
+#### Scenario: A reply or a change of its own
+- **WHEN** ABC-42 is handed back with any change of its own, or the same own diff after a not-ready verdict
 - **THEN** each role reads the round again, the reply beside it
-
-#### Scenario: The task's own diff changed
-- **WHEN** ABC-42 is handed back with any change of its own
-- **THEN** each role reads the round as before

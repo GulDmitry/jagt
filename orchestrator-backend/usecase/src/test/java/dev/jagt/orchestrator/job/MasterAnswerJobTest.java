@@ -10,6 +10,8 @@ import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -62,14 +64,15 @@ class MasterAnswerJobTest {
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
 
-    @Test
-    void leavesAQuestionOnAPlanToTheHumanWhoKeptApprovingPlans(@TempDir Path root) {
+    @ParameterizedTest
+    @ValueSource(strings = {"ship", "plan"})
+    void leavesAQuestionOnAPlanToThePlanReviewWhateverTheMasterKeeps(String kept, @TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
                 .message("awaiting: plan revised, approve?").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(kept), null)));
 
         new MasterAnswerJob(state, config, panel, verdicts).run();
 

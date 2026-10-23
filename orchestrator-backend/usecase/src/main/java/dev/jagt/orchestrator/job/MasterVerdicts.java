@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -48,7 +49,8 @@ public class MasterVerdicts {
             }
             case READY -> {
                 decisions.returned(task, verdict.writtenAt(), false);
-                yield plan ? config.may(MasterRight.PLAN) && !task.planGate().keptForTheHuman() && go(taskId)
+                yield plan ? config.may(MasterRight.PLAN) && !task.planGate().keptForTheHuman()
+                        && go(taskId, task, verdict)
                         : config.may(MasterRight.SHIP) && ship.ship(taskId, task);
             }
         };
@@ -83,7 +85,10 @@ public class MasterVerdicts {
         return reports.report(taskId, FlowRules.relayed(), "reviewer: not ready; relayed");
     }
 
-    private boolean go(String taskId) {
+    private boolean go(String taskId, TaskState task, MasterReview.Verdict verdict) {
+        if (AgentReport.of(task.message()) == AgentReport.QUESTION && !verdict.findings().isEmpty()) {
+            sessions.relayIfChanged(taskId, PLAN_ANSWERED + String.join("\n", verdict.findings()));
+        }
         if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human")) {
             return false;
         }
@@ -146,6 +151,9 @@ public class MasterVerdicts {
             + " checks evidence and cannot read your reasons. A line ending [repeat] came back from an earlier round."
             + " Ask (rule 1) only for a decision nobody gave you. Leave the fix uncommitted and report REVIEW_PENDING"
             + " again.\n\n";
+
+    private static final String PLAN_ANSWERED = "The Master read plan.md against the ticket and answered your question,"
+            + " standing in for the human:\n";
 
     private static final String PLAN_RETURNED = "The Master read plan.md against the ticket: NOT READY. Rework the"
             + " plan for each line below. Where you believe one wrong, change nothing for it and write in"

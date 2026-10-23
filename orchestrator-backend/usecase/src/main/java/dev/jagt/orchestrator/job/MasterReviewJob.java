@@ -78,10 +78,11 @@ public class MasterReviewJob implements Job {
                 .ifPresent(entry -> ask(entry.getKey(), entry.getValue(), config));
     }
 
-    /** A question the Master answers is the answer job's: reviewing its round ships around the question. */
+    /** A question on a round the Master answers is the answer job's; a plan's question is read with the plan. */
     static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
         return FlowRules.readByTheMaster(task.status()) && !judged && !task.loopStopped()
-                && !(questionsAnswered && AgentReport.of(task.message()) == AgentReport.QUESTION);
+                && (FlowRules.holdsAPlan(task.status())
+                || !(questionsAnswered && AgentReport.of(task.message()) == AgentReport.QUESTION));
     }
 
     private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {

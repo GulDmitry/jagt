@@ -266,7 +266,29 @@ record MasterCase(String name, String instructions, TaskStatus status, Map<Strin
                         """
                         1. In `QuoteMock.answer`, replace `case 2 -> "/quote/v2"` with `case 3 -> "/quote/v3"`.
                         """,
-                        MasterReview.Kind.QUESTION, List.of("v2")));
+                        MasterReview.Kind.QUESTION, List.of("v2")),
+
+                plan("a plan opening to everyone what the ticket reserves",
+                        "Add `GET /reports/export`, the CSV export of the report. It is for admins only.",
+                        Map.of("src/ReportController.java", """
+                                class ReportController {
+                                    String summary() {
+                                        return "summary";
+                                    }
+                                }
+                                """,
+                                "src/Roles.java", """
+                                class Roles {
+                                    static final String ADMIN = "ADMIN";
+                                    static final String ALL_USERS = "USER";
+                                }
+                                """),
+                        """
+                        1. In `ReportController`, add `export()` serving the report as CSV on `GET /reports/export`,
+                           annotated `@PreAuthorize(Roles.ALL_USERS)`.
+                        2. Test that a signed-in user receives the CSV.
+                        """,
+                        MasterReview.Kind.NOT_READY, List.of("ALL_USERS")));
     }
 
     @Override
