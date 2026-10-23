@@ -37,11 +37,16 @@ class MasterPress {
             return false;
         }
         left.remove(taskId);
+        execute(taskId, action);
+        return true;
+    }
+
+    /** A verb no path of the task can keep from the human. */
+    void execute(String taskId, TaskAction action) {
         log.atInfo().setMessage("master presses").addKeyValue("task", taskId).addKeyValue("cmd", action.id()).log();
         // Through the same door a human's press uses, so an illegal move is refused rather than taken, and
         // stamped as the Master's so what a verb does on its behalf can differ from what it does on yours.
         OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, action));
         config.startTaken();
-        return true;
     }
 }

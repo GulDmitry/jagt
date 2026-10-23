@@ -205,4 +205,32 @@ class MasterAnswerJobTest {
 
         verify(panel, times(1)).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
+
+    @Test
+    void answersNoRepositoryRequestInProseWhereTheMasterHoldsTheRight(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("awaiting: needs the registry").repoRequest("registry").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+
+        new MasterAnswerJob(state, config, panel, verdicts).run();
+
+        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void leavesARepositoryRequestToTheHumanWhoKeptTheRight(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("awaiting: needs the registry").repoRequest("registry").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("repo"), null)));
+
+        new MasterAnswerJob(state, config, panel, verdicts).run();
+
+        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
 }

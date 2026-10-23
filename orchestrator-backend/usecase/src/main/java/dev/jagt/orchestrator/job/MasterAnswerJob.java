@@ -69,10 +69,13 @@ public class MasterAnswerJob implements Job {
         return Move.asking(task.status(), AgentReport.of(task.message())) && !task.loopStopped();
     }
 
-    /** An answer at a plan the Master may not approve would move the task off the human's approval. */
+    /** What no prose answer settles: a right only the human grants, a repository jagt attaches, a plan. */
     private static Optional<String> humans(TaskState task, ConfigService.ConfigFile.MasterConfig config) {
         if (AgentReport.asksForAPermission(task.message())) {
             return Optional.of("a permission only the human grants");
+        }
+        if (task.asksForARepository()) {
+            return Optional.of("a repository jagt attaches");
         }
         boolean humansPlan = FlowRules.holdsAPlan(task.status())
                 && (!config.may(MasterRight.PLAN) || task.planGate().keptForTheHuman());

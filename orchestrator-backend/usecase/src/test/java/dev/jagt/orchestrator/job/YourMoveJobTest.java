@@ -480,4 +480,50 @@ class YourMoveJobTest {
 
         verify(notifications).send(argThat(sent -> sent.body().contains("review_replies.md")));
     }
+
+    @Test
+    void tapsYouOnceForARepositoryRequestYouKeptTheAttachingOf(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("repo"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("step 1").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("awaiting: needs the registry").repoRequest("registry").build());
+
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+        job.run();
+
+        verify(notifications, times(1)).send(argThat(sent -> "needs input".equals(sent.title())
+                && sent.body().contains("another repository")));
+    }
+
+    @Test
+    void staysQuietWhenTheMasterAttachesTheRepositoryBeforeTheRequestSettles(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("step 1").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("awaiting: needs the registry").repoRequest("registry").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(2));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("repository added").build());
+
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+
+        verifyNoInteractions(notifications);
+    }
 }

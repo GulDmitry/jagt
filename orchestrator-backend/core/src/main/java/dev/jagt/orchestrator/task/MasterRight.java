@@ -22,7 +22,9 @@ public enum MasterRight {
     /** Deciding what the ticket or the code leaves open, as the human would. */
     ANSWER,
     /** Telling a session its plan holds and to start on it. */
-    PLAN;
+    PLAN,
+    /** Attaching the repository a session asked for to its task. */
+    REPO;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

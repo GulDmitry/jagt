@@ -54,7 +54,7 @@ class ModesTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"deploy,DEPLOY", "' Reply ',REPLY", "PLAN,PLAN"})
+    @CsvSource({"deploy,DEPLOY", "' Reply ',REPLY", "PLAN,PLAN", "repo,REPO"})
     void readsAMasterRightByItsWord(String word, MasterRight right) {
         assertThat(MasterRight.of(word)).contains(right);
     }
@@ -63,7 +63,7 @@ class ModesTest {
     void refusesAMasterRightNoneOfTheWordsMean() {
         assertThat(MasterRight.of("sometimes")).isEmpty();
         assertThat(MasterRight.of(null)).isEmpty();
-        assertThat(MasterRight.ids()).containsExactly("ship", "deploy", "revert", "reply", "answer", "plan");
+        assertThat(MasterRight.ids()).containsExactly("ship", "deploy", "revert", "reply", "answer", "plan", "repo");
     }
 
     @ParameterizedTest

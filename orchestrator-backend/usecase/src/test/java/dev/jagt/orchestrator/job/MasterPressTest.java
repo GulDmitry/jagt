@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class MasterPressTest {
@@ -63,5 +64,13 @@ class MasterPressTest {
         new MasterPress(commands, humanPaths, config).press("ABC-1", task, TaskAction.DEPLOY);
 
         verify(config, never()).startTaken();
+    }
+
+    @Test
+    void pressesAVerbNoPathCanKeepWithoutAskingWhatTheTaskTouched() {
+        new MasterPress(commands, humanPaths, config).execute("ABC-1", TaskAction.ADD_REPO);
+
+        verify(commands).execute("ABC-1", TaskAction.ADD_REPO);
+        verifyNoInteractions(humanPaths);
     }
 }

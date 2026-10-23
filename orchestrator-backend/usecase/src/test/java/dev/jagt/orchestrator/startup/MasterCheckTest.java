@@ -119,7 +119,7 @@ class MasterCheckTest {
     void refusesKeepingEveryStepWhereSayingJudgeMeansTheSame(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
-                .withMine(List.of("ship", "deploy", "revert", "reply", "answer", "plan"))));
+                .withMine(List.of("ship", "deploy", "revert", "reply", "answer", "plan", "repo"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
                 agentRuntime);
@@ -203,5 +203,17 @@ class MasterCheckTest {
             assertThat(problem.key()).isEqualTo("orchestrator.master.mine");
             assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
         });
+    }
+
+    @Test
+    void acceptsKeepingTheAttachingOfARepositoryForYourself(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
+                .withMine(List.of("plan", "repo"))));
+        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                agentRuntime);
+
+        assertThat(check.problems()).isEmpty();
     }
 }
