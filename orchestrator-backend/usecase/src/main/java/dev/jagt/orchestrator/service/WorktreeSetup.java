@@ -32,15 +32,19 @@ public class WorktreeSetup {
 
     /** Every worktree written again for the set that now includes {@code added}, which the session may edit. */
     public void attach(NewTask request, NewRepo added, List<NewRepo> repos) {
-        repos.forEach(repo -> fill(request, repo, repos));
+        repos.forEach(repo -> fill(request, repo, repos, repo.equals(added)
+                ? agentRuntime.systemKnowledgeFile(repo.worktreePath()) : agentRuntime.briefedFile(repo.worktreePath())));
         agentRuntime.admit(repos.get(0).worktreePath(), added.worktreePath());
     }
 
     /** {@code repos} is every repository of the task, so the briefing can name the ones this agent may edit. */
     public void fill(NewTask request, NewRepo repo, List<NewRepo> repos) {
-        Path worktreePath = repo.worktreePath();
         // Asked while the worktree holds nothing but the checkout: jagt's own links look the same afterwards.
-        Path systemKnowledge = agentRuntime.systemKnowledgeFile(worktreePath);
+        fill(request, repo, repos, agentRuntime.systemKnowledgeFile(repo.worktreePath()));
+    }
+
+    private void fill(NewTask request, NewRepo repo, List<NewRepo> repos, Path systemKnowledge) {
+        Path worktreePath = repo.worktreePath();
         WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir(), agentRuntime);
         WorktreeHooks.install(worktreePath, request.taskId());
         // Which files exist and what is in them belongs to the runtime.

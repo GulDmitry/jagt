@@ -186,3 +186,7 @@ its own. A cut that fails SHALL unwind and leave the request standing, the cause
 #### Scenario: A worktree already stands on the branch
 - **WHEN** ABC-42's branch is checked out in a `schemaRegistry` worktree jagt did not cut
 - **THEN** `add-repo` registers that worktree, its uncommitted work untouched, and a failure leaves it in place
+
+#### Scenario: The session's repository ships its own memory file
+- **WHEN** ABC-42's first repository ships `CLAUDE.md`, so jagt briefed it in `CLAUDE.local.md`
+- **THEN** `add-repo` writes that briefing again in `CLAUDE.local.md` and attaches

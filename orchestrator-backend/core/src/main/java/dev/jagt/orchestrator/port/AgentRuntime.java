@@ -89,6 +89,11 @@ public interface AgentRuntime {
     /** Where this agent's system knowledge goes; a name the checkout already uses is the project's own, never taken. */
     Path systemKnowledgeFile(Path worktree);
 
+    /** Where the briefing stands in a worktree jagt already provisioned, whose names its own files now take. */
+    default Path briefedFile(Path worktree) {
+        return systemKnowledgeFile(worktree);
+    }
+
     /** Writes what this agent needs to run in a fresh worktree, once per task, before the agent starts. */
     void provisionWorktree(AgentWorktree worktree);
 

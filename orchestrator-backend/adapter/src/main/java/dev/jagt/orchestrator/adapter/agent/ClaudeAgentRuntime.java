@@ -141,6 +141,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return local;
     }
 
+    /** The root memory file is jagt's own alias only where the root names were free when it briefed. */
+    @Override
+    public Path briefedFile(Path worktree) {
+        return Files.isSymbolicLink(worktree.resolve(CLAUDE_MEMORY_FILE))
+                ? worktree.resolve(SYSTEM_KNOWLEDGE_FILE) : worktree.resolve(LOCAL_MEMORY_FILE);
+    }
+
     /** The memory-file names are absent on purpose: jagt only ever takes one the checkout left free. */
     @Override
     public List<String> generatedFiles() {

@@ -252,6 +252,41 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void findsTheBriefingBesideTheRepositorysOwnClaudeMdOnceTheWorktreeIsProvisioned(@TempDir Path root)
+            throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+        Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+        Path briefing = runtime.systemKnowledgeFile(worktree);
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root));
+        Files.writeString(briefing, "the briefing");
+
+        Path again = runtime.briefedFile(worktree);
+
+        assertThat(again).isEqualTo(worktree.resolve("CLAUDE.local.md"));
+    }
+
+    @Test
+    void findsTheBriefingAtTheRootNameOnceTheWorktreeIsProvisionedWhereTheRootWasFree(@TempDir Path root)
+            throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+        Path briefing = runtime.systemKnowledgeFile(worktree);
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root));
+        Files.writeString(briefing, "the briefing");
+
+        Path again = runtime.briefedFile(worktree);
+
+        assertThat(again).isEqualTo(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE));
+    }
+
+    @Test
     void refusesToStartAnAgentWhenTheRepositoryOwnsEveryNameTheBriefingCouldTake(@TempDir Path root)
             throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
