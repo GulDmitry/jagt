@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
@@ -48,7 +47,9 @@ class SessionBriefContractTest {
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
-        String brief = new SubAgentBriefing(new PromptTemplates()).of(NewTask.builder("ABC-42", "web").build(), repo,
+        String brief = new SubAgentBriefing(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                .of(NewTask.builder("ABC-42", "web").build(), repo,
                 List.of(repo), ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         AgentSessions sessions = mock(AgentSessions.class);
@@ -68,13 +69,16 @@ class SessionBriefContractTest {
 
     @Test
     void aShipNamesOnlyWorktreesTheBriefListsAsTheSessionsAndPushesOnlyItsBranch(@TempDir Path root) throws Exception {
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
         NewRepo api = new NewRepo("api", new ProjectConfig("/repo/api", "origin/main", "stage", List.of()),
                 Path.of("/repo/api"), Path.of("/w/ABC-42-api"), Path.of("/repo/api/.git"), "origin/main",
                 "git@host:g/api.git", false);
-        String brief = new SubAgentBriefing(new PromptTemplates()).of(NewTask.builder("ABC-42", "web").build(), web,
+        String brief = new SubAgentBriefing(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                .of(NewTask.builder("ABC-42", "web").build(), web,
                 List.of(web, api), ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -91,8 +95,6 @@ class SessionBriefContractTest {
         when(changes.holdsWork(anyString(), anyString(), anyString())).thenReturn(true);
         AgentSessions sessions = mock(AgentSessions.class);
 
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
-
         new ShipService(state, config, new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions), changes).ship("ABC-42");
 
@@ -105,11 +107,14 @@ class SessionBriefContractTest {
     }
 
     @Test
-    void aResumeAsksForTheOneRewriteTheBriefExceptsOnItsOwnBranch() {
+    void aResumeAsksForTheOneRewriteTheBriefExceptsOnItsOwnBranch(@TempDir Path root) throws Exception {
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/widget-fix"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
-        String brief = new SubAgentBriefing(new PromptTemplates()).of(NewTask.builder("widget-fix", "web").build(),
+        String brief = new SubAgentBriefing(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                .of(NewTask.builder("widget-fix", "web").build(),
                 repo, List.of(repo), ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         TaskProvisioning provisioning = mock(TaskProvisioning.class);

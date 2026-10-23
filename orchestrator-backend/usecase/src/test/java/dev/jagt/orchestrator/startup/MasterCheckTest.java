@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.CodeReviewConfig;
@@ -31,7 +31,8 @@ class MasterCheckTest {
         Files.writeString(root.resolve("master-brief.md.dist"), "the shipped standards");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults()));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems()).isEmpty();
@@ -42,7 +43,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("supervise")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -58,7 +60,8 @@ class MasterCheckTest {
                 .withCodeReview(new CodeReviewConfig(null, false, null)));
 
         assertThat(new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime).problems())
                 .extracting(Problem::key).containsExactly("orchestrator.master.mode");
     }
@@ -69,7 +72,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act").withWithhold(List.of("reply"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -82,7 +86,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("reply", "deploy"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -95,7 +100,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("reply", "revert"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -109,7 +115,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("reply", "deploy", "revert"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems()).isEmpty();
@@ -121,7 +128,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("ship", "deploy", "revert", "reply", "answer", "plan", "repo"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -133,7 +141,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -146,7 +155,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems()).isEmpty();
@@ -157,7 +167,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge").withBrief("mine.md")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -171,7 +182,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge").withModel("fable")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems())
@@ -184,7 +196,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems()).isEmpty();
@@ -196,7 +209,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(new MasterConfig("judge", null, null, List.of("ship", "teleport"), null)));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems()).singleElement().satisfies(problem -> {
@@ -211,7 +225,8 @@ class MasterCheckTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("plan", "repo"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime);
 
         assertThat(check.problems()).isEmpty();

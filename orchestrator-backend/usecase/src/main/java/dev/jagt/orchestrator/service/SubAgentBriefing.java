@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.NewTask;
@@ -18,24 +18,51 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SubAgentBriefing {
 
-    private final PromptTemplates prompts;
+    private final SessionBrief brief;
 
     public String of(NewTask request, NewRepo repo, List<NewRepo> repos,
                      ConfigService.ConfigFile.AutoplanConfig autoplan,
                      ConfigService.ConfigFile.VisualizeConfig visualize,
                      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
         String taskId = request.taskId();
-        return prompts.subAgentContext().formatted(
-                taskId,
-                taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
-                repo.worktreePath(),
-                alsoYours(repo, repos) + deployWorktrees(taskId, repos),
-                planFirstSentence(request.mode()),
-                autoplanSentence(autoplan),
-                visualizeSentence(visualize),
-                diagnoseSentence(diagnose),
-                taskId, baseBranches(repos), deployBranches(repos));
+        String switches = planFirstSentence(request.mode()) + autoplanSentence(autoplan)
+                + visualizeSentence(visualize) + diagnoseSentence(diagnose);
+        return TASK.formatted(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
+                        repo.remoteUrl(), repo.worktreePath(), alsoYours(repo, repos) + deployWorktrees(taskId, repos))
+                + brief.section("context").filter(context -> !context.isBlank()).map(context -> context + "\n\n")
+                        .orElse("")
+                + HARD_SAFETY.formatted(taskId, baseBranches(repos), deployBranches(repos))
+                + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
     }
+
+    private static final String TASK = """
+            <role>
+            You are the jagt worker agent for task %s, in this Git worktree. No preamble.
+            </role>
+
+            <task>
+            - Task ID: %s (also your Git branch)
+            - Project: %s (base repository: %s, base branch: %s)
+            - Remote: %s (your code-host project)
+            - Worktree (your CWD): %s
+            %s
+            - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+            - `task_request.md`, if present: the request the task opened with, never overwritten.
+            </task>
+
+            """;
+
+    /** jagt's, not the brief's: a human's copy of the brief cannot loosen what its guards enforce. */
+    private static final String HARD_SAFETY = """
+            <hard_safety>
+            No `git merge`, `rebase` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`,
+            `--force-with-lease`, `--amend`, `reset --hard`): fix with a new commit. Except where this task's brief says
+            jagt rebased your branch leaving conflicts: finish it and `push --force-with-lease`. %s%s Asked to write one:
+            refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository it lacks:
+            rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it. Never push
+            another branch, nor hand the human a push. A new base the human or the Master named: rebase onto it, then
+            `retarget_task`.
+            </hard_safety>""";
 
     private static String planFirstSentence(@Nullable String mode) {
         return "plan".equalsIgnoreCase(mode)

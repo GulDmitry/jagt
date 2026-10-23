@@ -18,7 +18,8 @@ class TextBudgetTest {
 
     private static final Pattern NOT_PROSE = Pattern.compile("^(```|\\||#|<|>)");
     private static final Pattern LIST_ITEM = Pattern.compile("^([-*]|\\d+\\.)\\s+");
-    private static final Path PROMPTS = Path.of("usecase/src/main/resources/prompts");
+    private static final Path SESSION_BRIEF = Path.of("../session-brief.md.dist");
+    private static final Pattern STEP = Pattern.compile("(?m)^## [a-z][a-z0-9-]*$");
     private static final Path MAP_FILE = Path.of("../ARCHITECTURE.md");
     private static final int RECORD = 50;
     private static final int RULE = 100;
@@ -47,13 +48,20 @@ class TextBudgetTest {
     }
 
     @Test
+    void aStepOfTheSessionBriefStaysUnderTwoHundredLines() {
+        assertThat(STEP.split(String.join("\n", lines(SESSION_BRIEF)))).allSatisfy(step ->
+                assertThat(step.lines().count()).describedAs("%s%s", step.lines().findFirst().orElse(""), PROMPT_RULE)
+                        .isLessThanOrEqualTo(PAGE));
+    }
+
+    @Test
     void theMapReadInPartsStaysUnderFiveHundredLines() {
         assertThat(lines(MAP_FILE)).hasSizeLessThanOrEqualTo(MAP);
     }
 
     @Test
     void noLineOutsideATableRunsPastOneHundredFiftyCharacters() {
-        assertThat(Stream.of(pages(), decisions(), markdownIn(Path.of("../docs/rules")), List.of(MAP_FILE))
+        assertThat(Stream.of(pages(), decisions(), markdownIn(Path.of("../docs/rules")), List.of(MAP_FILE, SESSION_BRIEF))
                 .flatMap(List::stream)
                 .flatMap(text -> lines(text).stream().filter(line -> line.length() > WIDTH && !line.startsWith("|"))
                         .map(line -> text.getFileName() + ": " + line))).isEmpty();
@@ -62,7 +70,7 @@ class TextBudgetTest {
     @Test
     void noSentenceAModelOrAHumanFollowsRunsPastTwentyFiveWords() {
         List<Path> read = Stream.of(markdownIn(Path.of("../docs/rules")), specs(), List.of(Path.of("../AGENTS.md")),
-                markdownIn(PROMPTS)).flatMap(List::stream).toList();
+                List.of(SESSION_BRIEF)).flatMap(List::stream).toList();
 
         assertThat(read.stream().flatMap(document -> sentences(document).stream()
                 .filter(sentence -> sentence.split("\\s+").length > 25)
@@ -85,18 +93,18 @@ class TextBudgetTest {
         assertThat(markdownIn(Path.of("../docs/rules"))).hasSizeGreaterThan(3);
         assertThat(markdownIn(Path.of("../docs"))).hasSizeGreaterThan(3);
         assertThat(markdownIn(Path.of("../docs/decisions"))).hasSizeGreaterThan(1);
-        assertThat(markdownIn(PROMPTS)).isNotEmpty();
+        assertThat(SESSION_BRIEF).isRegularFile();
         assertThat(specs()).hasSizeGreaterThan(5);
         assertThat(mainSources().count()).isGreaterThan(100);
     }
 
     private static String prompt(Path document) {
-        return document.startsWith(PROMPTS) ? PROMPT_RULE : "";
+        return document.equals(SESSION_BRIEF) ? PROMPT_RULE : "";
     }
 
     private static List<Path> pages() {
         return Stream.of(List.of(Path.of("../AGENTS.md"), Path.of("../README.md"), Path.of("../docs/decisions/README.md")),
-                markdownIn(Path.of("../docs")), specs(), markdownIn(PROMPTS)).flatMap(List::stream).toList();
+                markdownIn(Path.of("../docs")), specs()).flatMap(List::stream).toList();
     }
 
     private static List<Path> decisions() {

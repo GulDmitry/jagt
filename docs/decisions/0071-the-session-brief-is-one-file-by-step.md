@@ -20,6 +20,7 @@ session to test its change by any means, and only a rebuild changed it.
 - A section the copy lacks is read from the `.dist`, so a step shipped later reaches an old copy.
 - An empty section sends the step's facts alone: a step that drives the flow cannot be silenced from the brief.
 - The facts of a step (task, commits, paths) stay jagt's and precede the section; the section is only the ask.
+- The `context` step holds the session's standing rules; `<hard_safety>`, written by jagt per task, stays out of reach.
 - Steps move into the file one at a time, `deploy` first, each with its own spec change and eval run.
 
 ## Rejected

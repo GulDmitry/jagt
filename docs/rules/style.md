@@ -10,7 +10,7 @@
 - The one exception to English is functional: `KittyTerminalDriver`'s ЙЦУКЕН keymap (`map=cmd+м …`).
 - **A form field explains itself with a placeholder**, never a paragraph beside its button; the `*-state`
   spans are progress and verdict slots and start **empty**.
-- **The same standard is demanded of the agents**, in `sub-agent-context.md`'s "How you write" section;
+- **The same standard is demanded of the agents**, in the `context` step of `session-brief.md.dist`, its `<how_you_write>`;
   a skill outranks the brief wherever the machine has one. `initialize_task` alone writes that brief, so an
   existing worktree keeps its wording; the relay `ship` names the description rule.
 - **Prompt structure** (Anthropic guidance) in every prompt jagt writes: named XML sections (`<role>`,

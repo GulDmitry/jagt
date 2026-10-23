@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.Optional;
 public class MasterBriefs {
 
     private final OrchestratorPaths paths;
-    private final PromptTemplates prompts;
+    private final SessionBrief sessionBrief;
 
     private static final String SHIPPED = ".dist";
 
@@ -43,6 +43,6 @@ public class MasterBriefs {
     }
 
     public String author() {
-        return prompts.subAgentContext();
+        return sessionBrief.section("context").orElse("");
     }
 }

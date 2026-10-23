@@ -65,7 +65,7 @@ class RoundBriefTest {
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
 
         assertThat(brief).contains("what you answer is its NEWEST note")
-                .contains("never\nre-post the reply it has already read");
+                .contains("Never re-post the reply it has already read");
     }
 
     @Test

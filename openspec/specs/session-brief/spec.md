@@ -80,3 +80,11 @@ at one left empty the session SHALL hear the facts alone (`StepRelay`).
 #### Scenario: A step left empty
 - **WHEN** your copy holds `## plan` with nothing under it
 - **THEN** an approved plan's session hears who read it and that it holds, and no more
+
+#### Scenario: A session starts
+- **WHEN** a task's session is briefed
+- **THEN** it reads the task's facts, then the `context` step, then jagt's `<hard_safety>` for this task
+
+#### Scenario: A copy that drops the safety rule
+- **WHEN** your copy's `context` step says nothing of pushing
+- **THEN** `<hard_safety>` still names the one branch the session may push
