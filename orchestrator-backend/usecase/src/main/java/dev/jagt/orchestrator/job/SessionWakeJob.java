@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.SessionWakes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,10 +16,9 @@ import java.time.Duration;
 @ConditionalOnProperty(name = "orchestrator.usage-limits.wake-on-reset", havingValue = "true")
 public class SessionWakeJob implements Job {
 
-    static final String PROMPT = "The usage limit has reset. Continue where you stopped.";
-
     private final SessionWakes wakes;
     private final AgentSessions sessions;
+    private final StepRelay relay;
 
     @Override
     public String id() {
@@ -44,7 +44,7 @@ public class SessionWakeJob implements Job {
     public void run() {
         for (String taskId : wakes.takeDue(sessions::composing)) {
             try {
-                sessions.say(taskId, PROMPT);
+                relay.say(taskId, "wake", "The usage limit has reset.");
             } catch (RuntimeException e) {
                 log.atWarn().setMessage("session wake not sent").addKeyValue("task", taskId)
                         .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "the session stays stopped").log();

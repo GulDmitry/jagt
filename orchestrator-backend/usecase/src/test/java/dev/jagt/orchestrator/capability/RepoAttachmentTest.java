@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.capability;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
@@ -22,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -37,7 +38,7 @@ class RepoAttachmentTest {
 
     private final ConfigService config = mock(ConfigService.class);
     private final NewTaskWorktrees worktrees = mock(NewTaskWorktrees.class);
-    private final AgentSessions sessions = mock(AgentSessions.class);
+    private final StepRelay relay = mock(StepRelay.class);
     private StateService state;
     private RepoAttachment attachment;
 
@@ -49,7 +50,7 @@ class RepoAttachmentTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString());
         state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        attachment = new RepoAttachment(config, state, worktrees, sessions);
+        attachment = new RepoAttachment(config, state, worktrees, relay);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     }
 
@@ -61,7 +62,7 @@ class RepoAttachmentTest {
 
         String said = attachment.attach("ABC-7");
 
-        verify(sessions).relayUnder(eq("ABC-7"), contains("/wt/ABC-7-registry"));
+        verify(relay).relayUnder(eq("ABC-7"), eq("repo"), contains("/wt/ABC-7-registry"), eq(false));
         assertThat(said).contains("the session was told");
     }
 
@@ -70,7 +71,7 @@ class RepoAttachmentTest {
         state.putTask("ABC-7", TaskState.builder("api", "/wt/ABC-7-api", TaskStatus.IN_PROGRESS).alias("a1")
                 .repoRequest("registry").build());
         when(worktrees.attach(eq("ABC-7"), eq("registry"), any())).thenReturn(registry);
-        doThrow(new IllegalStateException("no window")).when(sessions).relayUnder(any(), any());
+        doThrow(new IllegalStateException("no window")).when(relay).relayUnder(any(), any(), any(), anyBoolean());
 
         String said = attachment.attach("ABC-7");
 

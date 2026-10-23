@@ -29,6 +29,11 @@ public class StepRelay {
         return sessions.relayUnder(taskId, told(step, facts), fresh);
     }
 
+    /** Typed into the session's window, which takes one line. */
+    public void say(String taskId, String step, String facts) {
+        sessions.say(taskId, told(step, facts).replaceAll("\\s*\\n\\s*", " "));
+    }
+
     private String told(String step, String facts) {
         return brief.section(step).filter(ask -> !ask.isBlank()).map(ask -> facts + "\n\n" + ask).orElse(facts);
     }

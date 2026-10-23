@@ -28,6 +28,17 @@ class StepRelayTest {
     }
 
     @Test
+    void typesTheStepAsOneLine(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## wake\n\nContinue where\nyou stopped.\n");
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions);
+
+        relay.say("ABC-42", "wake", "The usage limit has reset.");
+
+        verify(sessions).say("ABC-42", "The usage limit has reset. Continue where you stopped.");
+    }
+
+    @Test
     void tellsTheFactsAloneAtAStepTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()

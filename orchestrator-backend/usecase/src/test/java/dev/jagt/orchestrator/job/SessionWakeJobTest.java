@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.SessionWakes;
 import org.junit.jupiter.api.Test;
 
@@ -18,15 +19,16 @@ class SessionWakeJobTest {
 
     private final SessionWakes wakes = mock(SessionWakes.class);
     private final AgentSessions sessions = mock(AgentSessions.class);
+    private final StepRelay relay = mock(StepRelay.class);
 
     @Test
     void saysTheResumeLineToEachSessionDue() {
         when(wakes.takeDue(any())).thenReturn(List.of("ABC-42", "ABC-43"));
 
-        new SessionWakeJob(wakes, sessions).run();
+        new SessionWakeJob(wakes, sessions, relay).run();
 
-        verify(sessions).say("ABC-42", SessionWakeJob.PROMPT);
-        verify(sessions).say("ABC-43", SessionWakeJob.PROMPT);
+        verify(relay).say("ABC-42", "wake", "The usage limit has reset.");
+        verify(relay).say("ABC-43", "wake", "The usage limit has reset.");
     }
 
     @Test
@@ -35,18 +37,18 @@ class SessionWakeJobTest {
         when(wakes.takeDue(any())).thenAnswer(call -> ((Predicate<String>) call.getArgument(0)).test("ABC-42")
                 ? List.of() : List.of("ABC-42"));
 
-        new SessionWakeJob(wakes, sessions).run();
+        new SessionWakeJob(wakes, sessions, relay).run();
 
-        verify(sessions, never()).say("ABC-42", SessionWakeJob.PROMPT);
+        verify(relay, never()).say("ABC-42", "wake", "The usage limit has reset.");
     }
 
     @Test
     void keepsWakingTheOthersWhenOneSessionIsGone() {
         when(wakes.takeDue(any())).thenReturn(List.of("ABC-42", "ABC-43"));
-        doThrow(new IllegalStateException("No session")).when(sessions).say("ABC-42", SessionWakeJob.PROMPT);
+        doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", "wake", "The usage limit has reset.");
 
-        new SessionWakeJob(wakes, sessions).run();
+        new SessionWakeJob(wakes, sessions, relay).run();
 
-        verify(sessions).say("ABC-43", SessionWakeJob.PROMPT);
+        verify(relay).say("ABC-43", "wake", "The usage limit has reset.");
     }
 }

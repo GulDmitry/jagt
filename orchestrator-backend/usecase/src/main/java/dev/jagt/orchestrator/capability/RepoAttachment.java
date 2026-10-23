@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.capability;
 
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
@@ -19,7 +19,7 @@ class RepoAttachment {
     private final ConfigService configService;
     private final StateService stateService;
     private final NewTaskWorktrees worktrees;
-    private final AgentSessions sessions;
+    private final StepRelay relay;
 
     /** Cuts and registers the repository the task's session asked for, and tells the session where it is. */
     String attach(String taskId) {
@@ -38,8 +38,8 @@ class RepoAttachment {
     private String told(String taskId, NewRepo added) {
         String where = added.project() + " is at " + added.worktreePath();
         try {
-            sessions.relayUnder(taskId, "jagt added the repository you asked for: " + where + ", on branch " + taskId
-                    + ", cut from " + added.baseBranch() + ". Work there as in your other repositories.");
+            relay.relayUnder(taskId, "repo", "jagt added the repository you asked for: " + where + ", on branch " + taskId
+                    + ", cut from " + added.baseBranch() + ".", false);
             return "add-repo " + taskId + ": " + where + "; the session was told";
         } catch (RuntimeException unheard) {
             log.atWarn().setMessage("session not told of repository").addKeyValue("task", taskId)
