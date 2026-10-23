@@ -33,6 +33,10 @@ export async function refresh() {
 }
 
 let verbsFailed = false;
+let verbsRead;
+
+// Settles once the first read of the verbs does, failed or not: a line parsed before it would go to the model.
+export const verbsArrived = new Promise((resolve) => { verbsRead = resolve; });
 
 // Fetched, not hardcoded: the palette completes and validates against the server's own verb list. Without it
 // the palette degrades rather than breaks, said once per failing streak rather than on every reconnect.
@@ -44,5 +48,7 @@ export async function refreshVerbs() {
     store.set({verbs: []});
     if (!verbsFailed) toast(`Cannot read the commands: ${e.message}`, true);
     verbsFailed = true;
+  } finally {
+    verbsRead();
   }
 }

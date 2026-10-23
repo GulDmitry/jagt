@@ -96,6 +96,24 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     }
 
     @Test
+    void aCommandSentBeforeTheCommandsArrivedRunsOnceTheyDoWithoutPayingTheModel() {
+        when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+        List<Route> verbs = new ArrayList<>();
+        Page page = session.newPage();
+        page.route("**/api/commands", verbs::add);
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("do ABC-9 plan keep the API stable");
+        page.locator("#ask").press("Enter");
+
+        verbs.get(0).resume();
+
+        assertThat(page.locator("#toasts .toast")).containsText("Started ABC-9.");
+        verifyNoInteractions(naturalLanguage);
+    }
+
+    @Test
     void thePaletteRunsARetiredVerbItselfInsteadOfPayingTheModelForIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host/x/merge_requests/7")
