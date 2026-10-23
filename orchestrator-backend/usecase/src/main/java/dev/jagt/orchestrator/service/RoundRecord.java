@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +9,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Keeps what the host said about a round and taps the human ONCE when a run turns red: a later poll saying the same
- * thing writes nothing, or an unattended sweep would notify on a loop. ONE write, all three facts coming off one
+ * Keeps what the host said about a round: a later poll saying the same thing writes nothing, or an unattended sweep
+ * would rewrite the state on a loop. ONE write, all three facts coming off one
  * read. A round that could not read them leaves the older round's word standing, flagged.
  */
 @Service
@@ -21,7 +18,6 @@ import java.util.Optional;
 public class RoundRecord {
 
     private final StateService stateService;
-    private final Notifications notifications;
 
     public void record(String taskId, ReviewFacts facts) {
         Optional<TaskState> before = stateService.task(taskId);
@@ -39,11 +35,6 @@ public class RoundRecord {
         }
         stateService.updateTask(taskId, task -> (unread ? task.withChecksUnread() : task.withChecksRead(read))
                 .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
-        Pipeline was = Pipeline.of(standing);
-        Pipeline now = Pipeline.of(checks);
-        if (newChecks && now.worthATap() && now != was) {
-            notifications.send(Notification.checksFailed(taskId, Objects.requireNonNull(checks)));
-        }
     }
 
     /**

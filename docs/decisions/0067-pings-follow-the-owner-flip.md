@@ -19,6 +19,7 @@ Master's verdict and its own question are neither. A step can become the human's
 - The wait is the race: a verdict the Master presses on makes the card yours until its next tick, and that pings nobody.
 - `AgentStatusReports` pings nothing; `notifyUser` stays, as an agent's own words.
 - The map holds only present tasks.
+- `RoundRecord` taps nobody for a red run: `CI_FAILED` is a move of the human's, and this job pings it.
 
 ## Rejected
 

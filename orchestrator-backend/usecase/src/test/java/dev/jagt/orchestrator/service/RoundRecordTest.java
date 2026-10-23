@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -18,17 +16,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class RoundRecordTest {
 
     private final StateService stateService = mock(StateService.class);
-    private final Notifications notifications = mock(Notifications.class);
-    private final RoundRecord roundRecord = new RoundRecord(stateService, notifications);
+    private final RoundRecord roundRecord = new RoundRecord(stateService);
 
     @Test
     void keepsAnEarlierRoundsVerdictFlaggedWhenThisSweepCouldNotReadTheChecks() {
@@ -95,43 +89,6 @@ class RoundRecordTest {
         roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 0));
 
         verify(stateService, never()).updateTask(eq("ABC-1"), any());
-    }
-
-    @Test
-    void tapsTheHumanWhenTheChecksGoRedAndSaysNothingOnALaterPollOfTheSameRun() {
-        AtomicReference<TaskState> stored = new AtomicReference<>(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-        when(stateService.task("ABC-1")).thenAnswer(call -> Optional.of(stored.get()));
-        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
-            stored.set(call.<UnaryOperator<TaskState>>getArgument(1).apply(stored.get()));
-            return true;
-        });
-
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "failed", "", List.of(), 0));
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "failed", "", List.of(), 0));
-
-        verify(notifications, times(1)).send(Notification.checksFailed("ABC-1", "failed"));
-        verifyNoMoreInteractions(notifications);
-    }
-
-    @Test
-    void saysNothingWhenAFailedRunComesBackGreen() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build()));
-
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "success", "", List.of(), 0));
-
-        verifyNoInteractions(notifications);
-    }
-
-    @Test
-    void tellsTheHumanNothingAboutAGreenSweep() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-
-        roundRecord.record("ABC-1", new ReviewFacts(true, true, "success", "", List.of(), 0));
-
-        verifyNoInteractions(notifications);
     }
 
     @Test

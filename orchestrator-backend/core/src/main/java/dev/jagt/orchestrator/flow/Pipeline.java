@@ -59,9 +59,4 @@ public enum Pipeline {
         }
         return UNKNOWN;
     }
-
-    /** Whether a human should be told without being asked. */
-    public boolean worthATap() {
-        return this == RED;
-    }
 }

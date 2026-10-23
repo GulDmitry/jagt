@@ -23,12 +23,6 @@ public record Notification(Topic topic, @Nullable String taskId, String title, S
         return new Notification(Topic.AGENT, taskId, title, body);
     }
 
-    /** Nobody is watching the host, so a run that went red arrives this way. */
-    public static Notification checksFailed(String taskId, String hostStatus) {
-        return new Notification(Topic.AGENT, taskId, "checks " + hostStatus,
-                "the pipeline is not green — `sweep` relays the failure to the agent");
-    }
-
     public static Notification watchdog(String taskId, String title, String body) {
         return new Notification(Topic.WATCHDOG, taskId, title, body);
     }

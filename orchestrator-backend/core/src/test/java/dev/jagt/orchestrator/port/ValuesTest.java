@@ -53,15 +53,6 @@ class ValuesTest {
     }
 
     @Test
-    void tellsAHumanWhoIsNotWatchingTheHostThatTheChecksFailed() {
-        Notification told = Notification.checksFailed("ABC-1", "failed");
-
-        assertThat(told.topic()).isEqualTo(Notification.Topic.AGENT);
-        assertThat(told.title()).isEqualTo("checks failed");
-        assertThat(told.body()).contains("`sweep` relays the failure to the agent");
-    }
-
-    @Test
     void routesTheOtherNotificationsOnTheirOwnTopicsAndNamesATaskOnlyForTheWatchdog() {
         assertThat(Notification.watchdog("ABC-1", "quiet", "no report").topic()).isEqualTo(Notification.Topic.WATCHDOG);
         assertThat(Notification.watchdog("ABC-1", "quiet", "no report").taskId()).isEqualTo("ABC-1");

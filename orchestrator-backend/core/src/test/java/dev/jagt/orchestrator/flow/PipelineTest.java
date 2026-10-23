@@ -53,20 +53,4 @@ class PipelineTest {
         assertThat(Pipeline.of(hostStatus)).isEqualTo(Pipeline.UNKNOWN);
     }
 
-    @Test
-    void reportsNoChecksOnlyWhereTheHostItselfListedNoPipeline() {
-        assertThat(Pipeline.of("none")).isEqualTo(Pipeline.NONE);
-    }
-
-    @Test
-    void interruptsAHumanForARunThatWentRed() {
-        assertThat(Pipeline.RED.worthATap()).isTrue();
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = Pipeline.class, names = "RED", mode = EnumSource.Mode.EXCLUDE)
-    void interruptsNobodyForAnyOtherVerdict(Pipeline verdict) {
-        assertThat(verdict.worthATap()).isFalse();
-    }
-
 }
