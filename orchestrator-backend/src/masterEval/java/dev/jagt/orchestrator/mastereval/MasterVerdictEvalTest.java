@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.mastereval;
 
 import dev.jagt.orchestrator.eval.EvalQuorum;
-import dev.jagt.orchestrator.service.ReadScopes;
+import dev.jagt.orchestrator.surface.agent.ReadGateController;
 import org.mockito.Mockito;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -78,7 +78,7 @@ class MasterVerdictEvalTest {
     @Autowired
     private UsageTracker usage;
     @MockitoSpyBean
-    private ReadScopes readScopes;
+    private ReadGateController readGate;
 
     @BeforeAll
     static void nothingLiveIsWithinReach() throws Exception {
@@ -120,7 +120,7 @@ class MasterVerdictEvalTest {
     }
 
     private void oneRun(MasterCase round) throws Exception {
-        Mockito.clearInvocations(readScopes);
+        Mockito.clearInvocations(readGate);
         String taskId = "ABC-" + ROUND.incrementAndGet();
         Path worktree = MasterEvalWorkspace.worktreeFor(
                 MasterEvalWorkspace.root().resolve("repos/" + taskId + "/repo"), round, taskId);
@@ -139,10 +139,11 @@ class MasterVerdictEvalTest {
                 .isEqualTo(round.verdict());
         String review = Files.readString(reviews.file(task));
         assertThat(round.names()).allSatisfy(name -> assertThat(review).contains(name));
-        List<String> heard = Mockito.mockingDetails(readScopes).getInvocations().stream()
-                .filter(call -> call.getMethod().getName().equals("hear"))
-                .map(call -> call.getArgument(1) + " " + call.getArgument(2)).toList();
-        assertThat(heard).describedAs("calls heard: %s", heard).anyMatch(call -> call.contains(worktree.toString()));
+        List<ReadGateController.ToolCall> heard = Mockito.mockingDetails(readGate).getInvocations().stream()
+                .filter(call -> call.getMethod().getName().equals("gate"))
+                .map(call -> (ReadGateController.ToolCall) call.getArgument(1)).toList();
+        assertThat(heard).describedAs("calls heard: %s", heard).anyMatch(call -> call.cwd() != null
+                && Path.of(call.cwd()).normalize().startsWith(worktree.normalize()));
     }
 
     private Optional<MasterReview.Verdict> awaitVerdict(TaskState task) {

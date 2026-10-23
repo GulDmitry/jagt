@@ -77,7 +77,7 @@
 
 - **Majority of runs** — An eval case passes when most of its runs do; `-PevalRuns` and `-PevalPasses` set the quorum.
   [spec](../openspec/specs/judgement-resilience/spec.md#requirement-an-eval-case-passes-on-a-majority-of-runs)
-- **What jagt heard** — `masterEval` also asserts the read gate heard a call naming the round's worktree.
+- **What jagt heard** — `masterEval` also asserts the read gate heard a call made in the round's worktree.
   [spec](../openspec/specs/judgement-resilience/spec.md#requirement-an-eval-asserts-what-jagt-heard-not-only-what-the-model-said)
 - **Yes-or-no patterns** — A pattern the Master stops on is one fact answered yes or no on the diff.
   [spec](../openspec/specs/judgement-resilience/spec.md#requirement-a-pattern-the-master-stops-on-is-one-yes-or-no-fact)

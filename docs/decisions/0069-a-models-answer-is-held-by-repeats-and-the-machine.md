@@ -18,7 +18,7 @@ what jagt heard.
 - A case passes on a majority of its runs: 3 runs, 2 passes, both set by `-PevalRuns` / `-PevalPasses`.
 - `EvalQuorum` stops once the outcome is decided and reports every failed run's own message.
 - It lives in its own source set: a test class in `src/test` would leak into the evals' Spring scan.
-- `masterEval` asserts what the read gate heard: a call naming the run's worktree.
+- `masterEval` asserts what the read gate heard: a call made in the run's worktree, by the working directory the gate is told.
 - A pattern line is one yes-or-no fact, held by `PatternLinesTest`; a judge cannot be steady on a taste word.
 
 ## Rejected
