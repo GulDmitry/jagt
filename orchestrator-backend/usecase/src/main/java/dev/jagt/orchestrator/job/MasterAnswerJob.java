@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -68,10 +69,21 @@ public class MasterAnswerJob implements Job {
         return Move.asking(task.status(), AgentReport.of(task.message())) && !task.loopStopped();
     }
 
-    private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+    /** An answer at a plan the Master may not approve would move the task off the human's approval. */
+    private static Optional<String> humans(TaskState task, ConfigService.ConfigFile.MasterConfig config) {
         if (AgentReport.asksForAPermission(task.message())) {
+            return Optional.of("a permission only the human grants");
+        }
+        boolean humansPlan = FlowRules.holdsAPlan(task.status())
+                && (!config.may(MasterRight.PLAN) || task.planGate().keptForTheHuman());
+        return humansPlan ? Optional.of("a plan only the human approves") : Optional.empty();
+    }
+
+    private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+        Optional<String> humans = humans(task, config);
+        if (humans.isPresent()) {
             log.atInfo().setMessage("master answer withheld").addKeyValue("task", taskId)
-                    .addKeyValue("cause", "a permission only the human grants")
+                    .addKeyValue("cause", humans.get())
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
             unanswered.put(taskId, task.message());
