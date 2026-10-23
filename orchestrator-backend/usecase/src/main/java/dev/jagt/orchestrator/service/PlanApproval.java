@@ -12,13 +12,13 @@ import org.springframework.stereotype.Service;
 public class PlanApproval {
 
     private final StateService stateService;
-    private final AgentSessions sessions;
+    private final StepRelay relay;
 
     /** Whether the session was told anything new; the gate is open either way. */
     public boolean approve(String taskId, String reader) {
         String id = stateService.canonicalTaskId(taskId);
         stateService.updateTask(id, task -> task.withPlanGate(PlanGate.OPEN));
         log.atInfo().setMessage("plan approved").addKeyValue("task", id).addKeyValue("reader", reader).log();
-        return sessions.relayIfChanged(id, reader + ": the plan holds. Start on it.");
+        return relay.relay(id, "plan", reader + ": the plan holds.");
     }
 }

@@ -2,7 +2,7 @@
 
 What jagt tells a task's session at each step, one `## <step>` section per step. Copy this file to
 `session-brief.md` beside `jagt.yml` and edit a section to change what your sessions are told; a section your
-copy lacks is read from here, and a section left empty tells the session nothing at that step.
+copy lacks is read from here, and at a step left empty the session hears jagt's facts alone.
 
 ## deploy
 
@@ -21,3 +21,37 @@ uncommitted, and report REVIEW_PENDING again.
 jagt ran the acceptance probes of the plan you were given a go on, and those above failed. Make them pass, leave
 the fix uncommitted, and report REVIEW_PENDING again. A probe that is itself wrong changes only with a new plan:
 write it into plan.md and report PLAN_PENDING.
+
+## plan
+
+Start on it.
+
+## round-not-ready
+
+The review of your round came back NOT READY. Each line above is a review comment: fix it, or where you believe
+it wrong, change nothing for it and write in task_notes.md `disputed: <the comment> — <evidence>`. A `show:`
+comment asks for evidence: answer it the same way. Evidence is a ticket line, a file:line, or a command and what
+it printed: the reviewer checks evidence and cannot read your reasons. A line ending [repeat] came back from an
+earlier round. Ask (rule 1) only for a decision nobody gave you. Leave the fix uncommitted and report
+REVIEW_PENDING again.
+
+## plan-not-ready
+
+The Master read plan.md against the ticket: NOT READY. Rework the plan for each line above. Where you believe one
+wrong, change nothing for it and write in task_notes.md `disputed: <the comment> — <evidence>`. Then report
+PLAN_PENDING again.
+
+## plan-answered
+
+## asked-human
+
+Your status already carries the question. Report nothing and end your turn; the human answers in this window.
+Then report IN_PROGRESS, apply the answer uncommitted, and hand the round back.
+
+## answered
+
+Report IN_PROGRESS, apply it, and hand the round back as usual.
+
+## answered-under
+
+Apply it, then carry on with the instruction above.

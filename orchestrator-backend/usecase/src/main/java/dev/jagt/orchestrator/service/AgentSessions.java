@@ -195,12 +195,16 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     /** Keeps what the context file holds above its last addition, so an instruction still pending is not lost. */
     public boolean relayUnder(String taskId, String addition) {
+        return relayUnder(taskId, addition, false);
+    }
+
+    public boolean relayUnder(String taskId, String addition, boolean fresh) {
         String id = stateService.canonicalTaskId(taskId);
         Path contextFile = Path.of(requireTask(id).worktreePath()).resolve(Artifact.CONTEXT.fileName());
         synchronized (relayLock(id)) {
             String standing = WorktreeFiles.read(contextFile).map(held -> held.contains(UNDER)
                     ? held.substring(0, held.indexOf(UNDER)) : held).orElse("");
-            return relayIfChanged(id, standing.isBlank() ? addition : standing + UNDER + addition, false);
+            return relayIfChanged(id, standing.isBlank() ? addition : standing + UNDER + addition, fresh);
         }
     }
 

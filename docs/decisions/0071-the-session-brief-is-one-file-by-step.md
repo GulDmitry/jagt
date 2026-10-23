@@ -18,7 +18,7 @@ session to test its change by any means, and only a rebuild changed it.
 - What jagt tells a session lives in `session-brief.md.dist`, one `## <step>` section per step jagt sends.
 - A human copies it to `session-brief.md`, gitignored; nothing copied, the `.dist` is read — onboarding stays one file.
 - A section the copy lacks is read from the `.dist`, so a step shipped later reaches an old copy.
-- An empty section tells the session nothing at that step.
+- An empty section sends the step's facts alone: a step that drives the flow cannot be silenced from the brief.
 - The facts of a step (task, commits, paths) stay jagt's and precede the section; the section is only the ask.
 - Steps move into the file one at a time, `deploy` first, each with its own spec change and eval run.
 

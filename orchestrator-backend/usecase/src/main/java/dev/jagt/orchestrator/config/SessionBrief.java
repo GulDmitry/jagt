@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-/** A section the human's copy lacks is read from the shipped file; one left empty says nothing. */
+/** A section the human's copy lacks is read from the shipped file. */
 @Component
 @RequiredArgsConstructor
 @Slf4j

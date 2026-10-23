@@ -13,7 +13,6 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -21,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 class PlanApprovalTest {
 
-    private final AgentSessions sessions = mock(AgentSessions.class);
+    private final StepRelay relay = mock(StepRelay.class);
 
     @Test
     void opensThePlanGateAndTellsTheSessionToStartOnThePlan(@TempDir Path root) {
@@ -29,12 +28,12 @@ class PlanApprovalTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build());
-        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        when(relay.relay(eq("ABC-1"), eq("plan"), anyString())).thenReturn(true);
 
-        boolean told = new PlanApproval(state, sessions).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
-        verify(sessions).relayIfChanged(eq("ABC-1"), contains("the plan holds. Start on it."));
+        verify(relay).relay("ABC-1", "plan", "The human read plan.md: the plan holds.");
     }
 }

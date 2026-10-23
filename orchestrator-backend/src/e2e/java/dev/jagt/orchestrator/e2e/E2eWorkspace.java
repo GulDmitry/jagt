@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.GitDeploy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -69,6 +70,8 @@ final class E2eWorkspace {
     static void createRootMarker(Path root) throws IOException {
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// e2e placeholder proxy\n");
+        Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"),
+                StandardCopyOption.REPLACE_EXISTING);
     }
 
     static void writeConfig(Path configFile, Path projectPath, TaskFlowCase flowCase) throws IOException {
