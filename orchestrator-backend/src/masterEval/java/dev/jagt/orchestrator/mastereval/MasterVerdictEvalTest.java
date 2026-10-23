@@ -143,7 +143,6 @@ class MasterVerdictEvalTest {
                 .filter(call -> call.getMethod().getName().equals("hear"))
                 .map(call -> call.getArgument(1) + " " + call.getArgument(2)).toList();
         assertThat(heard).describedAs("calls heard: %s", heard).anyMatch(call -> call.contains(worktree.toString()));
-        Mockito.verify(readScopes, Mockito.never()).refuse(Mockito.any());
     }
 
     private Optional<MasterReview.Verdict> awaitVerdict(TaskState task) {

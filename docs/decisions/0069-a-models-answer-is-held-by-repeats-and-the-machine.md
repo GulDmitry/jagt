@@ -18,13 +18,14 @@ what jagt heard.
 - A case passes on a majority of its runs: 3 runs, 2 passes, both set by `-PevalRuns` / `-PevalPasses`.
 - `EvalQuorum` stops once the outcome is decided and reports every failed run's own message.
 - It lives in its own source set: a test class in `src/test` would leak into the evals' Spring scan.
-- `masterEval` asserts what the read gate heard: a call naming the run's worktree, and no refusal.
+- `masterEval` asserts what the read gate heard: a call naming the run's worktree.
 - A pattern line is one yes-or-no fact, held by `PatternLinesTest`; a judge cannot be steady on a taste word.
 
 ## Rejected
 
 - A quorum of different models: cost, and whatever a light model can do a light model does.
 - Embedding similarity of answers: it does not check meaning.
+- Failing a run on a refused call: the gate refuses a few calls in every round and the Master reads on.
 
 ## Reopen when
 
