@@ -103,9 +103,9 @@ from, a key no project holds. It fills the fields the human has not typed. It wr
 - **THEN** the reading says it is not a git repository, the add is refused, and `jagt.yml` is unchanged
 
 ### Requirement: The open task has four tabs
-The open task SHALL have the tabs Overview, Review round, Artifacts and Session, in that order. Overview shows its
+The open task SHALL have the tabs Overview, Drafted review, Artifacts and Session, in that order. Overview shows its
 status history, newest first. Session shows its session's screen read without colour codes, with a line to tell the
-session. Review round shows its drafted review replies, or that none are drafted. Artifacts lists the documents of
+session. Drafted review shows its drafted review replies, or that none are drafted. Artifacts lists the documents of
 the task (`Artifact`) present in its worktree now, in the order `Artifact` declares them, the one picked rendered.
 
 #### Scenario: Reading the session
@@ -117,7 +117,7 @@ the task (`Artifact`) present in its worktree now, in the order `Artifact` decla
 - **THEN** the tab shows it blank; it says no window holds the session only when none does
 
 #### Scenario: Reading the replies
-- **WHEN** the human opens the Review round tab
+- **WHEN** the human opens the Drafted review tab
 - **THEN** it shows the drafted review replies, read from the command whose `part` is `round`, or that none are drafted
 
 #### Scenario: Reading the documents of a task

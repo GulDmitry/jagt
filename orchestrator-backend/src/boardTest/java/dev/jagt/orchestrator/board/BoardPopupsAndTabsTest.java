@@ -176,7 +176,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#pane .tabs button")).hasText(new String[] {"Overview", "Review round", "Artifacts", "Session"});
+        assertThat(page.locator("#pane .tabs button")).hasText(new String[] {"Overview", "Drafted review", "Artifacts", "Session"});
     }
 
     @Test

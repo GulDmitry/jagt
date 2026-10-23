@@ -7,7 +7,7 @@ import {Report} from './Report.js';
 import {draw} from '../ui/mermaid.js';
 import {dayAndMinutes, minutes, sameDay} from '../core/time.js';
 
-export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'round', label: 'Review round'},
+export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'round', label: 'Drafted review'},
   {id: 'artifacts', label: 'Artifacts'}, {id: 'session', label: 'Session'}];
 
 // Today's steps by the clock alone; an older one by its day too.

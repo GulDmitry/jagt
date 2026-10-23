@@ -13,7 +13,7 @@ holds the pipeline (build → review → check → ready → deploy → done), a
 
 **The open task** stands beside the list: its card with every legal action, the obvious one highlighted and each
 one's key drawn on it, `Done` apart at the end; then four tabs: **Overview** (the status history), **Session** (its screen,
-with a line to tell it), **Review round** (the drafted replies) and **Files** (`plan.md`, `task_notes.md` and the other
+with a line to tell it), **Drafted review** (the drafted replies) and **Files** (`plan.md`, `task_notes.md` and the other
 documents of the task, rendered). `deploy`, `revert` and `done` ask for
 confirmation. Under 1200 px the open task replaces the list; `Esc` goes back.
 
