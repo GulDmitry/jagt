@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.capability.ship;
 
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
@@ -29,7 +29,7 @@ public class ShipService {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final AgentSessions sessions;
+    private final StepRelay relay;
     private final WorktreeChanges changes;
     /** One ship at a time per task: two clicks in a row would relay the same instruction twice. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
@@ -61,7 +61,7 @@ public class ShipService {
         }
         List<String> idle = targets.stream().filter(target -> !carrying.contains(target))
                 .map(Target::project).toList();
-        sessions.writeTaskContext(taskId, shipInstruction(title, taskId, carrying, repliesStep(config)));
+        relay.write(taskId, "ship", shipFacts(title, taskId, carrying, repliesStep(config)));
         return Outcome.relayed("ship " + taskId + ": relayed to the agent; SHIPPING until it reports the"
                 + " request" + (carrying.size() > 1 ? "s" : "")
                 + (idle.isEmpty() ? "" : "; nothing to ship in " + String.join(", ", idle))
@@ -109,27 +109,17 @@ public class ShipService {
 
     private static final String THREADS = " Resolve threads exactly as your `<review_replies>` rules say.\n";
 
-    static String shipInstruction(String title, String taskId, List<Target> targets, String repliesStep) {
-        return "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
+    static String shipFacts(String title, String taskId, List<Target> targets, String repliesStep) {
+        return "Ship " + taskId + ". Push branch " + taskId + ".\n"
+                + "The request's title is EXACTLY \"" + title + "\"; a later round's commit message STARTS with \""
+                + taskId + "\".\n"
                 + (targets.size() > 1
                         ? "The task spans these repositories, and what each one still needs:\n" + listed(targets)
                                 + "Do every step in EVERY one of them; a repository left behind is a"
                                 + " half-shipped task.\n"
                         : "The task's repository, and what it still needs:\n" + listed(targets))
-                + "1. Commit ALL current changes. Where the request is still to be opened the message is EXACTLY"
-                + " \"" + title + "\"; where it is already open, a CONCISE one-line message that STARTS with \""
-                + taskId + "\" followed by a short imperative summary (max ~10 words) of ONLY the changes you"
-                + " just made (e.g. \"" + taskId + " Guard null sort key, fix header toggle\").\n"
-                + "2. Push branch " + taskId + ".\n"
-                + "3. Open the request each repository is missing via your code-host MCP: source " + taskId
-                + " -> the target listed above, title \"" + title + "\" EXACTLY as given. Leave the description"
-                + " empty, or one line for a decision the diff cannot show — never a report of what you did."
-                + " Where one is already open, do NOT create another or retitle it.\n"
-                + "4. " + repliesStep
-                + "5. Report back with update_agent_status CI_POLLING and " + reportField(targets) + ".\n"
-                + "This authorises ONE commit and ONE push PER REPOSITORY listed above, of what is in their"
-                + " trees now — no fewer, and nothing after. It is single-use and does not clear this file"
-                + " (rule 4).";
+                + "Replies: " + repliesStep
+                + "Report: update_agent_status CI_POLLING and " + reportField(targets) + ".";
     }
 
     private static String listed(List<Target> targets) {

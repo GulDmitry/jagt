@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.LoopWatch;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -42,7 +44,8 @@ class RoundRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
-        RoundRelay relay = new RoundRelay(new LoopGuard(state, config, mock(Notifications.class), clock), sessions);
+        RoundRelay relay = new RoundRelay(new LoopGuard(state, config, mock(Notifications.class), clock), sessions,
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
         ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_1\nbot: rename x"), 0);
         relay.relay("ABC-42", "https://host/mr/1", round, "running");
 
@@ -59,7 +62,8 @@ class RoundRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, 1L, "5 ships"))).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        RoundRelay relay = new RoundRelay(new LoopGuard(state, config, mock(Notifications.class), clock), sessions);
+        RoundRelay relay = new RoundRelay(new LoopGuard(state, config, mock(Notifications.class), clock), sessions,
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
 
         SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
                 new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0), "running");
@@ -69,12 +73,14 @@ class RoundRelayTest {
     }
 
     @Test
-    void relaysTheThreadsAsDraftsAndCountsThem() {
+    void relaysTheThreadsAsDraftsAndCountsThem(@TempDir Path root) throws Exception {
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         LoopGuard loops = mock(LoopGuard.class);
         when(loops.round(anyString(), any(), anyString())).thenReturn(LoopGuard.Relay.RELAY);
         when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
 
-        SweepResult result = new RoundRelay(loops, sessions).relay("ABC-42", "http://mr/api, http://mr/web",
+        SweepResult result = new RoundRelay(loops, sessions,
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))).relay("ABC-42", "http://mr/api, http://mr/web",
                 new ReviewFacts(true, false, "success", "", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
                         0), "success");
 
@@ -83,12 +89,13 @@ class RoundRelayTest {
     }
 
     @Test
-    void reportsARoundUnchangedWhenTheContextFileAlreadyHoldsIt() {
+    void reportsARoundUnchangedWhenTheContextFileAlreadyHoldsIt(@TempDir Path root) {
         LoopGuard loops = mock(LoopGuard.class);
         when(loops.round(anyString(), any(), anyString())).thenReturn(LoopGuard.Relay.RELAY);
         when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(false);
 
-        SweepResult result = new RoundRelay(loops, sessions).relay("ABC-42", "http://mr/1",
+        SweepResult result = new RoundRelay(loops, sessions,
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))).relay("ABC-42", "http://mr/1",
                 new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0), "success");
 
         assertThat(result.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);

@@ -67,7 +67,7 @@ class SessionBriefContractTest {
     }
 
     @Test
-    void aShipNamesOnlyWorktreesTheBriefListsAsTheSessionsAndPushesOnlyItsBranch(@TempDir Path root) {
+    void aShipNamesOnlyWorktreesTheBriefListsAsTheSessionsAndPushesOnlyItsBranch(@TempDir Path root) throws Exception {
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -91,11 +91,15 @@ class SessionBriefContractTest {
         when(changes.holdsWork(anyString(), anyString(), anyString())).thenReturn(true);
         AgentSessions sessions = mock(AgentSessions.class);
 
-        new ShipService(state, config, sessions, changes).ship("ABC-42");
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+
+        new ShipService(state, config, new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions), changes).ship("ABC-42");
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
         verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());
-        assertThat(relayed.getValue()).contains("web: /w/ABC-42,", "api: /w/ABC-42-api,", "Push branch ABC-42.")
+        assertThat(relayed.getValue()).contains("web: /w/ABC-42,", "api: /w/ABC-42-api,", "Push branch ABC-42.",
+                        "ONE commit and ONE push PER REPOSITORY listed above")
                 .doesNotContain("rebase", "cherry-pick", "--force", "--amend", "reset --hard", "git merge");
         assertThat(brief).contains("(your CWD): /w/ABC-42\n", "api: /w/ABC-42-api", "push only to `ABC-42`");
     }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +13,10 @@ public class RoundRelay {
 
     private final LoopGuard loops;
     private final AgentSessions sessions;
+    private final SessionBrief sessionBrief;
 
     public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said) {
-        String brief = RoundBrief.of(mrUrl, r, said);
+        String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
         return switch (loops.round(taskId, r, brief)) {
             case STOPPED -> new SweepResult(SweepResult.Kind.STOPPED, read + ", checks " + said

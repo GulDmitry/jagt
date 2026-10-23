@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /** A section the human's copy lacks is read from the shipped file. */
 @Component
@@ -19,6 +20,8 @@ public class SessionBrief {
     private static final String COPY = "session-brief.md";
     private static final String SHIPPED = COPY + ".dist";
     private static final String HEADING = "## ";
+    /** Only a step's own heading ends a section: one may show a reply shaped with a heading of its own. */
+    private static final Pattern STEP = Pattern.compile("## [a-z][a-z0-9-]*");
 
     private final OrchestratorPaths paths;
 
@@ -48,7 +51,7 @@ public class SessionBrief {
             return Optional.empty();
         }
         int end = start + 1;
-        while (end < lines.size() && !lines.get(end).startsWith(HEADING)) {
+        while (end < lines.size() && !STEP.matcher(lines.get(end)).matches()) {
             end++;
         }
         return Optional.of(String.join("\n", lines.subList(start + 1, end)).strip());

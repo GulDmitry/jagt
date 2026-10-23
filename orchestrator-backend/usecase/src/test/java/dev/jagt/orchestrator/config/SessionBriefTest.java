@@ -44,4 +44,12 @@ class SessionBriefTest {
 
         assertThat(brief.section("deploy")).contains("");
     }
+
+    @Test
+    void keepsAHeadingThatNamesNoStepInsideItsStep(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## replies\n\nshape:\n## <thread link>\nFIXED\n\n## verify\n\nrun it\n");
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(brief.section("replies")).contains("shape:\n## <thread link>\nFIXED");
+    }
 }
