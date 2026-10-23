@@ -166,3 +166,14 @@ outcome of THIS round:
   round with a diff instead.
 - outcome=progress — you fixed code locally and there is a diff to read.
 Do NOT push or post anything yourself.
+
+## start
+
+You are the sub-agent for this worktree. Read task_notes.md (if present) and task_context.md, set your status to
+IN_PROGRESS via update_agent_status, and start working on the task by the rules already in your context.
+
+## revive
+
+Your session was interrupted and has been re-entered, so the context above may be incomplete. Re-read
+task_context.md and run `git status`: uncommitted changes in this worktree are your own work, and you continue
+from them rather than starting the task over.

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Sandbox;
@@ -19,9 +20,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CodexAgentRuntimeTest {
 
     @Test
-    void launchesTheCodexCliAgainstTheWorktreesOwnCodexHome() {
-        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults()
-                .withAgentPrompt("Read AGENTS.md and work"), CodexProperties.defaults(),
+    void launchesTheCodexCliAgainstTheWorktreesOwnCodexHome(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## start\n\nRead AGENTS.md and work\n");
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+                CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
 
@@ -30,8 +33,10 @@ class CodexAgentRuntimeTest {
     }
 
     @Test
-    void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves() {
-        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+    void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
@@ -46,7 +51,8 @@ class CodexAgentRuntimeTest {
         worktree.toFile().mkdirs();
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
 
-        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
@@ -63,7 +69,8 @@ class CodexAgentRuntimeTest {
         worktree.toFile().mkdirs();
         Files.writeString(worktree.resolve("mcp_client.js"), "the project's own script");
 
-        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
@@ -78,7 +85,8 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
@@ -94,7 +102,8 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:9111/mcp"))
@@ -109,7 +118,8 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
@@ -124,7 +134,8 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
@@ -163,7 +174,8 @@ class CodexAgentRuntimeTest {
         Files.createDirectories(worktree.resolve(".codex"));
         Files.writeString(worktree.resolve(".codex/config.toml"), "model = \"the project's own choice\"\n");
 
-        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
@@ -178,7 +190,8 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
@@ -191,7 +204,8 @@ class CodexAgentRuntimeTest {
 
     @Test
     void refusesToStartWithoutTheBridgeItIsTheOnlyRuntimeStillSpawning(@TempDir Path root) {
-        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
@@ -203,7 +217,8 @@ class CodexAgentRuntimeTest {
     void hasNothingToReportAboutTheBridgeOnceItIsThere(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("mcp_client.js"), "// bridge");
 
-        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));

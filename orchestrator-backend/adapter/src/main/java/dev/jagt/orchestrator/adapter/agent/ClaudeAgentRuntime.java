@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.Sandbox;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.SessionBrief;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -47,7 +47,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
     private static final List<String> MODELS = List.of("fable", "opus", "sonnet", "haiku");
 
-    private final OrchestratorProperties properties;
+    private final SessionBrief brief;
     private final ClaudeProperties claude;
     private final McpEndpoint mcp;
     private final HookEndpoint hooks;
@@ -65,7 +65,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public String launchCommand(Path worktree, boolean planMode, String model) {
-        return launchCommand(worktree, planMode, model, properties.agentPrompt());
+        return launchCommand(worktree, planMode, model, brief.line("start"));
     }
 
     @Override
@@ -78,7 +78,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     /** `--continue` takes the newest conversation this worktree holds, and simply starts one where it holds none. */
     @Override
     public String reviveCommand(Path worktree) {
-        return COMPACT_ENV + claude.command() + " --continue " + shellQuote(properties.agentRevivePrompt());
+        return COMPACT_ENV + claude.command() + " --continue " + shellQuote(brief.line("revive"));
     }
 
     /** The prompt cache's lifetime: https://code.claude.com/docs/en/prompt-caching#cache-lifetime */
@@ -113,8 +113,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
         Set<String> cut = new HashSet<>(typedByJagt);
-        cut.add(properties.agentPrompt());
-        cut.add(properties.agentRevivePrompt());
+        cut.add(brief.line("start"));
+        cut.add(brief.line("revive"));
         return ClaudeTranscripts.humanSaid(ClaudeTranscripts.projectsDir(), worktree, cut);
     }
 

@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.adapter.agent;
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
@@ -32,7 +32,7 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
     private static final String CODEX_HOME_DIR = ".jagt/codex";
     private static final JsonMapper JSON = new JsonMapper();
 
-    private final OrchestratorProperties properties;
+    private final SessionBrief brief;
     private final CodexProperties codex;
     private final OrchestratorPaths paths;
     private final McpEndpoint mcp;
@@ -59,7 +59,7 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
 
     @Override
     public String launchCommand(Path worktree, boolean planMode) {
-        return launchCommand(worktree, planMode, "", properties.agentPrompt());
+        return launchCommand(worktree, planMode, "", brief.line("start"));
     }
 
     @Override

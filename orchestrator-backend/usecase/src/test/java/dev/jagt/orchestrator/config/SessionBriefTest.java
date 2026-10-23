@@ -52,4 +52,12 @@ class SessionBriefTest {
 
         assertThat(brief.section("replies")).contains("shape:\n## <thread link>\nFIXED");
     }
+
+    @Test
+    void readsAStepAsOneLineForACommandLine(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## start\n\nRead the notes,\n  then work.\n");
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(brief.line("start")).isEqualTo("Read the notes, then work.");
+    }
 }

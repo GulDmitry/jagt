@@ -29,6 +29,11 @@ public class SessionBrief {
         return read(COPY).flatMap(text -> section(text, step)).or(() -> read(SHIPPED).flatMap(text -> section(text, step)));
     }
 
+    /** For a command line or a window that takes one line; empty where the brief has no such step. */
+    public String line(String step) {
+        return section(step).map(text -> text.replaceAll("\\s*\\n\\s*", " ")).orElse("");
+    }
+
     private Optional<String> read(String name) {
         Path file = paths.root().resolve(name);
         if (!Files.exists(file)) {
