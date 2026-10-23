@@ -1,13 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.AgentReport;
-import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
@@ -31,8 +27,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
- * What an agent says about its own task, and the one ping the human gets for it. WHICH task a caller may touch is
- * already decided upstream.
+ * What an agent says about its own task. WHICH task a caller may touch is already decided upstream.
  */
 @Service
 @RequiredArgsConstructor
@@ -115,12 +110,6 @@ public class AgentStatusReports {
         boolean askedNow = AgentReport.of(shortMessage) == AgentReport.QUESTION
                 && AgentReport.of(current.map(TaskState::message).orElse(null)) != AgentReport.QUESTION;
         logChange(taskId, current.map(TaskState::alias).orElse(null), previous, landed, shortMessage, askedNow);
-        // A keep-alive says nothing new; a task handing control back, or stopping to ask, does.
-        boolean handedBack = landed != previous && FlowRules.handsBack(landed);
-        if (handedBack || askedNow) {
-            // Re-read: the same call may have LINKED the request, and the advice differs on whether one exists.
-            ping(taskId, stateService.task(taskId));
-        }
         return answer(taskId, newStatus, landed, shortMessage);
     }
 
@@ -201,45 +190,12 @@ public class AgentStatusReports {
             default -> throw new IllegalArgumentException(read + " is not what a review read concludes");
         };
         String id = stateService.canonicalTaskId(taskId);
-        flow.read(id, read, message)
-                .filter(landed -> landed.now() != landed.previous()
-                        && (FlowRules.reviewed(read) || FlowRules.approved(read)))
-                .ifPresent(landed -> ping(id, stateService.task(id)));
+        flow.read(id, read, message);
     }
 
     public String notifyUser(String title, String message) {
         notifications.send(Notification.fromAgent(null, title, message));
         return "Notification sent";
-    }
-
-    /**
-     * The human is tapped for a move of THEIRS and nothing else. Which is what the projection answers, so this
-     * reads it rather than keeping a second list of statuses worth interrupting for.
-     */
-    private void ping(String taskId, Optional<TaskState> read) {
-        read.ifPresent(task -> {
-            RoundState round = handBack.round(task);
-            // Not silent: whoever this ping is about has just spoken, or jagt has just read the round for it.
-            Move move = Move.forTask(task.status(), Facts.projected(task), round, false);
-            if (move.owner() == Owner.YOU) {
-                notifications.send(Notification.fromAgent(taskId, title(task.status(), round),
-                        banner(move.hint(), round)));
-            }
-        });
-    }
-
-    /** A question is what the human has to act on; which status it was asked from is not. */
-    private static String title(TaskStatus status, RoundState round) {
-        return round.report() == AgentReport.QUESTION
-                ? "needs input"
-                : status.name().toLowerCase(java.util.Locale.ROOT);
-    }
-
-    /** The drafted replies are named here because a notification carries nothing else that would show them. */
-    private static String banner(String hint, RoundState round) {
-        return round.draftedReplies() && round.report() != AgentReport.NO_CHANGES
-                ? hint + " — drafted replies wait in review_replies.md"
-                : hint;
     }
 
     /**

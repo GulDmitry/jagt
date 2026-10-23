@@ -41,13 +41,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AgentStatusReportsTest {
@@ -135,7 +132,6 @@ class AgentStatusReportsTest {
         String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
         assertThat(answer).startsWith("Task ABC-1 stays REVERTED").endsWith("Your line was recorded (done)");
-        verify(notifications, never()).send(any());
     }
 
     @Test
@@ -318,51 +314,8 @@ class AgentStatusReportsTest {
                 .isEqualTo("no changes: withdrawn thread relayed again");
     }
 
-    @Test
-    void notifiesHumanWhenAgentFinishesAndHandsBackForReview(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
-        reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
-        verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())));
-    }
-
-    @Test
-    void leavesTheHumanUntappedWhileTheMasterReadsTheHandBackFirst(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-
-        reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
-
-        verify(notifications, never()).send(any());
-    }
-
-    @Test
-    void doesNotNotifyOnRoutineInProgressKeepAlive(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
-
-        reports.report(TaskStatus.IN_PROGRESS, "step 2", "ABC-1");
-
-        verifyNoInteractions(notifications);
-    }
 
     @Test
     void marksAQuestionStoppedOnADeniedCallAsAPermissionOnlyTheHumanGrants(@TempDir Path root) {
@@ -380,35 +333,7 @@ class AgentStatusReportsTest {
                 .isEqualTo("awaiting permission: edits in the deploy worktree denied");
     }
 
-    @Test
-    void notifiesHumanWhenAgentStopsToAskWithoutLeavingTheStatusItWasWorkingIn(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("step 2").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
 
-        reports.report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
-
-        verify(notifications).send(argThat(sent -> "needs input".equals(sent.title())));
-    }
-
-    @Test
-    void doesNotNotifyAgainWhileTheAgentRepeatsTheQuestionItIsStillWaitingOn(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("awaiting: which uniqueness rule").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
-
-        reports.report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
-
-        verifyNoInteractions(notifications);
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"branch pushed", "pushed, see the http docs for the request"})
@@ -485,7 +410,7 @@ class AgentStatusReportsTest {
     }
 
     @Test
-    void advancesToApprovedAndTapsTheHumanTheFirstTime(@TempDir Path root) {
+    void advancesARoundTheReviewApprovedToApproved(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -497,12 +422,10 @@ class AgentStatusReportsTest {
         reports.markRead("ABC-1", TaskStatus.APPROVED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
-        verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
-                && sent.body().contains("approved")));
     }
 
     @Test
-    void saysNothingWhenARoundCameBackCleanButUnapproved(@TempDir Path root) {
+    void advancesACleanUnapprovedRoundToReviewed(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -514,23 +437,8 @@ class AgentStatusReportsTest {
         reports.markRead("ABC-1", TaskStatus.REVIEWED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
-        verify(notifications, never()).send(any());
     }
 
-    @Test
-    void staysQuietAboutAnApprovalTheHumanHasAlreadySeen(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-                .alias("a1").mrUrl("http://mr/1").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
-
-        reports.markRead("ABC-1", TaskStatus.APPROVED);
-
-        verify(notifications, never()).send(any());
-    }
 
     @Test
     void writesNothingWhenAPollReadsTheOutcomeTheTaskAlreadyHolds(@TempDir Path root) {
@@ -627,47 +535,7 @@ class AgentStatusReportsTest {
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isEqualTo(12345L);
     }
 
-    @Test
-    void tellsTheHumanAboutTheDraftedRepliesWaitingInTheWorktree(@TempDir Path root) throws IOException {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        Files.createDirectories(root.resolve("wt"));
-        Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
-        state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
-        reports.report(TaskStatus.REVIEW_PENDING, "widget fixed", "ABC-1");
-
-        verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
-                && sent.body().contains("review_replies.md")));
-    }
-
-    @Test
-    void doesNotRepeatTheDraftedRepliesWhenTheRoundChangedNothingAndTheAdviceAlreadySaysIt(@TempDir Path root)
-            throws IOException {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        Files.createDirectories(root.resolve("wt"));
-        Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: already handled\n");
-        state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").mrUrl("https://host/mr/1").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService));
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-
-        reports.report(TaskStatus.REVIEW_PENDING, "no changes: every comment already handled", "ABC-1");
-
-        ArgumentCaptor<Notification> ping = ArgumentCaptor.forClass(Notification.class);
-        verify(notifications).send(ping.capture());
-        assertThat(ping.getValue().body()).containsOnlyOnce("drafted replies");
-    }
 
     @Test
     void refusesToPullATaskTheReviewHasPassedBackIntoWaitingOnChecks(@TempDir Path root) {
@@ -686,7 +554,7 @@ class AgentStatusReportsTest {
     }
 
     @Test
-    void putsARedRoundOnTheBoardWithoutTappingTheHumanTwice(@TempDir Path root) {
+    void putsARedRoundOnTheBoard(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -698,7 +566,6 @@ class AgentStatusReportsTest {
         reports.markRead("ABC-1", TaskStatus.CI_FAILED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_FAILED);
-        verify(notifications, never()).send(any());
     }
 
     @Test
