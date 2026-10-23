@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.board;
 
+import dev.jagt.orchestrator.port.UserNotifier;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Playwright;
@@ -39,6 +40,9 @@ import java.time.Duration;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Import(BoardPageContext.BreakableJob.class)
 abstract class BoardPageContext {
+
+    @MockitoBean
+    UserNotifier userNotifier;
 
     static class BreakableJob implements Job {
         private volatile boolean broken;

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.prompteval;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommandAssistant;
@@ -27,6 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false", "server.port=8393",
         "orchestrator.gate-url=http://127.0.0.1:8393/api/agent"})
 class CommandMappingEvalTest {
+
+    @MockitoBean
+    private UserNotifier userNotifier;
 
     @TempDir
     static Path workspace;

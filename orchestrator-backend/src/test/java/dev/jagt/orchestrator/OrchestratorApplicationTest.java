@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator;
 
+import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.mcp.McpController;
@@ -25,6 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "orchestrator.usage-limits.enabled=false"})
 @ResourceLock("spring-logging")
 class OrchestratorApplicationTest {
+
+    @MockitoBean
+    private UserNotifier userNotifier;
 
     @TempDir
     static Path root;

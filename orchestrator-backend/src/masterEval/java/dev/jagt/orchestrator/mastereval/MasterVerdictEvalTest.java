@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.mastereval;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -37,6 +39,9 @@ import static org.awaitility.Awaitility.await;
         "orchestrator.gate-url=http://127.0.0.1:" + MasterVerdictEvalTest.GATE_PORT + "/api/agent"})
 @org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
 class MasterVerdictEvalTest {
+
+    @MockitoBean
+    private UserNotifier userNotifier;
 
     static final String DEAD_PORT = "8391";
     static final String GATE_PORT = "8392";

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface;
 
+import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -24,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "orchestrator.usage-limits.enabled=false"})
 @ResourceLock("spring-logging")
 class BoardWriteOnTomcatTest {
+
+    @MockitoBean
+    private UserNotifier userNotifier;
 
     @TempDir
     static Path root;
