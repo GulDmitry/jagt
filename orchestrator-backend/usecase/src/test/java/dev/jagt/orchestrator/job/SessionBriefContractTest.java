@@ -4,11 +4,13 @@ import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ResumeRegistration;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.SubAgentBriefing;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TicketReader;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +42,9 @@ import static org.mockito.Mockito.when;
 class SessionBriefContractTest {
 
     @Test
-    void aDeployConflictIsHandedOnlyInAWorktreeTheBriefGrantsAsTheSessionsWithItsMergeExcepted() {
+    void aDeployConflictIsHandedOnlyInAWorktreeTheBriefGrantsAsTheSessionsWithItsMergeExcepted(@TempDir Path root)
+            throws Exception {
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -48,7 +53,8 @@ class SessionBriefContractTest {
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         AgentSessions sessions = mock(AgentSessions.class);
 
-        new ConflictHandOff(sessions, mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
+        new ConflictHandOff(sessions, new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions), mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
                         new ConflictWatch.Progress(7, 0, "d")));
 

@@ -63,3 +63,11 @@ Work there as in your other repositories.
 ## wake
 
 Continue where you stopped.
+
+## conflict
+
+That worktree is yours until it deploys, and finishing its merge is not a `git merge` of yours. Resolve it there,
+never in your own worktree, keeping what both sides meant. Build or test what the project lets you, then
+`git add` every resolved path in one go: once nothing is unmerged and nothing is left unstaged, jagt finishes the
+deploy. Do not commit, push or report a status. If a side cannot be kept without a human's call, report
+outcome=question.

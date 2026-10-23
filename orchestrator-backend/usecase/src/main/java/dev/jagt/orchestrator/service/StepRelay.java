@@ -19,6 +19,11 @@ public class StepRelay {
         return sessions.relayIfChanged(taskId, told(step, facts));
     }
 
+    /** Written whatever the session already holds, as a hand-off that must land again. */
+    public void write(String taskId, String step, String facts) {
+        sessions.writeTaskContext(taskId, told(step, facts));
+    }
+
     /** In a session started afresh, which reads the text with the task's notes rather than its conversation. */
     public boolean relayFresh(String taskId, String step, String facts) {
         return sessions.relayFreshIfChanged(taskId, told(step, facts));
