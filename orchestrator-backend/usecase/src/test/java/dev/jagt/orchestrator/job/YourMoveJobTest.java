@@ -327,4 +327,157 @@ class YourMoveJobTest {
 
         verifyNoInteractions(notifications);
     }
+
+    @Test
+    void tapsYouOnceForAReadyRoundWhenYouKeptShipping(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").build());
+        job.run();
+        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+        job.run();
+
+        verify(notifications, times(1)).send(argThat(sent -> "review_pending".equals(sent.title())));
+    }
+
+    @Test
+    void staysQuietWhenTheMasterApprovesAPlanBeforeItSettles(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("reply"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.PLAN_PENDING).alias("a1").build());
+        job.run();
+        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        job.run();
+        clock.advance(Duration.ofSeconds(1));
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void tapsYouOnceForAQuestionWhenYouKeptAnswering(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("answer"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("awaiting: which uniqueness rule").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+        job.run();
+
+        verify(notifications, times(1)).send(argThat(sent -> "needs input".equals(sent.title())));
+    }
+
+    @Test
+    void staysQuietWhenTheMasterAnswersAQuestionBeforeItSettles(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("awaiting: which uniqueness rule").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(1));
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("master answered the question").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void tapsYouOnceForAnApprovedTaskWhenYouKeptTheDeploy(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("deploy", "revert"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.APPROVED).alias("a1").mrUrl("http://mr/1").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+        job.run();
+
+        verify(notifications, times(1)).send(argThat(sent -> "approved".equals(sent.title())));
+    }
+
+    @Test
+    void staysQuietWhenTheMasterDeploysAnApprovedTaskBeforeItSettles(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.APPROVED).alias("a1").mrUrl("http://mr/1").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(1));
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.DEPLOYED).alias("a1").mrUrl("http://mr/1").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void namesTheDraftedRepliesWhenAShipTheMasterMadeLeftThemForYou(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("reply", "ship"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("http://mr/1").build());
+        job.run();
+        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+
+        verify(notifications).send(argThat(sent -> sent.body().contains("review_replies.md")));
+    }
 }
