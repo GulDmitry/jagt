@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -164,17 +165,24 @@ public class NewTaskWorktrees {
         if (held.stream().anyMatch(repo -> repo.project().equals(projectKey))) {
             throw Refusal.byState("Task " + taskId + " already works in " + projectKey);
         }
-        configured(projectKey, config);
-        BranchStrategy strategy = strategyForExisting(taskId, projectKey);
+        ProjectConfig project = configured(projectKey, config);
         NewTask request = NewTask.builder(taskId, projectKey).mode(task.planGate() == PlanGate.REQUIRED ? "plan" : null)
                 .baseBranch(task.baseBranch()).build();
-        NewRepo added = resolveRepos(request, config, strategy).getFirst().besideTheSession();
-        gitWorktrees.createWorktree(added.projectPath(), added.worktreePath(), taskId, added.baseBranch(), strategy);
+        Optional<Path> standing = gitWorktrees.worktreeOf(Path.of(project.path()).toAbsolutePath().normalize(), taskId);
+        BranchStrategy strategy = standing.isPresent() ? BranchStrategy.RESUME : strategyForExisting(taskId, projectKey);
+        NewRepo resolved = resolveRepos(request, config, strategy).getFirst().besideTheSession();
+        NewRepo added = standing.map(resolved::at).orElse(resolved);
+        if (standing.isEmpty()) {
+            gitWorktrees.createWorktree(added.projectPath(), added.worktreePath(), taskId, added.baseBranch(), strategy);
+        }
         try {
             worktreeSetup.attach(request, added, Stream.concat(held.stream(), Stream.of(added)).toList());
             stateService.updateTask(taskId, registered -> registered.withRepo(added.registered()));
         } catch (RuntimeException e) {
-            unwind(request, List.of(added), List.of(added), strategy);
+            // A worktree jagt did not cut holds work jagt never saw: it stays.
+            if (standing.isEmpty()) {
+                unwind(request, List.of(added), List.of(added), strategy);
+            }
             throw e;
         }
         return added;

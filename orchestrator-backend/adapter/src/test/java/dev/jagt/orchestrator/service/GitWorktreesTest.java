@@ -12,6 +12,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -169,6 +170,38 @@ class GitWorktreesTest {
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
         assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("task work");
+    }
+
+    @Test
+    void findsTheWorktreeSomeoneElseCutOnTheTaskBranch(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "init"));
+        runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-1",
+                dir.resolve("by-hand").toString(), "main"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        Optional<Path> found = git.worktreeOf(repo, "ABC-1");
+
+        assertThat(found).contains(dir.resolve("by-hand").toRealPath());
+    }
+
+    @Test
+    void findsNoWorktreeWhereOnlyTheRepositoryItselfHasTheBranchCheckedOut(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "ABC-1", repo.toString()));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "init"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        Optional<Path> found = git.worktreeOf(repo.toRealPath(), "ABC-1");
+
+        assertThat(found).isEmpty();
     }
 
     @Test

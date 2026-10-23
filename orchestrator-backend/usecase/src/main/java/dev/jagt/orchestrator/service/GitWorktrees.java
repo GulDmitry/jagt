@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -331,6 +332,20 @@ public class GitWorktrees {
             }
         }
         return Optional.empty();
+    }
+
+    /** A worktree of {@code projectPath}, its own checkout aside, that has {@code branch} checked out. */
+    public Optional<Path> worktreeOf(Path projectPath, String branch) {
+        return git.locked(projectPath, () -> checkoutOf(projectPath, branch)
+                .filter(worktree -> !real(worktree).equals(real(projectPath))));
+    }
+
+    private static Path real(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            return path.toAbsolutePath().normalize();
+        }
     }
 
     public boolean branchExists(Path projectPath, String branch) {

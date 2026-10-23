@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -444,6 +446,42 @@ class NewTaskWorktreesTest {
         TaskState task = state.task("ABC-7").orElseThrow();
         assertThat(task.projects()).containsExactly("api");
         assertThat(task.repoRequest()).isEqualTo("registry");
+    }
+
+    @Test
+    void adoptsAWorktreeAlreadyStandingOnTheTaskBranchInsteadOfCuttingOne() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry", new ProjectConfig(root.resolve("registry-repo").toString(), "origin/release",
+                                null, List.of()))));
+        when(config.load()).thenReturn(configured);
+        when(git.worktreeOf(root.resolve("registry-repo"), "ABC-7")).thenReturn(Optional.of(root.resolve("cut-by-hand")));
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("registry").build());
+
+        worktrees.attach("ABC-7", "registry", configured);
+
+        verify(git, never()).createWorktree(any(), any(), any(), any(), any());
+        assertThat(state.task("ABC-7").orElseThrow().repos()).extracting(TaskRepo::worktreePath)
+                .containsExactly(root.resolve("ABC-7-api").toString(), root.resolve("cut-by-hand").toString());
+    }
+
+    @Test
+    void leavesAnAdoptedWorktreeAndItsWorkInPlaceWhenWritingItFails() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry", new ProjectConfig(root.resolve("registry-repo").toString(), "origin/release",
+                                null, List.of()))));
+        when(config.load()).thenReturn(configured);
+        when(git.worktreeOf(root.resolve("registry-repo"), "ABC-7")).thenReturn(Optional.of(root.resolve("cut-by-hand")));
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("registry").build());
+        doThrow(new IllegalStateException("provisioning failed")).when(setup).attach(any(), any(), any());
+
+        assertThatThrownBy(() -> worktrees.attach("ABC-7", "registry", configured))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(git, never()).removeWorktree(any(), any(), any());
     }
 
     @Test
