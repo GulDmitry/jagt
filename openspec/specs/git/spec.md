@@ -190,3 +190,7 @@ its own. A cut that fails SHALL unwind and leave the request standing, the cause
 #### Scenario: The session's repository ships its own memory file
 - **WHEN** ABC-42's first repository ships `CLAUDE.md`, so jagt briefed it in `CLAUDE.local.md`
 - **THEN** `add-repo` writes that briefing again in `CLAUDE.local.md` and attaches
+
+#### Scenario: The attached repository is trusted as it stands
+- **WHEN** `add-repo` attaches `schemaRegistry` to ABC-42
+- **THEN** its git config and hooks join the trusted record as they are, and the next `ship` is not refused for them

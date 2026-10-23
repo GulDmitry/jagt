@@ -485,6 +485,24 @@ class NewTaskWorktreesTest {
     }
 
     @Test
+    void trustsTheAddedRepositorysGitStateAsItStandsAndKeepsTheRecordOfTheOthers() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry", new ProjectConfig(root.resolve("registry-repo").toString(), "origin/main", null,
+                                List.of()))));
+        when(config.load()).thenReturn(configured);
+        when(git.gitState(List.of(root.resolve("ABC-7-registry")))).thenReturn(Map.of("core.bare in registry", "d2"));
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("registry")
+                .gitTrust(GitTrust.of(Map.of("core.bare in api", "d1"))).build());
+
+        worktrees.attach("ABC-7", "registry", configured);
+
+        assertThat(state.task("ABC-7").orElseThrow().gitTrust().recorded())
+                .isEqualTo(Map.of("core.bare in api", "d1", "core.bare in registry", "d2"));
+    }
+
+    @Test
     void refusesAProjectTheTaskAlreadyWorksInBeforeCuttingAnything() {
         ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(Map.of("api",
                 new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of())));

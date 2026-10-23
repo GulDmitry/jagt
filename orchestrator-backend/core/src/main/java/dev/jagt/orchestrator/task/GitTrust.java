@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,6 +25,13 @@ public record GitTrust(Map<String, String> recorded, @Nullable String changed) {
 
     public static GitTrust of(Map<String, String> read) {
         return new GitTrust(read, null);
+    }
+
+    /** This record with {@code more}'s entries added, which name files this one does not. */
+    public GitTrust including(GitTrust more) {
+        Map<String, String> both = new HashMap<>(recorded);
+        both.putAll(more.recorded());
+        return new GitTrust(both, changed);
     }
 
     public GitTrust withChanged(String changed) {
