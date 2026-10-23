@@ -38,12 +38,13 @@ project key renders only where projects are several, in the install or the task.
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`, a row per group.
 A hint's text lives in `command/CommandReference` alone. `approve-plan` replaces the approval
-dialog of the CLI's plan mode and the hint to tell the session to go. A renamed verb still answers to its old spelling (`review`
-runs `sweep`), unadvertised (`TaskAction.RENAMED`).
+dialog of the CLI's plan mode and the hint to tell the session to go. `add-repo` replaces the answer typed to a session
+asking for a repository: offered, highlighted in place of `focus`, only while that request stands, and adds no mark.
+A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised (`TaskAction.RENAMED`).
 
-#### Scenario: A plan waits
-- **WHEN** a task is at `PLAN_PENDING`
-- **THEN** its top row offers `approve-plan`, and no other status does
+#### Scenario: A plan or a repository waits
+- **WHEN** a task is at `PLAN_PENDING`, or its session asked for a configured project it lacks
+- **THEN** its top row offers `approve-plan`, or `add-repo` on the NEEDS INPUT card; no other status or question does
 
 #### Scenario: Which buttons change something
 - **WHEN** the human reads a card's buttons
@@ -145,10 +146,7 @@ highlighted button says what to do. A badge is the human's move; a quiet "you ca
 #### Scenario: A deployed task
 - **WHEN** a task is deployed
 - **THEN** it wears no badge: `done` is its only move
-
-#### Scenario: Jobs that run fine
-- **WHEN** no job's last run failed
-- **THEN** no jobs chip shows
+- **AND** while no job's last run failed, no jobs chip shows
 
 ### Requirement: Components ship as the files that run
 The board SHALL render Preact components written with `htm`, served from `static/vendor/` byte for byte as the npm

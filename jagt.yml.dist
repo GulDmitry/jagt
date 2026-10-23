@@ -124,7 +124,8 @@ orchestrator:
     # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
                              # blank inherits the agent CLI's. One run per role of the brief, per round;
                              # a `model` column in the brief's role table overrides it for that role
-    # mine: [plan]           # the steps that stay YOURS in `act`: ship, deploy + revert (together), reply, answer, plan.
+    # mine: [plan]           # the steps that stay YOURS in `act`: ship, deploy + revert (together), reply, answer, plan,
+                             # repo (attaching a repository a session asked for).
                              # Unset: [plan]; [] hands the Master every step. Anything not listed the Master may do;
                              # closing a task and a plan you opened in `plan` mode are always yours
 

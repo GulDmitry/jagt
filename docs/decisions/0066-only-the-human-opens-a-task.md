@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-22.
+Accepted 2026-10-22. "Only a repository it lacks goes to the human": superseded in part by [0068](0068-a-session-asks-for-the-repository-it-lacks.md).
 
 ## Context
 

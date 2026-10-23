@@ -61,8 +61,8 @@
   [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)
 - **Push guard** — A session cannot push off its task's branch, force, delete or skip hooks.
   [spec](../openspec/specs/git/spec.md#requirement-push-guard-lives-in-the-worktree)
-- **Several repositories** — One task can span several repositories with a worktree in each.
-  [spec](../openspec/specs/git/spec.md#requirement-repositories-multiply-worktrees-not-agents)
+- **Several repositories** — One task spans several repositories, a worktree in each; `add-repo` attaches one a session asks for.
+  [spec](../openspec/specs/git/spec.md#requirement-a-running-task-gains-a-repository)
 
 ## Git trust
 [spec](../openspec/specs/git-trust/spec.md)

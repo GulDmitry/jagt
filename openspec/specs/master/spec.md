@@ -55,8 +55,9 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 
 ### Requirement: In act the Master moves for you
 With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
-answer a question. A permission, and a plan asked for in `plan` mode, stay yours. It SHALL deploy a `REVIEWED` or
-`APPROVED` task once (`MasterDeployJob`). `master.mine` SHALL keep named steps (`task/MasterRight`) the human's,
+answer a question. It SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`). A permission, and a
+plan asked for in `plan` mode, stay yours. It SHALL deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`).
+`master.mine` SHALL keep named steps (`task/MasterRight`) the human's,
 `[plan]` while unset; a project's `humanPaths` a task's ship and deploy where it changes a path they name
 (`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
 
@@ -76,6 +77,14 @@ answer a question. A permission, and a plan asked for in `plan` mode, stay yours
 - **WHEN** `humanPaths: ["**/auth/**"]` names a changed path, or the paths are unread
 - **THEN** it presses neither; the `master` window names the path
 
+#### Scenario: A session asks for a repository
+- **WHEN** a session names a configured project it lacks and the Master holds `repo`
+- **THEN** it presses `add-repo` once per request, answers in no prose and pings nobody
+
+#### Scenario: A repository kept for you
+- **WHEN** `mine: [repo]`
+- **THEN** it presses and answers nothing; you are pinged once and `add-repo` is yours
+
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours
@@ -83,10 +92,7 @@ answer a question. A permission, and a plan asked for in `plan` mode, stay yours
 #### Scenario: A plan in act
 - **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
 - **THEN** it approves nothing; the plan waits for your `approve-plan`
-
-#### Scenario: A question with a plan kept for you
-- **WHEN** a session asks at `PLAN_PENDING` and the plan is yours to approve
-- **THEN** the Master never answers; the plan and its question wait for you
+- **AND** a question asked at that `PLAN_PENDING` is never answered; the plan and its question wait for you
 
 #### Scenario: An answer while jagt's instruction waits
 - **WHEN** it answers at `SHIPPING` or `DEPLOY_CONFLICT`
@@ -125,18 +131,11 @@ line in `master-review.md`. Its findings SHALL go back to the session, in any mo
 - **WHEN** a bug fix's test fails before the fix, but not with the signal the report names
 - **THEN** it is wrong, and the round is not ready
 
-#### Scenario: A glossary nit
-- **WHEN** a reader finds only a term used against the glossary
-- **THEN** it is noise and the round is ready
-
 #### Scenario: A round is not ready
 - **WHEN** a plan or round has a blocking, wrong or unproven finding
 - **THEN** the fix is read anew; one an earlier round made on the same file goes back `[repeat]`
 - **AND** where two rounds running hold only repeats, the second is your question
-
-#### Scenario: Ready beside findings
-- **WHEN** the verdict is `ready` beside findings
-- **THEN** it counts as not ready
+- **AND** a verdict `ready` beside findings counts as not ready
 
 #### Scenario: The acceptance check skipped
 - **WHEN** a round skipped it
@@ -167,7 +166,8 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 
 ### Requirement: A task's work stays in the task
 Work a task needs SHALL be done in it, on its own branch, and the Master SHALL open no task: a `do` line in its answer
-opens nothing, the session told only you open a task. A repository the task lacks is a question for you.
+opens nothing, the session told only you open a task. A repository the task lacks is asked for with `needsProject`
+and attached by `add-repo`, never opened as a task.
 
 #### Scenario: The Master's answer holds a `do` line
 - **WHEN** in `act` it answers a session with `do proj drop the old keys from main`
