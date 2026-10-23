@@ -36,11 +36,11 @@ project key renders only where projects are several, in the install or the task.
 - **THEN** `resume <url>` after ⌘K is the one control
 
 ### Requirement: Verbs come off the wire in groups
-Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`, a row per group.
-A hint's text lives in `command/CommandReference` alone. `approve-plan` replaces the approval
-dialog of the CLI's plan mode and the hint to tell the session to go. `add-repo` replaces the answer typed to a session
-asking for a repository: offered, highlighted in place of `focus`, only while that request stands, and adds no mark.
-A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised (`TaskAction.RENAMED`).
+Per-task verbs SHALL come from `Move.actions()`, a row per `TaskAction.Group`; a hint's text lives in
+`command/CommandReference` alone. `approve-plan` replaces the CLI plan mode's approval dialog and its go-ahead hint.
+`add-repo` replaces the answer typed to a session asking for a repository: highlighted in place of `focus` while that
+request stands, no mark. A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised
+(`TaskAction.RENAMED`).
 
 #### Scenario: A plan or a repository waits
 - **WHEN** a task is at `PLAN_PENDING`, or its session asked for a configured project it lacks

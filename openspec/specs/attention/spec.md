@@ -7,11 +7,10 @@ Whose move it is: how a blocked session reaches the board, what interrupts, and 
 ## Requirements
 
 ### Requirement: A question is reported first
-An agent MUST report `outcome=question` before the human sees the question, rule 1 of `sub-agent-context.md` and
-`update_agent_status`. `AgentReport.QUESTION` SHALL make `Move.owner` YOU from any status, the
-`DashboardLine` NEEDS INPUT, and one ping from `YourMoveJob` on the transition into asking. That job SHALL ping
-when the projection turns a task YOU, or changes its advice while it stays YOU. The move must have stood five seconds.
-A step that becomes yours without any report is pinged too; a card already yours when jagt starts is not.
+An agent MUST report `outcome=question` before the human sees the question (rule 1 of `sub-agent-context.md`).
+`AgentReport.QUESTION` SHALL make `Move.owner` YOU from any status and the `DashboardLine` NEEDS INPUT.
+`YourMoveJob` SHALL ping once the projection turns a task YOU, or changes its advice while YOU, a report or not.
+The move must have stood five seconds; a card already yours when jagt starts is not pinged.
 
 #### Scenario: An agent stops to ask
 - **WHEN** an agent asks
