@@ -15,7 +15,8 @@ Master's verdict and its own question are neither. A step can become the human's
 ## Decision
 
 - One job, `YourMoveJob`, pings: every 2 s it projects each task and keeps its last owner-YOU advice.
-- It pings when that advice appears or changes; a task met for the first time, a restart included, is recorded silently.
+- It pings when that advice appears or changes and has stood five seconds; a task met first, a restart included, is silent.
+- The wait is the race: a verdict the Master presses on makes the card yours until its next tick, and that pings nobody.
 - `AgentStatusReports` pings nothing; `notifyUser` stays, as an agent's own words.
 - The map holds only present tasks.
 
@@ -26,4 +27,4 @@ Master's verdict and its own question are neither. A step can become the human's
 
 ## Reopen when
 
-- A write that makes a task yours can wait longer than one tick, or a tick pings a move the Master is about to press.
+- A press the Master holds takes longer than five seconds to land, and pings for it become noise.

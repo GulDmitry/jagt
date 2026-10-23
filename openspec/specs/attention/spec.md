@@ -10,8 +10,8 @@ Whose move it is: how a blocked session reaches the board, what interrupts, and 
 An agent MUST report `outcome=question` before the human sees the question, rule 1 of `sub-agent-context.md` and
 `update_agent_status`. `AgentReport.QUESTION` SHALL make `Move.owner` YOU from any status, the
 `DashboardLine` NEEDS INPUT, and one ping from `YourMoveJob` on the transition into asking. That job SHALL ping
-whenever the projection turns a task YOU, or changes its advice while it stays YOU. A step that becomes yours
-without any report is pinged too; a card already yours when jagt starts is not.
+when the projection turns a task YOU, or changes its advice while it stays YOU. The move must have stood five seconds.
+A step that becomes yours without any report is pinged too; a card already yours when jagt starts is not.
 
 #### Scenario: An agent stops to ask
 - **WHEN** an agent asks
@@ -27,7 +27,7 @@ without any report is pinged too; a card already yours when jagt starts is not.
 
 #### Scenario: A step the Master may not take
 - **WHEN** its verdict leaves a plan or a round for you (`mine` names it)
-- **THEN** you are pinged once
+- **THEN** you are pinged once; a step the Master presses within five seconds pings nobody
 
 ### Requirement: Silence is stamped by the watchdog
 `WatchdogService` SHALL stamp silence from `service/SessionProbe` (`TaskState.silentSince`, `TaskState.silentBecause`):
