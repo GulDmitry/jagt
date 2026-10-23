@@ -62,11 +62,15 @@ answer a question. A permission, and a plan asked for in `plan` mode, stay yours
 
 #### Scenario: Green with every thread closed
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
-- **THEN** the Master deploys it; `mine: [deploy, revert]` leaves the press yours
+- **THEN** the Master deploys it, never reverts; `mine: [deploy, revert]` leaves the press yours
 
 #### Scenario: A ready round holds nothing to ship
 - **WHEN** it has nothing to ship
 - **THEN** it presses nothing; the task waits for you
+
+#### Scenario: A ship or a reply kept for you
+- **WHEN** a round is `ready` and `mine: [ship]`, or the Master ships and `mine: [reply]`
+- **THEN** it ships nothing, or the session leaves `review_replies.md` for you
 
 #### Scenario: A path kept for you
 - **WHEN** `humanPaths: ["**/auth/**"]` names a changed path, or the paths are unread
@@ -77,7 +81,7 @@ answer a question. A permission, and a plan asked for in `plan` mode, stay yours
 - **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours
 
 #### Scenario: A plan in act
-- **WHEN** a plan holds and `mine` is unset, or names `plan`, or the task was opened in `plan` mode
+- **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode
 - **THEN** it approves nothing; the plan waits for your `approve-plan`
 
 #### Scenario: A question with a plan kept for you

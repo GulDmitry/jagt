@@ -98,4 +98,16 @@ class MasterDeployJobTest {
 
         verify(press, never()).press(anyString(), any(), any());
     }
+
+    @Test
+    void revertsNothingOnItsOwnOfADeployedTaskWhereTheHumanKeptTheRevert() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("revert"), null)));
+        when(state.tasks()).thenReturn(Map.of("ABC-1",
+                TaskState.builder("demo", "/wt", TaskStatus.DEPLOYED).build()));
+
+        new MasterDeployJob(state, config, press).run();
+
+        verify(press, never()).press(anyString(), any(), any());
+    }
 }

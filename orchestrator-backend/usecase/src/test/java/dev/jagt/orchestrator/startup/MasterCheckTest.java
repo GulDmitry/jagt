@@ -90,6 +90,19 @@ class MasterCheckTest {
     }
 
     @Test
+    void refusesKeepingTheRevertWhileLeavingItsDoToTheMaster(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
+                .withMine(List.of("reply", "revert"))));
+        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                agentRuntime);
+
+        assertThat(check.problems())
+                .extracting(Problem::key).containsExactly("orchestrator.master.mine");
+    }
+
+    @Test
     void findsNothingWrongWithShippingUnattendedWhileRepliesAndTheSharedBranchStayYours(@TempDir Path root)
             throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
