@@ -33,6 +33,18 @@ class TurnEndsTest {
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
 
+    @Test
+    void sendsOnATurnThatEndsOnAQuestionTheHumanAnsweredToStartIt() {
+        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+        when(runtime.refusedTurnEnd(contains("update_agent_status"))).thenReturn("{\"decision\": \"block\"}");
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("awaiting: keep v2?").lastActiveTimestamp(1_000L).build();
+
+        String answered = new TurnEnds(probe, runtime, config).answer("ABC-1", task, false, false);
+
+        assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
+    }
+
     @ParameterizedTest
     @ValueSource(longs = {2_000L, 3_000L})
     void letsATurnEndThatReportedSinceItBegan(long reportedAt) {

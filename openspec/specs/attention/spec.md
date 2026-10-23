@@ -40,6 +40,10 @@ threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overrul
 - **WHEN** Claude ends its turn without reporting
 - **THEN** it is sent back once to report first, then stamped silent
 
+#### Scenario: A question answered in the terminal
+- **WHEN** a session asked, the human answered in its terminal, and the turn that answer began ends without a report
+- **THEN** it is sent back once to report first, so NEEDS INPUT does not outlive its answer
+
 #### Scenario: The agent CLI never came up
 - **WHEN** you `focus <task>` at `NEW`
 - **THEN** the card points at the launch

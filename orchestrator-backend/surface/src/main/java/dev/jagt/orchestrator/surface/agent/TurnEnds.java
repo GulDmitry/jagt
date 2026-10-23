@@ -25,7 +25,7 @@ public class TurnEnds {
     public String answer(String taskId, @Nullable TaskState task, boolean sentOn, boolean pausedOnBackgroundWork) {
         long turnStarted = probe.turnStartedAt(taskId);
         if (sentOn || pausedOnBackgroundWork || task == null || turnStarted == 0
-                || task.lastActiveTimestamp() >= turnStarted || !Move.endsUnreported(task.status(), task.message())) {
+                || task.lastActiveTimestamp() >= turnStarted || !Move.endsUnreported(task.status())) {
             return withTheMaster(task);
         }
         return runtime.refusedTurnEnd("Your turn is ending with " + taskId + " at " + task.status()

@@ -160,10 +160,9 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         return report == AgentReport.QUESTION && status != TaskStatus.DONE;
     }
 
-    /** A turn ending on a move still the agent's, with no question put, is a session stopping unannounced. */
-    public static boolean endsUnreported(TaskStatus status, @Nullable String message) {
-        return ownerOf(status) == Owner.AGENT && !FlowRules.awaitingVerification(status)
-                && AgentReport.of(message) != AgentReport.QUESTION;
+    /** A question put before the turn began was answered by the prompt that began it. */
+    public static boolean endsUnreported(TaskStatus status) {
+        return ownerOf(status) == Owner.AGENT && !FlowRules.awaitingVerification(status);
     }
 
     /** Whose turn a status ALONE means. */

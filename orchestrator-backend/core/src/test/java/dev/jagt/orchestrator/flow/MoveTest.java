@@ -40,16 +40,14 @@ class MoveTest {
 
     @ParameterizedTest
     @CsvSource({
-            "NEW, started, true",
-            "IN_PROGRESS, wiring the parser, true",
-            "SHIPPING, pushing, true",
-            "IN_PROGRESS, outcome=question — keep v2?, false",
-            "VERIFYING, running tests, false",
-            "REVIEW_PENDING, done, false",
-            "CI_POLLING, out, false"})
-    void callsATurnEndUnreportedOnlyWhileTheMoveIsStillTheAgents(TaskStatus status, String message,
-                                                                  boolean unreported) {
-        assertThat(Move.endsUnreported(status, message)).isEqualTo(unreported);
+            "NEW, true",
+            "IN_PROGRESS, true",
+            "SHIPPING, true",
+            "VERIFYING, false",
+            "REVIEW_PENDING, false",
+            "CI_POLLING, false"})
+    void callsATurnEndUnreportedOnlyWhileTheMoveIsStillTheAgents(TaskStatus status, boolean unreported) {
+        assertThat(Move.endsUnreported(status)).isEqualTo(unreported);
     }
 
     @ParameterizedTest
