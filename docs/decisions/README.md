@@ -86,3 +86,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0068 A session asks for a repository](0068-a-session-asks-for-the-repository-it-lacks.md)
 - [0069 A model's answer is held by repeats and the machine](0069-a-models-answer-is-held-by-repeats-and-the-machine.md)
 - [0070 A ship counts only without a new low](0070-a-ship-counts-only-without-a-new-low.md)
+- [0071 The session brief is one file, a section per step](0071-the-session-brief-is-one-file-by-step.md)

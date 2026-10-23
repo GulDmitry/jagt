@@ -1,0 +1,47 @@
+package dev.jagt.orchestrator.config;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class SessionBriefTest {
+
+    @Test
+    void readsTheHumansCopyOfAStepUpToTheNextStep(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "# Brief\n\n## deploy\n\ncheck it in a browser\n\n## verify\n\nrun it\n");
+        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(brief.section("deploy")).contains("check it in a browser");
+    }
+
+    @Test
+    void readsTheShippedStepTheHumansCopyLacks(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## verify\n\nrun it\n");
+        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(brief.section("deploy")).contains("check the pipeline");
+    }
+
+    @Test
+    void readsTheShippedBriefWhereNoneWasCopied(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(brief.section("deploy")).contains("check the pipeline");
+    }
+
+    @Test
+    void keepsAStepTheHumanEmptiedEmpty(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n\n## verify\n\nrun it\n");
+        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(brief.section("deploy")).contains("");
+    }
+}

@@ -76,6 +76,7 @@ orchestrator:
   # codex:
   #   command: codex
 
+  # What a session is told at each step jagt sends it: session-brief.md.dist; copy it to session-brief.md to edit a step.
   # The built-in prompt starts every sub-agent on task_context.md and holds it to leaving work uncommitted.
   # agentPrompt: >-
   #   You are the sub-agent for this worktree. …
