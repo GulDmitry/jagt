@@ -69,8 +69,7 @@ seam (`ScriptedProcesses`) is allowed, a shared builder is not.
 
 - `e2eTest` runs the flow per `TaskFlowCase` under `orchestrator.agent.cli=stub` (`StubAgentRuntime`, GUI
   drivers doubled), asserting an exact end state. Widening coverage is a **row** in `TaskFlowCase.matrix()`;
-  an uncovered one is named there, with why.
-- It asserts the **sentence** a flow returns: run it before pushing a reword.
+  an uncovered one is named there, with why. It asserts the **sentence** a flow returns: run it before pushing a reword.
 - Two matrices: `TaskFlowCase` × `TaskFlowMatrixTest` is CREATE → TEARDOWN across the viewer combinations;
   `ReviewRoundCase` × `ReviewAndDeployFlowTest` is everything between (ship, a round, deploy, revert, resume)
   on **one** combination. Its verbs go through the board's HTTP endpoints, the agent reports over
@@ -79,6 +78,7 @@ seam (`ScriptedProcesses`) is allowed, a shared builder is not.
   change to the mapping prompt, a `TaskAction`'s hint, the task-list shape or the model.
 - `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped
   `master-brief.md.dist`. Run it when either changes; a defect it passed: `master-lesson`.
+- Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority); `masterEval` also asserts what the read gate heard.
 - **A change under `prompts/` runs `promptEval` and `masterEval` before its commit**; no eval reads the session brief
   yet, so `SessionBriefContractTest` holds each relayed text naming a worktree or a git operation to what it grants.
 - Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,

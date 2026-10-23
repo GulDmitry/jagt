@@ -2,16 +2,14 @@
 
 [← README](../README.md) · Each line names one thing jagt does and links to the requirement that defines it; the spec is the truth, this is its index.
 
-## Acceptance probes
-[spec](../openspec/specs/acceptance-probes/spec.md)
+## Acceptance probes · [spec](../openspec/specs/acceptance-probes/spec.md)
 
 - **Declared probes** — A plan lists its acceptance checks as typed probes, never as prose.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-declares-its-probes-in-one-form)
 - **Probes run by jagt** — jagt runs the plan's probes itself before a hand-back and records what they printed.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-jagt-runs-the-probes-at-verifying)
 
-## Attention
-[spec](../openspec/specs/attention/spec.md)
+## Attention · [spec](../openspec/specs/attention/spec.md)
 
 - **Questions come first** — A session that needs an answer says so before anything else, and the move becomes yours.
   [spec](../openspec/specs/attention/spec.md#requirement-a-question-is-reported-first)
@@ -22,8 +20,7 @@
 - **Badge names the act** — Each badge says which action waits for you, with a sentence in its tooltip.
   [spec](../openspec/specs/attention/spec.md#requirement-the-badge-names-the-act)
 
-## Board
-[spec](../openspec/specs/board/spec.md)
+## Board · [spec](../openspec/specs/board/spec.md)
 
 - **One surface** — The board is the only surface; every card, button and gate reads the same rules.
   [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
@@ -32,8 +29,7 @@
 - **Local only** — The board answers on the local machine only and refuses foreign writes.
   [spec](../openspec/specs/board/spec.md#requirement-loopback-only)
 
-## Board workspace
-[spec](../openspec/specs/board-workspace/spec.md)
+## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 
 - **One row per task** — Each task is a row with its status, age and checks, kept in its place.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row)
@@ -50,8 +46,7 @@
 - **Keys for verbs** — Every verb shows its key, and one that asks first asks on its key too.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key)
 
-## Git
-[spec](../openspec/specs/git/spec.md)
+## Git · [spec](../openspec/specs/git/spec.md)
 
 - **Deploy and revert** — Only these two verbs write a shared branch; the base branch is never touched.
   [spec](../openspec/specs/git/spec.md#requirement-only-deploy-and-revert-write-shared-branches)
@@ -64,24 +59,30 @@
 - **Several repositories** — One task spans several repositories, a worktree in each; `add-repo` attaches one a session asks for.
   [spec](../openspec/specs/git/spec.md#requirement-a-running-task-gains-a-repository)
 
-## Git trust
-[spec](../openspec/specs/git-trust/spec.md)
+## Git trust · [spec](../openspec/specs/git-trust/spec.md)
 
 - **Trust before credentials** — Git runs with your credentials only under config and hooks you have trusted.
   [spec](../openspec/specs/git-trust/spec.md#requirement-git-with-the-humans-credentials-waits-for-trust)
 - **Adopting a change** — Only you adopt a changed config or hook, in every Master mode.
   [spec](../openspec/specs/git-trust/spec.md#requirement-only-the-human-adopts-a-change)
 
-## Guards
-[spec](../openspec/specs/guards/spec.md)
+## Guards · [spec](../openspec/specs/guards/spec.md)
 
 - **Refusals are counted** — Each guard refusal is counted on its task, so a gap reopens on a number.
   [spec](../openspec/specs/guards/spec.md#requirement-a-refusal-is-counted-on-its-task)
 - **Writes stay inside the task** — A session's shell writes only inside its task's worktrees and the tool caches.
   [spec](../openspec/specs/guards/spec.md#requirement-a-session-writes-only-inside-its-task)
 
-## Master
-[spec](../openspec/specs/master/spec.md)
+## Judgement resilience · [spec](../openspec/specs/judgement-resilience/spec.md)
+
+- **Majority of runs** — An eval case passes when most of its runs do; `-PevalRuns` and `-PevalPasses` set the quorum.
+  [spec](../openspec/specs/judgement-resilience/spec.md#requirement-an-eval-case-passes-on-a-majority-of-runs)
+- **What jagt heard** — `masterEval` also asserts the read gate heard the round's worktree and refused nothing.
+  [spec](../openspec/specs/judgement-resilience/spec.md#requirement-an-eval-asserts-what-jagt-heard-not-only-what-the-model-said)
+- **Yes-or-no patterns** — A pattern the Master stops on is one fact answered yes or no on the diff.
+  [spec](../openspec/specs/judgement-resilience/spec.md#requirement-a-pattern-the-master-stops-on-is-one-yes-or-no-fact)
+
+## Master · [spec](../openspec/specs/master/spec.md)
 
 - **Master review** — A headless reader judges every handed-back round and writes its verdict for you.
   [spec](../openspec/specs/master/spec.md#requirement-the-master-is-a-headless-run-per-role-not-a-window)
@@ -92,16 +93,14 @@
 - **Lessons** — When you disagree with the Master, it offers a lesson and changes no brief.
   [spec](../openspec/specs/master/spec.md#requirement-a-disagreement-offers-a-lesson-never-applies-one)
 
-## Platform
-[spec](../openspec/specs/platform/spec.md)
+## Platform · [spec](../openspec/specs/platform/spec.md)
 
 - **Keep awake** — The machine stays awake while the Master acts, polls run or tasks are being taken. Key: `orchestrator.keepAwake`, off by default.
   [spec](../openspec/specs/platform/spec.md#requirement-the-machine-stays-awake-only-when-asked)
 - **English and UTC** — Every time on the board and in a report is UTC and every text English, whatever the machine's or browser's locale.
   [spec](../openspec/specs/platform/spec.md#requirement-jagt-shows-every-time-in-utc-and-every-text-in-english)
 
-## Protocol
-[spec](../openspec/specs/protocol/spec.md)
+## Protocol · [spec](../openspec/specs/protocol/spec.md)
 
 - **Reports validated once** — A session's report is checked at the door and every violation comes back together, typed.
   [spec](../openspec/specs/protocol/spec.md#requirement-every-violation-at-once)
@@ -110,8 +109,7 @@
 - **Tracker intake and close** — A ready ticket opens a task, and a done ticket closes it. Key: `orchestrator.tracker.mode`, off by default.
   [spec](../openspec/specs/protocol/spec.md#requirement-tracker-stages-open-and-close-tasks)
 
-## Review
-[spec](../openspec/specs/review/spec.md)
+## Review · [spec](../openspec/specs/review/spec.md)
 
 - **Review threads** — Each review thread is fixed, declined with a reason, or asked.
   [spec](../openspec/specs/review/spec.md#requirement-the-brief-routes-each-thread)
@@ -122,8 +120,7 @@
 - **Red round** — A failing pipeline stops the task and goes back to the session.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-stops-the-task)
 
-## Runtime
-[spec](../openspec/specs/runtime/spec.md)
+## Runtime · [spec](../openspec/specs/runtime/spec.md)
 
 - **Sessions in tmux** — Each agent runs in a tmux window, and a kitty window attaches to it.
   [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
@@ -134,8 +131,7 @@
 - **Open in your editor** — Open a task's worktree or diff in the editor you configure.
   [spec](../openspec/specs/runtime/spec.md#requirement-the-editor-is-a-launcher)
 
-## Session brief
-[spec](../openspec/specs/session-brief/spec.md)
+## Session brief · [spec](../openspec/specs/session-brief/spec.md)
 
 - **Autoplan** — A session plans first, unasked, when its task is large or unclear. Key: `orchestrator.agent.autoplan.enabled`, off by default.
   [spec](../openspec/specs/session-brief/spec.md#requirement-autoplan)
@@ -144,24 +140,21 @@
 - **Diagnose** — A session diagnoses a bug from facts and a control before code. Key: `orchestrator.agent.diagnose.enabled`, off by default.
   [spec](../openspec/specs/session-brief/spec.md#requirement-diagnose)
 
-## Spec changes
-[spec](../openspec/specs/spec-changes/spec.md)
+## Spec changes · [spec](../openspec/specs/spec-changes/spec.md)
 
 - **Spec change at hand-back** — A hand-back is refused until the task's spec change validates.
   [spec](../openspec/specs/spec-changes/spec.md#requirement-a-hand-back-carries-a-valid-change)
 - **Spec fold at ship** — A ship archives the change and folds it into the specs in the same commit.
   [spec](../openspec/specs/spec-changes/spec.md#requirement-a-ship-folds-the-change-into-the-specs)
 
-## Startup
-[spec](../openspec/specs/startup/spec.md)
+## Startup · [spec](../openspec/specs/startup/spec.md)
 
 - **Install checks** — A missing part of the installation is refused at start, with no network.
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
 - **One configuration file** — Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
   [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
 
-## Task flow
-[spec](../openspec/specs/task-flow/spec.md)
+## Task flow · [spec](../openspec/specs/task-flow/spec.md)
 
 - **One table of statuses** — One table says which action is allowed in which status and where it leads.
   [spec](../openspec/specs/task-flow/spec.md#requirement-one-table-owns-the-life-of-a-task)
@@ -176,8 +169,7 @@
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../openspec/specs/task-flow/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
 
-## Unattended work
-[spec](../openspec/specs/unattended-work/spec.md)
+## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 
 - **Auto-review** — jagt polls an open request for comments, only reading and drafting. Key: `orchestrator.autoReview.enabled`, off by default.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
@@ -189,8 +181,7 @@
 - **Loop stop** — A task whose rounds resolve nothing, or that ships too often, is stopped until you lift it.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
 
-## Usage limits
-[spec](../openspec/specs/usage-limits/spec.md)
+## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)
 
 - **Limit warnings** — Subscription limits are told once per period and never block a task.
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-limit-is-told-once-per-period-never-gated)

@@ -229,12 +229,25 @@ sourceSets {
     }
 }
 
+// Shared by the model evals and their unit test, kept out of src/test so no eval's Spring scan meets a test class.
+sourceSets {
+    evalSupport {
+        java.srcDirs = ['src/evalSupport/java']
+        compileClasspath += configurations.testCompileClasspath
+        runtimeClasspath += configurations.testRuntimeClasspath
+    }
+    test {
+        compileClasspath += sourceSets.evalSupport.output
+        runtimeClasspath += sourceSets.evalSupport.output
+    }
+}
+
 // Spends tokens through the assistant's own CLI, so it is asked for by name. NOT in `check`.
 sourceSets {
     promptEval {
         java.srcDirs = ['src/promptEval/java']
-        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
-        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
     }
 }
 
@@ -251,8 +264,8 @@ sourceSets {
 sourceSets {
     masterEval {
         java.srcDirs = ['src/masterEval/java']
-        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
-        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
     }
 }
 
@@ -362,6 +375,11 @@ tasks.register('masterEval', Test) {
     testClassesDirs = sourceSets.masterEval.output.classesDirs
     classpath = sourceSets.masterEval.runtimeClasspath
     useJUnitPlatform()
+    ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
+        if (project.hasProperty(property)) {
+            systemProperty key, project.property(property)
+        }
+    }
     // -PmasterBrief and -PmasterModel read another brief or model against the same rounds, to compare cost.
     ['masterBrief': 'masterEval.brief', 'masterModel': 'masterEval.model'].each { property, key ->
         if (project.hasProperty(property)) {
@@ -395,6 +413,11 @@ tasks.register('promptEval', Test) {
     testClassesDirs = sourceSets.promptEval.output.classesDirs
     classpath = sourceSets.promptEval.runtimeClasspath
     useJUnitPlatform()
+    ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
+        if (project.hasProperty(property)) {
+            systemProperty key, project.property(property)
+        }
+    }
     // Gated on the binary that answers, and it names what is missing rather than failing every row on it.
     onlyIf { task ->
         boolean present = (System.getenv('PATH') ?: '').split(File.pathSeparator)

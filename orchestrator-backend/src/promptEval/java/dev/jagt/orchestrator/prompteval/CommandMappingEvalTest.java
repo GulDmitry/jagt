@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.prompteval;
 
+import dev.jagt.orchestrator.eval.EvalQuorum;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -73,12 +74,14 @@ class CommandMappingEvalTest {
     @ParameterizedTest
     @MethodSource("cases")
     void mapsTheOperatorsOwnWordsOntoOneCommandAndOneTask(CommandMappingCase expected) {
-        Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.menu());
+        EvalQuorum.configured().hold(expected.request(), () -> {
+            Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.menu());
 
-        assertThat(answer.facts()).isPresent();
-        assertThat(answer.facts().orElseThrow().command()).isEqualTo(expected.command());
-        assertThat(answer.facts().orElseThrow().task()).isIn(expected.taskId(), expected.taskAlias());
-        assertThat(answer.facts().orElseThrow().ticket()).isEqualTo(expected.ticket());
+            assertThat(answer.facts()).isPresent();
+            assertThat(answer.facts().orElseThrow().command()).isEqualTo(expected.command());
+            assertThat(answer.facts().orElseThrow().task()).isIn(expected.taskId(), expected.taskAlias());
+            assertThat(answer.facts().orElseThrow().ticket()).isEqualTo(expected.ticket());
+        });
     }
 
     static java.util.List<CommandMappingCase> cases() {

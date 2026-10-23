@@ -1,6 +1,10 @@
 package dev.jagt.orchestrator.mastereval;
 
+import dev.jagt.orchestrator.eval.EvalQuorum;
+import dev.jagt.orchestrator.service.ReadScopes;
+import org.mockito.Mockito;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -73,6 +77,8 @@ class MasterVerdictEvalTest {
     private MasterReview reviews;
     @Autowired
     private UsageTracker usage;
+    @MockitoSpyBean
+    private ReadScopes readScopes;
 
     @BeforeAll
     static void nothingLiveIsWithinReach() throws Exception {
@@ -109,21 +115,35 @@ class MasterVerdictEvalTest {
 
     @ParameterizedTest
     @MethodSource("rounds")
-    void handsBackTheVerdictAHumanWouldHave(MasterCase round) throws Exception {
+    void handsBackTheVerdictAHumanWouldHave(MasterCase round) {
+        EvalQuorum.configured().hold(round.instructions(), () -> oneRun(round));
+    }
+
+    private void oneRun(MasterCase round) throws Exception {
+        Mockito.clearInvocations(readScopes);
         String taskId = "ABC-" + ROUND.incrementAndGet();
         Path worktree = MasterEvalWorkspace.worktreeFor(
                 MasterEvalWorkspace.root().resolve("repos/" + taskId + "/repo"), round, taskId);
         TaskState task = TaskState.builder("proj", worktree.toString(), round.status())
                 .alias("m" + ROUND.get()).title(round.instructions()).build();
         stateService.putTask(taskId, task);
-        Optional<MasterReview.Verdict> verdict = awaitVerdict(task);
-        stateService.removeTask(taskId);
+        Optional<MasterReview.Verdict> verdict;
+        try {
+            verdict = awaitVerdict(task);
+        } finally {
+            stateService.removeTask(taskId);
+        }
 
         assertThat(verdict).describedAs("no verdict inside %s", VERDICT_WAIT).isPresent();
         assertThat(verdict.orElseThrow().kind()).describedAs("%s", verdict.orElseThrow().findings())
                 .isEqualTo(round.verdict());
         String review = Files.readString(reviews.file(task));
         assertThat(round.names()).allSatisfy(name -> assertThat(review).contains(name));
+        List<String> heard = Mockito.mockingDetails(readScopes).getInvocations().stream()
+                .filter(call -> call.getMethod().getName().equals("hear"))
+                .map(call -> call.getArgument(1) + " " + call.getArgument(2)).toList();
+        assertThat(heard).describedAs("calls heard: %s", heard).anyMatch(call -> call.contains(worktree.toString()));
+        Mockito.verify(readScopes, Mockito.never()).refuse(Mockito.any());
     }
 
     private Optional<MasterReview.Verdict> awaitVerdict(TaskState task) {

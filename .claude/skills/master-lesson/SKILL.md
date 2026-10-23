@@ -11,7 +11,7 @@ Input: the exchange (what the agent wrote, what the human said) and the human's 
    "ack-mode comment". Never a project, class, framework or vendor from the case.
 2. **Sharpen before adding.** Read `## Patterns that stop a round` in `master-brief.md.dist`: a pattern already
    covering it gets its line sharpened; only a new class gets a new line. One line per pattern: what a unit must
-   not do, and one clause of why.
+   not do, and one clause of why; it states one fact a reader answers yes or no on the diff, no scale or taste word.
 3. **One round in `MasterCase.matrix()`.** Invented names, smallest diff carrying the pattern and nothing else that
    blocks. `names`: the offending file plus the file proving the premise, so it cannot pass on another finding.
    A row never reuses a scenario the brief shows.
