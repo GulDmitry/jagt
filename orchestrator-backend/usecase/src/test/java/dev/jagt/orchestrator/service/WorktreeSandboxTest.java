@@ -24,16 +24,24 @@ class WorktreeSandboxTest {
                 Path.of("/repo/api"), Path.of("/w/ABC-42-api"), Path.of("/repo/api/.git"), "origin/main",
                 "git@host:g/api.git", false);
 
-        Sandbox sandbox = WorktreeSandbox.of(SandboxConfig.defaults(), List.of(web, api), Path.of("/home/me"));
+        Sandbox sandbox = WorktreeSandbox.of(SandboxConfig.defaults(), List.of(web, api), Path.of("/home/me"), Path.of("/tmp"));
 
         assertThat(sandbox.writable()).contains(Path.of("/w/ABC-42"), Path.of("/repo/web/.git"),
                 Path.of("/w/ABC-42-api"), Path.of("/repo/api/.git"));
     }
 
     @Test
+    void writesInTheUsersTempDirectoryWhereAJvmOpensItsAttachSocket() {
+        Sandbox sandbox = WorktreeSandbox.of(SandboxConfig.defaults(), List.of(), Path.of("/home/me"),
+                Path.of("/users-temp/T"));
+
+        assertThat(sandbox.writable()).contains(Path.of("/users-temp/T"));
+    }
+
+    @Test
     void addsTheConfiguredPathsToTheBuiltInOnesWithTheHomeExpanded() {
         Sandbox sandbox = WorktreeSandbox.of(SandboxConfig.defaults().withAllowWrite(List.of("~/www/specs")),
-                List.of(), Path.of("/home/me"));
+                List.of(), Path.of("/home/me"), Path.of("/tmp"));
 
         assertThat(sandbox.writable()).contains(Path.of("/home/me/.gradle"), Path.of("/home/me/www/specs"));
     }
@@ -44,7 +52,7 @@ class WorktreeSandboxTest {
         Files.createSymbolicLink(root.resolve("link"), target);
 
         Sandbox sandbox = WorktreeSandbox.of(SandboxConfig.defaults().withAllowWrite(List.of(root + "/link")),
-                List.of(), Path.of("/home/me"));
+                List.of(), Path.of("/home/me"), Path.of("/tmp"));
 
         assertThat(sandbox.writable()).contains(target.toRealPath()).doesNotContain(root.resolve("link"));
     }
@@ -52,7 +60,7 @@ class WorktreeSandboxTest {
     @Test
     void runsTheConfiguredCommandsOutsideTheSandboxBesideTheSshRemotes() {
         Sandbox sandbox = WorktreeSandbox.of(SandboxConfig.defaults().withExcludedCommands(List.of("~/bin/db *")),
-                List.of(), Path.of("/home/me"));
+                List.of(), Path.of("/home/me"), Path.of("/tmp"));
 
         assertThat(sandbox.excludedCommands()).contains("git push *", "ssh *", "~/bin/db *");
     }
@@ -60,7 +68,7 @@ class WorktreeSandboxTest {
     @Test
     void confinesNothingWhenTheSandboxIsTurnedOff() {
         Sandbox sandbox = WorktreeSandbox.of(SandboxConfig.defaults().withEnabled(false), List.of(),
-                Path.of("/home/me"));
+                Path.of("/home/me"), Path.of("/tmp"));
 
         assertThat(sandbox).isEqualTo(Sandbox.off());
     }

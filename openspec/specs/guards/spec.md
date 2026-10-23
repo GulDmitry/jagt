@@ -58,12 +58,16 @@ keep no transcript (`--no-session-persistence`); a session's own transcripts are
 
 ### Requirement: A session writes only inside its task
 A session's shell SHALL write only in the task's worktrees and the git directories they commit to.
-It MAY also write `/tmp`, the build and cluster tools' own directories and `orchestrator.agent.sandbox.allowWrite`
+It MAY also write `/tmp`, the user's temp directory, the build and cluster tools' own directories and `orchestrator.agent.sandbox.allowWrite`
 (`WorktreeSandbox`). Every host SHALL stay reachable. A command needing more SHALL ask the human through the agent CLI's own prompt.
 
 #### Scenario: A write outside the task
 - **WHEN** ABC-42's session runs `rm -rf ~/other-project`
 - **THEN** the OS refuses it
+
+#### Scenario: A test mocking through an agent
+- **WHEN** a test in the session or in jagt's check attaches an agent to its own JVM
+- **THEN** it attaches: the JVM's attach socket lies in the user's temp directory, which the sandbox lets it write
 
 #### Scenario: A remote over ssh
 - **WHEN** the session runs `git push` or a command `sandbox.excludedCommands` names

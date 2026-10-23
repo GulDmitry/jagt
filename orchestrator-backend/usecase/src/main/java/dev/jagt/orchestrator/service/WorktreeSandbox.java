@@ -24,7 +24,7 @@ final class WorktreeSandbox {
     private WorktreeSandbox() {
     }
 
-    static Sandbox of(SandboxConfig config, List<NewRepo> repos, Path home) {
+    static Sandbox of(SandboxConfig config, List<NewRepo> repos, Path home, Path tempDir) {
         if (!config.enabledOrDefault()) {
             return Sandbox.off();
         }
@@ -33,6 +33,8 @@ final class WorktreeSandbox {
             writable.add(real(repo.worktreePath()));
             writable.add(real(repo.gitCommonDir()));
         });
+        // A JVM opens its attach socket here, not in /tmp: denied, a test that mocks with an agent cannot start.
+        writable.add(real(tempDir));
         Stream.concat(WRITABLE.stream(), config.allowWriteOrEmpty().stream())
                 .map(entry -> real(expanded(entry, home)))
                 .forEach(writable::add);

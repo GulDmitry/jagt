@@ -49,7 +49,7 @@ public class WorktreeSetup {
                 .withDisabledPlugins(agentDisabledPlugins)
                 .withAllowedTools(agentAllowedTools)
                 .withSandbox(WorktreeSandbox.of(configService.load().agent().sandboxOrDefault(), repos,
-                        Path.of(System.getProperty("user.home")))));
+                        Path.of(System.getProperty("user.home")), Path.of(System.getProperty("java.io.tmpdir")))));
         GitDeploy.deployWorktreePaths(repos, request.taskId())
                 .forEach(deployWorktree -> agentRuntime.admit(worktreePath, deployWorktree));
         WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, WorktreeFiles.PROJECT_FILES);
