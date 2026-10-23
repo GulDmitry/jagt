@@ -45,9 +45,10 @@ class LoopBreakerTest {
     }
 
     @Test
-    void stopsTheFifthShipWithinTheWindowEvenWhileThreadsAreResolved() {
-        LoopWatch watch = new LoopWatch(List.of(new LoopWatch.Round(1, 10, "", "a"),
-                new LoopWatch.Round(2, 6, "", "b"), new LoopWatch.Round(3, 5, "", "c")), 0, null);
+    void stopsTheFifthShipWithinTheWindowWhereThreadsOscillateWithoutANewLow() {
+        LoopWatch watch = new LoopWatch(List.of(new LoopWatch.Round(500, 5, "", "a"),
+                new LoopWatch.Round(1_500, 6, "", "b"), new LoopWatch.Round(2_500, 5, "", "c"),
+                new LoopWatch.Round(3_500, 6, "", "d"), new LoopWatch.Round(4_500, 5, "", "e")), 0, null);
         List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
@@ -57,8 +58,36 @@ class LoopBreakerTest {
 
         assertThat(stop).hasValueSatisfying(it -> {
             assertThat(it.trigger()).isEqualTo(LoopWatch.Trigger.SHIPS);
-            assertThat(it.evidence()).contains("ships in 24h: 4");
+            assertThat(it.evidence()).contains("ships without a new low in 24h: 4")
+                    .contains("threads per round: 5, 6, 5, 6, 5");
         });
+    }
+
+    @Test
+    void letsATaskShipAgainWhileEveryRoundBroughtThreadsToANewLow() {
+        LoopWatch watch = new LoopWatch(List.of(new LoopWatch.Round(500, 3, "", "a"),
+                new LoopWatch.Round(1_500, 2, "", "b"), new LoopWatch.Round(2_500, 1, "", "c"),
+                new LoopWatch.Round(3_500, 0, "", "d")), 0, null);
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 4_500, ActionOrigin.MASTER));
+
+        assertThat(breaker.beforeShip(watch, history, 5_000)).isEmpty();
+    }
+
+    @Test
+    void countsEveryShipWhereNoRoundHasThreadData() {
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
+
+        var stop = breaker.beforeShip(LoopWatch.none(), history, 5_000);
+
+        assertThat(stop).hasValueSatisfying(it -> assertThat(it.evidence())
+                .contains("ships without a new low in 24h: 4"));
     }
 
     @Test

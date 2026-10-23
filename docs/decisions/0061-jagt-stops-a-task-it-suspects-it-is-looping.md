@@ -6,6 +6,7 @@
 
 Accepted 2026-10-22. Adds to [0043](0043-act-stops-itself-after-three-bad-endings.md) and
 [0049](0049-unattended-starts-have-a-daily-ceiling.md).
+Superseded in part by [0070](0070-a-ship-counts-only-without-a-new-low.md): ships with progress no longer count.
 
 ## Context
 
