@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -30,10 +28,9 @@ public class DeployCheckJob implements Job {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final AgentSessions sessions;
-    private final SessionBrief sessionBrief;
+    private final StepRelay relay;
     private static final String STEP = "deploy";
-    /** Keyed off what was asked, not the context file, which every other relay overwrites. */
+    /** Keyed off the commits that landed, not the context file, which every other relay overwrites. */
     private final Map<String, String> asked = new ConcurrentHashMap<>();
 
     @Override
@@ -62,24 +59,20 @@ public class DeployCheckJob implements Job {
             if (!FlowRules.checkedWhereItLanded(task.status())) {
                 return;
             }
-            brief(taskId, task).filter(brief -> !brief.equals(asked.get(taskId))).ifPresent(brief -> {
-                sessions.relayIfChanged(taskId, brief);
-                asked.put(taskId, brief);
+            landed(taskId, task).filter(landed -> !landed.equals(asked.get(taskId))).ifPresent(landed -> {
+                relay.relay(taskId, STEP, landed);
+                asked.put(taskId, landed);
             });
         });
     }
 
-    private Optional<String> brief(String taskId, TaskState task) {
+    private Optional<String> landed(String taskId, TaskState task) {
         Map<String, ProjectConfig> projects = configService.load().projects();
         String landed = task.repos().stream()
                 .filter(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank())
                 .map(repo -> landed(repo, projects.get(repo.project())))
                 .collect(Collectors.joining("\n"));
-        if (landed.isEmpty()) {
-            return Optional.empty();
-        }
-        return sessionBrief.section(STEP).filter(check -> !check.isBlank())
-                .map(check -> taskId + " is deployed:\n" + landed + "\n\n" + check);
+        return landed.isEmpty() ? Optional.empty() : Optional.of(taskId + " is deployed:\n" + landed);
     }
 
     private static String landed(TaskRepo repo, @Nullable ProjectConfig project) {

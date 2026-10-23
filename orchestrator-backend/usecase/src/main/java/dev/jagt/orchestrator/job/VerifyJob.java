@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.Verification;
@@ -29,7 +28,7 @@ public class VerifyJob implements Job {
     private final StateService stateService;
     private final Verification verification;
     private final AgentStatusReports statusReports;
-    private final AgentSessions sessions;
+    private final StepRelay relay;
 
     @Override
     public String id() {
@@ -61,7 +60,7 @@ public class VerifyJob implements Job {
     private void verify(String taskId, TaskState task) {
         Optional<String> failure = verification.failure(task);
         if (failure.isPresent()) {
-            sessions.relayIfChanged(taskId, brief(failure.get()));
+            relay.relay(taskId, "verify", failure.get());
             statusReports.verified(false, "verification failed; relayed", taskId);
             return;
         }
@@ -74,19 +73,7 @@ public class VerifyJob implements Job {
             statusReports.verified(true, "verified", taskId);
             return;
         }
-        sessions.relayIfChanged(taskId, PROBES_FAILED + failed.stream().map(Probe::result)
-                .collect(Collectors.joining("\n\n")));
+        relay.relay(taskId, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")));
         statusReports.verified(false, "acceptance probe failed; relayed", taskId);
-    }
-
-    /** The plan was ratified with these probes, so the code is what changes; a new plan is the way to new probes. */
-    private static final String PROBES_FAILED = "jagt ran the acceptance probes of the plan you were given a go on,"
-            + " and these failed. Make them pass, leave the fix uncommitted, and report REVIEW_PENDING again. A probe"
-            + " that is itself wrong changes only with a new plan: write it into plan.md and report PLAN_PENDING.\n\n";
-
-    /** The output, and the one route out of it: a failing command is not a judgement to weigh. */
-    private static String brief(String failure) {
-        return "jagt ran this project's verification command and it failed. Fix it, leave the fix"
-                + " uncommitted, and report REVIEW_PENDING again.\n\n" + failure;
     }
 }

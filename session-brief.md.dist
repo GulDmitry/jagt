@@ -10,3 +10,14 @@ Make sure the deploy landed: the pipeline that deploys it passed and the commit 
 If it did, or nothing here can tell, report nothing: end your turn with one line naming what you checked, or
 that nothing could. If it did not, report IN_PROGRESS saying what failed, fix it, and hand the round back as
 usual — it is reviewed, deployed and checked again.
+
+## verify
+
+jagt ran this project's verification command and it failed with the output above. Fix it, leave the fix
+uncommitted, and report REVIEW_PENDING again.
+
+## probes
+
+jagt ran the acceptance probes of the plan you were given a go on, and those above failed. Make them pass, leave
+the fix uncommitted, and report REVIEW_PENDING again. A probe that is itself wrong changes only with a new plan:
+write it into plan.md and report PLAN_PENDING.
