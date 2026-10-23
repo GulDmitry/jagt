@@ -31,6 +31,20 @@ class BoardWorkspaceTest extends BoardPageContext {
     }
 
     @Test
+    void groupsTheTasksByProjectNameWhateverTaskCameFirst() {
+        state.putTask("ABC-1", TaskState.builder("beta", root.resolve("ABC-1-beta").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        assertThat(page.locator("#tasks .group.project .alias")).hasText(new String[]{"a2", "a1"});
+    }
+
+    @Test
     void pickingARowOpensThatTaskInThePane() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

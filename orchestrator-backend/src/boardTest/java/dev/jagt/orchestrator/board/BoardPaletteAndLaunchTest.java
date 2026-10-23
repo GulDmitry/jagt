@@ -273,6 +273,34 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     }
 
     @Test
+    void offersTheProjectsByNameWhateverOrderJagtYmlListsThem() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        page.locator("#new-task").click();
+
+        assertThat(page.locator("#project label")).hasText(new String[] {"alpha", "beta"});
+    }
+
+    @Test
+    void startingATaskInBothProjectsSendsThemInTheOrderJagtYmlListsThem() {
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#new-task").click();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#project input[value=alpha]").check();
+        page.locator("#project input[value=beta]").check();
+
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("beta,alpha").withStrategy("fresh"));
+    }
+
+    @Test
     void answersATasklessVerbItselfInsteadOfSendingItToTheModel() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");

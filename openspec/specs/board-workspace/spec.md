@@ -7,13 +7,17 @@ The board's task list, the open task beside it, and the header: where a task sta
 ## Requirements
 
 ### Requirement: Rows keep their place
-Rows SHALL keep their order inside their group: the tasks waiting on the human first, then each project in the
-order it first appears; only `order: alias` lets a new task take a retired one's place. The filter box (`/`)
+Rows SHALL keep their order inside their group: the tasks waiting on the human first, then each project by
+name; only `order: alias` lets a new task take a retired one's place. The filter box (`/`)
 matches alias, ticket number or title; `Esc` clears.
 
 #### Scenario: A task turns to the human
 - **WHEN** a task's checks fail while another task's agent works
 - **THEN** its row moves into the band on top, and the other row keeps its place
+
+#### Scenario: Projects by name
+- **WHEN** `jagt.yml` lists `beta` before `alpha`
+- **THEN** the task list and the launch boxes show `alpha` first; ticking both still sends `beta,alpha`
 
 ### Requirement: A task is one row
 Each task SHALL be one row of at most two lines: alias, title, badge and the one verb the server marks `onRow`; then

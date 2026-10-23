@@ -7,7 +7,10 @@ let rendered = null;
 
 // The order they were ticked in is not kept, so the CONFIGURED order decides which repository the agent's
 // session runs in. None ticked sends nothing: naming a project skips the ticket read.
-export const chosen = () => [...group.querySelectorAll('input:checked')].map((box) => box.value).join(',');
+export const chosen = () => {
+  const ticked = new Set([...group.querySelectorAll('input:checked')].map((box) => box.value));
+  return store.projects().filter((project) => ticked.has(project)).join(',');
+};
 
 export const forget = () => {
   group.querySelectorAll('input').forEach((box) => { box.checked = false; });
@@ -21,7 +24,8 @@ export function render() {
   }
   rendered = signature;
   const ticked = new Set(chosen().split(',').filter(Boolean));
-  group.replaceChildren(...(configured.length ? configured.map((project) => {
+  const byName = [...configured].sort((a, b) => a.localeCompare(b, 'en'));
+  group.replaceChildren(...(byName.length ? byName.map((project) => {
     const label = document.createElement('label');
     label.className = 'checkbox';
     const box = Object.assign(document.createElement('input'), {type: 'checkbox', value: project, name: 'project'});

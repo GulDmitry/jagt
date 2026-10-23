@@ -44,14 +44,14 @@ const Group = ({name, kind, tasks, named, selected, changed, now}) => html`<sect
     changed=${changed(task)} project=${named} now=${now}/>`)}
 </section>`;
 
-// The rows in the order the keyboard walks them: the human's band first, then each project in its first-seen order;
+// The rows in the order the keyboard walks them: the human's band first, then each project by name;
 // a flagged row leads its group.
 export function grouped(shown, manyProjects, flagged = () => false) {
   const leading = shown.filter(flagged);
   const ordered = [...leading, ...shown.filter((task) => !leading.includes(task))];
   const yours = ordered.filter((task) => task.attention === 'REQUIRED');
   const rest = ordered.filter((task) => task.attention !== 'REQUIRED');
-  const projects = [...new Set(rest.map((task) => task.project))];
+  const projects = [...new Set(rest.map((task) => task.project))].sort((a, b) => a.localeCompare(b, 'en'));
   const groups = manyProjects
     ? projects.map((project) => ({name: project, kind: 'project', tasks: rest.filter((task) => task.project === project)}))
     : [{name: yours.length ? 'the rest' : '', kind: 'project', tasks: rest}];

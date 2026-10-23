@@ -119,10 +119,10 @@ abstract class BoardPageContext {
         Files.writeString(root.resolve("jagt.yml"), """
                 orchestrator:
                   projects:
-                    alpha: {path: "%s", baseBranch: origin/main, deployBranch: dev}
                     beta: {path: "%s", baseBranch: origin/main, deployBranch: dev}
+                    alpha: {path: "%s", baseBranch: origin/main, deployBranch: dev}
                   autoReview: {enabled: true}
-                """.formatted(root.resolve("alpha"), root.resolve("beta")));
+                """.formatted(root.resolve("beta"), root.resolve("alpha")));
         playwright = Playwright.create();
         browser = playwright.chromium().launch();
     }
