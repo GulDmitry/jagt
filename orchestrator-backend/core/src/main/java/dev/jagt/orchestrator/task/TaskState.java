@@ -465,6 +465,18 @@ public record TaskState(
         return toBuilder().repoRequest(project).build();
     }
 
+    @JsonIgnore
+    public boolean asksForARepository() {
+        return repoRequest != null;
+    }
+
+    /** Adds the repository the session asked for, which ends the request. */
+    public TaskState withRepo(TaskRepo repo) {
+        List<TaskRepo> grown = new ArrayList<>(repos);
+        grown.add(repo);
+        return toBuilder().repos(grown).repoRequest(null).build();
+    }
+
     public TaskState withBaseBranch(String baseBranch) {
         return toBuilder().baseBranch(baseBranch).build();
     }

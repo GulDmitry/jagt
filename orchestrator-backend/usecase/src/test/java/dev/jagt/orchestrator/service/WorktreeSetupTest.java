@@ -15,6 +15,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -123,5 +124,55 @@ class WorktreeSetupTest {
         assertThat(worktree.resolve(".jagt/hooks/pre-push")).exists();
         assertThat(gitDir.resolve("info/exclude")).content().contains("task_context.md");
         verify(runtime).provisionWorktree(any());
+    }
+
+    @Test
+    void letsTheSessionEditTheWorktreeOfARepositoryAddedToItsTask(@TempDir Path root) throws Exception {
+        Path apiProject = Files.createDirectories(root.resolve("api-repo"));
+        Path registryProject = Files.createDirectories(root.resolve("registry-repo"));
+        Path apiWorktree = Files.createDirectories(root.resolve("ABC-1-api"));
+        Path registryWorktree = Files.createDirectories(root.resolve("ABC-1-registry"));
+        NewRepo api = new NewRepo("api", new ProjectConfig(apiProject.toString(), "origin/main", null, List.of()),
+                apiProject, apiWorktree, Files.createDirectories(apiProject.resolve(".git")), "origin/main", "u", true);
+        NewRepo registry = new NewRepo("registry", new ProjectConfig(registryProject.toString(), "origin/main", null,
+                List.of()), registryProject, registryWorktree, Files.createDirectories(registryProject.resolve(".git")),
+                "origin/main", "u", false);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(runtime.systemKnowledgeFile(apiWorktree)).thenReturn(apiWorktree.resolve("AGENTS.md"));
+        when(runtime.systemKnowledgeFile(registryWorktree)).thenReturn(registryWorktree.resolve("AGENTS.md"));
+        when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+        new WorktreeSetup(runtime, paths, config, briefing).attach(NewTask.builder("ABC-1", "registry").build(),
+                registry, List.of(api, registry));
+
+        verify(runtime).admit(apiWorktree, registryWorktree);
+    }
+
+    @Test
+    void writesTheBriefingOfEveryWorktreeAgainForTheSetThatHoldsTheAddedRepository(@TempDir Path root)
+            throws Exception {
+        Path apiProject = Files.createDirectories(root.resolve("api-repo"));
+        Path registryProject = Files.createDirectories(root.resolve("registry-repo"));
+        Path apiWorktree = Files.createDirectories(root.resolve("ABC-1-api"));
+        Path registryWorktree = Files.createDirectories(root.resolve("ABC-1-registry"));
+        NewRepo api = new NewRepo("api", new ProjectConfig(apiProject.toString(), "origin/main", null, List.of()),
+                apiProject, apiWorktree, Files.createDirectories(apiProject.resolve(".git")), "origin/main", "u", true);
+        NewRepo registry = new NewRepo("registry", new ProjectConfig(registryProject.toString(), "origin/main", null,
+                List.of()), registryProject, registryWorktree, Files.createDirectories(registryProject.resolve(".git")),
+                "origin/main", "u", false);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(runtime.systemKnowledgeFile(apiWorktree)).thenReturn(apiWorktree.resolve("AGENTS.md"));
+        when(runtime.systemKnowledgeFile(registryWorktree)).thenReturn(registryWorktree.resolve("AGENTS.md"));
+        when(briefing.of(any(), eq(api), eq(List.of(api, registry)), any(), any(), any())).thenReturn("api sees both");
+        when(briefing.of(any(), eq(registry), eq(List.of(api, registry)), any(), any(), any()))
+                .thenReturn("registry sees both");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+        new WorktreeSetup(runtime, paths, config, briefing).attach(NewTask.builder("ABC-1", "registry").build(),
+                registry, List.of(api, registry));
+
+        assertThat(apiWorktree.resolve("AGENTS.md")).hasContent("api sees both");
+        assertThat(registryWorktree.resolve("AGENTS.md")).hasContent("registry sees both");
     }
 }

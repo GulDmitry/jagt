@@ -52,6 +52,15 @@ public final class FlowRules {
                 .on(Outcome.Kind.RELAYED, TaskStatus.IN_PROGRESS)
                 .add();
 
+        // The session stopped to ask for another repository; the task goes back to work unless a human owns its status.
+        rule(TaskAction.ADD_REPO)
+                .fromAny()
+                .when((status, facts) -> status != TaskStatus.DONE && facts.repoRequested())
+                .on(Outcome.Kind.RELAYED, TaskStatus.IN_PROGRESS)
+                .keeps(Outcome.Kind.RELAYED, TaskStatus.PLAN_PENDING, TaskStatus.DEPLOYED,
+                        TaskStatus.DEPLOY_CONFLICT, TaskStatus.REVERTED)
+                .add();
+
         // Reading a review round decides nothing by itself: what it found is REPORTED.
         rule(TaskAction.SWEEP)
                 .fromAny()
@@ -414,8 +423,8 @@ public final class FlowRules {
             return this;
         }
 
-        private Builder keeps(Outcome.Kind outcome, TaskStatus status) {
-            keeps.put(outcome, EnumSet.of(status));
+        private Builder keeps(Outcome.Kind outcome, TaskStatus... statuses) {
+            keeps.put(outcome, EnumSet.copyOf(List.of(statuses)));
             return this;
         }
 

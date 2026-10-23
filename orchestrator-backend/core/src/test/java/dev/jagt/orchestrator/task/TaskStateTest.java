@@ -465,4 +465,24 @@ class TaskStateTest {
 
         assertThat(legacy.planGate()).isEqualTo(PlanGate.OPEN);
     }
+
+    @Test
+    void addsTheRepositoryASessionAskedForAfterItsOwnAndEndsTheRequest() {
+        TaskState asked = TaskState.builder("api", "/wt-api", TaskStatus.IN_PROGRESS).repoRequest("registry").build();
+
+        TaskState added = asked.withRepo(TaskRepo.of("registry", "/wt-registry"));
+
+        assertThat(added.projects()).containsExactly("api", "registry");
+        assertThat(added.repoRequest()).isNull();
+    }
+
+    @Test
+    void recordsARequestWithoutCountingItAsAgentActivity() {
+        TaskState working = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(7_000).build();
+
+        TaskState asked = working.withRepoRequest("registry");
+
+        assertThat(asked.asksForARepository()).isTrue();
+        assertThat(asked.lastActiveTimestamp()).isEqualTo(7_000);
+    }
 }

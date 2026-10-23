@@ -17,6 +17,8 @@ public enum TaskAction {
     APPROVE_PLAN(85, Group.FLOW, "approve-plan", "Approve plan",
             "tell the session the plan holds: it starts on the change the plan lists"),
     SHIP(30, Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
+    ADD_REPO(95, Group.FLOW, "add-repo", "Add repo",
+            "add the repository the session asked for to the task: its worktree is cut and the session told"),
     SWEEP(10, Group.FLOW, "sweep", "Check review",
             "read the checks and open threads, relay them to the agent"),
     DEPLOY(90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),

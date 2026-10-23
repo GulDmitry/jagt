@@ -55,6 +55,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push |
 | `revert <ticket>` | undo that deploy with a revert commit |
 | `respawn <ticket>` | restart a dead agent session |
+| `add-repo <ticket>` | attach the repository a session asked for: its worktree is cut and the session told |
 | `trust <ticket>` | adopt the git config or hooks jagt found changed |
 | `done <ticket>` | close the task: session, worktree and state gone (the branch stays) |
 

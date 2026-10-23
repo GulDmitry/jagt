@@ -27,6 +27,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -374,5 +375,89 @@ class NewTaskWorktreesTest {
 
         verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-1-api"), null);
         verify(git).reattach(Path.of("/api"), "ABC-1");
+    }
+
+    @Test
+    void cutsTheTaskBranchInTheRequestedProjectFromThatProjectsOwnBase() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry", new ProjectConfig(root.resolve("registry-repo").toString(), "origin/release",
+                                null, List.of()))));
+        when(config.load()).thenReturn(configured);
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("registry").build());
+
+        worktrees.attach("ABC-7", "registry", configured);
+
+        verify(git).createWorktree(root.resolve("registry-repo"), root.resolve("ABC-7-registry"), "ABC-7",
+                "origin/release", BranchStrategy.FRESH);
+    }
+
+    @Test
+    void registersTheAttachedRepositoryAfterTheSessionsOwnAndEndsTheRequest() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry", new ProjectConfig(root.resolve("registry-repo").toString(), "origin/main", null,
+                                List.of()))));
+        when(config.load()).thenReturn(configured);
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("registry").build());
+
+        worktrees.attach("ABC-7", "registry", configured);
+
+        TaskState task = state.task("ABC-7").orElseThrow();
+        assertThat(task.projects()).containsExactly("api", "registry");
+        assertThat(task.repoRequest()).isNull();
+    }
+
+    @Test
+    void writesEveryWorktreeAgainForTheSetThatNowIncludesTheNewOne() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry", new ProjectConfig(root.resolve("registry-repo").toString(), "origin/main", null,
+                                List.of()))));
+        when(config.load()).thenReturn(configured);
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("registry").build());
+
+        NewRepo added = worktrees.attach("ABC-7", "registry", configured);
+
+        verify(setup).attach(any(), eq(added), argThat(all -> all.stream().map(NewRepo::project).toList()
+                .equals(List.of("api", "registry"))));
+    }
+
+    @Test
+    void leavesNothingOfTheNewWorktreeAndKeepsTheRequestWhenWritingItFails() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry", new ProjectConfig(root.resolve("registry-repo").toString(), "origin/main", null,
+                                List.of()))));
+        when(config.load()).thenReturn(configured);
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("registry").build());
+        doThrow(new IllegalStateException("provisioning failed")).when(setup).attach(any(), any(), any());
+
+        assertThatThrownBy(() -> worktrees.attach("ABC-7", "registry", configured))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(git).removeWorktree(root.resolve("registry-repo"), root.resolve("ABC-7-registry"), "ABC-7");
+        TaskState task = state.task("ABC-7").orElseThrow();
+        assertThat(task.projects()).containsExactly("api");
+        assertThat(task.repoRequest()).isEqualTo("registry");
+    }
+
+    @Test
+    void refusesAProjectTheTaskAlreadyWorksInBeforeCuttingAnything() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(Map.of("api",
+                new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null, List.of())));
+        when(config.load()).thenReturn(configured);
+        state.putTask("ABC-7", TaskState.builder("api", root.resolve("ABC-7-api").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").repoRequest("api").build());
+
+        assertThatThrownBy(() -> worktrees.attach("ABC-7", "api", configured))
+                .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code())
+                        .isEqualTo(Refusal.Code.STATE));
+
+        verify(git, never()).createWorktree(any(), any(), any(), any(), any());
     }
 }

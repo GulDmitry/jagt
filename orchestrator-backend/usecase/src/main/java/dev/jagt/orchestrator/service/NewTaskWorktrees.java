@@ -5,8 +5,11 @@ import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskName;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -124,11 +127,7 @@ public class NewTaskWorktrees {
         List<NewRepo> repos = new ArrayList<>();
         for (String projectKey : request.projectKeys()) {
             requireSafeProjectKey(projectKey);
-            ProjectConfig project = config.projects().get(projectKey);
-            if (project == null) {
-                throw new IllegalArgumentException(
-                        "Unknown project '" + projectKey + "'. Known projects: " + config.projects().keySet());
-            }
+            ProjectConfig project = configured(projectKey, config);
             Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
             String override = branchOverride(request.baseBranch());
             if (override != null) {
@@ -144,6 +143,54 @@ public class NewTaskWorktrees {
             throw new IllegalArgumentException("A task needs at least one project");
         }
         return List.copyOf(repos);
+    }
+
+    private static ProjectConfig configured(String projectKey, ConfigService.ConfigFile config) {
+        ProjectConfig project = config.projects().get(projectKey);
+        if (project == null) {
+            throw new IllegalArgumentException(
+                    "Unknown project '" + projectKey + "'. Known projects: " + config.projects().keySet());
+        }
+        return project;
+    }
+
+    /**
+     * One more repository for a registered task, cut as creation cuts them and registered after the others. Every
+     * worktree's briefing and sandbox are written again for the new set; a failure leaves nothing of it.
+     */
+    public NewRepo attach(String taskId, String projectKey, ConfigService.ConfigFile config) {
+        TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
+        List<NewRepo> held = held(task, config);
+        if (held.stream().anyMatch(repo -> repo.project().equals(projectKey))) {
+            throw Refusal.byState("Task " + taskId + " already works in " + projectKey);
+        }
+        configured(projectKey, config);
+        BranchStrategy strategy = strategyForExisting(taskId, projectKey);
+        NewTask request = NewTask.builder(taskId, projectKey).mode(task.planGate() == PlanGate.REQUIRED ? "plan" : null)
+                .baseBranch(task.baseBranch()).build();
+        NewRepo added = resolveRepos(request, config, strategy).getFirst().besideTheSession();
+        gitWorktrees.createWorktree(added.projectPath(), added.worktreePath(), taskId, added.baseBranch(), strategy);
+        try {
+            worktreeSetup.attach(request, added, Stream.concat(held.stream(), Stream.of(added)).toList());
+            stateService.updateTask(taskId, registered -> registered.withRepo(added.registered()));
+        } catch (RuntimeException e) {
+            unwind(request, List.of(added), List.of(added), strategy);
+            throw e;
+        }
+        return added;
+    }
+
+    private List<NewRepo> held(TaskState task, ConfigService.ConfigFile config) {
+        List<NewRepo> held = new ArrayList<>();
+        for (TaskRepo repo : task.repos()) {
+            ProjectConfig project = configured(Objects.requireNonNull(repo.project()), config);
+            Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
+            String remote = repo.remoteUrl() == null ? gitWorktrees.remoteUrl(projectPath) : repo.remoteUrl();
+            held.add(new NewRepo(repo.project(), project, projectPath, Path.of(Objects.requireNonNull(repo.worktreePath())),
+                    gitWorktrees.gitCommonDir(projectPath), task.baseBranchOr(project.baseBranch()), remote,
+                    held.isEmpty()));
+        }
+        return held;
     }
 
     /**

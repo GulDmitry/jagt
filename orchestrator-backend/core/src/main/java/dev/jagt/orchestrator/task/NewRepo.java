@@ -9,6 +9,11 @@ import java.nio.file.Path;
 public record NewRepo(String project, ProjectConfig config, Path projectPath, Path worktreePath,
                       Path gitCommonDir, String baseBranch, String remoteUrl, boolean primary) {
 
+    /** This repository joining a task whose session already runs in another. */
+    public NewRepo besideTheSession() {
+        return new NewRepo(project, config, projectPath, worktreePath, gitCommonDir, baseBranch, remoteUrl, false);
+    }
+
     /** The same repository as {@code state.json} keeps it: no request and no deploy yet. */
     public TaskRepo registered() {
         return TaskRepo.of(project, worktreePath.toString()).withRemoteUrl(remoteUrl);

@@ -33,6 +33,11 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                     FlowRules.allowed(status, facts), TaskAction.LIFT,
                     "jagt stopped this task as a loop it suspects is its own bug; read the hover, then lift or close");
         }
+        if (facts.repoRequested() && asking(status, round)) {
+            return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "add the repository",
+                    FlowRules.allowed(status, facts), TaskAction.ADD_REPO,
+                    "the session asked for another repository: add it, or answer in the agent's window (focus)");
+        }
         boolean hasReviewRequest = facts.hasReviewRequest();
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());

@@ -30,6 +30,12 @@ public class WorktreeSetup {
     @Value("${orchestrator.agent-allowed-tools:}")
     private List<String> agentAllowedTools;
 
+    /** Every worktree written again for the set that now includes {@code added}, which the session may edit. */
+    public void attach(NewTask request, NewRepo added, List<NewRepo> repos) {
+        repos.forEach(repo -> fill(request, repo, repos));
+        agentRuntime.admit(repos.get(0).worktreePath(), added.worktreePath());
+    }
+
     /** {@code repos} is every repository of the task, so the briefing can name the ones this agent may edit. */
     public void fill(NewTask request, NewRepo repo, List<NewRepo> repos) {
         Path worktreePath = repo.worktreePath();
