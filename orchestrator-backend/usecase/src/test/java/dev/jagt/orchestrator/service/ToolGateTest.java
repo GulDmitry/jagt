@@ -228,4 +228,24 @@ class ToolGateTest {
         assertThat(ToolGate.refusal("curl -X POST http://192.168.1.5:8290/api/tasks/say", "ABC-42", 8290))
                 .get().asString().contains("reaching its board");
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "git worktree add /wt/other -b ABC-42 origin/release",
+            "git -C /repos/other worktree add /wt/other -b ABC-42 origin/release",
+            "git -c core.x=y worktree add /wt/other",
+            "cd /repos/other && git worktree add /wt/other -b ABC-42 origin/release",
+    })
+    void refusesASessionCuttingItsOwnWorktree(String command) {
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290))
+                .isPresent()
+                .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
+                .contains("needsProject");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"git worktree list", "git -C /wt/ABC-42 worktree prune"})
+    void letsASessionReadAndTidyItsWorktrees(String command) {
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290)).isEmpty();
+    }
 }

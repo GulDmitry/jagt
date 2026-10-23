@@ -81,6 +81,11 @@ It MAY also write `/tmp`, the user's temp directory, the build and cluster tools
 - **WHEN** `sandbox.enabled` is `false`
 - **THEN** a session writes wherever the agent CLI's own rules let it
 
+#### Scenario: A session cuts its own worktree
+- **WHEN** ABC-42's session runs `git -C ~/repos/other worktree add /wt/other -b ABC-42 origin/release`
+- **THEN** `ToolGate` refuses it, naming `update_agent_status` with `outcome=question` and `needsProject`
+- **AND** `git worktree list` is still allowed
+
 #### Scenario: Linux without the sandbox's tools
 - **WHEN** jagt starts on Linux with Claude, the sandbox on, and `bwrap` or `socat` missing
 - **THEN** the start is refused, naming the packages and `sandbox.enabled: false`

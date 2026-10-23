@@ -57,7 +57,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
 - **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's
   hooks running underneath. They refuse a push off the task's branch, deleting, branchless, hook-skipping, with
-  `-c`, `$'…'` or forced unleased; a plumbing push; `gh`/`glab` but a read; a line reaching the board or token.
+  `-c`, `$'…'` or forced unleased; a plumbing push; `gh`/`glab` but a read; `git worktree add`; a line reaching
+  the board or token.
   Else they report state; gaps: [`guards`](docs/rules/guards.md).
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.

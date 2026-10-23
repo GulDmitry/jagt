@@ -12,7 +12,7 @@ import java.util.stream.Stream;
  * The shell lines a task may be refused: a line reaching the board or the Master's token, a write to the code host
  * past the push, {@code $'…'} or {@code $"…"} on a git, gh or glab line, a push that could switch off the hook, a push naming
  * no branch or one not the task's own, a delete of the branch its review request is built on, and a force without
- * the lease. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an explicit
+ * the lease, and a worktree cut by the session itself. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an explicit
  * {@code git push origin dev} still needs refusing. This is a gate on a few lines, not a permission layer.
  * What is read is the command LINE, so a push assembled at runtime is not seen.
  */
@@ -79,6 +79,7 @@ public final class ToolGate {
                         () -> writesToHost(command, unquotedLine, branch),
                         () -> readsUnquoted(line, unquotedLine),
                         () -> skipsPrePush(command, branch),
+                        () -> cutsAWorktree(command),
                         () -> pushRefusal(line, command, branch))
                 .map(Supplier::get).flatMap(Optional::stream).findFirst();
     }
@@ -117,27 +118,37 @@ public final class ToolGate {
         return Optional.empty();
     }
 
+    private static Optional<String> cutsAWorktree(String command) {
+        if (Stream.of(SEPARATORS.split(command)).anyMatch(segment -> subcommandIn(segment, "worktree")
+                .filter(words -> !words.isEmpty() && "add".equals(bare(words.get(0)))).isPresent())) {
+            return Optional.of("jagt refuses creating a worktree from a session: a repository the task lacks is"
+                    + " asked for with update_agent_status outcome=question and needsProject set to its project key"
+                    + " (list_projects names the keys).");
+        }
+        return Optional.empty();
+    }
+
     private static Optional<String> pushRefusal(String line, String command, String taskBranch) {
         boolean headIsTheTask = !HEAD_MOVES.matcher(command).find();
         String escapesQuoted = ESCAPED.matcher(line.replace("\\\n", " ").replace("''", "").replace("\"\"", ""))
                 .replaceAll("\"$1\"");
         return Stream.of(SEPARATORS.split(escapesQuoted))
-                .map(segment -> pushIn(segment).flatMap(push -> refuse(push, taskBranch, headIsTheTask)))
+                .map(segment -> subcommandIn(segment, "push").flatMap(push -> refuse(push, taskBranch, headIsTheTask)))
                 .flatMap(Optional::stream).findFirst();
     }
 
     /**
-     * The words after {@code git push} in one command, or nothing where that command is not a push. git's own
+     * The words after {@code git <subcommand>} in one command, or nothing where that command is not it. git's own
      * options sit BEFORE the subcommand ({@code git -C <dir> push …}).
      */
-    private static Optional<List<String>> pushIn(String segment) {
+    private static Optional<List<String>> subcommandIn(String segment, String subcommandName) {
         List<String> words = List.of(WHITESPACE.split(segment.trim()));
         for (int at = 0; at < words.size(); at++) {
             if (!GIT.matcher(bare(words.get(at))).matches()) {
                 continue;
             }
             int subcommand = afterGitOptions(words, at + 1);
-            if (subcommand < words.size() && "push".equals(bare(words.get(subcommand)))) {
+            if (subcommand < words.size() && subcommandName.equals(bare(words.get(subcommand)))) {
                 return Optional.of(words.subList(subcommand + 1, words.size()));
             }
         }
