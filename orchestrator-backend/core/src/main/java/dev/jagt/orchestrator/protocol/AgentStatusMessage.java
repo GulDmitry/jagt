@@ -26,7 +26,7 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
                                  @Nullable String reviewRequestUrl, Map<String, String> reviewRequests,
-                                 @Nullable String taskId) implements Message {
+                                 @Nullable String taskId, @Nullable String needsProject) implements Message {
 
     /** The wire spelling of what a report says about a round; absent falls back to a marker in the message. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "permission", "no_changes",
@@ -64,6 +64,9 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                             "web", "https://host/web/-/merge_requests/3")))
             .text("message", "For the HUMAN, 10 words MAX — it renders as one narrow dashboard table line"
                     + " (longer text is truncated). No marker words: what the report MEANS is the outcome field.")
+            .text("needsProject", "With outcome=question only: the key of the configured project (`list_projects`)"
+                    + " whose repository this task needs and lacks. jagt adds it to the task on a human's or the"
+                    + " Master's word; the message says why.")
             .text("taskId", "Optional explicit task id or alias (Master use). Sub-agents may only target their"
                     + " own task.");
 
@@ -74,29 +77,30 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         outcome = absent(outcome);
         reviewRequestUrl = absent(reviewRequestUrl);
         taskId = absent(taskId);
+        needsProject = absent(needsProject);
         reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
     }
 
     /** The five-field form, for jagt's own reports, which name no task of someone else's. */
     public AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
                               @Nullable String reviewRequestUrl, Map<String, String> reviewRequests) {
-        this(status, message, outcome, reviewRequestUrl, reviewRequests, null);
+        this(status, message, outcome, reviewRequestUrl, reviewRequests, null, null);
     }
 
     public static AgentStatusMessage of(@Nullable String status, @Nullable String message) {
-        return new AgentStatusMessage(status, message, null, null, Map.of(), null);
+        return new AgentStatusMessage(status, message, null, null, Map.of(), null, null);
     }
 
     public AgentStatusMessage withOutcome(@Nullable String outcome) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject);
     }
 
     public AgentStatusMessage withReviewRequestUrl(@Nullable String reviewRequestUrl) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject);
     }
 
     public AgentStatusMessage withReviewRequests(Map<String, String> reviewRequests) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject);
     }
 
     /**
@@ -133,7 +137,26 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         }
         unknownProjects(projectsOnTask).forEach(key -> found.add(new Violation("reviewRequests",
                 "project '" + key + "' is not on this task; its projects are " + projectsOnTask)));
+        needsProjectViolation(context).ifPresent(found::add);
         return List.copyOf(found);
+    }
+
+    private Optional<Violation> needsProjectViolation(MessageContext context) {
+        if (needsProject == null) {
+            return Optional.empty();
+        }
+        if (outcome == null || !"question".equals(normalised(outcome))) {
+            return Optional.of(new Violation("needsProject", "only with outcome=question"));
+        }
+        if (context.projectsOnTask().contains(needsProject)) {
+            return Optional.of(new Violation("needsProject", "project '" + needsProject
+                    + "' is already on this task; its projects are " + context.projectsOnTask()));
+        }
+        if (!context.configuredProjects().isEmpty() && !context.configuredProjects().contains(needsProject)) {
+            return Optional.of(new Violation("needsProject", "project '" + needsProject + "' is not configured; the"
+                    + " projects are " + context.configuredProjects()));
+        }
+        return Optional.empty();
     }
 
     /**
@@ -145,7 +168,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             return Optional.empty();
         }
         return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), detail(),
-                link(context.projectsOnTask()), reviewRequests, noPlan(), permission()));
+                link(context.projectsOnTask()), reviewRequests, noPlan(), permission(), needsProject));
     }
 
     private boolean permission() {

@@ -69,7 +69,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null);
+                "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -112,7 +112,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null);
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 

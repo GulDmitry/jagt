@@ -62,7 +62,9 @@ public record TaskState(
         @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Probe> probes,
         PlanGate planGate,
         @Nullable LoopWatch loop,
-        @Nullable ConflictWatch conflict
+        @Nullable ConflictWatch conflict,
+        // The project key a session asked to have a repository of, until one is added or it reports anything else.
+        @Nullable String repoRequest
 ) {
 
     /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
@@ -111,7 +113,8 @@ public record TaskState(
             // Absent in a file written before the gate existed, which reads as nothing to wait for.
             @JsonProperty("planGate") @Nullable PlanGate planGate,
             @JsonProperty("loop") @Nullable LoopWatch loop,
-            @JsonProperty("conflict") @Nullable ConflictWatch conflict) {
+            @JsonProperty("conflict") @Nullable ConflictWatch conflict,
+            @JsonProperty("repoRequest") @Nullable String repoRequest) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -120,7 +123,8 @@ public record TaskState(
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
                 pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
-                probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate, loop, conflict);
+                probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate, loop, conflict,
+                repoRequest);
     }
 
     @JsonIgnore
@@ -456,6 +460,11 @@ public record TaskState(
         return toBuilder().probes(probes).build();
     }
 
+    /** Does NOT touch lastActiveTimestamp: it records what the session asked, and null is it asking nothing. */
+    public TaskState withRepoRequest(@Nullable String project) {
+        return toBuilder().repoRequest(project).build();
+    }
+
     public TaskState withBaseBranch(String baseBranch) {
         return toBuilder().baseBranch(baseBranch).build();
     }
@@ -487,7 +496,7 @@ public record TaskState(
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
                 .approved(approved)
                 .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
-                .planGate(planGate).loop(loop).conflict(conflict);
+                .planGate(planGate).loop(loop).conflict(conflict).repoRequest(repoRequest);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -519,6 +528,7 @@ public record TaskState(
         private PlanGate planGate = PlanGate.OPEN;
         private @Nullable LoopWatch loop;
         private @Nullable ConflictWatch conflict;
+        private @Nullable String repoRequest;
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -670,6 +680,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder repoRequest(@Nullable String repoRequest) {
+            this.repoRequest = repoRequest;
+            return this;
+        }
+
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
@@ -677,7 +692,7 @@ public record TaskState(
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust,
-                    probes, planGate, loop, conflict);
+                    probes, planGate, loop, conflict, repoRequest);
         }
     }
 }

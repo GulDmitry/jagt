@@ -40,6 +40,7 @@ public class AgentStatusReports {
     private final Notifications notifications;
     private final FlowReports flow;
     private final HandBack handBack;
+    private final ConfigService configService;
 
     /** For jagt's own reports, which carry no outcome of an agent's and no request to link. */
     public String report(TaskStatus status, String message, String taskId) {
@@ -83,7 +84,8 @@ public class AgentStatusReports {
     /** What the rules may ask about the task this message is about. */
     public MessageContext contextFor(String taskId) {
         return new MessageContext(known(taskId), stateService.task(taskId)
-                .filter(task -> task.planGate() == PlanGate.REQUIRED).isPresent());
+                .filter(task -> task.planGate() == PlanGate.REQUIRED).isPresent(),
+                List.copyOf(configService.load().projects().keySet()));
     }
 
     /** The task's repositories, primary first: which link a human follows first is the session's own. */
@@ -99,7 +101,8 @@ public class AgentStatusReports {
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
         FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage,
-                (was, next) -> planned(was, linked(was, next, url, requestsByProject)), verificationOwed)
+                (was, next) -> planned(was, linked(was, next, url, requestsByProject))
+                        .withRepoRequest(said.needsProject()), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (said.noPlan()) {
             stateService.updateTask(taskId, task -> task.withPlanGate(PlanGate.OPEN));
