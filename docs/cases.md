@@ -88,6 +88,7 @@ Families:
 | F4 | a store or log grows → a ceiling and something that packs or refuses past it | 3343f75e, f1b760c6, fbc2160f, 0e558ca8, 5c037ecc | `LogFileAppenderTest`, `FinishedTasksTest`, `TaskProvisioningTest` |
 | F5 | a headless call spends → every call carries a spend ceiling and fails naming it | 4aa63f4a | `HeadlessClaudeTest`, `AssistantPropertiesTest` |
 | F6 | an unfinished deploy, an unchanged status or a waiting close → read or asked at a bounded pace, not forever | 52c78b44, 70ba6aa6, 68e40274 | `TicketCloseJobTest`, `TaskProvisioningTest` |
+| F7 | a request only a reviewer can move on is polled → read at the longest interval, not the ramp | seen 2026-10-24: 71 sweeps in 18h | `AutoReviewCadenceTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |

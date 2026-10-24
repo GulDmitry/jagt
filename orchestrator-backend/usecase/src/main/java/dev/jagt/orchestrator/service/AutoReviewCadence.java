@@ -12,8 +12,9 @@ import java.time.Duration;
 
 /**
  * The whole auto-review policy. The interval escalates LINEARLY from {@code min} at the window start to {@code max}
- * at its end, and past the window polling stops. The poller and every human surface ask the SAME object, so a
- * dashboard cannot advertise a poll the scheduler will not make.
+ * at its end, and past the window polling stops; a request only a reviewer can move on waits {@code max} throughout,
+ * since nothing jagt reads without a model says a reviewer wrote. The poller and every human surface ask the SAME
+ * object, so a dashboard cannot advertise a poll the scheduler will not make.
  */
 @RequiredArgsConstructor
 public final class AutoReviewCadence {
@@ -65,9 +66,13 @@ public final class AutoReviewCadence {
             return AutoReviewWatch.noRound();
         }
         Duration interval = pollInterval(Duration.ofMillis(now - roundStart));
-        return interval == null
-                ? AutoReviewWatch.windowElapsed(windowHours())
-                : AutoReviewWatch.watching(task.lastPolledAt() + interval.toMillis());
+        if (interval == null) {
+            return AutoReviewWatch.windowElapsed(windowHours());
+        }
+        if (FlowRules.movedOnByAReviewerAlone(task.status())) {
+            interval = Duration.ofMinutes(maxMinutes);
+        }
+        return AutoReviewWatch.watching(task.lastPolledAt() + interval.toMillis());
     }
 
     /** How the cadence reads to a human, in the one place both surfaces take the words from. */

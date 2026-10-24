@@ -37,6 +37,18 @@ class AutoReviewCadenceTest {
         assertThat(watch.nextPollAt()).isEqualTo(shipped + Duration.ofMinutes(10).toMillis());
     }
 
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEWED", "APPROVED", "DEPLOYED"})
+    void pollsAtTheLongestIntervalARequestOnlyAReviewerCanMoveOn(TaskStatus status) {
+        long shipped = 1_000_000_000_000L;
+        TaskState task = TaskState.builder("proj", "/wt", status)
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(shipped).lastPolledAt(shipped).build();
+
+        AutoReviewWatch watch = cadence.watch(task, shipped + 60_000);
+
+        assertThat(watch.nextPollAt()).isEqualTo(shipped + Duration.ofMinutes(60).toMillis());
+    }
+
     @Test
     void watchesNothingWhilePollingIsSwitchedOffForTheInstall() {
         AutoReviewCadence off = new AutoReviewCadence(false, Duration.ofHours(24), 10, 60);

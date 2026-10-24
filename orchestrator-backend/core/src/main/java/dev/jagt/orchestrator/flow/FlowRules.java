@@ -303,6 +303,11 @@ public final class FlowRules {
         return OUT_FOR_REVIEW.contains(status);
     }
 
+    /** Green with nothing left for its session, so only a reviewer's word can move the request on. */
+    public static boolean movedOnByAReviewerAlone(TaskStatus status) {
+        return MOVED_ON_BY_A_REVIEWER_ALONE.contains(status);
+    }
+
     /** A hand-back jagt holds until it has run the project's verification command; its agent's silence is no stall. */
     public static boolean awaitingVerification(TaskStatus status) {
         return status == TaskStatus.VERIFYING;
@@ -355,6 +360,9 @@ public final class FlowRules {
             TaskStatus.REVIEW_PENDING);
 
     private static final Set<TaskStatus> OUT_FOR_REVIEW = EnumSet.of(TaskStatus.CI_POLLING, TaskStatus.REVIEWED);
+
+    private static final Set<TaskStatus> MOVED_ON_BY_A_REVIEWER_ALONE = EnumSet.of(TaskStatus.REVIEWED,
+            TaskStatus.APPROVED, TaskStatus.DEPLOYED);
 
     private static final Set<TaskStatus> HANDED_BACK = EnumSet.of(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED);
 

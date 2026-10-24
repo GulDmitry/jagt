@@ -27,7 +27,8 @@ Detection SHALL be deterministic — a cadence, a status, an open request; a new
 - **THEN** it is deterministic too
 
 ### Requirement: An open request is what the poller watches
-`AutoReviewCadence.polls` SHALL watch an open request, never a status: a request exists and the task is not DONE.
+`AutoReviewCadence.polls` SHALL watch an open request, never a status: a request exists and the task is not DONE. At
+`REVIEWED`, `APPROVED` or `DEPLOYED` only a reviewer moves it on, so it SHALL be read every `maxIntervalMinutes`.
 
 #### Scenario: Comments after hand-back
 - **WHEN** comments arrive after the agent handed back
@@ -39,7 +40,7 @@ Detection SHALL be deterministic — a cadence, a status, an open request; a new
 
 #### Scenario: Deployed, green, unapproved
 - **WHEN** a deployed task comes back green and unapproved
-- **THEN** it stays `deployed`: a poll never moves work that went out
+- **THEN** it stays `deployed`, read every `maxIntervalMinutes` from the start: a poll never moves work that went out
 
 ### Requirement: The polling window is per round
 The window SHALL run per round from `mrCreatedAt`, restamped on each entry into CI_POLLING, kept by a repeat, else `requestOpenedAt`.
@@ -166,8 +167,7 @@ nothing; a human press SHALL never be refused. It SHALL lift on the next local d
 
 #### Scenario: The ceiling is reached
 - **WHEN** the 50th unattended start of a local day is taken
-- **THEN** the Master only judges, intake and auto-review start nothing, and the header shows `act stopped`
-  whose hover names the 50
+- **THEN** the Master only judges, intake and auto-review start nothing, and `act stopped`'s hover names the 50
 
 #### Scenario: The stop lifts
 - **WHEN** the next local day begins, or you press `act stopped` while the daily stop stands
