@@ -9,16 +9,20 @@ import tools.jackson.databind.node.ObjectNode;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.function.BinaryOperator;
 
 /**
  * A directory Claude has never run in is untrusted, and it discards that directory's whole permission file
  * until a human accepts the trust dialog — so an unattended session stops at prompts nobody answers, and every
  * worktree is such a directory. Claude writes this file too, under a lock this cannot take, so the read and the
- * replace stay adjacent and anything unexpected in it costs the flag rather than the file.
+ * replace stay adjacent and anything unexpected in it costs the flag rather than the file. Every jagt process on the
+ * machine takes a lock of its own around them.
  */
 @Slf4j
 final class ClaudeTrust {
@@ -96,7 +100,9 @@ final class ClaudeTrust {
 
     private static synchronized void rewrite(Path configFile, Path worktree, BinaryOperator<String> edit, String effect) {
         Path staged = null;
-        try {
+        try (FileChannel channel = FileChannel.open(lockFile(configFile), StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE);
+             FileLock held = channel.lock()) {
             String current = Files.exists(configFile) ? Files.readString(configFile) : "{}";
             String updated = edit.apply(current, resolved(worktree));
             if (updated == null) {
@@ -115,6 +121,10 @@ final class ClaudeTrust {
         } finally {
             discard(staged);
         }
+    }
+
+    private static Path lockFile(Path configFile) {
+        return configFile.resolveSibling(configFile.getFileName() + ".jagt-lock");
     }
 
     /** Claude keys the entry by the resolved working directory, which no symlink survives; a worktree already

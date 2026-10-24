@@ -102,11 +102,11 @@ settings SHALL carry `autoMemoryEnabled: false`.
 
 ### Requirement: The worktree is trusted
 `wireAgent` SHALL trust the worktree, replacing only `projects["<worktree>"].hasTrustDialogAccepted` in
-`~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where set).
+`~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where set), under an OS file lock every jagt process takes.
 
-#### Scenario: The config file is unparsable or the task is removed
-- **WHEN** `~/.claude.json` cannot be parsed, or the task is removed
-- **THEN** the file is left alone, or the worktree's entry is dropped
+#### Scenario: The config file is unparsable, the task is removed, or another jagt process writes
+- **WHEN** `~/.claude.json` cannot be parsed, the task is removed, or another jagt process is writing it
+- **THEN** the file is left alone, the worktree's entry is dropped, or this one waits, so no flag is lost
 
 ### Requirement: A session reports itself through its CLI's own hooks
 A session SHALL report through its CLI's own hooks, never the model: `HookEndpoint` writes each line, a POST to
