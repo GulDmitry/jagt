@@ -124,6 +124,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public Optional<String> unansweredPrompt(String screen) {
+        String shown = ANSI.matcher(screen).replaceAll("");
+        return SessionHooks.trustDialog("claude").stream().anyMatch(shown::contains)
+                ? Optional.of("waiting on the trust dialog") : Optional.empty();
+    }
+
+    @Override
     public Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
         Set<String> cut = new HashSet<>(typedByJagt);
         cut.add(brief.line("start"));

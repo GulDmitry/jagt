@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
-/** An agent exiting before its harness loads reports nothing; its words last only while its window closes. */
+/** An agent exiting, or stopped at a prompt, before its harness loads reports nothing; only its window shows it. */
 @Service
 @RequiredArgsConstructor
 public class LaunchExits implements Job {
@@ -29,7 +29,7 @@ public class LaunchExits implements Job {
 
     @Override
     public String describe() {
-        return "tell an agent that exited before its first report, with the last lines it printed";
+        return "tell an agent that exited before its first report, with the last lines it printed, or waits at a prompt jagt never answers";
     }
 
     @Override
@@ -41,7 +41,8 @@ public class LaunchExits implements Job {
     public void run() {
         stateService.tasks().forEach((taskId, task) -> {
             if (FlowRules.launching(task.status())) {
-                sessions.exitTail(taskId).ifPresent(printed -> watchdog.ended(taskId, printed));
+                sessions.exitTail(taskId).ifPresentOrElse(printed -> watchdog.ended(taskId, printed),
+                        () -> sessions.unansweredPrompt(taskId).ifPresent(cause -> watchdog.waiting(taskId, cause)));
             }
         });
     }

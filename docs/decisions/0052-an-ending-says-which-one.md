@@ -5,7 +5,8 @@ spec: [`attention`](../../openspec/specs/attention/spec.md)
 
 ## Status
 
-Accepted 2026-10-19.
+Accepted 2026-10-19. Reading the pane: amended by [0082](0082-a-prompt-before-the-harness-is-read-off-the-window.md)
+for a prompt no hook can report.
 
 ## Context
 

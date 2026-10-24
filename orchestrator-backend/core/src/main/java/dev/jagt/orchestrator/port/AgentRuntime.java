@@ -91,6 +91,11 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
+    /** Why {@code screen}, a session's window as shown, waits at a prompt jagt never answers; empty where it does not. */
+    default Optional<String> unansweredPrompt(String screen) {
+        return Optional.empty();
+    }
+
     /** Where this agent's system knowledge goes; a name the checkout already uses is the project's own, never taken. */
     Path systemKnowledgeFile(Path worktree);
 

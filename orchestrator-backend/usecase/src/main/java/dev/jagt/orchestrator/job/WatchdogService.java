@@ -85,6 +85,12 @@ public class WatchdogService implements Job {
         check(taskId);
     }
 
+    /** A session sitting at a prompt that fires no hook, told by what it shows. */
+    public void waiting(String taskId, String cause) {
+        probe.report(taskId, SessionProbe.State.WAITING, cause, clock.millis());
+        check(taskId);
+    }
+
     private void verdict(String taskId, TaskState task, long now) {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         Optional<SessionProbe.Silence> silence = watches(task.status())

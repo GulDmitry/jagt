@@ -327,4 +327,17 @@ class WatchdogServiceTest {
 
         verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.GONE), isNull(), anyLong());
     }
+
+    @Test
+    void stopsASessionAtAPromptNoHookReportsAsWaitingWithTheCauseItsWindowShowed(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        SessionProbe probe = mock(SessionProbe.class);
+
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+                .waiting("ABC-1", "waiting on the trust dialog");
+
+        verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WAITING), eq("waiting on the trust dialog"), anyLong());
+    }
 }

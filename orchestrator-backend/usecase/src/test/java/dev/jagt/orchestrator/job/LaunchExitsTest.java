@@ -35,6 +35,21 @@ class LaunchExitsTest {
     }
 
     @Test
+    void stopsASessionWaitingAtLaunchOnAPromptJagtNeverAnswersWithItsCause(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
+        AgentSessions sessions = mock(AgentSessions.class);
+        when(sessions.exitTail("ABC-42")).thenReturn(Optional.empty());
+        when(sessions.unansweredPrompt("ABC-42")).thenReturn(Optional.of("waiting on the trust dialog"));
+        WatchdogService watchdog = mock(WatchdogService.class);
+
+        new LaunchExits(state, sessions, watchdog).run();
+
+        verify(watchdog).waiting("ABC-42", "waiting on the trust dialog");
+    }
+
+    @Test
     void readsNoWindowOfATaskPastItsFirstReport(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

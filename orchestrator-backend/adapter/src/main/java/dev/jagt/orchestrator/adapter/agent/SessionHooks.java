@@ -30,9 +30,10 @@ final class SessionHooks {
     private static final String TURN_FAILURE = "turn-failure";
     private static final String RATE_LIMIT_ERROR = "rate-limit-error";
     private static final String CONTINUING_END = "continuing-end";
+    private static final String TRUST_DIALOG = "trust-dialog";
     private static final Set<String> NOT_A_STATE =
             Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END, TURN_FAILURE, RATE_LIMIT_ERROR,
-                    CONTINUING_END);
+                    CONTINUING_END, TRUST_DIALOG);
 
     /** The event this CLI answers with allow or deny, or nothing where it has none. */
     static Optional<String> gate(String runtime) {
@@ -58,6 +59,12 @@ final class SessionHooks {
     static Set<String> continuingEnds(String runtime) {
         return Arrays.stream(declared(runtime).getProperty(CONTINUING_END, "").split(","))
                 .map(String::strip).filter(reason -> !reason.isEmpty()).collect(Collectors.toUnmodifiableSet());
+    }
+
+    /** Phrases only this CLI's trust dialog shows, any one meaning a session waits on it; none where undeclared. */
+    static Set<String> trustDialog(String runtime) {
+        return Arrays.stream(declared(runtime).getProperty(TRUST_DIALOG, "").split("\\|"))
+                .map(String::strip).filter(phrase -> !phrase.isEmpty()).collect(Collectors.toUnmodifiableSet());
     }
 
     /** What this CLI calls a start that follows a compaction, or blank where it says nothing about starts. */

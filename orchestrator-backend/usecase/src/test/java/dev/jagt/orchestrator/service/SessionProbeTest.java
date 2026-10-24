@@ -38,6 +38,18 @@ class SessionProbeTest {
     }
 
     @Test
+    void saysWhatASessionWaitsOnWhereItsWindowNamedIt() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.NEW).lastActiveTimestamp(9_990_000L).build();
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.WAITING, "waiting on the trust dialog", 10_000_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
+                .map(SessionProbe.Silence::detail).contains("waiting on the trust dialog");
+    }
+
+    @Test
     void staysQuietForATurnThatJustEndedBecauseTheSessionMayComeStraightBack() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();

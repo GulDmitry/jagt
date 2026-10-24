@@ -75,6 +75,8 @@ Master's reviewer, the ⌘K palette.
   matched to the one value a feature needs leaves the rest to silence (`turn-failure`, not a `rate_limit` matcher).
 - An end its source follows at once with a start is no ending (`continuing-end`).
 - **Silence is the last verdict, not an outcome**: the watchdog's threshold is for what emits nothing.
+- A prompt opening before any hook is read off the window, in phrases the runtime declares, never answered
+  ([0082](../decisions/0082-a-prompt-before-the-harness-is-read-off-the-window.md)).
 
 ## Every assistant call is metered
 

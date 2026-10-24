@@ -97,3 +97,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0079 A case's by: restricts who sets it off](0079-a-cases-by-restricts-who-sets-it-off.md)
 - [0080 A repeating round ends in one stop](0080-a-repeating-round-ends-in-one-stop.md)
 - [0081 A verdict answers a turn](0081-a-verdict-answers-a-turn.md)
+- [0082 A prompt before the harness is read off the window](0082-a-prompt-before-the-harness-is-read-off-the-window.md)

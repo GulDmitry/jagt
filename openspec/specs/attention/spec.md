@@ -53,6 +53,8 @@ threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overrul
 #### Scenario: The agent CLI never came up
 - **WHEN** it exits at `NEW` before reporting, printing `Error: Invalid MCP configuration`
 - **THEN** NEEDS YOU within seconds: the session ended, and its last lines; unread, the card points at the launch
+- **WHEN** its window at `NEW` shows a phrase the runtime declares for its trust dialog (`trust-dialog`)
+- **THEN** NEEDS YOU within seconds: waiting on the trust dialog; jagt reads the window and sends it no key
 
 #### Scenario: A turn ends on an API error
 - **WHEN** the CLI ends a turn on an API error and names `overloaded`

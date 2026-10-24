@@ -551,6 +551,26 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void tellsASessionWaitingOnTheTrustDialogFromItsScreen() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
+        String screen = """
+                \u001b[38;5;174m╭──────────────────────────────────────────────────────────────╮\u001b[39m
+                \u001b[38;5;174m│\u001b[39m \u001b[1mDo you trust the files in this folder?\u001b[22m                     \u001b[38;5;174m│\u001b[39m
+                \u001b[38;5;174m│\u001b[39m /wt/ABC-42-proj                                              \u001b[38;5;174m│\u001b[39m
+                \u001b[38;5;174m│\u001b[39m \u001b[36m❯ 1. Yes, \u001b[1mI trust this folder\u001b[22m\u001b[39m                            \u001b[38;5;174m│\u001b[39m
+                \u001b[38;5;174m│\u001b[39m   2. No, exit                                                \u001b[38;5;174m│\u001b[39m
+                \u001b[38;5;174m╰──────────────────────────────────────────────────────────────╯\u001b[39m
+                   Enter to confirm · Esc to exit
+                """;
+
+        assertThat(runtime.unansweredPrompt(screen)).contains("waiting on the trust dialog");
+    }
+
+    @Test
     void pinsTheModelAskedForAsOneShellArgument(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
         var runtime = new ClaudeAgentRuntime(

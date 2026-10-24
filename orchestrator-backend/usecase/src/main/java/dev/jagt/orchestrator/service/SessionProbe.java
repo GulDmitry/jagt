@@ -42,7 +42,10 @@ public class SessionProbe {
             if (reported == State.IDLE) {
                 return "its turn ended and nothing has moved since";
             }
-            return reported == State.WAITING ? "waiting for input" : null;
+            if (reported == State.WAITING) {
+                return cause == null ? "waiting for input" : cause;
+            }
+            return null;
         }
 
         /** Whether a harness put the session AT a prompt, as opposed to reporting it gone or saying nothing. */

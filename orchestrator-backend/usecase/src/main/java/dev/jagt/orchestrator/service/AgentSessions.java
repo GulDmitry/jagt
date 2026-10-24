@@ -120,6 +120,12 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return sessions.exitTail(agentSession(configService.load(), taskId), taskId);
     }
 
+    /** Why the task's session waits at a prompt jagt never answers; empty where its window shows none. Reads only. */
+    public Optional<String> unansweredPrompt(String taskId) {
+        return sessions.screenOf(agentSession(configService.load(), taskId), taskId)
+                .flatMap(agentRuntime::unansweredPrompt);
+    }
+
     /** A session that is gone or dead is re-entered first: focus must always land on a live agent. */
     public String focusTask(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
