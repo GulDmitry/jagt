@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -15,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -829,7 +831,8 @@ class MasterPanelTest {
         ChargedReviews reviews = mock(ChargedReviews.class);
         MasterBriefs briefs = mock(MasterBriefs.class);
         RoundQuotes quotes = mock(RoundQuotes.class);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()
+                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
@@ -841,7 +844,7 @@ class MasterPanelTest {
         new MasterPanel(reviews, briefs, quotes, stored).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(stored.of(task)).get().returns("abc123", MasterReview.Verdict::ownDiff)
-                .returns(task.statusSince(), MasterReview.Verdict::round);
+                .returns(5L, MasterReview.Verdict::round);
     }
 
     @Test

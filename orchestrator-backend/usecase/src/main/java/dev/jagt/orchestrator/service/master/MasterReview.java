@@ -60,7 +60,7 @@ public class MasterReview {
     /** Makes the stored verdict answer the hand-back in front; false where there was none or it stayed as it was. */
     public boolean restamp(TaskState task) {
         return stored(task).map(review -> JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED),
-                review.withRound(task.statusSince()))).orElse(false);
+                review.withRound(task.turnOrNone().id()))).orElse(false);
     }
 
     /** Whether the reviewer has looked at the task AS IT STANDS, rather than at an earlier hand-back. */
@@ -80,7 +80,7 @@ public class MasterReview {
     }
 
     /**
-     * {@code round} names the hand-back jagt asked about, {@code ownDiff} the task's own diff it read, blank where a
+     * {@code round} names the turn jagt asked about, {@code ownDiff} the task's own diff it read, blank where a
      * role could not read the round.
      */
     @With
@@ -155,9 +155,9 @@ public class MasterReview {
             }
         }
 
-        /** About the hand-back in front of it, by the round jagt asked about rather than by when it was written. */
+        /** About the turn in front of it, the one jagt asked about, rather than by when it was written. */
         public boolean answers(TaskState task) {
-            return round == task.statusSince();
+            return round == task.turnOrNone().id();
         }
 
         public boolean ready() {

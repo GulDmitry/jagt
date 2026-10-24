@@ -4,12 +4,14 @@ import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,8 +62,8 @@ class MasterReviewTest {
     @Test
     void doesNotTakeAVerdictAskedAboutAnEarlierHandBackForTheOneInFrontHoweverLateItWasWritten(@TempDir Path worktree) {
         TaskState handedBackAgain = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a1").lastActiveTimestamp(5_000).build();
-        reviews.write(handedBackAgain, new MasterReview.Review(1_000, "", List.of()), "");
+                .alias("a1").build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        reviews.write(handedBackAgain, new MasterReview.Review(3, "", List.of()), "");
 
         assertThat(reviews.readsTheRoundInFront(handedBackAgain)).isFalse();
     }
@@ -69,17 +71,30 @@ class MasterReviewTest {
     @Test
     void takesAVerdictAskedAboutTheHandBackInFrontAsAboutIt(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(5_000, "", List.of()), "");
+                .build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        reviews.write(task, new MasterReview.Review(5, "", List.of()), "");
 
         assertThat(reviews.readsTheRoundInFront(task)).isTrue();
     }
 
     @Test
+    void doesNotTakeAVerdictForAHandBackTheSessionMadeAgainWithNoRelayBetween(@TempDir Path worktree) {
+        Turn handedBack = new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of());
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .build().withTurn(handedBack);
+        reviews.write(task, new MasterReview.Review(5, "", List.of()), "");
+
+        TaskState handedBackAgain = task.withTurn(handedBack.closed(Turn.Holder.SESSION, 6_000)
+                .closed(Turn.Holder.MASTER, 7_000));
+
+        assertThat(reviews.readsTheRoundInFront(handedBackAgain)).isFalse();
+    }
+
+    @Test
     void makesARestampedVerdictAnswerTheHandBackInFront(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", List.of()), "");
+                .build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        reviews.write(task, new MasterReview.Review(3, "abc123", List.of()), "");
 
         boolean restamped = reviews.restamp(task);
 

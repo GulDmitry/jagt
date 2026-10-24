@@ -16,8 +16,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Whose move a task waits on, since when, and the step that handed it over. {@code marks} holds the last value each
- * step carried, one entry per step, so it is bounded; {@code run} when {@code step} was relayed, rounds running.
+ * Whose move a task waits on, since when, and the step that handed it over. {@code id} counts the turns, a relay or a
+ * report starting the next; {@code marks} holds the last value each step carried, one entry per step, so it is
+ * bounded; {@code run} when {@code step} was relayed, rounds running.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -76,9 +77,9 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
         return new Turn(Holder.SESSION, step, id + 1, digest, now, with(step, digest), ran(step, now));
     }
 
-    /** A report closes the turn it answers; the step it answered stays on record. */
+    /** A report closes the turn it answers and starts the next holder's; the step it answered stays on record. */
     public Turn closed(Holder next, long now) {
-        return new Turn(next, step, id, "", now, marks, run);
+        return new Turn(next, step, id + 1, "", now, marks, run);
     }
 
     public Turn withMark(String step, String value) {

@@ -10,12 +10,14 @@ import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -96,10 +98,10 @@ class MasterReviewJobTest {
     @Test
     void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain(@TempDir Path root) {
         StateService state = stateIn(root);
-        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
-                .lastActiveTimestamp(2_000L).build();
+        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
+                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(2_000L, "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview().write(back, new MasterReview.Review(5, "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
         new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
@@ -112,10 +114,10 @@ class MasterReviewJobTest {
     @Test
     void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack(@TempDir Path root) {
         StateService state = stateIn(root);
-        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
-                .lastActiveTimestamp(2_000L).build();
+        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
+                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(1_000L, "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview().write(back, new MasterReview.Review(3, "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
         new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();

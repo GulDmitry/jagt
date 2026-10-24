@@ -5,7 +5,7 @@
 
 ## Status
 
-Accepted 2026-10-24.
+Accepted 2026-10-24. What a verdict answers: amended by [0081](0081-a-verdict-answers-a-turn.md).
 
 ## Context
 

@@ -106,7 +106,7 @@ public class MasterPanel {
         }
         List<MasterReview.Read> reads = reads(roles, judgements);
         boolean allRead = judgements.stream().allMatch(judgement -> judgement.failure().isBlank());
-        Review review = new Review(task.statusSince(), allRead ? quotes.ownDiff(task).orElse("") : "", reads);
+        Review review = new Review(task.turnOrNone().id(), allRead ? quotes.ownDiff(task).orElse("") : "", reads);
         return stored.write(task, review,
                 verdictFile(taskId, reads, named.stream().filter(role -> !roles.contains(role)).toList()));
     }
@@ -124,7 +124,7 @@ public class MasterPanel {
                         reviews.loadsMcpServer()),
                         worktrees(task), config.modelOrInherited()));
         List<MasterReview.Read> reads = reads(List.of(PLANNER), List.of(judged));
-        return stored.write(task, new Review(task.statusSince(), "", reads), verdictFile(taskId, reads, List.of()));
+        return stored.write(task, new Review(task.turnOrNone().id(), "", reads), verdictFile(taskId, reads, List.of()));
     }
 
     private static final Role PLANNER = new Role("planner", "whether the plan does what the ticket asks", "",
