@@ -16,10 +16,10 @@ can read or extend, and a stand on a hosted repository is slow and costly; a loc
 - The turn table's rows are cases: markdown per role, `session-cases.md.dist`, `master-cases.md.dist` (read only
   when the Master is on), later `qa-cases.md.dist`, each copied and overridden like the briefs. A case names a
   brief step, never repeats its text. No case lives in code.
-- Code keeps the engine and the frame: `FlowRules`, the guards, the read-only branches. A case moves inside the
-  frame only.
-- Startup checks cases against code both ways: a case naming what code lacks, or a turn no case covers, refuses
-  to start, naming file and case.
+- Code keeps the engine and the frame: `FlowRules`, the guards, the read-only branches, and the table of which
+  status gives the turn to whom (`Turns`). A case moves inside the frame only.
+- Startup checks cases against code both ways: a case naming what code lacks, or a brief step no case sends,
+  refuses to start, naming file and case. The table of who holds a turn is the frame's, so no check reads it.
 - A reply no case takes is refused, written to `misses.jsonl` beside `state.json` (gitignored, rolled at 1 MB) and
   handed to the human, in `act` too. The Master never decides a miss nor adds a case; the human extends the cases.
 - The stand comes first and is local: bare repositories as remotes, a Java code host and tracker served over MCP
