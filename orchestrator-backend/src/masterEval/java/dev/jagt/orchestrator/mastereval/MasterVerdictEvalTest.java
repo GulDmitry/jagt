@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.mastereval;
 
+import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.MasterVerdictReport;
 import dev.jagt.orchestrator.surface.agent.ReadGateController;
@@ -38,19 +39,15 @@ import static org.awaitility.Awaitility.await;
 
 @Tag("masterEval")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.import=",
-        "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false",
-        "server.port=" + MasterVerdictEvalTest.GATE_PORT,
-        "orchestrator.mcp-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/mcp",
-        "orchestrator.hook-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent/session",
-        "orchestrator.gate-url=http://127.0.0.1:" + MasterVerdictEvalTest.GATE_PORT + "/api/agent"})
+        "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false"})
 @org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
 class MasterVerdictEvalTest {
 
     @MockitoBean
     private UserNotifier userNotifier;
 
-    static final String DEAD_PORT = "8391";
-    static final String GATE_PORT = "8392";
+    private static final int DEAD_PORT = EvalPorts.free();
+    private static final int GATE_PORT = EvalPorts.free();
 
     private static final Duration VERDICT_WAIT = Duration.ofMinutes(20);
 
@@ -58,6 +55,10 @@ class MasterVerdictEvalTest {
 
     @DynamicPropertySource
     static void orchestratorLivesInTheTrustedEvalRoot(DynamicPropertyRegistry registry) throws Exception {
+        registry.add("server.port", () -> GATE_PORT);
+        registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
+        registry.add("orchestrator.hook-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/api/agent/session");
+        registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
         MasterEvalWorkspace.claim();
         MasterEvalWorkspace.clean();
         Path root = MasterEvalWorkspace.root();
@@ -88,7 +89,7 @@ class MasterVerdictEvalTest {
 
     @BeforeAll
     static void nothingLiveIsWithinReach() throws Exception {
-        refuseIfSomethingAnswers(Integer.parseInt(DEAD_PORT));
+        refuseIfSomethingAnswers(DEAD_PORT);
     }
 
     @AfterAll

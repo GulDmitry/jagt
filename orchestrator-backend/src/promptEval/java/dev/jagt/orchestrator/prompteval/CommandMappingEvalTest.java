@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.prompteval;
 
+import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import dev.jagt.orchestrator.port.UserNotifier;
@@ -27,8 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("promptEval")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.import=",
-        "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false", "server.port=8393",
-        "orchestrator.gate-url=http://127.0.0.1:8393/api/agent"})
+        "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false"})
 class CommandMappingEvalTest {
 
     @MockitoBean
@@ -39,6 +39,9 @@ class CommandMappingEvalTest {
 
     @DynamicPropertySource
     static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) throws Exception {
+        int port = EvalPorts.free();
+        registry.add("server.port", () -> port);
+        registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + port + "/api/agent");
         java.nio.file.Files.createDirectories(workspace.resolve("root"));
         registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
         registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
