@@ -48,8 +48,8 @@
 
 ## Cases · [spec](../openspec/specs/cases/spec.md)
 
-- **Your own cases** — A case sends a step and opens a turn, or lets the Master move; what no case takes stops the task (`misses.jsonl`).
-  [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-a-file-you-may-copy)
+- **Your own cases** — A case sends a step and opens a turn, or lets the Master move.
+  [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-files-you-may-copy)
 
 ## Git · [spec](../openspec/specs/git/spec.md)
 
@@ -123,8 +123,8 @@
   [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
 - **Take over a request** — An existing review request can be taken over by a new task.
   [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
-- **Red round** — A failing pipeline stops the task and goes back to the session.
-  [spec](../openspec/specs/review/spec.md#requirement-a-red-round-stops-the-task)
+- **Red round** — A failing pipeline sends the task back to its session.
+  [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
 
@@ -184,11 +184,11 @@
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
 - **Activity report** — A report of what jagt did unasked is read back from its own log.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-reads-jagts-own-log)
-- **Act brake, daily ceiling** — `act` stops itself after repeated bad endings, and tells you; a daily ceiling bounds what jagt starts without you.
+- **Brakes** — `act` stops after bad endings, a daily ceiling bounds unasked starts, a looping or case-less task waits for your lift.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
   [spec](../openspec/specs/unattended-work/spec.md#requirement-unattended-starts-have-a-daily-ceiling)
-- **Loop stop** — A task whose rounds resolve nothing, or that ships too often, is stopped until you lift it.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
+  [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)
 

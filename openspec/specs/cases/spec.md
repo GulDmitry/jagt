@@ -6,24 +6,30 @@ a human reads and extends; what no case takes is a miss.
 
 ## Requirements
 
-### Requirement: The cases are a file you may copy
+### Requirement: The cases are files you may copy
 A step jagt relays SHALL reach a session only where a case of `session-cases.md` beside `jagt.yml` names it at the
-task's status. The copy comes from `session-cases.md.dist`; a case it lacks SHALL be read from the `.dist`. A case
-is a `## <id>` section holding `step:`, `at:`, `by:`, `replies:` and one line saying what it is, each key as the
-`.dist` describes it.
+task's status; a Master move (a verb it presses, the replies on its ship, a step it relays) only where a case of
+`master-cases.md` does. A case a copy lacks SHALL be read from its `.dist`. A case is a `## <id>` section holding
+one line saying what it is and the keys its `.dist` describes.
 
 #### Scenario: Nothing copied
-- **WHEN** no `session-cases.md` exists
-- **THEN** every step is sent where `session-cases.md.dist` says
+- **WHEN** no `session-cases.md` or `master-cases.md` exists
+- **THEN** every step is sent and every move made where the `.dist` says
 
 #### Scenario: A copy narrows a case
 - **WHEN** your copy's `wake` case says `at: IN_PROGRESS`
 - **THEN** a session stopped on a usage limit at REVIEW_PENDING is not woken
 
-### Requirement: Startup checks the cases against the brief both ways
-jagt SHALL refuse to start on a case naming a step no brief section holds, or a status, `by` or reply kind that is
-none. It SHALL refuse a case with no `replies:` line or no line saying what it is. It SHALL refuse an id written
-twice, and a brief step no case sends. Each refusal names the file and the case.
+#### Scenario: The keys of a case
+- **WHEN** a case is written
+- **THEN** a session case holds `step:`, `at:`, `by:` and `replies:`
+- **AND** a Master case holds `move:`, `at:` and `by: master`
+
+### Requirement: Startup checks the cases against the code both ways
+jagt SHALL refuse to start on a case naming a step no brief section holds, or a move the Master lacks.
+It SHALL refuse a status, `by` or reply kind that is none, and a Master `by` not `master`.
+It SHALL refuse a case with no `replies:` line or no line saying what it is, and an id written twice.
+It SHALL refuse a brief step or Master move no case names. Each refusal names the file and the case or move.
 
 #### Scenario: A case naming a missing step
 - **WHEN** a case says `step: woke` and the brief has no `## woke`
@@ -37,27 +43,13 @@ twice, and a brief step no case sends. Each refusal names the file and the case.
 - **WHEN** the `wake` case has no `replies:` line, or one naming the kind `maybe`
 - **THEN** jagt does not start and names `session-cases.md` and that case
 
-### Requirement: A step no case sends is a miss
-A step at a status no case names SHALL NOT reach the session. It SHALL be written as one line,
-`{at, task, step, status, by}`, to `misses.jsonl` beside `state.json`, rolled at 1 MB into `misses.jsonl.1`, and
-logged. It SHALL stop the task as a suspected loop does, its hover `no case sends <step> at <STATUS>, set off by
-<by>`, until a human's `lift`. The Master SHALL NOT decide a miss; a human extends the cases.
+#### Scenario: A revert
+- **WHEN** a case names `move: revert`
+- **THEN** jagt does not start: the Master never reverts
 
-#### Scenario: A step at a status no case names
-- **WHEN** a deploy check is relayed to ABC-42 at IN_PROGRESS and `deploy` is sent at DEPLOYED alone
-- **THEN** the session hears nothing, `misses.jsonl` holds the line for ABC-42, and the card asks `lift the stop`
-
-#### Scenario: A round into a closed task
-- **WHEN** a sweep reads open threads on ABC-42 at DONE
-- **THEN** nothing is relayed and the sweep says no case sends the round
-
-#### Scenario: The Master meets a stopped task
-- **WHEN** ABC-42 stopped on a miss and its session asks a question in `act`
-- **THEN** the Master leaves the question to you
-
-#### Scenario: A miss the Master set off
-- **WHEN** the Master returns a round to ABC-42 at CI_POLLING
-- **THEN** `misses.jsonl` reads `by: master` for it
+#### Scenario: A move no case names
+- **WHEN** no case names `answered-under`
+- **THEN** jagt does not start and names `master-cases.md` and `answered-under`
 
 ### Requirement: The turn is a fact on the task
 `flow/Turns.next` SHALL alone answer who holds a task's turn from its status, its report and the Master's mode and
@@ -77,12 +69,39 @@ nothing. What the Master pressed, left or failed to answer SHALL be kept on the 
 - **WHEN** the Master is reading ABC-42's question and its session reports in the meantime
 - **THEN** the Master's answer is dropped and nothing sets ABC-42 `IN_PROGRESS`
 
-### Requirement: A reply no case takes is a miss
-A session's report while its turn is open SHALL be applied only where a case naming the turn's step takes its
-status and its kind; a turn opened by joined steps takes what any of their cases takes. Any other SHALL be refused,
-not applied, and written to `misses.jsonl` as `{at, task, step, status, by: session, got, expected}`. It SHALL stop
-the task as a step no case sends does, and pass the turn to the human. A report with no turn open, or to a step no case
-names, SHALL be applied as before.
+### Requirement: What no case names is a miss
+A miss SHALL be refused. It is a step no case names at its status (`by: jagt`), a Master move no case allows
+(`by: master`) or a report no case takes (`by: session`). It SHALL be written as `{at, task, step, status, by}` to
+`misses.jsonl` beside `state.json` (rolled at 1 MB into `.1`) and logged. It SHALL stop the task as a suspected loop
+does until a human's `lift`, its hover `no case sends <step> at <STATUS>, set off by <by>`.
+The Master SHALL NOT decide a miss; a human extends the cases.
+
+#### Scenario: A step at a status no case names
+- **WHEN** a deploy check is relayed to ABC-42 at IN_PROGRESS and `deploy` is sent at DEPLOYED alone
+- **THEN** the session hears nothing, `misses.jsonl` holds the line for ABC-42, and the card asks `lift the stop`
+
+#### Scenario: A round into a closed task
+- **WHEN** a sweep reads open threads on ABC-42 at DONE
+- **THEN** nothing is relayed and the sweep says no case sends the round
+
+#### Scenario: The Master meets a stopped task
+- **WHEN** ABC-42 stopped on a miss and its session asks a question in `act`
+- **THEN** the Master leaves the question to you
+
+#### Scenario: A miss the Master set off
+- **WHEN** the Master returns a round to ABC-42 at CI_POLLING
+- **THEN** `misses.jsonl` reads `by: master` for it
+
+#### Scenario: A press no case allows
+- **WHEN** your copy's `deploy` case says `at: APPROVED` and ABC-42 reaches REVIEWED in `act`
+- **THEN** the Master deploys nothing, `misses.jsonl` names `deploy` at REVIEWED by `master`, and the card asks `lift the stop`
+- **AND** `master.mine` and `humanPaths` still keep a move the human's where a case allows it
+
+#### Scenario: A report is applied where a case takes it
+- **WHEN** a report arrives while a turn is open
+- **THEN** it is applied only where a case naming the turn's step takes its status and kind
+- **AND** a turn opened by joined steps takes what any of their cases takes
+- **AND** a report with no turn open, or to a step no case names, is applied as before
 
 #### Scenario: A reply the case takes
 - **WHEN** ABC-42's deploy check is open and its session reports IN_PROGRESS saying what broke
@@ -90,36 +109,5 @@ names, SHALL be applied as before.
 
 #### Scenario: A reply no case takes
 - **WHEN** ABC-42's deploy check is open and its session reports CI_POLLING
-- **THEN** the report is refused and not applied, `misses.jsonl` names `deploy`, what came and what it takes, and
-  the card asks `lift the stop`
-
-### Requirement: The Master's moves are a file you may copy
-A Master move is a verb it presses (`ship`, `deploy`, `approve-plan`, `add-repo`), the replies on its ship, or a step
-it relays. Each SHALL be named by a case of `master-cases.md`; a case it lacks SHALL be read from `master-cases.md.dist`.
-A case holds `move:`, `at:`, `by: master` and one line saying what it is.
-
-#### Scenario: Nothing copied
-- **WHEN** no `master-cases.md` exists
-- **THEN** the Master moves where `master-cases.md.dist` says
-
-### Requirement: A Master move no case allows is a miss
-A Master move at a status no case names SHALL NOT be made. It SHALL be written to `misses.jsonl` as
-`{at, task, step, status, by: master}` and stop the task as a step no case sends does. `master.mine` and `humanPaths`
-SHALL still keep a move the human's where a case allows it.
-
-#### Scenario: A press no case allows
-- **WHEN** your copy's `deploy` case says `at: APPROVED` and ABC-42 reaches REVIEWED in `act`
-- **THEN** the Master deploys nothing, `misses.jsonl` names `deploy` at REVIEWED by `master`, and the card asks `lift the stop`
-
-### Requirement: Startup checks the Master's cases against its moves both ways
-jagt SHALL refuse to start on a Master case naming a move the Master lacks, a status that is none, or a `by` not
-`master`. It SHALL refuse a Master move no case names. Each refusal names the file and the case or move, machine
-checks off or not.
-
-#### Scenario: A revert
-- **WHEN** a case names `move: revert`
-- **THEN** jagt does not start: the Master never reverts
-
-#### Scenario: A move no case names
-- **WHEN** no case names `answered-under`
-- **THEN** jagt does not start and names `master-cases.md` and `answered-under`
+- **THEN** the report is refused and not applied, the turn passes to the human, and the card asks `lift the stop`
+- **AND** `misses.jsonl` names `deploy` with `by: session`, `got` and `expected`

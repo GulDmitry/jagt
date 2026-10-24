@@ -167,10 +167,10 @@ nothing; a human press SHALL never be refused. It SHALL lift on the next local d
 - **THEN** it is gone and starts count from zero
 
 ### Requirement: jagt stops a task it suspects it is looping
-`LoopGuard` SHALL stop a task after `loopBreaker.stalledRounds` (3) relayed rounds running that each left as many
-threads open and the same job failing. It SHALL stop one before the Master ships past `loopBreaker.ships` (4) within
-`autoReview.windowHours` since the last `lift`. A ship counts only if the round it answers did not bring the open
-threads below the lowest of the rounds before it; the first round sets that low. Its status SHALL stay.
+`LoopGuard` SHALL stop a task, its status kept, on any trigger since the last `lift`:
+`loopBreaker.stalledRounds` (3) relayed rounds running that each left as many threads open and the same job failing;
+a Master ship past `loopBreaker.ships` (4) within `autoReview.windowHours`;
+a failed verification or probe, or a not-ready plan or round, sent back a fourth time within 24h.
 
 #### Scenario: Rounds that resolve nothing
 - **WHEN** ABC-42 gets a fourth relayed round with 10 threads open and `unit-tests` failing, as the three before
@@ -183,6 +183,11 @@ threads below the lowest of the rounds before it; the first round sets that low.
 #### Scenario: Ships going round
 - **WHEN** ABC-42 shipped four times today while its threads went 5, 6, 5, 6, and the Master would ship again
 - **THEN** it presses nothing and the hover says `ships without a new low in 24h: 4`
+- **AND** a ship counts only if its round left no fewer threads open than the lowest before it; the first round sets that low
+
+#### Scenario: Red rounds running
+- **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth
+- **THEN** nothing is sent, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`
 
 ### Requirement: A stopped task waits for your lift
 Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`LoopStopGuard`). The board
@@ -191,10 +196,3 @@ SHALL ring it `jagt stopped`, its hover the evidence. Only a human's `lift` SHAL
 #### Scenario: You press a verb on a stopped task
 - **WHEN** you press `ship` or `deploy` on a stopped task
 - **THEN** it runs, and the stop stands until you press `lift`
-
-### Requirement: A round sent back runs three times at most
-A failed verification or probe, and a not-ready plan or round, SHALL go back 3 rounds running in 24h since the `lift` at most.
-
-#### Scenario: Red rounds running
-- **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth
-- **THEN** nothing is sent, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`

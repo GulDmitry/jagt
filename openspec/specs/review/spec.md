@@ -90,8 +90,8 @@ pipeline), UNKNOWN (nobody read one). A round reading no listing SHALL write not
 - **WHEN** no checks dot shows while the host shows a failed run
 - **THEN** nobody read one yet; `none` means the host listed none
 
-### Requirement: A red round stops the task
-`FlowRules.readLands` SHALL stop the task and relay the failing job's lines as `<checks>`, a clue; read twice they MUST read the
+### Requirement: A red round goes back to the session
+`FlowRules.readLands` SHALL send the task back to its session and relay the failing job's lines as `<checks>`, a clue; read twice they MUST read the
 same, or every poll re-briefs.
 
 #### Scenario: Pipeline goes red
