@@ -43,7 +43,7 @@ class TaskStateTest {
     }
 
     @Test
-    void dropsTheOldestMovesOnceFiftyAreRecordedSoStateJsonStaysSmall() {
+    void dropsTheOldestMovesAfterTheOpeningOneOnceFiftyAreRecordedSoStateJsonStaysSmall() {
         List<StatusChange> fifty = IntStream.range(0, 50)
                 .mapToObj(i -> new StatusChange(TaskStatus.IN_PROGRESS, i, null)).toList();
         TaskState full = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).history(fifty).build();
@@ -51,7 +51,8 @@ class TaskStateTest {
         TaskState moved = full.withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000);
 
         assertThat(moved.history()).hasSize(50);
-        assertThat(moved.history().getFirst().at()).isEqualTo(1);
+        assertThat(moved.history().getFirst().at()).isZero();
+        assertThat(moved.history().get(1).at()).isEqualTo(2);
         assertThat(moved.history().getLast().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
     }
 
@@ -270,6 +271,18 @@ class TaskStateTest {
 
         assertThat(moved.history()).hasSize(50);
         assertThat(moved.history().getFirst().at()).isZero();
+    }
+
+    @Test
+    void keepsTheOpeningStepWhenTheOldestStepsAreTrimmed() {
+        List<StatusChange> fifty = new java.util.ArrayList<>(
+                List.of(new StatusChange(TaskStatus.NEW, 0, ActionOrigin.BOARD)));
+        IntStream.range(1, 50).forEach(i -> fifty.add(new StatusChange(TaskStatus.IN_PROGRESS, i, null)));
+        TaskState full = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).history(fifty).build();
+
+        TaskState moved = full.withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000);
+
+        assertThat(moved.history().getFirst()).isEqualTo(new StatusChange(TaskStatus.NEW, 0, ActionOrigin.BOARD));
     }
 
     @Test

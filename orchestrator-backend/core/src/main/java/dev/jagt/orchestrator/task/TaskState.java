@@ -71,8 +71,8 @@ public record TaskState(
         @Nullable Turn turn
 ) {
 
-    /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
-    private static final int MAX_HISTORY = 50;
+    /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
+    public static final int MAX_HISTORY = 50;
 
     public TaskState {
         repos = repos == null ? List.of() : List.copyOf(repos);
@@ -329,9 +329,10 @@ public record TaskState(
     private static List<StatusChange> appended(List<StatusChange> history, StatusChange change) {
         List<StatusChange> grown = new ArrayList<>(history);
         grown.add(change);
-        return grown.size() <= MAX_HISTORY
-                ? List.copyOf(grown)
-                : List.copyOf(grown.subList(grown.size() - MAX_HISTORY, grown.size()));
+        if (grown.size() > MAX_HISTORY) {
+            grown.subList(1, grown.size() - MAX_HISTORY + 1).clear();
+        }
+        return List.copyOf(grown);
     }
 
     /** Whether the oldest steps have been dropped, which makes any total over the log a FLOOR, not the figure. */
