@@ -137,7 +137,7 @@
   [spec](../openspec/specs/session-brief/spec.md#requirement-the-brief-is-a-file-you-may-copy)
 - **Autoplan** — A session plans first, unasked, when its task is large or unclear. Key: `orchestrator.agent.autoplan.enabled`, off by default.
   [spec](../openspec/specs/session-brief/spec.md#requirement-autoplan)
-- **Visualize** — A session sketches a task worth a picture before its first edit. Key: `orchestrator.agent.visualize.enabled`, off by default.
+- **Visualize** — A session sketches a task worth a picture before its first edit. Key: `orchestrator.agent.visualize.enabled`, on in the dist.
   [spec](../openspec/specs/session-brief/spec.md#requirement-visualize)
 - **Diagnose** — A session diagnoses a bug from facts and a control before code. Key: `orchestrator.agent.diagnose.enabled`, off by default.
   [spec](../openspec/specs/session-brief/spec.md#requirement-diagnose)
