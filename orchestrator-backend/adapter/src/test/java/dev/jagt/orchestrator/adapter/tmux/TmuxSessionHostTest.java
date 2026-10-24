@@ -237,6 +237,25 @@ class TmuxSessionHostTest {
     }
 
     @Test
+    void submitsWhatTheInputHoldsByPressingEnterInTheTasksWindow() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        boolean submitted = host.submitTaskWindow("jagt", "ABC-1");
+
+        assertThat(submitted).isTrue();
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).anySatisfy(command ->
+                assertThat(command).containsSequence("send-keys", "-t", "@2", "Enter"));
+    }
+
+    @Test
     void returnsTheScreenOfTheTasksWindow() {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->

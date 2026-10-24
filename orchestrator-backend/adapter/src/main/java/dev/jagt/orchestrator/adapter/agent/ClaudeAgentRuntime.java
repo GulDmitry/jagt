@@ -111,7 +111,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     /** The input line is the last one opening with the prompt mark; a dimmed remainder is a suggestion, not a draft. */
     @Override
-    public boolean holdsDraft(String screen) {
+    public Optional<String> draft(String screen) {
         String draft = "";
         for (String line : screen.split("\n")) {
             if (ANSI.matcher(line).replaceAll("").startsWith(PROMPT_MARK)) {
@@ -119,7 +119,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 draft = ANSI.matcher(DIMMED.matcher(typed).replaceAll("")).replaceAll("");
             }
         }
-        return !draft.replace('\u00a0', ' ').isBlank();
+        String typed = draft.replace('\u00a0', ' ').strip();
+        return typed.isEmpty() ? Optional.empty() : Optional.of(typed);
     }
 
     @Override

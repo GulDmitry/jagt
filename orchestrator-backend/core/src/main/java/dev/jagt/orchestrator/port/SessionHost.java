@@ -67,6 +67,9 @@ public interface SessionHost {
     /** Types a line into the session as if a human had, without touching focus; false when it is gone. */
     boolean nudgeTaskWindow(String session, String taskId, String message);
 
+    /** Presses Enter in the task's window, sending what its input holds; false when it is gone. */
+    boolean submitTaskWindow(String session, String taskId);
+
     /** Closes every window a task owns, and answers how many there were. */
     int killTaskWindows(String session, String taskId);
 

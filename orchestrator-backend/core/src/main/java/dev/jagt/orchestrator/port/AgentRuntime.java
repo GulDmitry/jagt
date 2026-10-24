@@ -81,9 +81,14 @@ public interface AgentRuntime {
         return false;
     }
 
-    /** Whether {@code screen}, a session's window as shown, holds input the human has typed and not yet sent. */
+    /** Whether {@code screen}, a session's window as shown, holds input typed and not yet sent. */
     default boolean holdsDraft(String screen) {
-        return false;
+        return draft(screen).isPresent();
+    }
+
+    /** The unsent input {@code screen} shows on its input line, as far as that line goes; empty where none. */
+    default Optional<String> draft(String screen) {
+        return Optional.empty();
     }
 
     /** Where this agent's system knowledge goes; a name the checkout already uses is the project's own, never taken. */

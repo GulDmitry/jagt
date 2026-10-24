@@ -30,11 +30,12 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
-    /** The one line jagt types into a session; whatever else arrives there is the human's. */
     private static final Duration DRAFT_POLL = Duration.ofSeconds(1);
+    private static final Duration SUBMIT_WAIT = Duration.ofMillis(700);
+    private static final int RESUBMITS = 3;
 
-    public static final String NUDGE = "The Master updated task_context.md — re-read it now and follow the new"
-            + " instructions.";
+    /** The one line jagt types into a session; whatever else arrives there is the human's. */
+    public static final String NUDGE = "task_context.md changed — re-read it now and follow the new instructions.";
 
     private static final Pattern ESCAPES = Pattern.compile(
             "\u001B\\[[0-?]*[ -/]*[@-~]|\u001B[\\]P][^\u0007\u001B]*(\u0007|\u001B\\\\)|\u001B[()][0-9A-B]|\u001B[78=>]");
@@ -168,6 +169,9 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
             throw new IllegalStateException("No " + agentRuntime.displayName() + " session is running for "
                     + id + " — restart the agent, then say it again.");
         }
+        undelivered(session, id, line).ifPresent(cause -> {
+            throw new IllegalStateException("The line was typed into " + id + "'s window, but " + cause + ".");
+        });
         log.atInfo().setMessage("line said to agent").addKeyValue("task", id)
                 .addKeyValue("alias", task.alias()).addKeyValue("said", OneLine.clipped(line)).log();
         return "Said to the agent.";
@@ -221,7 +225,9 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                         + " nudge waits until they send it.";
             }
             if (sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
-                return "Instructions written to task_context.md and the agent was nudged to re-read them.";
+                return undelivered(session, taskId, NUDGE)
+                        .map(cause -> "Instructions written to task_context.md, but the nudge failed: " + cause + ".")
+                        .orElse("Instructions written to task_context.md and the agent was nudged to re-read them.");
             }
         }
         log.atInfo().setMessage("agent session re-entered").addKeyValue("task", taskId)
@@ -265,8 +271,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 stateService.task(taskId).ifPresent(task -> {
                     if (agentRuntime.pastContinuing(Path.of(task.worktreePath()))) {
                         startFresh(taskId, task, configService.load(), "conversation idle past its cache lifetime");
-                    } else if (running(session, taskId)) {
-                        sessions.nudgeTaskWindow(session, taskId, NUDGE);
+                    } else if (running(session, taskId) && sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
+                        undelivered(session, taskId, NUDGE);
                     }
                 });
             } catch (InterruptedException stopped) {
@@ -275,6 +281,40 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 draftWaits.remove(taskId);
             }
         });
+    }
+
+    /** An Enter lost to a turn ending as it landed leaves the line in the input, so it is pressed again. */
+    private Optional<String> undelivered(String session, String taskId, String line) {
+        try {
+            for (int pressed = 0; pressed <= RESUBMITS; pressed++) {
+                Thread.sleep(SUBMIT_WAIT);
+                if (!stillTyped(session, taskId, line)) {
+                    return Optional.empty();
+                }
+                if (pressed < RESUBMITS && !sessions.submitTaskWindow(session, taskId)) {
+                    return Optional.of("its window closed before the line left its input");
+                }
+            }
+        } catch (InterruptedException stopped) {
+            Thread.currentThread().interrupt();
+            return Optional.of("jagt stopped before the line was seen to leave the input");
+        }
+        String cause = "the line still sat unsent in the agent's input after Enter was pressed " + (RESUBMITS + 1)
+                + " times";
+        log.atWarn().setMessage("nudge unsent").addKeyValue("task", taskId).addKeyValue("cause", cause).log();
+        return Optional.of(cause);
+    }
+
+    /** A screen that cannot be read shows no line of ours, so nothing is pressed blind. */
+    private boolean stillTyped(String session, String taskId, String line) {
+        try {
+            return sessions.screenOf(session, taskId).flatMap(agentRuntime::draft)
+                    .filter(line.strip()::startsWith).isPresent();
+        } catch (RuntimeException unread) {
+            log.atDebug().setMessage("session screen unread").addKeyValue("task", taskId)
+                    .addKeyValue("cause", unread.toString()).log();
+            return false;
+        }
     }
 
     private void startFresh(String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {

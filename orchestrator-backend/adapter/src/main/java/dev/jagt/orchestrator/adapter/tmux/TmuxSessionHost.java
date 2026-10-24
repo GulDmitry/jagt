@@ -197,10 +197,23 @@ public class TmuxSessionHost implements SessionHost {
             }
             processRunner.run(null, TIMEOUT, List.of(tmux(), "send-keys", "-t", windowId.get(), "-l", message))
                     .expectSuccess("tmux send-keys (nudge) " + taskId);
-            processRunner.run(null, TIMEOUT, List.of(tmux(), "send-keys", "-t", windowId.get(), "Enter"))
-                    .expectSuccess("tmux send-keys Enter " + taskId);
+            enter(windowId.get(), taskId);
             return true;
         }
+    }
+
+    @Override
+    public boolean submitTaskWindow(String session, String taskId) {
+        synchronized (lock) {
+            var windowId = findWindowId(session, taskId);
+            windowId.ifPresent(id -> enter(id, taskId));
+            return windowId.isPresent();
+        }
+    }
+
+    private void enter(String windowId, String taskId) {
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "send-keys", "-t", windowId, "Enter"))
+                .expectSuccess("tmux send-keys Enter " + taskId);
     }
 
     /** Killing a window also kills its processes, so this ends the agent with it. */

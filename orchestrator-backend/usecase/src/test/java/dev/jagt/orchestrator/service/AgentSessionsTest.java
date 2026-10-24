@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -149,6 +150,44 @@ class AgentSessionsTest {
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         assertThat(sessions.writeTaskContext("ABC-1", "new instructions")).contains("nudged");
+    }
+
+    @Test
+    void pressesEnterAgainOnANudgeLeftUnsentAsTheSessionsTurnEnded() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        String left = "────\n❯ task_context.md changed — re-read it now and follow the\n  new instructions.\n────";
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("❯ "), Optional.of(left), Optional.of("❯ "));
+        when(agentRuntime.draft(left)).thenReturn(Optional.of("task_context.md changed — re-read it now and follow the"));
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1",
+                "task_context.md changed — re-read it now and follow the new instructions.")).thenReturn(true);
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.writeTaskContext("ABC-1", "probes failed");
+
+        assertThat(answer).contains("nudged");
+        verify(tmux).submitTaskWindow("jagt", "ABC-1");
+    }
+
+    @Test
+    void namesTheNudgeFailedWhenItNeverLeavesTheInput() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        String left = "❯ task_context.md changed — re-read it now and follow the new instructions.";
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("❯ "), Optional.of(left));
+        when(agentRuntime.draft(left)).thenReturn(
+                Optional.of("task_context.md changed — re-read it now and follow the new instructions."));
+        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.writeTaskContext("ABC-1", "probes failed");
+
+        assertThat(answer).contains("the nudge failed", "unsent");
+        verify(tmux, times(3)).submitTaskWindow("jagt", "ABC-1");
     }
 
     @Test

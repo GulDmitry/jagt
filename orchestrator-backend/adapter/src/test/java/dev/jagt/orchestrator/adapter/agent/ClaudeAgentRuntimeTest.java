@@ -517,6 +517,20 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void readsTheFirstRowOfAWrappedInputAsTheDraft() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""),
+                new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        var draft = runtime.draft("────\n❯ task_context.md changed — re-read it now and follow the \n"
+                + "  new instructions.\n────\n  ? for shortcuts");
+
+        assertThat(draft).contains("task_context.md changed — re-read it now and follow the");
+    }
+
+    @Test
     void pinsTheModelAskedForAsOneShellArgument(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
         var runtime = new ClaudeAgentRuntime(
