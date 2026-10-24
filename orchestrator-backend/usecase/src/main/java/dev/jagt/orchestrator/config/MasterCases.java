@@ -16,6 +16,7 @@ public class MasterCases {
         return HumanCopy.read(paths.root(), FILE).stream()
                 .map(file -> CaseBook.parseMoves(file.file(), file.text()))
                 .reduce(CaseBook::over)
-                .orElseGet(() -> CaseBook.empty(CaseBook.Shape.MOVES));
+                .orElseGet(() -> CaseBook.empty(CaseBook.Shape.MOVES))
+                .failing(HumanCopy.unreadable(paths.root(), FILE));
     }
 }

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /** A step no case sends never reaches a session, and a case naming no step sends nothing. */
 @Component
@@ -19,7 +20,8 @@ public class CaseCheck implements StartupCheck {
 
     @Override
     public List<Problem> problems() {
-        return cases.book().problems(brief.steps(), SessionCases.FILE);
+        return Stream.concat(cases.book().problems(brief.steps(), SessionCases.FILE).stream(), brief.unreadable().stream())
+                .toList();
     }
 
     @Override

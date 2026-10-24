@@ -56,4 +56,28 @@ class CaseCheckTest {
 
         assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems()).isEmpty();
     }
+
+    @Test
+    void refusesToStartWhenTheHumansCasesCannotBeRead(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectory(root.resolve("session-cases.md"));
+
+        assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+                .extracting(Problem::text).containsExactly(
+                        "session-cases.md: cannot be read — java.io.IOException: Is a directory");
+    }
+
+    @Test
+    void refusesToStartWhenTheHumansBriefCannotBeRead(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectory(root.resolve("session-brief.md"));
+
+        assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+                .extracting(Problem::text).containsExactly(
+                        "session-brief.md: cannot be read — java.io.IOException: Is a directory");
+    }
 }

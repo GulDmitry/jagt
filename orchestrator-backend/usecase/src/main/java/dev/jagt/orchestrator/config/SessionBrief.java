@@ -1,8 +1,10 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.port.Problem;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -28,6 +30,10 @@ public class SessionBrief {
     /** For a command line or a window that takes one line; empty where the brief has no such step. */
     public String line(String step) {
         return section(step).map(text -> text.replaceAll("\\s*\\n\\s*", " ")).orElse("");
+    }
+
+    public List<Problem> unreadable() {
+        return HumanCopy.unreadable(paths.root(), COPY);
     }
 
     /** Every step either file holds a section for. */

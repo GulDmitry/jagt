@@ -77,4 +77,17 @@ class MasterCaseCheckTest {
 
         assertThat(new MasterCaseCheck(new MasterCases(paths), config, paths).problems()).isEmpty();
     }
+
+    @Test
+    void refusesToStartWhenTheHumansMasterCasesCannotBeRead(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectory(root.resolve("master-cases.md"));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
+
+        assertThat(new MasterCaseCheck(new MasterCases(paths), config, paths).problems())
+                .extracting(Problem::text).containsExactly(
+                        "master-cases.md: cannot be read — java.io.IOException: Is a directory");
+    }
 }

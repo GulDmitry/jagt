@@ -16,7 +16,8 @@ presses nothing, so it adds a reader without taking a step from the human.
 - An unset `master.mode` is `judge` where the runtime reads the human's words
   (`AgentRuntime.readsWhatTheHumanTyped`), else `off`: without them every round would stop as a question.
 - With no brief named or copied, it judges by the shipped `master-brief.md.dist` (`MasterBriefs.file`), so getting
-  started stays one copied file.
+  started stays one copied file. It does not read through `HumanCopy`: a brief named and missing refuses the
+  start, where `HumanCopy` would fall back to the shipped file.
 - `act` stays opt-in.
 
 ## Rejected

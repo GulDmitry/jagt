@@ -29,7 +29,8 @@ one line saying what it is and the keys its `.dist` describes.
 jagt SHALL refuse to start on a case naming a step no brief section holds, or a move the Master lacks.
 It SHALL refuse a status, `by` or reply kind that is none, and a Master `by` not `master`.
 It SHALL refuse a case with no `replies:` line or no line saying what it is, and an id written twice.
-It SHALL refuse a brief step or Master move no case names. Each refusal names the file and the case or move.
+It SHALL refuse a brief step or Master move no case names.
+It SHALL refuse a case or brief file it cannot read. Each refusal names the file and the case or move.
 
 #### Scenario: A case naming a missing step
 - **WHEN** a case says `step: woke` and the brief has no `## woke`
@@ -42,6 +43,10 @@ It SHALL refuse a brief step or Master move no case names. Each refusal names th
 #### Scenario: A case naming no replies
 - **WHEN** the `wake` case has no `replies:` line, or one naming the kind `maybe`
 - **THEN** jagt does not start and names `session-cases.md` and that case
+
+#### Scenario: A file that cannot be read
+- **WHEN** your copy of `session-cases.md` exists and cannot be read
+- **THEN** jagt does not start and names the file and the cause, and the `.dist` does not stand in for it
 
 #### Scenario: A revert
 - **WHEN** a case names `move: revert`

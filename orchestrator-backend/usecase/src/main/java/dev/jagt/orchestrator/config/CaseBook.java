@@ -148,6 +148,10 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
                 Stream.concat(faults.stream(), shipped.faults.stream()).toList());
     }
 
+    public CaseBook failing(List<Problem> more) {
+        return new CaseBook(shape, cases, Stream.concat(faults.stream(), more.stream()).toList());
+    }
+
     public boolean sends(String step, TaskStatus status) {
         return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status));
     }
