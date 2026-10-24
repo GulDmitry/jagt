@@ -1,11 +1,16 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.stand.invariant.RunRecord;
+import dev.jagt.orchestrator.stand.invariant.Violation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import tools.jackson.databind.JsonNode;
 
 public final class StandRun implements AutoCloseable {
 
@@ -13,37 +18,44 @@ public final class StandRun implements AutoCloseable {
     private static final Duration POLL = Duration.ofSeconds(5);
     private static final Duration PIPELINE = Duration.ofSeconds(20);
     private static final Duration STALL = Duration.ofMinutes(15);
+    private static final Duration HELD = Duration.ofMinutes(10);
 
     private final Path root;
+    private final StandMode mode;
     private final StandProject project;
     private final StandHost host;
-    private final JagtProcess jagt;
+    private JagtProcess jagt;
     private StandMarker marker;
 
-    private StandRun(Path root, StandMarker marker, StandProject project, StandHost host, JagtProcess jagt) {
+    private StandRun(Path root, StandMarker marker, StandMode mode, StandProject project, StandHost host, JagtProcess jagt) {
         this.root = root;
         this.marker = marker;
+        this.mode = mode;
         this.project = project;
         this.host = host;
         this.jagt = jagt;
     }
 
-    public static StandRun start(String scenario) throws IOException {
+    public static StandRun start(String scenario, StandMode mode) throws IOException {
         Path root = newRoot();
-        StandMarker marker = StandMarker.started(scenario).writeTo(root);
+        StandMarker marker = StandMarker.started(scenario + "/" + mode.id()).writeTo(root);
         Files.createDirectories(root.resolve("tmux"));
         StandProject project = StandProject.create(root);
         StandHost host = new StandHost(root.resolve("host")).start();
         try {
-            StandConfig.write(root, project.repo(), host.mcpUrl(), root.getFileName().toString());
+            StandConfig.write(root, project.repo(), host.mcpUrl(), root.getFileName().toString(), mode);
             JagtProcess jagt = JagtProcess.start(root);
-            return new StandRun(root, marker.withJagt(jagt.pid(), jagt.port()).writeTo(root), project, host, jagt);
+            return new StandRun(root, marker.withJagt(jagt.pid(), jagt.port()).writeTo(root), mode, project, host, jagt);
         } catch (RuntimeException e) {
             host.close();
             StandShell.killTmux(root);
             marker.withOutcome(StandMarker.FAILED).writeTo(root);
             throw new StandFailure("stand run " + scenario + " did not start; kept " + root, e);
         }
+    }
+
+    public Path root() {
+        return root;
     }
 
     public StandStore store() {
@@ -54,27 +66,50 @@ public final class StandRun implements AutoCloseable {
         return project;
     }
 
-    public StandOutcome drive(String ref, String until, Duration timeout, Duration settle) {
-        Timeline timeline = new Timeline(root.resolve("timeline.log"));
-        Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
-        Instant start = Instant.now();
-        timeline.note("open " + ref + " answered " + jagt.board().open(ref, "proj").toString().replaceAll("\\s+", " "));
-        Instant deadline = start.plus(timeout);
-        while (!timeline.lastStatus().equals(until) && Instant.now().isBefore(deadline) && !timeline.stalledFor(STALL)) {
-            tick(timeline);
-            pipelines.passDue(timeline);
-        }
-        Instant settled = Instant.now().plus(settle);
-        while (timeline.lastStatus().equals(until) && Instant.now().isBefore(settled)) {
-            tick(timeline);
-        }
-        return new StandOutcome(timeline.lastStatus(), Duration.between(start, Instant.now()), timeline.tail(20), root);
+    public RunRecord record() {
+        return RunRecord.read(root);
     }
 
-    private void tick(Timeline timeline) {
+    public List<Violation> violations() {
+        return new StandBooks(root).violations();
+    }
+
+    public StandOutcome drive(Script script) {
+        Timeline timeline = new Timeline(root.resolve("timeline.log"), new ContextRelays(new StandBooks(root).brief()));
+        Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
+        HumanStub human = new HumanStub(mode);
+        StandWorld world = new World(timeline, script.ref());
+        List<WorldEvent> pending = new ArrayList<>(script.events());
+        Instant start = Instant.now();
+        timeline.note("open " + script.ref() + " answered "
+                + jagt.board().open(script.ref(), "proj", script.launchMode()).toString().replaceAll("\\s+", " "));
+        Instant deadline = start.plus(script.timeout());
+        while (going(script, timeline, deadline)) {
+            JsonNode board = tick(timeline);
+            pipelines.passDue(timeline);
+            pending.removeIf(event -> event.fire(world));
+            human.take(board, jagt.board(), timeline);
+        }
+        Instant settled = Instant.now().plus(script.settle());
+        while (timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(settled)) {
+            tick(timeline);
+        }
+        return new StandOutcome(timeline.lastStatus(), timeline.lastOwner(), Duration.between(start, Instant.now()),
+                timeline.tail(20), root);
+    }
+
+    private static boolean going(Script script, Timeline timeline, Instant deadline) {
+        boolean held = timeline.lastOwner().equals("YOU") && timeline.stalledFor(HELD);
+        return !timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(deadline)
+                && !timeline.stalledFor(STALL) && !held;
+    }
+
+    private JsonNode tick(Timeline timeline) {
         JagtProcess.pause(POLL);
-        timeline.record(jagt.board().state(), jagt.board().tasks());
+        JsonNode board = jagt.board().tasks();
+        timeline.record(jagt.board().state(), board);
         timeline.windows(StandShell.windows(root));
+        return board;
     }
 
     public void passed() {
@@ -88,6 +123,7 @@ public final class StandRun implements AutoCloseable {
         Files.writeString(root.resolve("screens.log"), StandShell.screens(root));
         StandShell.killTmux(root);
         printUsage();
+        StandReport.append(marker.scenario(), marker.outcome().equals(StandMarker.PASSED));
         if (marker.outcome().equals(StandMarker.PASSED)) {
             StandShell.deleteRoot(root);
             return;
@@ -114,5 +150,53 @@ public final class StandRun implements AutoCloseable {
             root = base.resolve(prefix + RUNS.incrementAndGet());
         }
         return Files.createDirectories(root).toRealPath();
+    }
+
+    private final class World implements StandWorld {
+
+        private final Timeline timeline;
+        private final String task;
+
+        private World(Timeline timeline, String task) {
+            this.timeline = timeline;
+            this.task = task;
+        }
+
+        @Override
+        public StandStore store() {
+            return host.store();
+        }
+
+        @Override
+        public StandProject project() {
+            return project;
+        }
+
+        @Override
+        public Path scratch(String name) {
+            return root.resolve(name);
+        }
+
+        @Override
+        public void note(String event) {
+            timeline.note(event);
+        }
+
+        @Override
+        public int relaysSeen() {
+            return timeline.relaysSeen();
+        }
+
+        @Override
+        public void say(String line) {
+            jagt.board().say(task, line);
+        }
+
+        @Override
+        public void restart() {
+            jagt.close();
+            jagt = JagtProcess.start(root);
+            marker = marker.withJagt(jagt.pid(), jagt.port()).writeTo(root);
+        }
     }
 }

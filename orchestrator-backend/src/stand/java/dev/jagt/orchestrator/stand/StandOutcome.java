@@ -4,10 +4,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 
-public record StandOutcome(String status, Duration took, List<String> tail, Path root) {
+public record StandOutcome(String status, String owner, Duration took, List<String> tail, Path root) {
+
+    public boolean withTheHuman() {
+        return owner.equals("YOU");
+    }
 
     public String describe() {
-        return "last status " + status + " after " + took.toSeconds() + "s, root " + root + ", timeline tail:\n"
-                + String.join("\n", tail);
+        return "last status " + status + " owned by " + owner + " after " + took.toSeconds() + "s, root " + root
+                + ", timeline tail:\n" + String.join("\n", tail);
     }
 }

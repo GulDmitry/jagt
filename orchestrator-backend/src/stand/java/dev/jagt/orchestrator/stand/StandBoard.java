@@ -31,13 +31,25 @@ public final class StandBoard {
         }
     }
 
-    public JsonNode open(String ref, String project) {
-        String body = mapper.createObjectNode().put("ref", ref).put("project", project).toString();
-        HttpResponse<String> response = send(HttpRequest.newBuilder(URI.create(base + "/api/tasks"))
-                .header("Content-Type", "application/json").header("Origin", base).timeout(OPENING)
+    public JsonNode open(String ref, String project, String mode) {
+        String body = mapper.createObjectNode().put("ref", ref).put("project", project).put("mode", mode).toString();
+        return post("/api/tasks", body, OPENING);
+    }
+
+    public JsonNode press(String task, String verb) {
+        return post("/api/tasks/actions/" + verb + "?task=" + task, "{}", READING);
+    }
+
+    public JsonNode say(String task, String line) {
+        return post("/api/tasks/say?task=" + task, mapper.createObjectNode().put("line", line).toString(), READING);
+    }
+
+    private JsonNode post(String path, String body, Duration timeout) {
+        HttpResponse<String> response = send(HttpRequest.newBuilder(URI.create(base + path))
+                .header("Content-Type", "application/json").header("Origin", base).timeout(timeout)
                 .POST(HttpRequest.BodyPublishers.ofString(body)));
         if (response.statusCode() != 200) {
-            throw new StandFailure("opening " + ref + " answered " + response.statusCode() + ": " + response.body());
+            throw new StandFailure(path + " answered " + response.statusCode() + ": " + response.body());
         }
         return mapper.readTree(response.body());
     }

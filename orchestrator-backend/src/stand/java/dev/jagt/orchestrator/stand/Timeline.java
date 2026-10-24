@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import dev.jagt.orchestrator.stand.invariant.TimelineFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,14 +17,18 @@ import tools.jackson.databind.JsonNode;
 public final class Timeline {
 
     private final Path file;
+    private final ContextRelays relays;
     private final List<String> lines = new ArrayList<>();
     private final Map<String, String> lastSeen = new HashMap<>();
     private String lastStatus = "none";
+    private String lastOwner = "none";
+    private int relaysSeen;
     private String windows = "";
     private Instant lastChange = Instant.now();
 
-    public Timeline(Path file) {
+    public Timeline(Path file, ContextRelays relays) {
         this.file = file;
+        this.relays = relays;
     }
 
     public void record(JsonNode state, JsonNode board) {
@@ -51,17 +56,36 @@ public final class Timeline {
         return lastStatus;
     }
 
+    public String lastOwner() {
+        return lastOwner;
+    }
+
+    public int relaysSeen() {
+        return relaysSeen;
+    }
+
     public List<String> tail(int count) {
         return List.copyOf(lines.subList(Math.max(0, lines.size() - count), lines.size()));
     }
 
     private void record(String id, JsonNode task, Map<String, String> owners) {
         lastStatus = task.path("status").asString();
-        String entry = id + " " + lastStatus + " owner=" + owners.getOrDefault(id, "?") + " "
+        lastOwner = owners.getOrDefault(id, "?");
+        relays.changed(id, task).ifPresent(steps -> relayed(id, steps));
+        String entry = id + " " + lastStatus + " owner=" + lastOwner + " "
                 + task.path("message").asString("").replaceAll("\\s+", " ").strip();
         if (!entry.equals(lastSeen.put(id, entry))) {
             append(Instant.now().truncatedTo(ChronoUnit.SECONDS) + " " + entry);
         }
+    }
+
+    private void relayed(String id, List<String> steps) {
+        if (steps.isEmpty()) {
+            note("context of " + id + " changed, no brief step recognised");
+            return;
+        }
+        relaysSeen++;
+        note(TimelineFile.relayLine(id, steps));
     }
 
     private void append(String line) {

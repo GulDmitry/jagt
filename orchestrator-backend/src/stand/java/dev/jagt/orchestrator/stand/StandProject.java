@@ -39,6 +39,7 @@ public final class StandProject {
             Files.createDirectories(origin);
             Files.createDirectories(repo);
             StandShell.git(origin, "init", "--bare", "--initial-branch=main", ".");
+            StandShell.git(origin, "config", "core.logAllRefUpdates", "always");
             StandShell.git(repo, "init", "--initial-branch=main", ".");
             StandShell.git(repo, "config", "user.email", "stand@example.com");
             StandShell.git(repo, "config", "user.name", "jagt stand");
@@ -66,6 +67,32 @@ public final class StandProject {
 
     public String deployBranchFile(String file) {
         return StandShell.git(origin, "show", "refs/heads/dev:" + file);
+    }
+
+    public boolean deployBranchEverHeld(String text) {
+        return !StandShell.git(origin, "log", "-S" + text, "--format=%H", "refs/heads/dev").isBlank();
+    }
+
+    public String head(String branch) {
+        return StandShell.gitSucceeds(origin, "rev-parse", "--verify", "refs/heads/" + branch)
+                ? StandShell.git(origin, "rev-parse", "refs/heads/" + branch).strip() : "";
+    }
+
+    public String commitOnDeployBranch(Path scratch, String file, String content, String message) {
+        if (!Files.isDirectory(scratch)) {
+            StandShell.git(origin.getParent(), "clone", "--branch", "dev", "file://" + origin, scratch.toString());
+            StandShell.git(scratch, "config", "user.email", "outsider@example.com");
+            StandShell.git(scratch, "config", "user.name", "someone else");
+        }
+        StandShell.git(scratch, "pull", "--ff-only", "origin", "dev");
+        try {
+            Files.writeString(scratch.resolve(file), content);
+        } catch (IOException e) {
+            throw new StandFailure("cannot write " + file + " under " + scratch, e);
+        }
+        StandShell.git(scratch, "commit", "-am", message);
+        StandShell.git(scratch, "push", "origin", "HEAD:refs/heads/dev");
+        return StandShell.git(scratch, "rev-parse", "HEAD").strip();
     }
 
     private static void script(Path file, String content) throws IOException {
