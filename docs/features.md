@@ -130,6 +130,8 @@
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
 - **Open in your editor** — Open a task's worktree or diff in the editor you configure.
   [spec](../openspec/specs/runtime/spec.md#requirement-the-editor-is-a-launcher)
+- **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Key: `orchestrator.claude.mcpConfig`.
+  [spec](../openspec/specs/runtime/spec.md#requirement-a-sessions-servers-can-be-pinned)
 
 ## Session brief · [spec](../openspec/specs/session-brief/spec.md)
 

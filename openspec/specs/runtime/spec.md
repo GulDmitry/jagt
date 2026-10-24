@@ -43,12 +43,8 @@ So SHALL a relay past the cache lifetime (`AgentRuntime.pastContinuing`), read o
 - **WHEN** a relay comes after the cache lifetime
 - **THEN** the session starts fresh from the current `task_notes.md`, on the model its `next-model:` line names
 
-#### Scenario: A review round comes early
-- **WHEN** a review round comes within the cache lifetime, or a headless run wrote after the session
-- **THEN** the session starts fresh
-
-#### Scenario: The human respawns
-- **WHEN** the human runs `respawn`
+#### Scenario: A review round comes early, or the human respawns
+- **WHEN** a review round comes within the cache lifetime, a headless run wrote after the session, or `respawn` runs
 - **THEN** the session starts fresh
 
 ### Requirement: A fresh start reads the notes
@@ -84,10 +80,9 @@ through its per-session socket, each tab attached to tmux.
 - **THEN** the kitty instance is killed by its socket path
 
 ### Requirement: Every call a session needs is pre-approved
-Claude Code's auto-mode classifier blocks calls not pre-approved: the backend SHALL make none; the
-committed root `.claude/settings.json` covers sessions there. Every sub-agent worktree's generated
-`.claude/settings.local.json` MUST carry `enableAllProjectMcpServers: true` plus
-`permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` and every tool in `agentAllowedTools`.
+Claude Code's auto-mode classifier blocks calls not pre-approved: the backend SHALL make none; the committed root
+`.claude/settings.json` covers sessions there. Every sub-agent worktree's generated `.claude/settings.local.json` MUST
+carry `enableAllProjectMcpServers: true`, `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` and `agentAllowedTools`.
 
 #### Scenario: A worktree setting is missing
 - **WHEN** a worktree lacks either
@@ -106,9 +101,8 @@ settings SHALL carry `autoMemoryEnabled: false`.
 - **THEN** the command still sets it
 
 ### Requirement: The worktree is trusted
-`wireAgent` SHALL trust the worktree, writing
-`projects["<worktree>"].hasTrustDialogAccepted` in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where set),
-replacing that one flag.
+`wireAgent` SHALL trust the worktree, replacing only `projects["<worktree>"].hasTrustDialogAccepted` in
+`~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where set).
 
 #### Scenario: The config file is unparsable or the task is removed
 - **WHEN** `~/.claude.json` cannot be parsed, or the task is removed
@@ -197,3 +191,10 @@ A file the worktree already holds SHALL stay as it is.
 #### Scenario: No diff command
 - **WHEN** `editorDiffCommand` is unset and the human presses diff
 - **THEN** it is refused, naming the key and an example; jagt still starts
+
+### Requirement: A session's servers can be pinned
+With `orchestrator.claude.mcpConfig` set, a session SHALL start and revive with jagt's and that file's servers alone.
+
+#### Scenario: A pinned stand
+- **WHEN** `mcpConfig` names a local host's server file
+- **THEN** the session reaches jagt and that host, and none of the human's servers

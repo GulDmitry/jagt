@@ -73,6 +73,7 @@ orchestrator:
 
   claude:
     command: claude       # also used by the headless reads, which stay Claude whichever agent runs the tasks
+    # mcpConfig: /path/to/servers.json   # a session loads jagt's server and these alone, none of yours
   # codex:
   #   command: codex
 

@@ -70,7 +70,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public String launchCommand(Path worktree, boolean planMode, String model, @Nullable String prompt) {
-        return COMPACT_ENV + claude.command()
+        return COMPACT_ENV + claude.command() + pinnedServers(worktree)
                 + (model == null || model.isBlank() ? "" : " --model " + shellQuote(model.strip()))
                 + " " + shellQuote(prompt);
     }
@@ -78,7 +78,16 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     /** `--continue` takes the newest conversation this worktree holds, and simply starts one where it holds none. */
     @Override
     public String reviveCommand(Path worktree) {
-        return COMPACT_ENV + claude.command() + " --continue " + shellQuote(brief.line("revive"));
+        return COMPACT_ENV + claude.command() + pinnedServers(worktree) + " --continue " + shellQuote(brief.line("revive"));
+    }
+
+    /** Strict drops the worktree's own `.mcp.json` too, so jagt's server is named beside the pinned ones. */
+    private String pinnedServers(Path worktree) {
+        if (claude.mcpConfig().isEmpty()) {
+            return "";
+        }
+        return " --strict-mcp-config --mcp-config " + shellQuote(worktree.resolve(".mcp.json").toString())
+                + " " + shellQuote(claude.mcpConfig());
     }
 
     /** The prompt cache's lifetime: https://code.claude.com/docs/en/prompt-caching#cache-lifetime */
