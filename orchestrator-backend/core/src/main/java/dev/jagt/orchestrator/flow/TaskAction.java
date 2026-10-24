@@ -20,7 +20,7 @@ public enum TaskAction {
     ADD_REPO(95, Group.FLOW, "add-repo", "Add repo",
             "add the repository the session asked for to the task: its worktree is cut and the session told"),
     SWEEP(10, Group.FLOW, "sweep", "Check review",
-            "read the checks and open threads, relay them to the agent"),
+            "read what the pipeline and the reviewers said, the checks and open threads, relay them to the agent"),
     DEPLOY(90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
     REVERT(120, Group.FLOW, "revert", "Revert",
             "revert the last deploy's merge commit and push; earlier deploys stay live"),
