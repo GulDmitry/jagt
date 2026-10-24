@@ -324,8 +324,8 @@ class HeadlessClaudeRoundReviewerTest {
         var answer = reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         assertThat(answer.facts()).contains(new RoundReviewer.Judgement("", "changes",
-                List.of(new RoundReviewer.Finding("A.java", "leaks", "P1", "blocker")), "which way?",
-                List.of(new RoundReviewer.Premise("it is pure", "A.java"))));
+                List.of(new RoundReviewer.Finding("A.java", "leaks", "P1", "blocker", "", "")), "which way?",
+                List.of(new RoundReviewer.Premise("it is pure", "A.java")), ""));
     }
 
     @Test

@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.WorktreeFiles;
+import dev.jagt.orchestrator.service.master.MasterReview.Review;
+import dev.jagt.orchestrator.service.master.MasterReview.Verdict;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -13,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -40,10 +41,9 @@ public class MasterPanel {
     private final ChargedReviews reviews;
     private final MasterBriefs briefs;
     private final RoundQuotes quotes;
+    private final MasterReview stored;
 
     static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
-    /** Opens a finding asking the session for evidence: it decides nothing, so no later round is bound by it. */
-    public static final String SHOW = "show: ";
 
     /** What jagt read for a round once, quoted to every role. */
     record RoundRead(String ticket, String diff, String decided, List<String> said, String notes) {
@@ -104,11 +104,11 @@ public class MasterPanel {
                 return false;
             }
         }
-        String verdict = verdictFile(taskId, roles, judgements,
-                named.stream().filter(role -> !roles.contains(role)).toList());
+        List<MasterReview.Read> reads = reads(roles, judgements);
         boolean allRead = judgements.stream().allMatch(judgement -> judgement.failure().isBlank());
-        Optional<String> own = allRead ? quotes.ownDiff(task) : Optional.empty();
-        return write(taskId, worktrees, own.map(id -> MasterReview.OWN_DIFF + id + "\n" + verdict).orElse(verdict));
+        Review review = new Review(task.statusSince(), allRead ? quotes.ownDiff(task).orElse("") : "", reads);
+        return stored.write(task, review,
+                verdictFile(taskId, reads, named.stream().filter(role -> !roles.contains(role)).toList()));
     }
 
     /** One read, not one per role: a plan answers a single question, whether it does what the ticket asks. */
@@ -123,26 +123,19 @@ public class MasterPanel {
                         quotes.planFile(task), read.get(), config.may(MasterRight.ANSWER),
                         reviews.loadsMcpServer()),
                         worktrees(task), config.modelOrInherited()));
-        return write(taskId, worktrees(task), verdictFile(taskId, List.of(PLANNER), List.of(judged)));
+        List<MasterReview.Read> reads = reads(List.of(PLANNER), List.of(judged));
+        return stored.write(task, new Review(task.statusSince(), "", reads), verdictFile(taskId, reads, List.of()));
     }
 
     private static final Role PLANNER = new Role("planner", "whether the plan does what the ticket asks", "",
             List.of());
 
-    private static boolean write(String taskId, List<Path> worktrees, String file) {
-        try {
-            Files.writeString(worktrees.getFirst().resolve(MasterReview.FILE), file);
-            return true;
-        } catch (IOException unwritable) {
-            log.atError().setMessage("master review unwritable").addKeyValue("task", taskId)
-                    .addKeyValue("cause", unwritable.toString())
-                    .log();
-            return false;
-        }
+    /** {@code newTask} is work the decision would open as a task of its own, blank where none. */
+    public record Decision(String text, String newTask) {
     }
 
     /** The session's question decided as the human would; empty where no decision came back. */
-    public Optional<String> answer(String taskId, TaskState task, String question,
+    public Optional<Decision> answer(String taskId, TaskState task, String question,
                                    ConfigService.ConfigFile.MasterConfig config, boolean stuck) {
         Optional<String> brief = briefs.master(taskId, config);
         Optional<RoundRead> read = quotes.question(task);
@@ -155,7 +148,8 @@ public class MasterPanel {
                 worktrees(task),
                 config.modelOrInherited()));
         return Optional.of(judged).filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
-                .map(said -> said.findings().stream().map(f -> OneLine.of(f.issue())).collect(Collectors.joining("\n")));
+                .map(said -> new Decision(said.findings().stream().map(f -> OneLine.of(f.issue()))
+                        .collect(Collectors.joining("\n")), said.newTask().strip()));
     }
 
     private static List<Path> worktrees(TaskState task) {
@@ -206,52 +200,31 @@ public class MasterPanel {
         return at > 1 && at < cells.size() ? cells.get(at) : "";
     }
 
-    static String verdictFile(String taskId, List<Role> roles, List<Judgement> judgements) {
-        return verdictFile(taskId, roles, judgements, List.of());
+    static List<MasterReview.Read> reads(List<Role> roles, List<Judgement> judgements) {
+        return IntStream.range(0, roles.size())
+                .mapToObj(i -> new MasterReview.Read(roles.get(i).name(), judgements.get(i))).toList();
     }
 
-    static String verdictFile(String taskId, List<Role> roles, List<Judgement> judgements, List<Role> skipped) {
-        List<String> lines = new ArrayList<>();
-        List<String> questions = new ArrayList<>();
-        List<String> advice = new ArrayList<>(skipped.stream().map(role -> "# skipped [" + role.name()
-                + "] no changed path matches " + String.join(", ", role.applies())).toList());
-        for (int i = 0; i < roles.size(); i++) {
-            readJudgement(roles.get(i).name(), judgements.get(i), lines, advice, questions);
-        }
+    /** For a human: what the verdict rests on, advice and skipped roles included; nothing reads it back. */
+    static String verdictFile(String taskId, List<MasterReview.Read> reads, List<Role> skipped) {
+        Verdict verdict = Verdict.of(new Review(0, "", reads));
         StringBuilder file = new StringBuilder("# " + taskId + " — master review\n\n");
-        advice.forEach(line -> file.append(line).append('\n'));
-        lines.forEach(line -> file.append(line).append('\n'));
-        if (!questions.isEmpty()) {
-            questions.stream().skip(1).forEach(q -> file.append("- also asked: ").append(q).append('\n'));
-            return file.append(questions.getFirst()).append("\n\nVERDICT: question\n").toString();
-        }
-        if (!lines.isEmpty()) {
-            return file.append("\nVERDICT: not ready\n").toString();
-        }
-        return file.append("nothing wrong\n\nVERDICT: ready\n").toString();
-    }
-
-    private static void readJudgement(String role, Judgement said, List<String> lines, List<String> advice,
-                                      List<String> questions) {
-        if (!said.failure().isBlank()) {
-            questions.add("The " + role + " could not read the round: " + OneLine.of(said.failure()));
-            return;
-        }
-        said.findings().forEach(f -> (f.stops() ? lines : advice).add(findingLine(role, f)));
-        said.premises().stream().filter(p -> p.provenBy().isBlank())
-                .forEach(p -> advice.add("# unproven [" + role + "] " + OneLine.of(p.claim())));
-        if (said.verdict().equals("question")) {
-            questions.add(said.question().isBlank() ? "The " + role + " asks, naming no question"
-                    : OneLine.of(said.question()));
-        } else if (!said.verdict().equals("ready") && said.findings().isEmpty()) {
-            lines.add("- [" + role + "] not ready, naming nothing");
-        }
-    }
-
-    private static String findingLine(String role, RoundReviewer.Finding f) {
-        return (f.stops() ? "- [" : "# advice [") + role + "] " + OneLine.of(f.file()) + " — "
-                + (f.severity().equals("unproven") ? SHOW : "") + OneLine.of(f.issue())
-                + (f.pattern().isBlank() ? "" : " (" + OneLine.of(f.pattern()) + ")");
+        skipped.forEach(role -> file.append("# skipped [").append(role.name()).append("] no changed path matches ")
+                .append(String.join(", ", role.applies())).append('\n'));
+        verdict.advice().forEach(said -> file.append("# advice ").append(said.line().substring(2)).append('\n'));
+        reads.stream().filter(read -> read.judgement().failure().isBlank())
+                .forEach(read -> read.judgement().premises().stream().filter(p -> p.provenBy().isBlank())
+                        .forEach(p -> file.append("# unproven [").append(read.role()).append("] ")
+                                .append(OneLine.of(p.claim())).append('\n')));
+        verdict.findings().forEach(said -> file.append(said.line()).append('\n'));
+        return switch (verdict.kind()) {
+            case QUESTION -> {
+                verdict.questions().stream().skip(1).forEach(q -> file.append("- also asked: ").append(q).append('\n'));
+                yield file.append(verdict.question()).append("\n\nVERDICT: question\n").toString();
+            }
+            case NOT_READY -> file.append("\nVERDICT: not ready\n").toString();
+            case READY -> file.append("nothing wrong\n\nVERDICT: ready\n").toString();
+        };
     }
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
@@ -281,6 +254,8 @@ public class MasterPanel {
                 + "<output_format>\n"
                 + "- verdict: ready.\n"
                 + "- findings: the decision, one per line — what the session does, and the one clause of why.\n"
+                + "- newTask: blank, unless the decision is work outside this task: that work in one line."
+                + " jagt opens no task.\n"
                 + "- premises: what it rests on, each with provenBy — the file:line or read-only command"
                 + " that shows it.\n"
                 + "- failure: blank unless something stopped you reading, then what.\n"
@@ -315,7 +290,7 @@ public class MasterPanel {
                 + "<output_format>\n"
                 + "- verdict: ready where the plan holds, not ready, or question.\n"
                 + "- findings: one per problem — what the plan gets wrong, and the one clause of why."
-                + " Each finding carries pattern: two to four words naming the kind of problem.\n"
+                + IDENTITY
                 + SEVERITY
                 + "- question: only with verdict question, the one thing the human must decide.\n"
                 + "- premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
@@ -326,6 +301,12 @@ public class MasterPanel {
     }
 
     private static final String RESPOND = "Respond directly, no preamble.";
+
+    private static final String IDENTITY = " Each finding carries pattern: two to four words naming the kind of"
+            + " problem; anchor: the symbol, heading or key it sits on, as written in the file, blank for the whole"
+            + " file; kind: behaviour (it does the wrong thing), missing (a ticket line not done), scope (past the"
+            + " ticket), test (a check missing or wrong) or structure (architecture, naming, duplication)."
+            + " A problem an earlier round named keeps its file, anchor and kind.\n";
 
     private static final String SEVERITY = "- severity, one of five:\n"
             + "  - blocking: someone relying on it today breaks.\n"
@@ -398,7 +379,7 @@ public class MasterPanel {
                 + "<output_format>\n"
                 + "- verdict: ready, not ready, or question.\n"
                 + "- findings: one per problem — file, what is wrong and the one clause of why."
-                + " Each finding carries pattern: two to four words naming the kind of problem.\n"
+                + IDENTITY
                 + SEVERITY
                 + "- question: only with verdict question, the one thing the human must decide.\n"
                 + "- premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"

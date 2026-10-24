@@ -128,7 +128,7 @@ class MasterModeFlowTest {
     @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#rounds")
     void readsAndPressesARoundAsTheModeAllows(MasterModeCase master) throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
-        judges(new Judgement("", master.verdict(), List.of(), "", List.of()));
+        judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
 
         handBackTheFirstRound();
 
@@ -141,7 +141,7 @@ class MasterModeFlowTest {
     void stampsTheShipItPressesAsTheMastersOwn() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(),
                 MasterModeCase.rounds().findFirst().orElseThrow());
-        judges(new Judgement("", "ready", List.of(), "", List.of()));
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
         handBackTheFirstRound();
 
@@ -154,7 +154,7 @@ class MasterModeFlowTest {
     @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#plans")
     void readsAndStartsAPlanAsTheModeAllows(MasterModeCase master) throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
-        judges(new Judgement("", master.verdict(), List.of(), "", List.of()));
+        judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
         provisioning.initializeTask(NewTask.builder(TASK, "proj").instructions("Fix the widget")
                 .title("Widget layout is off").build());
         Files.writeString(worktree().resolve("plan.md"), "Move the widget left.\n");
@@ -171,7 +171,7 @@ class MasterModeFlowTest {
     void answersASessionsQuestionAsTheModeAllows(MasterModeCase master) throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
         judges(new Judgement("", "ready",
-                List.of(new Finding("", "keep v2 beside v3", "decided", "advice")), "", List.of()));
+                List.of(new Finding("", "keep v2 beside v3", "decided", "advice", "", "")), "", List.of(), ""));
         provisioning.initializeTask(NewTask.builder(TASK, "proj").instructions("Fix the widget")
                 .title("Widget layout is off").build());
 
@@ -186,7 +186,7 @@ class MasterModeFlowTest {
     @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#deploys")
     void deploysAGreenRequestAsTheModeAllows(MasterModeCase master) throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
-        judges(new Judgement("", "ready", List.of(), "", List.of()));
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
         handBackTheFirstRound();
         shipsTheRoundTheMasterShipped();
 
@@ -200,7 +200,7 @@ class MasterModeFlowTest {
     @Test
     void handsADeployConflictToTheSessionAndFinishesTheDeployOnceItIsResolved() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-        judges(new Judgement("", "ready", List.of(), "", List.of()));
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
         handBackTheFirstRound();
         shipsTheRoundTheMasterShipped();
         E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
@@ -222,7 +222,7 @@ class MasterModeFlowTest {
     @Test
     void answersAQuestionAtADeployConflictUnderTheHandOffItLeavesStanding() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-        judges(new Judgement("", "ready", List.of(), "", List.of()));
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
         handBackTheFirstRound();
         shipsTheRoundTheMasterShipped();
         E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
@@ -230,7 +230,7 @@ class MasterModeFlowTest {
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
         awaitTold("did not deploy");
         judges(new Judgement("", "ready",
-                List.of(new Finding("", "keep both lines", "decided", "advice")), "", List.of()));
+                List.of(new Finding("", "keep both lines", "decided", "advice", "", "")), "", List.of(), ""));
 
         post("/mcp", """
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
@@ -248,7 +248,7 @@ class MasterModeFlowTest {
     void leavesAPermissionTheSessionAsksForToTheHuman() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.questions().findFirst().orElseThrow());
         judges(new Judgement("", "ready",
-                List.of(new Finding("", "go ahead", "decided", "advice")), "", List.of()));
+                List.of(new Finding("", "go ahead", "decided", "advice", "", "")), "", List.of(), ""));
         provisioning.initializeTask(NewTask.builder(TASK, "proj").instructions("Fix the widget")
                 .title("Widget layout is off").build());
 

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.service.Rounds;
@@ -274,7 +275,9 @@ class YourMoveJobTest {
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.PLAN_PENDING).alias("a1").build());
         job.run();
-        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        TaskState judged = state.task("ABC-1").orElseThrow();
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
 
         job.run();
         clock.advance(Duration.ofSeconds(10));
@@ -317,7 +320,9 @@ class YourMoveJobTest {
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").build());
         job.run();
-        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        TaskState judged = state.task("ABC-1").orElseThrow();
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(1));
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.SHIPPING).alias("a1").build());
@@ -341,7 +346,9 @@ class YourMoveJobTest {
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").build());
         job.run();
-        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        TaskState judged = state.task("ABC-1").orElseThrow();
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(10));
         job.run();
@@ -362,7 +369,9 @@ class YourMoveJobTest {
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.PLAN_PENDING).alias("a1").build());
         job.run();
-        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        TaskState judged = state.task("ABC-1").orElseThrow();
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(1));
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -474,7 +483,9 @@ class YourMoveJobTest {
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("http://mr/1").build());
         job.run();
-        Files.writeString(root.resolve("wt").resolve(MasterReview.FILE), "VERDICT: ready\n");
+        TaskState judged = state.task("ABC-1").orElseThrow();
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(10));
         job.run();

@@ -65,7 +65,7 @@ Families:
 |----|--------------------|---------|-----------|
 | D1 | the Master judges a round → it stops on what it cannot prove, never waves a loss through, never ships around a question | 2078122b, 9c1cb2f9, 82360b45, 6a4d3a81, f7679dba, c280b20f | `MasterPanelTest`, `MasterVerdictEvalTest`, `MasterReviewJobTest` |
 | D2 | a session reports its own verdict or status → only statuses a session may report are accepted; jagt's read lands the verdict | 0829d301, ba18a8ff, 39ed0db6 | `FlowRulesTest`, `FlowCheckTest`, `VerifyJobTest`, `AgentStatusMessageTest` |
-| D3 | the Master in act answers its own question or presses → no `do` line opens a task, a protected path stays with the human | 245271e3, d62b9d4f, 24a87c4a, 693213d3 | `MasterShipTest`, `MasterVerdictsTest`, `HumanPathsTest` |
+| D3 | the Master in act answers its own question or presses → no task its answer names opens, a protected path stays with the human | 245271e3, d62b9d4f, 24a87c4a, 693213d3 | `MasterShipTest`, `MasterVerdictsTest`, `HumanPathsTest` |
 | D4 | a human opened a plan, or a call was denied → the human approves and grants; the Master never answers in act | 9cad8f04, eccb21fa, d5f3fe99 | `MasterAnswerJobTest`, `MasterCommandTest`, `AgentStatusReportsTest` |
 | D5 | the reviewer's framing, severity and comments → fresh session per round, severity one of five, listener wiring never passed as scope | 9eb5cf78, 2a3a40b3, d733224f | `MasterSessionTest`, `SchemaTest`, `ReviewSweepServiceTest` |
 | D6 | a label or command word is mapped → only schema-listed values pass; a layer label is not a repository | 1b5868c6, 452eb3b4 | `IntakeRoutingTest`, `CommandMappingEvalTest`, `PaletteContextTest` |
@@ -86,7 +86,7 @@ Families:
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
-| F1 | a ready round holds nothing new to ship → it is not shipped again, nor sent back for a repeated finding | 9be76dd5, c7232cc2, eaaf53b0, eab76b0c, 86220a6a | `MasterShipTest`, `WorktreeChangesTest`, `FindingMatchTest` |
+| F1 | a ready round holds nothing new to ship → it is not shipped again, nor sent back for a repeated finding | 9be76dd5, c7232cc2, eaaf53b0, eab76b0c, 86220a6a | `MasterShipTest`, `WorktreeChangesTest`, `MasterDecisionsTest` |
 | F2 | a green verification reports through the session's own door → the task reaches its next status, not VERIFYING every 20 seconds | c63dc787 | `VerifyJobTest` |
 | F3 | the Master presses, ships or starts unasked → progress is told from repeats; silent endings and a day's starts stop it | c2a6ad09, df7a8281, e20808e3 | `LoopBreakerTest`, `MasterBrakeTest`, `DailyStartsTest` |
 | F4 | a store or log grows → a ceiling and something that packs or refuses past it | 3343f75e, f1b760c6, fbc2160f, 0e558ca8, 5c037ecc | `LogFileAppenderTest`, `FinishedTasksTest`, `TaskProvisioningTest` |

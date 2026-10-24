@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -13,10 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -95,12 +94,12 @@ class MasterReviewJobTest {
     }
 
     @Test
-    void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain(@TempDir Path root) throws IOException {
+    void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain(@TempDir Path root) {
         StateService state = stateIn(root);
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
                 .lastActiveTimestamp(2_000L).build();
         state.putTask("ABC-1", back);
-        Files.writeString(root.resolve(MasterReview.FILE), "VERDICT: ready\n");
+        new MasterReview().write(back, new MasterReview.Review(2_000L, "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
         new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
@@ -111,14 +110,12 @@ class MasterReviewJobTest {
     }
 
     @Test
-    void asksAgainWhenTheOnlyVerdictPredatesTheHandBack(@TempDir Path root) throws IOException {
+    void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack(@TempDir Path root) {
         StateService state = stateIn(root);
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
                 .lastActiveTimestamp(2_000L).build();
         state.putTask("ABC-1", back);
-        Path file = root.resolve(MasterReview.FILE);
-        Files.writeString(file, "VERDICT: ready\n");
-        Files.setLastModifiedTime(file, FileTime.fromMillis(1_000L));
+        new MasterReview().write(back, new MasterReview.Review(1_000L, "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
         new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();

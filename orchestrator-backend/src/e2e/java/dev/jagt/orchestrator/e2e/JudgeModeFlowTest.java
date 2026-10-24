@@ -128,7 +128,7 @@ class JudgeModeFlowTest {
 
     @Test
     void readsAReadyRoundAndLeavesEveryPressToTheHuman() throws Exception {
-        judges(new Judgement("", "ready", List.of(), "", List.of()));
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
         handBackTheFirstRound();
 
@@ -141,8 +141,8 @@ class JudgeModeFlowTest {
     @Test
     void sendsANotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
         judges(new Judgement("", "not ready",
-                List.of(new Finding("widget.txt", "the guard is inverted", "inverted guard", "blocking")), "",
-                List.of()));
+                List.of(new Finding("widget.txt", "the guard is inverted", "inverted guard", "blocking", "", "")), "",
+                List.of(), ""));
 
         handBackTheFirstRound();
 
@@ -153,7 +153,7 @@ class JudgeModeFlowTest {
 
     @Test
     void putsTheReviewersQuestionToTheHumanRatherThanAnsweringIt() throws Exception {
-        judges(new Judgement("", "question", List.of(), "keep v2 beside v3?", List.of()));
+        judges(new Judgement("", "question", List.of(), "keep v2 beside v3?", List.of(), ""));
 
         handBackTheFirstRound();
 
@@ -176,7 +176,7 @@ class JudgeModeFlowTest {
 
     @Test
     void shipsAndDeploysOnlyWhenTheHumanPresses() throws Exception {
-        judges(new Judgement("", "ready", List.of(), "", List.of()));
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
         handBackTheFirstRound();
         awaitReview();
 

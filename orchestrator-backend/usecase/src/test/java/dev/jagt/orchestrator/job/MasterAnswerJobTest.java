@@ -46,11 +46,11 @@ class MasterAnswerJobTest {
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of("keep v2 beside v3"));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of(new MasterPanel.Decision("keep v2 beside v3", "")));
 
         new MasterAnswerJob(state, config, panel, verdicts).run();
 
-        verify(verdicts).answered("ABC-1", asking, "keep v2?", "keep v2 beside v3", false);
+        verify(verdicts).answered("ABC-1", asking, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
     }
 
     @Test
@@ -64,12 +64,12 @@ class MasterAnswerJobTest {
         when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenAnswer(read -> {
             state.updateTask("ABC-1", task -> task.withReport(AgentReport.PLAIN)
                     .withTurn(task.turnOrNone().closed(Turn.Holder.SESSION, 2_000)));
-            return Optional.of("keep v2 beside v3");
+            return Optional.of(new MasterPanel.Decision("keep v2 beside v3", ""));
         });
 
         new MasterAnswerJob(state, config, panel, verdicts).run();
 
-        verify(verdicts, never()).answered(anyString(), any(), anyString(), anyString(), anyBoolean());
+        verify(verdicts, never()).answered(anyString(), any(), anyString(), any(), anyBoolean());
     }
 
     @Test
@@ -222,8 +222,8 @@ class MasterAnswerJobTest {
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of("keep v2"));
-        when(verdicts.answered(anyString(), any(), anyString(), anyString(), anyBoolean())).thenReturn(false);
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of(new MasterPanel.Decision("keep v2", "")));
+        when(verdicts.answered(anyString(), any(), anyString(), any(), anyBoolean())).thenReturn(false);
         MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts);
 
         job.run();

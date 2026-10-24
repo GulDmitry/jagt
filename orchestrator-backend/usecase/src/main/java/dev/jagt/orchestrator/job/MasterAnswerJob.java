@@ -121,7 +121,7 @@ public class MasterAnswerJob implements Job {
         boolean stuck = given >= MasterDecisions.ANSWERS_PER_TREE;
         log.atInfo().setMessage("master answers").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .log();
-        Optional<String> decision = panel.answer(taskId, task, Objects.requireNonNull(task.message()), config, stuck);
+        Optional<MasterPanel.Decision> decision = panel.answer(taskId, task, Objects.requireNonNull(task.message()), config, stuck);
         if (decision.isPresent() && !standing(taskId, task)) {
             log.atInfo().setMessage("master answer dropped").addKeyValue("task", taskId)
                     .addKeyValue("cause", "the turn moved on while the Master read")

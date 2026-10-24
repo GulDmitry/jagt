@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.service.WorktreeChanges;
+import dev.jagt.orchestrator.service.master.MasterReview.Identity;
+import dev.jagt.orchestrator.service.master.MasterReview.Said;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +14,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-/** What this task's earlier rounds settled, kept beside the review so every later reader starts from it. */
+/** What this task's earlier rounds settled, kept in its worktree so every later reader, after a restart too, starts from it. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,47 +33,63 @@ public class MasterDecisions {
     public static final int RUNAWAY = 9;
     /** Not-ready rounds running holding only repeats, at which the loop is the human's rather than the session's. */
     public static final int REPEATED_ROUNDS = 2;
+    /** Past every count above, so folding older entries changes no answer. */
+    static final int KEPT = 20;
+    static final String STORED = "master-rounds.json";
 
     private final WorktreeChanges changes;
-    /** Never pruned: one small entry per worktree the Master ever answered in, for the life of the process. */
-    private final Map<String, Answered> answeredOver = new ConcurrentHashMap<>();
-    private final Map<String, Repeated> repeatedRounds = new ConcurrentHashMap<>();
 
-    private record Answered(String tree, int times) {
+    /** {@code settled}: what the round ruled, requests for evidence left out. */
+    record Round(long round, List<Identity> settled, boolean onlyRepeats) {
     }
 
-    private record Repeated(long verdictAt, int rounds) {
+    /** {@code answers}: the tree each answer was given over, oldest first. */
+    record Rounds(List<Round> rounds, List<String> answers) {
+
+        static final Rounds NONE = new Rounds(List.of(), List.of());
     }
 
-    /** Not-ready rounds running that held only repeats, this one counted once however often it is acted on. */
-    public int returned(TaskState task, long verdictAt, boolean onlyRepeats) {
-        if (!onlyRepeats) {
-            repeatedRounds.remove(task.worktreePath());
-            return 0;
-        }
-        return repeatedRounds.merge(task.worktreePath(), new Repeated(verdictAt, 1),
-                (then, now) -> then.verdictAt() == verdictAt ? then : new Repeated(verdictAt, then.rounds() + 1))
-                .rounds();
+    /** {@code repeated}: the findings an earlier round made; {@code rounds}: not-ready rounds running of only those. */
+    public record Returned(Set<Identity> repeated, int rounds) {
     }
 
-    public boolean repeats(TaskState task, String finding) {
-        return FindingMatch.repeats(finding, of(task).lines().toList());
+    /** A round acted on again is counted once; a verdict with no finding ends any run of repeats. */
+    public synchronized Returned returned(TaskState task, long round, List<Said> findings) {
+        Rounds before = read(task);
+        List<Round> earlier = before.rounds().stream().filter(then -> then.round() != round).toList();
+        Set<Identity> seen = earlier.stream().flatMap(then -> then.settled().stream()).collect(Collectors.toSet());
+        Set<Identity> repeated = findings.stream().map(Said::identity).filter(seen::contains)
+                .collect(Collectors.toSet());
+        boolean onlyRepeats = !findings.isEmpty()
+                && findings.stream().allMatch(said -> repeated.contains(said.identity()));
+        List<Round> now = last(Stream.concat(earlier.stream(), Stream.of(new Round(round,
+                findings.stream().filter(Said::settles).map(Said::identity).toList(), onlyRepeats))).toList());
+        write(task, new Rounds(now, before.answers()));
+        return new Returned(repeated, running(now));
     }
 
     public int repeatedRounds(TaskState task) {
-        Repeated then = repeatedRounds.get(task.worktreePath());
-        return then == null ? 0 : then.rounds();
+        return running(read(task).rounds());
     }
 
-    public void answered(TaskState task) {
-        changes.state(task).ifPresent(tree -> answeredOver.merge(task.worktreePath(), new Answered(tree, 1),
-                (then, now) -> then.tree().equals(tree) ? new Answered(tree, then.times() + 1) : now));
+    public synchronized void answered(TaskState task) {
+        changes.state(task).ifPresent(tree -> {
+            Rounds before = read(task);
+            write(task, new Rounds(before.rounds(),
+                    last(Stream.concat(before.answers().stream(), Stream.of(tree)).toList())));
+        });
     }
 
     /** How many answers this tree has already had, none where it changed since the last. */
     public int answersOverThisTree(TaskState task) {
-        Answered then = answeredOver.get(task.worktreePath());
-        return then != null && changes.state(task).map(then.tree()::equals).orElse(false) ? then.times() : 0;
+        Optional<String> tree = changes.state(task);
+        List<String> answers = read(task).answers();
+        int given = 0;
+        while (tree.isPresent() && given < answers.size()
+                && answers.get(answers.size() - 1 - given).equals(tree.get())) {
+            given++;
+        }
+        return given;
     }
 
     public void record(TaskState task, String decided) {
@@ -97,5 +119,26 @@ public class MasterDecisions {
                     .log();
             return "";
         }
+    }
+
+    private static int running(List<Round> rounds) {
+        int running = 0;
+        while (running < rounds.size() && rounds.get(rounds.size() - 1 - running).onlyRepeats()) {
+            running++;
+        }
+        return running;
+    }
+
+    private static <T> List<T> last(List<T> all) {
+        return new ArrayList<>(all.subList(Math.max(0, all.size() - KEPT), all.size()));
+    }
+
+    private static Rounds read(TaskState task) {
+        return JagtJson.read(JagtJson.in(String.valueOf(task.worktreePath()), STORED), Rounds.class)
+                .orElse(Rounds.NONE);
+    }
+
+    private static void write(TaskState task, Rounds rounds) {
+        JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), rounds);
     }
 }

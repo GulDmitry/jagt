@@ -8,8 +8,8 @@ The Master: a headless reader judging each handed-back round; in `act` it stands
 
 ### Requirement: The Master is a headless run per role, not a window
 One headless run per role of the brief SHALL read each round in the task's worktrees, loading no worktree setting.
-jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy read per role it applies to, charged as
-`master`, the rest after the first, reading its cached round.
+jagt SHALL store each answer with the hand-back it asked about (`MasterReview`), `master-review.md` only its rendering;
+a round SHALL cost one heavy read per role it applies to, charged as `master`, later roles reading the cached round.
 
 #### Scenario: What a role may call
 - **WHEN** a role reads
@@ -20,6 +20,7 @@ jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy re
 #### Scenario: A round read before you look
 - **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
 - **THEN** each round is read into the worktree's `master-review.md`; it presses nothing
+- **AND** a verdict answers only the hand-back it was asked about, however late it is written
 
 #### Scenario: The Master is reading a round
 - **WHEN** it is under review
@@ -124,8 +125,8 @@ A nudge to a session SHALL wait while the human is typing in its window.
 ### Requirement: Only blocking, wrong and unproven stop a round
 A plan or round SHALL be ready unless a finding is blocking, wrong or unproven, the last a `show:` request. Only
 correctness or a stated requirement SHALL stop one; wording, glossary and style SHALL be noise. Advice SHALL be a `#`
-line in `master-review.md`. Its findings SHALL go back to the session, in any mode, and the task to
-`IN_PROGRESS`, until rounds of repeats reach the human (`FindingMatch`).
+line in `master-review.md`. Its findings SHALL go back to the session, in any mode, and the task to `IN_PROGRESS`,
+until rounds of repeats reach the human; a finding is the same by file, anchor and kind (`MasterDecisions`).
 
 #### Scenario: Only advice
 - **WHEN** findings are only unguarded, noise or an unproven premise
@@ -137,8 +138,8 @@ line in `master-review.md`. Its findings SHALL go back to the session, in any mo
 
 #### Scenario: A round is not ready
 - **WHEN** a plan or round has a blocking, wrong or unproven finding
-- **THEN** the fix is read anew; one an earlier round made on the same file goes back `[repeat]`
-- **AND** where two rounds running hold only repeats, the second is your question
+- **THEN** the fix is read anew; one with an earlier round's file, anchor and kind goes back `[repeat]`, reworded or not
+- **AND** where two rounds running hold only repeats, the second is your question, a restart between them included
 - **AND** a verdict `ready` beside findings counts as not ready
 
 #### Scenario: The acceptance check skipped
@@ -169,12 +170,12 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 - **THEN** only a blocking reason reopens it
 
 ### Requirement: A task's work stays in the task
-Work a task needs SHALL be done in it, on its own branch, and the Master SHALL open no task: a `do` line in its answer
-opens nothing, the session told only you open a task. A repository the task lacks is asked for with `needsProject`
-and attached by `add-repo`, never opened as a task.
+Work a task needs SHALL be done in it, on its own branch, and the Master SHALL open no task: work its answer names as
+a new task opens nothing, the session told only you open a task. A repository the task lacks is asked for with
+`needsProject` and attached by `add-repo`, never opened as a task.
 
 #### Scenario: The Master's answer holds a `do` line
-- **WHEN** in `act` it answers a session with `do proj drop the old keys from main`
+- **WHEN** in `act` it answers a session naming `do proj drop the old keys from main` as a new task
 - **THEN** no task opens; the session does that work on its own branch
 
 ### Requirement: A disagreement offers a lesson, never applies one
@@ -186,10 +187,9 @@ a fail (`MasterRecord`); it changes no brief.
 - **THEN** `master` shows a `lesson:` line: what to paste into `/master-lesson`
 
 ### Requirement: A base-only move keeps the verdict
-`MasterPanel.review` SHALL keep the last verdict, restamped, when it is ready and the task's own diff has the
-identifier stored in it (`WorktreeInspection.ownDiffId`: the diff since the merge-base, line numbers and index lines
-left out, hashed).
-A verdict SHALL store no identifier when a role could not read the round, and a task holding an untracked file has none.
+`MasterPanel.review` SHALL keep the last ready verdict while the task's own diff keeps its stored identifier
+(`WorktreeInspection.ownDiffId`: the diff since the merge-base, line numbers and index lines left out, hashed). The kept
+verdict answers the hand-back in front; none is stored where a role could not read the round or an untracked file is held.
 
 #### Scenario: Only the base moved
 - **WHEN** ABC-42 is rebased onto a moved base and handed back with the same own diff

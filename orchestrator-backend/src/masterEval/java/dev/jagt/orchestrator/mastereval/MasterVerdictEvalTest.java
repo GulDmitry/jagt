@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -141,8 +142,10 @@ class MasterVerdictEvalTest {
         assertThat(verdict).describedAs("no verdict inside %s", VERDICT_WAIT).isPresent();
         assertThat(verdict.orElseThrow().kind()).describedAs("%s", verdict.orElseThrow().findings())
                 .isEqualTo(round.verdict());
-        String review = Files.readString(reviews.file(task));
-        assertThat(round.names()).allSatisfy(name -> assertThat(review).contains(name));
+        MasterReview.Verdict judged = verdict.orElseThrow();
+        String named = String.join("\n", Stream.concat(Stream.concat(judged.findings().stream(),
+                judged.advice().stream()).map(MasterReview.Said::line), judged.questions().stream()).toList());
+        assertThat(round.names()).allSatisfy(name -> assertThat(named).contains(name));
         List<ReadGateController.ToolCall> heard = Mockito.mockingDetails(readGate).getInvocations().stream()
                 .filter(call -> call.getMethod().getName().equals("gate"))
                 .map(call -> (ReadGateController.ToolCall) call.getArgument(1)).toList();

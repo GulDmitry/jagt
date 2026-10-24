@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.service.FileStamps;
+import dev.jagt.orchestrator.port.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
-import lombok.RequiredArgsConstructor;
+import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -11,70 +13,54 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
- * What the Master session leaves behind about one task. A file in that task's own worktree, so it sits in the
- * artifact chain beside the diff and the drafted replies, and `ide <task>` opens all of it at once. It is the
- * ONE thing the reviewer writes: everything else in a worktree belongs to whoever works there.
+ * What the Master session leaves behind about one task: every role's answer as jagt received it, and the same
+ * rendered for a human beside the diff, which nothing reads back. It is the ONE thing the reviewer writes.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MasterReview {
 
-    /** In the worktree, beside the drafted replies, and read back by jagt rather than reported over a wire. */
     public static final String FILE = Artifact.REVIEW.fileName();
+    static final String STORED = "master-review.json";
 
-    /** The last line the reviewer writes, and the only part of the file jagt reads as an answer. */
-    private static final String VERDICT = "VERDICT:";
-
-    /** A heading line, so it is never a finding. */
-    public static final String OWN_DIFF = "# own-diff: ";
-
-    /** What the reviewer concluded, or empty where it has not written, or has not finished. */
+    /** What the reviewer concluded, or empty where it has not written. */
     public Optional<Verdict> of(TaskState task) {
-        Path file = file(task);
-        if (file == null || !Files.isRegularFile(file)) {
-            return Optional.empty();
-        }
-        try {
-            List<String> lines = Files.readAllLines(file).stream().map(String::strip).toList();
-            int verdictAt = lines.size() - 1;
-            while (verdictAt >= 0 && !lines.get(verdictAt).startsWith(VERDICT)) {
-                verdictAt--;
-            }
-            if (verdictAt < 0) {
-                return Optional.empty();
-            }
-            List<String> findings = lines.subList(0, verdictAt).stream()
-                    .filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
-            String ownDiff = lines.stream().filter(line -> line.startsWith(OWN_DIFF)).findFirst()
-                    .map(line -> line.substring(OWN_DIFF.length())).orElse("");
-            return Optional.of(Verdict.of(lines.get(verdictAt).substring(VERDICT.length()), findings,
-                    FileStamps.modified(file), ownDiff));
-        } catch (IOException | RuntimeException unreadable) {
-            log.atWarn().setMessage("master review unreadable")
-                    .addKeyValue("file", file)
-                    .addKeyValue("cause", unreadable.toString())
-                    .log();
-            return Optional.empty();
-        }
+        return stored(task).map(Verdict::of);
     }
 
-    /** Makes the verdict answer the task as it stands now; false where the file could not be touched. */
-    public boolean restamp(TaskState task, long now) {
+    Optional<Review> stored(TaskState task) {
+        String worktree = task.worktreePath();
+        return worktree == null || worktree.isBlank() ? Optional.empty()
+                : JagtJson.read(JagtJson.in(worktree, STORED), Review.class);
+    }
+
+    /** False where either file could not be written; the typed record is written last, so it never runs ahead. */
+    public boolean write(TaskState task, Review review, String markdown) {
+        Path file = file(task);
+        if (file == null) {
+            return false;
+        }
         try {
-            Files.setLastModifiedTime(file(task), FileTime.fromMillis(now));
-            return true;
-        } catch (IOException | RuntimeException unwritable) {
-            log.atWarn().setMessage("master review unstamped").addKeyValue("file", file(task))
+            Files.writeString(file, markdown);
+        } catch (IOException unwritable) {
+            log.atError().setMessage("master review unwritable").addKeyValue("file", file)
                     .addKeyValue("cause", unwritable.toString()).log();
             return false;
         }
+        return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), review);
+    }
+
+    /** Makes the stored verdict answer the hand-back in front; false where there was none or it stayed as it was. */
+    public boolean restamp(TaskState task) {
+        return stored(task).map(review -> JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED),
+                review.withRound(task.statusSince()))).orElse(false);
     }
 
     /** Whether the reviewer has looked at the task AS IT STANDS, rather than at an earlier hand-back. */
@@ -82,29 +68,96 @@ public class MasterReview {
         return of(task).filter(verdict -> verdict.answers(task)).isPresent();
     }
 
-    public @Nullable Path file(TaskState task) {
+    private static @Nullable Path file(TaskState task) {
         String worktree = task.worktreePath();
         return worktree == null || worktree.isBlank() ? null : Path.of(worktree).resolve(FILE);
     }
 
     public enum Kind { READY, NOT_READY, QUESTION }
 
-    /** {@code findings} are the lines above the verdict, headings left out. */
-    public record Verdict(Kind kind, List<String> findings, long writtenAt, String ownDiff) {
+    /** One role's answer. */
+    public record Read(String role, Judgement judgement) {
+    }
 
-        /** Ready beside anything but the one line saying nothing is wrong is a finding waved through. */
-        static Verdict of(String word, List<String> findings, long writtenAt, String ownDiff) {
-            String said = word.strip();
-            if (said.equalsIgnoreCase("question")) {
-                return new Verdict(Kind.QUESTION, findings, writtenAt, ownDiff);
-            }
-            boolean ready = said.equalsIgnoreCase("ready") && findings.size() <= 1;
-            return new Verdict(ready ? Kind.READY : Kind.NOT_READY, findings, writtenAt, ownDiff);
+    /**
+     * {@code round} names the hand-back jagt asked about, {@code ownDiff} the task's own diff it read, blank where a
+     * role could not read the round.
+     */
+    @With
+    public record Review(long round, String ownDiff, List<Read> reads) {
+    }
+
+    /** A finding as the round's reader named it, with the role that made it. */
+    public record Said(String role, Finding finding) {
+
+        /** Opens a finding asking the session for evidence. */
+        static final String SHOW = "show: ";
+
+        public Identity identity() {
+            return new Identity(normal(finding.file()), normal(finding.anchor()), normal(finding.kind()));
         }
 
-        /** Written about the task as it stands, rather than about an earlier hand-back. */
+        /** A request for evidence decides nothing, so no later round is bound by it. */
+        public boolean settles() {
+            return !finding.severity().equals("unproven");
+        }
+
+        /** Names the file, anchor and kind, so a later reader can name the same finding the same way. */
+        public String line() {
+            String where = (OneLine.of(finding.file()) + " " + OneLine.of(finding.anchor())).strip();
+            String named = String.join(", ", Stream.of(finding.pattern(), finding.kind())
+                    .map(OneLine::of).filter(part -> part != null && !part.isEmpty()).toList());
+            return "- [" + role + "] " + (where.isEmpty() ? "" : where + " — ")
+                    + (settles() ? "" : SHOW) + OneLine.of(finding.issue())
+                    + (named.isEmpty() ? "" : " (" + named + ")");
+        }
+
+        private static String normal(String part) {
+            return part.strip().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    /** What makes a finding the same one in a later round, however it is worded. */
+    public record Identity(String file, String anchor, String kind) {
+    }
+
+    /**
+     * Ready only where every role found nothing that stops a round; any role's question or failure to read makes it
+     * a question, the first of them the one asked.
+     */
+    public record Verdict(Kind kind, List<Said> findings, List<Said> advice, List<String> questions, long round,
+                          String ownDiff) {
+
+        private static final Finding NAMING_NOTHING = new Finding("", "not ready, naming nothing", "", "blocking",
+                "", "");
+
+        static Verdict of(Review review) {
+            List<Said> findings = new ArrayList<>();
+            List<Said> advice = new ArrayList<>();
+            List<String> questions = new ArrayList<>();
+            review.reads().forEach(read -> sort(read, findings, advice, questions));
+            Kind kind = !questions.isEmpty() ? Kind.QUESTION : findings.isEmpty() ? Kind.READY : Kind.NOT_READY;
+            return new Verdict(kind, findings, advice, questions, review.round(), review.ownDiff());
+        }
+
+        private static void sort(Read read, List<Said> findings, List<Said> advice, List<String> questions) {
+            Judgement said = read.judgement();
+            if (!said.failure().isBlank()) {
+                questions.add("The " + read.role() + " could not read the round: " + OneLine.of(said.failure()));
+                return;
+            }
+            said.findings().forEach(f -> (f.stops() ? findings : advice).add(new Said(read.role(), f)));
+            if (said.verdict().equals("question")) {
+                questions.add(said.question().isBlank() ? "The " + read.role() + " asks, naming no question"
+                        : String.valueOf(OneLine.of(said.question())));
+            } else if (!said.verdict().equals("ready") && said.findings().isEmpty()) {
+                findings.add(new Said(read.role(), NAMING_NOTHING));
+            }
+        }
+
+        /** About the hand-back in front of it, by the round jagt asked about rather than by when it was written. */
         public boolean answers(TaskState task) {
-            return writtenAt >= task.statusSince();
+            return round == task.statusSince();
         }
 
         public boolean ready() {
@@ -116,7 +169,7 @@ public class MasterReview {
         }
 
         public String question() {
-            return findings.isEmpty() ? "" : findings.getLast();
+            return questions.isEmpty() ? "" : questions.getFirst();
         }
     }
 }

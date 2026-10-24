@@ -134,7 +134,7 @@ class ValuesTest {
     @ParameterizedTest
     @CsvSource({"blocking,true", "wrong,true", "unproven,true", "unguarded,false", "noise,false"})
     void stopsARoundOnlyForTheFirstThreeSeverities(String severity, boolean stops) {
-        assertThat(new RoundReviewer.Finding("A.java", "issue", "pattern", severity).stops()).isEqualTo(stops);
+        assertThat(new RoundReviewer.Finding("A.java", "issue", "pattern", severity, "", "").stops()).isEqualTo(stops);
     }
 
     @Test

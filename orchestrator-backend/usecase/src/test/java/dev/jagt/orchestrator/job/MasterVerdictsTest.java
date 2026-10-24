@@ -12,7 +12,10 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.port.RoundReviewer.Finding;
+import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
+import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -38,8 +41,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,7 +53,7 @@ class MasterVerdictsTest {
 
     private final AgentSessions sessions = mock(AgentSessions.class);
     private final MasterShip ship = mock(MasterShip.class);
-    private final MasterDecisions decisions = mock(MasterDecisions.class);
+    private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
 
     @Test
     void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) throws Exception {
@@ -67,7 +72,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
 
         verify(sessions).writeTaskContext(eq("ABC-1"), contains("the guard is inverted"));
         verify(ship, never()).ship(anyString(), any());
@@ -90,7 +95,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
 
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
@@ -113,7 +118,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
 
         assertThat(state.task("ABC-1").orElseThrow().history().getLast().origin()).isEqualTo(ActionOrigin.MASTER);
     }
@@ -135,7 +140,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
 
         assertThat(Files.readString(root.resolve("misses.jsonl")))
                 .contains("\"step\":\"round-not-ready\"", "\"by\":\"master\"");
@@ -156,7 +161,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
 
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
@@ -179,7 +184,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        verdicts.answered("ABC-42", task, "keep both imports?", "keep both imports", false);
+        verdicts.answered("ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""), false);
 
         verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"), eq(false));
         verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
@@ -200,7 +205,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        verdicts.answered("ABC-1", task, "override the gate?", "refactor the shared block", true);
+        verdicts.answered("ABC-1", task, "override the gate?", new MasterPanel.Decision("refactor the shared block", ""), true);
 
         verify(sessions).relayFresh(eq("ABC-1"), contains("refactor the shared block"));
     }
@@ -222,9 +227,9 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
 
-        verify(decisions).record(task, "Foo.java:12 the guard is inverted");
+        verify(decisions).record(task, "- [developer] Foo.java — the guard is inverted (behaviour)");
     }
 
     @Test
@@ -235,8 +240,7 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
-        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned (unguarded delay)"))
-                .thenReturn(true);
+        decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
@@ -246,10 +250,10 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("- [qa] Foo.java — the delay is never pinned (unguarded delay)"), 7, ""), acting);
+                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
 
         verify(sessions).writeTaskContext(eq("ABC-1"),
-                contains("- [qa] Foo.java — the delay is never pinned (unguarded delay) [repeat]"));
+                contains("- [qa] Foo.java delay — the delay is never pinned (unguarded delay, test) [repeat]"));
     }
 
     @Test
@@ -260,9 +264,8 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
-        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned (unguarded delay)"))
-                .thenReturn(true);
-        when(decisions.returned(task, 7, true)).thenReturn(2);
+        decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
+        decisions.returned(task, 5, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
@@ -272,13 +275,14 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("- [qa] Foo.java — the delay is never pinned (unguarded delay)"), 7, ""), acting);
+                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
 
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
                 .returns(AgentReport.QUESTION, TaskState::report)
                 .returns("reviewer: These findings came back 2 rounds running, neither fixed nor disputed:"
-                        + " - [qa] Foo.java — the delay is never pinned (unguarded delay) [repeat]", TaskState::message);
+                        + " - [qa] Foo.java delay — the delay is never pinned (unguarded delay, test) [repeat]",
+                        TaskState::message);
     }
 
     @Test
@@ -298,10 +302,10 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("[chaplain] Api.java — show: which caller still reads v2",
-                        "[developer] Foo.java:12 — the guard is inverted"), 1, ""), acting);
+                List.of(new MasterReview.Said("chaplain", new Finding("Api.java", "which caller still reads v2", "",
+                        "unproven", "", "behaviour")), new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
 
-        verify(decisions).record(task, "[developer] Foo.java:12 — the guard is inverted");
+        verify(decisions).record(task, "- [developer] Foo.java — the guard is inverted (behaviour)");
     }
 
     @Test
@@ -321,7 +325,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
 
         assertThat(moved).isTrue();
@@ -345,7 +349,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 kept);
 
         assertThat(moved).isFalse();
@@ -368,7 +372,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 judging);
 
         assertThat(moved).isFalse();
@@ -391,7 +395,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
 
         assertThat(moved).isTrue();
@@ -418,7 +422,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""), acting);
+        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""), acting);
 
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
     }
@@ -441,7 +445,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         boolean moved = verdicts.act("ABC-1", planned,
-                new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""), acting);
+                new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""), acting);
 
         assertThat(moved).isFalse();
         assertThat(state.task("ABC-1").orElseThrow())
@@ -467,7 +471,8 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("plan.md misses the migration"), 1, ""), acting);
+                List.of(new MasterReview.Said("planner", new Finding("plan.md", "misses the migration", "", "wrong", "",
+                        "missing"))), List.of(), List.of(), 1, ""), acting);
 
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
     }
@@ -488,7 +493,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 kept);
 
         assertThat(moved).isFalse();
@@ -512,8 +517,9 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY,
-                List.of("the endpoint is for admins only, as the ticket says"), 1, ""), acting);
+        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(),
+                List.of(new MasterReview.Said("planner", new Finding("", "the endpoint is for admins only, as the ticket says",
+                        "decided", "noise", "", "scope"))), List.of(), 1, ""), acting);
 
         verify(sessions).writeTaskContext(eq("ABC-1"), contains("answered your question"));
         verify(sessions).writeTaskContext(eq("ABC-1"), contains("the endpoint is for admins only, as the ticket says"));
@@ -538,9 +544,10 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("[planner] plan.md — drops the v2 route the ticket keeps"), 1, ""), judging);
+                List.of(new MasterReview.Said("planner", new Finding("plan.md", "drops the v2 route the ticket keeps", "",
+                        "wrong", "", "missing"))), List.of(), List.of(), 1, ""), judging);
 
-        verify(sessions).writeTaskContext("ABC-1", "[planner] plan.md — drops the v2 route the ticket keeps\n\nrework the plan");
+        verify(sessions).writeTaskContext("ABC-1", "- [planner] plan.md — drops the v2 route the ticket keeps (missing)\n\nrework the plan");
     }
 
     @Test
@@ -559,8 +566,8 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
-                List.of("Foo.java drops v2", "Add v3 beside v2, or replace it?"), 1, ""), acting);
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
+                List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
 
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
@@ -587,7 +594,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
         relay.relay("ABC-1", "asked-human", "The reviewer asked the human: Add v3 beside v2, or replace it?");
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
                 List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
 
         assertThat(moved).isFalse();
@@ -602,8 +609,8 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
-        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned")).thenReturn(true);
-        when(decisions.returned(task, 7, true)).thenReturn(2);
+        decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))));
+        decisions.returned(task, 5, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
@@ -612,10 +619,10 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
         relay.relay("ABC-1", "asked-human", "The reviewer asked the human: These findings came back 2 rounds running,"
-                + " neither fixed nor disputed: - [qa] Foo.java — the delay is never pinned [repeat]");
+                + " neither fixed nor disputed: - [qa] Foo.java delay — the delay is never pinned (test) [repeat]");
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("- [qa] Foo.java — the delay is never pinned"), 7, ""), acting);
+                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
 
         assertThat(moved).isFalse();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
@@ -629,7 +636,7 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
-        when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned")).thenReturn(true);
+        decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
@@ -639,10 +646,12 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("- [qa] Foo.java — the delay is never pinned", "- [developer] Bar.java:3 — a new finding"), 7, ""),
+                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test")),
+                        new MasterReview.Said("developer", new Finding("Bar.java", "a new finding", "", "blocking", "", "behaviour"))),
+                List.of(), List.of(), 7, ""),
                 acting);
 
-        verify(decisions).returned(task, 7, false);
+        assertThat(decisions.repeatedRounds(task)).isZero();
     }
 
     @Test
@@ -660,7 +669,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        verdicts.answered("ABC-1", task, "keep v2?", "keep v2\nbeside v3", false);
+        verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""), false);
 
         verify(decisions).record(task, "- asked: keep v2? — decided: keep v2 beside v3");
         verify(decisions).answered(task);
@@ -682,7 +691,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay));
         relay.relay("ABC-1", "answered", "The Master answered your question, standing in for the human:\nkeep v2 beside v3");
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
 
         assertThat(moved).isFalse();
         verify(decisions, never()).record(any(), anyString());
@@ -703,7 +712,8 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        verdicts.answered("ABC-1", task, "a second request?", "do proj drop the old keys from main", false);
+        verdicts.answered("ABC-1", task, "a second request?",
+                new MasterPanel.Decision("drop the old keys here", "do proj drop the old keys from main"), false);
 
         verify(sessions).writeTaskContext(eq("ABC-1"), contains("Not opened: only the human opens a task."));
     }
@@ -716,7 +726,7 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
-        when(decisions.answersOverThisTree(task)).thenReturn(3);
+        doReturn(3).when(decisions).answersOverThisTree(task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
@@ -735,7 +745,7 @@ class MasterVerdictsTest {
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        when(decisions.repeatedRounds(task)).thenReturn(repeated);
+        doReturn(repeated).when(decisions).repeatedRounds(task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
@@ -762,7 +772,8 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(kind, List.of("Foo.java:12 wrong"), 1, ""),
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(kind, List.of(new MasterReview.Said("developer",
+                new Finding("Foo.java", "wrong", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""),
                 acting);
 
         assertThat(moved).isFalse();
@@ -782,7 +793,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
 
         assertThat(moved).isFalse();
     }
@@ -803,7 +814,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
 
         assertThat(moved).isFalse();
@@ -825,7 +836,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1, ""),
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
 
         assertThat(moved).isFalse();

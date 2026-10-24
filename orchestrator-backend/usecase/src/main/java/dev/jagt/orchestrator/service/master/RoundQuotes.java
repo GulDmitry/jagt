@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +15,6 @@ public class RoundQuotes {
     private final RoundFacts facts;
     private final MasterDecisions decisions;
     private final MasterReview reviews;
-    private final Clock clock;
 
     Optional<MasterPanel.RoundRead> round(String taskId, TaskState task) {
         return facts.humanSaid(task).map(said -> new MasterPanel.RoundRead(facts.ask(taskId, task), facts.diff(task),
@@ -45,7 +43,7 @@ public class RoundQuotes {
         Optional<String> own = facts.ownDiff(task);
         boolean same = own.isPresent() && reviews.of(task).filter(verdict -> verdict.kind() == MasterReview.Kind.READY
                 && verdict.ownDiff().equals(own.get())).isPresent();
-        return same && reviews.restamp(task, clock.millis());
+        return same && reviews.restamp(task);
     }
 
     String planFile(TaskState task) {

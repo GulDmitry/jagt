@@ -36,7 +36,6 @@ public class MasterVerdicts {
     private final MasterDecisions decisions;
     private final PlanApproval approval;
 
-    private static final String DO = "do ";
     private static final String REVIEWER = "reviewer: ";
 
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
@@ -51,11 +50,11 @@ public class MasterVerdicts {
         return switch (verdict.kind()) {
             case NOT_READY -> returned(taskId, task, verdict, plan);
             case QUESTION -> {
-                decisions.returned(task, verdict.writtenAt(), false);
+                decisions.returned(task, verdict.round(), List.of());
                 yield ask(taskId, verdict.question());
             }
             case READY -> {
-                decisions.returned(task, verdict.writtenAt(), false);
+                decisions.returned(task, verdict.round(), List.of());
                 yield plan ? config.may(MasterRight.PLAN) && !task.planGate().keptForTheHuman()
                         && go(taskId, task, verdict)
                         : config.may(MasterRight.SHIP) && ship.ship(taskId, task);
@@ -65,10 +64,10 @@ public class MasterVerdicts {
 
     /** Repeats are relayed marked, never dropped; rounds of nothing but repeats end as the human's question. */
     private boolean returned(String taskId, TaskState task, MasterReview.Verdict verdict, boolean plan) {
+        MasterDecisions.Returned seen = decisions.returned(task, verdict.round(), verdict.findings());
         List<String> findings = verdict.findings().stream()
-                .map(f -> decisions.repeats(task, f) ? f + REPEAT : f).toList();
-        int repeated = decisions.returned(task, verdict.writtenAt(),
-                !findings.isEmpty() && findings.stream().allMatch(f -> f.endsWith(REPEAT)));
+                .map(said -> seen.repeated().contains(said.identity()) ? said.line() + REPEAT : said.line()).toList();
+        int repeated = seen.rounds();
         if (repeated >= MasterDecisions.REPEATED_ROUNDS) {
             log.atWarn().setMessage("master review stalled").addKeyValue("task", taskId)
                     .addKeyValue("rounds", repeated)
@@ -81,7 +80,7 @@ public class MasterVerdicts {
         if (!relay.relay(taskId, plan ? "plan-not-ready" : "round-not-ready", String.join("\n", findings))) {
             return false;
         }
-        String ruled = verdict.findings().stream().filter(f -> !f.contains(" — " + MasterPanel.SHOW))
+        String ruled = verdict.findings().stream().filter(MasterReview.Said::settles).map(MasterReview.Said::line)
                 .collect(Collectors.joining("\n"));
         if (!ruled.isEmpty()) {
             decisions.record(task, ruled);
@@ -93,8 +92,9 @@ public class MasterVerdicts {
     }
 
     private boolean go(String taskId, TaskState task, MasterReview.Verdict verdict) {
-        if (task.report().asks() && !verdict.findings().isEmpty()) {
-            relay.relay(taskId, "plan-answered", PLAN_ANSWERED + String.join("\n", verdict.findings()));
+        if (task.report().asks() && !verdict.advice().isEmpty()) {
+            relay.relay(taskId, "plan-answered", PLAN_ANSWERED + verdict.advice().stream().map(MasterReview.Said::line)
+                    .collect(Collectors.joining("\n")));
         }
         if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human")) {
             return false;
@@ -117,12 +117,18 @@ public class MasterVerdicts {
     }
 
     /** The Master's answer to a question, and the task back at work on it. */
-    public boolean answered(String taskId, TaskState task, String question, String decision, boolean freshSession) {
-        return OriginContext.as(ActionOrigin.MASTER, () -> answer(taskId, task, question, decision, freshSession));
+    public boolean answered(String taskId, TaskState task, String question, MasterPanel.Decision decision,
+                            boolean freshSession) {
+        return OriginContext.as(ActionOrigin.MASTER,
+                () -> answer(taskId, task, question, decision.text(), opened(decision), freshSession));
     }
 
-    private boolean answer(String taskId, TaskState task, String question, String decision, boolean freshSession) {
-        String opened = decision.lines().anyMatch(line -> line.startsWith(DO)) ? "\n" + NOT_OPENED : "";
+    private static String opened(MasterPanel.Decision decision) {
+        return decision.newTask().isBlank() ? "" : "\n" + decision.newTask() + "\n" + NOT_OPENED;
+    }
+
+    private boolean answer(String taskId, TaskState task, String question, String decision, String opened,
+                           boolean freshSession) {
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
         boolean told = FlowRules.awaitsItsInstruction(task.status())
                 ? relay.relayUnder(taskId, "answered-under", answer, freshSession)

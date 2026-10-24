@@ -1,14 +1,13 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.port.RoundReviewer.Finding;
+import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
-import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,15 +19,14 @@ class RoundQuotesTest {
 
     private final RoundFacts facts = mock(RoundFacts.class);
     private final MasterReview reviews = new MasterReview();
-    private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews, Clock.systemUTC());
+    private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
 
     @Test
-    void keepsAReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) throws Exception {
-        Path file = worktree.resolve(MasterReview.FILE);
-        Files.writeString(file, MasterReview.OWN_DIFF + "abc123\nnothing wrong\nVERDICT: ready\n");
-        Files.setLastModifiedTime(file, FileTime.fromMillis(1_000));
+    void keepsAReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .lastActiveTimestamp(System.currentTimeMillis()).build();
+                .lastActiveTimestamp(5_000).build();
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
 
         boolean carried = quotes.carried(task);
@@ -38,12 +36,11 @@ class RoundQuotesTest {
     }
 
     @Test
-    void readsTheRoundAnewWhenTheTasksOwnDiffChanged(@TempDir Path worktree) throws Exception {
-        Path file = worktree.resolve(MasterReview.FILE);
-        Files.writeString(file, MasterReview.OWN_DIFF + "abc123\nnothing wrong\nVERDICT: ready\n");
-        Files.setLastModifiedTime(file, FileTime.fromMillis(1_000));
+    void readsTheRoundAnewWhenTheTasksOwnDiffChanged(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .lastActiveTimestamp(System.currentTimeMillis()).build();
+                .lastActiveTimestamp(5_000).build();
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("def456"));
 
         boolean carried = quotes.carried(task);
@@ -53,12 +50,11 @@ class RoundQuotesTest {
     }
 
     @Test
-    void readsANotReadyVerdictAgainWhenTheSessionRepliedWithTheSameOwnDiff(@TempDir Path worktree) throws Exception {
-        Path file = worktree.resolve(MasterReview.FILE);
-        Files.writeString(file, MasterReview.OWN_DIFF + "abc123\nFoo.java drops v2\nVERDICT: not ready\n");
-        Files.setLastModifiedTime(file, FileTime.fromMillis(1_000));
+    void readsANotReadyVerdictAgainWhenTheSessionRepliedWithTheSameOwnDiff(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .lastActiveTimestamp(System.currentTimeMillis()).build();
+                .lastActiveTimestamp(5_000).build();
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", List.of(new MasterReview.Read("qa",
+                new Judgement("", "not ready", List.of(new Finding("Foo.java", "drops v2", "", "wrong", "", "missing")), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
 
         boolean carried = quotes.carried(task);
@@ -76,7 +72,7 @@ class RoundQuotesTest {
         when(facts.notes(task)).thenReturn("disputed: the guard is right");
         when(decisions.of(task)).thenReturn("- asked: keep v2? — decided: keep it");
 
-        var read = new RoundQuotes(facts, decisions, reviews, Clock.systemUTC()).round("ABC-1", task);
+        var read = new RoundQuotes(facts, decisions, reviews).round("ABC-1", task);
 
         assertThat(read).contains(new MasterPanel.RoundRead("Summary: accept v3 calls", "+int x;\n",
                 "- asked: keep v2? — decided: keep it", List.of("keep v2"), "disputed: the guard is right"));
@@ -92,7 +88,7 @@ class RoundQuotesTest {
         when(facts.notes(task)).thenReturn("disputed: the guard is right");
         when(decisions.of(task)).thenReturn("");
 
-        var read = new RoundQuotes(facts, decisions, reviews, Clock.systemUTC()).plan("ABC-1", task);
+        var read = new RoundQuotes(facts, decisions, reviews).plan("ABC-1", task);
 
         assertThat(read).contains(new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of("keep v2"),
                 "disputed: the guard is right"));
@@ -105,7 +101,7 @@ class RoundQuotesTest {
         when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
         when(decisions.of(task)).thenReturn("- settled");
 
-        var read = new RoundQuotes(facts, decisions, reviews, Clock.systemUTC()).question(task);
+        var read = new RoundQuotes(facts, decisions, reviews).question(task);
 
         assertThat(read).contains(new MasterPanel.RoundRead("", "", "- settled", List.of("keep v2"), ""));
     }

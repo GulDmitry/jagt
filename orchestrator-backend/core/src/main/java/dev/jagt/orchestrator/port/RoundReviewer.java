@@ -16,8 +16,11 @@ public interface RoundReviewer {
     record Round(String shared, String prompt, List<Path> worktrees, String model) {
     }
 
-    /** {@code severity}: blocking, wrong, unproven, unguarded or noise; only the first three stop a round. */
-    record Finding(String file, String issue, String pattern, String severity) {
+    /**
+     * {@code severity}: blocking, wrong, unproven, unguarded or noise; only the first three stop a round.
+     * {@code file}, {@code anchor} and {@code kind} are what makes it the same finding in a later round.
+     */
+    record Finding(String file, String issue, String pattern, String severity, String anchor, String kind) {
 
         public boolean stops() {
             return !severity.equals("unguarded") && !severity.equals("noise");
@@ -28,12 +31,15 @@ public interface RoundReviewer {
     record Premise(String claim, String provenBy) {
     }
 
-    /** {@code failure} non-blank means nothing else in it was read. */
+    /**
+     * {@code failure} non-blank means nothing else in it was read. {@code newTask} is work the reader would open
+     * as a task of its own, blank where none.
+     */
     record Judgement(String failure, String verdict, List<Finding> findings, String question,
-                     List<Premise> premises) {
+                     List<Premise> premises, String newTask) {
 
         public static Judgement failed(String failure) {
-            return new Judgement(failure, "", List.of(), "", List.of());
+            return new Judgement(failure, "", List.of(), "", List.of(), "");
         }
     }
 
