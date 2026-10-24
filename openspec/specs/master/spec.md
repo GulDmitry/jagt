@@ -56,11 +56,8 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 
 ### Requirement: In act the Master moves for you
 With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
-answer a question. It SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`). A permission, and
-a plan asked for in `plan` mode, stay yours. It SHALL deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`).
-`master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`
-a task's ship and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the
-Master's `done` is refused.
+answer a question. It SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`) and deploy a
+`REVIEWED` or `APPROVED` task once (`MasterDeployJob`). A permission, and a plan asked for in `plan` mode, stay yours.
 
 #### Scenario: Green with every thread closed
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`
@@ -70,19 +67,20 @@ Master's `done` is refused.
 - **WHEN** it has nothing to ship
 - **THEN** it presses nothing; the task waits for you
 
-#### Scenario: A ship or a reply kept for you
+### Requirement: The human keeps what mine and humanPaths name
+`master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`
+a task's ship and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the
+Master's `done` is refused.
+
+#### Scenario: A ship, a reply or a path kept for you
 - **WHEN** a round is `ready` and `mine: [ship]`, or the Master ships and `mine: [reply]`
 - **THEN** it ships nothing, or the session leaves `review_replies.md` for you
-
-#### Scenario: A path kept for you
 - **WHEN** `humanPaths: ["**/auth/**"]` names a changed path, or the paths are unread
 - **THEN** it presses neither; the `master` window names the path
 
-#### Scenario: A session asks for a repository
+#### Scenario: A session asks for a repository, or it is kept for you
 - **WHEN** a session names a configured project it lacks and the Master holds `repo`
 - **THEN** it presses `add-repo` once per request, answers in no prose and pings nobody
-
-#### Scenario: A repository kept for you
 - **WHEN** `mine: [repo]`
 - **THEN** it presses and answers nothing; you are pinged once and `add-repo` is yours
 

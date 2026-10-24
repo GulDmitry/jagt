@@ -98,14 +98,16 @@ approves ONE commit: only the next relay replaces `task_context.md`; re-reading 
 ### Requirement: Ship hands the work to the agent
 `ship` SHALL send ONE `ShipService` instruction for every repository holding work (changed in its worktree or ahead of
 its target): commit, push, open or update a request against its own target, every link in one `update_agent_status`
-(`reviewRequests`). jagt runs no git, calls no host; the task waits in SHIPPING. Nothing to ship
-or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened.
-A session that rebased onto a new base on the human's or the Master's word SHALL report it with `retarget_task`;
-jagt records it (`TaskRetarget`) only once origin has the branch and every worktree's HEAD holds it.
+(`reviewRequests`). jagt runs no git, calls no host; the task waits in SHIPPING.
+Nothing to ship or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened.
 
 #### Scenario: Ship
 - **WHEN** `ship ABC-42`
 - **THEN** a commit, push and request per repository onto its base
+
+### Requirement: A new base is reported by the session
+A session that rebased onto a new base on the human's or the Master's word SHALL report it with `retarget_task`;
+jagt records it (`TaskRetarget`) only once origin has the branch and every worktree's HEAD holds it.
 
 #### Scenario: A task stacked on another
 - **WHEN** ABC-42's session rebases onto `ABC-41` and calls `retarget_task` with it
@@ -169,15 +171,15 @@ MUST be refused by name.
 - **THEN** removed, its project in `jagt.yml` or gone
 
 ### Requirement: A running task gains a repository
-`add-repo` SHALL cut the task branch's worktree in the project the request names, as `do` does (`NewTaskWorktrees`).
-One already on that branch there it SHALL adopt (`GitWorktrees.worktreeOf`). It SHALL register it after the session's own,
-then write every worktree's briefing and sandbox again for the new set and clear the request. It SHALL hand the
-session the path under its instruction. It SHALL move the task to `IN_PROGRESS`; a status only a human leaves keeps
-its own. A cut that fails SHALL unwind and leave the request standing, the cause on the card.
+`add-repo` SHALL cut the task branch's worktree in the project the request names, as `do` does (`NewTaskWorktrees`),
+or adopt one already on that branch (`GitWorktrees.worktreeOf`). It SHALL register it after the session's own and
+rewrite every worktree's briefing and sandbox. It SHALL clear the request, hand the session the path and move the task
+to `IN_PROGRESS`. A cut that fails SHALL unwind and leave the request standing, the cause on the card.
 
 #### Scenario: The request is granted
 - **WHEN** you press `add-repo` on ABC-42, which asked for `schemaRegistry`
 - **THEN** its worktree exists, the session is told where, the request is gone and the task is `IN_PROGRESS`
+- **AND** a status only a human leaves keeps its own
 
 #### Scenario: The cut fails
 - **WHEN** git refuses the worktree
