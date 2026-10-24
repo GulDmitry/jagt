@@ -27,6 +27,8 @@ public class StandTools {
                         optional(a, "title"), optional(a, "description")));
         register("get_merge_request", "Read a merge request with its threads and pipeline by id or url",
                 "id_or_url:string", "", a -> store.request(idOf(text(a, "id_or_url"))));
+        register("list_merge_request_pipelines", "List the pipelines of a merge request by id", "id:integer", "",
+                a -> pipelines(number(a, "id")));
         register("list_merge_requests", "List merge requests, optionally of one source branch", "",
                 "source_branch:string", this::listRequests);
         register("reply_to_thread", "Reply to a review thread", "id:integer,thread_id:integer,body:string", "",
@@ -62,6 +64,14 @@ public class StandTools {
                 .filter(r -> source == null || r.path("sourceBranch").asString().equals(source))
                 .forEach(matching::add);
         return matching;
+    }
+
+    private JsonNode pipelines(int id) {
+        JsonNode request = store.request(id);
+        ArrayNode all = JsonMapper.builder().build().createArrayNode();
+        all.addObject().put("id", id).put("status", request.path("pipeline").asString())
+                .put("ref", request.path("sourceBranch").asString());
+        return all;
     }
 
     private static String text(JsonNode arguments, String name) {

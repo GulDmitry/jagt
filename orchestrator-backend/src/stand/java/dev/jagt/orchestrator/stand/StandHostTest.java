@@ -83,6 +83,24 @@ class StandHostTest {
     }
 
     @Test
+    void listsThePipelineOfARequestWithItsStatusAndBranch() throws Exception {
+        try (StandHost host = new StandHost(directory).start()) {
+            host.store().createRequest("feature/abc-42", "main", "ABC-42", "d");
+            host.store().setPipeline(1, "success");
+
+            String answer = post(host, "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":"
+                    + "{\"name\":\"list_merge_request_pipelines\",\"arguments\":{\"id\":1}}}").body();
+
+            String text = JsonMapper.builder().build().readTree(answer).path("result").path("content").get(0).path("text").asString();
+            JsonNode pipelines = JsonMapper.builder().build().readTree(text);
+            assertThat(pipelines.size()).isEqualTo(1);
+            assertThat(pipelines.get(0).path("status").asString()).isEqualTo("success");
+            assertThat(pipelines.get(0).path("ref").asString()).isEqualTo("feature/abc-42");
+            assertThat(pipelines.get(0).path("id").asInt()).isEqualTo(1);
+        }
+    }
+
+    @Test
     void failsAnUnknownToolAsAToolError() throws Exception {
         try (StandHost host = new StandHost(directory).start()) {
             HttpResponse<String> response = post(host, "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
