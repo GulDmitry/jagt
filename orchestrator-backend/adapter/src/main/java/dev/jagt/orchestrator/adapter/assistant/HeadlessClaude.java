@@ -50,6 +50,8 @@ class HeadlessClaude {
             + " what stopped you, and which tool or server it was>, and NEVER report that as not existing."
             + " A tool asking for a site or cloud id gets one the host's own listing of reachable sites"
             + " answered, never one recalled or guessed.";
+    /** A replayed run answers these reads from its recording. */
+    static final String NOT_REPLAYED = "'${orchestrator.agent.cli:claude}' != 'replay'";
     /** The CLI's own tool carrying the answer a {@code --json-schema} asks for. */
     static final String STRUCTURED_OUTPUT = "StructuredOutput";
     static final String RETRY_REASON = "\n\nYour last reply was prose without the " + STRUCTURED_OUTPUT
@@ -67,6 +69,12 @@ class HeadlessClaude {
     /** A read that reports what stopped it comes back unreadable, never as an answer with empty facts. */
     Answer<JsonNode> read(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
         Answer<JsonNode> answer = ask(prompt, schema, label, kind, timeout);
+        answer.facts().ifPresent(said -> log.atDebug().setMessage("assistant read answered").addKeyValue("ref", label)
+                .addKeyValue("kind", kind).addKeyValue("answer", said.toString()).log());
+        return reported(answer, label);
+    }
+
+    static Answer<JsonNode> reported(Answer<JsonNode> answer, String label) {
         String failure = answer.facts().map(n -> n.path("failure").asString("")).orElse("").trim();
         if (failure.isEmpty()) {
             return answer;

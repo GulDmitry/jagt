@@ -411,6 +411,8 @@ tasks.register('standTest', Test) {
     systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
     ['scenario', 'modes', 'mutations', 'seed'].each { key -> systemProperty "stand.${key}", project.findProperty(key) ?: '' }
     systemProperty 'stand.report', standReport.absolutePath
+    // A run starts the staged jar, so a replay checks the frame as built now.
+    dependsOn 'stageJar'
     doFirst { standReport.delete() }
     testLogging { showStandardStreams = true }
     outputs.upToDateWhen { false }

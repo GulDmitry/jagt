@@ -8,7 +8,9 @@ import dev.jagt.orchestrator.protocol.TicketText;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.List;
 import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.FAILURE_RULE;
 
 @Component
+@ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
 @RequiredArgsConstructor
 public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
 
@@ -41,19 +44,7 @@ public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
                 + " empty url." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
         return claude.read(prompt + correcting(corrections), TicketRead.SCHEMA.json(), ticketRef,
-                AssistantCallKind.TICKET_READ).map(n -> {
-            List<String> labels = new ArrayList<>();
-            n.path("labels").forEach(l -> labels.add(l.asString("")));
-            return TicketFacts.defaults()
-                    .withExists(n.path("exists").asBoolean(false))
-                    .withKey(n.path("key").asString(""))
-                    .withTitle(n.path("title").asString(""))
-                    .withTrackerProject(n.path("trackerProject").asString(""))
-                    .withLabels(labels)
-                    .withUrl(n.path("url").asString(""))
-                    .withTrackerStatus(n.path("trackerStatus").asString(""))
-                    .withAssignee(n.path("assignee").asString(""));
-        });
+                AssistantCallKind.TICKET_READ).map(HeadlessClaudeTrackerAssistant::ticket);
     }
 
     @Override
@@ -69,7 +60,7 @@ public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
         Answer<String> read = claude.read(prompt, TicketText.SCHEMA.json(), ticketRef,
-                AssistantCallKind.MASTER_REVIEW).map(n -> n.path("text").asString("").strip());
+                AssistantCallKind.MASTER_REVIEW).map(HeadlessClaudeTrackerAssistant::text);
         return new Answer<>(read.facts().filter(text -> !text.isEmpty()), read.usage(), read.failure(), read.refused());
     }
 
@@ -86,12 +77,32 @@ public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
                 + " the right answer where the search matched nothing." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
         return claude.read(prompt, TicketSearch.SCHEMA.json(), query, AssistantCallKind.INTAKE)
-                .map(n -> {
-                    List<String> keys = new ArrayList<>();
-                    n.path("keys").forEach(key -> keys.add(key.asString("").strip()));
-                    keys.removeIf(String::isEmpty);
-                    return List.copyOf(keys);
-                });
+                .map(HeadlessClaudeTrackerAssistant::keys);
+    }
+
+    static List<String> keys(JsonNode n) {
+        List<String> keys = new ArrayList<>();
+        n.path("keys").forEach(key -> keys.add(key.asString("").strip()));
+        keys.removeIf(String::isEmpty);
+        return List.copyOf(keys);
+    }
+
+    static TicketFacts ticket(JsonNode n) {
+        List<String> labels = new ArrayList<>();
+        n.path("labels").forEach(l -> labels.add(l.asString("")));
+        return TicketFacts.defaults()
+                .withExists(n.path("exists").asBoolean(false))
+                .withKey(n.path("key").asString(""))
+                .withTitle(n.path("title").asString(""))
+                .withTrackerProject(n.path("trackerProject").asString(""))
+                .withLabels(labels)
+                .withUrl(n.path("url").asString(""))
+                .withTrackerStatus(n.path("trackerStatus").asString(""))
+                .withAssignee(n.path("assignee").asString(""));
+    }
+
+    static String text(JsonNode n) {
+        return n.path("text").asString("").strip();
     }
 
     /** What the last answer got wrong, appended so the next one is not the same answer. */

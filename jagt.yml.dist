@@ -187,6 +187,8 @@ orchestrator:
   # gateUrl: http://127.0.0.1:8290/api/agent
   # stub:
   #   script: …                # the e2e matrix's scripted agent
+  # replay:
+  #   file: …/recording.jsonl  # `agent.cli: replay` plays a stand run's sessions, reads and verdicts back, no model
   # configFile: cannot live here, it says where THIS file is:
   #   `--orchestrator.config-file=…` or `ORCHESTRATOR_CONFIG_FILE=…`
 

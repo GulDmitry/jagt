@@ -28,7 +28,9 @@ public final class JagtProcess implements AutoCloseable {
         int port = freePort();
         String java = ProcessHandle.current().info().command().orElse("java");
         ProcessBuilder builder = new ProcessBuilder(List.of(java, "-jar", JAR.toString(), "--server.port=" + port,
-                "--orchestrator.open-terminal-window=false"))
+                "--orchestrator.open-terminal-window=false",
+                "--logging.level.dev.jagt.orchestrator.surface.mcp.McpProtocolService=DEBUG",
+                "--logging.level.dev.jagt.orchestrator.adapter.assistant.HeadlessClaude=DEBUG"))
                 .directory(root.toFile()).redirectErrorStream(true)
                 .redirectOutput(root.resolve("jagt.out").toFile());
         Map<String, String> env = builder.environment();

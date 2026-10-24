@@ -136,9 +136,9 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `flow/TaskCapability` | one per verb under `capability/` |
 | `flow/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/trust/GitStateGuard`; an install may add its own step |
 | `Specs` | `adapter/OpenSpec` |
-| `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`) |
-| `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe` |
-| `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer` |
+| `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
+| `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
+| `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer`, `ReplayRoundReviewer` (a stand recording played back) |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
 | `Processes` | `adapter/ProcessRunner` |

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
 import dev.jagt.orchestrator.surface.mcp.tools.IdeTools;
@@ -123,6 +124,34 @@ class McpProtocolServiceTest {
 
         assertThat(response.path("result").path("content").get(0).path("text").asString())
                 .endsWith(": IllegalStateException");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void logsASessionsCallWithItsArgumentsAndTheTurnItAnswers(@TempDir Path root) {
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
+        protocolLog.addAppender(log);
+        protocolLog.setLevel(Level.DEBUG);
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build()
+                .withTurn(Turn.none().relayed("ship", "d1", 0)));
+        McpTools noting = tools -> tools.tool("note", Audience.ANYONE, Effect.REPORTS, NoArguments.schema("notes"),
+                NoArguments.class, (said, caller) -> MessageContext.NONE, (said, caller) -> "noted");
+        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));
+
+        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"note\",\"arguments\":{\"why\":\"pushed\"}}}"), "/wt/ABC-1-proj", false);
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "mcp tool called".equals(event.getMessage()))
+                .singleElement().satisfies(event -> assertThat(event.getKeyValuePairs()).extracting(pair -> pair.key + "="
+                        + pair.value).containsExactly("task=ABC-1", "tool=note", "turn=1", "step=ship",
+                        "arguments={\"why\":\"pushed\"}"));
+        protocolLog.detachAppender(log);
+        protocolLog.setLevel(null);
     }
 
     @Test

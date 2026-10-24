@@ -9,7 +9,9 @@ import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.List;
 import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.FAILURE_RULE;
 
 @Component
+@ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
 @RequiredArgsConstructor
 public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
 
@@ -40,9 +43,7 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 + " title." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
         return claude.read(prompt, MergeRequestRead.SCHEMA.json(), mrUrl, AssistantCallKind.MR_READ)
-                .map(n -> new MergeRequestFacts(n.path("exists").asBoolean(false),
-                        n.path("sourceBranch").asString(""), n.path("targetBranch").asString(""),
-                        n.path("title").asString("")));
+                .map(HeadlessClaudeCodeHostAssistant::request);
     }
 
     @Override
@@ -98,13 +99,20 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 listing you could not get is pipelineStatus=unknown with failure="".</failure>
                 Respond directly, no preamble.""".formatted(mrUrl, FAILURE_RULE.strip());
         return claude.read(prompt, ReviewRead.SCHEMA.json(), mrUrl, AssistantCallKind.REVIEW_SWEEP, REVIEW_TIMEOUT)
-                .map(n -> {
-                    List<String> threads = new ArrayList<>();
-                    n.path("threads").forEach(t -> threads.add(cappedTail(t.asString(""))));
-                    return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
-                            n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
-                            threads, HostStamp.epochMillis(n.path("openedAt").asString("")));
-                });
+                .map(HeadlessClaudeCodeHostAssistant::review);
+    }
+
+    static MergeRequestFacts request(JsonNode n) {
+        return new MergeRequestFacts(n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
+                n.path("targetBranch").asString(""), n.path("title").asString(""));
+    }
+
+    static ReviewFacts review(JsonNode n) {
+        List<String> threads = new ArrayList<>();
+        n.path("threads").forEach(t -> threads.add(cappedTail(t.asString(""))));
+        return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
+                n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
+                threads, HostStamp.epochMillis(n.path("openedAt").asString("")));
     }
 
     /** Relayed into a worktree file, so a host that answered with a whole build log is cut here. */

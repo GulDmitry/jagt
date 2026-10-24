@@ -2,20 +2,26 @@ package dev.jagt.orchestrator.stand;
 
 import dev.jagt.orchestrator.stand.invariant.RunRecord;
 import dev.jagt.orchestrator.stand.invariant.Violation;
+import dev.jagt.orchestrator.stand.replay.Recorder;
+import dev.jagt.orchestrator.stand.replay.ReplayLog;
+import dev.jagt.orchestrator.stand.replay.WorktreeSnapshots;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 
 public final class StandRun implements AutoCloseable {
 
     private static final AtomicInteger RUNS = new AtomicInteger();
     private static final Duration POLL = Duration.ofSeconds(5);
+    private static final Duration REPLAY_POLL = Duration.ofSeconds(1);
     private static final Duration PIPELINE = Duration.ofSeconds(20);
     private static final Duration STALL = Duration.ofMinutes(15);
     private static final Duration HELD = Duration.ofMinutes(10);
@@ -24,11 +30,16 @@ public final class StandRun implements AutoCloseable {
     private final StandMode mode;
     private final StandProject project;
     private final StandHost host;
+    private final @Nullable Path replayed;
+    private final WorktreeSnapshots snapshots;
     private JagtProcess jagt;
     private StandMarker marker;
 
-    private StandRun(Path root, StandMarker marker, StandMode mode, StandProject project, StandHost host, JagtProcess jagt) {
+    private StandRun(Path root, StandMarker marker, StandMode mode, StandProject project, StandHost host, JagtProcess jagt,
+                     @Nullable Path replayed) {
         this.root = root;
+        this.replayed = replayed;
+        this.snapshots = new WorktreeSnapshots(root);
         this.marker = marker;
         this.mode = mode;
         this.project = project;
@@ -37,15 +48,25 @@ public final class StandRun implements AutoCloseable {
     }
 
     public static StandRun start(String scenario, StandMode mode) throws IOException {
+        return start(scenario, mode, null);
+    }
+
+    /** jagt as built, its sessions, reads and Master answered from {@code recording} instead of a model. */
+    public static StandRun replay(String scenario, StandMode mode, Path recording) throws IOException {
+        return start(scenario, mode, recording);
+    }
+
+    private static StandRun start(String scenario, StandMode mode, @Nullable Path replayed) throws IOException {
         Path root = newRoot();
         StandMarker marker = StandMarker.started(scenario + "/" + mode.id()).writeTo(root);
         Files.createDirectories(root.resolve("tmux"));
         StandProject project = StandProject.create(root);
         StandHost host = new StandHost(root.resolve("host")).start();
         try {
-            StandConfig.write(root, project.repo(), host.mcpUrl(), root.getFileName().toString(), mode);
+            StandConfig.write(root, project.repo(), host.mcpUrl(), root.getFileName().toString(), mode, replayed);
             JagtProcess jagt = JagtProcess.start(root);
-            return new StandRun(root, marker.withJagt(jagt.pid(), jagt.port()).writeTo(root), mode, project, host, jagt);
+            return new StandRun(root, marker.withJagt(jagt.pid(), jagt.port()).writeTo(root), mode, project, host, jagt,
+                    replayed);
         } catch (RuntimeException e) {
             host.close();
             StandShell.killTmux(root);
@@ -70,6 +91,10 @@ public final class StandRun implements AutoCloseable {
         return RunRecord.read(root);
     }
 
+    public ReplayLog replayLog() {
+        return ReplayLog.read(root);
+    }
+
     public List<Violation> violations() {
         return new StandBooks(root).violations();
     }
@@ -91,23 +116,30 @@ public final class StandRun implements AutoCloseable {
             human.take(board, jagt.board(), timeline);
         }
         Instant settled = Instant.now().plus(script.settle());
-        while (timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(settled)) {
+        while (replayed == null && timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(settled)) {
             tick(timeline);
         }
         return new StandOutcome(timeline.lastStatus(), timeline.lastOwner(), Duration.between(start, Instant.now()),
                 timeline.tail(20), root);
     }
 
-    private static boolean going(Script script, Timeline timeline, Instant deadline) {
+    private boolean going(Script script, Timeline timeline, Instant deadline) {
+        if (replayed != null) {
+            ReplayLog replay = ReplayLog.read(root);
+            boolean done = replay.drained() && timeline.lastStatus().equals(script.until());
+            return replay.divergences().isEmpty() && !done && Instant.now().isBefore(deadline);
+        }
         boolean held = timeline.lastOwner().equals("YOU") && timeline.stalledFor(HELD);
         return !timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(deadline)
                 && !timeline.stalledFor(STALL) && !held;
     }
 
     private JsonNode tick(Timeline timeline) {
-        JagtProcess.pause(POLL);
+        JagtProcess.pause(replayed == null ? POLL : REPLAY_POLL);
         JsonNode board = jagt.board().tasks();
-        timeline.record(jagt.board().state(), board);
+        JsonNode state = jagt.board().state();
+        timeline.record(state, board);
+        snapshots.take(state);
         timeline.windows(StandShell.windows(root));
         return board;
     }
@@ -123,6 +155,7 @@ public final class StandRun implements AutoCloseable {
         Files.writeString(root.resolve("screens.log"), StandShell.screens(root));
         StandShell.killTmux(root);
         printUsage();
+        keepRecording();
         StandReport.append(marker.scenario(), marker.outcome().equals(StandMarker.PASSED));
         if (marker.outcome().equals(StandMarker.PASSED)) {
             StandShell.deleteRoot(root);
@@ -130,6 +163,20 @@ public final class StandRun implements AutoCloseable {
         }
         marker.withOutcome(StandMarker.FAILED).writeTo(root);
         System.out.println("stand run " + marker.scenario() + " failed; kept " + root);
+    }
+
+    private void keepRecording() {
+        if (replayed != null) {
+            return;
+        }
+        try {
+            Path kept = Files.createDirectories(Path.of("build", "stand", "recordings"))
+                    .resolve(marker.scenario().replace('/', '-') + "-" + root.getFileName() + ".jsonl");
+            Files.copy(Recorder.write(root, POLL), kept, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("stand run " + marker.scenario() + " recorded: " + kept.toAbsolutePath());
+        } catch (IOException | RuntimeException e) {
+            System.out.println("stand run " + marker.scenario() + " not recorded: " + e);
+        }
     }
 
     private void printUsage() {

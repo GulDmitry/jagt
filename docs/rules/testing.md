@@ -22,8 +22,7 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 - Code that only forwards or holds — a getter, a controller calling a service — gets no test of its own.
   The business case passing through it covers it.
 - Editing a test's assertion or expected value, or deleting it, needs a reason in the commit message.
-- The reason is one of two: its scenario changed in the same commit, or it asserted what nothing promised.
-- A red run is the code's to fix. Rewriting the expectation to go green is never a reason.
+- The reason: its scenario changed in the same commit, or it asserted what nothing promised; never a red run, the code's to fix.
 - **A move is pinned by where it lands**: a report a unit sends is asserted once as the status it lands on,
   through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
 - Why: an edited test is the cheapest wrong fix, and a bug comes back through it
@@ -84,6 +83,7 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 - Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,
   the deploy check.
 - `standTest` runs real sessions on a local stand, held to invariants (`-Pmodelfree`: no tokens); `standCleanup` keeps failed roots, `standClean` not.
+- A live stand run records its model moves (`recording.jsonl`); `ReplayStandTest` replays one, no model, a turn it never answered a divergence.
 
 ### Linux, and one set of steps per host
 

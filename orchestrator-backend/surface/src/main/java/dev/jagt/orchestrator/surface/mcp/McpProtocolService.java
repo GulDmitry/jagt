@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.mcp;
 
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -154,6 +155,12 @@ public class McpProtocolService implements McpToolRegistry {
             return failed(ToolFailure.VALIDATION, "Unknown tool: " + name + ". Yours: " + String.join(", ",
                     tools.values().stream().filter(tool -> tool.audience().admits(callerTaskId))
                             .map(ToolSpec::name).toList()));
+        }
+        if (callerTaskId != null) {
+            Turn turn = stateService.task(callerTaskId).map(TaskState::turnOrNone).orElse(Turn.none());
+            log.atDebug().setMessage("mcp tool called").addKeyValue("task", callerTaskId).addKeyValue("tool", name)
+                    .addKeyValue("turn", turn.id()).addKeyValue("step", turn.step())
+                    .addKeyValue("arguments", args.toString()).log();
         }
         try {
             return toolResult(spec.handler().call(args, callerTaskId));

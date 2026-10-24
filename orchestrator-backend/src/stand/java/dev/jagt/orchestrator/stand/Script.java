@@ -16,6 +16,10 @@ public record Script(String ref, @Nullable String launchMode, String until, Dura
         return new Script(ref, "plan", until, timeout, settle, events);
     }
 
+    public Script within(Duration limit) {
+        return new Script(ref, launchMode, until, limit, settle, events);
+    }
+
     public Script with(WorldEvent event) {
         List<WorldEvent> more = new ArrayList<>(events);
         more.add(event);
