@@ -379,12 +379,34 @@ tasks.register('e2eTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
+def standBase = System.getProperty('java.io.tmpdir')
+
 tasks.register('standTest', Test) {
     description = 'Runs the local synthetic code host and tracker the test stand serves over MCP.'
     group = 'verification'
     testClassesDirs = sourceSets.stand.output.classesDirs
     classpath = sourceSets.stand.runtimeClasspath
     useJUnitPlatform()
+    // Each scenario owns its root, port and tmux server, so scenarios run side by side.
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
+    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'same_thread'
+    systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
+    systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
+    systemProperty 'stand.base', standBase
+    testLogging { showStandardStreams = true }
+    outputs.upToDateWhen { false }
+    finalizedBy 'standCleanup'
+}
+
+// Whatever the outcome: stops what dead stand runs left and removes their roots, a failed run's only by standClean.
+['standCleanup': [], 'standClean': ['--failed-too']].each { name, flags ->
+    tasks.register(name, JavaExec) {
+        description = 'Removes the roots of finished stand runs' + (flags ? ', failed ones included.' : ', keeping failed ones.')
+        group = 'verification'
+        classpath = sourceSets.stand.runtimeClasspath
+        mainClass = 'dev.jagt.orchestrator.stand.StandCleanup'
+        args([standBase] + flags)
+    }
 }
 
 tasks.register('masterEval', Test) {

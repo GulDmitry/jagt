@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -35,6 +36,8 @@ public class StandStore {
     public synchronized ObjectNode seedTicket(String key, String title, String description, String status) {
         ObjectNode ticket = mapper.createObjectNode();
         ticket.put("key", key).put("title", title).put("description", description).put("status", status);
+        ticket.put("url", baseUrl + "/tickets/" + key).put("project", key.substring(0, key.indexOf('-')));
+        ticket.put("assignee", "").putArray("labels");
         write(tickets.resolve(key + ".json"), ticket);
         return ticket;
     }
@@ -90,6 +93,7 @@ public class StandStore {
     public synchronized List<JsonNode> allRequests() {
         List<JsonNode> all = new ArrayList<>();
         readAll(requests).forEach(all::add);
+        all.sort(Comparator.comparingInt(request -> request.path("id").asInt()));
         return all;
     }
 
