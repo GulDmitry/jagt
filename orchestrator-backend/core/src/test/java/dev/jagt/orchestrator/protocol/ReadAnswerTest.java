@@ -32,6 +32,13 @@ class ReadAnswerTest {
     }
 
     @Test
+    void acceptsWhyTheListingCouldNotBeGotWhereTheChecksAreUnknown() {
+        var facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0);
+
+        assertThat(ReviewRead.violations(facts)).isEmpty();
+    }
+
+    @Test
     void acceptsTheFailingJobsLinesWhereTheRunActuallyFailed() {
         var facts = new ReviewFacts(true, false, "failed", "step 3 exited 1", List.of(), 0);
 

@@ -70,7 +70,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null);
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -112,7 +112,7 @@ class TaskStateTest {
     @Test
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
-                1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null,
+                1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
                 null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
@@ -440,13 +440,13 @@ class TaskStateTest {
     void readsBackEveryFieldItWroteIncludingWhatAnEarlierFileCouldOmit() {
         JsonMapper mapper = new JsonMapper();
         TaskState written = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
-                .withChecksUnread()
+                .withChecksUnread(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"))
                 .withProbes(List.of(Probe.specified(Probe.Kind.COMMAND, List.of("make"), 0)))
                 .refused(Guard.GIT_STATE);
 
         TaskState read = mapper.readValue(mapper.writeValueAsString(written), TaskState.class);
 
-        assertThat(read.pipelineUnread()).isTrue();
+        assertThat(read.checksUnread()).containsExactly(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"));
         assertThat(read.probes()).hasSize(1);
         assertThat(read.refusals()).containsEntry(Guard.GIT_STATE, 1);
         assertThat(read.history()).hasSize(1);
@@ -460,7 +460,7 @@ class TaskStateTest {
         List<Probe> probes = List.of(Probe.specified(Probe.Kind.REF, List.of("main"), 0));
 
         TaskState found = task.withAgentSpend(spend).withGitTrust(trust).withProbes(probes)
-                .withApproved(true).withChecksUnread();
+                .withApproved(true).withChecksUnread(new ChecksUnread(1_000, ""));
 
         assertThat(found.agentSpend()).isEqualTo(spend);
         assertThat(found.gitTrust()).isEqualTo(trust);
@@ -477,6 +477,35 @@ class TaskStateTest {
                  "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
 
         assertThat(legacy.planGate()).isEqualTo(PlanGate.OPEN);
+    }
+
+    @Test
+    void keepsTheChecksFlaggedUnreadInAFileWrittenBeforeTheReadsWereKept() {
+        TaskState legacy = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"CI_POLLING","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0,"pipelineStatus":"failed","pipelineUnread":true}""", TaskState.class);
+
+        assertThat(legacy.pipelineUnread()).isTrue();
+    }
+
+    @Test
+    void keepsOnlyTheReadsRunningThatCanStopTheTask() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withChecksUnread(new ChecksUnread(1_000, "a")).withChecksUnread(new ChecksUnread(2_000, "b"))
+                .withChecksUnread(new ChecksUnread(3_000, "c")).withChecksUnread(new ChecksUnread(4_000, "d"));
+
+        assertThat(task.checksUnread()).containsExactly(new ChecksUnread(2_000, "b"), new ChecksUnread(3_000, "c"),
+                new ChecksUnread(4_000, "d"));
+    }
+
+    @Test
+    void forgetsTheReadsRunningThatCouldNotListTheChecksOnceOneDid() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withChecksUnread(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"));
+
+        TaskState read = task.withChecksRead("success");
+
+        assertThat(read.checksUnread()).isEmpty();
     }
 
     @Test

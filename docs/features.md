@@ -117,14 +117,14 @@
 
 ## Review · [spec](../openspec/specs/review/spec.md)
 
-- **Review threads** — Each review thread is fixed, declined with a reason, or asked.
-  [spec](../openspec/specs/review/spec.md#requirement-the-brief-routes-each-thread)
+- **Review threads** — Each is fixed, declined with a why, or asked. [spec](../openspec/specs/review/spec.md#requirement-the-brief-routes-each-thread)
 - **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
   [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
-- **Take over a request** — An existing review request can be taken over by a new task.
-  [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
+- **Take over** — A new task can take over an open review request. [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
 - **Red round** — A failing pipeline sends the task back to its session.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)
+- **Unreadable checks** — Three reads running that cannot list the pipelines stop the task, with the reads' causes.
+  [spec](../openspec/specs/review/spec.md#requirement-pipeline-status-keeps-the-hosts-wording)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
 

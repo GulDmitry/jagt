@@ -47,8 +47,8 @@ public record TaskState(
         @Nullable Boolean autoReview,
         // The host's own wording for the checks, unparsed. Null = never read.
         @Nullable String pipelineStatus,
-        // Whether the NEWEST round failed to read them, so the word above is an older round's.
-        boolean pipelineUnread,
+        // The reads running that could not list them, newest last; any = the word above is an older round's.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<ChecksUnread> checksUnread,
         // Whether the host says this round is approved. Null = no read has said yet.
         @Nullable Boolean approved,
         // Null until the first metered call.
@@ -79,6 +79,7 @@ public record TaskState(
         history = history == null ? List.of() : List.copyOf(history);
         refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
         probes = probes == null ? List.of() : List.copyOf(probes);
+        checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
@@ -108,7 +109,9 @@ public record TaskState(
             @JsonProperty("silentBecause") @Nullable String silentBecause,
             @JsonProperty("autoReview") @Nullable Boolean autoReview,
             @JsonProperty("pipelineStatus") @Nullable String pipelineStatus,
+            // A file written before the reads were kept holds only whether the newest one failed.
             @JsonProperty("pipelineUnread") @Nullable Boolean pipelineUnread,
+            @JsonProperty("checksUnread") @Nullable List<ChecksUnread> checksUnread,
             @JsonProperty("approved") @Nullable Boolean approved,
             @JsonProperty("usage") @Nullable TokenUsage usage,
             @JsonProperty("agentSpend") @Nullable AgentSpend agentSpend,
@@ -130,10 +133,18 @@ public record TaskState(
                 report == null ? ReportMarkerMigration.reportOf(message) : report, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
-                pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
+                unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate, loop, conflict,
                 repoRequest, turn);
+    }
+
+    /** Flagged without a stamp, so it never counts toward a stop. */
+    private static List<ChecksUnread> unreadOf(@Nullable List<ChecksUnread> checksUnread, @Nullable Boolean flagged) {
+        if (checksUnread != null) {
+            return checksUnread;
+        }
+        return Boolean.TRUE.equals(flagged) ? List.of(new ChecksUnread(0, "")) : List.of();
     }
 
     @JsonIgnore
@@ -219,7 +230,7 @@ public record TaskState(
     public TaskState withReviewRound(@Nullable String project, String reviewRequestUrl, long now) {
         return relinked(project, reviewRequestUrl, now).lastActiveTimestamp(now)
                 // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
-                .pipelineStatus(null).pipelineUnread(false).approved(null)
+                .pipelineStatus(null).checksUnread(List.of()).approved(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
                 .build();
@@ -284,12 +295,20 @@ public record TaskState(
 
     /** What a round actually READ off the host, which also ends any older round's failure to read it. */
     public TaskState withChecksRead(String hostStatus) {
-        return toBuilder().pipelineStatus(hostStatus).pipelineUnread(false).build();
+        return toBuilder().pipelineStatus(hostStatus).checksUnread(List.of()).build();
     }
 
     /** A round that could not read them: the last verdict stands, marked as not this round's. */
-    public TaskState withChecksUnread() {
-        return toBuilder().pipelineUnread(true).build();
+    public TaskState withChecksUnread(ChecksUnread read) {
+        List<ChecksUnread> running = new ArrayList<>(checksUnread);
+        running.add(read);
+        return toBuilder().checksUnread(running.subList(Math.max(0, running.size() - ChecksUnread.CEILING),
+                running.size())).build();
+    }
+
+    @JsonIgnore
+    public boolean pipelineUnread() {
+        return !checksUnread.isEmpty();
     }
 
     public TaskState withApproved(Boolean approved) {
@@ -387,7 +406,7 @@ public record TaskState(
             return toBuilder().repos(repos);
         }
         return toBuilder().repos(repos).requestOpenedAt(now)
-                .pipelineStatus(null).pipelineUnread(false).approved(null);
+                .pipelineStatus(null).checksUnread(List.of()).approved(null);
     }
 
     public TaskState withMrUrl(String mrUrl, long now) {
@@ -538,7 +557,7 @@ public record TaskState(
                 .title(title).ticketUrl(ticketUrl).baseBranch(baseBranch)
                 .mrCreatedAt(mrCreatedAt).requestOpenedAt(requestOpenedAt)
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
-                .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
+                .autoReview(autoReview).pipelineStatus(pipelineStatus).checksUnread(checksUnread)
                 .approved(approved)
                 .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
                 .planGate(planGate).loop(loop).conflict(conflict).repoRequest(repoRequest).turn(turn);
@@ -562,7 +581,7 @@ public record TaskState(
         private @Nullable String silentBecause;
         private @Nullable Boolean autoReview;
         private @Nullable String pipelineStatus;
-        private boolean pipelineUnread;
+        private List<ChecksUnread> checksUnread = List.of();
         private @Nullable Boolean approved;
         private @Nullable TokenUsage usage;
         private @Nullable AgentSpend agentSpend;
@@ -677,8 +696,8 @@ public record TaskState(
             return this;
         }
 
-        public Builder pipelineUnread(boolean pipelineUnread) {
-            this.pipelineUnread = pipelineUnread;
+        public Builder checksUnread(List<ChecksUnread> checksUnread) {
+            this.checksUnread = checksUnread;
             return this;
         }
 
@@ -748,7 +767,7 @@ public record TaskState(
                     lastActiveTimestamp, null));
             return new TaskState(repos, status, lastActiveTimestamp, message, report, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
-                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust,
+                    autoReview, pipelineStatus, checksUnread, approved, usage, agentSpend, log, refusals, gitTrust,
                     probes, planGate, loop, conflict, repoRequest, turn);
         }
     }

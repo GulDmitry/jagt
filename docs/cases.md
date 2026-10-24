@@ -83,6 +83,7 @@ Families:
 | E7 | a starts-stopped file is unreadable → the typed cause, not three bad endings | 793271d5 | `BoardApiControllerTest` |
 | E8 | an agent exits at launch before any hook → within seconds an ended session with its last lines, the log's cause never null | seen 2026-10-24: noticed 10 min later, no cause | `LaunchExitsTest`, `TmuxSessionHostTest`, `SessionProbeTest`, `WatchdogServiceTest` |
 | E9 | jagt starts with the machine checks off → its own case file is still checked; an empty book never starts | seen 2026-10-24 on the stand: 451 misses in 15 min | `StartupValidationTest` |
+| E10 | a read cannot list a task's pipelines → three running since the lift stop the task with the reads' causes | seen 2026-10-24 on the stand: 8 unknown reads in 15 min, nobody told | `ChecksUnreadTest`, `RoundRecordTest`, `RoundOutcomeTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

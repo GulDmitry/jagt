@@ -74,7 +74,8 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 - approved: true only if the request is actually APPROVED by a human reviewer, not merely mergeable.
                 - pipelineStatus: exactly one of success | failed | running | none | unknown; none ONLY when that \
                 listing came back EMPTY, and unknown where you could not list them at all.
-                - pipelineFailure: ONLY where pipelineStatus is failed, the failing job's name and the error lines \
+                - pipelineFailure: where pipelineStatus is unknown, the listing tool's own words for what stopped \
+                it. Where it is failed, the failing job's name and the error lines \
                 of its log, at most 20 lines, cut to what names the fault; for an external analysis, its project \
                 key, then one line per failed condition as "<metric> <actual> / <threshold>". A log or verdict you \
                 could not read fails nothing: pipelineFailure is then the job's name and the lines you did read, \
@@ -96,7 +97,7 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 60 but was 55"
                 </examples>
                 <failure>%s The pipelines are the ONE exception to it, and they change nothing about exists: a \
-                listing you could not get is pipelineStatus=unknown with failure="".</failure>
+                listing you could not get is pipelineStatus=unknown with failure="" and its cause in pipelineFailure.</failure>
                 Respond directly, no preamble.""".formatted(mrUrl, FAILURE_RULE.strip());
         return claude.read(prompt, ReviewRead.SCHEMA.json(), mrUrl, AssistantCallKind.REVIEW_SWEEP, REVIEW_TIMEOUT)
                 .map(HeadlessClaudeCodeHostAssistant::review);

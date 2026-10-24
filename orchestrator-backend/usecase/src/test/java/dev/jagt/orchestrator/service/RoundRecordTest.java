@@ -1,14 +1,20 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.ChecksUnread;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +28,35 @@ import static org.mockito.Mockito.when;
 class RoundRecordTest {
 
     private final StateService stateService = mock(StateService.class);
-    private final RoundRecord roundRecord = new RoundRecord(stateService);
+    private final TaskStops stops = mock(TaskStops.class);
+    private final RoundRecord roundRecord = new RoundRecord(stateService, stops,
+            Clock.fixed(Instant.ofEpochMilli(3_000), ZoneOffset.UTC));
+
+    @Test
+    void stopsTheTaskWhenTheThirdReadRunningCouldNotListTheChecks() {
+        ArgumentCaptor<Function<TaskState, LoopWatch>> tripped = ArgumentCaptor.captor();
+
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0));
+
+        verify(stops).trip(eq("ABC-1"), tripped.capture());
+        LoopWatch watch = tripped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withChecksUnread(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"))
+                .withChecksUnread(new ChecksUnread(2_000, "list_pipelines: 403 Forbidden"))
+                .withChecksUnread(new ChecksUnread(3_000, "list_pipelines: 403 Forbidden")));
+        assertThat(watch.stop()).isNotNull();
+        assertThat(watch.stop().trigger()).isEqualTo(LoopWatch.Trigger.CHECKS);
+    }
+
+    @Test
+    void keepsTheReadsOwnWordsForWhyItCouldNotListTheChecks() {
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0));
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        assertThat(stamped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .checksUnread()).containsExactly(new ChecksUnread(3_000, "list_pipelines: 403 Forbidden"));
+    }
 
     @Test
     void keepsAnEarlierRoundsVerdictFlaggedWhenThisSweepCouldNotReadTheChecks() {

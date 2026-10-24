@@ -19,13 +19,13 @@ public final class ReviewRead {
     private ReviewRead() {
     }
 
-    /** The failing job's lines belong to a failing run: quoted under any other verdict they describe nothing. */
+    /** What went wrong belongs to a failing run or a listing not got: under any other verdict it describes nothing. */
     public static List<Violation> violations(ReviewFacts facts) {
-        boolean red = facts.pipelineStatus() != null
-                && facts.pipelineStatus().strip().toLowerCase(java.util.Locale.ROOT).contains("fail");
-        return !facts.pipelineFailure().isBlank() && !red
+        String said = facts.pipelineStatus() == null ? "" : facts.pipelineStatus().strip().toLowerCase(java.util.Locale.ROOT);
+        boolean wrong = said.contains("fail") || said.equals("unknown");
+        return !facts.pipelineFailure().isBlank() && !wrong
                 ? List.of(new Violation("pipelineFailure",
-                        "given only where pipelineStatus is failed; it said " + facts.pipelineStatus()))
+                        "given only where pipelineStatus is failed or unknown; it said " + facts.pipelineStatus()))
                 : List.of();
     }
 }

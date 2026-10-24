@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -26,6 +28,17 @@ class RoundOutcomeTest {
         outcome.settle("ABC-1", "http://mr/1", facts);
 
         verify(roundRecord).record("ABC-1", facts);
+    }
+
+    @Test
+    void saysTheTaskStoppedWhenItsChecksCouldNotBeListedOnceTooOften() {
+        ReviewFacts facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0);
+        when(roundRecord.record("ABC-1", facts)).thenReturn(Optional.of(new LoopWatch.Stop(LoopWatch.Trigger.CHECKS,
+                3_000, "3 reads running could not list the checks: list_pipelines: 403 Forbidden")));
+
+        var result = outcome.settle("ABC-1", "http://mr/1", facts);
+
+        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.STOPPED);
     }
 
     @Test

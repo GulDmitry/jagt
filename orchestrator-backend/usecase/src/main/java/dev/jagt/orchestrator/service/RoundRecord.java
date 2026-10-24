@@ -1,40 +1,51 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.ChecksUnread;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Keeps what the host said about a round: a later poll saying the same thing writes nothing, or an unattended sweep
  * would rewrite the state on a loop. ONE write, all three facts coming off one
- * read. A round that could not read them leaves the older round's word standing, flagged.
+ * read. A round that could not read them leaves the older round's word standing, flagged, and the reads running
+ * that could not stop the task at {@link ChecksUnread#CEILING}.
  */
 @Service
 @RequiredArgsConstructor
 public class RoundRecord {
 
     private final StateService stateService;
+    private final TaskStops stops;
+    private final Clock clock;
 
-    public void record(String taskId, ReviewFacts facts) {
+    /** The stop standing once a round that could not read the checks was recorded. */
+    public Optional<LoopWatch.Stop> record(String taskId, ReviewFacts facts) {
+        if (gotNoListing(facts.pipelineStatus())) {
+            long now = clock.millis();
+            stateService.updateTask(taskId, task -> task.withChecksUnread(new ChecksUnread(now, facts.pipelineFailure()))
+                    .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
+            return stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.loopOrNone(), now)
+                    .map(task.loopOrNone()::stopped).orElse(task.loopOrNone()));
+        }
         Optional<TaskState> before = stateService.task(taskId);
-        String standing = before.map(TaskState::pipelineStatus).orElse(null);
         String read = orUnknown(facts.pipelineStatus());
-        boolean unread = gotNoListing(facts.pipelineStatus());
-        String checks = unread ? standing : read;
-        boolean newChecks = !Objects.equals(standing, checks)
-                || before.map(TaskState::pipelineUnread).orElse(false) != unread;
+        boolean newChecks = !Objects.equals(before.map(TaskState::pipelineStatus).orElse(null), read)
+                || before.map(TaskState::pipelineUnread).orElse(false);
         boolean newApproval = !Objects.equals(before.map(TaskState::approved).orElse(null), facts.approved());
         boolean newOpened = facts.openedAt() > 0
                 && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.openedAt();
-        if (!newChecks && !newApproval && !newOpened) {
-            return;
+        if (newChecks || newApproval || newOpened) {
+            stateService.updateTask(taskId, task -> task.withChecksRead(read)
+                    .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
         }
-        stateService.updateTask(taskId, task -> (unread ? task.withChecksUnread() : task.withChecksRead(read))
-                .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
+        return Optional.empty();
     }
 
     /**
