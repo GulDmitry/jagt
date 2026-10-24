@@ -38,6 +38,20 @@ class BoardInteractionLogTest extends BoardPageContext {
     }
 
     @Test
+    void pickingARowIsLoggedWithTheRowsStatus() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#tasks .row")).hasCount(1);
+
+        page.waitForResponse("**/api/interactions", () -> page.locator("#tasks .row .pick").click());
+
+        org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
+                .contains("\"control\":\"select\",\"status\":\"IN_PROGRESS\"").doesNotContain("ABC-1");
+    }
+
+    @Test
     void aKeyIsLoggedByItsLetterAndTheOpenTasksStatus() throws Exception {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

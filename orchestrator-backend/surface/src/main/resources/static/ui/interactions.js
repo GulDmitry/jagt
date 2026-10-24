@@ -63,7 +63,7 @@ function flush() {
 
 document.addEventListener('click', (event) => {
   const control = event.target.closest?.('button, a, input[type=checkbox], select');
-  if (control) note(named(control), control.closest('[data-task]')?.dataset.task);
+  if (control) note(named(control), control.closest('[data-task]')?.dataset.task || control.closest('[data-row]')?.dataset.row);
 }, true);
 document.addEventListener('submit', (event) => note(named(event.target)), true);
 window.addEventListener('pagehide', flush);
