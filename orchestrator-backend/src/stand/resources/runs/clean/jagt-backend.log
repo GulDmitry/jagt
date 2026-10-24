@@ -1,2 +1,2 @@
-{"@timestamp": "2026-10-24T00:06:59.900Z", "message": "instructions relayed", "task": "ABC-1"}
-{"@timestamp": "2026-10-24T00:10:00.500Z", "message": "instructions relayed", "task": "ABC-1"}
+{"@timestamp": "2026-10-24T00:06:59.900Z", "message": "turn opened", "task": "ABC-1", "step": "ship", "turn": 1}
+{"@timestamp": "2026-10-24T00:10:00.500Z", "message": "turn opened", "task": "ABC-1", "step": "deploy", "turn": 2}

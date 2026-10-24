@@ -36,9 +36,8 @@ public record RunRecord(Map<String, List<Step>> histories, List<Miss> misses, Ti
     }
 
     public static RunRecord read(Path root) {
-        Map<String, List<Instant>> relayed = BackendLog.relayed(root.resolve("jagt-backend.log"));
         Timeline sampled = TimelineFile.read(root.resolve("timeline.log"));
-        Timeline timeline = new Timeline(sampled.samples(), RelayTimes.resolve(sampled.relays(), relayed),
+        Timeline timeline = new Timeline(sampled.samples(), BackendLog.relays(root.resolve("jagt-backend.log")),
                 sampled.standWrites());
         return new RunRecord(StateFiles.histories(root.resolve("state.json")), StateFiles.misses(root.resolve("misses.jsonl")),
                 timeline, Map.of(BASE, Reflog.read(root.resolve("origin.git"), BASE),

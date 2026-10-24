@@ -1,1 +1,1 @@
-{"@timestamp": "2026-10-24T00:01:00.500Z", "message": "instructions relayed", "task": "ABC-1"}
+{"@timestamp": "2026-10-24T00:01:00.500Z", "message": "turn opened", "task": "ABC-1", "step": "deploy", "turn": 1}
