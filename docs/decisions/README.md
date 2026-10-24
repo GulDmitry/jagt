@@ -89,3 +89,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0071 The session brief is one file, a section per step](0071-the-session-brief-is-one-file-by-step.md)
 - [0072 The conversation turn is the machine's](0072-the-conversation-turn-is-the-machines.md)
 - [0073 Cases are the human's, and the stand comes first](0073-cases-are-the-humans-and-the-stand-comes-first.md)
+- [0074 A discovery warning fails the run](0074-a-discovery-warning-fails-the-run.md)

@@ -107,6 +107,7 @@ allprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         maxHeapSize = '2g'
+        systemProperty 'junit.platform.discovery.issue.severity.critical', 'WARNING'
         // Mockito's inline mock maker appends to the bootstrap classpath, which a shared archive warns about on every fork.
         jvmArgs '-Xshare:off'
         // Never the developer's own log file: `activity` reads that file back, so a fixture task would come
