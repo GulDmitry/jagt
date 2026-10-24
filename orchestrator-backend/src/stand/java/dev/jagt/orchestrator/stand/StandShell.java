@@ -33,7 +33,9 @@ public final class StandShell {
 
     public static Result run(Path cwd, List<String> command) {
         try {
-            Process process = new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true).start();
+            ProcessBuilder builder = new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true);
+            builder.environment().keySet().removeIf(name -> name.startsWith("CLAUDE"));
+            Process process = builder.start();
             String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             if (!process.waitFor(60, TimeUnit.SECONDS)) {
                 process.destroyForcibly();

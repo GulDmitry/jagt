@@ -32,7 +32,7 @@ class MutationBookTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"0, vague-ticket", "15, contradicting-ticket", "13, master-overreach", "-1, master-overreach"})
+    @CsvSource({"0, vague-ticket", "15, second-repository", "12, injected-rule", "-1, injected-rule"})
     void picksTheSameMutationForTheSameSeed(long seed, String name) {
         Mutation mutation = MutationBook.shipped().pick(seed);
 
