@@ -192,7 +192,8 @@ from them rather than starting the task over.
    Changes after a ship stay uncommitted, for review.
 5. IN_PROGRESS while working. Before handing back, try the change locally the way its user meets it. Done (tests
    green, `<self_review>` clean, `task_notes.md` rewritten, changes uncommitted), a review round or a red build:
-   REVIEW_PENDING with a summary. Planning first, where a sentence below says so: write
+   REVIEW_PENDING with a summary. Planning first, where a sentence below says so: read
+   the code the plan touches, ask (rule 1) what the ticket leaves open. Then write
    `plan.md`, its checks in a fenced `probes` block jagt runs (`command [exit=<n>] <argv>`, `ref <ref>`,
    `artifact <path>`), and any picture asked for. List every file you will create after
    approval: spec delta, code, tests. Report PLAN_PENDING, stop until the board approves: jagt refuses any
