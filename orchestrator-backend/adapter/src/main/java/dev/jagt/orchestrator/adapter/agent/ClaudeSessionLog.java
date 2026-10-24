@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.agent;
 import dev.jagt.orchestrator.port.SessionLog;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -49,14 +50,58 @@ public class ClaudeSessionLog implements SessionLog {
             return window.length < limit ? Spent.nothing(from)
                     : new Spent(TokenUsage.NONE, from + window.length);
         }
+        String[] lines = new String(window, 0, lastLine, StandardCharsets.UTF_8).split("\n");
+        int counted = linesBeforeAnOpenMessage(lines);
         TokenUsage total = TokenUsage.NONE;
         boolean firstTurn = from == 0;
-        for (String line : new String(window, 0, lastLine, StandardCharsets.UTF_8).split("\n")) {
-            TokenUsage turn = usageIn(line, firstTurn);
+        @Nullable String previousId = null;
+        for (int at = 0; at < counted; at++) {
+            String id = messageIdIn(lines[at]);
+            TokenUsage turn = id != null && id.equals(previousId) ? TokenUsage.NONE : usageIn(lines[at], firstTurn);
+            previousId = id == null ? previousId : id;
             firstTurn &= turn.isNone();
             total = total.plus(turn);
         }
-        return new Spent(total, from + lastLine + 1);
+        return new Spent(total, from + bytesOf(lines, counted, lastLine));
+    }
+
+    /**
+     * Claude writes one line per content block of a message, each repeating its usage, so a message is counted
+     * once. A message at the window's end may still be getting blocks: it is left for the next read, unless it is
+     * all the window holds.
+     */
+    private int linesBeforeAnOpenMessage(String[] lines) {
+        String last = messageIdIn(lines[lines.length - 1]);
+        if (last == null) {
+            return lines.length;
+        }
+        int start = lines.length - 1;
+        while (start > 0 && last.equals(messageIdIn(lines[start - 1]))) {
+            start--;
+        }
+        return start == 0 ? lines.length : start;
+    }
+
+    private static long bytesOf(String[] lines, int counted, int lastLine) {
+        if (counted == lines.length) {
+            return lastLine + 1;
+        }
+        long bytes = 0;
+        for (int at = 0; at < counted; at++) {
+            bytes += lines[at].getBytes(StandardCharsets.UTF_8).length + 1;
+        }
+        return bytes;
+    }
+
+    private @Nullable String messageIdIn(String line) {
+        if (!line.contains("\"usage\"")) {
+            return null;
+        }
+        try {
+            return mapper.readTree(line).path("message").path("id").asString(null);
+        } catch (RuntimeException unreadable) {
+            return null;
+        }
     }
 
     private static int lastNewlineIn(byte[] window) {

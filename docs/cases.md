@@ -44,6 +44,7 @@ Families:
 | B7 | an unattended poll sees a deployed task → it never drags the task back to not approved | a83d2486 | `FlowRulesTest`, `MoveTest` |
 | B8 | the machine reboots → every session keeps its context | 61685efd | `ClaudeAgentRuntimeTest` |
 | B9 | the reviewer spends → the spend is charged to its own task | f9a54135 | `MasterSpendTest` |
+| B10 | a session's spend is read from its log → each message counted once, though every content block repeats its usage | seen 2026-10-23: stats read 2× | `ClaudeSessionLogTest` |
 
 ## C — turn collision
 | id | the case, one line | defects | pinned by |

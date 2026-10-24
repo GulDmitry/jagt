@@ -31,6 +31,35 @@ class ClaudeSessionLogTest {
     }
 
     @Test
+    void countsAMessageOnceThoughEachOfItsBlocksRepeatsItsUsage(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"id":"msg_1","usage":{"input_tokens":3,"output_tokens":100}}}
+                {"type":"assistant","message":{"id":"msg_1","usage":{"input_tokens":3,"output_tokens":100}}}
+                {"type":"user","message":{"content":"tool result"}}
+                """);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage().total()).isEqualTo(103);
+    }
+
+    @Test
+    void leavesAMessageStillBeingWrittenForTheNextReadSoItsLaterBlocksAreNotCountedAgain(@TempDir Path dir)
+            throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        String first = "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"output_tokens\":9}}}\n";
+        String open = "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"output_tokens\":40}}}\n";
+        Files.writeString(log, first + open);
+        SessionLog.Spent before = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+        Files.writeString(log, first + open + open + "{\"type\":\"user\",\"message\":{\"content\":\"ok\"}}\n");
+
+        SessionLog.Spent after = new ClaudeSessionLog().spent(log, before.upTo(), Files.size(log));
+
+        assertThat(before.usage().total() + after.usage().total()).isEqualTo(52);
+    }
+
+    @Test
     void pricesATurnAtTheListPriceOfTheModelItNames(@TempDir Path dir) throws IOException {
         Path log = dir.resolve("session.jsonl");
         Files.writeString(log, """
