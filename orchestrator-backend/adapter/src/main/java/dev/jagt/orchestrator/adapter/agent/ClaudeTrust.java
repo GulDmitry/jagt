@@ -94,7 +94,7 @@ final class ClaudeTrust {
         return (ObjectNode) parsed;
     }
 
-    private static void rewrite(Path configFile, Path worktree, BinaryOperator<String> edit, String effect) {
+    private static synchronized void rewrite(Path configFile, Path worktree, BinaryOperator<String> edit, String effect) {
         Path staged = null;
         try {
             String current = Files.exists(configFile) ? Files.readString(configFile) : "{}";

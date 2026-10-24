@@ -45,6 +45,7 @@ Families:
 | B8 | the machine reboots → every session keeps its context | 61685efd | `ClaudeAgentRuntimeTest` |
 | B9 | the reviewer spends → the spend is charged to its own task | f9a54135 | `MasterSpendTest` |
 | B10 | a session's spend is read from its log → each message counted once, though every content block repeats its usage | seen 2026-10-23: stats read 2× | `ClaudeSessionLogTest` |
+| B11 | two worktrees are provisioned at once → both stay trusted in the agent CLI's config, no write lost | seen 2026-10-24: flaky trust test | `ClaudeTrustTest` |
 
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
@@ -96,3 +97,8 @@ Families:
 | G3 | a `do` line mentions the deploy branch → only a branch after from, into or onto refuses it | 4a41823d | `MasterShipTest` |
 | G4 | a reviewer answers the agent's reply → read as answered, not as a comment nobody answered | 97ebd363 | `ReviewSweepServiceTest`, `ReviewRoundCase` |
 | G5 | a field's teaching word is parsed → the parser reads the word, never a sentence | d779aa20 | `AgentStatusMessageTest`, `AgentStatusReportsTest` |
+
+## I — vendor CLI behaviour
+| id | the case, one line | defects | pinned by |
+|----|--------------------|---------|-----------|
+| I1 | a session starts with pinned servers → the CLI's variadic `--mcp-config` never swallows the prompt | seen 2026-10-24 on the stand | `ClaudeAgentRuntimeTest` |

@@ -29,6 +29,17 @@ class ClaudeTrustTest {
     }
 
     @Test
+    void trustsEveryWorktreeWhenManyAreProvisionedAtOnce(@TempDir Path dir) throws Exception {
+        Path configFile = dir.resolve(".claude.json");
+        Path worktrees = Files.createDirectories(dir.resolve("wt"));
+
+        java.util.stream.IntStream.range(0, 40).parallel()
+                .forEach(n -> ClaudeTrust.accept(configFile, worktrees.resolve("ABC-" + n)));
+
+        assertThat(new JsonMapper().readTree(Files.readString(configFile)).path("projects").size()).isEqualTo(40);
+    }
+
+    @Test
     void writesNothingWhenTheWorktreeIsAlreadyTrusted() {
         String updated = ClaudeTrust.accepted(
                 "{\"projects\": {\"/wt/ABC-42\": {\"hasTrustDialogAccepted\": true}}}", "/wt/ABC-42");
