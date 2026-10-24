@@ -8,13 +8,13 @@ tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries 
 `promptEval` the assistant's CLI and tokens; `masterEval` those plus minutes; `pitest` of every ring is a mutation report
 a human reads, never a gate: a change runs `-PpitestTargets=<its changed classes>`, the full run is release-review's and refresh's.
 
-**Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
-**every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app
-passes `--orchestrator.open-terminal-window=false`, uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`,
-then removes the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed
-after the task), so no test reaches the human's. A test reading the repository's own files may keep **file-scanning**
-helpers (`TextBudgetTest.mainSources`, `ConfigReferenceTest.javaFilesUnder` …). A shared **fake** of a production
-seam (`ScriptedProcesses`) is allowed, a shared builder is not.
+**Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix. Its
+`docs/cases.md` row and `Defect-family:` trailer make defects countable per family. **Every new install requirement goes in
+`docs/installation.md`**. **Leave no trace**: a suite booting the app passes `--orchestrator.open-terminal-window=false`,
+uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a
+tmux server of its own (`TMUX_TMPDIR`, killed after the task), so no test reaches the human's. A test reading the
+repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainSources`, `ConfigReferenceTest.javaFilesUnder`
+…). A shared **fake** of a production seam (`ScriptedProcesses`) is allowed, a shared builder is not.
 
 ### Every test pins a business case
 

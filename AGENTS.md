@@ -25,6 +25,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 | [`docs/features.md`](docs/features.md) | what jagt does, one line each, linked to its spec |
+| [`docs/cases.md`](docs/cases.md) | every use case a defect broke, its family and what pins it |
 
 **An architectural decision gets its `docs/decisions/` record in the commit taking it.** **A behaviour change carries its
 `openspec/changes/<task>/`** ([`spec-changes`](openspec/specs/spec-changes/spec.md)).
@@ -105,7 +106,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
   `masterEval` and `pitest` are asked for by name. **A cached green is not a run**: before a commit, `--rerun-tasks`.
 - **A change to `session-brief.md.dist` runs `promptEval` and `masterEval`** before its commit.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
-- **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
+- **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. It adds its row to
+  [`docs/cases.md`](docs/cases.md) and a `Defect-family: <A–M>` trailer.
 - **Every test pins a business case, and changes only for a reason the commit names**: its scenario changed, or it
   asserted what nothing promised. Never to turn a red run green ([`testing`](docs/rules/testing.md#every-test-pins-a-business-case)).
 - Run `./gradlew boardTest` after any change to `static/`.
