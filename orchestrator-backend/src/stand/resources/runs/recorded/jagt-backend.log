@@ -1,0 +1,5 @@
+{"@timestamp":"2026-10-24T00:00:05Z","message":"assistant read answered","kind":"TICKET_READ","ref":"ABC-1","answer":"{\"title\":\"Fix the widget\"}"}
+{"@timestamp":"2026-10-24T00:00:10Z","message":"mcp tool called","task":"ABC-1","turn":"0","tool":"update_agent_status","arguments":"{\"status\":\"IN_PROGRESS\"}"}
+{"@timestamp":"2026-10-24T00:00:30Z","message":"mcp tool called","task":"ABC-1","turn":"0","tool":"update_agent_status","arguments":"{\"status\":\"REVIEW_PENDING\"}"}
+{"@timestamp":"2026-10-24T00:00:40Z","message":"turn opened","task":"ABC-1","turn":"1","step":"ship"}
+{"@timestamp":"2026-10-24T00:01:20Z","message":"turn opened","task":"ABC-1","turn":"2","step":"deploy"}
