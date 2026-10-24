@@ -63,7 +63,9 @@ public record TaskState(
         // What the last plan submitted declared, each with its last result once VERIFYING ran it.
         @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Probe> probes,
         PlanGate planGate,
-        @Nullable LoopWatch loop,
+        @Nullable RoundTrail trail,
+        // Set by jagt alone, cleared by a human's lift alone.
+        @Nullable TaskStop stop,
         @Nullable ConflictWatch conflict,
         // The project key a session asked to have a repository of, until one is added or it reports anything else.
         @Nullable String repoRequest,
@@ -121,7 +123,10 @@ public record TaskState(
             @JsonProperty("probes") @Nullable List<Probe> probes,
             // Absent in a file written before the gate existed, which reads as nothing to wait for.
             @JsonProperty("planGate") @Nullable PlanGate planGate,
-            @JsonProperty("loop") @Nullable LoopWatch loop,
+            @JsonProperty("trail") @Nullable RoundTrail trail,
+            @JsonProperty("stop") @Nullable TaskStop stop,
+            // Written before the stop left the trail: read once, rewritten as the two above.
+            @JsonProperty("loop") @Nullable Loop loop,
             @JsonProperty("conflict") @Nullable ConflictWatch conflict,
             @JsonProperty("repoRequest") @Nullable String repoRequest,
             @JsonProperty("turn") @Nullable Turn turn) {
@@ -135,8 +140,19 @@ public record TaskState(
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
                 unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
-                probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate, loop, conflict,
-                repoRequest, turn);
+                probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
+                Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn);
+    }
+
+    record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
+
+        static @Nullable RoundTrail trail(@Nullable RoundTrail trail, @Nullable Loop loop) {
+            return trail != null || loop == null ? trail : new RoundTrail(loop.rounds(), loop.since());
+        }
+
+        static @Nullable TaskStop stop(@Nullable TaskStop stop, @Nullable Loop loop) {
+            return stop != null || loop == null ? stop : loop.stop();
+        }
     }
 
     /** Flagged without a stamp, so it never counts toward a stop. */
@@ -473,17 +489,27 @@ public record TaskState(
     }
 
     /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
-    public TaskState withLoop(LoopWatch loop) {
-        return toBuilder().loop(loop).build();
+    public TaskState withTrail(RoundTrail trail) {
+        return toBuilder().trail(trail).build();
     }
 
-    public LoopWatch loopOrNone() {
-        return loop == null ? LoopWatch.none() : loop;
+    public RoundTrail trailOrNone() {
+        return trail == null ? RoundTrail.none() : trail;
+    }
+
+    /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
+    public TaskState withStop(TaskStop stop) {
+        return toBuilder().stop(stop).build();
+    }
+
+    /** The stop cleared and the trail counting anew from {@code now}. */
+    public TaskState lifted(long now) {
+        return toBuilder().stop(null).trail(RoundTrail.liftedAt(now)).build();
     }
 
     @JsonIgnore
-    public boolean loopStopped() {
-        return loop != null && loop.stop() != null;
+    public boolean stopped() {
+        return stop != null;
     }
 
     /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
@@ -560,7 +586,7 @@ public record TaskState(
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).checksUnread(checksUnread)
                 .approved(approved)
                 .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
-                .planGate(planGate).loop(loop).conflict(conflict).repoRequest(repoRequest).turn(turn);
+                .planGate(planGate).trail(trail).stop(stop).conflict(conflict).repoRequest(repoRequest).turn(turn);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -591,7 +617,8 @@ public record TaskState(
         private @Nullable GitTrust gitTrust;
         private List<Probe> probes = List.of();
         private PlanGate planGate = PlanGate.OPEN;
-        private @Nullable LoopWatch loop;
+        private @Nullable RoundTrail trail;
+        private @Nullable TaskStop stop;
         private @Nullable ConflictWatch conflict;
         private @Nullable String repoRequest;
         private @Nullable Turn turn;
@@ -741,8 +768,13 @@ public record TaskState(
             return this;
         }
 
-        public Builder loop(@Nullable LoopWatch loop) {
-            this.loop = loop;
+        public Builder trail(@Nullable RoundTrail trail) {
+            this.trail = trail;
+            return this;
+        }
+
+        public Builder stop(@Nullable TaskStop stop) {
+            this.stop = stop;
             return this;
         }
 
@@ -768,7 +800,7 @@ public record TaskState(
             return new TaskState(repos, status, lastActiveTimestamp, message, report, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, checksUnread, approved, usage, agentSpend, log, refusals, gitTrust,
-                    probes, planGate, loop, conflict, repoRequest, turn);
+                    probes, planGate, trail, stop, conflict, repoRequest, turn);
         }
     }
 }

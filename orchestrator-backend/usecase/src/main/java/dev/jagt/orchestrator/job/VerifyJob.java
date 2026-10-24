@@ -54,7 +54,7 @@ public class VerifyJob implements Job {
     @Override
     public void run() {
         stateService.tasks().entrySet().stream()
-                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()) && !entry.getValue().loopStopped())
+                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()) && !entry.getValue().stopped())
                 .forEach(entry -> verify(entry.getKey(), entry.getValue()));
     }
 
@@ -80,7 +80,7 @@ public class VerifyJob implements Job {
     /** A round stopped at its ceiling stays at VERIFYING, verified anew once the human lifts the stop. */
     private void returned(String taskId, String step, String facts, String said) {
         if (!relay.relayRound(taskId, step, facts)
-                && stateService.task(taskId).filter(TaskState::loopStopped).isPresent()) {
+                && stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
             return;
         }
         statusReports.verified(false, said, taskId);

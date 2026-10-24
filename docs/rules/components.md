@@ -41,7 +41,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   `surface/board/OriginFilter`, `NaturalLanguageDispatch`, `AutoReviewScheduler` — never passed down.
 - `StateService` writes atomically and keeps `state.json.bak`, recovering from it and moving an unparsable
   file to `state.json.corrupt`; with no usable backup it **throws** — never make that path fail soft.
-- **A dedup key lives with its writer**, on the task (`TaskState.loop`, `TaskState.conflict`): never a file another
+- **A dedup key lives with its writer**, on the task (`TaskState.trail`, `TaskState.conflict`): never a file another
   writer overwrites, never memory a restart loses; what jagt already did for a step is a mark on `TaskState.turn`.
 - **Every status jagt waits at unattended has a progress clock or a ceiling**: the watchdog, the auto-review window,
   `LoopBreaker`, `ConflictStall`; a round sent back to work, red or not ready, through `StepRelay.relayRound`.

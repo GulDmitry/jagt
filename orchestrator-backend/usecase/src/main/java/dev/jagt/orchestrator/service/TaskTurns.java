@@ -45,7 +45,7 @@ public class TaskTurns {
 
     /** The turn the task's last report answered, passed to whoever holds it now. */
     public static TaskState closed(TaskState task, Turns.Profile profile) {
-        Turn.Holder holder = Turns.next(task.status(), task.report(), task.loopStopped(), profile);
+        Turn.Holder holder = Turns.next(task.status(), task.report(), task.stopped(), profile);
         return task.withTurn(task.turnOrNone().closed(holder, task.lastActiveTimestamp()));
     }
 

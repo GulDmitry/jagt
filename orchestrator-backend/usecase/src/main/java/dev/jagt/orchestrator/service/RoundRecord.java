@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.ChecksUnread;
-import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,13 +26,12 @@ public class RoundRecord {
     private final Clock clock;
 
     /** The stop standing once a round that could not read the checks was recorded. */
-    public Optional<LoopWatch.Stop> record(String taskId, ReviewFacts facts) {
+    public Optional<TaskStop> record(String taskId, ReviewFacts facts) {
         if (gotNoListing(facts.pipelineStatus())) {
             long now = clock.millis();
             stateService.updateTask(taskId, task -> task.withChecksUnread(new ChecksUnread(now, facts.pipelineFailure()))
                     .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
-            return stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.loopOrNone(), now)
-                    .map(task.loopOrNone()::stopped).orElse(task.loopOrNone()));
+            return stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.trailOrNone(), now));
         }
         Optional<TaskState> before = stateService.task(taskId);
         String read = orUnknown(facts.pipelineStatus());

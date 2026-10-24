@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.service.LoopGuard;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 class ShipDue {
 
     private final WorktreeChanges changes;
-    private final LoopGuard loops;
+    private final TaskStops stops;
 
     boolean due(String taskId, TaskState task) {
-        return changes.anyToShip(task) && loops.mayShip(taskId);
+        return changes.anyToShip(task) && stops.mayShip(taskId);
     }
 }

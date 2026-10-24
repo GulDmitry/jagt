@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.AutoReviewWatch;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -62,7 +62,7 @@ class AutoReviewCadenceTest {
     void stopsWatchingATaskJagtStoppedAndCarriesWhyIntoTheHover() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(1L)
-                .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, 2L, "5 ships in 24h"))).build();
+                .stop(new TaskStop(TaskStop.Trigger.SHIPS, 2L, "5 ships in 24h")).build();
 
         AutoReviewWatch watch = cadence.watch(task, 3L);
 
@@ -73,8 +73,8 @@ class AutoReviewCadenceTest {
     @Test
     void carriesWhyJagtStoppedATaskWithNoRequestIntoTheHover() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.MISS, 2L,
-                        "no case sends deploy at IN_PROGRESS, set off by master"))).build();
+                .stop(new TaskStop(TaskStop.Trigger.MISS, 2L,
+                        "no case sends deploy at IN_PROGRESS, set off by master")).build();
 
         AutoReviewWatch watch = cadence.watch(task, 3L);
 

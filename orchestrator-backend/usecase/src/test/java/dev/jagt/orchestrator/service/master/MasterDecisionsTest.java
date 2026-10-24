@@ -60,16 +60,15 @@ class MasterDecisionsTest {
     }
 
     @Test
-    void keepsTheRoundsOfRepeatsAcrossARestart(@TempDir Path worktree) {
+    void knowsARepeatAcrossARestart(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
         var delay = new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking",
                 "delay", "test"));
         new MasterDecisions(mock(WorktreeChanges.class)).returned(task, 1L, List.of(delay));
-        new MasterDecisions(mock(WorktreeChanges.class)).returned(task, 2L, List.of(delay));
 
-        int rounds = new MasterDecisions(mock(WorktreeChanges.class)).repeatedRounds(task);
+        var repeated = new MasterDecisions(mock(WorktreeChanges.class)).returned(task, 2L, List.of(delay));
 
-        assertThat(rounds).isEqualTo(1);
+        assertThat(repeated).containsExactly(delay.identity());
     }
 
     @ParameterizedTest
@@ -92,7 +91,7 @@ class MasterDecisionsTest {
 
         var returned = decisions.returned(task, 2L, List.of(now));
 
-        assertThat(returned.repeated().contains(now.identity())).isEqualTo(repeats);
+        assertThat(returned.contains(now.identity())).isEqualTo(repeats);
     }
 
     @Test
@@ -105,36 +104,6 @@ class MasterDecisionsTest {
 
         var returned = decisions.returned(task, 2L, List.of(show));
 
-        assertThat(returned.repeated()).isEmpty();
-    }
-
-    @Test
-    void countsARoundOfRepeatsOnceHoweverOftenItIsActedOn(@TempDir Path worktree) {
-        MasterDecisions decisions = new MasterDecisions(mock(WorktreeChanges.class));
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
-        var delay = new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking",
-                "delay", "test"));
-
-        decisions.returned(task, 1L, List.of(delay));
-        decisions.returned(task, 2L, List.of(delay));
-        decisions.returned(task, 3L, List.of(delay));
-        decisions.returned(task, 3L, List.of(delay));
-
-        assertThat(decisions.repeatedRounds(task)).isEqualTo(2);
-    }
-
-    @Test
-    void startsCountingRepeatsAnewAfterARoundWithoutFindings(@TempDir Path worktree) {
-        MasterDecisions decisions = new MasterDecisions(mock(WorktreeChanges.class));
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
-        var delay = new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking",
-                "delay", "test"));
-
-        decisions.returned(task, 1L, List.of(delay));
-        decisions.returned(task, 2L, List.of(delay));
-        decisions.returned(task, 3L, List.of());
-        var returned = decisions.returned(task, 4L, List.of(delay));
-
-        assertThat(returned.rounds()).isEqualTo(1);
+        assertThat(returned).isEmpty();
     }
 }

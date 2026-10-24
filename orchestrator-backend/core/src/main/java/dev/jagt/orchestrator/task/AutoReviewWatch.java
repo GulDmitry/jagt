@@ -43,7 +43,7 @@ public record AutoReviewWatch(State state, long nextPollAt, @Nullable String not
                 "polling off");
     }
 
-    public static AutoReviewWatch loopStopped(LoopWatch.Stop stop) {
+    public static AutoReviewWatch stopped(TaskStop stop) {
         return new AutoReviewWatch(State.LOOP_STOPPED, 0, stop.reading(), "jagt stopped");
     }
 

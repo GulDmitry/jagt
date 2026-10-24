@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterPanel;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
@@ -120,13 +120,13 @@ class MasterAnswerJobTest {
     }
 
     @ParameterizedTest
-    @EnumSource(LoopWatch.Trigger.class)
-    void leavesTheQuestionOfATaskJagtStoppedToTheHuman(LoopWatch.Trigger trigger, @TempDir Path root) {
+    @EnumSource(TaskStop.Trigger.class)
+    void leavesTheQuestionOfATaskJagtStoppedToTheHuman(TaskStop.Trigger trigger, @TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .message("keep v2?").report(AgentReport.QUESTION)
-                .loop(LoopWatch.none().stopped(new LoopWatch.Stop(trigger, 1L, "the evidence"))).build());
+                .stop(new TaskStop(trigger, 1L, "the evidence")).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
@@ -162,22 +162,6 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(verdicts.answersOverThisTree(asking)).thenReturn(9);
-
-        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
-
-        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-    }
-
-    @Test
-    void leavesTheQuestionToTheHumanOnceTheReviewKeptReturningTheSameFindings(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("reviewer: these findings came back").report(AgentReport.QUESTION).build();
-        state.putTask("ABC-1", asking);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-        when(verdicts.stalled(asking)).thenReturn(true);
 
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 

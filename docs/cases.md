@@ -38,7 +38,7 @@ Families:
 | B1 | a round is handed back, fixed, rebased or re-read → its verdict is kept per diff and read back, so no round restarts from nothing | 052dd88c, 36ca2aa4, d251f05c, 5e0a43f7 | `MasterVerdictsTest`, `RoundQuotesTest`, `MasterAnswerJobTest` |
 | B2 | a task is done, its worktree gone or its deploy reverted → its reviewed documents, verdict and report stay on the record | 07daec13, 8d5df1bb, a74a181b, cad7d2d8, e407a210 | `FinishedTasksTest`, `FinishedArtifactsTest`, `DoneCapabilityTest`, `WorktreeFilesTest` |
 | B3 | a later instruction or answer arrives → it goes under the pending hand-off or ship, original request kept, nothing overwritten | d467fc02, e2009128 | `AgentSessionsTest`, `SubAgentBriefingTest`, `HeadlessClaudeTest` |
-| B4 | jagt restarts or a job re-fires → the dedup key lives where a restart and another writer keep it, so nothing repeats | 8c57f425, 4b39427c, dc8b74a6, 1d4b8566 | `LoopGuardTest`, `RoundRelayTest`, `MasterOpenTest`, `HeadlessClaudeAssistantTest` |
+| B4 | jagt restarts or a job re-fires → the dedup key lives where a restart and another writer keep it, so nothing repeats | 8c57f425, 4b39427c, dc8b74a6, 1d4b8566 | `TaskStopsTest`, `RoundRelayTest`, `MasterOpenTest`, `HeadlessClaudeAssistantTest` |
 | B5 | a router or launch makes nothing → nothing that would repeat it is kept or cleared, no item is turned away until restart | e7756d78, dfcec44c | `IntakeJobTest`, `TaskLauncherTest` |
 | B6 | drafted replies, a polling window or a landed report belong to their round → read from the write itself, not an earlier read | 6ec70243, 8bad4394, 12225e27 | `ReviewDraftsTest`, `FlowReportsTest`, `AutoReviewSchedulerTest` |
 | B7 | an unattended poll sees a deployed task → it never drags the task back to not approved | a83d2486 | `FlowRulesTest`, `MoveTest` |
@@ -95,7 +95,7 @@ Families:
 | F5 | a headless call spends → every call carries a spend ceiling and fails naming it | 4aa63f4a | `HeadlessClaudeTest`, `AssistantPropertiesTest` |
 | F6 | an unfinished deploy, an unchanged status or a waiting close → read or asked at a bounded pace, not forever | 52c78b44, 70ba6aa6, 68e40274 | `TicketCloseJobTest`, `TaskProvisioningTest` |
 | F7 | a request only a reviewer can move on is polled → read at the longest interval, not the ramp | seen 2026-10-24: 71 sweeps in 18h | `AutoReviewCadenceTest` |
-| F8 | a verification stays red or the Master finds something new each round → three rounds back, the fourth stops the task | 0065 rule E: no ceiling | `StepRelayTest`, `MasterVerdictsTest`, `LoopBreakerTest` |
+| F8 | a verification stays red or the Master returns a round, new or repeated → `loopBreaker.rounds` back, the next stops the task | 0065 rule E: no ceiling; repeats asked the Master itself in `act` | `StepRelayTest`, `MasterVerdictsTest`, `LoopBreakerTest` |
 | F9 | the agent declined a thread and the reviewer has not answered → it waits on the reviewer, not a round every poll | seen 2026-10-24 on the stand: 20 min of relays | `RoundOutcomeTest`, `HeadlessClaudeCodeHostAssistantTest`, `StepRelayTest` |
 
 ## G — prose routing

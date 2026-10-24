@@ -100,7 +100,7 @@ public final class FlowRules {
 
         rule(TaskAction.LIFT)
                 .fromAny()
-                .when((status, facts) -> facts.loopStopped())
+                .when((status, facts) -> facts.stopped())
                 .add();
 
         for (TaskAction action : ALWAYS) {

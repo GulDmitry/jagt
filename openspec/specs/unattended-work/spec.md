@@ -167,10 +167,10 @@ nothing; a human press SHALL never be refused. It SHALL lift on the next local d
 - **THEN** it is gone and starts count from zero
 
 ### Requirement: jagt stops a task it suspects it is looping
-`LoopGuard` SHALL stop a task, its status kept, on any trigger since the last `lift`:
+`TaskStops` SHALL stop a task, its status kept, on any trigger since the last `lift`:
 `loopBreaker.stalledRounds` (3) relayed rounds running that each left as many threads open and the same job failing;
 a Master ship past `loopBreaker.ships` (4) within `autoReview.windowHours`;
-a failed verification or probe, a not-ready plan or round, or a review round, sent back a fourth time within 24h.
+a failed verification or probe, a not-ready plan or round, repeats too, or a review round, sent back past `loopBreaker.rounds` (3) running in 24h.
 
 #### Scenario: Rounds that resolve nothing
 - **WHEN** ABC-42 gets a fourth relayed round with 10 threads open and `unit-tests` failing, as the three before
@@ -187,10 +187,10 @@ a failed verification or probe, a not-ready plan or round, or a review round, se
 
 #### Scenario: Red rounds running
 - **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth
-- **THEN** nothing is sent, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`
+- **THEN** nothing is sent, nobody is asked, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`
 
 ### Requirement: A stopped task waits for your lift
-Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`LoopStopGuard`). The board
+Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board
 SHALL ring it `jagt stopped`, its hover the evidence. Only a human's `lift` SHALL clear it and count anew.
 
 #### Scenario: You press a verb on a stopped task

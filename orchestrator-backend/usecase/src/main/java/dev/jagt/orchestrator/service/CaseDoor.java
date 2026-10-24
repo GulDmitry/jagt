@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -68,7 +68,7 @@ public class CaseDoor {
                 .addKeyValue("effect", "nothing relayed, the task stopped")
                 .addKeyValue("fix", SessionCases.FILE)
                 .log();
-        stops.stop(id, LoopWatch.Trigger.MISS, "no case sends " + step + " at " + status + ", set off by " + by.id());
+        stops.stop(id, TaskStop.Trigger.MISS, "no case sends " + step + " at " + status + ", set off by " + by.id());
         return false;
     }
 
@@ -83,7 +83,7 @@ public class CaseDoor {
                 .addKeyValue("effect", "the move not made, the task stopped")
                 .addKeyValue("fix", MasterCases.FILE)
                 .log();
-        stops.stop(id, LoopWatch.Trigger.MISS, "no master case allows " + move + " at " + status);
+        stops.stop(id, TaskStop.Trigger.MISS, "no master case allows " + move + " at " + status);
         return false;
     }
 
@@ -109,7 +109,7 @@ public class CaseDoor {
                 .addKeyValue("effect", "the report not applied, the task stopped")
                 .addKeyValue("fix", SessionCases.FILE)
                 .log();
-        stops.stop(id, LoopWatch.Trigger.MISS, "no case of " + turn.step() + " takes " + got + ", only " + expected.get());
+        stops.stop(id, TaskStop.Trigger.MISS, "no case of " + turn.step() + " takes " + got + ", only " + expected.get());
         return false;
     }
 }

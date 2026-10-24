@@ -29,6 +29,8 @@ orchestrator:
     stalledRounds: 3       # rounds relayed running that resolved no thread and left the same job failing (at most 19)
     ships: 4               # ships within autoReview.windowHours whose round left open threads at no new low;
                            # the next one jagt would press unasked stops the task
+    rounds: 3              # rounds of one step sent back running in 24h: a red verification or probe, a not-ready
+                           # plan or round, repeats included; the next one stops the task (at most 19)
   conflictStallMinutes: 20 # in act, a deploy conflict its session was handed whose worktree has not changed this long:
                            # you get one banner, and the card says how many paths are unmerged, where, since when
   keepAwake: false         # true: macOS stays awake while the Master acts, auto-review polls or `take` runs

@@ -7,41 +7,46 @@ import java.util.stream.Collectors;
 
 /**
  * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that resolved no thread
- * and left the same job failing, or a ship asked past {@code ships} within {@code window} that answered a round
- * bringing the open threads to no new low.
+ * and left the same job failing, a ship asked past {@code ships} within {@code window} that answered a round
+ * bringing the open threads to no new low, or a round of one step past {@code rounds} sent running.
  */
-public record LoopBreaker(int stalledRounds, int ships, Duration window) {
+public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration window) {
 
-    private static final int ROUNDS_RUNNING = 3;
+    /** The breaker as configured at the moment it is asked. */
+    @FunctionalInterface
+    public interface Current {
+        LoopBreaker current();
+    }
+
     private static final Duration ROUND_WINDOW = Duration.ofHours(24);
 
-    /** A round of {@code step} relayed {@link #ROUNDS_RUNNING} times running within the window since the lift is the last. */
-    public static Optional<LoopWatch.Stop> beforeRound(String step, Turn turn, LoopWatch watch, long now) {
-        long from = Math.max(watch.since(), now - ROUND_WINDOW.toMillis());
+    /** A round of {@code step} sent {@code rounds} times running within 24h since the lift is the last. */
+    public Optional<TaskStop> beforeRound(String step, Turn turn, RoundTrail trail, long now) {
+        long from = Math.max(trail.since(), now - ROUND_WINDOW.toMillis());
         long running = turn.step().equals(step) ? turn.run().stream().filter(at -> at > from).count() : 0;
-        return running < ROUNDS_RUNNING ? Optional.empty()
-                : Optional.of(new LoopWatch.Stop(LoopWatch.Trigger.ROUNDS, now, step + " sent " + running
+        return running < rounds ? Optional.empty()
+                : Optional.of(new TaskStop(TaskStop.Trigger.ROUNDS, now, step + " sent " + running
                         + " rounds running in " + ROUND_WINDOW.toHours() + "h; the next one was not"));
     }
 
-    public Optional<LoopWatch.Stop> afterRound(LoopWatch watch, List<StatusChange> history, long now) {
-        int stalled = stalled(watch.rounds());
+    public Optional<TaskStop> afterRound(RoundTrail trail, List<StatusChange> history, long now) {
+        int stalled = stalled(trail.rounds());
         return stalled < stalledRounds ? Optional.empty()
-                : Optional.of(new LoopWatch.Stop(LoopWatch.Trigger.STALLED, now,
-                        stalled + " rounds running resolved no thread; " + trail(watch, history, now)));
+                : Optional.of(new TaskStop(TaskStop.Trigger.STALLED, now,
+                        stalled + " rounds running resolved no thread; " + evidence(trail, history, now)));
     }
 
-    public Optional<LoopWatch.Stop> beforeShip(LoopWatch watch, List<StatusChange> history, long now) {
-        return shipped(watch, history, now) < ships ? Optional.empty()
-                : Optional.of(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, now,
-                        "a ship asked past " + ships + " without a new low in " + window.toHours() + "h; " + trail(watch, history, now)));
+    public Optional<TaskStop> beforeShip(RoundTrail trail, List<StatusChange> history, long now) {
+        return shipped(trail, history, now) < ships ? Optional.empty()
+                : Optional.of(new TaskStop(TaskStop.Trigger.SHIPS, now,
+                        "a ship asked past " + ships + " without a new low in " + window.toHours() + "h; " + evidence(trail, history, now)));
     }
 
-    private static int stalled(List<LoopWatch.Round> rounds) {
+    private static int stalled(List<RoundTrail.Round> rounds) {
         int stalled = 0;
         for (int i = rounds.size() - 1; i > 0; i--) {
-            LoopWatch.Round round = rounds.get(i);
-            LoopWatch.Round before = rounds.get(i - 1);
+            RoundTrail.Round round = rounds.get(i);
+            RoundTrail.Round before = rounds.get(i - 1);
             if (round.threads() < before.threads() || !round.failing().equals(before.failing())) {
                 break;
             }
@@ -50,24 +55,24 @@ public record LoopBreaker(int stalledRounds, int ships, Duration window) {
         return stalled;
     }
 
-    private long shipped(LoopWatch watch, List<StatusChange> history, long now) {
-        long from = Math.max(watch.since(), now - window.toMillis());
+    private long shipped(RoundTrail trail, List<StatusChange> history, long now) {
+        long from = Math.max(trail.since(), now - window.toMillis());
         return history.stream().filter(step -> step.status() == TaskStatus.SHIPPING && step.at() > from)
-                .filter(step -> !reachedNewLow(watch.rounds(), step.at())).count();
+                .filter(step -> !reachedNewLow(trail.rounds(), step.at())).count();
     }
 
-    private static boolean reachedNewLow(List<LoopWatch.Round> rounds, long shipAt) {
+    private static boolean reachedNewLow(List<RoundTrail.Round> rounds, long shipAt) {
         int answered = -1;
         for (int i = 0; i < rounds.size() && rounds.get(i).at() <= shipAt; i++) {
             answered = i;
         }
-        return answered > 0 && rounds.subList(0, answered).stream().mapToInt(LoopWatch.Round::threads).min()
+        return answered > 0 && rounds.subList(0, answered).stream().mapToInt(RoundTrail.Round::threads).min()
                 .getAsInt() > rounds.get(answered).threads();
     }
 
-    private String trail(LoopWatch watch, List<StatusChange> history, long now) {
-        return "threads per round: " + watch.rounds().stream().map(round -> String.valueOf(round.threads()))
+    private String evidence(RoundTrail trail, List<StatusChange> history, long now) {
+        return "threads per round: " + trail.rounds().stream().map(round -> String.valueOf(round.threads()))
                 .collect(Collectors.joining(", "))
-                + "; ships without a new low in " + window.toHours() + "h: " + shipped(watch, history, now);
+                + "; ships without a new low in " + window.toHours() + "h: " + shipped(trail, history, now);
     }
 }

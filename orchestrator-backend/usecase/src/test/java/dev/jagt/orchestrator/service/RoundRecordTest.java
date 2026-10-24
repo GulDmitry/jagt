@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.ChecksUnread;
-import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -34,17 +34,16 @@ class RoundRecordTest {
 
     @Test
     void stopsTheTaskWhenTheThirdReadRunningCouldNotListTheChecks() {
-        ArgumentCaptor<Function<TaskState, LoopWatch>> tripped = ArgumentCaptor.captor();
+        ArgumentCaptor<Function<TaskState, Optional<TaskStop>>> tripped = ArgumentCaptor.captor();
 
         roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of()));
 
         verify(stops).trip(eq("ABC-1"), tripped.capture());
-        LoopWatch watch = tripped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+        Optional<TaskStop> stop = tripped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
                 .withChecksUnread(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"))
                 .withChecksUnread(new ChecksUnread(2_000, "list_pipelines: 403 Forbidden"))
                 .withChecksUnread(new ChecksUnread(3_000, "list_pipelines: 403 Forbidden")));
-        assertThat(watch.stop()).isNotNull();
-        assertThat(watch.stop().trigger()).isEqualTo(LoopWatch.Trigger.CHECKS);
+        assertThat(stop).map(TaskStop::trigger).contains(TaskStop.Trigger.CHECKS);
     }
 
     @Test

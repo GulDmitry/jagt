@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -129,7 +129,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         reports.report(broke, "ABC-42");
@@ -152,7 +152,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
@@ -175,7 +175,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
@@ -200,13 +200,13 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
         assertThat(state.task("ABC-42").orElseThrow())
-                .extracting(task -> task.loopOrNone().stop().trigger(), task -> task.turnOrNone().holder())
-                .containsExactly(LoopWatch.Trigger.MISS, Turn.Holder.HUMAN);
+                .extracting(task -> task.stop().trigger(), task -> task.turnOrNone().holder())
+                .containsExactly(TaskStop.Trigger.MISS, Turn.Holder.HUMAN);
     }
 }

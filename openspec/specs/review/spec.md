@@ -31,7 +31,7 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 - **THEN** the agent says so; nothing highlighted, no ship advised
 
 ### Requirement: No re-brief on held threads
-`LoopGuard` and the session's open turn SHALL NOT re-brief a session on threads it was told to hold.
+`TaskStops` and the session's open turn SHALL NOT re-brief a session on threads it was told to hold.
 
 #### Scenario: Held thread
 - **WHEN** a poll reads a held thread
@@ -192,7 +192,7 @@ A GitHub request with no review required SHALL count as approved once someone ap
 - **THEN** approved
 
 ### Requirement: An unchanged round is relayed once
-`LoopGuard.round` SHALL keep a digest of the last round brief relayed into a task. A brief equal to it SHALL NOT be
+`TaskStops.round` SHALL keep a digest of the last round brief relayed into a task. A brief equal to it SHALL NOT be
 relayed again, whatever overwrote `task_context.md` in between. A `lift` SHALL forget it.
 
 #### Scenario: A ship between two equal reads

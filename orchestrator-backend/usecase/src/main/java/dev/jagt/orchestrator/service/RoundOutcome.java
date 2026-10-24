@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class RoundOutcome {
         // THIS round's own read is what decides and what is relayed; the word the CARD carries is the last one
         // a round managed to read, and a green nobody looked at must not mark the task REVIEWED.
         String said = RoundRecord.orUnknown(r.pipelineStatus());
-        Optional<LoopWatch.Stop> stopped = roundRecord.record(taskId, r);
+        Optional<TaskStop> stopped = roundRecord.record(taskId, r);
         if (stopped.isPresent()) {
             return new SweepResult(SweepResult.Kind.STOPPED, "sweep " + taskId + ": checks " + said
                     + " — jagt stopped this task: " + stopped.get().reading());

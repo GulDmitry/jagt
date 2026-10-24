@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class RoundOutcomeTest {
     @Test
     void saysTheTaskStoppedWhenItsChecksCouldNotBeListedOnceTooOften() {
         ReviewFacts facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of());
-        when(roundRecord.record("ABC-1", facts)).thenReturn(Optional.of(new LoopWatch.Stop(LoopWatch.Trigger.CHECKS,
+        when(roundRecord.record("ABC-1", facts)).thenReturn(Optional.of(new TaskStop(TaskStop.Trigger.CHECKS,
                 3_000, "3 reads running could not list the checks: list_pipelines: 403 Forbidden")));
 
         var result = outcome.settle("ABC-1", "http://mr/1", facts);

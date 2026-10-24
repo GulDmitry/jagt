@@ -25,7 +25,7 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
                    @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> marks,
                    @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Long> run) {
 
-    private static final int MAX_RUN = 20;
+    public static final int MAX_RUN = 20;
 
     public enum Holder {
         SESSION,

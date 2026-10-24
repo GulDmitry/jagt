@@ -70,7 +70,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null);
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -113,7 +113,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null);
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
@@ -316,6 +316,18 @@ class TaskStateTest {
                  "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
 
         assertThat(task.withLastChangeOrigin(ActionOrigin.BOARD)).isSameAs(task);
+    }
+
+    @Test
+    void keepsAStopWrittenInsideTheLoopBeforeTheStopStoodOnTheTask() {
+        TaskState task = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"IN_PROGRESS","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0,"loop":{"rounds":[{"at":1,"threads":4,"failing":"","digest":"a"}],"since":1,
+                         "stop":{"trigger":"ROUNDS","at":2,"evidence":"verify sent 3 rounds running in 24h"}}}""",
+                TaskState.class);
+
+        assertThat(task.stop()).isEqualTo(new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running in 24h"));
+        assertThat(task.trailOrNone().rounds()).hasSize(1);
     }
 
     @Test

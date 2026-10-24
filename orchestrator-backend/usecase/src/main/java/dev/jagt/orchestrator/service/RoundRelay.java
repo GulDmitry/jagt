@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RoundRelay {
 
-    private final LoopGuard loops;
+    private final TaskStops stops;
     private final StepRelay steps;
     private final SessionBrief sessionBrief;
 
@@ -25,12 +25,12 @@ public class RoundRelay {
                     + " — no case sends this round at the task's status, so nothing was relayed; see misses.jsonl");
         }
         String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
-        return switch (loops.round(taskId, r, brief)) {
+        return switch (stops.round(taskId, r, brief)) {
             case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);
             case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, said), brief)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)
-                    : loops.stopped(taskId) ? stopped(read, said) : unchanged(read, said);
+                    : stops.stopped(taskId) ? stopped(read, said) : unchanged(read, said);
         };
     }
 

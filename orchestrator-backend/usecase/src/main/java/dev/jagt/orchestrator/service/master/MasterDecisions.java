@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterReview.Identity;
 import dev.jagt.orchestrator.service.master.MasterReview.Said;
@@ -31,8 +32,6 @@ public class MasterDecisions {
     public static final int ANSWERS_PER_TREE = 3;
     /** Answers over one unchanged tree past which the loop is a runaway, the one stop that reaches the human. */
     public static final int RUNAWAY = 9;
-    /** Not-ready rounds running holding only repeats, at which the loop is the human's rather than the session's. */
-    public static final int REPEATED_ROUNDS = 2;
     /** Past every count above, so folding older entries changes no answer. */
     static final int KEPT = 20;
     static final String STORED = "master-rounds.json";
@@ -40,7 +39,8 @@ public class MasterDecisions {
     private final WorktreeChanges changes;
 
     /** {@code settled}: what the round ruled, requests for evidence left out. */
-    record Round(long round, List<Identity> settled, boolean onlyRepeats) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record Round(long round, List<Identity> settled) {
     }
 
     /** {@code answers}: the tree each answer was given over, oldest first. */
@@ -49,27 +49,17 @@ public class MasterDecisions {
         static final Rounds NONE = new Rounds(List.of(), List.of());
     }
 
-    /** {@code repeated}: the findings an earlier round made; {@code rounds}: not-ready rounds running of only those. */
-    public record Returned(Set<Identity> repeated, int rounds) {
-    }
-
-    /** A round acted on again is counted once; a verdict with no finding ends any run of repeats. */
-    public synchronized Returned returned(TaskState task, long round, List<Said> findings) {
+    /** The findings an earlier round made; a round acted on again is counted once. */
+    public synchronized Set<Identity> returned(TaskState task, long round, List<Said> findings) {
         Rounds before = read(task);
         List<Round> earlier = before.rounds().stream().filter(then -> then.round() != round).toList();
         Set<Identity> seen = earlier.stream().flatMap(then -> then.settled().stream()).collect(Collectors.toSet());
         Set<Identity> repeated = findings.stream().map(Said::identity).filter(seen::contains)
                 .collect(Collectors.toSet());
-        boolean onlyRepeats = !findings.isEmpty()
-                && findings.stream().allMatch(said -> repeated.contains(said.identity()));
         List<Round> now = last(Stream.concat(earlier.stream(), Stream.of(new Round(round,
-                findings.stream().filter(Said::settles).map(Said::identity).toList(), onlyRepeats))).toList());
+                findings.stream().filter(Said::settles).map(Said::identity).toList()))).toList());
         write(task, new Rounds(now, before.answers()));
-        return new Returned(repeated, running(now));
-    }
-
-    public int repeatedRounds(TaskState task) {
-        return running(read(task).rounds());
+        return repeated;
     }
 
     public synchronized void answered(TaskState task) {
@@ -119,14 +109,6 @@ public class MasterDecisions {
                     .log();
             return "";
         }
-    }
-
-    private static int running(List<Round> rounds) {
-        int running = 0;
-        while (running < rounds.size() && rounds.get(rounds.size() - 1 - running).onlyRepeats()) {
-            running++;
-        }
-        return running;
     }
 
     private static <T> List<T> last(List<T> all) {

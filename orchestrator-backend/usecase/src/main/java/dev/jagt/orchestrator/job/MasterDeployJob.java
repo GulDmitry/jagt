@@ -53,7 +53,7 @@ public class MasterDeployJob implements Job {
             String arrival = String.valueOf(task.statusSince());
             // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a restart.
             if (!FlowRules.deployedByTheMaster(task.status())
-                    || Turns.next(task.status(), task.report(), task.loopStopped(), profile) != Turn.Holder.MASTER
+                    || Turns.next(task.status(), task.report(), task.stopped(), profile) != Turn.Holder.MASTER
                     || task.turnOrNone().marked(TaskTurns.PRESSED_DEPLOY, arrival)) {
                 return;
             }

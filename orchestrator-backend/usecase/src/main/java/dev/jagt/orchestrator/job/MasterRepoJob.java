@@ -57,7 +57,7 @@ public class MasterRepoJob implements Job {
                 return;
             }
             // Once per request, kept on the task: a refused press is not repeated, nor after a restart.
-            if (task.status() == TaskStatus.DONE || task.loopStopped() || request.equals(pressed)) {
+            if (task.status() == TaskStatus.DONE || task.stopped() || request.equals(pressed)) {
                 return;
             }
             turns.mark(taskId, PRESSED, request);

@@ -9,8 +9,8 @@ import dev.jagt.orchestrator.flow.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.port.TaskStore;
-import dev.jagt.orchestrator.capability.LoopStopGuard;
-import dev.jagt.orchestrator.service.LoopGuard;
+import dev.jagt.orchestrator.capability.StopGuard;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -47,13 +47,13 @@ public class FlowWiring {
     }
 
     @Bean
-    public CapabilityInterceptor shipLoopStop(LoopGuard loops) {
-        return new LoopStopGuard(TaskAction.SHIP, loops);
+    public CapabilityInterceptor shipStop(TaskStops stops) {
+        return new StopGuard(TaskAction.SHIP, stops);
     }
 
     @Bean
-    public CapabilityInterceptor deployLoopStop(LoopGuard loops) {
-        return new LoopStopGuard(TaskAction.DEPLOY, loops);
+    public CapabilityInterceptor deployStop(TaskStops stops) {
+        return new StopGuard(TaskAction.DEPLOY, stops);
     }
 
     @Bean

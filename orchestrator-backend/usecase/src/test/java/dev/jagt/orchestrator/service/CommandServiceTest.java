@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -78,15 +78,15 @@ class CommandServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
         CommandService guarded = new CommandService(flow, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
 
         OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 
         verify(flow, never()).run("ABC-1", TaskAction.DEPLOY);
         assertThat(Files.readString(root.resolve("misses.jsonl")))
                 .isEqualTo("{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\":\"master\"}\n");
-        assertThat(state.task("ABC-1").orElseThrow().loopOrNone().stop())
-                .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
-                .containsExactly(LoopWatch.Trigger.MISS, "no master case allows deploy at REVIEWED");
+        assertThat(state.task("ABC-1").orElseThrow().stop())
+                .extracting(TaskStop::trigger, TaskStop::evidence)
+                .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");
     }
 }

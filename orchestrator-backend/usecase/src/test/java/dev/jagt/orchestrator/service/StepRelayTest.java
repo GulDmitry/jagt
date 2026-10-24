@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -108,7 +108,7 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
@@ -126,7 +126,7 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))),
+                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))),
                 new TaskTurns(state, Clock.systemUTC()));
 
         boolean told = relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
@@ -147,7 +147,7 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         boolean told = OriginContext.as(ActionOrigin.BOARD, () -> relay.relay("ABC-42", "deploy", "ABC-42 is deployed"));
@@ -168,7 +168,7 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         boolean told = OriginContext.as(ActionOrigin.MCP, () -> relay.relay("ABC-42", "deploy", "ABC-42 is deployed"));
@@ -186,14 +186,14 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
 
-        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
-                .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
-                .containsExactly(LoopWatch.Trigger.MISS, "no case sends deploy at IN_PROGRESS, set off by jagt");
+        assertThat(state.task("ABC-42").orElseThrow().stop())
+                .extracting(TaskStop::trigger, TaskStop::evidence)
+                .containsExactly(TaskStop.Trigger.MISS, "no case sends deploy at IN_PROGRESS, set off by jagt");
     }
 
     @Test
@@ -206,7 +206,7 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         relay.relayRound("ABC-42", "verify", "BUILD FAILED in CartTest");
         relay.relayRound("ABC-42", "verify", "BUILD FAILED in OrderTest");
@@ -216,9 +216,9 @@ class StepRelayTest {
 
         assertThat(told).isFalse();
         verify(sessions, times(3)).writeTaskContext(anyString(), anyString());
-        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
-                .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
-                .containsExactly(LoopWatch.Trigger.ROUNDS, "verify sent 3 rounds running in 24h; the next one was not");
+        assertThat(state.task("ABC-42").orElseThrow().stop())
+                .extracting(TaskStop::trigger, TaskStop::evidence)
+                .containsExactly(TaskStop.Trigger.ROUNDS, "verify sent 3 rounds running in 24h; the next one was not");
     }
 
     @Test
@@ -229,7 +229,7 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         List<String> steps = List.of("round-threads", "round-threads-done");
         relay.relayComposed("ABC-42", steps, "mia: Why is this loop not bounded?");
@@ -240,9 +240,9 @@ class StepRelayTest {
 
         assertThat(told).isFalse();
         verify(sessions, times(3)).relayFresh(anyString(), anyString());
-        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
-                .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
-                .containsExactly(LoopWatch.Trigger.ROUNDS,
+        assertThat(state.task("ABC-42").orElseThrow().stop())
+                .extracting(TaskStop::trigger, TaskStop::evidence)
+                .containsExactly(TaskStop.Trigger.ROUNDS,
                         "round-threads+round-threads-done sent 3 rounds running in 24h; the next one was not");
     }
 
@@ -256,7 +256,7 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         relay.relayRound("ABC-42", "verify", "BUILD FAILED in CartTest");
         relay.relayRound("ABC-42", "verify", "BUILD FAILED in OrderTest");
@@ -264,7 +264,7 @@ class StepRelayTest {
         boolean told = relay.relayRound("ABC-42", "verify", "BUILD FAILED in PaymentTest");
 
         assertThat(told).isTrue();
-        assertThat(state.task("ABC-42").orElseThrow().loopStopped()).isFalse();
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
     }
 
     @Test
@@ -279,14 +279,14 @@ class StepRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         boolean told = OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-42", "answered", "Keep the old keys."));
 
         assertThat(told).isFalse();
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
-        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
-                .extracting(LoopWatch.Stop::evidence).isEqualTo("no master case allows answered at IN_PROGRESS");
+        assertThat(state.task("ABC-42").orElseThrow().stop())
+                .extracting(TaskStop::evidence).isEqualTo("no master case allows answered at IN_PROGRESS");
     }
 }

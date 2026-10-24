@@ -68,7 +68,7 @@ public class MasterAnswerJob implements Job {
     /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
     private static boolean answers(TaskState task, Turns.Profile profile) {
         return Move.asking(task.status(), task.report())
-                && Turns.next(task.status(), task.report(), task.loopStopped(), profile) == Turn.Holder.MASTER
+                && Turns.next(task.status(), task.report(), task.stopped(), profile) == Turn.Holder.MASTER
                 && !task.turnOrNone().marked(TaskTurns.UNANSWERED, TaskTurns.asked(task));
     }
 
@@ -103,12 +103,10 @@ public class MasterAnswerJob implements Job {
             return;
         }
         int given = verdicts.answersOverThisTree(task);
-        boolean stalled = verdicts.stalled(task);
-        if (given >= MasterDecisions.RUNAWAY || stalled) {
+        if (given >= MasterDecisions.RUNAWAY) {
             log.atWarn().setMessage("master answer runaway").addKeyValue("task", taskId)
                     .addKeyValue("answers", given)
-                    .addKeyValue("cause", stalled ? "findings repeat earlier rounds"
-                            : "answers over a tree nothing changed in")
+                    .addKeyValue("cause", "answers over a tree nothing changed in")
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
             unanswered(taskId, task);

@@ -72,6 +72,6 @@ public class FlowEngine {
     /** The real liveness probe, unlike the projection's: this one is about to act on the answer. */
     private Facts facts(TaskState task, String taskId) {
         return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> agents.agentLive(taskId),
-                task.gitStateChanged(), task.loopStopped(), task.asksForARepository());
+                task.gitStateChanged(), task.stopped(), task.asksForARepository());
     }
 }

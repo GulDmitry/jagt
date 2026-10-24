@@ -55,7 +55,7 @@ public class DeployCheckJob implements Job {
     @Override
     public void run() {
         stateService.tasks().forEach((taskId, task) -> {
-            if (!FlowRules.checkedWhereItLanded(task.status()) || task.loopStopped()) {
+            if (!FlowRules.checkedWhereItLanded(task.status()) || task.stopped()) {
                 return;
             }
             landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP, Turn.digestOf(landed)))

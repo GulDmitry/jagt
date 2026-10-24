@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -63,21 +64,11 @@ public class MasterVerdicts {
         };
     }
 
-    /** Repeats are relayed marked, never dropped; rounds of nothing but repeats end as the human's question. */
+    /** Repeats are relayed marked, never dropped; they count toward the round ceiling like any round. */
     private boolean returned(String taskId, TaskState task, MasterReview.Verdict verdict, boolean plan) {
-        MasterDecisions.Returned seen = decisions.returned(task, verdict.round(), verdict.findings());
+        Set<MasterReview.Identity> repeated = decisions.returned(task, verdict.round(), verdict.findings());
         List<String> findings = verdict.findings().stream()
-                .map(said -> seen.repeated().contains(said.identity()) ? said.line() + REPEAT : said.line()).toList();
-        int repeated = seen.rounds();
-        if (repeated >= MasterDecisions.REPEATED_ROUNDS) {
-            log.atWarn().setMessage("master review stalled").addKeyValue("task", taskId)
-                    .addKeyValue("rounds", repeated)
-                    .addKeyValue("cause", "findings repeat earlier rounds")
-                    .addKeyValue("effect", "the round goes to the human")
-                    .log();
-            return ask(taskId, "These findings came back " + repeated + " rounds running, neither fixed nor"
-                    + " disputed: " + String.join(" ", findings));
-        }
+                .map(said -> repeated.contains(said.identity()) ? said.line() + REPEAT : said.line()).toList();
         MasterMove returning = plan ? MasterMove.PLAN_NOT_READY : MasterMove.ROUND_NOT_READY;
         if (!relay.relayRound(taskId, returning.id(), String.join("\n", findings))) {
             return false;
@@ -148,10 +139,6 @@ public class MasterVerdicts {
 
     public int answersOverThisTree(TaskState task) {
         return decisions.answersOverThisTree(task);
-    }
-
-    public boolean stalled(TaskState task) {
-        return decisions.repeatedRounds(task) >= MasterDecisions.REPEATED_ROUNDS;
     }
 
     private static final String REPEAT = " [repeat]";

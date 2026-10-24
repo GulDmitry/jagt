@@ -7,7 +7,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.LoopBreaker;
-import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.RoundTrail;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -43,7 +44,7 @@ import java.util.stream.Collectors;
  * omitted: {@link ConfigFile}'s accessors coalesce a missing one to its all-default instance.
  */
 @Service
-public class ConfigService {
+public class ConfigService implements LoopBreaker.Current {
 
     public ConfigService(OrchestratorPaths paths, AgentRuntime agentRuntime, ActStops actStops) {
         this.paths = paths;
@@ -60,18 +61,23 @@ public class ConfigService {
                              @Nullable Integer maxStartsPerDay, @Nullable LoopBreakerConfig loopBreaker,
                              @Nullable Integer conflictStallMinutes) {
 
-        /** Read as at most {@code LoopWatch.MAX_ROUNDS - 1} stalled rounds, the most a task's trail can hold. */
+        /** Each round ceiling read as at most one below what a task keeps of its rounds. */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record LoopBreakerConfig(@Nullable Integer stalledRounds, @Nullable Integer ships) {
+        public record LoopBreakerConfig(@Nullable Integer stalledRounds, @Nullable Integer ships,
+                                        @Nullable Integer rounds) {
 
             public static LoopBreakerConfig defaults() {
-                return new LoopBreakerConfig(null, null);
+                return new LoopBreakerConfig(null, null, null);
+            }
+
+            public int roundsOrDefault() {
+                return rounds == null || rounds <= 0 ? 3 : Math.min(rounds, Turn.MAX_RUN - 1);
             }
 
             public int stalledRoundsOrDefault() {
                 return stalledRounds == null || stalledRounds <= 0 ? 3
-                        : Math.min(stalledRounds, LoopWatch.MAX_ROUNDS - 1);
+                        : Math.min(stalledRounds, RoundTrail.MAX_ROUNDS - 1);
             }
 
             public int shipsOrDefault() {
@@ -418,7 +424,7 @@ public class ConfigService {
         /** The ship ceiling counts over the auto-review window. */
         public LoopBreaker loopBreakerOrDefault() {
             LoopBreakerConfig config = loopBreaker == null ? LoopBreakerConfig.defaults() : loopBreaker;
-            return new LoopBreaker(config.stalledRoundsOrDefault(), config.shipsOrDefault(),
+            return new LoopBreaker(config.stalledRoundsOrDefault(), config.shipsOrDefault(), config.roundsOrDefault(),
                     Duration.ofHours(autoReview().windowHoursOrDefault()));
         }
 
@@ -489,6 +495,11 @@ public class ConfigService {
         }
         return master.mode() != null && !master.mode().isBlank() ? config : config.withMaster(master.withMode(
                 (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.JUDGE : MasterMode.OFF).id()));
+    }
+
+    @Override
+    public LoopBreaker current() {
+        return load().loopBreakerOrDefault();
     }
 
     public Optional<ActStop> actStop() {

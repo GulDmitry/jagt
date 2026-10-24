@@ -69,7 +69,7 @@ class DeployCheckJobTest {
         StateService before = new StateService(new JsonMapper(), paths);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), before,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(before, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(before, Clock.systemUTC()));
         new DeployCheckJob(before, config, relay).run();
         relay.relay("ABC-42", "answered", "The Master answered your question, standing in for the human:\nyes");
@@ -77,7 +77,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(restarted, config, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), restarted, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(restarted, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                        new TaskStops(restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(restarted, Clock.systemUTC()))).run();
 
         verify(sessions, times(1)).writeTaskContext(eq("ABC-42"), contains("ABC-42 is deployed"));
