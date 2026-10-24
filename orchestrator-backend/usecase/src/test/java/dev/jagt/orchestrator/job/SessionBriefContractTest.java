@@ -4,9 +4,12 @@ import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
+import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.ResumeRegistration;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -28,6 +31,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 
@@ -54,8 +58,15 @@ class SessionBriefContractTest {
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         AgentSessions sessions = mock(AgentSessions.class);
 
-        new ConflictHandOff(sessions, new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions), mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
+
+        new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()))),
+                mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
                         new ConflictWatch.Progress(7, 0, "d")));
 
@@ -81,8 +92,10 @@ class SessionBriefContractTest {
                 .of(NewTask.builder("ABC-42", "web").build(), web,
                 List.of(web, api), ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.REVIEW_PENDING).title("Widget")
                 .repos(List.of(TaskRepo.of("web", "/w/ABC-42"), TaskRepo.of("api", "/w/ABC-42-api"))).build());
         ConfigService config = mock(ConfigService.class);
@@ -95,8 +108,9 @@ class SessionBriefContractTest {
         when(changes.holdsWork(anyString(), anyString(), anyString())).thenReturn(true);
         AgentSessions sessions = mock(AgentSessions.class);
 
-        new ShipService(state, config, new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions), changes).ship("ABC-42");
+        new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()))),
+                changes).ship("ABC-42");
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
         verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());

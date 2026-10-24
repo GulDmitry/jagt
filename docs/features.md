@@ -46,6 +46,11 @@
 - **Keys for verbs** — Every verb shows its key, and one that asks first asks on its key too.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key)
 
+## Cases · [spec](../openspec/specs/cases/spec.md)
+
+- **Your own cases** — A step reaches a session where a case of `session-cases.md.dist` sends it, else lands in `misses.jsonl`.
+  [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-a-file-you-may-copy)
+
 ## Git · [spec](../openspec/specs/git/spec.md)
 
 - **Deploy and revert** — Only these two verbs write a shared branch; the base branch is never touched.

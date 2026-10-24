@@ -61,7 +61,10 @@ public class ShipService {
         }
         List<String> idle = targets.stream().filter(target -> !carrying.contains(target))
                 .map(Target::project).toList();
-        relay.write(taskId, "ship", shipFacts(title, taskId, carrying, repliesStep(config)));
+        if (!relay.write(taskId, "ship", shipFacts(title, taskId, carrying, repliesStep(config)))) {
+            return Outcome.nothing("ship " + taskId + ": no case sends ship at " + task.status()
+                    + ", so the session was not told; see misses.jsonl");
+        }
         return Outcome.relayed("ship " + taskId + ": relayed to the agent; SHIPPING until it reports the"
                 + " request" + (carrying.size() > 1 ? "s" : "")
                 + (idle.isEmpty() ? "" : "; nothing to ship in " + String.join(", ", idle))

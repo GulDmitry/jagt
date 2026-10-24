@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ReviewSweepService {
 
     public record SweepResult(Kind kind, String message) {
-        public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED, UNCHANGED, STOPPED, IN_FLIGHT }
+        public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED, UNCHANGED, STOPPED, REFUSED, IN_FLIGHT }
     }
 
     private final StateService stateService;

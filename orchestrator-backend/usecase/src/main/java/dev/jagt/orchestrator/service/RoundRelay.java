@@ -6,7 +6,10 @@ import dev.jagt.orchestrator.task.ReviewFacts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** A round with work for the agent, relayed unless it is the last one again or the task stands stopped. */
+/**
+ * A round with work for the agent, relayed unless it is the last one again, the task stands stopped, or no case
+ * sends one of its steps at the task's status.
+ */
 @Service
 @RequiredArgsConstructor
 public class RoundRelay {
@@ -14,10 +17,15 @@ public class RoundRelay {
     private final LoopGuard loops;
     private final AgentSessions sessions;
     private final SessionBrief sessionBrief;
+    private final CaseDoor door;
 
     public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said) {
-        String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
+        if (!RoundBrief.steps(r, said).stream().allMatch(step -> door.opens(taskId, step))) {
+            return new SweepResult(SweepResult.Kind.REFUSED, read + ", checks " + said
+                    + " — no case sends this round at the task's status, so nothing was relayed; see misses.jsonl");
+        }
+        String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
         return switch (loops.round(taskId, r, brief)) {
             case STOPPED -> new SweepResult(SweepResult.Kind.STOPPED, read + ", checks " + said
                     + " — jagt stopped this task as a suspected loop, so nothing was relayed; `lift` it first");

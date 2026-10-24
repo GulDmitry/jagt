@@ -56,6 +56,7 @@ class ShipServiceTest {
 
     @Test
     void handsTheShipToTheAgentAndWaitsForTheRequestItOpens() {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING)
                 .title("Widget layout is off").build());
@@ -100,6 +101,7 @@ class ShipServiceTest {
 
     @Test
     void leavesOutTheRepositoryHoldingNothingSoNoEmptyRequestIsOpened() {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("Widget layout is off")
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
@@ -112,6 +114,16 @@ class ShipServiceTest {
         verify(relay).write(eq("ABC-42"), eq("ship"), instruction.capture());
         assertThat(instruction.getValue()).contains("demo: /wt").doesNotContain("web: /wt-web");
         assertThat(outcome.message()).contains("nothing to ship in web");
+    }
+
+    @Test
+    void shipsNothingWhereNoCaseSendsTheShipAtTheTasksStatus() {
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
+
+        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
+        assertThat(outcome.message()).contains("no case sends ship at REVIEW_PENDING");
     }
 
     @Test
@@ -129,6 +141,7 @@ class ShipServiceTest {
 
     @Test
     void shipsARepositoryAlreadyInReviewEvenWhenItHoldsNothingNew() {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t")
                 .repos(List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git",
@@ -218,6 +231,7 @@ class ShipServiceTest {
 
     @Test
     void speaksOfOneRequestWhereOnlyOneRepositoryCarriesWork() {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());
 
@@ -228,6 +242,7 @@ class ShipServiceTest {
 
     @Test
     void speaksOfRequestsWhereSeveralRepositoriesCarryWork() {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t")
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
@@ -240,6 +255,7 @@ class ShipServiceTest {
 
     @Test
     void saysTheRepliesAreTheHumansToPostWherePostingWasTurnedOff() {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(

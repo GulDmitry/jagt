@@ -1,32 +1,28 @@
 package dev.jagt.orchestrator.config;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /** A section the human's copy lacks is read from the shipped file. */
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class SessionBrief {
 
     private static final String COPY = "session-brief.md";
-    private static final String SHIPPED = COPY + ".dist";
-    private static final String HEADING = "## ";
-    /** Only a step's own heading ends a section: one may show a reply shaped with a heading of its own. */
-    private static final Pattern STEP = Pattern.compile("## [a-z][a-z0-9-]*");
 
     private final OrchestratorPaths paths;
 
     public Optional<String> section(String step) {
-        return read(COPY).flatMap(text -> section(text, step)).or(() -> read(SHIPPED).flatMap(text -> section(text, step)));
+        return HumanCopy.read(paths.root(), COPY).stream()
+                .flatMap(file -> Sections.of(file.text()).stream().filter(section -> section.id().equals(step))
+                        .findFirst().stream())
+                .map(Sections.Section::body)
+                .findFirst();
     }
 
     /** For a command line or a window that takes one line; empty where the brief has no such step. */
@@ -34,31 +30,11 @@ public class SessionBrief {
         return section(step).map(text -> text.replaceAll("\\s*\\n\\s*", " ")).orElse("");
     }
 
-    private Optional<String> read(String name) {
-        Path file = paths.root().resolve(name);
-        if (!Files.exists(file)) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(Files.readString(file));
-        } catch (IOException unreadable) {
-            log.atError().setMessage("session brief unreadable").addKeyValue("file", file)
-                    .addKeyValue("cause", unreadable.toString())
-                    .log();
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<String> section(String text, String step) {
-        List<String> lines = text.lines().toList();
-        int start = lines.indexOf(HEADING + step);
-        if (start < 0) {
-            return Optional.empty();
-        }
-        int end = start + 1;
-        while (end < lines.size() && !STEP.matcher(lines.get(end)).matches()) {
-            end++;
-        }
-        return Optional.of(String.join("\n", lines.subList(start + 1, end)).strip());
+    /** Every step either file holds a section for. */
+    public Set<String> steps() {
+        return HumanCopy.read(paths.root(), COPY).stream()
+                .flatMap(file -> Sections.of(file.text()).stream())
+                .map(Sections.Section::id)
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 }

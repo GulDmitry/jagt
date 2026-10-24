@@ -3,6 +3,9 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StateService;
@@ -44,14 +47,16 @@ class MasterVerdictsTest {
     private final MasterDecisions decisions = mock(MasterDecisions.class);
 
     @Test
-    void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -64,15 +69,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -84,14 +91,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("keep v2 beside v3"))).thenReturn(true);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -104,13 +113,15 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
         state.putTask("ABC-42", task);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -121,14 +132,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(sessions.relayFreshIfChanged(eq("ABC-1"), contains("refactor the shared block"))).thenReturn(true);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -138,15 +151,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -157,16 +172,18 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void relaysAFindingAnEarlierRoundMadeMarkedAsARepeat(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void relaysAFindingAnEarlierRoundMadeMarkedAsARepeat(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned (unguarded delay)"))
                 .thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -178,9 +195,11 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void asksTheHumanWhenRoundsOfRepeatsKeepComingBack(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void asksTheHumanWhenRoundsOfRepeatsKeepComingBack(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned (unguarded delay)"))
@@ -188,8 +207,8 @@ class MasterVerdictsTest {
         when(decisions.returned(task, 7, true)).thenReturn(2);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("The reviewer asked the human"))).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -204,15 +223,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -224,15 +245,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(ship.ship("ABC-1", task)).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -245,14 +268,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -264,14 +289,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -283,15 +310,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("the plan holds."))).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -306,16 +335,18 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.CLOSED).build();
         state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -325,15 +356,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void leavesAPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void leavesAPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -347,16 +380,18 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void keepsThePlanGateClosedWhenTheMasterSendsThePlanBack(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void keepsThePlanGateClosedWhenTheMasterSendsThePlanBack(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build();
         state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -367,14 +402,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -386,16 +423,18 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .message("admins only or every user?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -410,13 +449,15 @@ class MasterVerdictsTest {
     @Test
     void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("session-brief.md.dist"), "## plan-not-ready\n\nrework the plan\n");
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -427,15 +468,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("Add v3 beside v2, or replace it?"))).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -451,14 +494,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void asksTheSameQuestionOnce(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void asksTheSameQuestionOnce(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -470,16 +515,18 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void asksTheHumanNothingWhenTheSessionAlreadyHoldsTheStalledRoundsQuestion(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void asksTheHumanNothingWhenTheSessionAlreadyHoldsTheStalledRoundsQuestion(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned")).thenReturn(true);
         when(decisions.returned(task, 7, true)).thenReturn(2);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -491,15 +538,17 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void countsARoundAsRepeatedOnlyWhenEveryFindingRepeatsAnEarlierOne(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void countsARoundAsRepeatedOnlyWhenEveryFindingRepeatsAnEarlierOne(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(decisions.repeats(task, "- [qa] Foo.java — the delay is never pinned")).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -511,14 +560,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void recordsWhatTheMasterDecidedSoALaterRoundDoesNotReopenIt(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void recordsWhatTheMasterDecidedSoALaterRoundDoesNotReopenIt(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -529,13 +580,15 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -546,13 +599,15 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void opensNoTaskWhenTheMastersAnswerHoldsADoLine(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void opensNoTaskWhenTheMastersAnswerHoldsADoLine(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -562,14 +617,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void reportsAnAnswerCountOverTheTreeAsTheDecisionsHoldIt(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void reportsAnAnswerCountOverTheTreeAsTheDecisionsHoldIt(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(decisions.answersOverThisTree(task)).thenReturn(3);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -578,13 +635,15 @@ class MasterVerdictsTest {
 
     @ParameterizedTest
     @CsvSource({"1,false", "2,true", "3,true"})
-    void callsAReviewStalledFromTheSecondRepeatedRoundOn(int repeated, boolean stalled, @TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void callsAReviewStalledFromTheSecondRepeatedRoundOn(int repeated, boolean stalled, @TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         when(decisions.repeatedRounds(task)).thenReturn(repeated);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -593,14 +652,16 @@ class MasterVerdictsTest {
 
     @ParameterizedTest
     @CsvSource({"NOT_READY,REVIEW_PENDING", "QUESTION,REVIEW_PENDING", "READY,PLAN_PENDING"})
-    void movesNothingOfATaskThatIsGoneFromTheState(MasterReview.Kind kind, TaskStatus status, @TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void movesNothingOfATaskThatIsGoneFromTheState(MasterReview.Kind kind, TaskStatus status, @TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -611,13 +672,15 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void movesNothingOfAnAnsweredTaskThatIsGoneFromTheState(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void movesNothingOfAnAnsweredTaskThatIsGoneFromTheState(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -627,14 +690,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void movesNothingWhenTheShipWasNotOpened(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void movesNothingWhenTheShipWasNotOpened(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 
@@ -645,14 +710,16 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void startsNothingOnAPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    void startsNothingOnAPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))), sessions);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
 

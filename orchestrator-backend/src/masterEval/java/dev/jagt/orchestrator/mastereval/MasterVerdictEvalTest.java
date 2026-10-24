@@ -63,6 +63,8 @@ class MasterVerdictEvalTest {
         Files.writeString(root.resolve("mcp_client.js"), "// master eval placeholder proxy\n");
         Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(Path.of("../session-cases.md.dist"), root.resolve("session-cases.md.dist"),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         Files.copy(Path.of(System.getProperty("masterEval.brief", "../master-brief.md.dist")),
                 root.resolve("master-brief.md"),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);

@@ -38,6 +38,11 @@ CLAUDE.local.md
 master-brief.md
 # The session brief, copied from session-brief.md.dist
 session-brief.md
+# The session cases, copied from session-cases.md.dist
+session-cases.md
+# Steps no case sends, written beside state.json
+misses.jsonl
+misses.jsonl.1
 # What the router worked out about this install: written by it, edited by you, local to this machine
 memory/
 

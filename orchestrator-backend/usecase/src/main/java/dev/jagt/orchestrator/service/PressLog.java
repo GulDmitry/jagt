@@ -8,25 +8,18 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * What the human pressed, one line per press beside `state.json`. A press names a control and the status of the
- * task it was on, never a task, a ticket or typed text. Past {@link #MAX_BYTES} the file rolls
- * into one `.1`, replacing the last.
+ * task it was on, never a task, a ticket or typed text.
  */
 @Service
 @Slf4j
 public class PressLog {
 
-    static final long MAX_BYTES = 1024L * 1024;
     static final int MAX_BATCH = 50;
 
     private static final Pattern CONTROL = Pattern.compile("[a-z0-9][a-z0-9:#._-]{0,47}");
@@ -37,13 +30,13 @@ public class PressLog {
     }
 
     private final ObjectMapper mapper;
-    private final Path file;
+    private final RollingFile file;
     private final boolean enabled;
 
     public PressLog(ObjectMapper mapper, OrchestratorPaths paths,
                     @Value("${orchestrator.interaction-log:true}") boolean enabled) {
         this.mapper = mapper;
-        this.file = paths.stateFile().resolveSibling("interactions.jsonl");
+        this.file = new RollingFile(paths.stateFile().resolveSibling("interactions.jsonl"));
         this.enabled = enabled;
     }
 
@@ -75,14 +68,11 @@ public class PressLog {
         }
     }
 
-    private synchronized void append(String lines) {
+    private void append(String lines) {
         try {
-            Files.writeString(file, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            if (Files.size(file) > MAX_BYTES) {
-                Files.move(file, file.resolveSibling(file.getFileName() + ".1"), StandardCopyOption.REPLACE_EXISTING);
-            }
+            file.append(lines);
         } catch (IOException e) {
-            log.atWarn().setMessage("presses not recorded").addKeyValue("file", file)
+            log.atWarn().setMessage("presses not recorded").addKeyValue("file", file.path())
                     .addKeyValue("cause", e.toString()).log();
         }
     }

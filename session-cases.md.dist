@@ -1,0 +1,204 @@
+# Session cases
+
+When jagt may send a session each step of `session-brief.md.dist`. Copy this file to `session-cases.md` to edit a
+case; a case your copy lacks is read from here. A step at a status no case names is not sent: it is written to
+`misses.jsonl` beside `state.json` instead.
+
+Each case: `step:` a brief step · `at:` the task's statuses, `any` or `any but <statuses>` · `by:` jagt, master or
+human, who sets it off · one line saying what the case is.
+
+## start
+
+step: start
+at: any but DONE
+by: jagt
+A session starts in the task's worktree.
+
+## revive
+
+step: revive
+at: any but DONE
+by: jagt
+A session that went down is entered again.
+
+## context
+
+step: context
+at: any but DONE
+by: jagt
+A worktree is briefed with the session's standing rules.
+
+## plan-by-human
+
+step: plan
+at: PLAN_PENDING
+by: human
+You approved the plan, so the session starts on it.
+
+## plan-by-master
+
+step: plan
+at: PLAN_PENDING
+by: master
+The Master read the plan and it holds, so the session starts on it.
+
+## plan-not-ready
+
+step: plan-not-ready
+at: PLAN_PENDING
+by: master
+The Master read the plan and sends its findings back.
+
+## plan-answered
+
+step: plan-answered
+at: PLAN_PENDING
+by: master
+The Master answers the question a plan was handed back with.
+
+## round-not-ready
+
+step: round-not-ready
+at: REVIEW_PENDING
+by: master
+The Master read the hand-back and sends its findings back.
+
+## asked-human
+
+step: asked-human
+at: PLAN_PENDING, REVIEW_PENDING
+by: master
+The Master asked you a question, and the session waits on the answer.
+
+## answered
+
+step: answered
+at: any but PLAN_PENDING, SHIPPING, DEPLOY_CONFLICT, DONE
+by: master
+The Master answers a session's question.
+
+## answered-under
+
+step: answered-under
+at: SHIPPING, DEPLOY_CONFLICT
+by: master
+The Master answers a session's question below the instruction it still works on.
+
+## repo-by-human
+
+step: repo
+at: any but DONE
+by: human
+You added the repository the session asked for.
+
+## repo-by-master
+
+step: repo
+at: any but DONE
+by: master
+The Master added the repository the session asked for.
+
+## verify
+
+step: verify
+at: VERIFYING
+by: jagt
+The project's verification command failed on a hand-back.
+
+## probes
+
+step: probes
+at: VERIFYING
+by: jagt
+An acceptance probe of the plan failed on a hand-back.
+
+## ship-by-human
+
+step: ship
+at: IN_PROGRESS, VERIFYING, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED, REVIEWED, DEPLOYED, REVERTED
+by: human
+You shipped the task, so the session commits, pushes and opens its requests.
+
+## ship-by-master
+
+step: ship
+at: REVIEW_PENDING
+by: master
+The Master read the hand-back and shipped it.
+
+## round-checks-polled
+
+step: round-checks
+at: any but CI_POLLING, REVIEWED, APPROVED, DONE
+by: jagt
+The poll read red checks on the task's request.
+
+## round-checks-swept
+
+step: round-checks
+at: any but CI_POLLING, REVIEWED, APPROVED, DONE
+by: human
+Your sweep read red checks on the task's request.
+
+## round-checks-done-polled
+
+step: round-checks-done
+at: any but CI_POLLING, REVIEWED, APPROVED, DONE
+by: jagt
+The poll read red checks and no open thread.
+
+## round-checks-done-swept
+
+step: round-checks-done
+at: any but CI_POLLING, REVIEWED, APPROVED, DONE
+by: human
+Your sweep read red checks and no open thread.
+
+## round-threads-polled
+
+step: round-threads
+at: any but DONE
+by: jagt
+The poll read open threads on the task's request.
+
+## round-threads-swept
+
+step: round-threads
+at: any but DONE
+by: human
+Your sweep read open threads on the task's request.
+
+## round-threads-done-polled
+
+step: round-threads-done
+at: any but DONE
+by: jagt
+The poll read open threads, which end the round.
+
+## round-threads-done-swept
+
+step: round-threads-done
+at: any but DONE
+by: human
+Your sweep read open threads, which end the round.
+
+## deploy
+
+step: deploy
+at: DEPLOYED
+by: jagt
+The task is live on the deploy branch, so the session checks it where it landed.
+
+## conflict
+
+step: conflict
+at: DEPLOY_CONFLICT
+by: jagt
+A deploy conflicts, and the session resolves it in the deploy worktree.
+
+## wake
+
+step: wake
+at: any but DONE
+by: jagt
+A usage limit has reset, so a stopped session goes on.

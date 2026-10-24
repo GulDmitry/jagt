@@ -111,7 +111,8 @@ Every other key has a default, described in `jagt.yml.dist`.
 
 It judges by `master-brief.md.dist` until you copy it to `master-brief.md` —
 [what each mode gives](#with-the-master-and-without).
-Sessions are told each step by `session-brief.md.dist` until you copy it to `session-brief.md`.
+Sessions are told each step by `session-brief.md.dist` until you copy it to `session-brief.md`,
+and sent each one where `session-cases.md.dist` has a case for it until you copy that to `session-cases.md`.
 
 ### 4 — build, and run
 

@@ -72,6 +72,8 @@ final class E2eWorkspace {
         Files.writeString(root.resolve("mcp_client.js"), "// e2e placeholder proxy\n");
         Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"),
                 StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(Path.of("../session-cases.md.dist"), root.resolve("session-cases.md.dist"),
+                StandardCopyOption.REPLACE_EXISTING);
     }
 
     static void writeConfig(Path configFile, Path projectPath, TaskFlowCase flowCase) throws IOException {

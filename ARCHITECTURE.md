@@ -234,7 +234,7 @@ file it reads its instructions from.
 
 At startup, **one report of everything wrong**, never first-failure, because a half-valid assembly boots and then does
 nothing: `port/StartupCheck` implementations are collected by `startup/StartupValidation`, which throws
-`Misconfigured` once with every problem. Eleven of them: five in `startup/`, and six at the edge, which can name the
+`Misconfigured` once with every problem. Twelve of them: six in `startup/`, and six at the edge, which can name the
 key that fixes it. The composition half, and what of it exists:
 
 | # | check | state |
