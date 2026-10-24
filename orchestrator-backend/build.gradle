@@ -229,6 +229,15 @@ sourceSets {
     }
 }
 
+// Spends model tokens on a local stand, so it is asked for by name. NOT in `check`.
+sourceSets {
+    stand {
+        java.srcDirs = ['src/stand/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
 // Shared by the model evals and their unit test, kept out of src/test so no eval's Spring scan meets a test class.
 sourceSets {
     evalSupport {
@@ -368,6 +377,14 @@ tasks.register('e2eTest', Test) {
         scratch.mkdirs()
     }
     shouldRunAfter tasks.named('test')
+}
+
+tasks.register('standTest', Test) {
+    description = 'Runs the local synthetic code host and tracker the test stand serves over MCP.'
+    group = 'verification'
+    testClassesDirs = sourceSets.stand.output.classesDirs
+    classpath = sourceSets.stand.runtimeClasspath
+    useJUnitPlatform()
 }
 
 tasks.register('masterEval', Test) {
