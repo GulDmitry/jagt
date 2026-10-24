@@ -68,7 +68,8 @@ you. **It never posts, pushes or deploys.** One model call per poll.
 **`startupChecks`.** What is missing is [said at startup, all of it at
 once](rules/components.md#what-is-missing-is-said-at-startup-not-at-the-click-that-needed-it). Nothing reaches
 the network, so a token that is present but wrong surfaces at the first read instead. Test suites and smoke
-scripts pass `false`: what is checked is your machine, and a CI runner is not one.
+scripts pass `false`: what is checked is your machine, and a CI runner is not one. jagt's own files, the
+cases, are checked either way.
 
 **`visualize`** draws and stores nothing in jagt: the session writes `task_visual.md` into its worktree, the board
 reads it on request, and it goes with the worktree. A small fix gets no picture.

@@ -4,19 +4,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
 
 public final class StandConfig {
-
-    private static final List<String> MARKERS = List.of("jagt.yml.dist", "session-brief.md.dist", "master-brief.md.dist");
 
     private StandConfig() {
     }
 
     public static void write(Path root, Path repo, String mcpUrl, String tmuxSession) {
         try {
-            for (String marker : MARKERS) {
-                Files.copy(Path.of("..", marker), root.resolve(marker), StandardCopyOption.REPLACE_EXISTING);
+            try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
+                for (Path file : shipped) {
+                    Files.copy(file, root.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                }
             }
             Path servers = root.resolve("servers.json");
             Files.writeString(servers, """

@@ -21,4 +21,9 @@ public class CaseCheck implements StartupCheck {
     public List<Problem> problems() {
         return cases.book().problems(brief.steps(), SessionCases.FILE);
     }
+
+    @Override
+    public boolean machine() {
+        return false;
+    }
 }

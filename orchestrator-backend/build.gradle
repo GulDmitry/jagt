@@ -88,7 +88,15 @@ allprojects {
         // Walking up from the working directory would reach the human's own stores.
         def testRoot = task.project.layout.buildDirectory.dir("test-root/${task.name}").get().asFile
         task.environment 'ORCHESTRATOR_ROOT', testRoot.absolutePath
-        task.doFirst { testRoot.mkdirs() }
+        // A booted app reads its briefs and cases from the root, so the root holds the shipped ones.
+        def shipped = task.project.rootProject.file('..')
+        task.doFirst {
+            testRoot.mkdirs()
+            shipped.listFiles().findAll { it.name.endsWith('.dist') }.each {
+                java.nio.file.Files.copy(it.toPath(), new File(testRoot, it.name).toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        }
     }
 
     // Provisioning a worktree trusts it in the config Claude reads; the suites that log in as the human need theirs.

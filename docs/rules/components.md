@@ -76,6 +76,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   implementation answers for goes in `startup` — a `type` selecting nothing, `jagt.yml`, jagt's paths, git,
   tmux.
 - Two limits: **nothing reaches the network** (presence, never validity) and nothing asks a
-  remote about a branch. `orchestrator.startup-checks=false` is for test harnesses only.
+  remote about a branch. `orchestrator.startup-checks=false` is for test harnesses only and skips the machine
+  alone: a check of jagt's own files answers `machine()` false and runs always.
 - `surface/board/AbortedConnectionFilter` drops the aborted-peer `setSoLinger` `SocketException`. Never
   silence `NioEndpoint` instead.
