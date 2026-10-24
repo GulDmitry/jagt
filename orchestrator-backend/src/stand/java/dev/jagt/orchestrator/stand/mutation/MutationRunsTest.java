@@ -14,7 +14,7 @@ class MutationRunsTest {
         List<MutationRuns.Run> runs = MutationRuns.selected(MutationBook.shipped(), "", 15, "act", 1);
 
         assertThat(runs).extracting(run -> run.mutation().name(), MutationRuns.Run::mode)
-                .containsExactly(tuple("contradicting-ticket", StandMode.ACT));
+                .containsExactly(tuple("second-repository", StandMode.ACT));
     }
 
     @Test

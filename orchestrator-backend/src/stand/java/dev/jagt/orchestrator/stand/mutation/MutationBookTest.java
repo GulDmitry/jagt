@@ -18,8 +18,7 @@ class MutationBookTest {
         assertThat(mutations).extracting(Mutation::kind).containsExactly(
                 Mutation.Kind.TICKET, Mutation.Kind.TICKET, Mutation.Kind.TICKET, Mutation.Kind.TICKET,
                 Mutation.Kind.WORLD, Mutation.Kind.WORLD, Mutation.Kind.WORLD, Mutation.Kind.WORLD, Mutation.Kind.WORLD,
-                Mutation.Kind.ATTACK, Mutation.Kind.ATTACK, Mutation.Kind.ATTACK, Mutation.Kind.ATTACK,
-                Mutation.Kind.ATTACK);
+                Mutation.Kind.ATTACK, Mutation.Kind.ATTACK, Mutation.Kind.ATTACK, Mutation.Kind.ATTACK);
     }
 
     @Test
