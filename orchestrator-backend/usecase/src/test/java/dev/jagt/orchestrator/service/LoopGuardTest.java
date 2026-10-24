@@ -38,7 +38,7 @@ class LoopGuardTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        LoopGuard loops = new LoopGuard(state, config, notifications, clock);
+        LoopGuard loops = new LoopGuard(state, config, new TaskStops(state, notifications, clock), clock);
         ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
                 List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0);
         loops.round("ABC-42", round, "brief 1");
@@ -67,7 +67,7 @@ class LoopGuardTest {
                 new StatusChange(TaskStatus.REVIEW_PENDING, 99_800_000, ActionOrigin.MCP))).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        boolean may = new LoopGuard(state, config, notifications, clock).mayShip("ABC-42");
+        boolean may = new LoopGuard(state, config, new TaskStops(state, notifications, clock), clock).mayShip("ABC-42");
 
         assertThat(may).isFalse();
         assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
@@ -81,7 +81,7 @@ class LoopGuardTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .loop(LoopWatch.none().withRound(new LoopWatch.Round(1, 2, "", "same"))
                         .stopped(new LoopWatch.Stop(LoopWatch.Trigger.STALLED, 2, "3 rounds"))).build());
-        LoopGuard loops = new LoopGuard(state, config, notifications, clock);
+        LoopGuard loops = new LoopGuard(state, config, new TaskStops(state, notifications, clock), clock);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
         loops.lift("ABC-42");

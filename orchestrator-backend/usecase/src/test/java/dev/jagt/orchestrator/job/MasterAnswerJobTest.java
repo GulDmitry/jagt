@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -96,13 +97,14 @@ class MasterAnswerJobTest {
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
 
-    @Test
-    void leavesTheQuestionOfATaskJagtStoppedToTheHuman(@TempDir Path root) {
+    @ParameterizedTest
+    @EnumSource(LoopWatch.Trigger.class)
+    void leavesTheQuestionOfATaskJagtStoppedToTheHuman(LoopWatch.Trigger trigger, @TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .message("keep v2?").report(AgentReport.QUESTION)
-                .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, 1L, "5 ships"))).build());
+                .loop(LoopWatch.none().stopped(new LoopWatch.Stop(trigger, 1L, "the evidence"))).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 

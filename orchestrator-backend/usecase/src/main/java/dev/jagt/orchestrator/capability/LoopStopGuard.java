@@ -12,7 +12,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-/** Refuses {@code action} on a task jagt stopped as a loop, unless a human pressed it. */
+/** Refuses {@code action} on a task jagt stopped, unless a human pressed it. */
 public record LoopStopGuard(TaskAction action, LoopGuard loops) implements CapabilityInterceptor {
 
     private static final Set<ActionOrigin> HUMAN = EnumSet.of(ActionOrigin.BOARD, ActionOrigin.PALETTE);
@@ -25,7 +25,7 @@ public record LoopStopGuard(TaskAction action, LoopGuard loops) implements Capab
     @Override
     public Outcome around(String taskId, Supplier<Outcome> work) {
         if (!HUMAN.contains(OriginContext.current()) && loops.stopped(taskId)) {
-            throw Refusal.byState(action.id() + " " + taskId + " refused: jagt stopped it as a suspected loop;"
+            throw Refusal.byState(action.id() + " " + taskId + " refused: jagt stopped it;"
                     + " only a human presses it until `lift`");
         }
         return work.get();

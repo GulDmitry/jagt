@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.CaseBook;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-/** A step goes to a session only where a case sends it at the task's status; a miss is recorded, never decided. */
+/** A step goes to a session only where a case sends it at the task's status; a miss stops the task for the human. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -19,6 +20,7 @@ public class CaseDoor {
     private final SessionCases cases;
     private final StateService stateService;
     private final MissLog misses;
+    private final TaskStops stops;
 
     /** A task jagt does not hold is left to the relay, which refuses it by name. */
     public boolean opens(String taskId, String step) {
@@ -32,9 +34,10 @@ public class CaseDoor {
         log.atWarn().setMessage("step refused").addKeyValue("task", id).addKeyValue("step", step)
                 .addKeyValue("status", status.get()).addKeyValue("by", by.id())
                 .addKeyValue("cause", "no case sends it at this status")
-                .addKeyValue("effect", "nothing relayed")
+                .addKeyValue("effect", "nothing relayed, the task stopped")
                 .addKeyValue("fix", SessionCases.FILE)
                 .log();
+        stops.stop(id, LoopWatch.Trigger.MISS, "no case sends " + step + " at " + status.get() + ", set off by " + by.id());
         return false;
     }
 }

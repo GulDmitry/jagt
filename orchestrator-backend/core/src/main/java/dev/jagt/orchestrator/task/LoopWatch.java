@@ -19,9 +19,24 @@ public record LoopWatch(List<Round> rounds, long since, @Nullable Stop stop) {
     public record Round(long at, int threads, String failing, String digest) {
     }
 
-    public enum Trigger { STALLED, SHIPS }
+    /** {@code next} is what a human reads after the evidence. */
+    public enum Trigger {
+        STALLED(Trigger.DEFECT), SHIPS(Trigger.DEFECT), MISS("Add a case if one should send it");
+
+        private static final String DEFECT = "Likely a jagt defect: inspect the sweeps in the log";
+
+        private final String next;
+
+        Trigger(String next) {
+            this.next = next;
+        }
+    }
 
     public record Stop(Trigger trigger, long at, String evidence) {
+
+        public String reading() {
+            return evidence + ". " + trigger.next + ", then lift or close";
+        }
     }
 
     public LoopWatch {

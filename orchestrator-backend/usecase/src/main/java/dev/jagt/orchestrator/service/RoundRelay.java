@@ -28,7 +28,7 @@ public class RoundRelay {
         String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
         return switch (loops.round(taskId, r, brief)) {
             case STOPPED -> new SweepResult(SweepResult.Kind.STOPPED, read + ", checks " + said
-                    + " — jagt stopped this task as a suspected loop, so nothing was relayed; `lift` it first");
+                    + " — jagt stopped this task, so nothing was relayed; `lift` it first");
             case UNCHANGED -> unchanged(read, said);
             case RELAY -> sessions.relayFreshIfChanged(taskId, brief)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)

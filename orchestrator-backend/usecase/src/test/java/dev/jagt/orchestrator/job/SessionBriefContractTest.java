@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CaseDoor;
@@ -15,6 +16,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.SubAgentBriefing;
 import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.ConflictWatch;
@@ -65,7 +67,8 @@ class SessionBriefContractTest {
         state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()))),
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))),
                 mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
                         new ConflictWatch.Progress(7, 0, "d")));
@@ -109,7 +112,8 @@ class SessionBriefContractTest {
         AgentSessions sessions = mock(AgentSessions.class);
 
         new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()))),
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))),
                 changes).ship("ABC-42");
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();

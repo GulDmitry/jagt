@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -75,7 +78,8 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC())));
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
 
         relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
 
@@ -91,7 +95,8 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
-                new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))));
+                new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))));
 
         boolean told = relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
 
@@ -99,5 +104,24 @@ class StepRelayTest {
         verify(sessions, never()).relayIfChanged(anyString(), anyString());
         assertThat(Files.readString(root.resolve("misses.jsonl")))
                 .isEqualTo("{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"IN_PROGRESS\",\"by\":\"jagt\"}\n");
+    }
+
+    @Test
+    void stopsTheTaskForTheHumanWhereNoCaseSendsTheStepAtItsStatus(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"),
+                "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nThe task is live.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+
+        relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
+                .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
+                .containsExactly(LoopWatch.Trigger.MISS, "no case sends deploy at IN_PROGRESS, set off by jagt");
     }
 }

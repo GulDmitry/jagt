@@ -48,12 +48,12 @@ public final class AutoReviewCadence {
 
     /** What a human is owed about this task: is anything watching it, and when will it next look. */
     public AutoReviewWatch watch(TaskState task, long now) {
-        if (!polls(task)) {
-            return AutoReviewWatch.none();
-        }
         LoopWatch.Stop stop = task.loopOrNone().stop();
         if (stop != null) {
             return AutoReviewWatch.loopStopped(stop);
+        }
+        if (!polls(task)) {
+            return AutoReviewWatch.none();
         }
         if (!task.autoReviewEnabled(true)) {
             return AutoReviewWatch.offForTask();

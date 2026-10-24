@@ -48,7 +48,7 @@
 
 ## Cases · [spec](../openspec/specs/cases/spec.md)
 
-- **Your own cases** — A step reaches a session where a case of `session-cases.md.dist` sends it, else lands in `misses.jsonl`.
+- **Your own cases** — A step goes where a case of `session-cases.md.dist` sends it; any other stops the task, logged to `misses.jsonl`.
   [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-a-file-you-may-copy)
 
 ## Git · [spec](../openspec/specs/git/spec.md)

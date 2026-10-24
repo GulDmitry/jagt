@@ -44,8 +44,7 @@ public record AutoReviewWatch(State state, long nextPollAt, @Nullable String not
     }
 
     public static AutoReviewWatch loopStopped(LoopWatch.Stop stop) {
-        return new AutoReviewWatch(State.LOOP_STOPPED, 0, stop.evidence()
-                + ". Likely a jagt defect: inspect the sweeps in the log, then lift or close", "jagt stopped");
+        return new AutoReviewWatch(State.LOOP_STOPPED, 0, stop.reading(), "jagt stopped");
     }
 
     /** A request nothing can time — its round was never stamped, so no interval can be measured from it. */
