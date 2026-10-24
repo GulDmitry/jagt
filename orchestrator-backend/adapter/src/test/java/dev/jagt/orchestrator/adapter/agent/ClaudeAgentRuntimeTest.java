@@ -649,4 +649,29 @@ class ClaudeAgentRuntimeTest {
     void keepsAConfiguredCommand() {
         assertThat(new ClaudeProperties("/opt/bin/claude", "").command()).isEqualTo("/opt/bin/claude");
     }
+
+    @Test
+    void readsTheNudgeAndAnIdleSessionFromTheScreenOfASessionFinishedWithItsTurn() throws Exception {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
+        String screen = new String(getClass().getResourceAsStream("/screens/idle-nudge.txt").readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        assertThat(runtime.draft(screen)).contains("task_context.md changed \u2014 re-read it now and follow the new instructions.");
+        assertThat(runtime.working(screen)).isFalse();
+    }
+
+    @Test
+    void readsATurnRunningFromItsInterruptHint() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
+
+        assertThat(runtime.working("\u001b[38;5;174m\u2736 Thinking\u2026\u001b[0m (12s \u00b7 esc to interrupt)\n\u276f ")).isTrue();
+    }
 }

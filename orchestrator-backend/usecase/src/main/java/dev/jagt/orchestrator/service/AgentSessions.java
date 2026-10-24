@@ -323,6 +323,26 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         }
     }
 
+    /** Enter pressed on jagt's own nudge left in the input of an idle session; never on any other text. */
+    public boolean resubmitUnsentNudge(String taskId) {
+        String id = stateService.canonicalTaskId(taskId);
+        String session = agentSession(configService.load(), id);
+        try {
+            boolean unsent = sessions.screenOf(session, id).filter(shown -> !agentRuntime.working(shown))
+                    .flatMap(agentRuntime::draft).filter(AgentSessions::isNudge).isPresent();
+            return unsent && sessions.submitTaskWindow(session, id);
+        } catch (RuntimeException unread) {
+            log.atDebug().setMessage("session screen unread").addKeyValue("task", id)
+                    .addKeyValue("cause", unread.toString()).log();
+            return false;
+        }
+    }
+
+    /** A wrapped input shows the nudge's first row alone, which must still be most of it to be ours. */
+    private static boolean isNudge(String draft) {
+        return NUDGE.startsWith(draft) && draft.length() >= NUDGE.length() / 2;
+    }
+
     private void startFresh(String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
         log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias()).addKeyValue("cause", cause).log();

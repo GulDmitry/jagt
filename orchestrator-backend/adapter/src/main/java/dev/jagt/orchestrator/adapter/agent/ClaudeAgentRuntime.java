@@ -41,6 +41,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     private static final JsonMapper JSON = new JsonMapper();
     private static final String PROMPT_MARK = "\u276f";
+    private static final String INTERRUPT_HINT = "esc to interrupt";
     private static final Pattern ANSI = Pattern.compile("\u001b\\[[0-9;?]*[A-Za-z]");
     private static final Pattern DIMMED = Pattern.compile("\u001b\\[2m.*?(?=\u001b\\[(?:0|22)?m|$)");
     private static final String CLAUDE_MEMORY_FILE = "CLAUDE.md";
@@ -121,6 +122,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         }
         String typed = draft.replace('\u00a0', ' ').strip();
         return typed.isEmpty() ? Optional.empty() : Optional.of(typed);
+    }
+
+    @Override
+    public boolean working(String screen) {
+        return ANSI.matcher(screen).replaceAll("").contains(INTERRUPT_HINT);
     }
 
     @Override

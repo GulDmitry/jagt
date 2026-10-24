@@ -537,4 +537,45 @@ class AgentSessionsTest {
 
         verify(tmux, after(2500).never()).nudgeTaskWindow(anyString(), anyString(), anyString());
     }
+
+    @Test
+    void pressesEnterOnTheNudgeLeftUnsentInAnIdleSessionsInput() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        String idle = "\u276f task_context.md changed \u2014 re-read it now and follow the new instructions.";
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of(idle));
+        when(agentRuntime.draft(idle)).thenReturn(
+                Optional.of("task_context.md changed \u2014 re-read it now and follow the new instructions."));
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.resubmitUnsentNudge("ABC-1")).isTrue();
+        verify(tmux).submitTaskWindow("jagt", "ABC-1");
+    }
+
+    @Test
+    void pressesNothingOnTheHumansOwnDraft() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("screen"));
+        when(agentRuntime.draft("screen")).thenReturn(Optional.of("where is the merge request for the nudge"));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
+        verify(tmux, never()).submitTaskWindow(anyString(), anyString());
+    }
+
+    @Test
+    void pressesNothingWhileASessionsTurnIsRunning() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("screen"));
+        when(agentRuntime.working("screen")).thenReturn(true);
+        when(agentRuntime.draft("screen")).thenReturn(
+                Optional.of("task_context.md changed \u2014 re-read it now and follow the new instructions."));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
+        verify(tmux, never()).submitTaskWindow(anyString(), anyString());
+    }
 }

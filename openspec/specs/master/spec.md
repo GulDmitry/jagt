@@ -114,13 +114,13 @@ Master's `done` is refused.
 - **THEN** it decides as you would, sent back as a finding
 
 ### Requirement: Instructions never land inside your line
-A nudge to a session SHALL wait while the human is typing in its window; one left unsent in the input SHALL be
-submitted again, three times at most, then reported failed with that cause. It SHALL name no author.
+A nudge SHALL wait while the human types in the window; one left in the input SHALL get Enter again, three times
+at most, then be reported failed, and five more while idle, per turn. It SHALL name no author.
 
 #### Scenario: You are typing
 - **WHEN** instructions arrive mid-line
 - **THEN** they wait for your line
-- **AND** a nudge still in the input after the turn ended gets Enter again; after three the relay says it failed
+- **AND** a nudge left in the input gets Enter again, even once idle; after three the relay says it failed; a line that is yours, never
 
 ### Requirement: Only blocking, wrong and unproven stop a round
 A plan or round SHALL be ready unless a finding is blocking, wrong or unproven, the last a `show:` request. Only

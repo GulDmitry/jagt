@@ -1,0 +1,14 @@
+  wait for approval.
+
+  OPEN QUESTIONS:
+  - --shout only works as the first argument, which is the form the ticket
+    names.
+
+✻ Worked for 2m 11s · done 6:55 PM
+
+────────────────────────────────────────────────────────────────────────────────
+❯ task_context.md changed — re-read it now and follow the new instructions.
+
+────────────────────────────────────────────────────────────────────────────────
+  d 58% 3h; w 9% 165h
+  ⏵⏵ auto mode on (shift+tab to cycle)

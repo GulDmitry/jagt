@@ -91,6 +91,11 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
+    /** Whether {@code screen} shows a turn running, which keys sent now would be lost to. */
+    default boolean working(String screen) {
+        return false;
+    }
+
     /** Why {@code screen}, a session's window as shown, waits at a prompt jagt never answers; empty where it does not. */
     default Optional<String> unansweredPrompt(String screen) {
         return Optional.empty();
