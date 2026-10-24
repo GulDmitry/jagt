@@ -13,7 +13,7 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record NewTaskMessage(String taskId, String projectKey, List<String> alsoProjects, String instructions,
                              String title, String ticketUrl, String mode, String branchStrategy,
-                             String baseBranch) implements Message {
+                             String baseBranch, String why) implements Message {
 
     public static final Schema SCHEMA = Schema
             .of("Create an isolated Git worktree for a task, register it in state.json and start a sub-agent in"
@@ -33,7 +33,8 @@ public record NewTaskMessage(String taskId, String projectKey, List<String> also
                     + " exists (a reopened ticket). Default: " + BranchStrategy.FRESH.id() + ".")
             .text("baseBranch", "Branch to cut the worktree from and to target with the review request, e.g. a"
                     + " parent feature branch. Must exist on origin. Default: the project's configured"
-                    + " baseBranch.");
+                    + " baseBranch.")
+            .required(Why.FIELD, "string", Why.DESCRIBES);
 
     public NewTaskMessage {
         taskId = absent(taskId);
@@ -44,12 +45,14 @@ public record NewTaskMessage(String taskId, String projectKey, List<String> also
         mode = absent(mode);
         branchStrategy = absent(branchStrategy);
         baseBranch = absent(baseBranch);
+        why = absent(why);
         alsoProjects = alsoProjects == null ? List.of() : List.copyOf(alsoProjects);
     }
 
     @Override
     public List<Violation> violations(MessageContext context) {
         List<Violation> found = new ArrayList<>();
+        Why.violation(why).ifPresent(found::add);
         if (taskId == null) {
             found.add(new Violation("taskId", "required: it becomes the branch name"));
         }

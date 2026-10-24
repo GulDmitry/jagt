@@ -10,7 +10,7 @@ class NewTaskMessageTest {
 
     @Test
     void refusesALaunchWithNothingToNameTheBranchOrTheRepositoryBy() {
-        var said = new NewTaskMessage(null, null, List.of(), null, null, null, null, null, null);
+        var said = new NewTaskMessage(null, null, List.of(), null, null, null, null, null, null, "user asked for the widget fix");
 
         assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
                 .containsExactlyInAnyOrder("taskId", "projectKey");
@@ -18,7 +18,7 @@ class NewTaskMessageTest {
 
     @Test
     void refusesABranchStrategyThisMachineDoesNotHave() {
-        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, null, "clobber", null);
+        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, null, "clobber", null, "user asked for the widget fix");
 
         assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
                 .containsExactly("branchStrategy");
@@ -26,7 +26,7 @@ class NewTaskMessageTest {
 
     @Test
     void refusesATicketLinkNobodyCanOpen() {
-        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, "jira://ABC-42", null, null, null);
+        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, "jira://ABC-42", null, null, null, "user asked for the widget fix");
 
         assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
                 .containsExactly("ticketUrl");
@@ -35,15 +35,15 @@ class NewTaskMessageTest {
     @Test
     void refusesTheSessionsOwnRepositoryRepeatedAmongTheFurtherOnes() {
         var said = new NewTaskMessage("ABC-42", "api", List.of("api", "web"), null, null, null, null, null,
-                null);
+                null, "user asked for the widget fix");
 
         assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
                 .containsExactly("alsoProjects");
     }
 
     @Test
-    void acceptsTheOrdinaryLaunchWithNothingButATaskAndAProject() {
-        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, null, null, null);
+    void acceptsTheOrdinaryLaunchWithNothingButATaskAProjectAndAReason() {
+        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, null, null, null, "user asked for the widget fix");
 
         assertThat(said.violations(MessageContext.NONE)).isEmpty();
     }
@@ -51,23 +51,30 @@ class NewTaskMessageTest {
     @Test
     void acceptsALaunchNamingEveryOptionInAnyCase() {
         var said = new NewTaskMessage("ABC-42", "api", List.of("web"), "do it", "Widget layout is off",
-                "https://tracker/ABC-42", " PLAN ", " Recreate ", "release");
+                "https://tracker/ABC-42", " PLAN ", " Recreate ", "release", "user asked for the widget fix");
 
         assertThat(said.violations(MessageContext.NONE)).isEmpty();
     }
 
     @Test
     void refusesASessionModeThisMachineDoesNotHave() {
-        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, "turbo", null, null);
+        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, "turbo", null, null, "user asked for the widget fix");
 
         assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("mode");
     }
 
     @Test
-    void readsBlankFieldsAsLeftOutSoALaunchOfBlanksIsRefusedForTheTwoItNeeds() {
-        var said = new NewTaskMessage(" ", " ", null, " ", " ", " ", " ", " ", " ");
+    void readsBlankFieldsAsLeftOutSoALaunchOfBlanksIsRefusedForTheThreeItNeeds() {
+        var said = new NewTaskMessage(" ", " ", null, " ", " ", " ", " ", " ", " ", " ");
 
         assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
-                .containsExactlyInAnyOrder("taskId", "projectKey");
+                .containsExactlyInAnyOrder("taskId", "projectKey", "why");
+    }
+
+    @Test
+    void refusesALaunchGivingNoReason() {
+        var said = new NewTaskMessage("ABC-42", "api", List.of(), null, null, null, null, null, null, null);
+
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("why");
     }
 }

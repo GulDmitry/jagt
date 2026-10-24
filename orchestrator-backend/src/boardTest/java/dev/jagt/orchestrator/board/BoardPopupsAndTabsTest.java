@@ -305,6 +305,22 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    void aStepsReasonReadsInItsHoverAndNowhereOnThePage() {
+        long now = System.currentTimeMillis();
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a1").lastActiveTimestamp(now).history(List.of(
+                        new StatusChange(TaskStatus.REVIEW_PENDING, now - 60_000, null,
+                                "work done, tests green, ready for review"))).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#pane .history li").first().hover();
+
+        assertThat(page.locator("#tip")).hasText("work done, tests green, ready for review");
+        assertThat(page.locator("#board")).not().containsText("ready for review");
+    }
+
+    @Test
     void theListSaysWhatItsKeysDo() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

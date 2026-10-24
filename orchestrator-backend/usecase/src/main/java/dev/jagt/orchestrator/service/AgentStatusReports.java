@@ -65,7 +65,7 @@ public class AgentStatusReports {
 
     /**
      * A message that reached the door. It is judged here as well as at the transport, because jagt's own reports
-     * and a session's come through the same door and only one of them crossed a wire.
+     * and a session's come through the same door and only one of them crossed a wire; the reason is the wire's alone.
      */
     public String report(AgentStatusMessage said, String taskId) {
         return report(accepted(said, taskId), taskId, handBack::verificationOwed);
@@ -73,7 +73,7 @@ public class AgentStatusReports {
 
     private Reported accepted(AgentStatusMessage said, String taskId) {
         MessageContext context = contextFor(taskId);
-        List<Violation> violations = said.violations(context);
+        List<Violation> violations = said.reportViolations(context);
         if (!violations.isEmpty()) {
             throw new IllegalArgumentException(Message.refusal(violations));
         }

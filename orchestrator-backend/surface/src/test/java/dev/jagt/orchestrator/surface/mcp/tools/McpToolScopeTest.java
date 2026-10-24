@@ -136,7 +136,8 @@ class McpToolScopeTest {
                 .thenReturn("recorded for MINE-1");
 
         String answered = handler.call(
-                new JsonMapper().readTree("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
+                new JsonMapper().readTree("{\"status\":\"IN_PROGRESS\",\"message\":\"working\",\"why\":\"started on the ticket\"}"),
+                "MINE-1");
 
         assertThat(answered).isEqualTo("recorded for MINE-1");
     }
@@ -293,7 +294,7 @@ class McpToolScopeTest {
         ToolHandler handler = registered.handlers.get("initialize_task");
 
         String answered = handler.call(
-                new JsonMapper().readTree("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\"}"), null);
+                new JsonMapper().readTree("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\",\"why\":\"user asked for ABC-2\"}"), null);
 
         assertThat(answered).isEqualTo("ABC-2 initialized");
     }

@@ -186,11 +186,13 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
      * {@link OriginContext}.
      */
     private static TaskState stamped(@Nullable TaskState before, TaskState after) {
-        ActionOrigin origin = OriginContext.current();
-        if (origin == null || after.history().isEmpty() || !tookAStep(before, after)) {
+        if (after.history().isEmpty() || !tookAStep(before, after)) {
             return after;
         }
-        return after.withLastChangeOrigin(origin);
+        ActionOrigin origin = OriginContext.current();
+        String why = OriginContext.why();
+        TaskState byOrigin = origin == null ? after : after.withLastChangeOrigin(origin);
+        return why == null ? byOrigin : byOrigin.withLastChangeWhy(why);
     }
 
     private static boolean tookAStep(@Nullable TaskState before, TaskState after) {

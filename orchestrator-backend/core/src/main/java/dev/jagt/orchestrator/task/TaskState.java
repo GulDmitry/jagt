@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /**
  * One task, as {@code state.json} holds it.
@@ -305,11 +306,20 @@ public record TaskState(
      * work happens and the asker is known only at the entry point.
      */
     public TaskState withLastChangeOrigin(ActionOrigin origin) {
+        return withLastChange(step -> step.by(origin));
+    }
+
+    /** The reason the asker gave for the step just taken, stamped as its origin is. */
+    public TaskState withLastChangeWhy(String why) {
+        return withLastChange(step -> step.because(why));
+    }
+
+    private TaskState withLastChange(UnaryOperator<StatusChange> stamp) {
         if (history.isEmpty()) {
             return this;
         }
         List<StatusChange> stamped = new ArrayList<>(history);
-        stamped.set(stamped.size() - 1, stamped.getLast().by(origin));
+        stamped.set(stamped.size() - 1, stamp.apply(stamped.getLast()));
         return toBuilder().history(List.copyOf(stamped)).build();
     }
 

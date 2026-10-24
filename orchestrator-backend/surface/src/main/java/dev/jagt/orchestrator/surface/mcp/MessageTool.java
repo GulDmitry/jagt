@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Violation;
+import dev.jagt.orchestrator.service.OriginContext;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -48,7 +49,7 @@ public final class MessageTool {
             if (!violations.isEmpty()) {
                 throw new ToolRefusal(ToolFailure.VALIDATION, Message.refusal(violations));
             }
-            return handler.call(said, callerTaskId);
+            return OriginContext.because(said.why(), () -> handler.call(said, callerTaskId));
         };
     }
 

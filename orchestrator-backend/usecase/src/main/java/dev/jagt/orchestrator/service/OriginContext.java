@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.ActionOrigin;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Supplier;
 
@@ -11,6 +12,7 @@ import java.util.function.Supplier;
 public final class OriginContext {
 
     private static final ThreadLocal<ActionOrigin> CURRENT = new ThreadLocal<>();
+    private static final ThreadLocal<String> WHY = new ThreadLocal<>();
 
     private OriginContext() {
     }
@@ -44,6 +46,28 @@ public final class OriginContext {
     /** Null when nobody said — a write from a thread no entry point claimed is recorded without an origin. */
     public static ActionOrigin current() {
         return CURRENT.get();
+    }
+
+    /** The asker's reason, carried the same way; a null one leaves an outer reason standing. */
+    public static <T> T because(@Nullable String why, Supplier<T> work) {
+        if (why == null) {
+            return work.get();
+        }
+        String previous = WHY.get();
+        WHY.set(why);
+        try {
+            return work.get();
+        } finally {
+            if (previous == null) {
+                WHY.remove();
+            } else {
+                WHY.set(previous);
+            }
+        }
+    }
+
+    public static @Nullable String why() {
+        return WHY.get();
     }
 
     @FunctionalInterface

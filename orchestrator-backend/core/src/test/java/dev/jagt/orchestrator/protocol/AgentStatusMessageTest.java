@@ -15,21 +15,21 @@ class AgentStatusMessageTest {
     void refusesAnOutcomeItDoesNotNameInsteadOfReadingTheMessageInstead() {
         var said = AgentStatusMessage.of("IN_PROGRESS", "still going").withOutcome("done");
 
-        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("outcome");
+        assertThat(said.reportViolations(MessageContext.NONE)).extracting(Violation::field).containsExactly("outcome");
     }
 
     @Test
     void refusesAStatusThisMachineDoesNotHave() {
         var said = AgentStatusMessage.of("ALMOST_DONE", "still going");
 
-        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("status");
+        assertThat(said.reportViolations(MessageContext.NONE)).extracting(Violation::field).containsExactly("status");
     }
 
     @Test
     void refusesAStatusOnlyJagtSetsNamingOnlyTheReportableOnes() {
         var said = AgentStatusMessage.of("DEPLOYED", "landed");
 
-        assertThat(said.violations(MessageContext.NONE)).singleElement()
+        assertThat(said.reportViolations(MessageContext.NONE)).singleElement()
                 .satisfies(violation -> assertThat(violation.expected())
                         .isEqualTo("one of [PLAN_PENDING, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED]"));
     }
@@ -38,7 +38,7 @@ class AgentStatusMessageTest {
     void refusesARoundThatIsOutForReviewWithNoRequestAnywhereInIt() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped it");
 
-        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::expected)
+        assertThat(said.reportViolations(MessageContext.NONE)).extracting(Violation::expected)
                 .allSatisfy(expected -> assertThat(expected).contains("required with CI_POLLING"));
     }
 
@@ -46,7 +46,7 @@ class AgentStatusMessageTest {
     void acceptsARoundWhoseRequestWasWrittenIntoTheMessage() {
         var said = AgentStatusMessage.of("CI_POLLING", "review request: https://host/mr/9");
 
-        assertThat(said.violations(MessageContext.NONE)).isEmpty();
+        assertThat(said.reportViolations(MessageContext.NONE)).isEmpty();
     }
 
     @Test
@@ -54,7 +54,7 @@ class AgentStatusMessageTest {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped").withReviewRequestUrl("https://host/mr/9")
                 .withReviewRequests(Map.of("api", "https://host/api/mr/1"));
 
-        assertThat(said.violations(new MessageContext(List.of("api"), false, java.util.List.of()))).extracting(Violation::field)
+        assertThat(said.reportViolations(new MessageContext(List.of("api"), false, java.util.List.of()))).extracting(Violation::field)
                 .containsExactly("reviewRequests");
     }
 
@@ -62,7 +62,7 @@ class AgentStatusMessageTest {
     void refusesALinkNobodyCanOpen() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped").withReviewRequestUrl("git@host:proj.git");
 
-        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
+        assertThat(said.reportViolations(MessageContext.NONE)).extracting(Violation::field)
                 .contains("reviewRequestUrl");
     }
 
@@ -71,7 +71,7 @@ class AgentStatusMessageTest {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
                 .withReviewRequests(Map.of("nope", "https://host/mr/9"));
 
-        assertThat(said.violations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).extracting(Violation::expected)
+        assertThat(said.reportViolations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).extracting(Violation::expected)
                 .allSatisfy(expected -> assertThat(expected).contains("not on this task"));
     }
 
@@ -79,7 +79,7 @@ class AgentStatusMessageTest {
     void namesEveryBrokenRuleAtOnceSoASenderFixesThemInOneGo() {
         var said = new AgentStatusMessage("ALMOST_DONE", "shipped", "done", "git@host:proj.git", Map.of());
 
-        assertThat(said.violations(MessageContext.NONE)).hasSize(3);
+        assertThat(said.reportViolations(MessageContext.NONE)).hasSize(3);
     }
 
     @Test
@@ -114,7 +114,7 @@ class AgentStatusMessageTest {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
                 .withReviewRequests(Map.of("nope", "https://host/mr/9"));
 
-        assertThat(said.violations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).singleElement()
+        assertThat(said.reportViolations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).singleElement()
                 .satisfies(violation -> assertThat(violation.field()).isEqualTo("reviewRequests"))
                 .satisfies(violation -> assertThat(violation.expected())
                         .isEqualTo("project 'nope' is not on this task; its projects are [api, web]"));
@@ -125,7 +125,7 @@ class AgentStatusMessageTest {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
                 .withReviewRequests(Map.of("web", "https://host/mr/9"));
 
-        assertThat(said.violations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).isEmpty();
+        assertThat(said.reportViolations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).isEmpty();
     }
 
     @Test
@@ -133,7 +133,7 @@ class AgentStatusMessageTest {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
                 .withReviewRequests(Map.of("nope", "https://host/mr/9"));
 
-        assertThat(said.violations(MessageContext.NONE)).isEmpty();
+        assertThat(said.reportViolations(MessageContext.NONE)).isEmpty();
     }
 
     @Test
@@ -193,7 +193,7 @@ class AgentStatusMessageTest {
     void acceptsNoPlanFromAnAutoplanTaskAndReportsIt() {
         var said = new AgentStatusMessage("IN_PROGRESS", "touches one file", "no_plan", null, Map.of());
 
-        assertThat(said.violations(new MessageContext(List.of("api"), false, java.util.List.of()))).isEmpty();
+        assertThat(said.reportViolations(new MessageContext(List.of("api"), false, java.util.List.of()))).isEmpty();
         assertThat(said.accepted(MessageContext.NONE).orElseThrow().noPlan()).isTrue();
     }
 
@@ -201,7 +201,7 @@ class AgentStatusMessageTest {
     void refusesNoPlanForATaskOpenedInPlanMode() {
         var said = new AgentStatusMessage("IN_PROGRESS", "touches one file", "no_plan", null, Map.of());
 
-        assertThat(said.violations(new MessageContext(List.of("api"), true, java.util.List.of()))).singleElement()
+        assertThat(said.reportViolations(new MessageContext(List.of("api"), true, java.util.List.of()))).singleElement()
                 .satisfies(violation -> assertThat(violation.field()).isEqualTo("outcome"));
     }
 
@@ -209,26 +209,26 @@ class AgentStatusMessageTest {
     void refusesNoPlanFromAnyStatusButInProgress() {
         var said = new AgentStatusMessage("REVIEW_PENDING", "touches one file", "no_plan", null, Map.of());
 
-        assertThat(said.violations(MessageContext.NONE)).singleElement()
+        assertThat(said.reportViolations(MessageContext.NONE)).singleElement()
                 .satisfies(violation -> assertThat(violation.field()).isEqualTo("status"));
     }
 
     @Test
     void carriesTheProjectAQuestionNeedsWhenItIsConfiguredAndNotOnTheTask() {
         var said = new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", null, Map.of(), null,
-                "registry");
+                "registry", null);
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
-        assertThat(said.violations(context)).isEmpty();
+        assertThat(said.reportViolations(context)).isEmpty();
         assertThat(said.accepted(context).orElseThrow().needsProject()).isEqualTo("registry");
     }
 
     @Test
     void refusesAProjectNoConfigurationHasNamingTheOnesThereAre() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "ghost");
+        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "ghost", null);
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
-        assertThat(said.violations(context)).singleElement().satisfies(violation -> {
+        assertThat(said.reportViolations(context)).singleElement().satisfies(violation -> {
             assertThat(violation.field()).isEqualTo("needsProject");
             assertThat(violation.expected()).contains("not configured").contains("[api, registry]");
         });
@@ -236,10 +236,10 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectTheTaskAlreadyHoldsNamingItsProjects() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "api");
+        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "api", null);
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
-        assertThat(said.violations(context)).singleElement().satisfies(violation -> {
+        assertThat(said.reportViolations(context)).singleElement().satisfies(violation -> {
             assertThat(violation.field()).isEqualTo("needsProject");
             assertThat(violation.expected()).contains("already on this task").contains("[api]");
         });
@@ -247,10 +247,35 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectNeededOutsideAQuestion() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", "progress", null, Map.of(), null, "registry");
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", "progress", null, Map.of(), null, "registry", null);
 
-        assertThat(said.violations(new MessageContext(List.of("api"), false, List.of("api", "registry"))))
+        assertThat(said.reportViolations(new MessageContext(List.of("api"), false, List.of("api", "registry"))))
                 .singleElement().satisfies(violation -> assertThat(violation.expected())
                         .isEqualTo("only with outcome=question"));
+    }
+
+    @Test
+    void refusesAReportGivingNoReason() {
+        var said = AgentStatusMessage.of("IN_PROGRESS", "working");
+
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("why");
+    }
+
+    @Test
+    void refusesAReasonLongerThanOneSentenceNamingTheLimit() {
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+                "the human asked for the billing repository because the invoice export reads it, and the change"
+                        + " crosses both sides of the contract");
+
+        assertThat(said.violations(MessageContext.NONE)).singleElement()
+                .satisfies(violation -> assertThat(violation).hasToString("why: at most 120 characters, not 129"));
+    }
+
+    @Test
+    void acceptsAReportWithItsReason() {
+        var said = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of(), null, null,
+                "work done, tests green, ready for review");
+
+        assertThat(said.violations(MessageContext.NONE)).isEmpty();
     }
 }

@@ -24,10 +24,10 @@ class SchemaTest {
     }
 
     @Test
-    void asksForTheOneFieldWithoutWhichAReportSaysNothing() {
+    void asksForTheStatusAndTheReasonForIt() {
         JsonNode schema = mapper.readTree(AgentStatusMessage.SCHEMA.json());
 
-        assertThat(schema.path("required")).extracting(JsonNode::asString).containsExactly("status");
+        assertThat(schema.path("required")).extracting(JsonNode::asString).containsExactly("status", "why");
     }
 
     @Test

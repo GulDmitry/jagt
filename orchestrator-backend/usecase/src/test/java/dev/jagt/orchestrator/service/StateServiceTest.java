@@ -300,6 +300,45 @@ class StateServiceTest {
     }
 
     @Test
+    void recordsTheReasonOnTheStepItsRequestTook(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+
+        OriginContext.because("work done, tests green, ready for review", () -> state.updateTask("ABC-1",
+                task -> task.withStatus(TaskStatus.REVIEW_PENDING, "done", 2_000)));
+
+        assertThat(state.task("ABC-1").orElseThrow().history())
+                .extracting(StatusChange::status, StatusChange::why)
+                .containsExactly(tuple(TaskStatus.IN_PROGRESS, null),
+                        tuple(TaskStatus.REVIEW_PENDING, "work done, tests green, ready for review"));
+    }
+
+    @Test
+    void keepsAReasonGivenWithNoStepOffTheEarlierStep(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+
+        OriginContext.because("still on the parser", () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
+
+        assertThat(state.task("ABC-1").orElseThrow().history()).extracting(StatusChange::why).containsOnlyNulls();
+    }
+
+    @Test
+    void readsAStepWrittenBeforeReasonsExistedAsGivingNone(@TempDir Path root) throws IOException {
+        Path stateFile = root.resolve("state.json");
+        Files.writeString(stateFile, """
+                {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"NEW","alias":"a1",
+                "history":[{"status":"NEW","at":1000,"origin":"BOARD"}]}}}""");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+
+        assertThat(state.task("ABC-1").orElseThrow().history())
+                .containsExactly(new StatusChange(TaskStatus.NEW, 1000, ActionOrigin.BOARD, null));
+    }
+
+    @Test
     void leavesTheEarlierStepAloneWhenAKeepAliveChangesNothing(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

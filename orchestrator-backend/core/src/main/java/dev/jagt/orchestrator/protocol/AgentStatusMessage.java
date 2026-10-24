@@ -26,7 +26,8 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
                                  @Nullable String reviewRequestUrl, Map<String, String> reviewRequests,
-                                 @Nullable String taskId, @Nullable String needsProject) implements Message {
+                                 @Nullable String taskId, @Nullable String needsProject,
+                                 @Nullable String why) implements Message {
 
     /** The wire spelling of what a report means; absent is progress. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "permission", "no_changes",
@@ -68,7 +69,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                     + " whose repository this task needs and lacks. jagt adds it to the task on a human's or the"
                     + " Master's word; the message says why.")
             .text("taskId", "Optional explicit task id or alias (Master use). Sub-agents may only target their"
-                    + " own task.");
+                    + " own task.")
+            .required(Why.FIELD, "string", Why.DESCRIBES);
 
     public AgentStatusMessage {
         // Blank is absent: a field the sender left as "" must read the same as one it left out.
@@ -78,38 +80,49 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         reviewRequestUrl = absent(reviewRequestUrl);
         taskId = absent(taskId);
         needsProject = absent(needsProject);
+        why = absent(why);
         reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
     }
 
     /** The five-field form, for jagt's own reports, which name no task of someone else's. */
     public AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
                               @Nullable String reviewRequestUrl, Map<String, String> reviewRequests) {
-        this(status, message, outcome, reviewRequestUrl, reviewRequests, null, null);
+        this(status, message, outcome, reviewRequestUrl, reviewRequests, null, null, null);
     }
 
     public static AgentStatusMessage of(@Nullable String status, @Nullable String message) {
-        return new AgentStatusMessage(status, message, null, null, Map.of(), null, null);
+        return new AgentStatusMessage(status, message, null, null, Map.of(), null, null, null);
     }
 
     public AgentStatusMessage withOutcome(@Nullable String outcome) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why);
     }
 
     public AgentStatusMessage withReviewRequestUrl(@Nullable String reviewRequestUrl) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why);
     }
 
     public AgentStatusMessage withReviewRequests(Map<String, String> reviewRequests) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why);
     }
 
     /**
      * Every violation at once, field rules and consistency rules together: a sender told about one error at a
-     * time fixes them one call at a time. {@code projectsOnTask} empty means the task is unknown, which is a
-     * different refusal and not this one's to make.
+     * time fixes them one call at a time.
      */
     @Override
     public List<Violation> violations(MessageContext context) {
+        List<Violation> found = new ArrayList<>();
+        Why.violation(why).ifPresent(found::add);
+        found.addAll(reportViolations(context));
+        return List.copyOf(found);
+    }
+
+    /**
+     * Every rule but the sender's reason, which a report jagt writes for itself does not give. {@code projectsOnTask}
+     * empty means the task is unknown, which is a different refusal and not this one's to make.
+     */
+    public List<Violation> reportViolations(MessageContext context) {
         List<String> projectsOnTask = context.projectsOnTask();
         List<Violation> found = new ArrayList<>();
         if (status == null) {
@@ -164,7 +177,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
      * repositories, primary first, since which link a human follows first is the session's own repository.
      */
     public Optional<Reported> accepted(MessageContext context) {
-        if (!violations(context).isEmpty()) {
+        if (!reportViolations(context).isEmpty()) {
             return Optional.empty();
         }
         return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), message,

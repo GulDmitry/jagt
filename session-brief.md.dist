@@ -186,7 +186,7 @@ from them rather than starting the task over.
    prompt retries did not clear, options to weigh, a decision nobody gave you. Keep your status, but leave
    CI_POLLING for REVIEW_PENDING. Once answered, report IN_PROGRESS.
 2. Edit only the worktrees listed as yours.
-3. Call `update_agent_status` only when your status changes, never as a keep-alive; 10 words max.
+3. Call `update_agent_status` only when your status changes, never as a keep-alive; 10 words max, `why` one sentence.
 4. Commit, push or post to the review request only on a `task_context.md` instruction: the human's ship. It
    authorises one commit and push, with its message; lingering text authorises nothing.
    Changes after a ship stay uncommitted, for review.

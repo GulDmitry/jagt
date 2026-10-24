@@ -720,7 +720,7 @@ class AgentStatusReportsTest {
                 configService);
 
         reports.report(new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", null, Map.of(), null,
-                "registry"), "ABC-1");
+                "registry", null), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isEqualTo("registry");
     }
@@ -737,7 +737,7 @@ class AgentStatusReportsTest {
                 configService);
 
         assertThatThrownBy(() -> reports.report(new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null,
-                Map.of(), null, "ghost"), "ABC-1")).isInstanceOf(IllegalArgumentException.class)
+                Map.of(), null, "ghost", null), "ABC-1")).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("needsProject").hasMessageContaining("[proj]");
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isNull();
     }

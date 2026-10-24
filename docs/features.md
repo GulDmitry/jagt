@@ -40,8 +40,7 @@
   [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
 - **Add a project** — Add a repository to the configuration from the board, never by hand.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-project-is-added-from-the-board)
-- **Run a job now** — Any unattended job can be started on the spot from its row.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
+- **Run a job now** — Any unattended job runs now, from its row. [spec](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Keys for verbs** — Every verb shows its key, and one that asks first asks on its key too.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key)
 - **Who asked** — Each step of a task's history names who asked for it, the first one what opened the task.
@@ -113,6 +112,8 @@
   [spec](../openspec/specs/protocol/spec.md#requirement-a-ticket-is-read-through-the-humans-mcp-servers)
 - **Tracker intake and close** — A ready ticket opens a task, and a done ticket closes it. Key: `orchestrator.tracker.mode`, off by default.
   [spec](../openspec/specs/protocol/spec.md#requirement-tracker-stages-open-and-close-tasks)
+- **Says why** — A session's report and a new task each give one sentence why, read in the step's hover.
+  [spec](../openspec/specs/protocol/spec.md#requirement-a-request-says-why)
 
 ## Review · [spec](../openspec/specs/review/spec.md)
 
@@ -129,8 +130,7 @@
 
 - **Sessions in tmux** — Each agent runs in a tmux window, and a kitty window attaches to it.
   [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
-- **Viewer detaches** — Closing the viewer never stops a session.
-  [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
+- **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
 - **Revive after a restart** — A restart brings the sessions back where they were.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
 - **Open in your editor** — Open a task's worktree or diff in the editor you configure.

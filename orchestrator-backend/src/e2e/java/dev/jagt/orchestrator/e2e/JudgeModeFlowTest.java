@@ -222,7 +222,7 @@ class JudgeModeFlowTest {
         String call = """
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                  "params": {"name": "update_agent_status",
-                            "arguments": {"status": "%s", "message": "%s"%s}}}"""
+                            "arguments": {"status": "%s", "message": "%s", "why": "the session reports"%s}}}"""
                 .formatted(status, message, extraArgument);
         assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
                 .contains("-> " + status);

@@ -60,7 +60,7 @@ public record TaskView(
 ) {
 
     /** One status the task passed through, in the words the board shows it by. */
-    public record Step(TaskStatus status, String label, long at, @Nullable ActionOrigin origin) {
+    public record Step(TaskStatus status, String label, long at, @Nullable ActionOrigin origin, @Nullable String why) {
     }
 
     /**
@@ -103,7 +103,7 @@ public record TaskView(
                         .toList(),
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
                 task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
-                        change.origin())).toList(), deployed, draftedReplies, autoReview,
+                        change.origin(), change.why())).toList(), deployed, draftedReplies, autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
                 task.hasReviewRequest() ? task.approved() : null);
     }

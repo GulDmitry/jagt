@@ -340,7 +340,7 @@ class ReviewAndDeployFlowTest {
     void aTaskOpenedOverMcpRecordsTheCallAsItsOpener() throws Exception {
         String call = """
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
-                 "params": {"name": "initialize_task", "arguments": {"taskId": "%s", "projectKey": "proj"}}}"""
+                 "params": {"name": "initialize_task", "arguments": {"taskId": "%s", "projectKey": "proj", "why": "user asked for it"}}}"""
                 .formatted(TASK);
 
         post("/mcp", call, Map.of(MasterToken.HEADER,
@@ -387,7 +387,7 @@ class ReviewAndDeployFlowTest {
         String call = """
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                  "params": {"name": "update_agent_status",
-                            "arguments": {"status": "%s", "message": "%s"%s}}}"""
+                            "arguments": {"status": "%s", "message": "%s", "why": "the session reports"%s}}}"""
                 .formatted(status, message, request);
         assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
                 .contains("-> " + status);
@@ -400,7 +400,7 @@ class ReviewAndDeployFlowTest {
         String call = """
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                  "params": {"name": "update_agent_status",
-                            "arguments": {"status": "CI_POLLING", "message": "requests up",
+                            "arguments": {"status": "CI_POLLING", "message": "requests up", "why": "both requests opened",
                                           "reviewRequests": {%s}}}}""".formatted(requests);
         assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
                 .contains("-> CI_POLLING");

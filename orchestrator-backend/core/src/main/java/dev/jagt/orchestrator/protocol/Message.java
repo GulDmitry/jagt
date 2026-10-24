@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,6 +13,11 @@ public interface Message {
 
     /** Every rule broken, field and consistency together; empty means the message can be acted on. */
     List<Violation> violations(MessageContext context);
+
+    /** The sender's reason ({@link Why}), null where the message asks for none. */
+    default @Nullable String why() {
+        return null;
+    }
 
     /**
      * What goes back to whoever sent it. A refusal is a correction — the sender's next move is the same message
