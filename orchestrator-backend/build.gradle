@@ -498,6 +498,15 @@ tasks.register('promptEval', Test) {
     shouldRunAfter tasks.named('test')
 }
 
+// Each case of a model eval appends its outcome to one gitignored file a later run reads; nothing else reads it.
+['promptEval', 'masterEval'].each { name ->
+    tasks.named(name) {
+        systemProperty 'eval.suite', name
+        systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
+        systemProperty 'eval.model', (name == 'masterEval' ? project.findProperty('masterModel') : null) ?: 'default'
+    }
+}
+
 // What these prove is the MACHINE — or a model — and no such state is in a cache key: a restored result would
 // come back green without anything having run.
 ['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval', 'masterEval'].each { name ->

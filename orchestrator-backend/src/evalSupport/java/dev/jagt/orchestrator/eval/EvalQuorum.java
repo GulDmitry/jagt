@@ -37,6 +37,7 @@ public record EvalQuorum(int runs, int passes) {
                 .addKeyValue("passes", made - failures.size())
                 .addKeyValue("runs", made)
                 .log();
+        EvalStats.record(name, held, made);
         if (!held) {
             throw new AssertionError(name + " passed " + (made - failures.size()) + " of " + made
                     + " runs, " + passes + " needed:\n" + String.join("\n", failures));

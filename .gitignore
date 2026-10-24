@@ -66,3 +66,6 @@ starts-stopped
 TODO.md
 TESTBED.md
 DETERMINISM.md
+
+# Pass/fail per eval case across runs, written by promptEval and masterEval
+orchestrator-backend/eval-stats.jsonl*
