@@ -68,6 +68,7 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 leave it out, whatever landed in it since. Read each of them WHOLE with the host's discussion tool \
                 and keep EVERY note in it, oldest first, bots and humans alike — never drop a note because an \
                 earlier one already answers it, an answer being what the exchange is.
+                6. Read the account these tools act as with the host's current-user tool.
                 </steps>
                 <output_format>
                 - exists: whether the request is there.
@@ -89,6 +90,8 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 "<author>: <body>". Copy each body as the host gives it, cut at its first 60 words, never \
                 paraphrased and never summarised: a thread read twice must read the same. Empty array where no \
                 thread awaits an answer.
+                - signedInAs: that account's username exactly as a note names its author; empty string where you \
+                could not read it.
                 </output_format>
                 <examples>
                 threads: ["https://host.invalid/shop/merge_requests/9#note_1\\nmia: Why is this loop not bounded?\\n\
@@ -113,7 +116,8 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
         n.path("threads").forEach(t -> threads.add(cappedTail(t.asString(""))));
         return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
                 n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
-                threads, HostStamp.epochMillis(n.path("openedAt").asString("")));
+                threads, HostStamp.epochMillis(n.path("openedAt").asString("")), List.of())
+                .answeredBy(n.path("signedInAs").asString(""));
     }
 
     /** Relayed into a worktree file, so a host that answered with a whole build log is cut here. */

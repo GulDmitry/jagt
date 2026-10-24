@@ -29,7 +29,8 @@ public class RoundOutcome {
             return new SweepResult(SweepResult.Kind.STOPPED, "sweep " + taskId + ": checks " + said
                     + " — jagt stopped this task: " + stopped.get().reading());
         }
-        Optional<TaskStatus> read = FlowRules.readReview(!r.threads().isEmpty(), r.approved(), Pipeline.of(said));
+        Optional<TaskStatus> read = FlowRules.readReview(!r.threads().isEmpty() || !r.awaitingReviewer().isEmpty(),
+                r.approved(), Pipeline.of(said));
         read.ifPresent(status -> statusReports.markRead(taskId, status));
         if (read.filter(FlowRules::approved).isPresent()) {
             return new SweepResult(SweepResult.Kind.APPROVED,
@@ -39,6 +40,11 @@ public class RoundOutcome {
             return new SweepResult(SweepResult.Kind.REVIEWED,
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved — waiting for an approval; `deploy` without one");
+        }
+        if (read.isEmpty() && r.threads().isEmpty() && !r.awaitingReviewer().isEmpty()) {
+            return new SweepResult(SweepResult.Kind.PENDING,
+                    "sweep " + taskId + ": checks " + said + ", " + r.awaitingReviewer().size()
+                            + " thread(s) answered by the agent — waiting on the reviewer");
         }
         if (read.isEmpty() && r.threads().isEmpty()) {
             return new SweepResult(SweepResult.Kind.PENDING,

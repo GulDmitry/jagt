@@ -72,11 +72,11 @@ public class StepRelay {
         return true;
     }
 
-    /** A text already holding its steps' sections, sent afresh; every step has passed the door. */
+    /** A round of text already holding its steps' sections, sent afresh; every step has passed the door. */
     public boolean relayComposed(String taskId, List<String> steps, String text) {
         String step = String.join("+", steps);
         String digest = Turn.digestOf(text);
-        if (turns.of(taskId).holds(step, digest)) {
+        if (turns.of(taskId).holds(step, digest) || !door.roundDue(taskId, step)) {
             return false;
         }
         sessions.relayFresh(taskId, text);

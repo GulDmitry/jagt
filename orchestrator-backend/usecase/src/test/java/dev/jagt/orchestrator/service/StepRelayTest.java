@@ -222,6 +222,31 @@ class StepRelayTest {
     }
 
     @Test
+    void stopsTheTaskInsteadOfSendingAFourthReviewRoundRunning(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
+        List<String> steps = List.of("round-threads", "round-threads-done");
+        relay.relayComposed("ABC-42", steps, "mia: Why is this loop not bounded?");
+        relay.relayComposed("ABC-42", steps, "mia: Why is this map not sorted?");
+        relay.relayComposed("ABC-42", steps, "mia: Why is this name so long?");
+
+        boolean told = relay.relayComposed("ABC-42", steps, "mia: Why is this test so short?");
+
+        assertThat(told).isFalse();
+        verify(sessions, times(3)).relayFresh(anyString(), anyString());
+        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
+                .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
+                .containsExactly(LoopWatch.Trigger.ROUNDS,
+                        "round-threads+round-threads-done sent 3 rounds running in 24h; the next one was not");
+    }
+
+    @Test
     void sendsAThirdRedVerificationRunning(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));

@@ -26,13 +26,17 @@ public class RoundRelay {
         }
         String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
         return switch (loops.round(taskId, r, brief)) {
-            case STOPPED -> new SweepResult(SweepResult.Kind.STOPPED, read + ", checks " + said
-                    + " — jagt stopped this task, so nothing was relayed; `lift` it first");
+            case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);
             case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, said), brief)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)
-                    : unchanged(read, said);
+                    : loops.stopped(taskId) ? stopped(read, said) : unchanged(read, said);
         };
+    }
+
+    private static SweepResult stopped(String read, String said) {
+        return new SweepResult(SweepResult.Kind.STOPPED, read + ", checks " + said
+                + " — jagt stopped this task, so nothing was relayed; `lift` it first");
     }
 
     private static SweepResult unchanged(String read, String said) {

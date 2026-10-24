@@ -170,7 +170,7 @@ nothing; a human press SHALL never be refused. It SHALL lift on the next local d
 `LoopGuard` SHALL stop a task, its status kept, on any trigger since the last `lift`:
 `loopBreaker.stalledRounds` (3) relayed rounds running that each left as many threads open and the same job failing;
 a Master ship past `loopBreaker.ships` (4) within `autoReview.windowHours`;
-a failed verification or probe, or a not-ready plan or round, sent back a fourth time within 24h.
+a failed verification or probe, a not-ready plan or round, or a review round, sent back a fourth time within 24h.
 
 #### Scenario: Rounds that resolve nothing
 - **WHEN** ABC-42 gets a fourth relayed round with 10 threads open and `unit-tests` failing, as the three before

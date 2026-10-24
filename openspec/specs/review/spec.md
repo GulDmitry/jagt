@@ -74,6 +74,10 @@ newest note is its own waits on the reviewer. Threads SHALL be relayed while unr
 - **WHEN** a GitHub review is written in the body, not a thread
 - **THEN** relayed all the same
 
+#### Scenario: The agent answered last
+- **WHEN** two polls read a thread whose newest note is by the account the host's tools act as
+- **THEN** neither relays it, the task is not REVIEWED, and only a new note on it starts a round
+
 ### Requirement: Threads are resolved at ship
 The agent SHALL resolve at ship time over its own MCP (`ShipService.repliesStep`), only threads whose code it changed. During the
 round it SHALL post nothing, and a draft SHALL go only where the answered note's author matches `reviewReplyAuthors`.
@@ -136,8 +140,7 @@ included. The card's drafted-replies line SHALL be its only button (`GlobalComma
 - **THEN** `replies <task>` or the card's drafted-replies line shows every draft
 
 ### Requirement: A line typed at the report is said
-A line typed at the replies report SHALL be said (`AgentSessions.say` → `nudgeTaskWindow`), never relayed: a relay overwrites
-`task_context.md`.
+A line typed at the replies report SHALL be said (`AgentSessions.say` → `nudgeTaskWindow`), never relayed: a relay overwrites `task_context.md`.
 
 #### Scenario: A drafted reply is wrong
 - **WHEN** you say so under the open `replies` report

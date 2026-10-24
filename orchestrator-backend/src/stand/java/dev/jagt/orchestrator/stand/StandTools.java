@@ -35,6 +35,8 @@ public class StandTools {
                 a -> store.reply(number(a, "id"), number(a, "thread_id"), "agent", text(a, "body")));
         register("resolve_thread", "Resolve a review thread", "id:integer,thread_id:integer", "",
                 a -> store.resolve(number(a, "id"), number(a, "thread_id")));
+        register("get_current_user", "The account these tools act as", "", "",
+                a -> JsonMapper.builder().build().createObjectNode().put("username", "agent"));
     }
 
     public ArrayNode definitions() {

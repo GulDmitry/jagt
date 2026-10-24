@@ -162,6 +162,26 @@ class HeadlessClaudeCodeHostAssistantTest {
     }
 
     @Test
+    void leavesAThreadTheAgentAnsweredLastToTheReviewer() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
+                "signedInAs":"lee","threads":["https://host/mr/9#note_1\\nmia: Why is this loop not bounded?\\n\
+                lee: The page size bounds it, see Paging.java"]}}""", ""));
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().threads()).isEmpty();
+        assertThat(facts.get().awaitingReviewer()).containsExactly(
+                "https://host/mr/9#note_1\nmia: Why is this loop not bounded?\nlee: The page size bounds it, see Paging.java");
+    }
+
+    @Test
     void cutsAFailureLogTooLongToRelayIntoAWorktreeFile() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,

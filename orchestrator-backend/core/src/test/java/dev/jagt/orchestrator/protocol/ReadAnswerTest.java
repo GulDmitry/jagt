@@ -25,7 +25,7 @@ class ReadAnswerTest {
 
     @Test
     void refusesAFailingJobsLinesQuotedUnderAVerdictThatIsNotRed() {
-        var facts = new ReviewFacts(true, false, "success", "step 3 exited 1", List.of(), 0);
+        var facts = new ReviewFacts(true, false, "success", "step 3 exited 1", List.of(), 0, List.of());
 
         assertThat(ReviewRead.violations(facts)).extracting(Violation::field)
                 .containsExactly("pipelineFailure");
@@ -33,14 +33,14 @@ class ReadAnswerTest {
 
     @Test
     void acceptsWhyTheListingCouldNotBeGotWhereTheChecksAreUnknown() {
-        var facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0);
+        var facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of());
 
         assertThat(ReviewRead.violations(facts)).isEmpty();
     }
 
     @Test
     void acceptsTheFailingJobsLinesWhereTheRunActuallyFailed() {
-        var facts = new ReviewFacts(true, false, "failed", "step 3 exited 1", List.of(), 0);
+        var facts = new ReviewFacts(true, false, "failed", "step 3 exited 1", List.of(), 0, List.of());
 
         assertThat(ReviewRead.violations(facts)).isEmpty();
     }

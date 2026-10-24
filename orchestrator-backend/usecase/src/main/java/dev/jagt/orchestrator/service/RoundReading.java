@@ -67,7 +67,8 @@ public class RoundReading {
         return new ReviewFacts(round.exists(), round.approved(), round.pipelineStatus(),
                 round.pipelineFailure().isBlank() ? "" : "[" + project + "] " + round.pipelineFailure(),
                 round.threads().stream().map(thread -> "[" + project + "] " + thread).toList(),
-                round.openedAt());
+                round.openedAt(),
+                round.awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList());
     }
 
     /**
@@ -83,7 +84,8 @@ public class RoundReading {
                 rounds.stream().allMatch(ReviewFacts::approved),
                 worst.pipelineStatus(), worst.pipelineFailure(),
                 rounds.stream().flatMap(round -> round.threads().stream()).toList(),
-                longestOpen(rounds));
+                longestOpen(rounds),
+                rounds.stream().flatMap(round -> round.awaitingReviewer().stream()).toList());
     }
 
     /** The OLDEST request: how long the review has been hanging is the longest any of them has waited. */

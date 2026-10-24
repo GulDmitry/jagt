@@ -40,7 +40,7 @@ class LoopGuardTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         LoopGuard loops = new LoopGuard(state, config, new TaskStops(state, notifications, clock), clock);
         ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
-                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0);
+                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of());
         loops.round("ABC-42", round, "brief 1");
         loops.round("ABC-42", round, "brief 2");
         loops.round("ABC-42", round, "brief 3");
@@ -86,7 +86,7 @@ class LoopGuardTest {
 
         loops.lift("ABC-42");
 
-        assertThat(loops.round("ABC-42", new ReviewFacts(true, false, "running", "", List.of("x"), 0), "same"))
+        assertThat(loops.round("ABC-42", new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of()), "same"))
                 .isEqualTo(LoopGuard.Relay.RELAY);
     }
 }
