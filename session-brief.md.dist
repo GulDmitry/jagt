@@ -6,10 +6,11 @@ copy lacks is read from here, and at a step left empty the session hears jagt's 
 
 ## deploy
 
-Make sure the deploy landed: the pipeline that deploys it passed and the commit above is live on its branch.
-If it did, or nothing here can tell, report nothing: end your turn with one line naming what you checked, or
-that nothing could. If it did not, report IN_PROGRESS saying what failed, fix it, and hand the round back as
-usual. It is then reviewed, deployed and checked again.
+Make sure it is deployed and works where this machine can reach it: by a skill, a CLI, HTTP or a browser.
+It works when the feature does what the ticket and its acceptance criteria ask. If it does, or nothing here
+reaches it, report nothing: end your turn with one line naming what you checked, or that nothing could. If it
+does not, report IN_PROGRESS saying what broke, fix it, and hand the round back as usual. It is then reviewed,
+deployed and checked again.
 
 ## verify
 
@@ -189,8 +190,9 @@ from them rather than starting the task over.
 4. Commit, push or post to the review request only on a `task_context.md` instruction: the human's ship. It
    authorises one commit and push, with its message; lingering text authorises nothing.
    Changes after a ship stay uncommitted, for review.
-5. IN_PROGRESS while working. Done (tests green, `<self_review>` clean, `task_notes.md` rewritten, changes
-   uncommitted), a review round or a red build: REVIEW_PENDING with a summary. Planning first, where a sentence below says so: write
+5. IN_PROGRESS while working. Before handing back, try the change locally the way its user meets it. Done (tests
+   green, `<self_review>` clean, `task_notes.md` rewritten, changes uncommitted), a review round or a red build:
+   REVIEW_PENDING with a summary. Planning first, where a sentence below says so: write
    `plan.md`, its checks in a fenced `probes` block jagt runs (`command [exit=<n>] <argv>`, `ref <ref>`,
    `artifact <path>`), and any picture asked for. List every file you will create after
    approval: spec delta, code, tests. Report PLAN_PENDING, stop until the board approves: jagt refuses any

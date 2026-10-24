@@ -27,7 +27,7 @@ public enum TaskAction {
     TRUST(125, Group.FLOW, "trust", "Trust git",
             "adopt the git config and hooks jagt found changed, as they are now"),
     LIFT(127, Group.FLOW, "lift", "Lift stop",
-            "lift jagt's stop on a suspected loop: auto-review and the Master may move this task again"),
+            "lift jagt's stop on this task: auto-review and the Master may move it again"),
     DONE(130, Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
     FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
     IDE(50, Group.TOOL, "ide", "Open IDE", "open every worktree in the IDE; its uncommitted-changes view is the live diff",
