@@ -45,7 +45,7 @@ Families:
 | B8 | the machine reboots → every session keeps its context | 61685efd | `ClaudeAgentRuntimeTest` |
 | B9 | the reviewer spends → the spend is charged to its own task | f9a54135 | `MasterSpendTest` |
 | B10 | a session's spend is read from its log → each message counted once, though every content block repeats its usage | seen 2026-10-23: stats read 2× | `ClaudeSessionLogTest` |
-| B11 | a task's history passes 50 steps → its opening step, who opened the task, is kept and held time skips the gap after it | seen 2026-10-24: opener lost past 50 steps | `TaskStateTest`, `HeldTimeTest` |
+| B13 | a task's history passes 50 steps → its opening step, who opened the task, is kept and held time skips the gap after it | seen 2026-10-24: opener lost past 50 steps | `TaskStateTest`, `HeldTimeTest` |
 | B11 | two worktrees are provisioned at once → both stay trusted in the agent CLI's config, no write lost | seen 2026-10-24: flaky trust test | `ClaudeTrustTest` |
 | B12 | jagt restarts after a deploy → the Master presses no deploy again, the session hears "is deployed" once: both kept on the task's turn | seen 2026-10-24: NothingToDeployException and a second "is deployed" after a restart | `MasterDeployJobTest`, `DeployCheckJobTest`, `TurnsTest` |
 
