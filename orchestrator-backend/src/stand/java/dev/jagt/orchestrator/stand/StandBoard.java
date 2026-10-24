@@ -12,9 +12,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 public final class StandBoard {
 
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
     private final ObjectMapper mapper = JsonMapper.builder().build();
-    private static final Duration READING = Duration.ofSeconds(30);
+    private static final Duration READING = Duration.ofSeconds(60);
     private static final Duration OPENING = Duration.ofMinutes(10);
 
     private final String base;

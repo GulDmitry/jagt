@@ -125,6 +125,20 @@ public class StandStore {
         return save(request);
     }
 
+    /** At least one thread is open, and the newest note on each open one is the agent's: the reviewer's move. */
+    public synchronized boolean awaitsTheReviewer() {
+        List<JsonNode> open = allRequests().stream().flatMap(request -> stream(request.path("threads")))
+                .filter(thread -> !thread.path("resolved").asBoolean()).toList();
+        return !open.isEmpty() && open.stream().allMatch(thread -> {
+            JsonNode replies = thread.path("replies");
+            return replies.size() > 0 && replies.get(replies.size() - 1).path("author").asString().equals("agent");
+        });
+    }
+
+    private static java.util.stream.Stream<JsonNode> stream(JsonNode threads) {
+        return java.util.stream.StreamSupport.stream(threads.spliterator(), false);
+    }
+
     private ObjectNode thread(ObjectNode request, int threadId) {
         for (JsonNode thread : request.path("threads")) {
             if (thread.path("id").asInt() == threadId) {

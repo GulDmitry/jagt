@@ -23,4 +23,23 @@ class StandStoreTest {
 
         assertThat(requests).extracting(request -> request.path("id").asInt()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
     }
+
+    @Test
+    void awaitsTheReviewerWhenTheAgentAnsweredEveryOpenThreadLast() {
+        StandStore store = new StandStore(directory, "http://127.0.0.1:1");
+        store.createRequest("a", "main", "a", "");
+        store.addThread(1, "greet.sh", 3, "stiff");
+        store.reply(1, 1, "agent", "kept as is, the ticket says so");
+
+        assertThat(store.awaitsTheReviewer()).isTrue();
+    }
+
+    @Test
+    void doesNotAwaitTheReviewerWhileAnOpenThreadHasNoAnswer() {
+        StandStore store = new StandStore(directory, "http://127.0.0.1:1");
+        store.createRequest("a", "main", "a", "");
+        store.addThread(1, "greet.sh", 3, "stiff");
+
+        assertThat(store.awaitsTheReviewer()).isFalse();
+    }
 }

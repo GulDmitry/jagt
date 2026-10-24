@@ -12,7 +12,7 @@ import java.util.Map;
 public final class JagtProcess implements AutoCloseable {
 
     private static final Path JAR = Path.of("build", "libs", "jagt-run.jar").toAbsolutePath();
-    private static final Duration STARTUP = Duration.ofMinutes(2);
+    private static final Duration STARTUP = Duration.ofMinutes(5);
 
     private final Process process;
     private final int port;

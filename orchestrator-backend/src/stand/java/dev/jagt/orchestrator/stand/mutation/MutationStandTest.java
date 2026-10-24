@@ -40,7 +40,8 @@ class MutationStandTest {
 
             assertThat(outcome).as(mutation.holds() + "\n" + outcome.describe()).satisfiesAnyOf(
                     deployed -> assertThat(deployed.status()).isEqualTo("DEPLOYED"),
-                    handedOver -> assertThat(handedOver.withTheHuman()).isTrue());
+                    handedOver -> assertThat(handedOver.withTheHuman()).isTrue(),
+                    answered -> assertThat(answered.withTheCodeHost() && stand.store().awaitsTheReviewer()).isTrue());
             assertThat(stand.record().histories()).as("the task was never closed: " + outcome.describe()).isNotEmpty();
             assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             stand.passed();
