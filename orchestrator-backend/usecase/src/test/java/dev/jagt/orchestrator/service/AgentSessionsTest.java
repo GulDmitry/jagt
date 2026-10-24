@@ -247,31 +247,10 @@ class AgentSessionsTest {
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions.relayFreshIfChanged("ABC-1", "Review round for http://mr/1.");
+        sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
         verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
         verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    void relaysAHandedBackRoundWhoseBriefTheWorktreeDoesNotHold() {
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
-
-        boolean relayed = sessions.relayFreshIfChanged("ABC-1", "Review round for http://mr/1.");
-
-        assertThat(relayed).isTrue();
-    }
-
-    @Test
-    void leavesAHandedBackRoundAloneWhenItsBriefIsAlreadyInTheWorktree() throws Exception {
-        Files.writeString(root.resolve("task_context.md"), "Review round for http://mr/1.");
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
-        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
-
-        assertThat(sessions.relayFreshIfChanged("ABC-1", "Review round for http://mr/1.")).isFalse();
-        verifyNoInteractions(tmux);
     }
 
     @ParameterizedTest
@@ -428,7 +407,7 @@ class AgentSessionsTest {
         state.putTask("ABC-42", TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions.relayUnder("ABC-42", "Keep both imports.");
+        sessions.relayUnder("ABC-42", "Keep both imports.", false);
 
         assertThat(Files.readString(worktree.resolve("task_context.md")))
                 .contains("Resolve the conflict in /src/ABC-42-deploy.", "Keep both imports.");
@@ -440,40 +419,13 @@ class AgentSessionsTest {
         Files.writeString(worktree.resolve("task_context.md"), "Resolve the conflict in /src/ABC-42-deploy.");
         state.putTask("ABC-42", TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
-        sessions.relayUnder("ABC-42", "Keep both imports.");
+        sessions.relayUnder("ABC-42", "Keep both imports.", false);
 
-        sessions.relayUnder("ABC-42", "Drop the old import.");
+        sessions.relayUnder("ABC-42", "Drop the old import.", false);
 
         assertThat(Files.readString(worktree.resolve("task_context.md")))
                 .contains("Resolve the conflict in /src/ABC-42-deploy.", "Drop the old import.")
                 .doesNotContain("Keep both imports.");
-    }
-
-    @Test
-    void leavesTheAgentAloneWhenTheRoundIsTheOneItWasAlreadyHanded() throws Exception {
-        Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
-        Files.writeString(worktree.resolve("task_context.md"), "Review round for http://mr/1.\nComment: rename x");
-        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
-        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
-
-        assertThat(sessions.relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: rename x"))
-                .isFalse();
-        verifyNoInteractions(tmux);
-    }
-
-    @Test
-    void relaysARoundThatDiffersFromTheOneTheAgentWasHanded() throws Exception {
-        Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
-        Files.writeString(worktree.resolve("task_context.md"), "Review round for http://mr/1.\nComment: rename x");
-        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
-        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
-
-        assertThat(sessions.relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: drop the cache"))
-                .isTrue();
-        assertThat(Files.readString(worktree.resolve("task_context.md"))).contains("drop the cache");
     }
 
     @Test

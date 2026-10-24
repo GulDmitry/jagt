@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.Message;
@@ -43,14 +45,15 @@ public class AgentStatusReports {
 
     /** For jagt's own reports, which carry no outcome of an agent's and no request to link. */
     public String report(TaskStatus status, String message, String taskId) {
-        return report(new AgentStatusMessage(status.name(), message, null, null, Map.of()), taskId);
+        AgentStatusMessage said = new AgentStatusMessage(status.name(), message, null, null, Map.of());
+        return report(accepted(said, taskId), taskId, handBack::verificationOwed, false);
     }
 
     /** A verification run's own verdict, which owes no further run. */
     public String verified(boolean passed, String message, String taskId) {
         TaskStatus verdict = FlowRules.verified(passed);
         AgentStatusMessage said = new AgentStatusMessage(verdict.name(), message, null, null, Map.of());
-        String answer = report(accepted(said, taskId), taskId, task -> false);
+        String answer = report(accepted(said, taskId), taskId, task -> false, false);
         TaskStatus landed = stateService.task(taskId).map(TaskState::status).orElse(null);
         // A measured verdict the flow turns aside leaves the task held, and the run repeats with nothing to say why.
         if (landed != verdict) {
@@ -64,11 +67,12 @@ public class AgentStatusReports {
     }
 
     /**
-     * A message that reached the door. It is judged here as well as at the transport, because jagt's own reports
-     * and a session's come through the same door and only one of them crossed a wire; the reason is the wire's alone.
+     * A session's message that reached the door, closing the turn it answers. It is judged here as well as at the
+     * transport, because jagt's own reports and a session's come through the same door and only one of them crossed a
+     * wire; the reason is the wire's alone.
      */
     public String report(AgentStatusMessage said, String taskId) {
-        return report(accepted(said, taskId), taskId, handBack::verificationOwed);
+        return report(accepted(said, taskId), taskId, handBack::verificationOwed, true);
     }
 
     private Reported accepted(AgentStatusMessage said, String taskId) {
@@ -92,7 +96,7 @@ public class AgentStatusReports {
         return stateService.task(taskId).map(TaskState::projects).orElse(List.of());
     }
 
-    private String report(Reported said, String taskId, Predicate<TaskState> verificationOwed) {
+    private String report(Reported said, String taskId, Predicate<TaskState> verificationOwed, boolean closesTurn) {
         Optional<TaskState> current = stateService.task(taskId);
         TaskStatus newStatus = said.status();
         Map<String, String> requestsByProject = said.requests();
@@ -101,8 +105,8 @@ public class AgentStatusReports {
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
         FlowReports.Landed written = flow.report(taskId, newStatus, means, shortMessage,
-                (was, next) -> planned(was, linked(was, next, url, requestsByProject))
-                        .withRepoRequest(said.needsProject()), verificationOwed)
+                (was, next) -> closed(planned(was, linked(was, next, url, requestsByProject))
+                        .withRepoRequest(said.needsProject()), closesTurn), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (said.noPlan()) {
             stateService.updateTask(taskId, task -> task.withPlanGate(PlanGate.OPEN));
@@ -150,6 +154,14 @@ public class AgentStatusReports {
                 : "; the Master reads this round next; end your turn";
         return "Task " + taskId + " -> " + landed + said
                 + (FlowRules.headedForTheMaster(landed) && handBack.masterReads() ? next : "");
+    }
+
+    private TaskState closed(TaskState next, boolean closesTurn) {
+        if (!closesTurn) {
+            return next;
+        }
+        Turn.Holder holder = Turns.next(next.status(), next.report(), configService.load().master().profile());
+        return next.withTurn(next.turnOrNone().closed(holder, next.lastActiveTimestamp()));
     }
 
     private static TaskState linked(TaskStatus was, TaskState next, @Nullable String url,

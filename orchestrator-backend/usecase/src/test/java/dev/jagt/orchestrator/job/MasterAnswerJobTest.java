@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,6 +51,25 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts).run();
 
         verify(verdicts).answered("ABC-1", asking, "keep v2?", "keep v2 beside v3", false);
+    }
+
+    @Test
+    void setsNothingOnATaskWhoseSessionWentBackToWorkWhileTheMasterRead(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("keep v2?").report(AgentReport.QUESTION).build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenAnswer(read -> {
+            state.updateTask("ABC-1", task -> task.withReport(AgentReport.PLAIN)
+                    .withTurn(task.turnOrNone().closed(Turn.Holder.SESSION, 2_000)));
+            return Optional.of("keep v2 beside v3");
+        });
+
+        new MasterAnswerJob(state, config, panel, verdicts).run();
+
+        verify(verdicts, never()).answered(anyString(), any(), anyString(), anyString(), anyBoolean());
     }
 
     @Test

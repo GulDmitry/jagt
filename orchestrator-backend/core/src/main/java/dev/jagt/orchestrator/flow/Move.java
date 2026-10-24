@@ -173,15 +173,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
 
     /** Whose turn a status ALONE means. */
     public static Owner ownerOf(TaskStatus status) {
-        return switch (status) {
-            case NEW, IN_PROGRESS, VERIFYING, SHIPPING -> Owner.AGENT;
-            case PLAN_PENDING -> Owner.YOU;
-            // REVIEWED is "nothing unresolved, checks green, NOT approved": handed in, waiting for a reviewer.
-            case CI_POLLING, REVIEWED -> Owner.CI;
-            case REVIEW_PENDING, CI_FAILED, APPROVED, DEPLOY_CONFLICT, REVERTED -> Owner.YOU;
-            case DEPLOYED -> Owner.NOBODY;
-            case DONE -> Owner.NOBODY;
-        };
+        return Owner.of(Turns.of(status));
     }
 
     private static @Nullable TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, RoundState round,

@@ -15,13 +15,12 @@ import org.springframework.stereotype.Service;
 public class RoundRelay {
 
     private final LoopGuard loops;
-    private final AgentSessions sessions;
+    private final StepRelay steps;
     private final SessionBrief sessionBrief;
-    private final CaseDoor door;
 
     public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said) {
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
-        if (!RoundBrief.steps(r, said).stream().allMatch(step -> door.opens(taskId, step))) {
+        if (!RoundBrief.steps(r, said).stream().allMatch(step -> steps.opens(taskId, step))) {
             return new SweepResult(SweepResult.Kind.REFUSED, read + ", checks " + said
                     + " — no case sends this round at the task's status, so nothing was relayed; see misses.jsonl");
         }
@@ -30,7 +29,7 @@ public class RoundRelay {
             case STOPPED -> new SweepResult(SweepResult.Kind.STOPPED, read + ", checks " + said
                     + " — jagt stopped this task, so nothing was relayed; `lift` it first");
             case UNCHANGED -> unchanged(read, said);
-            case RELAY -> sessions.relayFreshIfChanged(taskId, brief)
+            case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, said), brief)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)
                     : unchanged(read, said);
         };

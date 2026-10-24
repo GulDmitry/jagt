@@ -66,7 +66,9 @@ public record TaskState(
         @Nullable LoopWatch loop,
         @Nullable ConflictWatch conflict,
         // The project key a session asked to have a repository of, until one is added or it reports anything else.
-        @Nullable String repoRequest
+        @Nullable String repoRequest,
+        // Absent in a file written before the turn existed, which reads as no turn open.
+        @Nullable Turn turn
 ) {
 
     /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
@@ -118,7 +120,8 @@ public record TaskState(
             @JsonProperty("planGate") @Nullable PlanGate planGate,
             @JsonProperty("loop") @Nullable LoopWatch loop,
             @JsonProperty("conflict") @Nullable ConflictWatch conflict,
-            @JsonProperty("repoRequest") @Nullable String repoRequest) {
+            @JsonProperty("repoRequest") @Nullable String repoRequest,
+            @JsonProperty("turn") @Nullable Turn turn) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -130,7 +133,7 @@ public record TaskState(
                 pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate, loop, conflict,
-                repoRequest);
+                repoRequest, turn);
     }
 
     @JsonIgnore
@@ -502,6 +505,15 @@ public record TaskState(
     }
 
     /** Does NOT touch lastActiveTimestamp: the gate moves by a human's word or by the session declaring no plan. */
+    public TaskState withTurn(Turn turn) {
+        return toBuilder().turn(turn).build();
+    }
+
+    @JsonIgnore
+    public Turn turnOrNone() {
+        return turn == null ? Turn.none() : turn;
+    }
+
     public TaskState withPlanGate(PlanGate planGate) {
         return toBuilder().planGate(planGate).build();
     }
@@ -528,7 +540,7 @@ public record TaskState(
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
                 .approved(approved)
                 .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
-                .planGate(planGate).loop(loop).conflict(conflict).repoRequest(repoRequest);
+                .planGate(planGate).loop(loop).conflict(conflict).repoRequest(repoRequest).turn(turn);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -562,6 +574,7 @@ public record TaskState(
         private @Nullable LoopWatch loop;
         private @Nullable ConflictWatch conflict;
         private @Nullable String repoRequest;
+        private @Nullable Turn turn;
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -723,6 +736,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder turn(@Nullable Turn turn) {
+            this.turn = turn;
+            return this;
+        }
+
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
@@ -730,7 +748,7 @@ public record TaskState(
             return new TaskState(repos, status, lastActiveTimestamp, message, report, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust,
-                    probes, planGate, loop, conflict, repoRequest);
+                    probes, planGate, loop, conflict, repoRequest, turn);
         }
     }
 }

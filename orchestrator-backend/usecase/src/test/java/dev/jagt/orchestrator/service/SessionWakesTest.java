@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -33,14 +35,18 @@ class SessionWakesTest {
     }
 
     private static SessionWakes wakes(UsageLimits limits, boolean on, Path file, Instant now) {
-        return new SessionWakes(limits, UsageLimitsProperties.defaults().withWakeOnReset(on), JsonMapper.builder().build(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(file.getParent().toString())),
+        return new SessionWakes(limits, UsageLimitsProperties.defaults().withWakeOnReset(on),
+                new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                        .withRoot(file.getParent().toString()).withStateFile(file.toString()))),
                 at(now));
     }
 
     @Test
     void wakesNothingBeforeTheWindowResets(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
         List<String> due = wakes(reading(100, Optional.of(RESET)), true, file, RESET.minusSeconds(1)).takeDue(taskId -> false);
@@ -50,7 +56,10 @@ class SessionWakesTest {
 
     @Test
     void wakesTheSessionOnceWhenTheWindowResets(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
         SessionWakes later = wakes(reading(0, Optional.empty()), true, file, RESET);
 
@@ -63,7 +72,10 @@ class SessionWakesTest {
 
     @Test
     void keepsADueWakePendingWhileTheHumanIsTypingAndSendsItOnceAfter(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
         SessionWakes later = wakes(reading(0, Optional.empty()), true, file, RESET);
 
@@ -78,7 +90,10 @@ class SessionWakesTest {
 
     @Test
     void doesNotWakeASessionTwiceAcrossARestart(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
         wakes(reading(0, Optional.empty()), true, file, RESET).takeDue(taskId -> false);
 
@@ -89,7 +104,10 @@ class SessionWakesTest {
 
     @Test
     void keepsAPendingWakeAcrossARestart(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
         List<String> afterRestart = wakes(reading(0, Optional.empty()), true, file, RESET).takeDue(taskId -> false);
@@ -99,7 +117,10 @@ class SessionWakesTest {
 
     @Test
     void armsNoWakeWhenNoWindowIsAtItsLimit(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(99, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
         List<String> due = wakes(reading(0, Optional.empty()), true, file, RESET).takeDue(taskId -> false);
@@ -109,7 +130,10 @@ class SessionWakesTest {
 
     @Test
     void armsNoWakeWhenTheFullWindowReportsNoReset(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.empty()), true, file, STOPPED).arm("ABC-42");
 
         List<String> due = wakes(reading(0, Optional.empty()), true, file, RESET).takeDue(taskId -> false);
@@ -119,7 +143,10 @@ class SessionWakesTest {
 
     @Test
     void armsNoWakeWhileTheKeyIsOff(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), false, file, STOPPED).arm("ABC-42");
 
         List<String> due = wakes(reading(0, Optional.empty()), true, file, RESET).takeDue(taskId -> false);
@@ -129,7 +156,10 @@ class SessionWakesTest {
 
     @Test
     void dropsTheWakeWhenTheSessionMovesAgain(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         SessionWakes armed = wakes(reading(100, Optional.of(RESET)), true, file, STOPPED);
         armed.arm("ABC-42");
 
@@ -140,7 +170,10 @@ class SessionWakesTest {
 
     @Test
     void wakesAtTheLaterResetWhenTwoWindowsAreFull(@TempDir Path dir) {
-        Path file = dir.resolve("session-wakes.json");
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         SubscriptionUsage usage = () -> new SubscriptionUsage.Read(new SubscriptionUsage.Snapshot(List.of(
                 new SubscriptionUsage.Window("5h", 100, Optional.of(RESET)),
                 new SubscriptionUsage.Window("week", 100, Optional.of(RESET.plusSeconds(86400)))), Optional.empty()));

@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -14,10 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Where the Master stands in for the human, a session that stopped to ask is answered by it, not left waiting. */
 @Service
@@ -29,8 +29,8 @@ public class MasterAnswerJob implements Job {
     private final ConfigService configService;
     private final MasterPanel panel;
     private final MasterVerdicts verdicts;
-    /** A question no answer came back for is not asked again every tick; a new one is. */
-    private final Map<String, String> unanswered = new ConcurrentHashMap<>();
+    /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
+    private static final String UNANSWERED = "unanswered";
 
     @Override
     public String id() {
@@ -58,15 +58,30 @@ public class MasterAnswerJob implements Job {
         if (!config.may(MasterRight.ANSWER)) {
             return;
         }
+        Turns.Profile profile = config.profile();
         stateService.tasks().entrySet().stream()
-                .filter(entry -> asking(entry.getValue())
-                        && !Objects.requireNonNull(entry.getValue().message()).equals(unanswered.get(entry.getKey())))
+                .filter(entry -> answers(entry.getValue(), profile))
                 .findFirst()
                 .ifPresent(entry -> answer(entry.getKey(), entry.getValue(), config));
     }
 
-    private static boolean asking(TaskState task) {
-        return Move.asking(task.status(), task.report()) && !task.loopStopped();
+    private static boolean answers(TaskState task, Turns.Profile profile) {
+        return Move.asking(task.status(), task.report()) && !task.loopStopped()
+                && Turns.next(task.status(), task.report(), profile) == Turn.Holder.MASTER
+                && !task.turnOrNone().marked(UNANSWERED, asked(task));
+    }
+
+    private static String asked(TaskState task) {
+        return Turn.digestOf(Objects.requireNonNull(task.message()));
+    }
+
+    private void unanswered(String taskId, TaskState task) {
+        stateService.updateTask(taskId, now -> now.withTurn(now.turnOrNone().withMark(UNANSWERED, asked(task))));
+    }
+
+    /** A report or a relay while the Master read moved the turn on: the question it read is no longer standing. */
+    private boolean standing(String taskId, TaskState task) {
+        return stateService.task(taskId).map(TaskState::turnOrNone).filter(task.turnOrNone()::sameTurnAs).isPresent();
     }
 
     /** What no prose answer settles: a right only the human grants, a repository jagt attaches, a plan. */
@@ -87,7 +102,7 @@ public class MasterAnswerJob implements Job {
                     .addKeyValue("cause", humans.get())
                     .addKeyValue("effect", "no answer is written here")
                     .log();
-            unanswered.put(taskId, task.message());
+            unanswered(taskId, task);
             return;
         }
         int given = verdicts.answersOverThisTree(task);
@@ -99,7 +114,7 @@ public class MasterAnswerJob implements Job {
                             : "answers over a tree nothing changed in")
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
-            unanswered.put(taskId, task.message());
+            unanswered(taskId, task);
             return;
         }
         // Answers nothing acted on change the approach: a session with fresh tools, a change in the worktrees.
@@ -107,11 +122,18 @@ public class MasterAnswerJob implements Job {
         log.atInfo().setMessage("master answers").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .log();
         Optional<String> decision = panel.answer(taskId, task, Objects.requireNonNull(task.message()), config, stuck);
+        if (decision.isPresent() && !standing(taskId, task)) {
+            log.atInfo().setMessage("master answer dropped").addKeyValue("task", taskId)
+                    .addKeyValue("cause", "the turn moved on while the Master read")
+                    .addKeyValue("effect", "nothing relayed, the status left as it is")
+                    .log();
+            return;
+        }
         if (decision.isEmpty() || !verdicts.answered(taskId, task, Objects.requireNonNull(task.message()), decision.get(), stuck)) {
             log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
-            unanswered.put(taskId, task.message());
+            unanswered(taskId, task);
         }
     }
 }

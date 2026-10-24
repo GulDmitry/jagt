@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import tools.jackson.databind.json.JsonMapper;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.ConflictWatch;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,7 +48,8 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new ConflictWatch.Progress(7, 0, "d")));
 
         verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-deploy"));
@@ -63,7 +65,8 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new ConflictWatch.Progress(7, 0, "d")));
 
         verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
@@ -80,7 +83,8 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))), stall, finish).handle("ABC-42", conflict);
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", conflict);
 
         verify(stall).watch("ABC-42", conflict);
     }
@@ -92,7 +96,8 @@ class ConflictHandOffTest {
         StateService state = new StateService(new JsonMapper(), paths);
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), true, new ConflictWatch.Progress(0, 7, "d")));
 
         verify(finish).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));

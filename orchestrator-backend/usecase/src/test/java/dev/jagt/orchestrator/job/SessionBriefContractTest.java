@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.ResumeRegistration;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.SubAgentBriefing;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -68,7 +69,8 @@ class SessionBriefContractTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC())),
                 mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
                         new ConflictWatch.Progress(7, 0, "d")));
@@ -113,7 +115,8 @@ class SessionBriefContractTest {
 
         new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC()))),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC())),
                 changes).ship("ABC-42");
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();

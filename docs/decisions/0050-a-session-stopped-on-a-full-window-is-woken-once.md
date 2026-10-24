@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-19.
+Superseded in part by [0076](0076-the-turn-is-a-fact-on-the-task.md): the wake is kept on the task's turn.
 
 ## Context
 

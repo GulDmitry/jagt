@@ -79,7 +79,7 @@ It adds no board mark.
 ### Requirement: A stop on a full window arms one wake
 With `usageLimits.wakeOnReset: true` (default false, and off when `usageLimits.enabled` is false), a usage-limit stop SHALL
 read the limits once. Where a window is at its limit with a known reset, it SHALL arm one wake at the latest such
-reset (`SessionWakes`, kept beside `state.json`).
+reset (`SessionWakes`, on the task).
 
 #### Scenario: The window is full
 - **WHEN** a session stops on a limit while the 5h window reads 100% and resets at 15:00
@@ -90,7 +90,7 @@ reset (`SessionWakes`, kept beside `state.json`).
 - **THEN** no wake is armed and the session shows as stopped
 
 ### Requirement: A wake says one line, once
-At its time a wake SHALL say one line through `SessionHost.nudgeTaskWindow` and nothing else. It is taken from the file
+At its time a wake SHALL say one line through `SessionHost.nudgeTaskWindow` and nothing else. It is taken off the task
 before it is sent, so a stop is woken at most once, across a restart. A report of the session working again SHALL
 cancel it.
 

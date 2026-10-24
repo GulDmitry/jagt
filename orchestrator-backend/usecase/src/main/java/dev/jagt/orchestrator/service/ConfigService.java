@@ -4,6 +4,7 @@ import lombok.With;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.LoopWatch;
@@ -264,9 +265,7 @@ public class ConfigService {
 
             /** Whether the session may do this, which in any mode but `act` is never. */
             public boolean may(MasterRight right) {
-                return modeOrDefault() == MasterMode.ACT
-                        && mineOrDefault().stream().noneMatch(named -> MasterRight.of(named)
-                                .filter(right::equals).isPresent());
+                return profile().may(right);
             }
 
             /** The file it judges by. Named here so an install that copied the shipped one sets nothing. */
@@ -286,6 +285,11 @@ public class ConfigService {
 
             public boolean running() {
                 return modeOrDefault() != MasterMode.OFF;
+            }
+
+            public Turns.Profile profile() {
+                return new Turns.Profile(modeOrDefault(), mineOrDefault().stream().map(MasterRight::of)
+                        .flatMap(Optional::stream).collect(java.util.stream.Collectors.toSet()));
             }
         }
 

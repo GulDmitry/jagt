@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -31,8 +31,6 @@ public class DeployCheckJob implements Job {
     private final ConfigService configService;
     private final StepRelay relay;
     private static final String STEP = "deploy";
-    /** Keyed off the commits that landed, not the context file, which every other relay overwrites. */
-    private final Map<String, String> asked = new ConcurrentHashMap<>();
 
     @Override
     public String id() {
@@ -57,13 +55,11 @@ public class DeployCheckJob implements Job {
     @Override
     public void run() {
         stateService.tasks().forEach((taskId, task) -> {
-            if (!FlowRules.checkedWhereItLanded(task.status())) {
+            if (!FlowRules.checkedWhereItLanded(task.status()) || task.loopStopped()) {
                 return;
             }
-            landed(taskId, task).filter(landed -> !landed.equals(asked.get(taskId))).ifPresent(landed -> {
-                relay.relay(taskId, STEP, landed);
-                asked.put(taskId, landed);
-            });
+            landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP, Turn.digestOf(landed)))
+                    .ifPresent(landed -> relay.relay(taskId, STEP, landed));
         });
     }
 

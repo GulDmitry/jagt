@@ -3,14 +3,13 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** In act, the repository a session asked for is attached as the human's own press would. */
 @Service
@@ -20,7 +19,8 @@ public class MasterRepoJob implements Job {
     private final StateService stateService;
     private final ConfigService configService;
     private final MasterPress press;
-    private final Map<String, String> pressed = new ConcurrentHashMap<>();
+    private final TaskTurns turns;
+    private static final String PRESSED = "press:add-repo";
 
     @Override
     public String id() {
@@ -49,14 +49,18 @@ public class MasterRepoJob implements Job {
         }
         stateService.tasks().forEach((taskId, task) -> {
             String request = task.repoRequest();
+            String pressed = task.turnOrNone().mark(PRESSED);
             if (request == null) {
-                pressed.remove(taskId);
+                if (pressed != null) {
+                    turns.unmark(taskId, PRESSED);
+                }
                 return;
             }
-            // Once per request, or a refused press is repeated every tick.
-            if (task.status() == TaskStatus.DONE || task.loopStopped() || request.equals(pressed.put(taskId, request))) {
+            // Once per request, kept on the task: a refused press is not repeated, nor after a restart.
+            if (task.status() == TaskStatus.DONE || task.loopStopped() || request.equals(pressed)) {
                 return;
             }
+            turns.mark(taskId, PRESSED, request);
             press.execute(taskId, TaskAction.ADD_REPO);
         });
     }

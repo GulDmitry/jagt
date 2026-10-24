@@ -2,6 +2,9 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.service.TaskTurns;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -9,8 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** In act, a request green with every thread closed is deployed as the human's own press would. */
 @Service
@@ -20,7 +21,8 @@ public class MasterDeployJob implements Job {
     private final StateService stateService;
     private final ConfigService configService;
     private final MasterPress press;
-    private final Map<String, Long> pressed = new ConcurrentHashMap<>();
+    private final TaskTurns turns;
+    private static final String PRESSED = "press:deploy";
 
     @Override
     public String id() {
@@ -44,15 +46,19 @@ public class MasterDeployJob implements Job {
 
     @Override
     public void run() {
-        if (!configService.load().master().may(MasterRight.DEPLOY)) {
+        Turns.Profile profile = configService.load().master().profile();
+        if (!profile.may(MasterRight.DEPLOY)) {
             return;
         }
         stateService.tasks().forEach((taskId, task) -> {
-            // Once per arrival, or a refused deploy is pressed again every tick.
+            String arrival = String.valueOf(task.statusSince());
+            // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a restart.
             if (!FlowRules.deployedByTheMaster(task.status()) || task.loopStopped()
-                    || Long.valueOf(task.statusSince()).equals(pressed.put(taskId, task.statusSince()))) {
+                    || Turns.next(task.status(), task.report(), profile) != Turn.Holder.MASTER
+                    || task.turnOrNone().marked(PRESSED, arrival)) {
                 return;
             }
+            turns.mark(taskId, PRESSED, arrival);
             press.press(taskId, task, TaskAction.DEPLOY);
         });
     }

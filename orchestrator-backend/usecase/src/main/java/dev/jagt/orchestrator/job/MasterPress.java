@@ -4,15 +4,14 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** A verb pressed as the human's own press would be, unless the task touched a path its project keeps for them. */
 @Component
@@ -23,20 +22,26 @@ class MasterPress {
     private final CommandService commands;
     private final HumanPaths humanPaths;
     private final ConfigService config;
-    private final Map<String, String> left = new ConcurrentHashMap<>();
+    private final TaskTurns turns;
+    private static final String LEFT = "left";
 
     /** False where the press was left to the human. */
     boolean press(String taskId, TaskState task, TaskAction action) {
         Optional<String> touched = humanPaths.touched(task);
+        String left = task.turnOrNone().mark(LEFT);
         if (touched.isPresent()) {
             // A step left waiting is offered again every tick.
-            if (!(action.id() + touched.get()).equals(left.put(taskId, action.id() + touched.get()))) {
+            String step = action.id() + " " + touched.get();
+            if (!step.equals(left)) {
+                turns.mark(taskId, LEFT, step);
                 log.atInfo().setMessage("master leaves it").addKeyValue("task", taskId)
                         .addKeyValue("cmd", action.id()).addKeyValue("path", touched.get()).log();
             }
             return false;
         }
-        left.remove(taskId);
+        if (left != null) {
+            turns.unmark(taskId, LEFT);
+        }
         execute(taskId, action);
         return true;
     }

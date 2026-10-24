@@ -31,7 +31,7 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 - **THEN** the agent says so; nothing highlighted, no ship advised
 
 ### Requirement: No re-brief on held threads
-`AgentSessions.relayIfChanged` SHALL NOT re-brief a session on threads it was told to hold.
+`LoopGuard` and the session's open turn SHALL NOT re-brief a session on threads it was told to hold.
 
 #### Scenario: Held thread
 - **WHEN** a poll reads a held thread

@@ -30,7 +30,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | kind | its one job | state |
 |------|-------------|-------|
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` |
-| `flow/` | which status allows what, and where each outcome leads | built — `FlowRules`, `FlowEngine`, `FlowReports`, `Move` |
+| `flow/` | which status allows what, where each outcome leads, whose turn | built — `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
@@ -86,6 +86,8 @@ answer. Every type in `flow/`, one question each:
 | `RoundState` | what the last round left behind: that report, plus whether drafted replies are waiting |
 | `DashboardLine` | the one contextual line under a card, empty whenever status and next move already answer |
 | `Refusal` | a refusal a caller must act on rather than only show |
+| `Turns` | who holds a task's turn, from its status, its report and the Master's profile |
+| `task/Turn` | that turn on the task: holder, the step that opened it, its digest, since when, each step's last mark |
 | `Move` | what can be done to this task, whose turn it is, how loudly it asks |
 | `Owner` | whose turn |
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |

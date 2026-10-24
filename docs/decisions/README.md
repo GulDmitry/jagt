@@ -91,3 +91,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0073 Cases are the human's, and the stand comes first](0073-cases-are-the-humans-and-the-stand-comes-first.md)
 - [0074 A discovery warning fails the run](0074-a-discovery-warning-fails-the-run.md)
 - [0075 A request that sets off a case says why](0075-a-request-that-sets-off-a-case-says-why.md)
+- [0076 The turn is a fact on the task](0076-the-turn-is-a-fact-on-the-task.md)

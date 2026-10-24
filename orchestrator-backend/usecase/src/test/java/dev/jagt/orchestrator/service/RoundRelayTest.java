@@ -46,18 +46,19 @@ class RoundRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
         RoundRelay relay = new RoundRelay(new LoopGuard(state, config,
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), clock), clock), sessions,
-                new SessionBrief(paths), new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)));
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), clock), clock),
+                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+                        new MissLog(new JsonMapper(), paths, clock),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
+                        new TaskTurns(state, clock)), new SessionBrief(paths));
         ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_1\nbot: rename x"), 0);
         relay.relay("ABC-42", "https://host/mr/1", round, "running");
 
         SweepResult again = relay.relay("ABC-42", "https://host/mr/1", round, "running");
 
         assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
-        verify(sessions, times(1)).relayFreshIfChanged(eq("ABC-42"), anyString());
+        verify(sessions, times(1)).relayFresh(eq("ABC-42"), anyString());
     }
 
     @Test
@@ -70,15 +71,17 @@ class RoundRelayTest {
                 .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, 1L, "5 ships"))).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         RoundRelay relay = new RoundRelay(new LoopGuard(state, config,
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), clock), clock), sessions,
-                new SessionBrief(paths), new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)));
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), clock), clock),
+                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+                        new MissLog(new JsonMapper(), paths, clock),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
+                        new TaskTurns(state, clock)), new SessionBrief(paths));
 
         SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
                 new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0), "running");
 
         assertThat(result.kind()).isEqualTo(SweepResult.Kind.STOPPED);
-        verify(sessions, never()).relayFreshIfChanged(anyString(), anyString());
+        verify(sessions, never()).relayFresh(anyString(), anyString());
     }
 
     @Test
@@ -88,33 +91,39 @@ class RoundRelayTest {
         Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         LoopGuard loops = mock(LoopGuard.class);
         when(loops.round(anyString(), any(), anyString())).thenReturn(LoopGuard.Relay.RELAY);
-        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
+        StateService state = new StateService(new JsonMapper(), paths);
 
-        SweepResult result = new RoundRelay(loops, sessions, new SessionBrief(paths),
-                new CaseDoor(new SessionCases(paths), new StateService(new JsonMapper(), paths), new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(new StateService(new JsonMapper(), paths), new Notifications(List.of(), Runnable::run), clock))).relay("ABC-42", "http://mr/api, http://mr/web",
+        SweepResult result = new RoundRelay(loops, new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
+                new TaskTurns(state, clock)), new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
                 new ReviewFacts(true, false, "success", "", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
                         0), "success");
 
         assertThat(result.message()).contains("2 thread(s) relayed");
-        verify(sessions).relayFreshIfChanged(eq("ABC-42"), contains("review_replies.md"));
+        verify(sessions).relayFresh(eq("ABC-42"), contains("review_replies.md"));
     }
 
     @Test
-    void reportsARoundUnchangedWhenTheContextFileAlreadyHoldsIt(@TempDir Path root) throws Exception {
+    void reportsARoundUnchangedWhileTheSessionHoldsTheTurnItOpened(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         LoopGuard loops = mock(LoopGuard.class);
         when(loops.round(anyString(), any(), anyString())).thenReturn(LoopGuard.Relay.RELAY);
-        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(false);
+        RoundRelay relay = new RoundRelay(loops, new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
+                new TaskTurns(state, clock)), new SessionBrief(paths));
+        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0);
+        relay.relay("ABC-42", "http://mr/1", round, "success");
 
-        SweepResult result = new RoundRelay(loops, sessions, new SessionBrief(paths),
-                new CaseDoor(new SessionCases(paths), new StateService(new JsonMapper(), paths), new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(new StateService(new JsonMapper(), paths), new Notifications(List.of(), Runnable::run), clock))).relay("ABC-42", "http://mr/1",
-                new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0), "success");
+        SweepResult again = relay.relay("ABC-42", "http://mr/1", round, "success");
 
-        assertThat(result.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
-        assertThat(result.message()).contains("unchanged since the last relay");
+        assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
+        assertThat(again.message()).contains("unchanged since the last relay");
     }
 
     @Test
@@ -125,14 +134,15 @@ class RoundRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
         LoopGuard loops = mock(LoopGuard.class);
-        RoundRelay relay = new RoundRelay(loops, sessions, new SessionBrief(paths),
+        RoundRelay relay = new RoundRelay(loops, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)));
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
+                new TaskTurns(state, clock)), new SessionBrief(paths));
 
         SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
                 new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0), "running");
 
         assertThat(result.kind()).isEqualTo(SweepResult.Kind.REFUSED);
-        verify(sessions, never()).relayFreshIfChanged(anyString(), anyString());
+        verify(sessions, never()).relayFresh(anyString(), anyString());
     }
 }
