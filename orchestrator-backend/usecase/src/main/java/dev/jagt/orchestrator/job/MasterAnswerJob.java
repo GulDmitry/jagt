@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -29,8 +30,7 @@ public class MasterAnswerJob implements Job {
     private final ConfigService configService;
     private final MasterPanel panel;
     private final MasterVerdicts verdicts;
-    /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
-    private static final String UNANSWERED = "unanswered";
+    private final TaskTurns turns;
 
     @Override
     public String id() {
@@ -65,18 +65,15 @@ public class MasterAnswerJob implements Job {
                 .ifPresent(entry -> answer(entry.getKey(), entry.getValue(), config));
     }
 
+    /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
     private static boolean answers(TaskState task, Turns.Profile profile) {
-        return Move.asking(task.status(), task.report()) && !task.loopStopped()
-                && Turns.next(task.status(), task.report(), profile) == Turn.Holder.MASTER
-                && !task.turnOrNone().marked(UNANSWERED, asked(task));
-    }
-
-    private static String asked(TaskState task) {
-        return Turn.digestOf(Objects.requireNonNull(task.message()));
+        return Move.asking(task.status(), task.report())
+                && Turns.next(task.status(), task.report(), task.loopStopped(), profile) == Turn.Holder.MASTER
+                && !task.turnOrNone().marked(TaskTurns.UNANSWERED, TaskTurns.asked(task));
     }
 
     private void unanswered(String taskId, TaskState task) {
-        stateService.updateTask(taskId, now -> now.withTurn(now.turnOrNone().withMark(UNANSWERED, asked(task))));
+        turns.mark(taskId, TaskTurns.UNANSWERED, TaskTurns.asked(task));
     }
 
     /** A report or a relay while the Master read moved the turn on: the question it read is no longer standing. */

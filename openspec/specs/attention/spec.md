@@ -8,13 +8,14 @@ Whose move it is: how a blocked session reaches the board, what interrupts, and 
 
 ### Requirement: A question is reported first
 An agent MUST report `outcome=question` before the human sees the question (rule 1 of the brief's `context` step).
-`AgentReport.QUESTION` SHALL make `Move.owner` YOU from any status and the `DashboardLine` NEEDS INPUT.
-`YourMoveJob` SHALL ping once the projection turns a task YOU, or changes its advice while YOU, a report or not.
-The move must have stood five seconds; a card already yours when jagt starts is not pinged.
+`AgentReport.QUESTION` SHALL make `Move.owner` whoever `Turns.next` names, from any status, and the `DashboardLine`
+NEEDS INPUT. `YourMoveJob` SHALL ping once the projection turns a task YOU, or changes its advice while YOU, a report
+or not. The move must have stood five seconds; a card already yours when jagt starts is not pinged.
 
 #### Scenario: An agent stops to ask
 - **WHEN** an agent asks
 - **THEN** NEEDS INPUT, one desktop ping the first time
+- **AND** where the Master answers it in `act`, the card shows the Master at work and nobody is pinged until it gives up
 
 #### Scenario: The task contradicts the code
 - **WHEN** it breaks a code guarantee
@@ -94,8 +95,8 @@ one whose poll `AutoReviewWatch.stopped()` on the human. A plan or round the Mas
 
 ### Requirement: Owners after review
 `REVIEWED`'s owner SHALL be the review request: nothing highlighted, no ping, `deploy` listed where no approval is
-needed. Only `APPROVED` taps the human; `YourMoveJob` MUST stay silent unless `Move` says
-YOU. `DEPLOYED`'s owner is nobody, as `DONE`'s; `done` stays highlighted.
+needed. Only `APPROVED` taps the human, and neither is theirs where the Master deploys it in `act`; `YourMoveJob`
+MUST stay silent unless `Move` says YOU. `DEPLOYED`'s owner is nobody, as `DONE`'s; `done` stays highlighted.
 
 #### Scenario: An approval lands
 - **WHEN** `APPROVED`

@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.MissLog;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -617,7 +618,8 @@ class MasterVerdictsTest {
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
-        relay.relay("ABC-1", "asked-human", "The reviewer asked the human: Add v3 beside v2, or replace it?");
+        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "asked-human",
+                "The reviewer asked the human: Add v3 beside v2, or replace it?"));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
                 List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
@@ -644,8 +646,9 @@ class MasterVerdictsTest {
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
-        relay.relay("ABC-1", "asked-human", "The reviewer asked the human: These findings came back 2 rounds running,"
-                + " neither fixed nor disputed: - [qa] Foo.java delay — the delay is never pinned (test) [repeat]");
+        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "asked-human",
+                "The reviewer asked the human: These findings came back 2 rounds running,"
+                + " neither fixed nor disputed: - [qa] Foo.java delay — the delay is never pinned (test) [repeat]"));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
@@ -718,7 +721,8 @@ class MasterVerdictsTest {
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay));
-        relay.relay("ABC-1", "answered", "The Master answered your question, standing in for the human:\nkeep v2 beside v3");
+        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "answered",
+                "The Master answered your question, standing in for the human:\nkeep v2 beside v3"));
 
         boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
 

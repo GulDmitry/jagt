@@ -65,7 +65,7 @@ class MoveTest {
     @Test
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.NO_CHANGES, false, false), false,
+                RoundState.of(AgentReport.NO_CHANGES, false), false,
                 AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
         assertThat(move.primary()).isNull();
@@ -77,7 +77,7 @@ class MoveTest {
     @Test
     void handsAReviewRoundBackToTheHumanOncePollingHasStoppedForIt() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.NO_CHANGES, false, false), false, AutoReviewWatch.windowElapsed(24));
+                RoundState.of(AgentReport.NO_CHANGES, false), false, AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.primary()).isEqualTo(TaskAction.SWEEP);
@@ -98,7 +98,7 @@ class MoveTest {
     @Test
     void stillAdvisesAShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.NO_CHANGES, true, false), false);
+                RoundState.of(AgentReport.NO_CHANGES, true), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
         assertThat(move.hint())
@@ -108,7 +108,7 @@ class MoveTest {
     @Test
     void asksTheHumanToShipARoundThatChangedNothingBeforeAnyRequestExists() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(false, false, () -> false, false, false, false),
-                new RoundState(AgentReport.NO_CHANGES, false, false),
+                RoundState.of(AgentReport.NO_CHANGES, false),
                 false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -120,7 +120,7 @@ class MoveTest {
     @Test
     void keepsTheRoundWithTheHumanWhenTheDraftedRepliesStillNeedAShip() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.NO_CHANGES, true, false),
+                RoundState.of(AgentReport.NO_CHANGES, true),
                 false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -157,7 +157,7 @@ class MoveTest {
     @Test
     void pointsAtTheAgentWhenTheRoundEndedInAQuestionInsteadOfAtTheShipButton() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
         assertThat(move.hint()).isEqualTo("read the round and the question it left (focus), then ship");
@@ -166,7 +166,7 @@ class MoveTest {
     @Test
     void leavesAQuestionUnshoutedWhileAPollIsStillReadingTheRoundItWasAskedOn() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false),
+                RoundState.of(AgentReport.QUESTION, false),
                 false, AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -177,7 +177,7 @@ class MoveTest {
     @Test
     void interruptsForTheSameQuestionOnceNothingIsPollingTheRoundAnyMore() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false),
+                RoundState.of(AgentReport.QUESTION, false),
                 false, AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
@@ -187,8 +187,7 @@ class MoveTest {
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "CI_FAILED", "DEPLOY_CONFLICT", "APPROVED",
             "DEPLOYED"})
     void interruptsForAQuestionNoCommentOnTheRequestCanReachEvenWhileThatRequestIsPolled(TaskStatus status) {
-        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), new RoundState(AgentReport.QUESTION,
-                false, false), false, AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), RoundState.of(AgentReport.QUESTION, false), false, AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
     }
@@ -196,7 +195,7 @@ class MoveTest {
     @Test
     void asksForTheRoundToBeReadRatherThanTheSessionAnsweredWhenTheQuestionCameBackWithIt() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false),
+                RoundState.of(AgentReport.QUESTION, false),
                 false);
 
         assertThat(move.ask()).isEqualTo("review the round");
@@ -205,8 +204,7 @@ class MoveTest {
     @ParameterizedTest
     @CsvSource({"NEW", "IN_PROGRESS", "SHIPPING"})
     void handsAnAgentThatStoppedToAskBackToTheHumanInsteadOfSayingItIsStillWorking(TaskStatus status) {
-        Move move = Move.forTask(status, new Facts(false, false, () -> false, false, false, false), new RoundState(AgentReport.QUESTION,
-                false, false), false);
+        Move move = Move.forTask(status, new Facts(false, false, () -> false, false, false, false), RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.hint()).contains("answer the question");
@@ -226,7 +224,7 @@ class MoveTest {
     @Test
     void quotesTheQuestionRatherThanTheSilenceWhenAnAgentAskedBeforeItStopped() {
         Move move = Move.forTask(TaskStatus.IN_PROGRESS, new Facts(false, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false), true);
+                RoundState.of(AgentReport.QUESTION, false), true);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.hint()).contains("answer the question");
@@ -260,7 +258,7 @@ class MoveTest {
     @Test
     void stillAsksForTheHumanWhenAnAgentQuestionOutlivesTheDeploy() {
         Move move = Move.forTask(TaskStatus.DEPLOYED, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.hint()).contains("answer the question");
@@ -279,8 +277,7 @@ class MoveTest {
     void namesTheActOnEveryCardWhoseMoveIsTheHumansOwn(TaskStatus status) {
         Move working = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), RoundState.NONE, false);
         Move stopped = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), RoundState.NONE, true);
-        Move asked = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), new RoundState(AgentReport.QUESTION,
-                false, false), false);
+        Move asked = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), RoundState.of(AgentReport.QUESTION, false), false);
         Move unpolled = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), RoundState.NONE, false,
                 AutoReviewWatch.windowElapsed(24));
         Move requestless = Move.forTask(status, new Facts(false, false, () -> false, false, false, false), RoundState.NONE, false);
@@ -343,7 +340,7 @@ class MoveTest {
     @Test
     void asksForAnAnswerWhereverTheSessionStoppedToPutTheQuestion() {
         Move move = Move.forTask(TaskStatus.DEPLOYED, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.ask()).isEqualTo("answer the session");
     }
@@ -388,7 +385,7 @@ class MoveTest {
     @Test
     void saysNothingAboutARoundWhoseOpenThreadsAreTheReviewersToClose() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.NO_CHANGES, false, false), false);
+                RoundState.of(AgentReport.NO_CHANGES, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.CI);
         assertThat(move.attention()).isEqualTo(Attention.NONE);
@@ -413,7 +410,7 @@ class MoveTest {
     @Test
     void interruptsWhenAnAgentAsksFromAStatusThatWouldOtherwiseWait() {
         Move move = Move.forTask(TaskStatus.APPROVED, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
     }
@@ -449,8 +446,7 @@ class MoveTest {
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_FAILED", "REVIEWED", "APPROVED",
             "REVERTED", "DEPLOYED"})
     void highlightsTheAnswerRatherThanAVerbThatActsWhileAQuestionIsOpen(TaskStatus status) {
-        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), new RoundState(AgentReport.QUESTION,
-                false, false), false);
+        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
@@ -468,8 +464,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED"})
     void handsTheTaskOverForAQuestionAskedFromAStatusThatWaitsOnTheCodeHost(TaskStatus status) {
-        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), new RoundState(AgentReport.QUESTION,
-                false, false), false);
+        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false), RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.hint()).contains("answer the question");
@@ -478,7 +473,7 @@ class MoveTest {
     @Test
     void leavesAClosedTaskAloneWhateverItsLastMessageSaid() {
         Move move = Move.forTask(TaskStatus.DONE, new Facts(true, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.NOBODY);
     }
@@ -574,7 +569,7 @@ class MoveTest {
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING", "CI_FAILED"})
     void putsAddRepoOnTheQuestionOfASessionAskingForARepository(TaskStatus status) {
         Move move = Move.forTask(status, new Facts(false, false, () -> false, false, false, true),
-                new RoundState(AgentReport.QUESTION, false, false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
@@ -585,7 +580,7 @@ class MoveTest {
     @Test
     void keepsFocusOnTheQuestionOfASessionAskingForNothingTheBoardCanAdd() {
         Move move = Move.forTask(TaskStatus.IN_PROGRESS, new Facts(false, false, () -> false, false, false, false),
-                new RoundState(AgentReport.QUESTION, false, false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
         assertThat(move.actions()).doesNotContain(TaskAction.ADD_REPO);

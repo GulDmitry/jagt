@@ -57,10 +57,11 @@ It SHALL refuse a case or brief file it cannot read. Each refusal names the file
 - **THEN** jagt does not start and names `master-cases.md` and `answered-under`
 
 ### Requirement: The turn is a fact on the task
-`flow/Turns.next` SHALL alone answer who holds a task's turn from its status, its report and the Master's mode and
-`mine`. A relay SHALL open the session's turn on the task (`task/Turn`: step, digest of its facts, `since`); the
-session's next report SHALL close it. A step relayed again with the same facts while that turn is open SHALL send
-nothing. What the Master pressed, left or failed to answer SHALL be kept on the turn, so a restart repeats none.
+`flow/Turns.next` SHALL alone answer who holds a task's turn from its status, report, stop and the Master's mode and
+`mine`; the board's owner maps it. A relay SHALL open the session's turn on the task (`task/Turn`: step, digest of its
+facts, `since`); the session's next report SHALL close it. A step relayed again with the same facts while that turn
+is open SHALL send nothing. What the Master pressed, left or failed to answer SHALL be kept on the turn, so a restart
+repeats none.
 
 #### Scenario: jagt restarts after a deploy
 - **WHEN** ABC-42 was deployed, its check asked and another relay followed, and jagt restarts
@@ -75,15 +76,19 @@ nothing. What the Master pressed, left or failed to answer SHALL be kept on the 
 - **THEN** the Master's answer is dropped and nothing sets ABC-42 `IN_PROGRESS`
 
 ### Requirement: What no case names is a miss
-A miss SHALL be refused. It is a step no case names at its status (`by: jagt`), a Master move no case allows
-(`by: master`) or a report no case takes (`by: session`). It SHALL be written as `{at, task, step, status, by}` to
-`misses.jsonl` beside `state.json` (rolled at 1 MB into `.1`) and logged. It SHALL stop the task as a suspected loop
-does until a human's `lift`, its hover `no case sends <step> at <STATUS>, set off by <by>`.
-The Master SHALL NOT decide a miss; a human extends the cases.
+A miss SHALL be refused: a step no case names at its status for whoever set it off (`by:` jagt, human or master;
+a session's MCP call sets off jagt's), a Master move no case allows or a report no case takes (`by: session`). It
+SHALL be logged and written as `{at, task, step, status, by}` to `misses.jsonl` beside `state.json` (rolled at 1 MB).
+It SHALL stop the task until a human's `lift`, hover `no case sends <step> at <STATUS>, set off by <by>`. Only a
+human extends the cases.
 
 #### Scenario: A step at a status no case names
 - **WHEN** a deploy check is relayed to ABC-42 at IN_PROGRESS and `deploy` is sent at DEPLOYED alone
 - **THEN** the session hears nothing, `misses.jsonl` holds the line for ABC-42, and the card asks `lift the stop`
+
+#### Scenario: A step set off by someone its case does not name
+- **WHEN** you set off `deploy` at DEPLOYED and its only case says `by: jagt`
+- **THEN** the session hears nothing and `misses.jsonl` reads `by: human` for it
 
 #### Scenario: A round into a closed task
 - **WHEN** a sweep reads open threads on ABC-42 at DONE

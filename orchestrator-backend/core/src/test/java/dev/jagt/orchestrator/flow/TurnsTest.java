@@ -32,14 +32,14 @@ class TurnsTest {
     }
 
     static Stream<Arguments> everyTurnNoMasterHolds() {
-        return everyTurn().filter(row -> Turns.next((TaskStatus) row.get()[0], (AgentReport) row.get()[1],
+        return everyTurn().filter(row -> Turns.next((TaskStatus) row.get()[0], (AgentReport) row.get()[1], false,
                 PROFILES.get((String) row.get()[2])) != Holder.MASTER);
     }
 
     @ParameterizedTest
     @MethodSource("everyTurn")
     void namesExactlyOneHolderForEveryStatusReportAndProfile(TaskStatus status, AgentReport report, String profile) {
-        Holder holder = Turns.next(status, report, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
 
         assertThat(holder).isIn((Object[]) Holder.values());
     }
@@ -47,12 +47,40 @@ class TurnsTest {
     @ParameterizedTest
     @MethodSource("everyTurnNoMasterHolds")
     void theBoardShowsTheHolderWhereNoMasterHoldsTheTurn(TaskStatus status, AgentReport report, String profile) {
-        Holder holder = Turns.next(status, report, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
 
         Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false),
-                RoundState.of(report, false), false, AutoReviewWatch.watching(Long.MAX_VALUE));
+                RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
+                AutoReviewWatch.watching(Long.MAX_VALUE));
 
         assertThat(move.owner()).isEqualTo(Owner.of(holder));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "IN_PROGRESS, QUESTION, act",
+            "SHIPPING, QUESTION, act-mine-plan",
+            "REVIEWED, PLAIN, act",
+            "APPROVED, PLAIN, act"})
+    void theBoardShowsTheMasterAtWorkWhereItStandsInForTheHuman(TaskStatus status, AgentReport report, String profile) {
+        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false),
+                RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
+                AutoReviewWatch.watching(Long.MAX_VALUE));
+
+        assertThat(move.owner()).isEqualTo(Owner.AGENT);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "IN_PROGRESS, QUESTION, act, HUMAN",
+            "APPROVED, PLAIN, act, HUMAN",
+            "REVIEW_PENDING, PLAIN, judge, HUMAN",
+            "DONE, PLAIN, act, NOBODY"})
+    void aTaskJagtStoppedIsTheHumansWhereverTheMasterStands(TaskStatus status, AgentReport report, String profile,
+                                                           Holder expected) {
+        Holder holder = Turns.next(status, report, true, PROFILES.get(profile));
+
+        assertThat(holder).isEqualTo(expected);
     }
 
     @ParameterizedTest
@@ -63,7 +91,7 @@ class TurnsTest {
             "REVIEW_PENDING, NO_CHANGES, judge"})
     void aRoundTheMasterReadsIsItsTurnAndTheBoardSaysMasterReview(TaskStatus status, AgentReport report,
                                                                   String profile) {
-        Holder holder = Turns.next(status, report, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
 
         Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false),
                 RoundState.of(report, false).withMasterReading(true), false);
@@ -85,7 +113,7 @@ class TurnsTest {
             "DONE, QUESTION, act, NOBODY"})
     void theMasterHoldsTheTurnOnlyWhereItStandsInForTheHuman(TaskStatus status, AgentReport report, String profile,
                                                             Holder expected) {
-        Holder holder = Turns.next(status, report, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
 
         assertThat(holder).isEqualTo(expected);
     }

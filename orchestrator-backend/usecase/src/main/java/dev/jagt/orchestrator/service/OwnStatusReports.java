@@ -22,6 +22,7 @@ public class OwnStatusReports {
     private final HandBackDue due;
     private final AgentStatusReports statusReports;
     private final CaseDoor door;
+    private final TaskTurns turns;
 
     public String report(AgentStatusMessage said, String taskId) {
         Optional<Reported> accepted = said.accepted(statusReports.contextFor(taskId));
@@ -35,6 +36,8 @@ public class OwnStatusReports {
             throw Refusal.byState(owed);
         });
         accepted.filter(reply -> !door.takes(taskId, reply.status(), reply.claimed())).ifPresent(reply -> {
+            // Closed, so the session's next report is not refused for the same step again.
+            turns.refused(taskId);
             throw Refusal.byState("jagt refuses this report: no case takes it as a reply to the step you were sent,"
                     + " so it was not applied and the task is stopped for the human. End your turn.");
         });

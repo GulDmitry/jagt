@@ -9,7 +9,10 @@ import dev.jagt.orchestrator.task.Turn.Holder;
 import java.util.EnumSet;
 import java.util.Set;
 
-/** Who holds a task's turn once its status and its last report stand, under the Master's mode and the steps kept. */
+/**
+ * Who holds a task's turn once its status, its last report and whether jagt stopped it stand, under the Master's mode
+ * and the steps kept.
+ */
 public final class Turns {
 
     /** {@code mine} are the steps the human keeps even where the Master acts. */
@@ -34,9 +37,12 @@ public final class Turns {
     }
 
     /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. */
-    public static Holder next(TaskStatus status, AgentReport report, Profile profile) {
+    public static Holder next(TaskStatus status, AgentReport report, boolean stopped, Profile profile) {
         if (FlowRules.closed(status)) {
             return Holder.NOBODY;
+        }
+        if (stopped) {
+            return Holder.HUMAN;
         }
         if (FlowRules.readByTheMaster(status) && profile.running()) {
             return Holder.MASTER;
@@ -53,8 +59,7 @@ public final class Turns {
         return of(status);
     }
 
-    /** Whose turn a status alone means, where nobody stands in for the human. */
-    public static Holder of(TaskStatus status) {
+    private static Holder of(TaskStatus status) {
         return switch (status) {
             case NEW, IN_PROGRESS, VERIFYING, SHIPPING -> Holder.SESSION;
             case CI_POLLING, REVIEWED -> Holder.CI;

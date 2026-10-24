@@ -64,12 +64,12 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
     /** An agent that stopped is not working, whatever status it kept: the wait is the human's. */
     private static Owner ownerOf(TaskStatus status, boolean hasReviewRequest, RoundState round,
                                  boolean agentSilent, boolean pollStopped) {
-        // ASKING IS STOPPING, whatever status it was asked from: the session waits until a human answers.
-        if (asking(status, round)) {
-            return Owner.YOU;
-        }
         if (masterReading(status, round)) {
             return Owner.AGENT;
+        }
+        // ASKING IS STOPPING, whatever status it was asked from: the session waits until its question is answered.
+        if (asking(status, round)) {
+            return turnOf(status, round);
         }
         Owner owner = waitingOn(status, hasReviewRequest, round);
         if (owner == Owner.AGENT && agentSilent && !FlowRules.awaitingVerification(status)) {
@@ -150,7 +150,14 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         if (FlowRules.outForReview(status) && !hasReviewRequest) {
             return Owner.YOU;
         }
-        return ownerOf(status);
+        if (status == TaskStatus.REVIEW_PENDING && round.report() == AgentReport.NO_CHANGES) {
+            return Owner.YOU;
+        }
+        return turnOf(status, round);
+    }
+
+    private static Owner turnOf(TaskStatus status, RoundState round) {
+        return Owner.of(Turns.next(status, round.report(), false, round.master()));
     }
 
     private static boolean masterReading(TaskStatus status, RoundState round) {
@@ -173,7 +180,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
 
     /** Whose turn a status ALONE means. */
     public static Owner ownerOf(TaskStatus status) {
-        return Owner.of(Turns.of(status));
+        return turnOf(status, RoundState.NONE);
     }
 
     private static @Nullable TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, RoundState round,
@@ -225,20 +232,27 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         return polled ? null : TaskAction.SWEEP;
     }
 
+    private static String askingHint(TaskStatus status, RoundState round) {
+        if (turnOf(status, round) == Owner.AGENT) {
+            return "the Master is answering the session; no action required";
+        }
+        // At REVIEW_PENDING the round is already back, so the answer is followed by a ship.
+        return status == TaskStatus.REVIEW_PENDING
+                ? "read the round and the question it left (focus), then ship"
+                : "answer the question in the agent's window (focus)";
+    }
+
     /** One line of prose, for a hint line or a button tooltip. */
     private static String hint(TaskStatus status, boolean hasReviewRequest, RoundState round,
                                boolean agentSilent, boolean polled) {
+        if (masterReading(status, round)) {
+            return "the Master is reading this round; no action required";
+        }
         if (asking(status, round)) {
-            // At REVIEW_PENDING the round is already back, so the answer is followed by a ship.
-            return status == TaskStatus.REVIEW_PENDING
-                    ? "read the round and the question it left (focus), then ship"
-                    : "answer the question in the agent's window (focus)";
+            return askingHint(status, round);
         }
         if (ownerOf(status) == Owner.AGENT && agentSilent) {
             return "agent stopped without reporting: focus to see why, or respawn";
-        }
-        if (masterReading(status, round)) {
-            return "the Master is reading this round; no action required";
         }
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent is working; no action required";

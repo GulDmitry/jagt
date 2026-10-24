@@ -22,7 +22,6 @@ public class MasterDeployJob implements Job {
     private final ConfigService configService;
     private final MasterPress press;
     private final TaskTurns turns;
-    private static final String PRESSED = "press:deploy";
 
     @Override
     public String id() {
@@ -53,12 +52,12 @@ public class MasterDeployJob implements Job {
         stateService.tasks().forEach((taskId, task) -> {
             String arrival = String.valueOf(task.statusSince());
             // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a restart.
-            if (!FlowRules.deployedByTheMaster(task.status()) || task.loopStopped()
-                    || Turns.next(task.status(), task.report(), profile) != Turn.Holder.MASTER
-                    || task.turnOrNone().marked(PRESSED, arrival)) {
+            if (!FlowRules.deployedByTheMaster(task.status())
+                    || Turns.next(task.status(), task.report(), task.loopStopped(), profile) != Turn.Holder.MASTER
+                    || task.turnOrNone().marked(TaskTurns.PRESSED_DEPLOY, arrival)) {
                 return;
             }
-            turns.mark(taskId, PRESSED, arrival);
+            turns.mark(taskId, TaskTurns.PRESSED_DEPLOY, arrival);
             press.press(taskId, task, TaskAction.DEPLOY);
         });
     }

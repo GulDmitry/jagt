@@ -3,8 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Turns;
-import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.Message;
@@ -160,8 +158,7 @@ public class AgentStatusReports {
         if (!closesTurn) {
             return next;
         }
-        Turn.Holder holder = Turns.next(next.status(), next.report(), configService.load().master().profile());
-        return next.withTurn(next.turnOrNone().closed(holder, next.lastActiveTimestamp()));
+        return TaskTurns.closed(next, configService.load().master().profile());
     }
 
     private static TaskState linked(TaskStatus was, TaskState next, @Nullable String url,

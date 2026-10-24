@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.CaseBook;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
@@ -39,7 +38,7 @@ public class CaseDoor {
         if (status.isEmpty()) {
             return true;
         }
-        if (!cases.book().sends(step, status.get())) {
+        if (!cases.book().sends(step, status.get(), CaseBook.By.of(OriginContext.current()))) {
             return refused(id, step, status.get());
         }
         return MasterMove.relaying(step).isEmpty() || !byTheMaster() || allows(id, step, status.get());
@@ -55,8 +54,9 @@ public class CaseDoor {
         return status.isEmpty() || allows(id, move, status.get());
     }
 
-    private static boolean byTheMaster() {
-        return OriginContext.current() == ActionOrigin.MASTER;
+    /** Whether what runs now runs as the Master: the one answer to who that is. */
+    public static boolean byTheMaster() {
+        return CaseBook.By.of(OriginContext.current()) == CaseBook.By.MASTER;
     }
 
     private boolean refused(String id, String step, TaskStatus status) {
@@ -73,7 +73,7 @@ public class CaseDoor {
     }
 
     private boolean allows(String id, String move, TaskStatus status) {
-        if (masterCases.book().sends(move, status)) {
+        if (masterCases.book().sends(move, status, CaseBook.By.MASTER)) {
             return true;
         }
         misses.record(id, move, status, CaseBook.By.MASTER);
@@ -92,10 +92,7 @@ public class CaseDoor {
         return stops.roundDue(stateService.canonicalTaskId(taskId), step);
     }
 
-    /**
-     * A reply with no turn open, or to a step no case names, is taken. A refused one hands the turn to the human, so
-     * the session's next report is not refused for the same step again.
-     */
+    /** A reply with no turn open, or to a step no case names, is taken; a refused one stops the task. */
     public boolean takes(String taskId, TaskStatus reported, AgentReport kind) {
         String id = stateService.canonicalTaskId(taskId);
         Optional<TaskState> task = stateService.task(id);
@@ -112,8 +109,6 @@ public class CaseDoor {
                 .addKeyValue("effect", "the report not applied, the task stopped")
                 .addKeyValue("fix", SessionCases.FILE)
                 .log();
-        stateService.updateTask(id, held -> held.withTurn(held.turnOrNone().closed(Turn.Holder.HUMAN,
-                held.lastActiveTimestamp())));
         stops.stop(id, LoopWatch.Trigger.MISS, "no case of " + turn.step() + " takes " + got + ", only " + expected.get());
         return false;
     }

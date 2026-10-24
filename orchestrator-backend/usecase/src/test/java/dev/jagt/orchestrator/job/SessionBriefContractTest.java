@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.MissLog;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ResumeRegistration;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -21,6 +22,7 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.service.WorktreeChanges;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
@@ -114,11 +116,13 @@ class SessionBriefContractTest {
         when(changes.holdsWork(anyString(), anyString(), anyString())).thenReturn(true);
         AgentSessions sessions = mock(AgentSessions.class);
 
-        new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions,
+        ShipService ships = new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())),
-                changes).ship("ABC-42");
+                changes);
+
+        OriginContext.as(ActionOrigin.BOARD, () -> ships.ship("ABC-42"));
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
         verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());

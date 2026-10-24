@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 
 /** One pending wake per task, kept on the task's turn so it outlives a restart; taken off before it is returned. */
 @Component
@@ -28,6 +26,7 @@ public class SessionWakes {
     private final UsageLimits limits;
     private final UsageLimitsProperties properties;
     private final StateService stateService;
+    private final TaskTurns turns;
     private final Clock clock;
 
     /** Arms a wake at the reset of every window at its limit; none where no window is, or one carries no reset. */
@@ -43,14 +42,14 @@ public class SessionWakes {
                     .addKeyValue("cause", "no window at its limit with a known reset").log();
             return;
         }
-        mark(taskId, turn -> turn.withMark(WAKE, String.valueOf(at.get().toEpochMilli())));
+        turns.mark(taskId, WAKE, String.valueOf(at.get().toEpochMilli()));
         log.atInfo().setMessage("session wake armed").addKeyValue("task", taskId)
                 .addKeyValue("at", at.get()).log();
     }
 
     public synchronized void cancel(String taskId) {
         if (stateService.task(taskId).map(task -> task.turnOrNone().mark(WAKE)).isPresent()) {
-            mark(taskId, turn -> turn.withoutMark(WAKE));
+            turns.unmark(taskId, WAKE);
             log.atInfo().setMessage("session wake cancelled").addKeyValue("task", taskId).log();
         }
     }
@@ -61,17 +60,13 @@ public class SessionWakes {
         List<String> due = stateService.tasks().entrySet().stream()
                 .filter(task -> wakeAt(task.getValue()) <= now)
                 .map(Map.Entry::getKey).filter(taskId -> !held.test(taskId)).sorted().toList();
-        due.forEach(taskId -> mark(taskId, turn -> turn.withoutMark(WAKE)));
+        due.forEach(taskId -> turns.unmark(taskId, WAKE));
         return due;
     }
 
     private static long wakeAt(TaskState task) {
         String at = task.turnOrNone().mark(WAKE);
         return at == null ? Long.MAX_VALUE : Long.parseLong(at);
-    }
-
-    private void mark(String taskId, UnaryOperator<Turn> change) {
-        stateService.updateTask(taskId, task -> task.withTurn(change.apply(task.turnOrNone())));
     }
 
     private static Optional<Instant> resetOfExhausted(List<SubscriptionUsage.Window> windows) {

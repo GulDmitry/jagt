@@ -94,3 +94,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0076 The turn is a fact on the task](0076-the-turn-is-a-fact-on-the-task.md)
 - [0077 The Master's verdict stays typed](0077-the-masters-verdict-stays-typed.md)
 - [0078 A stand run replays without a model](0078-a-stand-run-replays-without-a-model.md)
+- [0079 A case's by: restricts who sets it off](0079-a-cases-by-restricts-who-sets-it-off.md)

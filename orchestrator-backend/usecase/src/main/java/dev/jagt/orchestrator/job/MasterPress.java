@@ -23,24 +23,23 @@ class MasterPress {
     private final HumanPaths humanPaths;
     private final ConfigService config;
     private final TaskTurns turns;
-    private static final String LEFT = "left";
 
     /** False where the press was left to the human. */
     boolean press(String taskId, TaskState task, TaskAction action) {
         Optional<String> touched = humanPaths.touched(task);
-        String left = task.turnOrNone().mark(LEFT);
+        String left = task.turnOrNone().mark(TaskTurns.LEFT);
         if (touched.isPresent()) {
             // A step left waiting is offered again every tick.
             String step = action.id() + " " + touched.get();
             if (!step.equals(left)) {
-                turns.mark(taskId, LEFT, step);
+                turns.mark(taskId, TaskTurns.LEFT, step);
                 log.atInfo().setMessage("master leaves it").addKeyValue("task", taskId)
                         .addKeyValue("cmd", action.id()).addKeyValue("path", touched.get()).log();
             }
             return false;
         }
         if (left != null) {
-            turns.unmark(taskId, LEFT);
+            turns.unmark(taskId, TaskTurns.LEFT);
         }
         execute(taskId, action);
         return true;

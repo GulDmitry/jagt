@@ -5,14 +5,11 @@ import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
-import java.util.HexFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** The trail of rounds relayed into a task, and the stop it trips when they look like a loop. */
@@ -29,7 +26,7 @@ public class LoopGuard {
 
     /** A round identical to the last one relayed is not news, whatever was relayed in between. */
     public Relay round(String taskId, ReviewFacts facts, String brief) {
-        String digest = digest(brief);
+        String digest = Turn.digestOf(brief);
         AtomicReference<Relay> relay = new AtomicReference<>(Relay.RELAY);
         LoopBreaker breaker = breaker();
         stops.trip(taskId, task -> {
@@ -66,14 +63,5 @@ public class LoopGuard {
     private static String failing(ReviewFacts facts) {
         return Pipeline.of(facts.pipelineStatus()) == Pipeline.RED
                 ? facts.pipelineFailure().lines().findFirst().orElse("") : "";
-    }
-
-    private static String digest(String brief) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(brief.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

@@ -55,15 +55,15 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
             return Arrays.stream(values()).filter(by -> by.id().equals(id)).findFirst();
         }
 
-        /** Only the Master's session reaches a verb over MCP. */
+        /** A call over MCP is a session's own, so what it sets off is jagt's answer to it. */
         public static By of(@Nullable ActionOrigin origin) {
             if (origin == null) {
                 return JAGT;
             }
             return switch (origin) {
                 case BOARD, PALETTE -> HUMAN;
-                case MASTER, MCP -> MASTER;
-                case AUTO_REVIEW, TRACKER -> JAGT;
+                case MASTER -> MASTER;
+                case MCP, AUTO_REVIEW, TRACKER -> JAGT;
             };
         }
     }
@@ -152,8 +152,13 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         return new CaseBook(shape, cases, Stream.concat(faults.stream(), more.stream()).toList());
     }
 
+    /** Whoever sets the step off. */
     public boolean sends(String step, TaskStatus status) {
         return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status));
+    }
+
+    public boolean sends(String step, TaskStatus status, By by) {
+        return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status) && c.by() == by);
     }
 
     /** What the cases naming any of the {@code +}-joined steps take together; empty where none names one. */

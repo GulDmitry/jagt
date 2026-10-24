@@ -35,10 +35,10 @@ class SessionWakesTest {
     }
 
     private static SessionWakes wakes(UsageLimits limits, boolean on, Path file, Instant now) {
-        return new SessionWakes(limits, UsageLimitsProperties.defaults().withWakeOnReset(on),
-                new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                        .withRoot(file.getParent().toString()).withStateFile(file.toString()))),
-                at(now));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(file.getParent().toString()).withStateFile(file.toString())));
+        return new SessionWakes(limits, UsageLimitsProperties.defaults().withWakeOnReset(on), state,
+                new TaskTurns(state, at(now)), at(now));
     }
 
     @Test

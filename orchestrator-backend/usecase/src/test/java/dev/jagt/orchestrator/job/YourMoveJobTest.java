@@ -9,11 +9,13 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.HandBack;
 import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -424,6 +426,48 @@ class YourMoveJobTest {
         job.run();
 
         verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void staysQuietWhileTheMasterAnswersAQuestionThatOutlivesTheSettle(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("which uniqueness rule").report(AgentReport.QUESTION).build());
+        job.run();
+        clock.advance(Duration.ofSeconds(30));
+        job.run();
+
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void tapsYouOnceTheMasterLeavesAQuestionUnanswered(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1")
+                .message("which uniqueness rule").report(AgentReport.QUESTION)
+                .turn(Turn.none().withMark(TaskTurns.UNANSWERED, Turn.digestOf("which uniqueness rule"))).build());
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+
+        verify(notifications, times(1)).send(argThat(sent -> "needs input".equals(sent.title())));
     }
 
     @Test

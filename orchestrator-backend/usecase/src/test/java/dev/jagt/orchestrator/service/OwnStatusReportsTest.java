@@ -47,7 +47,8 @@ class OwnStatusReportsTest {
         HandBackDue due = mock(HandBackDue.class);
         when(due.invalid(any())).thenReturn(Optional.empty());
         when(due.owed(any(), any())).thenReturn(Optional.of("write task_notes.md before handing the round back"));
-        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class));
+        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class),
+                new TaskTurns(state, Clock.systemUTC()));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-1"))
@@ -64,7 +65,8 @@ class OwnStatusReportsTest {
         when(statusReports.contextFor("ABC-1")).thenReturn(MessageContext.NONE);
         HandBackDue due = mock(HandBackDue.class);
         when(due.invalid(any())).thenReturn(Optional.of("task_notes.md names the model 'gpt'"));
-        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class));
+        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class),
+                new TaskTurns(state, Clock.systemUTC()));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-1"))
@@ -85,7 +87,8 @@ class OwnStatusReportsTest {
         HandBackDue due = mock(HandBackDue.class);
         CaseDoor door = mock(CaseDoor.class);
         when(door.takes("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.PLAIN)).thenReturn(true);
-        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door);
+        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door,
+                new TaskTurns(state, Clock.systemUTC()));
 
         reports.report(working, "ABC-1");
 
@@ -103,7 +106,8 @@ class OwnStatusReportsTest {
         when(statusReports.report(plan, "ABC-1")).thenReturn("Task ABC-1 -> PLAN_PENDING");
         CaseDoor door = mock(CaseDoor.class);
         when(door.takes("ABC-1", TaskStatus.PLAN_PENDING, AgentReport.PLAIN)).thenReturn(true);
-        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports, door);
+        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports, door,
+                new TaskTurns(state, Clock.systemUTC()));
 
         String answer = reports.report(plan, "ABC-1");
 
@@ -125,7 +129,8 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
 
         reports.report(broke, "ABC-42");
 
@@ -147,7 +152,8 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
                 .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
@@ -169,7 +175,8 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
@@ -193,7 +200,8 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 

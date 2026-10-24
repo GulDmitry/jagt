@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -18,6 +19,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +50,7 @@ class MasterAnswerJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of(new MasterPanel.Decision("keep v2 beside v3", "")));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(verdicts).answered("ABC-1", asking, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
     }
@@ -67,7 +69,7 @@ class MasterAnswerJobTest {
             return Optional.of(new MasterPanel.Decision("keep v2 beside v3", ""));
         });
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(verdicts, never()).answered(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -81,7 +83,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -96,7 +98,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(kept), null)));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -112,7 +114,7 @@ class MasterAnswerJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null,
                         List.of("answer"), null)));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -128,7 +130,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -144,7 +146,7 @@ class MasterAnswerJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(verdicts.answersOverThisTree(asking)).thenReturn(3);
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel).answer("ABC-1", asking, "override the gate?",
                 config.load().master(), true);
@@ -161,7 +163,7 @@ class MasterAnswerJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(verdicts.answersOverThisTree(asking)).thenReturn(9);
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -177,7 +179,7 @@ class MasterAnswerJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(verdicts.stalled(asking)).thenReturn(true);
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -190,7 +192,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -205,7 +207,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.empty());
-        MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts);
+        MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
 
         job.run();
         job.run();
@@ -224,7 +226,7 @@ class MasterAnswerJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of(new MasterPanel.Decision("keep v2", "")));
         when(verdicts.answered(anyString(), any(), anyString(), any(), anyBoolean())).thenReturn(false);
-        MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts);
+        MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
 
         job.run();
         job.run();
@@ -241,7 +243,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
@@ -255,7 +257,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("repo"), null)));
 
-        new MasterAnswerJob(state, config, panel, verdicts).run();
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
