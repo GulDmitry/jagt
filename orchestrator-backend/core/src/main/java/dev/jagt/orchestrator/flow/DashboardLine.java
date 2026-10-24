@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.TaskState;
@@ -32,11 +33,11 @@ public final class DashboardLine {
             return new Line(Kind.YOURS, "NEEDS YOU: " + Objects.requireNonNull(task.gitTrust()).changed());
         }
         String message = task.message();
-        AgentReport report = AgentReport.of(message);
+        AgentReport report = task.report();
         // A question OUTRANKS every other line and is reachable from every status — an agent may ask without
         // moving its task.
-        if (report == AgentReport.QUESTION && task.status() != TaskStatus.DONE) {
-            return needsInput(message);
+        if (report.asks() && task.status() != TaskStatus.DONE) {
+            return needsInput(report, message);
         }
         Optional<ConflictWatch> conflict = task.currentConflict().filter(ConflictWatch::stalled);
         if (conflict.isPresent()) {
@@ -51,9 +52,9 @@ public final class DashboardLine {
             case REVIEW_PENDING -> switch (report) {
                 // The one round that leaves no highlighted button, so this line has to say whose move it is.
                 case NO_CHANGES -> new Line(Kind.NOTE, "ANSWERED: "
-                        + orDefault(report.detailOf(message), "nothing to change")
+                        + orDefault(message, "nothing to change")
                         + " — the open threads are the reviewer's to close");
-                case QUESTION, PLAIN -> requestProblem(task, usableRequestLink);
+                case QUESTION, PERMISSION, PLAIN -> requestProblem(task, usableRequestLink);
             };
             case NEW, IN_PROGRESS, SHIPPING -> silence(task);
             case PLAN_PENDING, VERIFYING, DONE -> Line.NONE;
@@ -88,9 +89,9 @@ public final class DashboardLine {
         return new Line(Kind.YOURS, "NEEDS YOU: agent stopped: " + because);
     }
 
-    private static Line needsInput(@Nullable String message) {
-        return new Line(Kind.YOURS,
-                "NEEDS INPUT: " + orDefault(AgentReport.QUESTION.detailOf(message), "the agent is waiting on you"));
+    private static Line needsInput(AgentReport report, @Nullable String message) {
+        String asked = orDefault(message, "the agent is waiting on you");
+        return new Line(Kind.YOURS, "NEEDS INPUT: " + (report == AgentReport.PERMISSION ? "permission: " + asked : asked));
     }
 
     private static Line problem(String text) {

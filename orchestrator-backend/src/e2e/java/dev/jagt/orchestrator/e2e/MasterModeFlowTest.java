@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -255,7 +256,7 @@ class MasterModeFlowTest {
 
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
         assertThat(asked()).isFalse();
-        assertThat(task().message()).startsWith("awaiting permission");
+        assertThat(task().report()).isEqualTo(AgentReport.PERMISSION);
         assertThat(Files.readString(worktree().resolve("task_context.md"))).isEqualTo("Fix the widget");
     }
 

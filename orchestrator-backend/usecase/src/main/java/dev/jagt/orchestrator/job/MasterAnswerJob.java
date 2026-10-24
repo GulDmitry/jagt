@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -66,12 +66,12 @@ public class MasterAnswerJob implements Job {
     }
 
     private static boolean asking(TaskState task) {
-        return Move.asking(task.status(), AgentReport.of(task.message())) && !task.loopStopped();
+        return Move.asking(task.status(), task.report()) && !task.loopStopped();
     }
 
     /** What no prose answer settles: a right only the human grants, a repository jagt attaches, a plan. */
     private static Optional<String> humans(TaskState task) {
-        if (AgentReport.asksForAPermission(task.message())) {
+        if (task.report() == AgentReport.PERMISSION) {
             return Optional.of("a permission only the human grants");
         }
         if (task.asksForARepository()) {

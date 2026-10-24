@@ -82,7 +82,7 @@ answer. Every type in `flow/`, one question each:
 | `Capabilities` | every `flow/TaskCapability` there is, one per action — the `capability/` kind's registry |
 | `Phase` | the step of a task's life a human reads |
 | `Pipeline` | what the host last said about the checks, as a verdict rather than as its own wording |
-| `AgentReport` | what the agent is reporting about a round — a question, no changes, or progress |
+| `task/AgentReport` | what the task's last report means — a question, a permission, no changes, or plain; never parsed from its line |
 | `RoundState` | what the last round left behind: that report, plus whether drafted replies are waiting |
 | `DashboardLine` | the one contextual line under a card, empty whenever status and next move already answer |
 | `Refusal` | a refusal a caller must act on rather than only show |

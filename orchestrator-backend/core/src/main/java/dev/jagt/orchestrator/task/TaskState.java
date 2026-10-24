@@ -28,6 +28,7 @@ public record TaskState(
         TaskStatus status,
         long lastActiveTimestamp,
         @Nullable String message,
+        AgentReport report,
         @Nullable String alias,
         @Nullable String title,
         @Nullable String ticketUrl,
@@ -89,6 +90,8 @@ public record TaskState(
             @JsonProperty("status") TaskStatus status,
             @JsonProperty("lastActiveTimestamp") long lastActiveTimestamp,
             @JsonProperty("message") @Nullable String message,
+            // Absent in a file written while the meaning was a marker in the message.
+            @JsonProperty("report") @Nullable AgentReport report,
             @JsonProperty("alias") @Nullable String alias,
             @JsonProperty("title") @Nullable String title,
             @JsonProperty("ticketUrl") @Nullable String ticketUrl,
@@ -118,7 +121,9 @@ public record TaskState(
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
-        return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
+        return new TaskState(resolved, status, lastActiveTimestamp,
+                report == null ? ReportMarkerMigration.lineOf(message) : message,
+                report == null ? ReportMarkerMigration.reportOf(message) : report, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
                 pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history,
@@ -187,7 +192,7 @@ public record TaskState(
         return repos.stream().anyMatch(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank());
     }
 
-    /** A status move — the ONE place history grows. */
+    /** A status move — the ONE place history grows. A new line means nothing until {@link #withReport} says so. */
     public TaskState withStatus(TaskStatus status, @Nullable String message, long now) {
         return withStatus(status, message, false, now);
     }
@@ -199,7 +204,8 @@ public record TaskState(
     public TaskState withStatus(TaskStatus status, @Nullable String message, boolean event, long now) {
         List<StatusChange> known = seededHistory(now);
         boolean record = event || status != this.status;
-        return toBuilder().status(status).lastActiveTimestamp(now).message(message).silentSince(0)
+        return toBuilder().status(status).lastActiveTimestamp(now).message(message).report(AgentReport.PLAIN)
+                .silentSince(0)
                 .silentBecause(null)
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
@@ -336,7 +342,11 @@ public record TaskState(
     }
 
     public TaskState touched(long now) {
-        return withStatus(status, message, now);
+        return withStatus(status, message, now).withReport(report);
+    }
+
+    public TaskState withReport(AgentReport report) {
+        return toBuilder().report(report).build();
     }
 
     /** The merge commit a deploy created in THAT repo; the status move is a separate step. */
@@ -501,7 +511,7 @@ public record TaskState(
 
     private Builder toBuilder() {
         return new Builder(repos, status)
-                .lastActiveTimestamp(lastActiveTimestamp).message(message).alias(alias)
+                .lastActiveTimestamp(lastActiveTimestamp).message(message).report(report).alias(alias)
                 .title(title).ticketUrl(ticketUrl).baseBranch(baseBranch)
                 .mrCreatedAt(mrCreatedAt).requestOpenedAt(requestOpenedAt)
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
@@ -517,6 +527,7 @@ public record TaskState(
         private TaskStatus status;
         private long lastActiveTimestamp;
         private @Nullable String message;
+        private AgentReport report = AgentReport.PLAIN;
         private @Nullable String alias;
         private @Nullable String title;
         private @Nullable String ticketUrl;
@@ -564,6 +575,11 @@ public record TaskState(
 
         public Builder message(@Nullable String message) {
             this.message = message;
+            return this;
+        }
+
+        public Builder report(AgentReport report) {
+            this.report = report;
             return this;
         }
 
@@ -701,7 +717,7 @@ public record TaskState(
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp, null));
-            return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
+            return new TaskState(repos, status, lastActiveTimestamp, message, report, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log, refusals, gitTrust,
                     probes, planGate, loop, conflict, repoRequest);

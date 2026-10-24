@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
@@ -32,23 +33,27 @@ public class FlowReports {
     }
 
     public boolean report(String taskId, TaskStatus status, @Nullable String message) {
-        return report(taskId, status, message, (was, next) -> next).isPresent();
+        return report(taskId, status, AgentReport.PLAIN, message);
+    }
+
+    public boolean report(String taskId, TaskStatus status, AgentReport means, @Nullable String message) {
+        return report(taskId, status, means, message, (was, next) -> next).isPresent();
     }
 
     /**
      * The same, plus whatever else the report established. Applied in the SAME write, because a status that refuses
      * to exist without its link must not be able to land first; {@code alsoRecord} is handed the status BEFORE it.
      */
-    public Optional<Landed> report(String taskId, TaskStatus status, @Nullable String message,
+    public Optional<Landed> report(String taskId, TaskStatus status, AgentReport means, @Nullable String message,
                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord) {
-        return report(taskId, status, message, alsoRecord, task -> false);
+        return report(taskId, status, means, message, alsoRecord, task -> false);
     }
 
     /**
      * The same, told per task whether a hand-back still owes jagt a verification run. Asked of the state being
      * written, so two reports arriving together cannot disagree about it.
      */
-    public Optional<Landed> report(String taskId, TaskStatus status, @Nullable String message,
+    public Optional<Landed> report(String taskId, TaskStatus status, AgentReport means, @Nullable String message,
                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
                                    Predicate<TaskState> verificationOwed) {
         // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving together
@@ -63,8 +68,10 @@ public class FlowReports {
             }
             TaskStatus now = FlowRules.reported(task.status(), status, verificationOwed.test(task));
             landed.set(new Landed(task.status(), now));
-            String line = FlowRules.holdsItsLine(task.status()) ? held(task.message(), message) : message;
-            return alsoRecord.apply(task.status(), task.withStatus(now, line, clock.millis()));
+            TaskState said = FlowRules.holdsItsLine(task.status()) && !means.asks()
+                    ? held(task, now, clock.millis())
+                    : task.withStatus(now, message, clock.millis()).withReport(means);
+            return alsoRecord.apply(task.status(), said);
         });
         Optional<String> why = Optional.ofNullable(refused.get())
                 .or(() -> FlowRules.reportable(status) ? Optional.empty() : FlowRules.refusedReport(status, status));
@@ -75,11 +82,9 @@ public class FlowReports {
     }
 
     /** A question still reaches the card; once one is behind, the line falls back to the status's own. */
-    private static @Nullable String held(@Nullable String shown, @Nullable String said) {
-        if (AgentReport.of(said) == AgentReport.QUESTION) {
-            return said;
-        }
-        return AgentReport.of(shown) == AgentReport.QUESTION ? null : shown;
+    private static TaskState held(TaskState task, TaskStatus now, long at) {
+        return task.report().asks() ? task.withStatus(now, null, at)
+                : task.withStatus(now, task.message(), at).withReport(task.report());
     }
 
     /**

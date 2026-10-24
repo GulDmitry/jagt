@@ -6,7 +6,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.PlanGate;
@@ -275,8 +275,7 @@ class AgentStatusReportsTest {
 
         reports.report(new AgentStatusMessage("IN_PROGRESS", "which cache should this use", "question", null, Map.of()), "ABC-1");
 
-        assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message()))
-                .isEqualTo(AgentReport.QUESTION);
+        assertThat(state.task("ABC-1").orElseThrow().report()).isEqualTo(AgentReport.QUESTION);
     }
 
     @Test
@@ -293,7 +292,7 @@ class AgentStatusReportsTest {
 
         reports.report(new AgentStatusMessage("REVIEW_PENDING", "already handled", "no_changes", null, Map.of()), "ABC-1");
 
-        assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message())).isEqualTo(AgentReport.PLAIN);
+        assertThat(state.task("ABC-1").orElseThrow().report()).isEqualTo(AgentReport.PLAIN);
     }
 
     @ParameterizedTest
@@ -310,24 +309,9 @@ class AgentStatusReportsTest {
 
         reports.report(new AgentStatusMessage("REVIEW_PENDING", "already handled", outcome, null, Map.of()), "ABC-1");
 
-        assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("no changes: already handled");
-    }
-
-    @Test
-    void recordsTheOutcomeAnAgentTypedIntoTheMessageInsteadOfTheField(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
-                .mrUrl("https://host/mr/1").build());
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
-                configService);
-
-        reports.report(TaskStatus.REVIEW_PENDING, "outcome=no_changes: withdrawn thread relayed again", "ABC-1");
-
-        assertThat(state.task("ABC-1").orElseThrow().message())
-                .isEqualTo("no changes: withdrawn thread relayed again");
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.report()).isEqualTo(AgentReport.NO_CHANGES);
+        assertThat(after.message()).isEqualTo("already handled");
     }
 
 
@@ -346,8 +330,9 @@ class AgentStatusReportsTest {
         reports.report(new AgentStatusMessage("IN_PROGRESS", "edits in the deploy worktree denied", "permission", null,
                 Map.of()), "ABC-1");
 
-        assertThat(state.task("ABC-1").orElseThrow().message())
-                .isEqualTo("awaiting permission: edits in the deploy worktree denied");
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.report()).isEqualTo(AgentReport.PERMISSION);
+        assertThat(after.message()).isEqualTo("edits in the deploy worktree denied");
     }
 
 
@@ -469,7 +454,7 @@ class AgentStatusReportsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).alias("a1")
-                .mrUrl("http://mr/1").message("awaiting: squash or keep the commits?")
+                .mrUrl("http://mr/1").message("squash or keep the commits?").report(AgentReport.QUESTION)
                 .lastActiveTimestamp(1_700_000_000_000L).silentSince(1_700_000_000_000L).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
@@ -479,7 +464,7 @@ class AgentStatusReportsTest {
         reports.markRead("ABC-1", TaskStatus.REVIEWED);
 
         TaskState after = state.task("ABC-1").orElseThrow();
-        assertThat(after.message()).isEqualTo("awaiting: squash or keep the commits?");
+        assertThat(after.message()).isEqualTo("squash or keep the commits?");
         assertThat(after.lastActiveTimestamp()).isEqualTo(1_700_000_000_000L);
         assertThat(after.silentSince()).isEqualTo(1_700_000_000_000L);
     }

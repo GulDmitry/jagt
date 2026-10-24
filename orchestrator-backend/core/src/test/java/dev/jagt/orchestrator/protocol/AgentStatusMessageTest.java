@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.protocol;
 
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
@@ -92,15 +92,17 @@ class AgentStatusMessageTest {
     }
 
     @Test
-    void fallsBackToTheMarkerInTheMessageWhenNoOutcomeFieldWasSent() {
+    void readsAnOutcomeTypedIntoTheMessageAsWordsWhenNoOutcomeFieldWasSent() {
         var said = AgentStatusMessage.of("REVIEW_PENDING", "outcome=question: which branch?");
 
-        assertThat(said.accepted(MessageContext.NONE).orElseThrow().claimed()).isEqualTo(AgentReport.QUESTION);
+        Reported accepted = said.accepted(MessageContext.NONE).orElseThrow();
+        assertThat(accepted.claimed()).isEqualTo(AgentReport.PLAIN);
+        assertThat(accepted.detail()).isEqualTo("outcome=question: which branch?");
     }
 
     @Test
     void handsBackTheStatusAndTheHumansHalfOfTheMessageSeparately() {
-        var said = AgentStatusMessage.of("REVIEW_PENDING", "outcome=no_changes: all handled").withOutcome("no_changes");
+        var said = AgentStatusMessage.of("REVIEW_PENDING", "all handled").withOutcome("no_changes");
 
         Reported accepted = said.accepted(MessageContext.NONE).orElseThrow();
         assertThat(accepted.status()).isEqualTo(TaskStatus.REVIEW_PENDING);

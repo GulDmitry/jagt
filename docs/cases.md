@@ -95,4 +95,4 @@ Families:
 | G2 | a launch refusal or a missing branch name → told by type, not by comparing a sentence | 0d999d80 | `DoCommandTest`, `TaskLaunchesTest` |
 | G3 | a `do` line mentions the deploy branch → only a branch after from, into or onto refuses it | 4a41823d | `MasterShipTest` |
 | G4 | a reviewer answers the agent's reply → read as answered, not as a comment nobody answered | 97ebd363 | `ReviewSweepServiceTest`, `ReviewRoundCase` |
-| G5 | a field's teaching word is parsed → the parser reads the word, never a sentence | d779aa20 | `AgentReportTest`, `AgentStatusReportsTest` |
+| G5 | a field's teaching word is parsed → the parser reads the word, never a sentence | d779aa20 | `AgentStatusMessageTest`, `AgentStatusReportsTest` |

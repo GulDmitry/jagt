@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
@@ -84,7 +84,7 @@ public class YourMoveJob implements Job {
     }
 
     private static String title(TaskStatus status, RoundState round) {
-        return round.report() == AgentReport.QUESTION ? "needs input" : status.name().toLowerCase(Locale.ROOT);
+        return round.report().asks() ? "needs input" : status.name().toLowerCase(Locale.ROOT);
     }
 
     private static String banner(String hint, RoundState round) {

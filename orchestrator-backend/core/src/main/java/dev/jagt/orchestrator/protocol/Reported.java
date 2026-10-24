@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.protocol;
 
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 
 import org.jspecify.annotations.Nullable;
@@ -14,7 +14,7 @@ import java.util.Map;
  * carries.
  */
 public record Reported(TaskStatus status, AgentReport claimed, @Nullable String detail, @Nullable String link,
-                       Map<String, String> requests, boolean noPlan, boolean permission, @Nullable String needsProject) {
+                       Map<String, String> requests, boolean noPlan, @Nullable String needsProject) {
 
     public Reported {
         requests = requests == null ? Map.of() : Map.copyOf(requests);

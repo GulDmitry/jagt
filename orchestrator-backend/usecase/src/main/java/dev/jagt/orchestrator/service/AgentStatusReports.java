@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -97,10 +96,11 @@ public class AgentStatusReports {
         Optional<TaskState> current = stateService.task(taskId);
         TaskStatus newStatus = said.status();
         Map<String, String> requestsByProject = said.requests();
-        String shortMessage = OneLine.of(stated(said, current, taskId), MAX_MESSAGE);
+        AgentReport means = measured(said, current, taskId);
+        String shortMessage = OneLine.of(said.detail(), MAX_MESSAGE);
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
-        FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage,
+        FlowReports.Landed written = flow.report(taskId, newStatus, means, shortMessage,
                 (was, next) -> planned(was, linked(was, next, url, requestsByProject))
                         .withRepoRequest(said.needsProject()), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
@@ -110,14 +110,13 @@ public class AgentStatusReports {
         TaskStatus previous = written.previous();
         TaskStatus landed = written.now();
         // An agent that stops to ask usually keeps its status, so the message is the only thing that changed.
-        boolean askedNow = AgentReport.of(shortMessage) == AgentReport.QUESTION
-                && AgentReport.of(current.map(TaskState::message).orElse(null)) != AgentReport.QUESTION;
-        logChange(taskId, current.map(TaskState::alias).orElse(null), previous, landed, shortMessage, askedNow);
+        boolean askedNow = means.asks() && !current.map(TaskState::report).orElse(AgentReport.PLAIN).asks();
+        logChange(taskId, current.map(TaskState::alias).orElse(null), previous, landed, shortMessage, means, askedNow);
         return answer(taskId, newStatus, landed, shortMessage);
     }
 
     private void logChange(String taskId, @Nullable String alias, TaskStatus previous, TaskStatus landed,
-                           @Nullable String shortMessage, boolean askedNow) {
+                           @Nullable String shortMessage, AgentReport means, boolean askedNow) {
         if (landed != previous) {
             log.atInfo().setMessage("agent status changed").addKeyValue("task", taskId)
                     .addKeyValue("alias", alias)
@@ -131,7 +130,7 @@ public class AgentStatusReports {
                     .addKeyValue("status", landed)
                     .addKeyValue("said", shortMessage)
                     .log();
-        } else if (FlowRules.holdsItsLine(landed) && AgentReport.of(shortMessage) != AgentReport.QUESTION) {
+        } else if (FlowRules.holdsItsLine(landed) && !means.asks()) {
             log.atInfo().setMessage("agent line held off the card").addKeyValue("task", taskId)
                     .addKeyValue("alias", alias)
                     .addKeyValue("status", landed)
@@ -202,30 +201,18 @@ public class AgentStatusReports {
     }
 
     /**
-     * What this report SAYS about a round, written into the message as the one marker `AgentReport` parses: the
-     * typed argument first, the agent's own opening as the fallback. NO_CHANGES is then CHECKED — it is the one
-     * claim jagt can measure, and a round that edited files is a diff for the human to read.
+     * What this report means. NO_CHANGES is CHECKED: it is the one claim jagt can measure, and a round that edited
+     * files is a diff for the human to read.
      */
-    private @Nullable String stated(Reported said, Optional<TaskState> task, String taskId) {
-        AgentReport claimed = said.claimed();
-        String detail = said.detail();
-        if (claimed == AgentReport.NO_CHANGES && task.filter(handBack::anyUncommitted).isPresent()) {
+    private AgentReport measured(Reported said, Optional<TaskState> task, String taskId) {
+        if (said.claimed() == AgentReport.NO_CHANGES && task.filter(handBack::anyUncommitted).isPresent()) {
             log.atInfo().setMessage("report overruled").addKeyValue("task", taskId)
                     .addKeyValue("alias", task.get().alias())
                     .addKeyValue("cause", "uncommitted changes")
                     .addKeyValue("effect", "round recorded with a diff")
                     .log();
-            claimed = AgentReport.PLAIN;
+            return AgentReport.PLAIN;
         }
-        return switch (claimed) {
-            case QUESTION -> marked(said.permission() ? "awaiting permission" : "awaiting",
-                    Objects.requireNonNull(detail));
-            case NO_CHANGES -> marked("no changes", Objects.requireNonNull(detail));
-            case PLAIN -> detail;
-        };
-    }
-
-    private static String marked(String marker, String detail) {
-        return detail.isBlank() ? marker : marker + ": " + detail;
+        return said.claimed();
     }
 }

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.agent;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ class TurnEndsTest {
         when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         when(runtime.refusedTurnEnd(contains("update_agent_status"))).thenReturn("{\"decision\": \"block\"}");
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("awaiting: keep v2?").lastActiveTimestamp(1_000L).build();
+                .message("keep v2?").report(AgentReport.QUESTION).lastActiveTimestamp(1_000L).build();
 
         String answered = new TurnEnds(probe, runtime, config).answer("ABC-1", task, false, false);
 

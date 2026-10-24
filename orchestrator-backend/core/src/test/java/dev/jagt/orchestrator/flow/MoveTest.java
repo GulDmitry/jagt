@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,7 +55,7 @@ class MoveTest {
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "PLAN_PENDING"})
     void leavesWhatTheMasterHasYetToReadOffTheHumansMoves(TaskStatus status) {
         Move move = Move.forTask(status, new Facts(false, false, () -> false, false, false, false),
-                RoundState.of("done", false).withMasterReading(true), false);
+                RoundState.of(AgentReport.PLAIN, false).withMasterReading(true), false);
 
         assertThat(move.owner()).isEqualTo(Owner.AGENT);
         assertThat(move.attention()).isEqualTo(Attention.NONE);
@@ -547,7 +548,7 @@ class MoveTest {
     @Test
     void asksTheHumanToAnswerTheSessionWhereItStoppedOnAQuestion() {
         Move move = Move.forTask(TaskStatus.IN_PROGRESS, new Facts(false, false, () -> false, false, false, false),
-                RoundState.of("outcome=question — keep v2?", false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.ask()).isEqualTo("answer the session");
@@ -556,7 +557,7 @@ class MoveTest {
     @Test
     void asksTheHumanToReviewTheRoundWhereTheQuestionCameBackWithTheHandBack() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, new Facts(true, false, () -> false, false, false, false),
-                RoundState.of("outcome=question — keep v2?", false), false);
+                RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.ask()).isEqualTo("review the round");
     }

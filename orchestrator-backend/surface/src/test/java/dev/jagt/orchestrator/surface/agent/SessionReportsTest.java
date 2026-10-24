@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -108,7 +109,7 @@ class SessionReportsTest {
         when(runtime.compactedStart()).thenReturn("compact");
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .title("Add v3 beside v2").ticketUrl("https://tracker.example/ABC-1")
-                .message("outcome=question — keep v2?").build();
+                .message("keep v2?").report(AgentReport.QUESTION).build();
 
         String answered = new SessionReports(signs, runtime, turnEnds).record("ABC-1",
                 SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact").withTask(task));

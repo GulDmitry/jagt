@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -91,7 +90,7 @@ public class WatchdogService implements Job {
         }
         // The wait FOLLOWING an agent's own question was announced when it asked.
         boolean announcedWhenItAsked = silence.get().atAPrompt()
-                && AgentReport.of(task.message()) == AgentReport.QUESTION;
+                && task.report().asks();
         // Re-alert at most once per stale window to avoid notification spam.
         if (announcedWhenItAsked || now - lastAlertAt.getOrDefault(taskId, 0L) < staleMs) {
             return;

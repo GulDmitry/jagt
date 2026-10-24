@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 
@@ -134,7 +135,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         return switch (round.report()) {
             case NO_CHANGES -> !hasReviewRequest ? "open the review request"
                     : round.draftedReplies() ? "post the drafted replies" : "read the review";
-            case QUESTION, PLAIN -> "review and ship";
+            case QUESTION, PERMISSION, PLAIN -> "review and ship";
         };
     }
 
@@ -162,7 +163,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
 
     /** A closed task's leftover message is not a question anybody still owes an answer to. */
     public static boolean asking(TaskStatus status, AgentReport report) {
-        return report == AgentReport.QUESTION && status != TaskStatus.DONE;
+        return report.asks() && status != TaskStatus.DONE;
     }
 
     /** A question put before the turn began was answered by the prompt that began it. */
@@ -220,7 +221,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
             case NO_CHANGES -> draftedReplies || !hasReviewRequest ? TaskAction.SHIP
                     : polled ? null : TaskAction.SWEEP;
             // A question never reaches here: it is answered above, from whatever status it was asked.
-            case QUESTION, PLAIN -> TaskAction.SHIP;
+            case QUESTION, PERMISSION, PLAIN -> TaskAction.SHIP;
         };
     }
 
@@ -269,7 +270,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
     private static String reviewPendingHint(boolean hasReviewRequest, RoundState round, boolean polled) {
         return switch (round.report()) {
             case NO_CHANGES -> noChangesHint(hasReviewRequest, round.draftedReplies(), polled);
-            case QUESTION, PLAIN -> "read the diff (ide), then ship";
+            case QUESTION, PERMISSION, PLAIN -> "read the diff (ide), then ship";
         };
     }
 

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.Guard;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 
@@ -89,7 +90,7 @@ class FlowReportsTest {
     void keepsTheLineOfAStatusAHumanHoldsWhenItsSessionReports(TaskStatus held) {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
 
-        reports.report("ABC-1", TaskStatus.IN_PROGRESS, "no changes: clean worktree");
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.NO_CHANGES, "clean worktree");
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());
@@ -103,13 +104,14 @@ class FlowReportsTest {
     void putsAQuestionOnTheCardOfAStatusAHumanHolds() {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
 
-        reports.report("ABC-1", TaskStatus.IN_PROGRESS, "awaiting: keep both sides of Foo.java?");
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.QUESTION, "keep both sides of Foo.java?");
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());
         TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
                 .message("deploy ABC-1: conflict in Foo.java").build());
-        assertThat(after.message()).isEqualTo("awaiting: keep both sides of Foo.java?");
+        assertThat(after.message()).isEqualTo("keep both sides of Foo.java?");
+        assertThat(after.report()).isEqualTo(AgentReport.QUESTION);
     }
 
     @Test
@@ -121,15 +123,16 @@ class FlowReportsTest {
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());
         TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-                .message("awaiting: keep both sides of Foo.java?").build());
+                .message("keep both sides of Foo.java?").report(AgentReport.QUESTION).build());
         assertThat(after.message()).isNull();
+        assertThat(after.report()).isEqualTo(AgentReport.PLAIN);
     }
 
     @Test
     void recordsTheRequestLinkInTheSameWriteAsTheStatusThatNeedsIt() {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
 
-        reports.report("ABC-1", TaskStatus.CI_POLLING, "review request: http://host/1",
+        reports.report("ABC-1", TaskStatus.CI_POLLING, AgentReport.PLAIN, "review request: http://host/1",
                 (was, task) -> task.withMrUrl("http://host/1", 2_000));
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
@@ -148,7 +151,7 @@ class FlowReportsTest {
         });
 
         boolean accepted = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
-        var landed = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed", (was, task) -> task);
+        var landed = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, AgentReport.PLAIN, "widget fixed", (was, task) -> task);
 
         assertThat(accepted).isTrue();
         assertThat(landed).contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING));
@@ -169,7 +172,7 @@ class FlowReportsTest {
             return true;
         });
 
-        var landed = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed", (was, task) -> task,
+        var landed = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, AgentReport.PLAIN, "widget fixed", (was, task) -> task,
                 task -> true);
 
         assertThat(landed).contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING));

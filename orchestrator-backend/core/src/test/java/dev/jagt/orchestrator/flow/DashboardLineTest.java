@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.junit.jupiter.api.Test;
@@ -51,11 +52,12 @@ class DashboardLineTest {
     }
 
     @ParameterizedTest
-    @CsvSource(nullValues = "-", value = {"CI_FAILED,checks red,PROBLEM", "DEPLOY_CONFLICT,-,YOURS",
-            "IN_PROGRESS,awaiting: FE or BE,YOURS", "REVIEW_PENDING,no changes: all handled,NOTE",
-            "IN_PROGRESS,step 2,NONE"})
-    void namesWhatKindOfLineItIsSoNoReaderParsesItsWords(TaskStatus status, String message, DashboardLine.Kind kind) {
-        TaskState task = TaskState.builder("p", "/wt", status).message(message).build();
+    @CsvSource(nullValues = "-", value = {"CI_FAILED,checks red,PLAIN,PROBLEM", "DEPLOY_CONFLICT,-,PLAIN,YOURS",
+            "IN_PROGRESS,FE or BE,QUESTION,YOURS", "REVIEW_PENDING,all handled,NO_CHANGES,NOTE",
+            "IN_PROGRESS,step 2,PLAIN,NONE"})
+    void namesWhatKindOfLineItIsSoNoReaderParsesItsWords(TaskStatus status, String message, AgentReport report,
+                                                         DashboardLine.Kind kind) {
+        TaskState task = TaskState.builder("p", "/wt", status).message(message).report(report).build();
 
         assertThat(DashboardLine.forTask(task, null).kind()).isEqualTo(kind);
     }
@@ -91,7 +93,7 @@ class DashboardLineTest {
     @Test
     void shoutsNeedsInputWhenAgentIsBlocked() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: FE or BE decision").build();
+                .message("FE or BE decision").report(AgentReport.QUESTION).build();
 
         assertThat(DashboardLine.forTask(task, null).text()).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
@@ -134,7 +136,7 @@ class DashboardLineTest {
     @Test
     void quotesTheQuestionRatherThanTheSilenceWhenTheAgentAskedBeforeItWentQuiet() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: FE or BE decision").silentSince(1_000).build();
+                .message("FE or BE decision").report(AgentReport.QUESTION).silentSince(1_000).build();
 
         assertThat(DashboardLine.forTask(task, null).text()).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
@@ -142,7 +144,7 @@ class DashboardLineTest {
     @Test
     void shoutsNeedsInputRatherThanTheMrLinkWhenAReviewRoundEndedInAQuestion() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("awaiting: cache or index?").mrUrl("https://host/mr/425").build();
+                .message("cache or index?").report(AgentReport.QUESTION).mrUrl("https://host/mr/425").build();
 
         assertThat(DashboardLine.forTask(task, "https://host/mr/425").text()).isEqualTo("NEEDS INPUT: cache or index?");
     }
@@ -151,7 +153,7 @@ class DashboardLineTest {
     @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED", "APPROVED"})
     void shoutsNeedsInputForAQuestionAskedFromAStatusThatWaitsOnSomebodyElse(TaskStatus status) {
         TaskState task = TaskState.builder("p", "/wt", status)
-                .message("awaiting: cache or index?").mrUrl("https://host/mr/425").build();
+                .message("cache or index?").report(AgentReport.QUESTION).mrUrl("https://host/mr/425").build();
 
         assertThat(DashboardLine.forTask(task, "https://host/mr/425").text()).isEqualTo("NEEDS INPUT: cache or index?");
     }
@@ -159,7 +161,7 @@ class DashboardLineTest {
     @Test
     void stillSaysWhoIsWaitedOnWhenTheQuestionCarriesNoWordsOfItsOwn() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("outcome=question").mrUrl("https://host/mr/441").build();
+                .report(AgentReport.QUESTION).mrUrl("https://host/mr/441").build();
 
         assertThat(DashboardLine.forTask(task, "https://host/mr/441").text())
                 .isEqualTo("NEEDS INPUT: the agent is waiting on you");
@@ -168,7 +170,7 @@ class DashboardLineTest {
     @Test
     void saysTheRoundChangedNothing() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("no changes: every comment already handled").mrUrl("https://host/mr/440").build();
+                .message("every comment already handled").report(AgentReport.NO_CHANGES).mrUrl("https://host/mr/440").build();
 
         assertThat(DashboardLine.forTask(task, "https://host/mr/440").text())
                 .isEqualTo("ANSWERED: every comment already handled"

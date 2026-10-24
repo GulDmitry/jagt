@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -157,7 +158,7 @@ class JudgeModeFlowTest {
         handBackTheFirstRound();
 
         assertThat(awaitTask(task -> task.message() != null && task.message().contains("keep v2 beside v3?"))
-                .message()).contains("outcome=question");
+                .report()).isEqualTo(AgentReport.QUESTION);
     }
 
     @Test

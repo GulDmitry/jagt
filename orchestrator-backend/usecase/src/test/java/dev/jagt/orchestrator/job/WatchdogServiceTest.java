@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -82,7 +83,7 @@ class WatchdogServiceTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("awaiting: which database").build());
+                .message("which database").report(AgentReport.QUESTION).build());
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
@@ -186,7 +187,7 @@ class WatchdogServiceTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("awaiting: which database").build());
+                .message("which database").report(AgentReport.QUESTION).build());
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))

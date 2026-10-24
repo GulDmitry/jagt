@@ -20,7 +20,7 @@ public class Rounds {
     }
 
     public RoundState of(TaskState task, ConfigService.ConfigFile config) {
-        return RoundState.of(task.message(),
+        return RoundState.of(task.report(),
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
                 .withMasterReading(FlowRules.readByTheMaster(task.status()) && config.master().running()
                         && !masterReview.readsTheRoundInFront(task));

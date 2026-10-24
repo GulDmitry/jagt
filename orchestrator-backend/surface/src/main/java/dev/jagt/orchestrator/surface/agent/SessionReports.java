@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.surface.agent;
 
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.service.SessionProbe;
-import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -118,8 +117,8 @@ public class SessionReports {
         if (task == null) {
             return "";
         }
-        String asked = AgentReport.of(task.message()) == AgentReport.QUESTION
-                ? "; your open question: " + AgentReport.QUESTION.detailOf(task.message())
+        String asked = task.report().asks()
+                ? "; your open question: " + task.message()
                 : present(task.message()) ? "; your last report: " + task.message() : "";
         return (present(task.title()) ? " — " + task.title() : "")
                 + (present(task.ticketUrl()) ? " (" + task.ticketUrl() + ")" : "")

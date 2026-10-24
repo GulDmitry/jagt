@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.protocol;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.task.TaskStatus;
 
@@ -28,7 +28,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                                  @Nullable String reviewRequestUrl, Map<String, String> reviewRequests,
                                  @Nullable String taskId, @Nullable String needsProject) implements Message {
 
-    /** The wire spelling of what a report says about a round; absent falls back to a marker in the message. */
+    /** The wire spelling of what a report means; absent is progress. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "permission", "no_changes",
             "no_plan");
 
@@ -167,33 +167,24 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         if (!violations(context).isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), detail(),
-                link(context.projectsOnTask()), reviewRequests, noPlan(), permission(), needsProject));
-    }
-
-    private boolean permission() {
-        return outcome != null && "permission".equals(normalised(outcome));
+        return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), message,
+                link(context.projectsOnTask()), reviewRequests, noPlan(), needsProject));
     }
 
     private boolean noPlan() {
         return outcome != null && "no_plan".equals(normalised(outcome));
     }
 
-    /** What this report says about a round: the typed field first, the marker the message opens with second. */
     private AgentReport claimed() {
         if (outcome == null) {
-            return AgentReport.of(message);
+            return AgentReport.PLAIN;
         }
         return switch (normalised(outcome)) {
-            case "question", "permission" -> AgentReport.QUESTION;
+            case "question" -> AgentReport.QUESTION;
+            case "permission" -> AgentReport.PERMISSION;
             case "no_changes" -> AgentReport.NO_CHANGES;
             default -> AgentReport.PLAIN;
         };
-    }
-
-    /** The human's half of the message, with any marker taken off; null stays null. */
-    private @Nullable String detail() {
-        return message == null ? null : AgentReport.withoutMarker(message);
     }
 
     /** The status this message names, or null when it names none this machine has. */

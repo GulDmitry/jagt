@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ class MasterRepoJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(state.tasks()).thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: needs the registry").repoRequest("registry").build()));
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build()));
 
         new MasterRepoJob(state, config, press).run();
 
@@ -41,7 +42,7 @@ class MasterRepoJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("repo"), null)));
         when(state.tasks()).thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: needs the registry").repoRequest("registry").build()));
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build()));
 
         new MasterRepoJob(state, config, press).run();
 
@@ -53,7 +54,7 @@ class MasterRepoJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
         when(state.tasks()).thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: needs the registry").repoRequest("registry").build()));
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build()));
 
         new MasterRepoJob(state, config, press).run();
 
@@ -65,7 +66,7 @@ class MasterRepoJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(state.tasks()).thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: which rule?").build()));
+                .message("which rule?").report(AgentReport.QUESTION).build()));
 
         new MasterRepoJob(state, config, press).run();
 
@@ -77,7 +78,7 @@ class MasterRepoJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(state.tasks()).thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: needs the registry").repoRequest("registry").build()));
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build()));
         MasterRepoJob job = new MasterRepoJob(state, config, press);
 
         job.run();
@@ -91,7 +92,7 @@ class MasterRepoJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         TaskState asking = TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: needs the registry").repoRequest("registry").build();
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build();
         TaskState working = TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).message("working").build();
         when(state.tasks()).thenReturn(Map.of("ABC-1", asking), Map.of("ABC-1", working), Map.of("ABC-1", asking));
         MasterRepoJob job = new MasterRepoJob(state, config, press);

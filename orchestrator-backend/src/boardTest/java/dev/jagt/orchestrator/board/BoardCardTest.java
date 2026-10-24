@@ -6,6 +6,7 @@ import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -244,7 +245,7 @@ class BoardCardTest extends BoardPageContext {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")
                 .mrCreatedAt(System.currentTimeMillis()).lastPolledAt(System.currentTimeMillis())
-                .message("no changes: already handled").lastActiveTimestamp(System.currentTimeMillis()).build());
+                .message("already handled").report(AgentReport.NO_CHANGES).lastActiveTimestamp(System.currentTimeMillis()).build());
 
         Page page = session.newPage();
 
@@ -282,7 +283,7 @@ class BoardCardTest extends BoardPageContext {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")
                 .mrCreatedAt(System.currentTimeMillis()).lastPolledAt(System.currentTimeMillis())
-                .message("awaiting: which lock do we take")
+                .message("which lock do we take").report(AgentReport.QUESTION)
                 .lastActiveTimestamp(System.currentTimeMillis()).build());
 
         Page page = session.newPage();

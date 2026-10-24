@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.task.LoopWatch;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,7 +40,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("outcome=question — keep v2?").build();
+                .message("keep v2?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
@@ -47,7 +48,7 @@ class MasterAnswerJobTest {
 
         new MasterAnswerJob(state, config, panel, verdicts).run();
 
-        verify(verdicts).answered("ABC-1", asking, "outcome=question — keep v2?", "keep v2 beside v3", false);
+        verify(verdicts).answered("ABC-1", asking, "keep v2?", "keep v2 beside v3", false);
     }
 
     @Test
@@ -55,7 +56,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-                .message("awaiting permission: edits in the deploy worktree denied").build());
+                .message("edits in the deploy worktree denied").report(AgentReport.PERMISSION).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
@@ -70,7 +71,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-                .message("awaiting: plan revised, approve?").build());
+                .message("plan revised, approve?").report(AgentReport.QUESTION).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(kept), null)));
 
@@ -84,7 +85,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("outcome=question — keep v2?").build();
+                .message("keep v2?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null,
@@ -100,7 +101,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("outcome=question — keep v2?")
+                .message("keep v2?").report(AgentReport.QUESTION)
                 .loop(LoopWatch.none().stopped(new LoopWatch.Stop(LoopWatch.Trigger.SHIPS, 1L, "5 ships"))).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
@@ -115,7 +116,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("outcome=question — override the gate?").build();
+                .message("override the gate?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
@@ -123,7 +124,7 @@ class MasterAnswerJobTest {
 
         new MasterAnswerJob(state, config, panel, verdicts).run();
 
-        verify(panel).answer("ABC-1", asking, "outcome=question — override the gate?",
+        verify(panel).answer("ABC-1", asking, "override the gate?",
                 config.load().master(), true);
     }
 
@@ -132,7 +133,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("outcome=question — override the gate?").build();
+                .message("override the gate?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
@@ -148,7 +149,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("outcome=question — reviewer: these findings came back").build();
+                .message("reviewer: these findings came back").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
@@ -177,7 +178,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("outcome=question — keep v2?").build();
+                .message("keep v2?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
@@ -195,7 +196,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("outcome=question — keep v2?").build();
+                .message("keep v2?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", asking);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
@@ -214,7 +215,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: needs the registry").repoRequest("registry").build());
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
@@ -228,7 +229,7 @@ class MasterAnswerJobTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .message("awaiting: needs the registry").repoRequest("registry").build());
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("repo"), null)));
 

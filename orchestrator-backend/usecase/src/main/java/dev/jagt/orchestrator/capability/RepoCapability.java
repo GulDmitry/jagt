@@ -32,7 +32,7 @@ public class RepoCapability implements TaskCapability {
                     .addKeyValue("effect", "the request stands; the card says why").log();
             String cause = OneLine.of(String.valueOf(failed.getMessage()), CAUSE_WIDTH);
             return Outcome.partial("add-repo " + taskId + " failed: " + failed.getMessage(),
-                    "awaiting: add-repo failed: " + cause, failed);
+                    "add-repo failed: " + cause, failed).asking();
         }
     }
 }

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -67,6 +69,7 @@ public class TaskViews {
     private String listed(@Nullable TaskState task, TaskView view) {
         String tail = Optional.ofNullable(task).map(t -> (t.title() == null ? "" : " " + t.title())
                 + (t.message() == null || t.message().isBlank() ? "" : " — " + t.message())
+                + (t.report() == AgentReport.PLAIN ? "" : " report=" + t.report().name().toLowerCase(Locale.ROOT))
                 + t.repos().stream().map(repo -> " | " + repo.worktreePath()
                         + (repo.mrUrl() == null ? "" : " " + repo.mrUrl())).collect(Collectors.joining())).orElse("");
         return view.id() + " [" + view.status() + "]" + tail + " alias=" + (view.alias() == null ? "-" : view.alias())

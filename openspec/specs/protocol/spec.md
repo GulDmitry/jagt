@@ -55,8 +55,8 @@ plan gate ([task-flow](../task-flow/spec.md)). For a task opened in `plan` mode 
 - **THEN** it is refused as a violation and the plan gate stays closed
 
 ### Requirement: A session may say only the human can unblock it
-`update_agent_status` SHALL take `outcome=permission`: a question stopped on a call the CLI denied, written
-`awaiting permission` into the line, which nothing standing in for the human answers ([master](../master/spec.md)).
+`update_agent_status` SHALL take `outcome=permission`: a question stopped on a call the CLI denied, recorded as the
+task's `PERMISSION` report, which nothing standing in for the human answers ([master](../master/spec.md)).
 
 #### Scenario: Edits denied in the deploy worktree
 - **WHEN** a session reports `outcome=permission`

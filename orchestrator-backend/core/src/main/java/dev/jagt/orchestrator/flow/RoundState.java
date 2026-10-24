@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 
-import org.jspecify.annotations.Nullable;
 /**
  * What the last review round left behind: what the agent said about it, whether replies it drafted are still
  * waiting, and whether the Master has yet to read it. All three decide the human's next move, and none is in
@@ -12,8 +12,8 @@ public record RoundState(AgentReport report, boolean draftedReplies, boolean mas
 
     public static final RoundState NONE = new RoundState(AgentReport.PLAIN, false, false);
 
-    public static RoundState of(@Nullable String message, boolean draftedReplies) {
-        return new RoundState(AgentReport.of(message), draftedReplies, false);
+    public static RoundState of(AgentReport report, boolean draftedReplies) {
+        return new RoundState(report, draftedReplies, false);
     }
 
     public RoundState withMasterReading(boolean masterReading) {

@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -95,7 +96,7 @@ class YourMoveJobTest {
                 .message("step 2").build());
         job.run();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("awaiting: which uniqueness rule").build());
+                .message("which uniqueness rule").report(AgentReport.QUESTION).build());
 
         job.run();
         clock.advance(Duration.ofSeconds(10));
@@ -384,7 +385,7 @@ class YourMoveJobTest {
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
         job.run();
-        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("awaiting: which uniqueness rule").build());
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("which uniqueness rule").report(AgentReport.QUESTION).build());
         job.run();
         clock.advance(Duration.ofSeconds(10));
         job.run();
@@ -405,7 +406,7 @@ class YourMoveJobTest {
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
         job.run();
-        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("awaiting: which uniqueness rule").build());
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("which uniqueness rule").report(AgentReport.QUESTION).build());
         job.run();
         clock.advance(Duration.ofSeconds(1));
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("master answered the question").build());
@@ -492,7 +493,7 @@ class YourMoveJobTest {
                 .message("step 1").build());
         job.run();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("awaiting: needs the registry").repoRequest("registry").build());
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build());
 
         job.run();
         clock.advance(Duration.ofSeconds(10));
@@ -514,7 +515,7 @@ class YourMoveJobTest {
                 .message("step 1").build());
         job.run();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("awaiting: needs the registry").repoRequest("registry").build());
+                .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build());
         job.run();
         clock.advance(Duration.ofSeconds(2));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")

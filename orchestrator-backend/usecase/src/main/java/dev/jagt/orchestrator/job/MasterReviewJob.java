@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -82,7 +81,7 @@ public class MasterReviewJob implements Job {
     static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
         return FlowRules.readByTheMaster(task.status()) && !judged && !task.loopStopped()
                 && (FlowRules.holdsAPlan(task.status())
-                || !(questionsAnswered && AgentReport.of(task.message()) == AgentReport.QUESTION));
+                || !(questionsAnswered && task.report().asks()));
     }
 
     private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {

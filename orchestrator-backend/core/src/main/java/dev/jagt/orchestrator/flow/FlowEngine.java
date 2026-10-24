@@ -35,7 +35,7 @@ public class FlowEngine {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "
                     + Move.forTask(task.status(), Facts.projected(task),
-                            dev.jagt.orchestrator.flow.RoundState.of(task.message(), false),
+                            dev.jagt.orchestrator.flow.RoundState.of(task.report(), false),
                             task.agentIsSilent()).hint() + ")");
         }
         TaskCapability capability = capabilities.of(action).orElseThrow(() ->
@@ -59,8 +59,9 @@ public class FlowEngine {
         if (next.isPresent() || outcome.stamp() != null) {
             TaskStatus moved = next.orElse(was);
             // Recorded even when the status is unchanged: a second round onto the same request happened.
-            tasks.updateTask(taskId, task -> task.withStatus(moved,
-                    outcome.stamp() == null ? task.message() : outcome.stamp(), true, clock.millis()));
+            tasks.updateTask(taskId, task -> outcome.stamp() == null
+                    ? task.withStatus(moved, task.message(), true, clock.millis()).withReport(task.report())
+                    : task.withStatus(moved, outcome.stamp(), true, clock.millis()).withReport(outcome.stampMeans()));
         }
         if (outcome.kind().refuses()) {
             throw new IllegalStateException(outcome.message(), outcome.cause());

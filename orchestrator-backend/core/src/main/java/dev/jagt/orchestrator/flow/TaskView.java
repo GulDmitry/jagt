@@ -77,7 +77,7 @@ public record TaskView(
 
     public static TaskView of(String id, TaskState task, boolean draftedReplies, AutoReviewWatch autoReview,
                               Map<String, String> deployBranches) {
-        return of(id, task, RoundState.of(task.message(), draftedReplies), autoReview, deployBranches);
+        return of(id, task, RoundState.of(task.report(), draftedReplies), autoReview, deployBranches);
     }
 
     public static TaskView of(String id, TaskState task, RoundState round, AutoReviewWatch autoReview,

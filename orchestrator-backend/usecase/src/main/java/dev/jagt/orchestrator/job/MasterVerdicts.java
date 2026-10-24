@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
-import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -86,7 +86,7 @@ public class MasterVerdicts {
     }
 
     private boolean go(String taskId, TaskState task, MasterReview.Verdict verdict) {
-        if (AgentReport.of(task.message()) == AgentReport.QUESTION && !verdict.findings().isEmpty()) {
+        if (task.report().asks() && !verdict.findings().isEmpty()) {
             relay.relay(taskId, "plan-answered", PLAN_ANSWERED + String.join("\n", verdict.findings()));
         }
         if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human")) {
@@ -106,7 +106,7 @@ public class MasterVerdicts {
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
                 .log();
-        return reports.report(taskId, FlowRules.relayed(), "outcome=question — " + REVIEWER + question);
+        return reports.report(taskId, FlowRules.relayed(), AgentReport.QUESTION, REVIEWER + question);
     }
 
     /** The Master's answer to a question, and the task back at work on it. */

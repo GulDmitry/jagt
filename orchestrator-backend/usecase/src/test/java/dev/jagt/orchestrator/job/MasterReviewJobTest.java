@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -129,7 +130,7 @@ class MasterReviewJobTest {
     @Test
     void leavesARoundWhoseQuestionTheMasterAnswersToTheAnswerNotTheReview() {
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("outcome=question — override the gate?").build();
+                .message("override the gate?").report(AgentReport.QUESTION).build();
 
         boolean reviewable = MasterReviewJob.reviewable(asking, false, true);
 
@@ -148,7 +149,7 @@ class MasterReviewJobTest {
     @Test
     void readsAPlanWhoseHandBackCarriesAQuestionTheMasterAnswers() {
         TaskState planned = TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-                .message("awaiting: plan revised, approve?").build();
+                .message("plan revised, approve?").report(AgentReport.QUESTION).build();
 
         boolean reviewable = MasterReviewJob.reviewable(planned, false, true);
 

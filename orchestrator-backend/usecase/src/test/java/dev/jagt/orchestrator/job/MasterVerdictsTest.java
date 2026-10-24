@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -196,9 +197,10 @@ class MasterVerdictsTest {
                 List.of("- [qa] Foo.java — the delay is never pinned (unguarded delay)"), 7, ""), acting);
 
         assertThat(moved).isTrue();
-        assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("outcome=question — reviewer: These findings"
-                + " came back 2 rounds running, neither fixed nor disputed:"
-                + " - [qa] Foo.java — the delay is never pinned (unguarded delay) [repeat]");
+        assertThat(state.task("ABC-1").orElseThrow())
+                .returns(AgentReport.QUESTION, TaskState::report)
+                .returns("reviewer: These findings came back 2 rounds running, neither fixed nor disputed:"
+                        + " - [qa] Foo.java — the delay is never pinned (unguarded delay) [repeat]", TaskState::message);
     }
 
     @Test
@@ -388,7 +390,7 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-                .message("awaiting: admins only or every user?").build();
+                .message("admins only or every user?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
@@ -443,7 +445,8 @@ class MasterVerdictsTest {
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
                 .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-                .returns("outcome=question — reviewer: Add v3 beside v2, or replace it?", TaskState::message);
+                .returns(AgentReport.QUESTION, TaskState::report)
+                .returns("reviewer: Add v3 beside v2, or replace it?", TaskState::message);
         verify(ship, never()).ship(anyString(), any());
     }
 
