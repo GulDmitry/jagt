@@ -549,8 +549,8 @@ class ClaudeAgentRuntimeTest {
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false))
-                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --strict-mcp-config"
-                        + " --mcp-config '/wt/.mcp.json' '/stand/servers.json' 'go'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --mcp-config '/wt/.mcp.json'"
+                        + " '/stand/servers.json' --strict-mcp-config 'go'");
     }
 
     @Test
@@ -562,8 +562,8 @@ class ClaudeAgentRuntimeTest {
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
         assertThat(runtime.reviveCommand(Path.of("/wt")))
-                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --strict-mcp-config"
-                        + " --mcp-config '/wt/.mcp.json' '/stand/servers.json' --continue 'go on'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --mcp-config '/wt/.mcp.json'"
+                        + " '/stand/servers.json' --strict-mcp-config --continue 'go on'");
     }
 
     @Test

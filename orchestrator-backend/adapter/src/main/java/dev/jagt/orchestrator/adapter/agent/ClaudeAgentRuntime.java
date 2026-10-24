@@ -81,13 +81,16 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return COMPACT_ENV + claude.command() + pinnedServers(worktree) + " --continue " + shellQuote(brief.line("revive"));
     }
 
-    /** Strict drops the worktree's own `.mcp.json` too, so jagt's server is named beside the pinned ones. */
+    /**
+     * Strict drops the worktree's own `.mcp.json` too, so jagt's server is named beside the pinned ones. The flag
+     * comes after the files: `--mcp-config` takes every word up to the next option, the prompt included.
+     */
     private String pinnedServers(Path worktree) {
         if (claude.mcpConfig().isEmpty()) {
             return "";
         }
-        return " --strict-mcp-config --mcp-config " + shellQuote(worktree.resolve(".mcp.json").toString())
-                + " " + shellQuote(claude.mcpConfig());
+        return " --mcp-config " + shellQuote(worktree.resolve(".mcp.json").toString())
+                + " " + shellQuote(claude.mcpConfig()) + " --strict-mcp-config";
     }
 
     /** The prompt cache's lifetime: https://code.claude.com/docs/en/prompt-caching#cache-lifetime */
