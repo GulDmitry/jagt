@@ -113,3 +113,8 @@ Families:
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | I1 | a session starts with pinned servers → the CLI's variadic `--mcp-config` never swallows the prompt | seen 2026-10-24 on the stand | `ClaudeAgentRuntimeTest` |
+
+## L — the tests themselves
+| id | the case, one line | defects | pinned by |
+|----|--------------------|---------|-----------|
+| L1 | a log is rolled at start → only a regular file moves; a directory of the log's name and its dotted siblings stay | seen 2026-10-24: a pitest mutant moved the surface module to surface.1 | `LogFileRollTest` |

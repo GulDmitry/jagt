@@ -69,13 +69,14 @@ public class LogFileRoll implements ApplicationListener<ApplicationEnvironmentPr
         String name = fileName.toString();
         Path previous = directory.resolve(name + ".1");
         try {
-            if (Files.exists(absolute)) {
+            if (Files.isRegularFile(absolute)) {
                 Files.move(absolute, previous, StandardCopyOption.REPLACE_EXISTING);
             }
             try (Stream<Path> siblings = Files.list(directory)) {
                 List<Path> strays = siblings
                         .filter(sibling -> sibling.getFileName().toString().startsWith(name + "."))
                         .filter(sibling -> !sibling.equals(previous))
+                        .filter(Files::isRegularFile)
                         .toList();
                 for (Path stray : strays) {
                     Files.deleteIfExists(stray);

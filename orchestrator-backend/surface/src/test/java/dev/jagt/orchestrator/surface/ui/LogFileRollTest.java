@@ -51,6 +51,26 @@ class LogFileRollTest {
     }
 
     @Test
+    void leavesADirectoryNamedAsTheLogAndItsDottedSiblingsInPlace(@TempDir Path root) throws IOException {
+        Path folder = Files.createDirectories(root.resolve("surface"));
+        Files.writeString(folder.resolve("Kept.java"), "class Kept {}");
+        Path sibling = Files.createDirectories(root.resolve("surface.gradle"));
+        int freePort;
+        try (ServerSocket probe = new ServerSocket()) {
+            probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+            freePort = probe.getLocalPort();
+        }
+
+        new LogFileRoll().apply(new MockEnvironment()
+                .withProperty("logging.file.name", folder.toString())
+                .withProperty("server.port", String.valueOf(freePort)));
+
+        assertThat(folder.resolve("Kept.java")).exists();
+        assertThat(sibling).exists();
+        assertThat(root.resolve("surface.1")).doesNotExist();
+    }
+
+    @Test
     void rollsTheMasterFeedAsWellAsTheMainLog(@TempDir Path root) throws IOException {
         Path feed = root.resolve("master.log");
         Files.writeString(feed, "yesterday's steps\n");
