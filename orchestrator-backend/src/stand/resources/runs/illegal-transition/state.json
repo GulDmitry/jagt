@@ -1,0 +1,23 @@
+{
+  "tasks": {
+    "ABC-1": {
+      "status": "DEPLOY_CONFLICT",
+      "history": [
+        {
+          "status": "NEW",
+          "at": 1792800000000
+        },
+        {
+          "status": "IN_PROGRESS",
+          "at": 1792800060000,
+          "origin": "MCP"
+        },
+        {
+          "status": "DEPLOY_CONFLICT",
+          "at": 1792800600000,
+          "origin": "MASTER"
+        }
+      ]
+    }
+  }
+}

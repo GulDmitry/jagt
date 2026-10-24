@@ -395,7 +395,11 @@ tasks.register('standTest', Test) {
     group = 'verification'
     testClassesDirs = sourceSets.stand.output.classesDirs
     classpath = sourceSets.stand.runtimeClasspath
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (project.hasProperty('modelfree')) {
+            excludeTags 'model'
+        }
+    }
     // Each scenario owns its root, port and tmux server, so scenarios run side by side.
     systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
     systemProperty 'junit.jupiter.execution.parallel.mode.default', 'same_thread'

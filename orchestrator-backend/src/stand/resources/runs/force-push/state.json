@@ -1,0 +1,47 @@
+{
+  "tasks": {
+    "ABC-1": {
+      "status": "DEPLOYED",
+      "history": [
+        {
+          "status": "NEW",
+          "at": 1792800000000
+        },
+        {
+          "status": "IN_PROGRESS",
+          "at": 1792800060000,
+          "origin": "MCP"
+        },
+        {
+          "status": "VERIFYING",
+          "at": 1792800300000,
+          "origin": "MCP"
+        },
+        {
+          "status": "REVIEW_PENDING",
+          "at": 1792800330000
+        },
+        {
+          "status": "SHIPPING",
+          "at": 1792800420000,
+          "origin": "MASTER"
+        },
+        {
+          "status": "CI_POLLING",
+          "at": 1792800480000,
+          "origin": "MCP"
+        },
+        {
+          "status": "REVIEWED",
+          "at": 1792800540000,
+          "origin": "AUTO_REVIEW"
+        },
+        {
+          "status": "DEPLOYED",
+          "at": 1792800600000,
+          "origin": "MASTER"
+        }
+      ]
+    }
+  }
+}
