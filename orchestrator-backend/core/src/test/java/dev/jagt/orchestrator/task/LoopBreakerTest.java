@@ -110,4 +110,32 @@ class LoopBreakerTest {
 
         assertThat(breaker.beforeShip(LoopWatch.none(), history, day + 5_000)).isEmpty();
     }
+
+    @Test
+    void sendsARoundAgainOnceTheHumanLiftedTheStopItsRunTripped() {
+        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("verify", "c", 3);
+
+        var stop = LoopBreaker.beforeRound("verify", turn, LoopWatch.liftedAt(3), 4);
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
+    void forgetsRoundsOlderThanItsWindow() {
+        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("verify", "c", 3);
+
+        var stop = LoopBreaker.beforeRound("verify", turn, LoopWatch.none(), Duration.ofHours(25).toMillis());
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
+    void countsOnlyTheRoundsOfTheStepRunningSinceAnotherStepWasRelayed() {
+        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("answered", "c", 3)
+                .relayed("verify", "d", 4);
+
+        var stop = LoopBreaker.beforeRound("verify", turn, LoopWatch.none(), 5);
+
+        assertThat(stop).isEmpty();
+    }
 }

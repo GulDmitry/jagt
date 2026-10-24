@@ -77,7 +77,7 @@ public class MasterVerdicts {
             return ask(taskId, "These findings came back " + repeated + " rounds running, neither fixed nor"
                     + " disputed: " + String.join(" ", findings));
         }
-        if (!relay.relay(taskId, plan ? "plan-not-ready" : "round-not-ready", String.join("\n", findings))) {
+        if (!relay.relayRound(taskId, plan ? "plan-not-ready" : "round-not-ready", String.join("\n", findings))) {
             return false;
         }
         String ruled = verdict.findings().stream().filter(MasterReview.Said::settles).map(MasterReview.Said::line)

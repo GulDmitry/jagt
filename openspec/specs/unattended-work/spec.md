@@ -9,7 +9,7 @@ What jagt does unasked: the auto-review poll, its cadence, and every other job i
 ### Requirement: The auto-review poll only reads and drafts
 The poll (`AutoReviewScheduler` → `ReviewSweepService`) SHALL only read and draft: threads relayed, the agent fixing locally into
 `review_replies.md`, nothing posted without a human `ship`, the diff and drafts left for `ide <alias>`. Code review is never
-fully automated. Rounds: [review](../review/spec.md).
+fully automated. Rounds: [review](../review/spec.md). Detection SHALL be deterministic (a cadence, a status, an open request), a new trigger's too.
 
 #### Scenario: Sweep by hand
 - **WHEN** you type `review <task>`
@@ -18,13 +18,6 @@ fully automated. Rounds: [review](../review/spec.md).
 #### Scenario: Not your move
 - **WHEN** a round answered every comment and changed no code
 - **THEN** it is not your move: the open threads are the reviewer's
-
-### Requirement: Detection is deterministic
-Detection SHALL be deterministic — a cadence, a status, an open request; a new trigger MUST be too.
-
-#### Scenario: A new trigger
-- **WHEN** a new auto-review trigger is added
-- **THEN** it is deterministic too
 
 ### Requirement: An open request is what the poller watches
 `AutoReviewCadence.polls` SHALL watch an open request, never a status: a request exists and the task is not DONE. At
@@ -198,3 +191,10 @@ SHALL ring it `jagt stopped`, its hover the evidence. Only a human's `lift` SHAL
 #### Scenario: You press a verb on a stopped task
 - **WHEN** you press `ship` or `deploy` on a stopped task
 - **THEN** it runs, and the stop stands until you press `lift`
+
+### Requirement: A round sent back runs three times at most
+A failed verification or probe, and a not-ready plan or round, SHALL go back 3 rounds running in 24h since the `lift` at most.
+
+#### Scenario: Red rounds running
+- **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth
+- **THEN** nothing is sent, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`

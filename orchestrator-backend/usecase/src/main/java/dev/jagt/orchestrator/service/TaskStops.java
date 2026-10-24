@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,13 @@ public class TaskStops {
 
     public void stop(String taskId, LoopWatch.Trigger trigger, String evidence) {
         trip(taskId, task -> task.loopOrNone().stopped(new LoopWatch.Stop(trigger, clock.millis(), evidence)));
+    }
+
+    /** False where a round of {@code step} would run past its ceiling, which stops the task, or a stop stands. */
+    public boolean roundDue(String taskId, String step) {
+        long now = clock.millis();
+        return trip(taskId, task -> LoopBreaker.beforeRound(step, task.turnOrNone(), task.loopOrNone(), now)
+                .map(task.loopOrNone()::stopped).orElse(task.loopOrNone())).isEmpty();
     }
 
     /** The stop standing once {@code next} ran. */

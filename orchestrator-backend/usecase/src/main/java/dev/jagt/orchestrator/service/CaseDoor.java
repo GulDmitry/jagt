@@ -46,6 +46,11 @@ public class CaseDoor {
         return false;
     }
 
+    /** A round of a loop no thread count measures goes only while it runs below its ceiling; past it the task stops. */
+    public boolean roundDue(String taskId, String step) {
+        return stops.roundDue(stateService.canonicalTaskId(taskId), step);
+    }
+
     /**
      * A reply with no turn open, or to a step no case names, is taken. A refused one hands the turn to the human, so
      * the session's next report is not refused for the same step again.

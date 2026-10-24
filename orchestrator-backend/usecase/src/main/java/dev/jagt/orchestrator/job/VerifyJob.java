@@ -54,15 +54,14 @@ public class VerifyJob implements Job {
     @Override
     public void run() {
         stateService.tasks().entrySet().stream()
-                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()))
+                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()) && !entry.getValue().loopStopped())
                 .forEach(entry -> verify(entry.getKey(), entry.getValue()));
     }
 
     private void verify(String taskId, TaskState task) {
         Optional<String> failure = verification.failure(task);
         if (failure.isPresent()) {
-            relay.relay(taskId, "verify", failure.get());
-            statusReports.verified(false, "verification failed; relayed", taskId);
+            returned(taskId, "verify", failure.get(), "verification failed; relayed");
             return;
         }
         List<Probe> probed = verification.probed(taskId, task);
@@ -74,7 +73,16 @@ public class VerifyJob implements Job {
             statusReports.verified(true, "verified", taskId);
             return;
         }
-        relay.relay(taskId, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")));
-        statusReports.verified(false, "acceptance probe failed; relayed", taskId);
+        returned(taskId, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
+                "acceptance probe failed; relayed");
+    }
+
+    /** A round stopped at its ceiling stays at VERIFYING, verified anew once the human lifts the stop. */
+    private void returned(String taskId, String step, String facts, String said) {
+        if (!relay.relayRound(taskId, step, facts)
+                && stateService.task(taskId).filter(TaskState::loopStopped).isPresent()) {
+            return;
+        }
+        statusReports.verified(false, said, taskId);
     }
 }

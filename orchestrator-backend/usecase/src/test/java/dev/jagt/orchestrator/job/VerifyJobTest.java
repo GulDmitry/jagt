@@ -43,7 +43,7 @@ class VerifyJobTest {
         new VerifyJob(state, verification, statusReports, relay).run();
 
         verify(statusReports).verified(true, "verified", "ABC-1");
-        verify(relay, never()).relay(eq("ABC-1"), anyString(), anyString());
+        verify(relay, never()).relayRound(eq("ABC-1"), anyString(), anyString());
     }
 
     @Test
@@ -55,7 +55,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay).run();
 
-        verify(relay).relay(eq("ABC-1"), eq("verify"), contains("BUILD FAILED"));
+        verify(relay).relayRound(eq("ABC-1"), eq("verify"), contains("BUILD FAILED"));
         verify(statusReports).verified(false, "verification failed; relayed", "ABC-1");
         verify(statusReports, never()).verified(eq(true), any(), any());
     }
@@ -83,7 +83,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay).run();
 
-        verify(relay).relay(eq("ABC-1"), eq("probes"), eq("artifact docs/guide.md — FAILED\nno such file"));
+        verify(relay).relayRound(eq("ABC-1"), eq("probes"), eq("artifact docs/guide.md — FAILED\nno such file"));
         verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().probes()).containsExactly(passed, failed);
     }

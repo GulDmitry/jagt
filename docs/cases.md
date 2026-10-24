@@ -94,6 +94,7 @@ Families:
 | F5 | a headless call spends → every call carries a spend ceiling and fails naming it | 4aa63f4a | `HeadlessClaudeTest`, `AssistantPropertiesTest` |
 | F6 | an unfinished deploy, an unchanged status or a waiting close → read or asked at a bounded pace, not forever | 52c78b44, 70ba6aa6, 68e40274 | `TicketCloseJobTest`, `TaskProvisioningTest` |
 | F7 | a request only a reviewer can move on is polled → read at the longest interval, not the ramp | seen 2026-10-24: 71 sweeps in 18h | `AutoReviewCadenceTest` |
+| F8 | a verification stays red or the Master finds something new each round → three rounds back, the fourth stops the task | 0065 rule E: no ceiling | `StepRelayTest`, `MasterVerdictsTest`, `LoopBreakerTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |

@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -841,5 +842,66 @@ class MasterVerdictsTest {
 
         assertThat(moved).isFalse();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+    }
+
+    @Test
+    void stopsTheTaskInsteadOfReturningAFourthRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay));
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Order.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 2, ""), acting);
+        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Payment.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 3, ""), acting);
+        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
+
+        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Invoice.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 4, ""), acting);
+
+        assertThat(moved).isFalse();
+        assertThat(state.task("ABC-1").orElseThrow())
+                .extracting(TaskState::status, done -> done.loopOrNone().stop().trigger())
+                .containsExactly(TaskStatus.REVIEW_PENDING, LoopWatch.Trigger.ROUNDS);
+    }
+
+    @Test
+    void returnsAThirdRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay));
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Order.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 2, ""), acting);
+        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
+
+        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Payment.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 3, ""), acting);
+
+        assertThat(moved).isTrue();
+        assertThat(state.task("ABC-1").orElseThrow().loopStopped()).isFalse();
     }
 }

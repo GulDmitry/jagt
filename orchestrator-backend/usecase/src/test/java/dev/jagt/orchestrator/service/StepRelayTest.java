@@ -154,4 +154,50 @@ class StepRelayTest {
                 .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
                 .containsExactly(LoopWatch.Trigger.MISS, "no case sends deploy at IN_PROGRESS, set off by jagt");
     }
+
+    @Test
+    void stopsTheTaskInsteadOfSendingAFourthRedVerificationRunning(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"),
+                "## verify\n\nstep: verify\nat: VERIFYING\nby: jagt\nreplies: any; plain\nThe command failed.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
+        relay.relayRound("ABC-42", "verify", "BUILD FAILED in CartTest");
+        relay.relayRound("ABC-42", "verify", "BUILD FAILED in OrderTest");
+        relay.relayRound("ABC-42", "verify", "BUILD FAILED in CartTest again");
+
+        boolean told = relay.relayRound("ABC-42", "verify", "BUILD FAILED in PaymentTest");
+
+        assertThat(told).isFalse();
+        verify(sessions, times(3)).writeTaskContext(anyString(), anyString());
+        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
+                .extracting(LoopWatch.Stop::trigger, LoopWatch.Stop::evidence)
+                .containsExactly(LoopWatch.Trigger.ROUNDS, "verify sent 3 rounds running in 24h; the next one was not");
+    }
+
+    @Test
+    void sendsAThirdRedVerificationRunning(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"),
+                "## verify\n\nstep: verify\nat: VERIFYING\nby: jagt\nreplies: any; plain\nThe command failed.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
+        relay.relayRound("ABC-42", "verify", "BUILD FAILED in CartTest");
+        relay.relayRound("ABC-42", "verify", "BUILD FAILED in OrderTest");
+
+        boolean told = relay.relayRound("ABC-42", "verify", "BUILD FAILED in PaymentTest");
+
+        assertThat(told).isTrue();
+        assertThat(state.task("ABC-42").orElseThrow().loopStopped()).isFalse();
+    }
 }

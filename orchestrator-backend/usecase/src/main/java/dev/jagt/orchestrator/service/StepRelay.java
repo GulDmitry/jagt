@@ -29,7 +29,12 @@ public class StepRelay {
     }
 
     public boolean relay(String taskId, String step, String facts) {
-        return opened(taskId, step, facts, told -> sessions.writeTaskContext(taskId, told));
+        return opened(taskId, step, facts, false, told -> sessions.writeTaskContext(taskId, told));
+    }
+
+    /** A round sent back to work, false too where the rounds of this step running reached their ceiling. */
+    public boolean relayRound(String taskId, String step, String facts) {
+        return opened(taskId, step, facts, true, told -> sessions.writeTaskContext(taskId, told));
     }
 
     /** Written whatever the session already holds, as a hand-off that must land again. */
@@ -44,12 +49,12 @@ public class StepRelay {
 
     /** In a session started afresh, which reads the text with the task's notes rather than its conversation. */
     public boolean relayFresh(String taskId, String step, String facts) {
-        return opened(taskId, step, facts, told -> sessions.relayFresh(taskId, told));
+        return opened(taskId, step, facts, false, told -> sessions.relayFresh(taskId, told));
     }
 
     /** Below an instruction still pending, which stands. */
     public boolean relayUnder(String taskId, String step, String facts, boolean fresh) {
-        return opened(taskId, step, facts, told -> sessions.relayUnder(taskId, told, fresh));
+        return opened(taskId, step, facts, false, told -> sessions.relayUnder(taskId, told, fresh));
     }
 
     /** Typed into the session's window, which takes one line. */
@@ -74,12 +79,12 @@ public class StepRelay {
         return true;
     }
 
-    private boolean opened(String taskId, String step, String facts, Consumer<String> send) {
+    private boolean opened(String taskId, String step, String facts, boolean round, Consumer<String> send) {
         if (!door.opens(taskId, step)) {
             return false;
         }
         String digest = Turn.digestOf(facts);
-        if (turns.of(taskId).holds(step, digest)) {
+        if (turns.of(taskId).holds(step, digest) || round && !door.roundDue(taskId, step)) {
             return false;
         }
         send.accept(told(step, facts));

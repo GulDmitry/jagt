@@ -44,7 +44,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 - **A dedup key lives with its writer**, on the task (`TaskState.loop`, `TaskState.conflict`): never a file another
   writer overwrites, never memory a restart loses; what jagt already did for a step is a mark on `TaskState.turn`.
 - **Every status jagt waits at unattended has a progress clock or a ceiling**: the watchdog, the auto-review window,
-  `LoopBreaker`, `ConflictStall`. None yet: red `VERIFYING` rounds, and the Master's not-ready rounds of new findings.
+  `LoopBreaker`, `ConflictStall`; a round sent back to work, red or not ready, through `StepRelay.relayRound`.
 
 ## Session roles, tasks and scope
 

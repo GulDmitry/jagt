@@ -9,18 +9,23 @@ import org.jspecify.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Whose move a task waits on, since when, and the step that handed it over. {@code marks} holds the last value each
- * step carried, one entry per step, so it is bounded.
+ * step carried, one entry per step, so it is bounded; {@code run} when {@code step} was relayed, rounds running.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Turn(Holder holder, String step, long id, String digest, long since,
-                   @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> marks) {
+                   @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> marks,
+                   @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Long> run) {
+
+    private static final int MAX_RUN = 20;
 
     public enum Holder {
         SESSION,
@@ -36,10 +41,11 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
         step = step == null ? "" : step;
         digest = digest == null ? "" : digest;
         marks = marks == null ? Map.of() : Map.copyOf(marks);
+        run = run == null ? List.of() : List.copyOf(run);
     }
 
     public static Turn none() {
-        return new Turn(Holder.NOBODY, "", 0, "", 0, Map.of());
+        return new Turn(Holder.NOBODY, "", 0, "", 0, Map.of(), List.of());
     }
 
     /** From a relay until the session's next report, which empties the digest. */
@@ -67,22 +73,28 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
     }
 
     public Turn relayed(String step, String digest, long now) {
-        return new Turn(Holder.SESSION, step, id + 1, digest, now, with(step, digest));
+        return new Turn(Holder.SESSION, step, id + 1, digest, now, with(step, digest), ran(step, now));
     }
 
     /** A report closes the turn it answers; the step it answered stays on record. */
     public Turn closed(Holder next, long now) {
-        return new Turn(next, step, id, "", now, marks);
+        return new Turn(next, step, id, "", now, marks, run);
     }
 
     public Turn withMark(String step, String value) {
-        return new Turn(holder, this.step, id, digest, since, with(step, value));
+        return new Turn(holder, this.step, id, digest, since, with(step, value), run);
     }
 
     public Turn withoutMark(String step) {
         Map<String, String> kept = new HashMap<>(marks);
         kept.remove(step);
-        return new Turn(holder, this.step, id, digest, since, kept);
+        return new Turn(holder, this.step, id, digest, since, kept, run);
+    }
+
+    private List<Long> ran(String step, long now) {
+        List<Long> grown = new ArrayList<>(this.step.equals(step) ? run : List.of());
+        grown.add(now);
+        return grown.subList(Math.max(0, grown.size() - MAX_RUN), grown.size());
     }
 
     private Map<String, String> with(String step, String value) {

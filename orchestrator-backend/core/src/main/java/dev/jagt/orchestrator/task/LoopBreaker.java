@@ -12,6 +12,18 @@ import java.util.stream.Collectors;
  */
 public record LoopBreaker(int stalledRounds, int ships, Duration window) {
 
+    private static final int ROUNDS_RUNNING = 3;
+    private static final Duration ROUND_WINDOW = Duration.ofHours(24);
+
+    /** A round of {@code step} relayed {@link #ROUNDS_RUNNING} times running within the window since the lift is the last. */
+    public static Optional<LoopWatch.Stop> beforeRound(String step, Turn turn, LoopWatch watch, long now) {
+        long from = Math.max(watch.since(), now - ROUND_WINDOW.toMillis());
+        long running = turn.step().equals(step) ? turn.run().stream().filter(at -> at > from).count() : 0;
+        return running < ROUNDS_RUNNING ? Optional.empty()
+                : Optional.of(new LoopWatch.Stop(LoopWatch.Trigger.ROUNDS, now, step + " sent " + running
+                        + " rounds running in " + ROUND_WINDOW.toHours() + "h; the next one was not"));
+    }
+
     public Optional<LoopWatch.Stop> afterRound(LoopWatch watch, List<StatusChange> history, long now) {
         int stalled = stalled(watch.rounds());
         return stalled < stalledRounds ? Optional.empty()
