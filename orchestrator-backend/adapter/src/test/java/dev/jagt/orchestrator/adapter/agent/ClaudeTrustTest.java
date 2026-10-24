@@ -1,11 +1,18 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -173,5 +180,33 @@ class ClaudeTrustTest {
         ClaudeTrust.forget(config, worktree);
 
         assertThat(new JsonMapper().readTree(Files.readString(config)).path("projects").size()).isZero();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsNothingOnceTheTrustFlagStuck(@TempDir Path home) {
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(ClaudeTrust.class)).addAppender(log);
+
+        ClaudeTrust.reaccept(home.resolve(".claude.json"), home);
+
+        assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage)
+                .doesNotContain("trust flag kept being lost");
+        assertThat(home.resolve(".claude.json")).exists();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsOnceTheTrustFlagKeptBeingLost(@TempDir Path home) throws Exception {
+        Path config = home.resolve(".claude.json");
+        Files.writeString(config, "[]");
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(ClaudeTrust.class)).addAppender(log);
+
+        ClaudeTrust.reaccept(config, home);
+
+        assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage).contains("trust flag kept being lost");
     }
 }

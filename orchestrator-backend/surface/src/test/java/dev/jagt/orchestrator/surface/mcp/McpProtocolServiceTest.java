@@ -388,6 +388,21 @@ class McpProtocolServiceTest {
     }
 
     @Test
+    void skipsKeepAliveRewriteWhenAgentWasActiveExactlyTheThrottleAgo(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(85_000).alias("a1").build());
+        McpProtocolService protocol = new McpProtocolService(mapper, state,
+                Clock.fixed(java.time.Instant.ofEpochMilli(100_000), java.time.ZoneOffset.UTC), List.of());
+
+        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"), root.toString(), false);
+
+        assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(85_000);
+    }
+
+    @Test
     void answersAnUnknownToolWithTheToolsThisCallerHas(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()

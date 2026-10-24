@@ -231,4 +231,42 @@ class ClaudeSessionLogTest {
 
         assertThat(spent.upTo()).isEqualTo(1);
     }
+
+    @Test
+    void marksTheEndOfTheLastClosedMessageAndLeavesTheOpenOneAfterIt(@TempDir Path dir) throws IOException {
+        String closed = "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"output_tokens\":9}}}\n";
+        String open = "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"output_tokens\":40}}}\n";
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, closed + open);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage().total()).isEqualTo(10);
+        assertThat(spent.upTo()).isEqualTo(closed.getBytes().length);
+    }
+
+    @Test
+    void countsAMessageWhoseBlocksAreAllThatTheWindowHolds(@TempDir Path dir) throws IOException {
+        String block = "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":3,\"output_tokens\":100}}}\n";
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, block + block);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage().total()).isEqualTo(103);
+        assertThat(spent.upTo()).isEqualTo(Files.size(log));
+    }
+
+    @Test
+    void countsEveryLineWhereTheLastOneCarriesNoUsage(@TempDir Path dir) throws IOException {
+        String closed = "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"output_tokens\":9}}}\n";
+        String user = "{\"type\":\"user\",\"message\":{\"content\":\"ok\"}}\n";
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, closed + user);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage().total()).isEqualTo(10);
+        assertThat(spent.upTo()).isEqualTo(Files.size(log));
+    }
 }
