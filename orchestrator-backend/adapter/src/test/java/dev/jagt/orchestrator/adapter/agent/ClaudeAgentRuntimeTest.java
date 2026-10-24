@@ -97,6 +97,26 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void trustsTheWorktreeAgainAtLaunchWhenAnotherWriterDroppedTheFlagSinceProvisioning(@TempDir Path root)
+            throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-8-proj"));
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root));
+        ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
+
+        runtime.beforeLaunch(worktree);
+
+        boolean trusted = new JsonMapper().readTree(Files.readString(ClaudeTrust.configFile()))
+                .path("projects").path(worktree.toRealPath().toString()).path("hasTrustDialogAccepted")
+                .asBoolean(false);
+        assertThat(trusted).isTrue();
+    }
+
+    @Test
     void declaresTheJagtMcpServerOverHttpWithThisWorktreeAsTheCaller(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();

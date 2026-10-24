@@ -61,11 +61,9 @@ A launch SHALL leave jagt's process group, which Ctrl-C reaches and `ProcessBuil
 `ProcessRunner.detachedFrom` runs it under `setsid`, or perl's `POSIX::setsid` where there is none. Both wrappers
 `exec`, so `destroy()` on the returned `Process` reaches the app.
 
-#### Scenario: Ctrl-C stops jagt
+#### Scenario: Ctrl-C stops jagt, or a detached binary is missing
 - **WHEN** the human presses Ctrl-C in jagt's terminal
 - **THEN** an app launched detached keeps running
-
-#### Scenario: A detached binary is missing
 - **WHEN** `runDetached` launches a binary that does not exist
 - **THEN** the wrapper exits non-zero and the launch fails
 
@@ -103,10 +101,13 @@ settings SHALL carry `autoMemoryEnabled: false`.
 ### Requirement: The worktree is trusted
 `wireAgent` SHALL trust the worktree, replacing only `projects["<worktree>"].hasTrustDialogAccepted` in
 `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where set), under an OS file lock every jagt process takes.
+`AgentRuntime.beforeLaunch` SHALL check it right before each launch line, writing a lost flag again up to three times.
 
 #### Scenario: The config file is unparsable, the task is removed, or another jagt process writes
 - **WHEN** `~/.claude.json` cannot be parsed, the task is removed, or another jagt process is writing it
 - **THEN** the file is left alone, the worktree's entry is dropped, or this one waits, so no flag is lost
+- **WHEN** the CLI dropped the flag between provisioning and launch
+- **THEN** it is written again before the session starts
 
 ### Requirement: A session reports itself through its CLI's own hooks
 A session SHALL report through its CLI's own hooks, never the model: `HookEndpoint` writes each line, a POST to

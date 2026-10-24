@@ -32,6 +32,7 @@ final class ClaudeTrust {
     private static final String TRUSTED = "hasTrustDialogAccepted";
     private static final String UNTRUSTED = "worktree left untrusted";
     private static final String STALE = "trust entry orphaned";
+    private static final int ATTEMPTS = 3;
 
     private ClaudeTrust() {
     }
@@ -46,6 +47,31 @@ final class ClaudeTrust {
 
     static void accept(Path configFile, Path worktree) {
         rewrite(configFile, worktree, ClaudeTrust::accepted, UNTRUSTED);
+    }
+
+    /** Claude rewrites this file from its own copy, outside the lock, so a flag written may be gone by the launch. */
+    static void reaccept(Path configFile, Path worktree) {
+        for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
+            accept(configFile, worktree);
+            if (trusted(configFile, worktree)) {
+                return;
+            }
+        }
+        log.atWarn().setMessage("trust flag kept being lost")
+                .addKeyValue("file", configFile)
+                .addKeyValue("worktree", worktree)
+                .addKeyValue("attempts", ATTEMPTS)
+                .addKeyValue("effect", UNTRUSTED)
+                .log();
+    }
+
+    private static boolean trusted(Path configFile, Path worktree) {
+        try {
+            return JSON.readTree(Files.readString(configFile))
+                    .path(PROJECTS).path(resolved(worktree)).path(TRUSTED).asBoolean(false);
+        } catch (IOException | JacksonException e) {
+            return false;
+        }
     }
 
     /** Called while the worktree still exists, so the key matches the one Claude wrote. */

@@ -307,6 +307,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public void beforeLaunch(Path worktree) {
+        ClaudeTrust.reaccept(ClaudeTrust.configFile(), worktree);
+    }
+
+    @Override
     public void retireWorktree(Path worktree) {
         ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
     }

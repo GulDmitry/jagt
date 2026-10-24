@@ -113,6 +113,11 @@ public interface AgentRuntime {
     /** {@code UNPROVISIONED}: the worktree holds none of this CLI's settings to widen. */
     enum Admission { GRANTED, UNSUPPORTED, UNPROVISIONED }
 
+    /** Restores, right before a session starts in {@code worktree}, what {@link #provisionWorktree} wrote OUTSIDE it
+     *  and another writer may since have undone. */
+    default void beforeLaunch(Path worktree) {
+    }
+
     /** Undoes what {@link #provisionWorktree} wrote OUTSIDE the worktree; the worktree itself is deleted for it. */
     default void retireWorktree(Path worktree) {
     }

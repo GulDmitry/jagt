@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -24,6 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -338,6 +340,23 @@ class TmuxSessionHostTest {
             assertThat(command).containsSequence("new-window", "-P");
             assertThat(command.getLast()).contains("agent-cmd").endsWith("; exec sleep 15");
         });
+    }
+
+    @Test
+    void restoresWhatTheAgentWasProvisionedWithBeforeOpeningItsWindow() {
+        Processes processes = mock(Processes.class);
+        AgentRuntime agent = mock(AgentRuntime.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), agent);
+
+        host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+
+        InOrder order = inOrder(agent, processes);
+        order.verify(agent).beforeLaunch(Path.of("/wt/ABC-1"));
+        order.verify(processes).run(isNull(), any(Duration.class),
+                argThat((List<String> command) -> command.contains("new-window")));
     }
 
     @Test

@@ -73,6 +73,7 @@ public class TmuxSessionHost implements SessionHost {
 
     private void taskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias,
                             Path worktreePath, String command) {
+        agentRuntime.beforeLaunch(worktreePath);
         synchronized (lock) {
             ensureSession(session);
             // One task = one window: respawns must never accumulate duplicates.
