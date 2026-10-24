@@ -55,7 +55,7 @@ orchestrator:
 
   # ── The agents ─────────────────────────────────────────────────────────────────────────────────────────────
   agent:
-    # cli: codex          # claude | codex; read at startup, unlike the two below. A Codex worktree runs
+    # cli: codex          # claude | codex (stub, replay: test runs); read at startup, unlike the two below. A Codex worktree runs
     #                     # against its own CODEX_HOME, so your ~/.codex servers are not there.
     outputStyle: ""       # a Claude output style to start every sub-agent with
     probeSeconds: 600     # how often every running session's liveness is probed
