@@ -899,4 +899,52 @@ class MasterVerdictsTest {
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
     }
+
+    @Test
+    void startsNoSessionOnAPlanWhereNoMasterCaseAllowsTheApproval(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+        state.putTask("ABC-1", planned);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+                acting);
+
+        assertThat(moved).isFalse();
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+    }
+
+    @Test
+    void saysNothingMovedWhereTheFlowTurnedTheApprovedPlansReportAside(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+        state.putTask("ABC-1", planned);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        FlowReports reports = spy(new FlowReports(state, Clock.systemUTC()));
+        doReturn(false).when(reports).report(anyString(), any(), anyString());
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, reports, decisions,
+                new PlanApproval(state, relay, door));
+
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+                acting);
+
+        assertThat(moved).isFalse();
+    }
 }

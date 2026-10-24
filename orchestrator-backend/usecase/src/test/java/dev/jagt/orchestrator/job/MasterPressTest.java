@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -90,5 +91,51 @@ class MasterPressTest {
 
         verify(commands).execute("ABC-1", TaskAction.ADD_REPO);
         verifyNoInteractions(humanPaths);
+    }
+
+    @Test
+    void marksTheStepLeftToTheHumanWithThePathThatKeptItFromTheMaster(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
+        state.putTask("ABC-1", task);
+        when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
+
+        new MasterPress(commands, humanPaths, config, new TaskTurns(state, Clock.systemUTC()))
+                .press("ABC-1", task, TaskAction.DEPLOY);
+
+        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.LEFT))
+                .isEqualTo("deploy demo/src/auth/Login.java");
+    }
+
+    @Test
+    void replacesTheStepLeftWithTheOneLeftNow(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
+                .turn(Turn.none().withMark(TaskTurns.LEFT, "deploy demo/src/old/Old.java")).build();
+        state.putTask("ABC-1", task);
+        when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
+
+        new MasterPress(commands, humanPaths, config, new TaskTurns(state, Clock.systemUTC()))
+                .press("ABC-1", task, TaskAction.DEPLOY);
+
+        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.LEFT))
+                .isEqualTo("deploy demo/src/auth/Login.java");
+    }
+
+    @Test
+    void forgetsTheStepLeftOnceTheVerbIsPressed(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
+                .turn(Turn.none().withMark(TaskTurns.LEFT, "deploy demo/src/old/Old.java")).build();
+        state.putTask("ABC-1", task);
+        when(humanPaths.touched(task)).thenReturn(Optional.empty());
+
+        new MasterPress(commands, humanPaths, config, new TaskTurns(state, Clock.systemUTC()))
+                .press("ABC-1", task, TaskAction.DEPLOY);
+
+        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.LEFT)).isNull();
     }
 }

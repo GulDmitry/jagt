@@ -28,4 +28,32 @@ class OriginContextTest {
         assertThat(inner).isEqualTo(ActionOrigin.TRACKER);
         assertThat(afterInner[0]).isEqualTo(ActionOrigin.BOARD);
     }
+
+    @Test
+    void answersWithTheWorkAndForgetsTheReasonAfterIt() {
+        String during = OriginContext.because("work done", OriginContext::why);
+
+        assertThat(during).isEqualTo("work done");
+        assertThat(OriginContext.why()).isNull();
+    }
+
+    @Test
+    void leavesAnOuterReasonStandingWhereTheInnerOneIsNull() {
+        String inner = OriginContext.because("outer", () -> OriginContext.because(null, OriginContext::why));
+
+        assertThat(inner).isEqualTo("outer");
+    }
+
+    @Test
+    void restoresTheOuterReasonWhenAnInnerOneEnds() {
+        String[] afterInner = new String[1];
+
+        OriginContext.because("outer", () -> {
+            OriginContext.because("inner", OriginContext::why);
+            afterInner[0] = OriginContext.why();
+            return null;
+        });
+
+        assertThat(afterInner[0]).isEqualTo("outer");
+    }
 }

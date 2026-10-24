@@ -114,4 +114,38 @@ class MasterReviewTest {
         assertThat(new MasterReview.Verdict(MasterReview.Kind.NOT_READY, List.of(), List.of(), List.of(), 1, "").said())
                 .isEqualTo("not ready");
     }
+
+    @Test
+    void saysNothingWasWrittenForATaskWithNoWorktree() {
+        TaskState task = TaskState.builder("proj", "", TaskStatus.REVIEW_PENDING).alias("a1").build();
+
+        assertThat(reviews.write(task, new MasterReview.Review(1, "", List.of()), "VERDICT: ready\n")).isFalse();
+    }
+
+    @Test
+    void saysTheVerdictWasNotWrittenWhereOnlyTheFileForTheHumanCould(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve(".jagt"), "in the way");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+
+        boolean written = reviews.write(task, new MasterReview.Review(1, "", List.of()), "VERDICT: ready\n");
+
+        assertThat(written).isFalse();
+        assertThat(worktree.resolve(MasterReview.FILE)).content().isEqualTo("VERDICT: ready\n");
+    }
+
+    @Test
+    void saysBothFilesWereWrittenWhereTheyWere(@TempDir Path worktree) {
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+
+        assertThat(reviews.write(task, new MasterReview.Review(1, "", List.of()), "VERDICT: ready\n")).isTrue();
+    }
+
+    @Test
+    void takesOnlyAReadyVerdictAsReady() {
+        var ready = new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
+        var notReady = new MasterReview.Verdict(MasterReview.Kind.NOT_READY, List.of(), List.of(), List.of(), 1, "");
+
+        assertThat(ready.ready()).isTrue();
+        assertThat(notReady.ready()).isFalse();
+    }
 }

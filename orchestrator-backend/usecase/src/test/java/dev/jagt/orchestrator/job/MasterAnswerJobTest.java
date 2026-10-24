@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -166,6 +167,8 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().marked(TaskTurns.UNANSWERED, TaskTurns.asked(asking)))
+                .isTrue();
     }
 
     @Test
@@ -230,6 +233,8 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+        assertThat(state.task("ABC-1").orElseThrow().turnOrNone()
+                .marked(TaskTurns.UNANSWERED, TaskTurns.asked(state.task("ABC-1").orElseThrow()))).isTrue();
     }
 
     @Test

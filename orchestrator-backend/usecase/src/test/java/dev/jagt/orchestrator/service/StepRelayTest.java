@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -283,5 +284,149 @@ class StepRelayTest {
         boolean told = OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-42", "answered", "Keep the old keys."));
 
         assertThat(told).isTrue();
+    }
+
+    @Test
+    void sendsTheTextWrittenWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.write("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(told).isEqualTo(true);
+        verify(sessions).writeTaskContext("ABC-42", "ABC-42 is deployed");
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    }
+
+    @Test
+    void leavesTheTextWrittenUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.write("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(told).isEqualTo(false);
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    }
+
+    @Test
+    void sendsTheLineTypedWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.say("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(told).isEqualTo(true);
+        verify(sessions).say("ABC-42", "ABC-42 is deployed");
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    }
+
+    @Test
+    void leavesTheLineTypedUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.say("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(told).isEqualTo(false);
+        verify(sessions, never()).say(anyString(), anyString());
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    }
+
+    @Test
+    void sendsToAFreshSessionWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.relayFresh("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(told).isEqualTo(true);
+        verify(sessions).relayFresh("ABC-42", "ABC-42 is deployed");
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    }
+
+    @Test
+    void leavesToAFreshSessionUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.relayFresh("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(told).isEqualTo(false);
+        verify(sessions, never()).relayFresh(anyString(), anyString());
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    }
+
+    @Test
+    void sendsBelowAPendingInstructionWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.relayUnder("ABC-42", "deploy", "ABC-42 is deployed", true);
+
+        assertThat(told).isEqualTo(true);
+        verify(sessions).relayUnder("ABC-42", "ABC-42 is deployed", true);
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    }
+
+    @Test
+    void leavesBelowAPendingInstructionUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = relay.relayUnder("ABC-42", "deploy", "ABC-42 is deployed", true);
+
+        assertThat(told).isEqualTo(false);
+        verify(sessions, never()).relayUnder(anyString(), anyString(), anyBoolean());
+        assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
     }
 }

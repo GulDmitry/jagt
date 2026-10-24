@@ -911,4 +911,47 @@ class MasterPanelTest {
 
         assertThat(file).endsWith("- also asked: Drop the old keys?\nAdd v3 beside v2?\n\nVERDICT: question\n");
     }
+
+    @Test
+    void readsNoModelFromTheQuestionColumnWhateverItsHeaderIsCalled() {
+        String brief = """
+                | role | model |
+                |------|-------|
+                | architect | opus |
+                """;
+
+        assertThat(MasterPanel.roles(brief, "")).extracting(role -> role.modelOr("sonnet"))
+                .containsExactly("sonnet");
+    }
+
+    @Test
+    void readsNoModelFromARowShorterThanTheHeader() {
+        String brief = """
+                | role | the question it asks | model |
+                |------|----------------------|-------|
+                | architect | is the architecture held |
+                """;
+
+        assertThat(MasterPanel.roles(brief, "")).extracting(role -> role.modelOr("sonnet"))
+                .containsExactly("sonnet");
+    }
+
+    @Test
+    void namesEveryWorktreeOfTheTaskToTheMasterAnsweringAQuestion() {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.question(task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
+
+        new MasterPanel(reviews, briefs, quotes, new MasterReview()).answer("ABC-1", task, "keep v2?",
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null), false);
+
+        ArgumentCaptor<RoundReviewer.Round> asked = ArgumentCaptor.captor();
+        verify(reviews).review(eq("ABC-1"), asked.capture());
+        assertThat(asked.getValue().worktrees()).containsExactly(Path.of("/wt/ABC-1-proj"));
+    }
 }

@@ -102,4 +102,14 @@ class CommandServiceTest {
                 .extracting(TaskStop::trigger, TaskStop::evidence)
                 .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");
     }
+
+    @Test
+    void saysWhyAPressTheMasterCaseDoesNotAllowWasNotRun() {
+        when(door.presses("ABC-1", TaskAction.SHIP)).thenReturn(false);
+
+        String said = commands.execute("ABC-1", TaskAction.SHIP);
+
+        assertThat(said).isEqualTo("ship ABC-1: no master case allows it at this status; see misses.jsonl");
+        verify(flow, never()).run("ABC-1", TaskAction.SHIP);
+    }
 }

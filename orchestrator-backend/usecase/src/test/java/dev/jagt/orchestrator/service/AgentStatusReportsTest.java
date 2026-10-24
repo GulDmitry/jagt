@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
@@ -740,6 +741,121 @@ class AgentStatusReportsTest {
                 Map.of(), null, "ghost", null), "ABC-1")).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("needsProject").hasMessageContaining("[proj]");
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isNull();
+    }
+
+    @Test
+    void answersASessionsReportWithTheStatusItLandedOnAndItsOwnWords(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        String answer = reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
+
+        assertThat(answer).isEqualTo("Task ABC-1 -> IN_PROGRESS (working)");
+    }
+
+    @Test
+    void answersAVerificationVerdictWithTheStatusItLanded(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        String answer = reports.verified(true, "checks green", "ABC-1");
+
+        assertThat(answer).startsWith("Task ABC-1 -> REVIEW_PENDING (checks green)");
+    }
+
+    @Test
+    void closesTheTurnASessionsReportAnswersAndLeavesOpenTheOneJagtsOwnReportDoesNot(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .turn(Turn.none().relayed("round", "d1", 100)).build();
+        state.putTask("ABC-1", working);
+        state.putTask("ABC-2", working);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
+        reports.report(TaskStatus.IN_PROGRESS, "working", "ABC-2");
+
+        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().open()).isFalse();
+        assertThat(state.task("ABC-2").orElseThrow().turnOrNone().open()).isTrue();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void logsTheMoveAReportMadeWhereTheStatusChanged(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(AgentStatusReports.class)).addAppender(log);
+
+        reports.report(TaskStatus.IN_PROGRESS, "started", "ABC-1");
+
+        assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage).containsExactly("agent status changed");
+        assertThat(log.list.getFirst().getKeyValuePairs()).extracting(pair -> pair.key + "=" + pair.value)
+                .contains("status=IN_PROGRESS", "previous=NEW", "said=started");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void logsAQuestionOnceWhenTheStatusStaysAndNothingWhenItIsRepeatedOrPlain(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(AgentStatusReports.class)).addAppender(log);
+
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "which cache", "question", null, Map.of()), "ABC-1");
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "which cache", "question", null, Map.of()), "ABC-1");
+
+        assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage).containsExactly("agent asked");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void logsALineHeldOffTheCardButNotAQuestionAskedAgainWhileHeld(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a2")
+                .report(AgentReport.QUESTION).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(AgentStatusReports.class)).addAppender(log);
+
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "back at it", null, null, Map.of()), "ABC-1");
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "which one", "question", null, Map.of()), "ABC-2");
+
+        assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage)
+                .containsExactly("agent line held off the card");
     }
 
     @Test

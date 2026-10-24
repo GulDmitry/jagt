@@ -106,4 +106,35 @@ class MasterDecisionsTest {
 
         assertThat(returned).isEmpty();
     }
+
+    @Test
+    void countsARoundActedOnAgainOnceSoItIsNoRepeatOfItself(@TempDir Path worktree) {
+        MasterDecisions decisions = new MasterDecisions(mock(WorktreeChanges.class));
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        var delay = new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking",
+                "delay", "test"));
+        decisions.returned(task, 1L, List.of(delay));
+
+        var again = decisions.returned(task, 1L, List.of(delay));
+
+        assertThat(again).isEmpty();
+    }
+
+    @Test
+    void readsBackWhatWasRecordedAsDecidedWithoutItsTrailingBlankSpace(@TempDir Path worktree) {
+        MasterDecisions decisions = new MasterDecisions(mock(WorktreeChanges.class));
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+
+        decisions.record(task, "- keep v2 beside v3  ");
+
+        assertThat(decisions.of(task)).isEqualTo("- keep v2 beside v3");
+    }
+
+    @Test
+    void readsNothingDecidedWhereNothingWasRecorded(@TempDir Path worktree) {
+        MasterDecisions decisions = new MasterDecisions(mock(WorktreeChanges.class));
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+
+        assertThat(decisions.of(task)).isEmpty();
+    }
 }

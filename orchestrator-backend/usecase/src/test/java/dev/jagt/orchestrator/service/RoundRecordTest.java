@@ -138,4 +138,15 @@ class RoundRecordTest {
                 .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
                 .requestOpenedAt()).isEqualTo(1_700_000_500_000L);
     }
+
+    @Test
+    void answersWithTheStopTheTripLeftStandingOnTheTask() {
+        TaskStop standing = new TaskStop(TaskStop.Trigger.CHECKS, 3_000, "3 reads running could not list the checks");
+        when(stops.trip(eq("ABC-1"), any())).thenReturn(Optional.of(standing));
+
+        Optional<TaskStop> answer = roundRecord.record("ABC-1",
+                new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of()));
+
+        assertThat(answer).contains(standing);
+    }
 }

@@ -375,4 +375,58 @@ class ConfigServiceTest {
         assertThat(AgentConfig.defaults().visualizeOrDefault().enabledOrDefault()).isFalse();
         assertThat(ConfigFile.VisualizeConfig.defaults().withEnabled(true).enabledOrDefault()).isTrue();
     }
+
+    @ParameterizedTest
+    @CsvSource(value = {"null,3", "0,3", "1,1", "19,19", "25,19"}, nullValues = "null")
+    void resolvesHowManyRoundsOfOneStepMayRunBeforeTheTaskStops(Integer configured, int expected) {
+        assertThat(ConfigFile.LoopBreakerConfig.defaults().withRounds(configured).roundsOrDefault()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"null,3", "0,3", "1,1", "19,19", "25,19"}, nullValues = "null")
+    void resolvesHowManyRoundsRunningMayResolveNoThreadBeforeTheTaskStops(Integer configured, int expected) {
+        assertThat(ConfigFile.LoopBreakerConfig.defaults().withStalledRounds(configured).stalledRoundsOrDefault())
+                .isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"null,4", "0,4", "1,1", "9,9"}, nullValues = "null")
+    void resolvesHowManyShipsMayGoRoundBeforeTheTaskStops(Integer configured, int expected) {
+        assertThat(ConfigFile.LoopBreakerConfig.defaults().withShips(configured).shipsOrDefault()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"null,20", "0,20", "1,1", "45,45"}, nullValues = "null")
+    void resolvesHowManyMinutesAConflictMayStandStill(Integer configured, long expectedMinutes) {
+        assertThat(ConfigFile.defaults().withConflictStallMinutes(configured).conflictStallOrDefault())
+                .isEqualTo(java.time.Duration.ofMinutes(expectedMinutes));
+    }
+
+    @Test
+    void keepsTheDiagnoseSectionTheHumanWroteAndDefaultsOneTheyDidNot() {
+        assertThat(AgentConfig.defaults().diagnoseOrDefault().enabledOrDefault()).isFalse();
+        assertThat(AgentConfig.defaults().withDiagnose(new ConfigFile.DiagnoseConfig(true)).diagnoseOrDefault()
+                .enabledOrDefault()).isTrue();
+    }
+
+    @Test
+    void handsTheLoopBreakerTheOwnerConfiguredAtTheMomentItIsAsked(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, """
+                orchestrator:
+                  loopBreaker:
+                    rounds: 5
+                    ships: 6
+                    stalledRounds: 7
+                """);
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        var breaker = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .current();
+
+        assertThat(breaker.rounds()).isEqualTo(5);
+        assertThat(breaker.ships()).isEqualTo(6);
+        assertThat(breaker.stalledRounds()).isEqualTo(7);
+    }
 }

@@ -340,4 +340,36 @@ class WatchdogServiceTest {
 
         verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WAITING), eq("waiting on the trust dialog"), anyLong());
     }
+
+    @Test
+    void stampsTheSilenceAtOnceWhenASessionEndedRatherThanAtTheNextTick(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, SessionProbe.State.GONE, null)));
+
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+                .ended("ABC-1", "Error: usage limit");
+
+        assertThat(state.task("ABC-1").orElseThrow().agentIsSilent()).isTrue();
+    }
+
+    @Test
+    void stampsTheSilenceAtOnceWhenASessionWaitsAtAPromptNoHookReports(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, SessionProbe.State.WAITING, "the trust dialog")));
+
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+                .waiting("ABC-1", "the trust dialog");
+
+        assertThat(state.task("ABC-1").orElseThrow().agentIsSilent()).isTrue();
+    }
 }

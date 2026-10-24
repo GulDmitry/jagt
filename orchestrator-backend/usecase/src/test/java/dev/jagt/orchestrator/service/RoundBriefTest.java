@@ -46,6 +46,18 @@ class RoundBriefTest {
     }
 
     @Test
+    void addsNoBlankLineForARoundSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("session-brief.md"), "## round-threads\n\n## round-threads-done\nDone.\n");
+
+        String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",
+                List.of("reviewer (a.java:3): drop the cache"), 0, List.of()), "success",
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
+
+        assertThat(brief).isEqualTo("Review round for http://mr/1.\n<threads>\nreviewer (a.java:3): drop the cache\n\n"
+                + "</threads>\nDone.");
+    }
+
+    @Test
     void relaysAThreadWholeSoTheAgentAnswersTheReviewersLastWord(@TempDir Path root) throws Exception {
         Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         String brief = RoundBrief.of("http://mr/1", new ReviewFacts(true, false, "success", "",

@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.Verification;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -86,5 +87,22 @@ class VerifyJobTest {
         verify(relay).relayRound(eq("ABC-1"), eq("probes"), eq("artifact docs/guide.md — FAILED\nno such file"));
         verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().probes()).containsExactly(passed, failed);
+    }
+
+    @Test
+    void keepsATaskStoppedAtItsRoundCeilingInVerifyingInsteadOfReportingTheRunFailed(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
+        when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString())).thenAnswer(stopsTheTask -> {
+            state.updateTask("ABC-1", task -> task.withStop(new TaskStop(TaskStop.Trigger.ROUNDS, 5,
+                    "verify sent 3 rounds running")));
+            return false;
+        });
+
+        new VerifyJob(state, verification, statusReports, relay).run();
+
+        verify(statusReports, never()).verified(eq(false), any(), any());
     }
 }

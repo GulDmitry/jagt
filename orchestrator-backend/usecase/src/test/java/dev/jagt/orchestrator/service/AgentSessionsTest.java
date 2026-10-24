@@ -578,4 +578,160 @@ class AgentSessionsTest {
         assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
         verify(tmux, never()).submitTaskWindow(anyString(), anyString());
     }
+
+    @Test
+    void retiresWhatProvisioningWroteOutsideTheWorktreeThroughTheRuntime() {
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.forgetWorktree(Path.of("/wt"));
+
+        verify(agentRuntime).retireWorktree(Path.of("/wt"));
+    }
+
+    @Test
+    void tellsWhatTheAgentPrintedLastBeforeItExited() {
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.exitTail("jagt", "ABC-1")).thenReturn(Optional.of("Error: usage limit reached"));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.exitTail("ABC-1")).contains("Error: usage limit reached");
+    }
+
+    @Test
+    void tellsWhyTheSessionWaitsAtAPromptJagtNeverAnswers() {
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("Do you trust this folder?"));
+        when(agentRuntime.unansweredPrompt("Do you trust this folder?")).thenReturn(Optional.of("a trust dialog"));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.unansweredPrompt("ABC-1")).contains("a trust dialog");
+    }
+
+    @Test
+    void answersAnAdmissionWithWhatTheRuntimeSaidOfTheTasksWorktree() {
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        when(agentRuntime.admit(Path.of("/wt"), Path.of("/other"))).thenReturn(AgentRuntime.Admission.GRANTED);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.admit("ABC-1", Path.of("/other"))).isEqualTo(AgentRuntime.Admission.GRANTED);
+    }
+
+    @Test
+    void tellsTheCallerAFreshSessionWasStartedForARelayedRound() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+
+        assertThat(answer).contains("a fresh session was started");
+    }
+
+    @Test
+    void tellsTheCallerTheSessionWasReenteredWhenInstructionsAreRelayedUnderAPendingOne() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.relayUnder("ABC-1", "Keep both imports.", false);
+
+        assertThat(answer).contains("was down, so it was re-entered");
+    }
+
+    @Test
+    void typesALineIntoTheRunningSessionAndSaysSo() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", "use the cache")).thenReturn(true);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.say("ABC-1", "use the cache");
+
+        assertThat(answer).isEqualTo("Said to the agent.");
+        verify(tmux).nudgeTaskWindow("jagt", "ABC-1", "use the cache");
+    }
+
+    @Test
+    void refusesALineWhereNoSessionIsRunningForTheTask() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache")).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("restart the agent");
+        verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void refusesALineTheWindowTookButClosedBeforeItLeftTheInput() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", "use the cache")).thenReturn(true);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> use the cache"));
+        when(agentRuntime.draft("> use the cache")).thenReturn(Optional.of("use the cache"));
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(false);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache")).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("its window closed before the line left its input");
+    }
+
+    @Test
+    void refusesALineThatStaysUnsentAfterEnterWasPressedFourTimes() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", "use the cache")).thenReturn(true);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> use the cache"));
+        when(agentRuntime.draft("> use the cache")).thenReturn(Optional.of("use the cache"));
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache")).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("still sat unsent in the agent's input after Enter was pressed 4 times");
+        verify(tmux, times(3)).submitTaskWindow("jagt", "ABC-1");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"task_context.md changed \u2014 re-read it,true", "task_context.md changed \u2014 re-read i,false"})
+    void takesAnInputAsTheNudgeOnlyWhenItIsAtLeastHalfOfIt(String draft, boolean pressed) {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("screen"));
+        when(agentRuntime.draft("screen")).thenReturn(Optional.of(draft));
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.resubmitUnsentNudge("ABC-1")).isEqualTo(pressed);
+    }
+
+    @Test
+    void pressesNothingMoreWhereTheWindowRefusedTheEnter() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("screen"));
+        when(agentRuntime.draft("screen")).thenReturn(
+                Optional.of("task_context.md changed \u2014 re-read it now and follow the new instructions."));
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(false);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
+    }
+
+    @Test
+    void pressesNothingWhereTheScreenCannotBeRead() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.screenOf("jagt", "ABC-1")).thenThrow(new IllegalStateException("capture-pane failed"));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
+        verify(tmux, never()).submitTaskWindow(anyString(), anyString());
+    }
 }

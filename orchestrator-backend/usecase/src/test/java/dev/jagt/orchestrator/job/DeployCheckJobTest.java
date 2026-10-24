@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -117,6 +118,24 @@ class DeployCheckJobTest {
         ConfigService config = mock(ConfigService.class);
         StepRelay relay = mock(StepRelay.class);
         when(state.tasks()).thenReturn(Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+
+        new DeployCheckJob(state, config, relay).run();
+
+        verify(relay, never()).relay(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void asksNothingAgainOfADeployWhoseCheckWasAlreadyAsked() {
+        StateService state = mock(StateService.class);
+        ConfigService config = mock(ConfigService.class);
+        StepRelay relay = mock(StepRelay.class);
+        TaskState deployed = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
+                .withDeployCommit("proj", "0123456789abcdef");
+        String asked = "ABC-42 is deployed:\n- proj: 01234567 on dev";
+        when(state.tasks()).thenReturn(Map.of("ABC-42",
+                deployed.withTurn(Turn.none().withMark("deploy", Turn.digestOf(asked)))));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 

@@ -35,6 +35,32 @@ class SubAgentBriefingTest {
     }
 
     @Test
+    void addsNothingForAContextSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
+        Path blank = Files.createDirectories(root.resolve("blank"));
+        Path absent = Files.createDirectories(root.resolve("absent"));
+        Files.writeString(blank.resolve("session-brief.md"), "## context\n");
+        Files.writeString(absent.resolve("session-brief.md"), "## other\nText.\n");
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String withBlank = new SubAgentBriefing(new SessionBrief(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(blank.toString()))))
+                .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        String withNone = new SubAgentBriefing(new SessionBrief(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(absent.toString()))))
+                .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(withBlank).isEqualTo(withNone);
+    }
+
+    @Test
     void namesTheDeployBranchAsJagtsAloneSoTheAgentNeverMergesIntoIt(@TempDir Path root) throws Exception {
         Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),

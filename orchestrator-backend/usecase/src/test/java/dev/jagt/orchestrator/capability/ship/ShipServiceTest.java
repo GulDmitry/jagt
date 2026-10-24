@@ -7,6 +7,8 @@ import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.MissLog;
+import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -286,5 +289,37 @@ class ShipServiceTest {
                 .isInstanceOf(Refusal.class)
                 .hasMessageContaining("No task ABC-9")
                 .extracting("code").isEqualTo(Refusal.Code.NO_SUCH_TASK);
+    }
+
+    @Test
+    void forbidsTheRepliesOfAMasterShipWhereNoMasterCaseAllowsTheReply() {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).title("t").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
+                .withMaster(ConfigService.ConfigFile.MasterConfig.defaults().withMode("act")));
+
+        OriginContext.as(ActionOrigin.MASTER,
+                () -> new ShipService(stateService, configService, relay, changes, door).ship("ABC-42"));
+
+        verify(relay).write(eq("ABC-42"), eq("ship"), contains("this ship is the Master session's"));
+    }
+
+    @Test
+    void leavesTheRepliesOfAMasterShipToTheSessionWhereAMasterCaseAllowsThem() throws Exception {
+        when(relay.write(anyString(), anyString(), anyString())).thenReturn(true);
+        Files.writeString(root.resolve("master-cases.md"),
+                "## reply\n\nmove: reply\nat: REVIEW_PENDING\nby: master\nThe Master lets the session reply.\n");
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).title("t").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
+                .withMaster(ConfigService.ConfigFile.MasterConfig.defaults().withMode("act")));
+
+        OriginContext.as(ActionOrigin.MASTER,
+                () -> new ShipService(stateService, configService, relay, changes, door).ship("ABC-42"));
+
+        verify(relay).write(eq("ABC-42"), eq("ship"), contains("post each drafted reply"));
     }
 }
