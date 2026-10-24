@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
@@ -48,7 +49,7 @@ class RoundRelayTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         RoundRelay relay = new RoundRelay(new LoopGuard(state, config,
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), clock), clock),
-                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                         new MissLog(new JsonMapper(), paths, clock),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
                         new TaskTurns(state, clock)), new SessionBrief(paths));
@@ -72,7 +73,7 @@ class RoundRelayTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         RoundRelay relay = new RoundRelay(new LoopGuard(state, config,
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), clock), clock),
-                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                         new MissLog(new JsonMapper(), paths, clock),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
                         new TaskTurns(state, clock)), new SessionBrief(paths));
@@ -94,7 +95,7 @@ class RoundRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
 
         SweepResult result = new RoundRelay(loops, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
                 new TaskTurns(state, clock)), new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
                 new ReviewFacts(true, false, "success", "", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
@@ -114,7 +115,7 @@ class RoundRelayTest {
         LoopGuard loops = mock(LoopGuard.class);
         when(loops.round(anyString(), any(), anyString())).thenReturn(LoopGuard.Relay.RELAY);
         RoundRelay relay = new RoundRelay(loops, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
                 new TaskTurns(state, clock)), new SessionBrief(paths));
         ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0);
@@ -135,7 +136,7 @@ class RoundRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
         LoopGuard loops = mock(LoopGuard.class);
         RoundRelay relay = new RoundRelay(loops, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), clock)),
                 new TaskTurns(state, clock)), new SessionBrief(paths));
 

@@ -1,0 +1,94 @@
+# Master cases
+
+What the Master may do at which status, read while `master.mode` is not `off`. Copy this file to `master-cases.md` to
+edit a case; a case your copy lacks is read from here. A move at a status no case names is not made: it is written to
+`misses.jsonl` beside `state.json` instead, and the task stops for you. `master.mine` and `humanPaths` still keep a
+move yours where a case allows it.
+
+Each case: `move:` a verb the Master presses or a step it sends the session · `at:` the task's statuses, `any` or
+`any but <statuses>` · `by: master` · one line saying what the case is. What the session may answer is its own case's,
+in `session-cases.md`.
+
+## ship
+
+move: ship
+at: REVIEW_PENDING
+by: master
+The Master read the hand-back, it holds, and the Master ships it.
+
+## reply
+
+move: reply
+at: REVIEW_PENDING
+by: master
+On the Master's ship the session posts its drafted replies to the reviewers.
+
+## deploy
+
+move: deploy
+at: REVIEWED, APPROVED
+by: master
+The request is green with every thread closed, and the Master deploys it once.
+
+## deploy-finish
+
+move: deploy
+at: DEPLOY_CONFLICT
+by: master
+The session staged a deploy conflict resolved in full, and the Master finishes the deploy you pressed.
+
+## approve-plan
+
+move: approve-plan
+at: PLAN_PENDING
+by: master
+The Master read the plan, it holds, and the Master approves it.
+
+## add-repo
+
+move: add-repo
+at: any but DONE
+by: master
+The session asked for a repository its task lacks, and the Master adds it.
+
+## round-not-ready
+
+move: round-not-ready
+at: REVIEW_PENDING
+by: master
+The Master sends its findings on the hand-back to the session.
+
+## plan-not-ready
+
+move: plan-not-ready
+at: PLAN_PENDING
+by: master
+The Master sends its findings on the plan to the session.
+
+## asked-human
+
+move: asked-human
+at: PLAN_PENDING, REVIEW_PENDING
+by: master
+The Master asked you a question and tells the session to wait on the answer.
+
+## plan-answered
+
+move: plan-answered
+at: PLAN_PENDING
+by: master
+The Master answers the question a plan was handed back with.
+
+## answered
+
+move: answered
+at: any but PLAN_PENDING, SHIPPING, DEPLOY_CONFLICT, DONE
+by: master
+The Master answers a session's question.
+
+## answered-under
+
+move: answered-under
+at: SHIPPING, DEPLOY_CONFLICT
+by: master
+The Master answers a session's question below the instruction it still works on.

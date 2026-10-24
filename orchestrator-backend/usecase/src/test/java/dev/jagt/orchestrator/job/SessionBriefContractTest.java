@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -68,7 +69,7 @@ class SessionBriefContractTest {
         state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())),
                 mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
@@ -114,7 +115,7 @@ class SessionBriefContractTest {
         AgentSessions sessions = mock(AgentSessions.class);
 
         new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())),
                 changes).ship("ABC-42");

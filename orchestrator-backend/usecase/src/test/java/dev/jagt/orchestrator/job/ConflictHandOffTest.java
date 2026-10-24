@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.CaseDoor;
@@ -47,7 +48,7 @@ class ConflictHandOffTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new ConflictWatch.Progress(7, 0, "d")));
@@ -64,7 +65,7 @@ class ConflictHandOffTest {
         when(stall.handed("ABC-42")).thenReturn(true);
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new ConflictWatch.Progress(7, 0, "d")));
@@ -82,7 +83,7 @@ class ConflictHandOffTest {
         when(stall.handed("ABC-42")).thenReturn(true);
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", conflict);
 
@@ -95,7 +96,7 @@ class ConflictHandOffTest {
                 .withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), true, new ConflictWatch.Progress(0, 7, "d")));

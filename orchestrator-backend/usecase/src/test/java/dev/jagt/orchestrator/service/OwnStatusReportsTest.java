@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
@@ -122,7 +123,7 @@ class OwnStatusReportsTest {
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage broke = new AgentStatusMessage("IN_PROGRESS", "the page 500s", null, null, Map.of());
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
-                new CaseDoor(new SessionCases(paths), state,
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
 
@@ -144,7 +145,7 @@ class OwnStatusReportsTest {
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
-                new CaseDoor(new SessionCases(paths), state,
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
 
@@ -166,7 +167,7 @@ class OwnStatusReportsTest {
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
-                new CaseDoor(new SessionCases(paths), state,
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
 
@@ -190,7 +191,7 @@ class OwnStatusReportsTest {
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
-                new CaseDoor(new SessionCases(paths), state,
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
 

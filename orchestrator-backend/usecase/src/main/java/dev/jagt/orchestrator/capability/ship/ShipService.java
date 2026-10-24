@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -33,6 +34,8 @@ public class ShipService {
     private final WorktreeChanges changes;
     /** One ship at a time per task: two clicks in a row would relay the same instruction twice. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
+    private static final String MASTER_MAY_NOT_REPLY = "Do NOT post any replies — this ship is the Master session's,"
+            + " which may not answer a person. LEAVE review_replies.md for the human.\n";
 
     public Outcome ship(String taskIdOrAlias) {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
@@ -61,7 +64,7 @@ public class ShipService {
         }
         List<String> idle = targets.stream().filter(target -> !carrying.contains(target))
                 .map(Target::project).toList();
-        if (!relay.write(taskId, "ship", shipFacts(title, taskId, carrying, repliesStep(config)))) {
+        if (!relay.write(taskId, "ship", shipFacts(title, taskId, carrying, repliesStep(taskId, config)))) {
             return Outcome.nothing("ship " + taskId + ": no case sends ship at " + task.status()
                     + ", so the session was not told; see misses.jsonl");
         }
@@ -90,11 +93,16 @@ public class ShipService {
                 .toList();
     }
 
+    private String repliesStep(String taskId, ConfigService.ConfigFile config) {
+        boolean byTheMaster = OriginContext.current() == ActionOrigin.MASTER;
+        return byTheMaster && config.master().may(MasterRight.REPLY) && !relay.presses(taskId, MasterMove.REPLY.id())
+                ? MASTER_MAY_NOT_REPLY : repliesStep(config);
+    }
+
     static String repliesStep(ConfigService.ConfigFile config) {
         // A right withheld from the Master is withheld from the ship it asked for, not from every ship.
         if (OriginContext.current() == ActionOrigin.MASTER && !config.master().may(MasterRight.REPLY)) {
-            return "Do NOT post any replies — this ship is the Master session's, which may not answer a"
-                    + " person. LEAVE review_replies.md for the human.\n";
+            return MASTER_MAY_NOT_REPLY;
         }
         if (!config.codeReview().postReviewRepliesOrDefault()) {
             return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";

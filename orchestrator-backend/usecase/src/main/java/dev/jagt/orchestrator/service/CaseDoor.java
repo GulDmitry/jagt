@@ -1,7 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.CaseBook;
+import dev.jagt.orchestrator.config.MasterCases;
+import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
@@ -14,8 +17,9 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 /**
- * A step goes to a session only where a case sends it at the task's status, and the session's reply closes its turn
- * only where a case of that step takes it; a miss either way stops the task for the human.
+ * A step goes to a session only where a case sends it at the task's status, the session's reply closes its turn only
+ * where a case of that step takes it, and the Master moves only where a Master case allows it; a miss stops the task
+ * for the human.
  */
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,7 @@ import java.util.Optional;
 public class CaseDoor {
 
     private final SessionCases cases;
+    private final MasterCases masterCases;
     private final StateService stateService;
     private final MissLog misses;
     private final TaskStops stops;
@@ -31,18 +36,54 @@ public class CaseDoor {
     public boolean opens(String taskId, String step) {
         String id = stateService.canonicalTaskId(taskId);
         Optional<TaskStatus> status = stateService.task(id).map(TaskState::status);
-        if (status.isEmpty() || cases.book().sends(step, status.get())) {
+        if (status.isEmpty()) {
             return true;
         }
+        if (!cases.book().sends(step, status.get())) {
+            return refused(id, step, status.get());
+        }
+        return MasterMove.relaying(step).isEmpty() || !byTheMaster() || allows(id, step, status.get());
+    }
+
+    /** Only the Master's move is held to a case: any other press passes. */
+    public boolean presses(String taskId, String move) {
+        if (!byTheMaster()) {
+            return true;
+        }
+        String id = stateService.canonicalTaskId(taskId);
+        Optional<TaskStatus> status = stateService.task(id).map(TaskState::status);
+        return status.isEmpty() || allows(id, move, status.get());
+    }
+
+    private static boolean byTheMaster() {
+        return OriginContext.current() == ActionOrigin.MASTER;
+    }
+
+    private boolean refused(String id, String step, TaskStatus status) {
         CaseBook.By by = CaseBook.By.of(OriginContext.current());
-        misses.record(id, step, status.get(), by);
+        misses.record(id, step, status, by);
         log.atWarn().setMessage("step refused").addKeyValue("task", id).addKeyValue("step", step)
-                .addKeyValue("status", status.get()).addKeyValue("by", by.id())
+                .addKeyValue("status", status).addKeyValue("by", by.id())
                 .addKeyValue("cause", "no case sends it at this status")
                 .addKeyValue("effect", "nothing relayed, the task stopped")
                 .addKeyValue("fix", SessionCases.FILE)
                 .log();
-        stops.stop(id, LoopWatch.Trigger.MISS, "no case sends " + step + " at " + status.get() + ", set off by " + by.id());
+        stops.stop(id, LoopWatch.Trigger.MISS, "no case sends " + step + " at " + status + ", set off by " + by.id());
+        return false;
+    }
+
+    private boolean allows(String id, String move, TaskStatus status) {
+        if (masterCases.book().sends(move, status)) {
+            return true;
+        }
+        misses.record(id, move, status, CaseBook.By.MASTER);
+        log.atWarn().setMessage("move refused").addKeyValue("task", id).addKeyValue("step", move)
+                .addKeyValue("status", status).addKeyValue("by", CaseBook.By.MASTER.id())
+                .addKeyValue("cause", "no master case allows it at this status")
+                .addKeyValue("effect", "the move not made, the task stopped")
+                .addKeyValue("fix", MasterCases.FILE)
+                .log();
+        stops.stop(id, LoopWatch.Trigger.MISS, "no master case allows " + move + " at " + status);
         return false;
     }
 

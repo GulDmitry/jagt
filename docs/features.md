@@ -48,7 +48,7 @@
 
 ## Cases · [spec](../openspec/specs/cases/spec.md)
 
-- **Your own cases** — A case sends a step and opens a turn kept on the task; a step or reply no case takes stops the task (`misses.jsonl`).
+- **Your own cases** — A case sends a step and opens a turn, or lets the Master move; what no case takes stops the task (`misses.jsonl`).
   [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-a-file-you-may-copy)
 
 ## Git · [spec](../openspec/specs/git/spec.md)

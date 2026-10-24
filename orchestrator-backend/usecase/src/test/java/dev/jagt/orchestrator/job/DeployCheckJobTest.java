@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -66,7 +67,7 @@ class DeployCheckJobTest {
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         AgentSessions sessions = mock(AgentSessions.class);
         StateService before = new StateService(new JsonMapper(), paths);
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), before,
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), before,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(before, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(before, Clock.systemUTC()));
@@ -75,7 +76,7 @@ class DeployCheckJobTest {
         StateService restarted = new StateService(new JsonMapper(), paths);
 
         new DeployCheckJob(restarted, config, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), restarted, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), restarted, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(restarted, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(restarted, Clock.systemUTC()))).run();
 

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.CaseDoor;
@@ -61,12 +62,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -84,12 +86,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -107,12 +110,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -129,12 +133,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -152,11 +157,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -175,11 +181,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
         state.putTask("ABC-42", task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -196,11 +203,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -216,12 +224,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -238,13 +247,14 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -262,6 +272,7 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -269,7 +280,7 @@ class MasterVerdictsTest {
         decisions.returned(task, 5, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -291,12 +302,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -314,13 +326,14 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         when(ship.ship("ABC-1", task)).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -339,12 +352,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -362,12 +376,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -385,12 +400,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -411,13 +427,14 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.CLOSED).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -433,13 +450,14 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -459,13 +477,14 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -483,12 +502,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -506,13 +526,14 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .message("admins only or every user?").report(AgentReport.QUESTION).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -533,12 +554,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -556,12 +578,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -583,12 +606,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -607,6 +631,7 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -614,7 +639,7 @@ class MasterVerdictsTest {
         decisions.returned(task, 5, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -634,13 +659,14 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -660,11 +686,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -681,11 +708,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -703,11 +731,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -724,12 +753,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         doReturn(3).when(decisions).answersOverThisTree(task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -744,11 +774,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         doReturn(repeated).when(decisions).repeatedRounds(task);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -763,11 +794,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -785,10 +817,11 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -804,12 +837,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -826,12 +860,13 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -849,11 +884,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -882,11 +918,12 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,

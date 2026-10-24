@@ -40,6 +40,8 @@ master-brief.md
 session-brief.md
 # The session cases, copied from session-cases.md.dist
 session-cases.md
+# The Master cases, copied from master-cases.md.dist
+master-cases.md
 # Steps no case sends, written beside state.json
 misses.jsonl
 misses.jsonl.1

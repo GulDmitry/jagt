@@ -3,8 +3,10 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -105,7 +107,7 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
@@ -122,7 +124,7 @@ class StepRelayTest {
                 "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                         new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))),
                 new TaskTurns(state, Clock.systemUTC()));
@@ -143,7 +145,7 @@ class StepRelayTest {
                 "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
@@ -163,7 +165,7 @@ class StepRelayTest {
                 "## verify\n\nstep: verify\nat: VERIFYING\nby: jagt\nreplies: any; plain\nThe command failed.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
@@ -188,7 +190,7 @@ class StepRelayTest {
                 "## verify\n\nstep: verify\nat: VERIFYING\nby: jagt\nreplies: any; plain\nThe command failed.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
@@ -199,5 +201,28 @@ class StepRelayTest {
 
         assertThat(told).isTrue();
         assertThat(state.task("ABC-42").orElseThrow().loopStopped()).isFalse();
+    }
+
+    @Test
+    void sendsNothingTheMasterRelaysWhereNoMasterCaseAllowsIt(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"),
+                "## answered\n\nstep: answered\nat: any\nby: master\nreplies: any; plain\nThe Master answers.\n");
+        Files.writeString(root.resolve("master-cases.md"),
+                "## answered\n\nmove: answered\nat: REVIEW_PENDING\nby: master\nThe Master answers.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC()));
+
+        boolean told = OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-42", "answered", "Keep the old keys."));
+
+        assertThat(told).isFalse();
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
+        assertThat(state.task("ABC-42").orElseThrow().loopOrNone().stop())
+                .extracting(LoopWatch.Stop::evidence).isEqualTo("no master case allows answered at IN_PROGRESS");
     }
 }

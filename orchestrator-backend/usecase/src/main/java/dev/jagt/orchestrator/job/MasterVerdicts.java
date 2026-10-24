@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -77,7 +78,8 @@ public class MasterVerdicts {
             return ask(taskId, "These findings came back " + repeated + " rounds running, neither fixed nor"
                     + " disputed: " + String.join(" ", findings));
         }
-        if (!relay.relayRound(taskId, plan ? "plan-not-ready" : "round-not-ready", String.join("\n", findings))) {
+        MasterMove returning = plan ? MasterMove.PLAN_NOT_READY : MasterMove.ROUND_NOT_READY;
+        if (!relay.relayRound(taskId, returning.id(), String.join("\n", findings))) {
             return false;
         }
         String ruled = verdict.findings().stream().filter(MasterReview.Said::settles).map(MasterReview.Said::line)
@@ -93,7 +95,7 @@ public class MasterVerdicts {
 
     private boolean go(String taskId, TaskState task, MasterReview.Verdict verdict) {
         if (task.report().asks() && !verdict.advice().isEmpty()) {
-            relay.relay(taskId, "plan-answered", PLAN_ANSWERED + verdict.advice().stream().map(MasterReview.Said::line)
+            relay.relay(taskId, MasterMove.PLAN_ANSWERED.id(), PLAN_ANSWERED + verdict.advice().stream().map(MasterReview.Said::line)
                     .collect(Collectors.joining("\n")));
         }
         if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human")) {
@@ -108,7 +110,7 @@ public class MasterVerdicts {
      * round. The report is the one an agent makes when it stops rather than guess.
      */
     private boolean ask(String taskId, String question) {
-        if (!relay.relay(taskId, "asked-human", "The reviewer asked the human: " + question)) {
+        if (!relay.relay(taskId, MasterMove.ASKED_HUMAN.id(), "The reviewer asked the human: " + question)) {
             return false;
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
@@ -131,8 +133,9 @@ public class MasterVerdicts {
                            boolean freshSession) {
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
         boolean told = FlowRules.awaitsItsInstruction(task.status())
-                ? relay.relayUnder(taskId, "answered-under", answer, freshSession)
-                : freshSession ? relay.relayFresh(taskId, "answered", answer) : relay.relay(taskId, "answered", answer);
+                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.id(), answer, freshSession)
+                : freshSession ? relay.relayFresh(taskId, MasterMove.ANSWERED.id(), answer)
+                : relay.relay(taskId, MasterMove.ANSWERED.id(), answer);
         if (!told) {
             return false;
         }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.task.PlanGate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +15,12 @@ public class PlanApproval {
     private final StateService stateService;
     private final StepRelay relay;
 
-    /** Whether the session was told anything new; the gate is open either way. */
+    /** Whether the session was told anything new; the gate is open either way, unless no case allowed the approval. */
     public boolean approve(String taskId, String reader) {
         String id = stateService.canonicalTaskId(taskId);
+        if (!relay.presses(id, MasterMove.APPROVE_PLAN.id())) {
+            return false;
+        }
         stateService.updateTask(id, task -> task.withPlanGate(PlanGate.OPEN));
         log.atInfo().setMessage("plan approved").addKeyValue("task", id).addKeyValue("reader", reader).log();
         return relay.relay(id, "plan", reader + ": the plan holds.");

@@ -22,8 +22,27 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** Which step may be sent to a session at which status, and which replies the turn it opens takes. */
-public record CaseBook(List<Case> cases, List<Problem> faults) {
+/**
+ * Which step may be sent to a session at which status and which replies the turn it opens takes, or which move the
+ * Master may make at which status.
+ */
+public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
+
+    /** What a case names; a move takes no reply, as the session's case of its step holds that. */
+    public enum Shape {
+        STEPS("step", "which no brief section holds", "no case sends the brief step '%s' — add one, or it never reaches a session"),
+        MOVES("move", "which the Master lacks", "no case names the Master's move '%s' — add one, or the Master never makes it");
+
+        private final String key;
+        private final String unknown;
+        private final String unnamed;
+
+        Shape(String key, String unknown, String unnamed) {
+            this.key = key;
+            this.unknown = unknown;
+            this.unnamed = unnamed;
+        }
+    }
 
     public enum By {
         JAGT, MASTER, HUMAN;
@@ -55,6 +74,8 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
     /** A reply is a reported status and what the report means; both must be named. */
     public record Replies(Set<TaskStatus> statuses, Set<AgentReport> kinds) {
 
+        static final Replies NONE = new Replies(Set.of(), Set.of());
+
         public Replies {
             statuses = Set.copyOf(statuses);
             kinds = Set.copyOf(kinds);
@@ -83,7 +104,7 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
         }
     }
 
-    private static final Pattern KEY = Pattern.compile("(step|at|by|replies):\\s*(.*)");
+    private static final Pattern KEY = Pattern.compile("(step|move|at|by|replies):\\s*(.*)");
     private static final String ANY = "any";
     private static final String ANY_BUT = "any but ";
 
@@ -92,11 +113,19 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
         faults = List.copyOf(faults);
     }
 
-    public static CaseBook empty() {
-        return new CaseBook(List.of(), List.of());
+    public static CaseBook empty(Shape shape) {
+        return new CaseBook(shape, List.of(), List.of());
     }
 
     public static CaseBook parse(String file, String text) {
+        return parse(Shape.STEPS, file, text);
+    }
+
+    public static CaseBook parseMoves(String file, String text) {
+        return parse(Shape.MOVES, file, text);
+    }
+
+    private static CaseBook parse(Shape shape, String file, String text) {
         List<Case> cases = new ArrayList<>();
         List<Problem> faults = new ArrayList<>();
         Set<String> seen = new HashSet<>();
@@ -105,9 +134,9 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
                 faults.add(fault(file, section.id(), "is written twice"));
                 continue;
             }
-            read(file, section, faults).ifPresent(cases::add);
+            read(shape, file, section, faults).ifPresent(cases::add);
         }
-        return new CaseBook(cases, faults);
+        return new CaseBook(shape, cases, faults);
     }
 
     /** This book's cases replace the shipped one's of the same id; the rest of the shipped book stands. */
@@ -115,7 +144,7 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
         Map<String, Case> merged = new LinkedHashMap<>();
         shipped.cases.forEach(c -> merged.put(c.id(), c));
         cases.forEach(c -> merged.put(c.id(), c));
-        return new CaseBook(List.copyOf(merged.values()),
+        return new CaseBook(shape, List.copyOf(merged.values()),
                 Stream.concat(faults.stream(), shipped.faults.stream()).toList());
     }
 
@@ -129,19 +158,18 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
         return cases.stream().filter(c -> steps.contains(c.step())).map(Case::replies).reduce(Replies::plus);
     }
 
-    /** What keeps this book from matching {@code steps}, both ways, beside what it could not read. */
-    public List<Problem> problems(Set<String> steps, String file) {
+    /** What keeps this book from matching {@code named}, both ways, beside what it could not read. */
+    public List<Problem> problems(Set<String> named, String file) {
         List<Problem> problems = new ArrayList<>(faults);
-        cases.stream().filter(c -> !steps.contains(c.step()))
-                .forEach(c -> problems.add(fault(c.file(), c.id(), "names step '" + c.step()
-                        + "', which no brief section holds")));
-        steps.stream().filter(step -> cases.stream().noneMatch(c -> c.step().equals(step)))
-                .forEach(step -> problems.add(new Problem(file, file + ": no case sends the brief step '" + step
-                        + "' — add one, or it never reaches a session")));
+        cases.stream().filter(c -> !named.contains(c.step()))
+                .forEach(c -> problems.add(fault(c.file(), c.id(), "names " + shape.key + " '" + c.step()
+                        + "', " + shape.unknown)));
+        named.stream().filter(step -> cases.stream().noneMatch(c -> c.step().equals(step)))
+                .forEach(step -> problems.add(new Problem(file, file + ": " + shape.unnamed.formatted(step))));
         return List.copyOf(problems);
     }
 
-    private static Optional<Case> read(String file, Sections.Section section, List<Problem> faults) {
+    private static Optional<Case> read(Shape shape, String file, Sections.Section section, List<Problem> faults) {
         Map<String, String> keys = new LinkedHashMap<>();
         List<String> says = new ArrayList<>();
         section.body().lines().map(String::strip).filter(line -> !line.isEmpty()).forEach(line -> {
@@ -154,20 +182,22 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
         });
         int before = faults.size();
         String id = section.id();
-        String step = keys.getOrDefault("step", "");
+        String step = keys.getOrDefault(shape.key, "");
         if (step.isEmpty()) {
-            faults.add(fault(file, id, "names no step"));
+            faults.add(fault(file, id, "names no " + shape.key));
         }
         Optional<Set<TaskStatus>> at = statuses(keys.getOrDefault("at", ""));
         if (at.isEmpty()) {
             faults.add(fault(file, id, "has at: '" + keys.getOrDefault("at", "")
                     + "', which is not any, any but <statuses>, or a list of " + Arrays.toString(TaskStatus.values())));
         }
-        Optional<By> by = By.of(keys.getOrDefault("by", ""));
+        Optional<By> by = By.of(keys.getOrDefault("by", "")).filter(named -> shape == Shape.STEPS || named == By.MASTER);
         if (by.isEmpty()) {
-            faults.add(fault(file, id, "has by: '" + keys.getOrDefault("by", "") + "', which is not jagt, master or human"));
+            faults.add(fault(file, id, "has by: '" + keys.getOrDefault("by", "") + "', which is not "
+                    + (shape == Shape.STEPS ? "jagt, master or human" : "master")));
         }
-        Optional<Replies> replies = readReplies(keys.getOrDefault("replies", ""), faults, file, id);
+        Optional<Replies> replies = shape == Shape.MOVES ? Optional.of(Replies.NONE)
+                : readReplies(keys.getOrDefault("replies", ""), faults, file, id);
         if (says.isEmpty()) {
             faults.add(fault(file, id, "says nothing of what it is"));
         }
