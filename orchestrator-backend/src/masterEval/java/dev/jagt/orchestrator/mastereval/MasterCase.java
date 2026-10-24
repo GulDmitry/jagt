@@ -180,7 +180,7 @@ record MasterCase(String name, String instructions, TaskStatus status, Map<Strin
                                     }
                                 }
                                 """),
-                        MasterReview.Kind.QUESTION, List.of("v2")),
+                        MasterReview.Kind.QUESTION, List.of("v2|version 2")),
 
                 plan("a plan doing exactly what the ticket asks",
                         "Discount was applied to the shipping line too. Charge it on goods only.",
@@ -266,7 +266,7 @@ record MasterCase(String name, String instructions, TaskStatus status, Map<Strin
                         """
                         1. In `QuoteMock.answer`, replace `case 2 -> "/quote/v2"` with `case 3 -> "/quote/v3"`.
                         """,
-                        MasterReview.Kind.QUESTION, List.of("v2")),
+                        MasterReview.Kind.QUESTION, List.of("v2|version 2")),
 
                 plan("a plan opening to everyone what the ticket reserves",
                         "Add `GET /reports/export`, the CSV export of the report. It is for admins only.",
