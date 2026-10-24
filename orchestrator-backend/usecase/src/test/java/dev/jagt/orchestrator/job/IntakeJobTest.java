@@ -4,13 +4,17 @@ import static org.mockito.Mockito.times;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -69,6 +73,24 @@ class IntakeJobTest {
         job.run();
 
         verify(candidates, never()).waiting(any());
+    }
+
+    @Test
+    void opensATaskAsTheTrackers() {
+        IntakeCandidates.Ready ready = new IntakeCandidates.Ready(TicketFacts.defaults().withKey("ABC-42"),
+                TokenUsage.NONE);
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withTracker(new TrackerConfig("both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
+        when(candidates.waiting(any())).thenReturn(Optional.of(List.of(ready)));
+        AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
+        when(starts.start(ready)).thenAnswer(call -> {
+            openedBy.set(OriginContext.current());
+            return true;
+        });
+
+        job.run();
+
+        assertThat(openedBy.get()).isEqualTo(ActionOrigin.TRACKER);
     }
 
     @Test

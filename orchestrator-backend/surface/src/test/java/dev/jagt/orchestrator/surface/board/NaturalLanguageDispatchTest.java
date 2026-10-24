@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
@@ -26,6 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -183,6 +186,28 @@ class NaturalLanguageDispatchTest {
         String result = dispatch.interpret("pick up ABC-42");
 
         assertThat(result).isEqualTo("understood as `do ABC-42` — Task ABC-42 initialized");
+    }
+
+    @Test
+    void opensATaskAsThePalettes(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("do", "", "ABC-42", "a new ticket")), TokenUsage.NONE);
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, new PaletteContext(state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview()), Clock.systemUTC())), commands, launcher);
+        AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
+        when(launcher.launch(LaunchRequest.of("ABC-42"))).thenAnswer(call -> {
+            openedBy.set(OriginContext.current());
+            return Launched.created("ABC-42", "Task ABC-42 initialized");
+        });
+
+        dispatch.interpret("pick up ABC-42");
+
+        assertThat(openedBy.get()).isEqualTo(ActionOrigin.PALETTE);
     }
 
     @Test

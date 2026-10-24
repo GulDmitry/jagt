@@ -26,8 +26,7 @@
   [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
   [spec](../openspec/specs/board/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
-- **Local only** — The board answers on the local machine only and refuses foreign writes.
-  [spec](../openspec/specs/board/spec.md#requirement-loopback-only)
+- **Local only** — The board answers locally only and refuses foreign writes. [spec](../openspec/specs/board/spec.md#requirement-loopback-only)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 
@@ -45,6 +44,8 @@
   [spec](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Keys for verbs** — Every verb shows its key, and one that asks first asks on its key too.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key)
+- **Who asked** — Each step of a task's history names who asked for it, the first one what opened the task.
+  [spec](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)
 
 ## Cases · [spec](../openspec/specs/cases/spec.md)
 
@@ -91,8 +92,7 @@
 
 - **Master review** — A headless reader judges every handed-back round and writes its verdict for you.
   [spec](../openspec/specs/master/spec.md#requirement-the-master-is-a-headless-run-per-role-not-a-window)
-- **Master brief** — The Master judges by a brief you can copy and edit.
-  [spec](../openspec/specs/master/spec.md#requirement-the-master-judges-by-a-brief)
+- **Master brief** — The Master judges by a brief you copy and edit. [spec](../openspec/specs/master/spec.md#requirement-the-master-judges-by-a-brief)
 - **Master acts for you** — In `act` the Master ships and deploys; your word overrules it. Key: `orchestrator.master.mode`, `judge` by default.
   [spec](../openspec/specs/master/spec.md#requirement-in-act-the-master-moves-for-you)
 - **Lessons** — When you disagree with the Master, it offers a lesson and changes no brief.

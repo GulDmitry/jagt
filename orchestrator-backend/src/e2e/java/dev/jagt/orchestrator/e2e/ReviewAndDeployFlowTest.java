@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.surface.mcp.MasterToken;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -321,6 +322,32 @@ class ReviewAndDeployFlowTest {
         assertThat(task().baseBranch()).isEqualTo("main");
         assertThat(task().title()).isEqualTo(TITLE);
         assertThat(worktree().resolve("task_context.md")).exists();
+    }
+
+    @Test
+    void aTaskOpenedOnTheBoardRecordsTheBoardAsItsOpener() throws Exception {
+        when(tracker.readTicket(eq(TASK), any())).thenReturn(
+                new Answer<>(Optional.of(TicketFacts.defaults().withExists(true).withKey(TASK).withTitle(TITLE)
+                        .withTrackerProject("ABC").withUrl("https://tracker.example.com/" + TASK)), TokenUsage.NONE));
+
+        post("/api/tasks", "{\"ref\": \"" + TASK + "\", \"project\": \"proj\"}", Map.of());
+
+        assertThat(task().history()).extracting(StatusChange::status, StatusChange::origin)
+                .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.BOARD));
+    }
+
+    @Test
+    void aTaskOpenedOverMcpRecordsTheCallAsItsOpener() throws Exception {
+        String call = """
+                {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                 "params": {"name": "initialize_task", "arguments": {"taskId": "%s", "projectKey": "proj"}}}"""
+                .formatted(TASK);
+
+        post("/mcp", call, Map.of(MasterToken.HEADER,
+                Files.readString(paths.root().resolve(MasterToken.FILE)).strip()));
+
+        assertThat(task().history()).extracting(StatusChange::status, StatusChange::origin)
+                .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.MCP));
     }
 
     private String shipTheFirstRound() throws Exception {
