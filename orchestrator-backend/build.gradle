@@ -382,7 +382,7 @@ tasks.register('e2eTest', Test) {
 def standBase = System.getProperty('java.io.tmpdir')
 
 tasks.register('standTest', Test) {
-    description = 'Runs the local synthetic code host and tracker the test stand serves over MCP.'
+    description = 'Blood Games: real sessions and the Master try to break into jagt on a local stand (spends tokens).'
     group = 'verification'
     testClassesDirs = sourceSets.stand.output.classesDirs
     classpath = sourceSets.stand.runtimeClasspath
