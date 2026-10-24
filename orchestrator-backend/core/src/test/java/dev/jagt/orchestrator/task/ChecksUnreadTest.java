@@ -31,6 +31,17 @@ class ChecksUnreadTest {
     }
 
     @Test
+    void countsNoReadMadeAtTheMomentOfTheLift() {
+        List<ChecksUnread> running = List.of(new ChecksUnread(1_500, "list_pipelines: 403 Forbidden"),
+                new ChecksUnread(2_000, "list_pipelines: 403 Forbidden"),
+                new ChecksUnread(3_000, "list_pipelines: 403 Forbidden"));
+
+        Optional<TaskStop> stop = ChecksUnread.stop(running, RoundTrail.liftedAt(1_500), 4_000);
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
     void countsAnewFromTheLift() {
         List<ChecksUnread> running = List.of(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"),
                 new ChecksUnread(2_000, "list_pipelines: 403 Forbidden"),

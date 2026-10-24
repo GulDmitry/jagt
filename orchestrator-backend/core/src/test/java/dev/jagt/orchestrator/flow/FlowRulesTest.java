@@ -18,6 +18,30 @@ class FlowRulesTest {
         assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(false, false, () -> false, false, false, false))).isTrue();
     }
 
+    @ParameterizedTest
+    @CsvSource({"REVERTED,true", "DEPLOY_CONFLICT,true", "IN_PROGRESS,false"})
+    void holdsItsLineAgainstAReportOnlyWhereTheStatusFactIsTheHumans(TaskStatus status, boolean held) {
+        assertThat(FlowRules.holdsItsLine(status)).isEqualTo(held);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NEW,true", "IN_PROGRESS,false"})
+    void isLaunchingOnlyWhileStartedAndNotYetReported(TaskStatus status, boolean launching) {
+        assertThat(FlowRules.launching(status)).isEqualTo(launching);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"SHIPPING,true", "DEPLOY_CONFLICT,true", "IN_PROGRESS,false"})
+    void awaitsAnInstructionOnlyWhereJagtRelayedOne(TaskStatus status, boolean awaits) {
+        assertThat(FlowRules.awaitsItsInstruction(status)).isEqualTo(awaits);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"REVIEWED,true", "APPROVED,true", "DEPLOYED,true", "IN_PROGRESS,false"})
+    void isMovedOnByAReviewerAloneOnlyWhenGreenWithNothingLeftForItsSession(TaskStatus status, boolean alone) {
+        assertThat(FlowRules.movedOnByAReviewerAlone(status)).isEqualTo(alone);
+    }
+
     @Test
     void offersApprovePlanAtAPendingPlanAndAtNoOtherStatus() {
         Facts facts = new Facts(false, false, () -> false, false, false, false);

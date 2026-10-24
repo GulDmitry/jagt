@@ -121,6 +121,36 @@ class LoopBreakerTest {
     }
 
     @Test
+    void countsNoRoundSentAtTheMomentOfTheLift() {
+        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("verify", "c", 3);
+
+        var stop = breaker.beforeRound("verify", turn, RoundTrail.liftedAt(1), 4);
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
+    void countsNoShipAskedAtTheMomentOfTheLift() {
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
+
+        assertThat(breaker.beforeShip(RoundTrail.liftedAt(1_000), history, 5_000)).isEmpty();
+    }
+
+    @Test
+    void countsAShipAsAnsweringTheRoundReadAtTheSameMoment() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(100, 5, "", "a"),
+                new RoundTrail.Round(1_000, 3, "", "b")), 0);
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER));
+
+        var stop = new LoopBreaker(3, 1, 3, Duration.ofHours(24)).beforeShip(watch, history, 2_000);
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
     void forgetsRoundsOlderThanItsWindow() {
         Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("verify", "c", 3);
 

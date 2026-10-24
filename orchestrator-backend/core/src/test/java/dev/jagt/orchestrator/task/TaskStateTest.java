@@ -531,6 +531,69 @@ class TaskStateTest {
     }
 
     @Test
+    void asksForNoRepositoryUntilTheSessionNamesOne() {
+        TaskState working = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+
+        assertThat(working.asksForARepository()).isFalse();
+    }
+
+    @Test
+    void reportsTheChecksUnreadOnlyWhileAReadRunningCouldNotListThem() {
+        TaskState clear = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState unread = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+                .checksUnread(List.of(new ChecksUnread(1, "403"))).build();
+
+        assertThat(clear.pipelineUnread()).isFalse();
+        assertThat(unread.pipelineUnread()).isTrue();
+    }
+
+    @Test
+    void holdsNoTurnUntilOneIsRecordedAndThenTheOneRecorded() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        Turn relayed = Turn.none().relayed("round", "d1", 100);
+
+        assertThat(task.turnOrNone()).isEqualTo(Turn.none());
+        assertThat(task.withTurn(relayed).turnOrNone()).isEqualTo(relayed);
+    }
+
+    @Test
+    void keepsTheStopAndTheTrailItWasGivenAndClearsTheStopOnALift() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running");
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a"));
+
+        TaskState stopped = task.withStop(stop).withTrail(trail);
+        TaskState lifted = stopped.lifted(9);
+
+        assertThat(stopped.stopped()).isTrue();
+        assertThat(stopped.stop()).isEqualTo(stop);
+        assertThat(stopped.trailOrNone()).isEqualTo(trail);
+        assertThat(lifted.stopped()).isFalse();
+        assertThat(lifted.trailOrNone()).isEqualTo(RoundTrail.liftedAt(9));
+    }
+
+    @Test
+    void keepsTheBaseBranchAndThePlanGateItWasGiven() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+
+        TaskState given = task.withBaseBranch("release").withPlanGate(PlanGate.REQUIRED);
+
+        assertThat(given.baseBranchOr("main")).isEqualTo("release");
+        assertThat(given.planGate()).isEqualTo(PlanGate.REQUIRED);
+    }
+
+    @Test
+    void stampsTheReasonOnTheLastStepAndNoOtherStep() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1, ActionOrigin.BOARD),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, 2, null))).build();
+
+        TaskState stamped = task.withLastChangeWhy("work done");
+
+        assertThat(stamped.history()).extracting(StatusChange::why).containsExactly(null, "work done");
+    }
+
+    @Test
     void recordsARequestWithoutCountingItAsAgentActivity() {
         TaskState working = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(7_000).build();
 
