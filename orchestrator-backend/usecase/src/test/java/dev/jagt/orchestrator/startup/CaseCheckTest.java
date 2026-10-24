@@ -19,8 +19,8 @@ class CaseCheckTest {
     void refusesACaseNamingAStepTheBriefLacks(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         Files.writeString(root.resolve("session-brief.md"), "## wake\n\ngo on\n");
-        Files.writeString(root.resolve("session-cases.md"), "## wake\n\nstep: wake\nat: any\nby: jagt\nA reset.\n\n"
-                + "## woke\n\nstep: woke\nat: any\nby: jagt\nA typo.\n");
+        Files.writeString(root.resolve("session-cases.md"), "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n\n"
+                + "## woke\n\nstep: woke\nat: any\nby: jagt\nreplies: any; plain\nA typo.\n");
 
         assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems()).containsExactly(
                 new Problem("session-cases.md", "session-cases.md: case woke names step 'woke', which no brief section holds"));
@@ -30,7 +30,7 @@ class CaseCheckTest {
     void refusesABriefStepNoCaseSends(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         Files.writeString(root.resolve("session-brief.md"), "## wake\n\ngo on\n\n## deploy\n\ncheck it\n");
-        Files.writeString(root.resolve("session-cases.md"), "## wake\n\nstep: wake\nat: any\nby: jagt\nA reset.\n");
+        Files.writeString(root.resolve("session-cases.md"), "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n");
 
         assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems()).containsExactly(
                 new Problem("session-cases.md", "session-cases.md: no case sends the brief step 'deploy' — add one, or it"
@@ -41,7 +41,7 @@ class CaseCheckTest {
     void refusesACaseNamingNoStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         Files.writeString(root.resolve("session-brief.md"), "## wake\n\ngo on\n");
-        Files.writeString(root.resolve("session-cases.md"), "## wake\n\nstep: wake\nat: WAITING\nby: jagt\nA reset.\n");
+        Files.writeString(root.resolve("session-cases.md"), "## wake\n\nstep: wake\nat: WAITING\nby: jagt\nreplies: any; plain\nA reset.\n");
 
         assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
                 .extracting(Problem::text).anySatisfy(text -> assertThat(text).startsWith(

@@ -5,13 +5,16 @@ case; a case your copy lacks is read from here. A step at a status no case names
 `misses.jsonl` beside `state.json` instead.
 
 Each case: `step:` a brief step · `at:` the task's statuses, `any` or `any but <statuses>` · `by:` jagt, master or
-human, who sets it off · one line saying what the case is.
+human, who sets it off · `replies:` what the session may report while the step's turn is open, its statuses then
+its kinds (plain, question, permission, no_changes) · one line saying what the case is. A reply no case of the step
+takes is not applied: it is written to `misses.jsonl` too, and the task stops for you.
 
 ## start
 
 step: start
 at: any but DONE
 by: jagt
+replies: any; plain, question, permission, no_changes
 A session starts in the task's worktree.
 
 ## revive
@@ -19,6 +22,7 @@ A session starts in the task's worktree.
 step: revive
 at: any but DONE
 by: jagt
+replies: any; plain, question, permission, no_changes
 A session that went down is entered again.
 
 ## context
@@ -26,6 +30,7 @@ A session that went down is entered again.
 step: context
 at: any but DONE
 by: jagt
+replies: any; plain, question, permission, no_changes
 A worktree is briefed with the session's standing rules.
 
 ## plan-by-human
@@ -33,6 +38,7 @@ A worktree is briefed with the session's standing rules.
 step: plan
 at: PLAN_PENDING
 by: human
+replies: IN_PROGRESS, PLAN_PENDING, REVIEW_PENDING; plain, question, permission
 You approved the plan, so the session starts on it.
 
 ## plan-by-master
@@ -40,6 +46,7 @@ You approved the plan, so the session starts on it.
 step: plan
 at: PLAN_PENDING
 by: master
+replies: IN_PROGRESS, PLAN_PENDING, REVIEW_PENDING; plain, question, permission
 The Master read the plan and it holds, so the session starts on it.
 
 ## plan-not-ready
@@ -47,6 +54,7 @@ The Master read the plan and it holds, so the session starts on it.
 step: plan-not-ready
 at: PLAN_PENDING
 by: master
+replies: IN_PROGRESS, PLAN_PENDING; plain, question, permission
 The Master read the plan and sends its findings back.
 
 ## plan-answered
@@ -54,6 +62,7 @@ The Master read the plan and sends its findings back.
 step: plan-answered
 at: PLAN_PENDING
 by: master
+replies: IN_PROGRESS, PLAN_PENDING, REVIEW_PENDING; plain, question, permission
 The Master answers the question a plan was handed back with.
 
 ## round-not-ready
@@ -61,6 +70,7 @@ The Master answers the question a plan was handed back with.
 step: round-not-ready
 at: REVIEW_PENDING
 by: master
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 The Master read the hand-back and sends its findings back.
 
 ## asked-human
@@ -68,6 +78,7 @@ The Master read the hand-back and sends its findings back.
 step: asked-human
 at: PLAN_PENDING, REVIEW_PENDING
 by: master
+replies: IN_PROGRESS, PLAN_PENDING, REVIEW_PENDING; plain, question, permission
 The Master asked you a question, and the session waits on the answer.
 
 ## answered
@@ -75,6 +86,7 @@ The Master asked you a question, and the session waits on the answer.
 step: answered
 at: any but PLAN_PENDING, SHIPPING, DEPLOY_CONFLICT, DONE
 by: master
+replies: IN_PROGRESS, PLAN_PENDING, REVIEW_PENDING; plain, question, permission, no_changes
 The Master answers a session's question.
 
 ## answered-under
@@ -82,6 +94,7 @@ The Master answers a session's question.
 step: answered-under
 at: SHIPPING, DEPLOY_CONFLICT
 by: master
+replies: REVIEW_PENDING, CI_POLLING; plain, question, permission
 The Master answers a session's question below the instruction it still works on.
 
 ## repo-by-human
@@ -89,6 +102,7 @@ The Master answers a session's question below the instruction it still works on.
 step: repo
 at: any but DONE
 by: human
+replies: any; plain, question, permission, no_changes
 You added the repository the session asked for.
 
 ## repo-by-master
@@ -96,6 +110,7 @@ You added the repository the session asked for.
 step: repo
 at: any but DONE
 by: master
+replies: any; plain, question, permission, no_changes
 The Master added the repository the session asked for.
 
 ## verify
@@ -103,6 +118,7 @@ The Master added the repository the session asked for.
 step: verify
 at: VERIFYING
 by: jagt
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 The project's verification command failed on a hand-back.
 
 ## probes
@@ -110,6 +126,7 @@ The project's verification command failed on a hand-back.
 step: probes
 at: VERIFYING
 by: jagt
+replies: IN_PROGRESS, PLAN_PENDING, REVIEW_PENDING; plain, question, permission, no_changes
 An acceptance probe of the plan failed on a hand-back.
 
 ## ship-by-human
@@ -117,6 +134,7 @@ An acceptance probe of the plan failed on a hand-back.
 step: ship
 at: IN_PROGRESS, VERIFYING, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED, REVIEWED, DEPLOYED, REVERTED
 by: human
+replies: REVIEW_PENDING, CI_POLLING; plain, question, permission
 You shipped the task, so the session commits, pushes and opens its requests.
 
 ## ship-by-master
@@ -124,6 +142,7 @@ You shipped the task, so the session commits, pushes and opens its requests.
 step: ship
 at: REVIEW_PENDING
 by: master
+replies: REVIEW_PENDING, CI_POLLING; plain, question, permission
 The Master read the hand-back and shipped it.
 
 ## round-checks-polled
@@ -131,6 +150,7 @@ The Master read the hand-back and shipped it.
 step: round-checks
 at: any but CI_POLLING, REVIEWED, APPROVED, DONE
 by: jagt
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 The poll read red checks on the task's request.
 
 ## round-checks-swept
@@ -138,6 +158,7 @@ The poll read red checks on the task's request.
 step: round-checks
 at: any but CI_POLLING, REVIEWED, APPROVED, DONE
 by: human
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 Your sweep read red checks on the task's request.
 
 ## round-checks-done-polled
@@ -145,6 +166,7 @@ Your sweep read red checks on the task's request.
 step: round-checks-done
 at: any but CI_POLLING, REVIEWED, APPROVED, DONE
 by: jagt
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 The poll read red checks and no open thread.
 
 ## round-checks-done-swept
@@ -152,6 +174,7 @@ The poll read red checks and no open thread.
 step: round-checks-done
 at: any but CI_POLLING, REVIEWED, APPROVED, DONE
 by: human
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 Your sweep read red checks and no open thread.
 
 ## round-threads-polled
@@ -159,6 +182,7 @@ Your sweep read red checks and no open thread.
 step: round-threads
 at: any but DONE
 by: jagt
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 The poll read open threads on the task's request.
 
 ## round-threads-swept
@@ -166,6 +190,7 @@ The poll read open threads on the task's request.
 step: round-threads
 at: any but DONE
 by: human
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 Your sweep read open threads on the task's request.
 
 ## round-threads-done-polled
@@ -173,6 +198,7 @@ Your sweep read open threads on the task's request.
 step: round-threads-done
 at: any but DONE
 by: jagt
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 The poll read open threads, which end the round.
 
 ## round-threads-done-swept
@@ -180,6 +206,7 @@ The poll read open threads, which end the round.
 step: round-threads-done
 at: any but DONE
 by: human
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 Your sweep read open threads, which end the round.
 
 ## deploy
@@ -187,6 +214,7 @@ Your sweep read open threads, which end the round.
 step: deploy
 at: DEPLOYED
 by: jagt
+replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission
 The task is live on the deploy branch, so the session checks it where it landed.
 
 ## conflict
@@ -194,6 +222,7 @@ The task is live on the deploy branch, so the session checks it where it landed.
 step: conflict
 at: DEPLOY_CONFLICT
 by: jagt
+replies: any; question, permission
 A deploy conflicts, and the session resolves it in the deploy worktree.
 
 ## wake
@@ -201,4 +230,5 @@ A deploy conflicts, and the session resolves it in the deploy worktree.
 step: wake
 at: any but DONE
 by: jagt
+replies: any; plain, question, permission, no_changes
 A usage limit has reset, so a stopped session goes on.

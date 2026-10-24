@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.config;
 
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.jspecify.annotations.Nullable;
 
@@ -15,11 +16,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** Which step may be sent to a session at which status. */
+/** Which step may be sent to a session at which status, and which replies the turn it opens takes. */
 public record CaseBook(List<Case> cases, List<Problem> faults) {
 
     public enum By {
@@ -46,10 +49,41 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
         }
     }
 
-    public record Case(String file, String id, String step, Set<TaskStatus> at, By by) {
+    public record Case(String file, String id, String step, Set<TaskStatus> at, By by, Replies replies) {
     }
 
-    private static final Pattern KEY = Pattern.compile("(step|at|by):\\s*(.*)");
+    /** A reply is a reported status and what the report means; both must be named. */
+    public record Replies(Set<TaskStatus> statuses, Set<AgentReport> kinds) {
+
+        public Replies {
+            statuses = Set.copyOf(statuses);
+            kinds = Set.copyOf(kinds);
+        }
+
+        public boolean takes(TaskStatus status, AgentReport kind) {
+            return statuses.contains(status) && kinds.contains(kind);
+        }
+
+        Replies plus(Replies other) {
+            return new Replies(union(statuses, other.statuses), union(kinds, other.kinds));
+        }
+
+        @Override
+        public String toString() {
+            return String.join(", ", new TreeSet<>(statuses.stream().map(Enum::name).toList())) + "; "
+                    + String.join(", ", new TreeSet<>(kinds.stream().map(Replies::kind).toList()));
+        }
+
+        public static String kind(AgentReport report) {
+            return report.name().toLowerCase(Locale.ROOT);
+        }
+
+        private static <T> Set<T> union(Set<T> one, Set<T> two) {
+            return Stream.concat(one.stream(), two.stream()).collect(Collectors.toSet());
+        }
+    }
+
+    private static final Pattern KEY = Pattern.compile("(step|at|by|replies):\\s*(.*)");
     private static final String ANY = "any";
     private static final String ANY_BUT = "any but ";
 
@@ -87,6 +121,12 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
 
     public boolean sends(String step, TaskStatus status) {
         return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status));
+    }
+
+    /** What the cases naming any of the {@code +}-joined steps take together; empty where none names one. */
+    public Optional<Replies> replies(String step) {
+        List<String> steps = List.of(step.split("\\+"));
+        return cases.stream().filter(c -> steps.contains(c.step())).map(Case::replies).reduce(Replies::plus);
     }
 
     /** What keeps this book from matching {@code steps}, both ways, beside what it could not read. */
@@ -127,11 +167,37 @@ public record CaseBook(List<Case> cases, List<Problem> faults) {
         if (by.isEmpty()) {
             faults.add(fault(file, id, "has by: '" + keys.getOrDefault("by", "") + "', which is not jagt, master or human"));
         }
+        Optional<Replies> replies = readReplies(keys.getOrDefault("replies", ""), faults, file, id);
         if (says.isEmpty()) {
             faults.add(fault(file, id, "says nothing of what it is"));
         }
         return faults.size() > before ? Optional.empty()
-                : Optional.of(new Case(file, id, step, at.orElseThrow(), by.orElseThrow()));
+                : Optional.of(new Case(file, id, step, at.orElseThrow(), by.orElseThrow(), replies.orElseThrow()));
+    }
+
+    private static Optional<Replies> readReplies(String line, List<Problem> faults, String file, String id) {
+        String[] parts = line.split(";", -1);
+        Optional<Set<TaskStatus>> statuses = parts.length == 2 ? statuses(parts[0].strip()) : Optional.empty();
+        Optional<Set<AgentReport>> kinds = parts.length == 2 ? kinds(parts[1]) : Optional.empty();
+        if (statuses.isEmpty() || kinds.isEmpty()) {
+            faults.add(fault(file, id, "has replies: '" + line + "', which is not <statuses>; <kinds> of "
+                    + Arrays.stream(AgentReport.values()).map(Replies::kind).toList()));
+            return Optional.empty();
+        }
+        return Optional.of(new Replies(statuses.get(), kinds.get()));
+    }
+
+    private static Optional<Set<AgentReport>> kinds(String list) {
+        Set<AgentReport> kinds = EnumSet.noneOf(AgentReport.class);
+        for (String name : list.split(",")) {
+            Optional<AgentReport> kind = Arrays.stream(AgentReport.values())
+                    .filter(value -> Replies.kind(value).equals(name.strip())).findFirst();
+            if (kind.isEmpty()) {
+                return Optional.empty();
+            }
+            kinds.add(kind.get());
+        }
+        return Optional.of(kinds);
     }
 
     private static Optional<Set<TaskStatus>> statuses(String at) {

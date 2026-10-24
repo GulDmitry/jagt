@@ -101,7 +101,7 @@ class StepRelayTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.writeString(root.resolve("session-cases.md"),
-                "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nThe task is live.\n");
+                "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
@@ -119,7 +119,7 @@ class StepRelayTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.writeString(root.resolve("session-cases.md"),
-                "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nThe task is live.\n");
+                "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,
@@ -140,7 +140,7 @@ class StepRelayTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.writeString(root.resolve("session-cases.md"),
-                "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nThe task is live.\n");
+                "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), state,

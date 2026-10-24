@@ -2,16 +2,26 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.LoopWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,6 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -34,7 +46,7 @@ class OwnStatusReportsTest {
         HandBackDue due = mock(HandBackDue.class);
         when(due.invalid(any())).thenReturn(Optional.empty());
         when(due.owed(any(), any())).thenReturn(Optional.of("write task_notes.md before handing the round back"));
-        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports);
+        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-1"))
@@ -51,7 +63,7 @@ class OwnStatusReportsTest {
         when(statusReports.contextFor("ABC-1")).thenReturn(MessageContext.NONE);
         HandBackDue due = mock(HandBackDue.class);
         when(due.invalid(any())).thenReturn(Optional.of("task_notes.md names the model 'gpt'"));
-        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports);
+        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-1"))
@@ -70,7 +82,9 @@ class OwnStatusReportsTest {
         AgentStatusMessage working = new AgentStatusMessage("IN_PROGRESS", "still going", null, null, Map.of());
         when(statusReports.report(working, "ABC-1")).thenReturn("Task ABC-1 -> IN_PROGRESS");
         HandBackDue due = mock(HandBackDue.class);
-        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports);
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.takes("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.PLAIN)).thenReturn(true);
+        OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door);
 
         reports.report(working, "ABC-1");
 
@@ -86,10 +100,104 @@ class OwnStatusReportsTest {
         when(statusReports.contextFor("ABC-1")).thenReturn(MessageContext.NONE);
         AgentStatusMessage plan = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of());
         when(statusReports.report(plan, "ABC-1")).thenReturn("Task ABC-1 -> PLAN_PENDING");
-        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports);
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.takes("ABC-1", TaskStatus.PLAN_PENDING, AgentReport.PLAIN)).thenReturn(true);
+        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports, door);
 
         String answer = reports.report(plan, "ABC-1");
 
         assertThat(answer).isEqualTo("Task ABC-1 -> PLAN_PENDING");
+    }
+
+    @Test
+    void appliesAReplyACaseOfTheOpenTurnsStepTakes(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+                + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
+        when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
+        AgentStatusMessage broke = new AgentStatusMessage("IN_PROGRESS", "the page 500s", null, null, Map.of());
+        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
+                new CaseDoor(new SessionCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+
+        reports.report(broke, "ABC-42");
+
+        verify(statusReports).report(broke, "ABC-42");
+    }
+
+    @Test
+    void refusesAReplyNoCaseOfTheOpenTurnsStepTakesAndAppliesNothing(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+                + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
+        when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
+        AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
+        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
+                new CaseDoor(new SessionCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+
+        assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
+                .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
+        verify(statusReports, never()).report(handBack, "ABC-42");
+    }
+
+    @Test
+    void recordsARefusedReplyWithTheStepWhatCameAndWhatTheCasesTake(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+                + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
+        when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
+        AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
+        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
+                new CaseDoor(new SessionCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+
+        assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
+
+        assertThat(Files.readString(root.resolve("misses.jsonl"))).isEqualTo("{\"at\":1000,\"task\":\"ABC-42\","
+                + "\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by\":\"session\",\"got\":\"REVIEW_PENDING; plain\","
+                + "\"expected\":\"IN_PROGRESS; plain, question\"}\n");
+    }
+
+    @Test
+    void stopsTheTaskForTheHumanOnAReplyNoCaseTakes(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+                + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
+        when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
+        AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
+        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
+                new CaseDoor(new SessionCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
+                new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+
+        assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
+
+        assertThat(state.task("ABC-42").orElseThrow())
+                .extracting(task -> task.loopOrNone().stop().trigger(), task -> task.turnOrNone().holder())
+                .containsExactly(LoopWatch.Trigger.MISS, Turn.Holder.HUMAN);
     }
 }
