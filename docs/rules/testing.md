@@ -83,6 +83,7 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
   `context` step, and `SessionBriefContractTest` holds each relayed step naming a worktree or a git verb to what it grants.
 - Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,
   the deploy check.
+- `standTest` runs real sessions on a local stand, held to invariants (`-Pmodelfree`: no tokens); `standCleanup` keeps failed roots, `standClean` not.
 
 ### Linux, and one set of steps per host
 
@@ -96,5 +97,4 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
   (`scripts/linux-test-deps.sh` the package list, `scripts/with-linux-desktop.sh` Xvfb + session bus +
   notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.** `linuxDriverTest` is
   gated on **capability**, never on the harness.
-- **Only the hermetic suite is cached**: three others prove the **machine**, two a model
-  (`cacheIf` / `upToDateWhen` false).
+- **Only the hermetic suite is cached**: three others prove the **machine**, three a model (`cacheIf` / `upToDateWhen` false).
