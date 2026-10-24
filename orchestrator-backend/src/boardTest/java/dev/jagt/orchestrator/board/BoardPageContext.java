@@ -116,6 +116,11 @@ abstract class BoardPageContext {
 
     @BeforeAll
     static void startTheBrowserAndNameTheProjectsTheBoardOffers() throws IOException {
+        try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
+            for (Path file : shipped) {
+                Files.copy(file, root.resolve(file.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
         Files.writeString(root.resolve("jagt.yml"), """
                 orchestrator:
                   projects:
