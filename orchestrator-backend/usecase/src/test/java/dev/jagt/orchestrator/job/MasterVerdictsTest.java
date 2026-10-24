@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
@@ -92,6 +93,50 @@ class MasterVerdictsTest {
 
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void signsTheMoveItsVerdictTookAsTheMasters(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay));
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
+
+        assertThat(state.task("ABC-1").orElseThrow().history().getLast().origin()).isEqualTo(ActionOrigin.MASTER);
+    }
+
+    @Test
+    void recordsAMissItsVerdictSetOffAsTheMasters(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay));
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("Foo.java:12 the guard is inverted"), 1, ""), acting);
+
+        assertThat(Files.readString(root.resolve("misses.jsonl")))
+                .contains("\"step\":\"round-not-ready\"", "\"by\":\"master\"");
     }
 
     @Test

@@ -8,8 +8,10 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,11 @@ public class MasterVerdicts {
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
     public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
                        ConfigService.ConfigFile.MasterConfig config) {
+        return OriginContext.as(ActionOrigin.MASTER, () -> judged(taskId, task, verdict, config));
+    }
+
+    private boolean judged(String taskId, TaskState task, MasterReview.Verdict verdict,
+                           ConfigService.ConfigFile.MasterConfig config) {
         boolean plan = FlowRules.holdsAPlan(task.status());
         return switch (verdict.kind()) {
             case NOT_READY -> returned(taskId, task, verdict, plan);
@@ -111,6 +118,10 @@ public class MasterVerdicts {
 
     /** The Master's answer to a question, and the task back at work on it. */
     public boolean answered(String taskId, TaskState task, String question, String decision, boolean freshSession) {
+        return OriginContext.as(ActionOrigin.MASTER, () -> answer(taskId, task, question, decision, freshSession));
+    }
+
+    private boolean answer(String taskId, TaskState task, String question, String decision, boolean freshSession) {
         String opened = decision.lines().anyMatch(line -> line.startsWith(DO)) ? "\n" + NOT_OPENED : "";
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
         boolean told = FlowRules.awaitsItsInstruction(task.status())

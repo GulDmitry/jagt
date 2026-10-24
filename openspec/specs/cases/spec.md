@@ -49,3 +49,7 @@ logged. It SHALL stop the task as a suspected loop does, its hover `no case send
 #### Scenario: The Master meets a stopped task
 - **WHEN** ABC-42 stopped on a miss and its session asks a question in `act`
 - **THEN** the Master leaves the question to you
+
+#### Scenario: A miss the Master set off
+- **WHEN** the Master returns a round to ABC-42 at CI_POLLING
+- **THEN** `misses.jsonl` reads `by: master` for it
