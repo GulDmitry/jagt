@@ -427,14 +427,15 @@ tasks.register('standReport', JavaExec) {
     args(standReport.absolutePath)
 }
 
-// Whatever the outcome: stops what dead stand runs left and removes their roots, a failed run's only by standClean.
-['standCleanup': [], 'standClean': ['--failed-too']].each { name, flags ->
+// Whatever the outcome: stops what dead stand runs left, keeps a failed run's evidence under build/stand/failed, and removes
+// their roots, their trust entries in the human's Claude config and their transcript directories.
+['standCleanup', 'standClean'].each { name ->
     tasks.register(name, JavaExec) {
-        description = 'Removes the roots of finished stand runs' + (flags ? ', failed ones included.' : ', keeping failed ones.')
+        description = 'Removes what finished stand runs left: roots, Claude trust entries and transcripts.'
         group = 'verification'
         classpath = sourceSets.stand.runtimeClasspath
         mainClass = 'dev.jagt.orchestrator.stand.StandCleanup'
-        args([standBase] + flags)
+        args(standBase, layout.buildDirectory.dir('stand/failed').get().asFile.absolutePath)
     }
 }
 

@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.stand;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
@@ -18,24 +17,23 @@ public final class StandRoots {
     public record Found(Path root, StandMarker marker) {
     }
 
-    public record Plan(List<Found> stop, List<Found> remove, List<Found> keep) {
+    public record Plan(List<Found> dead) {
     }
 
     private StandRoots() {
     }
 
-    public static Plan plan(Path base, boolean failedToo, LongPredicate alive) {
-        List<Found> stop = new ArrayList<>();
-        List<Found> remove = new ArrayList<>();
-        List<Found> keep = new ArrayList<>();
-        for (Found found : under(base)) {
-            if (alive.test(found.marker().pid())) {
-                continue;
-            }
-            stop.add(found);
-            (found.marker().failed() && !failedToo ? keep : remove).add(found);
+    public static Plan plan(Path base, LongPredicate alive) {
+        List<Found> dead = under(base).stream().filter(found -> !alive.test(found.marker().pid())).toList();
+        return new Plan(dead);
+    }
+
+    public static long pidOf(String rootName) {
+        Matcher name = NAME.matcher(rootName);
+        if (!name.matches()) {
+            throw new StandFailure("not a stand root name: " + rootName);
         }
-        return new Plan(stop, remove, keep);
+        return Long.parseLong(name.group(1));
     }
 
     public static boolean named(Path directory) {

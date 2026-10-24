@@ -157,12 +157,13 @@ public final class StandRun implements AutoCloseable {
         printUsage();
         keepRecording();
         StandReport.append(marker.scenario(), marker.outcome().equals(StandMarker.PASSED));
-        if (marker.outcome().equals(StandMarker.PASSED)) {
-            StandShell.deleteRoot(root);
-            return;
+        if (!marker.outcome().equals(StandMarker.PASSED)) {
+            marker.withOutcome(StandMarker.FAILED).writeTo(root);
+            System.out.println("stand run " + marker.scenario() + " failed; evidence: "
+                    + StandEvidence.keep(root, marker.scenario(), StandEvidence.DIR).toAbsolutePath());
         }
-        marker.withOutcome(StandMarker.FAILED).writeTo(root);
-        System.out.println("stand run " + marker.scenario() + " failed; kept " + root);
+        StandShell.deleteRoot(root);
+        StandTraces.ofTheHuman(root.getParent()).remove(root.getFileName().toString()::equals);
     }
 
     private void keepRecording() {

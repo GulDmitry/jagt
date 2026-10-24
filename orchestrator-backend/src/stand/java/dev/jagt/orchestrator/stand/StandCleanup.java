@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.stand;
 
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.LongPredicate;
 
 public final class StandCleanup {
 
@@ -10,13 +11,24 @@ public final class StandCleanup {
 
     public static void main(String[] args) {
         Path base = Path.of(args[0]);
-        boolean failedToo = args.length > 1 && args[1].equals("--failed-too");
-        StandRoots.Plan plan = StandRoots.plan(base, failedToo, pid -> ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false));
-        plan.stop().forEach(StandCleanup::stop);
-        plan.remove().forEach(found -> StandShell.deleteRoot(found.root()));
-        plan.keep().forEach(found -> System.out.println("kept failed stand run " + found.marker().scenario() + " at " + found.root()));
-        System.out.println("stand cleanup: removed " + plan.remove().size() + ", kept " + plan.keep().size()
-                + (plan.keep().isEmpty() ? "" : "; standClean removes those too"));
+        Path failedDir = Path.of(args[1]);
+        LongPredicate alive = pid -> ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false);
+        StandRoots.Plan plan = StandRoots.plan(base, alive);
+        plan.dead().forEach(StandCleanup::stop);
+        StandTraces.Removed removed = sweep(plan, failedDir, StandTraces.ofTheHuman(base), alive);
+        System.out.println("stand cleanup: removed " + plan.dead().size() + " roots, " + removed.trust()
+                + " trust entries, " + removed.transcripts() + " transcript directories");
+    }
+
+    static StandTraces.Removed sweep(StandRoots.Plan plan, Path failedDir, StandTraces traces, LongPredicate alive) {
+        for (StandRoots.Found found : plan.dead()) {
+            if (found.marker().failed()) {
+                System.out.println("failed stand run " + found.marker().scenario() + " evidence: "
+                        + StandEvidence.keep(found.root(), found.marker().scenario(), failedDir).toAbsolutePath());
+            }
+            StandShell.deleteRoot(found.root());
+        }
+        return traces.remove(root -> !alive.test(StandRoots.pidOf(root)));
     }
 
     private static void stop(StandRoots.Found found) {

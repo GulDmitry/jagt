@@ -98,12 +98,16 @@ public final class StandShell {
         if (!StandRoots.named(root)) {
             throw new StandFailure("refusing to delete " + root + ": not a stand root");
         }
-        try (Stream<Path> paths = Files.walk(root)) {
+        deleteTree(root);
+    }
+
+    static void deleteTree(Path tree) {
+        try (Stream<Path> paths = Files.walk(tree)) {
             for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
                 Files.deleteIfExists(path);
             }
         } catch (IOException e) {
-            throw new StandFailure("cannot delete " + root, e);
+            throw new StandFailure("cannot delete " + tree, e);
         }
     }
 
