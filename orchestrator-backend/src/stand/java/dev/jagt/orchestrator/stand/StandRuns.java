@@ -20,12 +20,14 @@ public final class StandRuns {
     }
 
     public static List<Run> selected(String scenario, String scenarios, String modes, int runs) {
-        boolean chosen = scenarios.isBlank() || Arrays.stream(scenarios.split(",")).map(String::strip)
-                .anyMatch(scenario::equals);
-        if (!chosen) {
+        if (!chosen(scenario, scenarios)) {
             return List.of();
         }
         return StandMode.selected(modes).stream()
                 .flatMap(mode -> IntStream.rangeClosed(1, runs).mapToObj(index -> new Run(mode, index))).toList();
+    }
+
+    public static boolean chosen(String scenario, String scenarios) {
+        return scenarios.isBlank() || Arrays.stream(scenarios.split(",")).map(String::strip).anyMatch(scenario::equals);
     }
 }
