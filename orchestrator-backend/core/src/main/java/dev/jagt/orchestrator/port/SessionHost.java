@@ -58,6 +58,12 @@ public interface SessionHost {
      */
     Optional<String> screenOf(String session, String taskId);
 
+    /**
+     * The last lines an agent printed before it exited, while its window still shows them; empty while it runs or
+     * once the window is gone. A failed read throws.
+     */
+    Optional<String> exitTail(String session, String taskId);
+
     /** Types a line into the session as if a human had, without touching focus; false when it is gone. */
     boolean nudgeTaskWindow(String session, String taskId, String message);
 

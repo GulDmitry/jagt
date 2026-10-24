@@ -114,6 +114,11 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 .map(shown -> ESCAPES.matcher(shown).replaceAll("").stripTrailing());
     }
 
+    /** What the task's agent printed last before it exited; empty while it runs or once its window is gone. */
+    public Optional<String> exitTail(String taskId) {
+        return sessions.exitTail(agentSession(configService.load(), taskId), taskId);
+    }
+
     /** A session that is gone or dead is re-entered first: focus must always land on a live agent. */
     public String focusTask(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);

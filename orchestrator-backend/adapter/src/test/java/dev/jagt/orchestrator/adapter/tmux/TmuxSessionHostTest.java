@@ -251,6 +251,46 @@ class TmuxSessionHostTest {
     }
 
     @Test
+    void readsTheLastLinesAnAgentPrintedBeforeItExited() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@1 100 1700000000 ABC-1\n", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("pgrep")))).thenReturn(new Processes.Result(1, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("capture-pane")))).thenReturn(new Processes.Result(0, """
+                Welcome
+                Loading servers
+                Error: Invalid MCP configuration:
+                  mcpServers.jagt: missing command
+
+                [jagt] agent exited — window closes in 15s (Ctrl+C to close now)
+
+
+                """, ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        assertThat(host.exitTail("jagt", "ABC-1"))
+                .contains("Loading servers\nError: Invalid MCP configuration:\n  mcpServers.jagt: missing command");
+    }
+
+    @Test
+    void readsNoExitWhileTheAgentRuns() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@1 100 1700000000 ABC-1\n", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("pgrep")))).thenReturn(new Processes.Result(0, "4242\n", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        assertThat(host.exitTail("jagt", "ABC-1")).isEmpty();
+    }
+
+    @Test
     void reportsNoScreenForATaskWithoutAWindow() {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
@@ -277,7 +317,7 @@ class TmuxSessionHostTest {
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).anySatisfy(command -> {
             assertThat(command).containsSequence("new-window", "-P");
-            assertThat(command.getLast()).contains("agent-cmd").endsWith("; sleep 15");
+            assertThat(command.getLast()).contains("agent-cmd").endsWith("; exec sleep 15");
         });
     }
 

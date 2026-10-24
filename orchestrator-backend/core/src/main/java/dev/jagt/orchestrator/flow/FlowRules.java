@@ -275,6 +275,11 @@ public final class FlowRules {
         return WATCHED.contains(status);
     }
 
+    /** Started and not yet reported, so only its window can tell an agent that never came up. */
+    public static boolean launching(TaskStatus status) {
+        return status == TaskStatus.NEW;
+    }
+
     /** A status a session hands control back with: news to the human, and where its drafted replies wait. */
     public static boolean handsBack(TaskStatus status) {
         return HANDED_BACK.contains(status);

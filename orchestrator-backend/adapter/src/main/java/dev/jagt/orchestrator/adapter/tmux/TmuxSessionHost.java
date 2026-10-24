@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +30,8 @@ public class TmuxSessionHost implements SessionHost {
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
     /** Only what is shown is cut: the full window name stays the task's identity. */
     private static final String SHOWN_NAME = "#{=/10/…:window_name}";
+    private static final String EXITED = "[jagt] agent exited";
+    private static final int TAIL_LINES = 3;
 
     private final Processes processRunner;
     private final OrchestratorProperties properties;
@@ -99,8 +102,9 @@ public class TmuxSessionHost implements SessionHost {
     /** The window id, which is the only target immune to a name collision on a respawn. */
     private String newWindow(String session, String name, Path cwd, String command) {
         // An interactive shell here would linger forever and read as a hung process.
+        // Exec'd, the tail holds no child process, so the window reads as exited while it shows why.
         String ran = command
-                + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
+                + "; printf '\\n" + EXITED + " — window closes in 15s (Ctrl+C to close now)\\n'; exec sleep 15";
         String windowId = processRunner.run(null, TIMEOUT, List.of(tmux(), "new-window",
                         "-P", "-F", "#{window_id}",
                         "-t", "=" + session + ":", "-n", name, "-c", cwd.toString(), ran))
@@ -139,11 +143,36 @@ public class TmuxSessionHost implements SessionHost {
             if (window.isEmpty()) {
                 return WindowState.MISSING;
             }
-            var children = processRunner.run(null, TIMEOUT, List.of("pgrep", "-P", window.get().panePid()));
-            return children.exitCode() == 0 && !children.stdout().isBlank()
-                    ? WindowState.AGENT_RUNNING
-                    : WindowState.DEAD_SHELL;
+            return agentRunning(window.get()) ? WindowState.AGENT_RUNNING : WindowState.DEAD_SHELL;
         }
+    }
+
+    @Override
+    public Optional<String> exitTail(String session, String taskId) {
+        synchronized (lock) {
+            var window = findWindow(session, taskId);
+            if (window.isEmpty() || agentRunning(window.get())) {
+                return Optional.empty();
+            }
+            String shown = processRunner.run(null, TIMEOUT, List.of(tmux(), "capture-pane", "-p", "-t",
+                    window.get().id())).expectSuccess("tmux capture-pane " + window.get().id()).stdout();
+            return printedBeforeExit(shown);
+        }
+    }
+
+    private static Optional<String> printedBeforeExit(String shown) {
+        List<String> lines = shown.lines().toList();
+        int exited = IntStream.range(0, lines.size()).filter(i -> lines.get(i).startsWith(EXITED)).max().orElse(-1);
+        if (exited < 0) {
+            return Optional.empty();
+        }
+        List<String> printed = lines.subList(0, exited).stream().filter(line -> !line.isBlank()).toList();
+        return Optional.of(String.join("\n", printed.subList(Math.max(0, printed.size() - TAIL_LINES), printed.size())));
+    }
+
+    private boolean agentRunning(Window window) {
+        var children = processRunner.run(null, TIMEOUT, List.of("pgrep", "-P", window.panePid()));
+        return children.exitCode() == 0 && !children.stdout().isBlank();
     }
 
     @Override

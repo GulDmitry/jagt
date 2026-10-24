@@ -126,6 +126,18 @@ class SessionProbeTest {
     }
 
     @Test
+    void namesTheLastLinesAnEndedSessionPrinted() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.NEW).build();
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.GONE, "Error: Invalid MCP configuration: bad", 10_000_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).map(SessionProbe.Silence::detail)
+                .contains("the session ended: Error: Invalid MCP configuration: bad");
+    }
+
+    @Test
     void raisesAFailedTurnAtOnceNamingItsCause() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_990_000L).build();

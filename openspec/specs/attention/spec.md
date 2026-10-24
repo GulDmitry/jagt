@@ -30,7 +30,7 @@ The move must have stood five seconds; a card already yours when jagt starts is 
 
 ### Requirement: Silence is stamped by the watchdog
 `WatchdogService` SHALL stamp silence from `service/SessionProbe` (`TaskState.silentSince`, `TaskState.silentBecause`):
-token limit, crash, unanswered prompt, a turn the CLI ended on an API error, or `SessionProbe.State.IDLE` at the shared
+token limit, crash, a launch exit, unanswered prompt, an API error ending a turn, or `SessionProbe.State.IDLE` at the shared
 threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overruled at `NEW`.
 
 #### Scenario: Silent stop
@@ -50,8 +50,8 @@ threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overrul
 - **THEN** it is sent back once to report first, so NEEDS INPUT does not outlive its answer
 
 #### Scenario: The agent CLI never came up
-- **WHEN** you `focus <task>` at `NEW`
-- **THEN** the card points at the launch
+- **WHEN** it exits at `NEW` before reporting, printing `Error: Invalid MCP configuration`
+- **THEN** NEEDS YOU within seconds: the session ended, and its last lines; unread, the card points at the launch
 
 #### Scenario: A turn ends on an API error
 - **WHEN** the CLI ends a turn on an API error and names `overloaded`

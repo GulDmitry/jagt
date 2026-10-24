@@ -34,7 +34,7 @@ public class SessionProbe {
         /** The words a human is owed, or null where nothing was said and the sentence is the surface's own. */
         public @Nullable String detail() {
             if (reported == State.GONE) {
-                return "the session ended";
+                return cause == null ? "the session ended" : "the session ended: " + cause;
             }
             if (reported == State.FAILED) {
                 return cause == null ? "its turn failed" : "its turn failed: " + cause;

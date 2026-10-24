@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -78,6 +79,12 @@ public class WatchdogService implements Job {
         stateService.task(taskId).ifPresent(task -> verdict(taskId, task, clock.millis()));
     }
 
+    /** An agent that exited without a word from its harness, told by what it printed last. */
+    public void ended(String taskId, String printed) {
+        probe.report(taskId, SessionProbe.State.GONE, printed.isBlank() ? null : OneLine.clipped(printed), clock.millis());
+        check(taskId);
+    }
+
     private void verdict(String taskId, TaskState task, long now) {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         Optional<SessionProbe.Silence> silence = watches(task.status())
@@ -100,10 +107,17 @@ public class WatchdogService implements Job {
         log.atWarn().setMessage("task stopped")
                 .addKeyValue("task", taskId)
                 .addKeyValue("said", OneLine.clipped(said))
-                .addKeyValue("cause", silence.get().reported())
+                .addKeyValue("cause", cause(silence.get()))
                 .addKeyValue("silent", (now - silence.get().since()) / 60_000)
                 .log();
         notifications.send(Notification.watchdog(taskId, "agent stopped", said));
+    }
+
+    private static String cause(SessionProbe.Silence silence) {
+        if (silence.cause() != null) {
+            return silence.cause();
+        }
+        return silence.reported() == null ? "silent" : silence.reported().name().toLowerCase(Locale.ROOT);
     }
 
     /** A banner has one line and no clock, so the absence of any word about a session has to become one. */

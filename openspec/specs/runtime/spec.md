@@ -21,7 +21,7 @@ exited agent's window SHALL close after showing its tail 15s; an interactive she
 
 #### Scenario: The agent exits
 - **WHEN** the agent process in a window exits
-- **THEN** the window shows its tail for 15s and closes, leaving no shell behind
+- **THEN** the window shows its tail for 15s, holding no process, and closes, leaving no shell behind
 
 ### Requirement: Closing the viewer only detaches
 Closing the viewer SHALL only detach; killing SHALL be explicit — `done` or `close_task_tab`.

@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.job;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -12,15 +15,22 @@ import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.slf4j.LoggerFactory;
+import org.slf4j.event.KeyValuePair;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +40,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -279,5 +291,40 @@ class WatchdogServiceTest {
         watchdog.run();
 
         verify(notifications, times(2)).send(any());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"GONE,Error: Invalid MCP configuration,Error: Invalid MCP configuration", ",,silent"})
+    @ResourceLock(Resources.GLOBAL)
+    void logsWhatEndedTheSessionAsTheCauseNeverNull(SessionProbe.State reported, String cause, String logged,
+                                                    @TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, reported, cause)));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
+
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).check("ABC-1");
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "task stopped".equals(event.getMessage()))
+                .singleElement().extracting(ILoggingEvent::getKeyValuePairs).asInstanceOf(InstanceOfAssertFactories.LIST)
+                .contains(new KeyValuePair("cause", logged));
+    }
+
+    @Test
+    void endsASessionThatPrintedNothingWithNoCauseRatherThanAnEmptyOne(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        SessionProbe probe = mock(SessionProbe.class);
+
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).ended("ABC-1", " ");
+
+        verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.GONE), isNull(), anyLong());
     }
 }
