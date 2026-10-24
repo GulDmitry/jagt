@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.CaseBook;
 import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -16,9 +15,9 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 /**
- * A step goes to a session only where a case sends it at the task's status, the session's reply closes its turn only
- * where a case of that step takes it, and the Master moves only where a Master case allows it; a miss stops the task
- * for the human.
+ * A step goes to a session only where a case sends it at the task's status, whoever relays it; the session's reply
+ * closes its turn only where a case of that step takes it, and the Master presses a verb only where a Master case
+ * allows it; a miss stops the task for the human.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,10 +37,8 @@ public class CaseDoor {
         if (status.isEmpty()) {
             return true;
         }
-        if (!cases.book().sends(step, status.get(), CaseBook.By.of(OriginContext.current()))) {
-            return refused(id, step, status.get());
-        }
-        return MasterMove.relaying(step).isEmpty() || !byTheMaster() || allows(id, step, status.get());
+        return cases.book().sends(step, status.get(), CaseBook.By.of(OriginContext.current()))
+                || refused(id, step, status.get());
     }
 
     /** Only the Master's move is held to a case: any other press passes. */

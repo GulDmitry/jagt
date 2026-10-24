@@ -268,13 +268,11 @@ class StepRelayTest {
     }
 
     @Test
-    void sendsNothingTheMasterRelaysWhereNoMasterCaseAllowsIt(@TempDir Path root) throws Exception {
+    void relaysTheMastersAnswerWhereItsSessionCaseSendsIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.writeString(root.resolve("session-cases.md"),
-                "## answered\n\nstep: answered\nat: any\nby: master\nreplies: any; plain\nThe Master answers.\n");
-        Files.writeString(root.resolve("master-cases.md"),
-                "## answered\n\nmove: answered\nat: REVIEW_PENDING\nby: master\nThe Master answers.\n");
+                "## answered\n\nstep: answered\nat: IN_PROGRESS\nby: master\nreplies: any; plain\nThe Master answers.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
@@ -284,9 +282,6 @@ class StepRelayTest {
 
         boolean told = OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-42", "answered", "Keep the old keys."));
 
-        assertThat(told).isFalse();
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-        assertThat(state.task("ABC-42").orElseThrow().stop())
-                .extracting(TaskStop::evidence).isEqualTo("no master case allows answered at IN_PROGRESS");
+        assertThat(told).isTrue();
     }
 }

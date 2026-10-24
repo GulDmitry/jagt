@@ -31,7 +31,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
     /** What a case names; a move takes no reply, as the session's case of its step holds that. */
     public enum Shape {
         STEPS("step", "which no brief section holds", "no case sends the brief step '%s' — add one, or it never reaches a session"),
-        MOVES("move", "which the Master lacks", "no case names the Master's move '%s' — add one, or the Master never makes it");
+        MOVES("move", "which is no verb the Master presses", "no case names the Master's move '%s' — add one, or the Master never makes it");
 
         private final String key;
         private final String unknown;
@@ -159,6 +159,12 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
 
     public boolean sends(String step, TaskStatus status, By by) {
         return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status) && c.by() == by);
+    }
+
+    /** The steps of {@code steps} no case set off {@code by} names. */
+    public Set<String> unnamed(Set<String> steps, By by) {
+        return steps.stream().filter(step -> cases.stream().noneMatch(c -> c.step().equals(step) && c.by() == by))
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /** What the cases naming any of the {@code +}-joined steps take together; empty where none names one. */

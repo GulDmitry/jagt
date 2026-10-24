@@ -81,7 +81,7 @@ orchestrator:
 
   # What a session is told at each step jagt sends it: session-brief.md.dist; copy it to session-brief.md to edit a step.
   # When jagt may send each step: session-cases.md.dist; copy it to session-cases.md to edit a case.
-  # When the Master may move: master-cases.md.dist; copy it to master-cases.md to edit a case.
+  # When the Master may press a verb: master-cases.md.dist; copy it to master-cases.md to edit a case.
 
   watchdog:
     staleAfter: 5m        # silence before an "agent stopped" alert; a hook report needs no wait

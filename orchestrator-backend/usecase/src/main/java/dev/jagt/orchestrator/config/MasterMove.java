@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.config;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,12 +32,17 @@ public enum MasterMove {
         return id;
     }
 
-    public static Set<String> ids() {
-        return Arrays.stream(values()).map(MasterMove::id).collect(Collectors.toCollection(LinkedHashSet::new));
+    /** The verbs, held to {@code master-cases.md}; a step relayed is held to its session case alone. */
+    public static Set<String> pressed() {
+        return ids(false);
     }
 
-    /** The move relaying {@code step}, empty where the Master relays no such step. */
-    public static Optional<MasterMove> relaying(String step) {
-        return Arrays.stream(values()).filter(move -> move.relayed && move.id.equals(step)).findFirst();
+    public static Set<String> relayed() {
+        return ids(true);
+    }
+
+    private static Set<String> ids(boolean relayed) {
+        return Arrays.stream(values()).filter(move -> move.relayed == relayed).map(MasterMove::id)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }
