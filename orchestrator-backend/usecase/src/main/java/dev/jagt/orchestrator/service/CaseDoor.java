@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.CaseBook;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskState;
@@ -41,11 +43,24 @@ public class CaseDoor {
                 || refused(id, step, status.get());
     }
 
-    /** Only the Master's move is held to a case: any other press passes. */
-    public boolean presses(String taskId, String move) {
+    /** Only the Master's press is held to a case, and a verb only a human presses is refused it outright. */
+    public boolean presses(String taskId, TaskAction action) {
         if (!byTheMaster()) {
             return true;
         }
+        if (action.humanOnly()) {
+            throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE,
+                    action.label() + " is a human's to press, never the Master's.");
+        }
+        return held(taskId, action.id());
+    }
+
+    /** Only the Master's move is held to a case: any other passes. */
+    public boolean presses(String taskId, String move) {
+        return !byTheMaster() || held(taskId, move);
+    }
+
+    private boolean held(String taskId, String move) {
         String id = stateService.canonicalTaskId(taskId);
         Optional<TaskStatus> status = stateService.task(id).map(TaskState::status);
         return status.isEmpty() || allows(id, move, status.get());

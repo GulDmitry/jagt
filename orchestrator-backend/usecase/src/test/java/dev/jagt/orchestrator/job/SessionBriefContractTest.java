@@ -70,9 +70,10 @@ class SessionBriefContractTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
-        new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+
+        new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC())),
                 mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
@@ -116,11 +117,12 @@ class SessionBriefContractTest {
         when(changes.holdsWork(anyString(), anyString(), anyString())).thenReturn(true);
         AgentSessions sessions = mock(AgentSessions.class);
 
-        ShipService ships = new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+
+        ShipService ships = new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC())),
-                changes);
+                changes, door);
 
         OriginContext.as(ActionOrigin.BOARD, () -> ships.ship("ABC-42"));
 

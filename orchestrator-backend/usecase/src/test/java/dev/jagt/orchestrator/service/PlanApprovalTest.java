@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 class PlanApprovalTest {
 
     private final StepRelay relay = mock(StepRelay.class);
+    private final CaseDoor door = mock(CaseDoor.class);
 
     @Test
     void opensThePlanGateAndTellsTheSessionToStartOnThePlan(@TempDir Path root) {
@@ -28,10 +29,10 @@ class PlanApprovalTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build());
-        when(relay.presses("ABC-1", "approve-plan")).thenReturn(true);
+        when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         when(relay.relay(eq("ABC-1"), eq("plan"), anyString())).thenReturn(true);
 
-        boolean told = new PlanApproval(state, relay).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay, door).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);

@@ -34,10 +34,12 @@ import static org.mockito.Mockito.when;
 class CommandServiceTest {
 
     private final FlowEngine flow = mock(FlowEngine.class);
-    private final CommandService commands = new CommandService(flow, mock(CaseDoor.class));
+    private final CaseDoor door = mock(CaseDoor.class);
+    private final CommandService commands = new CommandService(flow, door);
 
     @Test
     void handsBackWhateverTheFlowSaidWithoutRewordingIt() {
+        when(door.presses("ABC-1", TaskAction.SHIP)).thenReturn(true);
         when(flow.run("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: approval relayed");
 
         assertThat(commands.execute("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: approval relayed");
@@ -45,6 +47,8 @@ class CommandServiceTest {
 
     @Test
     void passesAnAliasDownUntouchedSoOnlyOnePlaceResolvesIt() {
+        when(door.presses("a1", TaskAction.FOCUS)).thenReturn(true);
+
         commands.execute("a1", TaskAction.FOCUS);
 
         verify(flow).run("a1", TaskAction.FOCUS);
@@ -52,6 +56,7 @@ class CommandServiceTest {
 
     @Test
     void letsARefusalReachTheCallerWithTheCodeItMustActOn() {
+        when(door.presses("ABC-1", TaskAction.DEPLOY)).thenReturn(true);
         when(flow.run("ABC-1", TaskAction.DEPLOY)).thenThrow(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE,
                 "Deploy is not available for ABC-1 (it is IN_PROGRESS — agent working)"));
 
@@ -61,9 +66,17 @@ class CommandServiceTest {
     }
 
     @Test
-    void refusesTheMasterAVerbOnlyAHumanPresses() {
+    void refusesTheMasterAVerbOnlyAHumanPresses(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        CommandService guarded = new CommandService(flow, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new Notifications(List.of(), Runnable::run), Clock.systemUTC())));
+
         assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER,
-                () -> commands.execute("ABC-1", TaskAction.DONE)))
+                () -> guarded.execute("ABC-1", TaskAction.DONE)))
                 .isInstanceOf(Refusal.class)
                 .hasMessage("Done is a human's to press, never the Master's.");
     }

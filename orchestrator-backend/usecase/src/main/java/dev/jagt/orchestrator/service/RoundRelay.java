@@ -16,11 +16,12 @@ public class RoundRelay {
 
     private final TaskStops stops;
     private final StepRelay steps;
+    private final CaseDoor door;
     private final SessionBrief sessionBrief;
 
     public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said) {
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
-        if (!RoundBrief.steps(r, said).stream().allMatch(step -> steps.opens(taskId, step))) {
+        if (!RoundBrief.steps(r, said).stream().allMatch(step -> door.opens(taskId, step))) {
             return new SweepResult(SweepResult.Kind.REFUSED, read + ", checks " + said
                     + " — no case sends this round at the task's status, so nothing was relayed; see misses.jsonl");
         }

@@ -23,16 +23,6 @@ public class StepRelay {
     private final CaseDoor door;
     private final TaskTurns turns;
 
-    /** Whether a case sends the step at the task's status; a miss is recorded and stops the task. */
-    public boolean opens(String taskId, String step) {
-        return door.opens(taskId, step);
-    }
-
-    /** Whether a case lets the Master make {@code move} at the task's status; a miss is recorded and stops the task. */
-    public boolean presses(String taskId, String move) {
-        return door.presses(taskId, move);
-    }
-
     public boolean relay(String taskId, String step, String facts) {
         return opened(taskId, step, facts, false, told -> sessions.writeTaskContext(taskId, told));
     }

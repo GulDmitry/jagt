@@ -45,11 +45,12 @@ class RoundRelayTest {
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
+                new MissLog(new JsonMapper(), paths, clock),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock));
         RoundRelay relay = new RoundRelay(new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock),
-                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
-                        new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock)),
-                        new TaskTurns(state, clock)), new SessionBrief(paths));
+                new StepRelay(new SessionBrief(paths), sessions, door,
+                        new TaskTurns(state, clock)), door, new SessionBrief(paths));
         ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_1\nbot: rename x"), 0, List.of());
         relay.relay("ABC-42", "https://host/mr/1", round, "running");
 
@@ -67,11 +68,12 @@ class RoundRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1L, "5 ships")).build());
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
+                new MissLog(new JsonMapper(), paths, clock),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock));
         RoundRelay relay = new RoundRelay(new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock),
-                new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
-                        new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock)),
-                        new TaskTurns(state, clock)), new SessionBrief(paths));
+                new StepRelay(new SessionBrief(paths), sessions, door,
+                        new TaskTurns(state, clock)), door, new SessionBrief(paths));
 
         SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
                 new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0, List.of()), "running");
@@ -89,10 +91,11 @@ class RoundRelayTest {
         when(stops.round(anyString(), any(), anyString())).thenReturn(TaskStops.Relay.RELAY);
         StateService state = new StateService(new JsonMapper(), paths);
 
-        SweepResult result = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock)),
-                new TaskTurns(state, clock)), new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock));
+
+        SweepResult result = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, clock)), door, new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
                 new ReviewFacts(true, false, "success", "", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
                         0, List.of()), "success");
 
@@ -109,10 +112,10 @@ class RoundRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = mock(TaskStops.class);
         when(stops.round(anyString(), any(), anyString())).thenReturn(TaskStops.Relay.RELAY);
-        RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock)),
-                new TaskTurns(state, clock)), new SessionBrief(paths));
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock));
+        RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, clock)), door, new SessionBrief(paths));
         ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0, List.of());
         relay.relay("ABC-42", "http://mr/1", round, "success");
 
@@ -130,10 +133,10 @@ class RoundRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
         TaskStops stops = mock(TaskStops.class);
-        RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions,
-                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock)),
-                new TaskTurns(state, clock)), new SessionBrief(paths));
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock));
+        RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, clock)), door, new SessionBrief(paths));
 
         SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
                 new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0, List.of()), "running");

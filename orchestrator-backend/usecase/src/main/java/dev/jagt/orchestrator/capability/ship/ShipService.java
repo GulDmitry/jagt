@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.capability.ship;
 
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.ActionOrigin;
@@ -32,6 +33,7 @@ public class ShipService {
     private final ConfigService configService;
     private final StepRelay relay;
     private final WorktreeChanges changes;
+    private final CaseDoor door;
     /** One ship at a time per task: two clicks in a row would relay the same instruction twice. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
     private static final String MASTER_MAY_NOT_REPLY = "Do NOT post any replies — this ship is the Master session's,"
@@ -94,8 +96,7 @@ public class ShipService {
     }
 
     private String repliesStep(String taskId, ConfigService.ConfigFile config) {
-        boolean byTheMaster = OriginContext.current() == ActionOrigin.MASTER;
-        return byTheMaster && config.master().may(MasterRight.REPLY) && !relay.presses(taskId, MasterMove.REPLY.id())
+        return config.master().may(MasterRight.REPLY) && !door.presses(taskId, MasterMove.REPLY.id())
                 ? MASTER_MAY_NOT_REPLY : repliesStep(config);
     }
 

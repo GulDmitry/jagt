@@ -1,7 +1,13 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.MissLog;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -19,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,11 +49,17 @@ class ShipServiceTest {
     private final ConfigService configService = mock(ConfigService.class);
     private final StepRelay relay = mock(StepRelay.class);
     private final WorktreeChanges changes = mock(WorktreeChanges.class);
+    private CaseDoor door;
 
     @BeforeEach
     void oneProjectAndTasksAddressedByTheirId() {
-        stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        stateService = new StateService(new JsonMapper(), paths);
+        door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), stateService,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(stateService, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
@@ -61,7 +74,7 @@ class ShipServiceTest {
                 TaskStatus.REVIEW_PENDING)
                 .title("Widget layout is off").build());
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         verify(relay).write(eq("ABC-42"), eq("ship"), contains("Push branch ABC-42."));
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
@@ -75,7 +88,7 @@ class ShipServiceTest {
                 TaskStatus.REVIEW_PENDING).title("t")
                 .baseBranch("feature/parent").build());
 
-        new ShipService(stateService, configService, relay, changes).ship("ABC-7");
+        new ShipService(stateService, configService, relay, changes, door).ship("ABC-7");
 
         ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
         verify(relay).write(eq("ABC-7"), eq("ship"), instruction.capture());
@@ -89,7 +102,7 @@ class ShipServiceTest {
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
                         TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build());
 
-        new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
         verify(relay).write(eq("ABC-42"), eq("ship"), instruction.capture());
@@ -108,7 +121,7 @@ class ShipServiceTest {
                         TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build());
         when(changes.holdsWork("web", "/wt-web", "master")).thenReturn(false);
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
         verify(relay).write(eq("ABC-42"), eq("ship"), instruction.capture());
@@ -120,7 +133,7 @@ class ShipServiceTest {
     void shipsNothingWhereNoCaseSendsTheShipAtTheTasksStatus() {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
         assertThat(outcome.message()).contains("no case sends ship at REVIEW_PENDING");
@@ -132,7 +145,7 @@ class ShipServiceTest {
                 TaskStatus.REVIEW_PENDING).title("t").build());
         when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
         assertThat(outcome.message()).contains("nothing to ship");
@@ -148,7 +161,7 @@ class ShipServiceTest {
                         "https://code.example/demo/-/merge_requests/1", null))).build());
         when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
         verify(relay).write(eq("ABC-42"), eq("ship"), contains("its request is already open"));
@@ -158,7 +171,7 @@ class ShipServiceTest {
     void refusesASecondShipWhileTheFirstIsStillRunning() {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());
-        ShipService shipService = new ShipService(stateService, configService, relay, changes);
+        ShipService shipService = new ShipService(stateService, configService, relay, changes, door);
         AtomicReference<Outcome> reentrant = new AtomicReference<>();
         doAnswer(call -> {
             reentrant.set(shipService.ship("ABC-42"));
@@ -235,7 +248,7 @@ class ShipServiceTest {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         assertThat(outcome.message()).contains("until it reports the request").doesNotContain("requests");
     }
@@ -248,7 +261,7 @@ class ShipServiceTest {
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
                         TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build());
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         assertThat(outcome.message()).contains("until it reports the requests");
     }
@@ -262,14 +275,14 @@ class ShipServiceTest {
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
                 .withCodeReview(ConfigService.ConfigFile.CodeReviewConfig.defaults().withPostReviewReplies(false)));
 
-        Outcome outcome = new ShipService(stateService, configService, relay, changes).ship("ABC-42");
+        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         assertThat(outcome.message()).contains("review_replies.md is yours to post (postReviewReplies=false)");
     }
 
     @Test
     void refusesATaskThatIsNotThereNamingIt() {
-        assertThatThrownBy(() -> new ShipService(stateService, configService, relay, changes).ship("ABC-9"))
+        assertThatThrownBy(() -> new ShipService(stateService, configService, relay, changes, door).ship("ABC-9"))
                 .isInstanceOf(Refusal.class)
                 .hasMessageContaining("No task ABC-9")
                 .extracting("code").isEqualTo(Refusal.Code.NO_SUCH_TASK);

@@ -14,11 +14,12 @@ public class PlanApproval {
 
     private final StateService stateService;
     private final StepRelay relay;
+    private final CaseDoor door;
 
     /** Whether the session was told anything new; the gate is open either way, unless no case allowed the approval. */
     public boolean approve(String taskId, String reader) {
         String id = stateService.canonicalTaskId(taskId);
-        if (!relay.presses(id, MasterMove.APPROVE_PLAN.id())) {
+        if (!door.presses(id, MasterMove.APPROVE_PLAN.id())) {
             return false;
         }
         stateService.updateTask(id, task -> task.withPlanGate(PlanGate.OPEN));
