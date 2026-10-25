@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public record RunRecord(Map<String, List<Step>> histories, List<Miss> misses, Timeline timeline,
                         Map<String, List<RefUpdate>> origin) {
@@ -22,7 +23,7 @@ public record RunRecord(Map<String, List<Step>> histories, List<Miss> misses, Ti
     public record Sample(Instant at, String task, TaskStatus status, String line) {
     }
 
-    public record Relay(Instant at, String task, List<String> steps, String line) {
+    public record Relay(Instant at, String task, List<String> steps, @Nullable TaskStatus status, String line) {
     }
 
     public record RefUpdate(String old, String now, Instant at, String line) {

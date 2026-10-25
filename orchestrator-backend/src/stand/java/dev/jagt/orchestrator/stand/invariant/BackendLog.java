@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand.invariant;
 
+import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -31,7 +32,9 @@ final class BackendLog {
         if (!event.path("message").asString().equals(OPENED)) {
             return Optional.empty();
         }
+        String status = event.path("status").asString("");
         return Optional.of(new RunRecord.Relay(Instant.parse(event.path("@timestamp").asString()),
-                event.path("task").asString(), List.of(event.path("step").asString().split("\\+")), line));
+                event.path("task").asString(), List.of(event.path("step").asString().split("\\+")),
+                status.isEmpty() ? null : TaskStatus.valueOf(status), line));
     }
 }
