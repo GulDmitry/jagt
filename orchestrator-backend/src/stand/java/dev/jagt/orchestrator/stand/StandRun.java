@@ -35,6 +35,7 @@ public final class StandRun implements AutoCloseable {
     private final StandHost host;
     private final @Nullable Path replayed;
     private final WorktreeSnapshots snapshots;
+    private final Instant began = Instant.now();
     private JagtProcess jagt;
     private StandMarker marker;
 
@@ -163,6 +164,7 @@ public final class StandRun implements AutoCloseable {
         printUsage();
         keepRecording();
         StandReport.append(marker.scenario(), marker.outcome().equals(StandMarker.PASSED));
+        keepRunRecord();
         if (!marker.outcome().equals(StandMarker.PASSED)) {
             marker.withOutcome(StandMarker.FAILED).writeTo(root);
             System.out.println("stand run " + marker.scenario() + " failed; evidence: "
@@ -170,6 +172,29 @@ public final class StandRun implements AutoCloseable {
         }
         StandShell.deleteRoot(root);
         StandTraces.ofTheHuman(root.getParent()).remove(root.getFileName().toString()::equals);
+    }
+
+    private void keepRunRecord() {
+        List<String> found;
+        try {
+            found = violations().stream().map(Violation::toString).toList();
+        } catch (RuntimeException e) {
+            found = List.of("invariants unreadable: " + e);
+        }
+        String[] named = marker.scenario().split("/", 2);
+        StandRunLog.keep(StandRunLog.DIR, new StandRunLog.Entry(Instant.now(), named[0], named.length > 1 ? named[1] : "",
+                replayed == null ? "live" : "replay", marker.outcome().equals(StandMarker.PASSED), found,
+                Duration.between(began, Instant.now()).toSeconds(), spend()), root.getFileName().toString());
+    }
+
+    private String spend() {
+        try {
+            Path usage = root.resolve("usage-by-day.jsonl");
+            String spent = Files.isRegularFile(usage) ? Files.readString(usage).strip() : "";
+            return spent.isEmpty() ? "unknown" : spent;
+        } catch (IOException e) {
+            return "unknown";
+        }
     }
 
     private void keepRecording() {
