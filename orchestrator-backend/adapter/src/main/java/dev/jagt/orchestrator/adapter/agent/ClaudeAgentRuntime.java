@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 
+import dev.jagt.orchestrator.task.Ansi;
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.config.SessionBrief;
@@ -43,7 +44,6 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     private static final String PROMPT_MARK = "\u276f";
     private static final String INTERRUPT_HINT = "esc to interrupt";
     private static final Pattern SPINNER_LINE = Pattern.compile("(?m)^\\s*[^\\p{L}\\p{N}\\s\u276f\u23fa>]\\s\\p{L}+\u2026");
-    private static final Pattern ANSI = Pattern.compile("\u001b\\[[0-9;?]*[A-Za-z]");
     private static final Pattern DIMMED = Pattern.compile("\u001b\\[2m.*?(?=\u001b\\[(?:0|22)?m|$)");
     private static final String CLAUDE_MEMORY_FILE = "CLAUDE.md";
     private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
@@ -116,9 +116,9 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     public Optional<String> draft(String screen) {
         String draft = "";
         for (String line : screen.split("\n")) {
-            if (ANSI.matcher(line).replaceAll("").startsWith(PROMPT_MARK)) {
+            if (Ansi.strip(line).startsWith(PROMPT_MARK)) {
                 String typed = line.substring(line.indexOf(PROMPT_MARK) + PROMPT_MARK.length());
-                draft = ANSI.matcher(DIMMED.matcher(typed).replaceAll("")).replaceAll("");
+                draft = Ansi.strip(DIMMED.matcher(typed).replaceAll(""));
             }
         }
         String typed = draft.replace('\u00a0', ' ').strip();
@@ -127,13 +127,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public boolean working(String screen) {
-        String plain = ANSI.matcher(screen).replaceAll("");
+        String plain = Ansi.strip(screen);
         return plain.contains(INTERRUPT_HINT) || SPINNER_LINE.matcher(plain).find();
     }
 
     @Override
     public Optional<String> unansweredPrompt(String screen) {
-        String shown = ANSI.matcher(screen).replaceAll("");
+        String shown = Ansi.strip(screen);
         return SessionHooks.trustDialog("claude").stream().anyMatch(shown::contains)
                 ? Optional.of("waiting on the trust dialog") : Optional.empty();
     }

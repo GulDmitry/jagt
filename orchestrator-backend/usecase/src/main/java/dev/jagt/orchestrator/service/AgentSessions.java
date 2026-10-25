@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Ansi;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.SessionHost;
 
@@ -19,7 +20,6 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 /**
  * Which agent runs here is never assumed: window titles, liveness and the words in these messages all come from
@@ -36,9 +36,6 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     /** The one line jagt types into a session; whatever else arrives there is the human's. */
     public static final String NUDGE = "task_context.md changed — re-read it now and follow the new instructions.";
-
-    private static final Pattern ESCAPES = Pattern.compile(
-            "\u001B\\[[0-?]*[ -/]*[@-~]|\u001B[\\]P][^\u0007\u001B]*(\u0007|\u001B\\\\)|\u001B[()][0-9A-B]|\u001B[78=>]");
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -112,7 +109,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         String id = stateService.canonicalTaskId(taskId);
         requireTask(id);
         return sessions.screenOf(agentSession(configService.load(), id), id)
-                .map(shown -> ESCAPES.matcher(shown).replaceAll("").stripTrailing());
+                .map(shown -> Ansi.strip(shown).stripTrailing());
     }
 
     /** What the task's agent printed last before it exited; empty while it runs or once its window is gone. */
