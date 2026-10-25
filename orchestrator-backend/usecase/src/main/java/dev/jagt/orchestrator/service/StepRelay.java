@@ -22,7 +22,7 @@ import java.util.function.UnaryOperator;
  * A step's facts are jagt's and come first; what the session is asked to do with them is the brief's. Every relay
  * opens the session's turn. Each answers false where no case sends the step at the task's status, or where the
  * session still holds the turn this step opened with the same facts. The turn is recorded before the session is
- * told, and put back where telling it fails.
+ * told, and put back where telling it fails, which stops the task for the human.
  * A step the brief leaves empty sends its facts alone.
  */
 @Service
@@ -166,9 +166,12 @@ public class StepRelay {
             boolean restored = turns.restored(taskId, opened, before);
             log.atError().setMessage("relay failed").addKeyValue("task", taskId).addKeyValue("step", step)
                     .addKeyValue("cause", failure.toString())
-                    .addKeyValue("effect", restored ? "the turn put back, the step can be pressed again"
+                    .addKeyValue("effect", restored ? "the turn put back, the task stopped for the human"
                             : "the task had moved on, left as it is")
                     .setCause(failure).log();
+            if (restored) {
+                door.undelivered(taskId, step, failure.toString());
+            }
             throw failure;
         }
     }

@@ -157,6 +157,24 @@ class StepRelayTest {
     }
 
     @Test
+    void stopsTheTaskForTheHumanWhenTellingTheSessionFailed(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
+        when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
+                .thenThrow(new IllegalStateException("window closed"));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+
+        assertThatThrownBy(() -> relay.relay("ABC-42", "deploy", "ABC-42 is deployed"))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(door).undelivered("ABC-42", "deploy", "java.lang.IllegalStateException: window closed");
+    }
+
+    @Test
     void relaysAStepACaseSendsAtTheTasksStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));

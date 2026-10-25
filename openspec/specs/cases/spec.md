@@ -98,7 +98,7 @@ restart repeats none.
 #### Scenario: jagt dies while the session is being told
 - **WHEN** ABC-42's step is relayed and jagt dies after the session was told
 - **THEN** the turn and its digest were recorded before the session was told, so pressing the step again sends nothing
-- **AND** where telling the session fails and jagt lives, the turn is put back and the step can be pressed again
+- **AND** where telling the session fails and jagt lives, the turn is put back and the task stopped for the human with the cause
 
 #### Scenario: A hand-back made again with no relay between
 - **WHEN** the Master judged ABC-42's hand-back, and its session reports IN_PROGRESS then REVIEW_PENDING again
