@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import org.springframework.util.FileSystemUtils;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
 import lombok.RequiredArgsConstructor;
@@ -83,8 +84,8 @@ public class GitCommands {
     void forceDeleteDir(Path dir) {
         for (int attempt = 0; attempt < 4 && Files.exists(dir); attempt++) {
             worktreeProcesses.reap(dir);
-            try (var paths = Files.walk(dir)) {
-                paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+            try {
+                FileSystemUtils.deleteRecursively(dir);
             } catch (IOException e) {
                 log.atWarn().setMessage("directory delete failed")
                         .addKeyValue("path", dir)

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import org.springframework.util.FileSystemUtils;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.WorktreeFiles;
@@ -90,22 +91,7 @@ public class WorktreeOrphanScanner implements Job {
             return false;
         }
         try {
-            Files.walkFileTree(orphan.path(), new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Files.delete(file);
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException failure) throws IOException {
-                    if (failure != null) {
-                        throw failure;
-                    }
-                    Files.delete(dir);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            FileSystemUtils.deleteRecursively(orphan.path());
             log.atInfo().setMessage("worktree husk deleted")
                     .addKeyValue("path", orphan.path())
                     .log();
