@@ -537,6 +537,20 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void readsThePromptSuggestionOfAnIdleSessionAsNoDraftAndATypedLineOverItAsOne() throws Exception {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
+        String screen = new String(getClass().getResourceAsStream("/screens/suggestion-2.1.308.txt").readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        assertThat(runtime.holdsDraft(screen)).isFalse();
+        assertThat(runtime.holdsDraft(screen.replace("\u001b[2mretry the status report\u001b[0m", "retry the sta"))).isTrue();
+    }
+
+    @Test
     void readsTheFirstRowOfAWrappedInputAsTheDraft() {
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
