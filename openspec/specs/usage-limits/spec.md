@@ -111,7 +111,7 @@ cancel it.
 - **THEN** the wake is still due at the reset
 
 ### Requirement: A headless run has a spend ceiling
-Every headless run SHALL be held to `orchestrator.assistant.maxCostUsd`, 5.00 unless set. A run that reaches it SHALL
+Every headless run SHALL be held to `orchestrator.assistant.maxCostUsd`, 1.75 unless set. A run that reaches it SHALL
 come back as a failure naming the ceiling, its spend booked as for any run.
 
 #### Scenario: A run under the ceiling
