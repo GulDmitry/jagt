@@ -60,4 +60,18 @@ class RecordedVerdictsTest {
 
         assertThat(recording.diverged()).isTrue();
     }
+
+    @Test
+    void answersFromTheEarliestRoundLeftEvenWhereALaterRoundHoldsTheRoleNamed(@TempDir Path root) throws Exception {
+        Path file = root.resolve("recording.jsonl");
+        Files.writeString(file, """
+                {"type":"verdict","round":1,"role":"architect","judgement":{"failure":"","verdict":"not ready","findings":[],"question":"","premises":[],"newTask":""}}
+                {"type":"verdict","round":2,"role":"QA","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
+                """);
+        RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
+
+        Judgement read = verdicts.answer("<role>You are the QA of jagt's unattended reviewer</role>").orElseThrow();
+
+        assertThat(read.verdict()).isEqualTo("not ready");
+    }
 }

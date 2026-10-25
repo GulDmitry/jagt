@@ -46,4 +46,11 @@ class TurnScriptTest {
 
         assertThat(reply.divergence()).isEqualTo("turn opened at deploy with no recorded move");
     }
+
+    @Test
+    void isNotDrainedWhileARecordedTurnIsStillToOpen() {
+        TurnScript script = TurnScript.of("ABC-1", List.of(new RecordingLine.Opened("ABC-1", 1, "ship")));
+
+        assertThat(script.drained()).isFalse();
+    }
 }
