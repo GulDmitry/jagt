@@ -507,6 +507,9 @@ tasks.register('promptEval', Test) {
         systemProperty 'eval.suite', name
         systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
         systemProperty 'eval.model', (name == 'masterEval' ? project.findProperty('masterModel') : null) ?: 'default'
+        systemProperty 'eval.brief.file', (name == 'masterEval'
+                ? (project.findProperty('masterBrief') ?: file('../master-brief.md.dist').path)
+                : file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path)
     }
 }
 
