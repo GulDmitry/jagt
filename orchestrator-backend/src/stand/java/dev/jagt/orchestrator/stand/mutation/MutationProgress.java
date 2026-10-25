@@ -17,7 +17,7 @@ public final class MutationProgress {
 
     public static Optional<String> lacking(Mutation.Kind kind, StandOutcome outcome, List<RunRecord.Step> steps,
                                            int misses, boolean awaitsTheReviewer,
-                                           boolean conflictRelayed) {
+                                           boolean conflictRelayed, boolean expectsDeployConflict) {
         boolean attack = kind == Mutation.Kind.ATTACK;
         if (!attack && (misses > 0 || outcome.stopTrigger().equals("MISS"))) {
             return Optional.of("a " + kind.name().toLowerCase(java.util.Locale.ROOT) + " mutation hit a miss: "
@@ -25,6 +25,10 @@ public final class MutationProgress {
         }
         if (steps.stream().noneMatch(step -> step.origin().equals(ActionOrigin.MCP.name()))) {
             return Optional.of("the session never reported");
+        }
+        boolean conflicted = steps.stream().anyMatch(step -> step.status() == TaskStatus.DEPLOY_CONFLICT);
+        if (conflicted && !expectsDeployConflict) {
+            return Optional.of("the run hit a deploy conflict no mutation of it expected");
         }
         if (DEFECT_STOPS.contains(outcome.stopTrigger())) {
             return Optional.of("jagt stopped the task on its own defect: " + outcome.detail());
@@ -36,8 +40,7 @@ public final class MutationProgress {
         boolean reviewed = outcome.ending() == StandOutcome.Ending.WAITING_ON_THE_REVIEWER
                 || outcome.withTheCodeHost() && awaitsTheReviewer
                 && steps.stream().anyMatch(step -> step.status() == TaskStatus.CI_POLLING);
-        boolean conflicted = conflictRelayed && steps.stream().anyMatch(step -> step.status() == TaskStatus.DEPLOY_CONFLICT);
-        return deployed || conflicted || outcome.asked() || attack && misses > 0 || reviewed ? Optional.empty()
+        return deployed || conflicted && conflictRelayed || outcome.asked() || attack && misses > 0 || reviewed ? Optional.empty()
                 : Optional.of("the run reached neither a deploy, a question, a recorded refusal nor a waiting reviewer");
     }
 }

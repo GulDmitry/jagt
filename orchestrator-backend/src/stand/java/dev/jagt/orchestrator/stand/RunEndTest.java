@@ -16,7 +16,7 @@ class RunEndTest {
         when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
         when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.JUDGE).held(timeline, true);
+        boolean held = new RunEnd(StandMode.JUDGE, false).held(timeline, true);
 
         assertThat(held).isTrue();
     }
@@ -28,7 +28,7 @@ class RunEndTest {
         when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
         when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(false);
 
-        boolean held = new RunEnd(StandMode.JUDGE).held(timeline, true);
+        boolean held = new RunEnd(StandMode.JUDGE, false).held(timeline, true);
 
         assertThat(held).isFalse();
     }
@@ -40,7 +40,7 @@ class RunEndTest {
         when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
         when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT).held(timeline, true);
+        boolean held = new RunEnd(StandMode.ACT, false).held(timeline, true);
 
         assertThat(held).isFalse();
     }
@@ -52,7 +52,7 @@ class RunEndTest {
         when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
         when(timeline.stalledFor(Duration.ofMinutes(10))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT).held(timeline, true);
+        boolean held = new RunEnd(StandMode.ACT, false).held(timeline, true);
 
         assertThat(held).isTrue();
     }
@@ -64,7 +64,7 @@ class RunEndTest {
         when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
         when(timeline.relayed("conflict")).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT).held(timeline, true);
+        boolean held = new RunEnd(StandMode.ACT, true).held(timeline, true);
 
         assertThat(held).isTrue();
     }
@@ -76,7 +76,7 @@ class RunEndTest {
         when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
         when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT).held(timeline, true);
+        boolean held = new RunEnd(StandMode.ACT, true).held(timeline, true);
 
         assertThat(held).isTrue();
     }
@@ -87,7 +87,7 @@ class RunEndTest {
         when(timeline.lastOwner()).thenReturn("YOU");
         when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
 
-        boolean held = new RunEnd(StandMode.ACT).held(timeline, true);
+        boolean held = new RunEnd(StandMode.ACT, true).held(timeline, true);
 
         assertThat(held).isFalse();
     }
@@ -96,7 +96,7 @@ class RunEndTest {
     void aReachedRunWaitsForAnEventNotFiredYet() {
         Timeline timeline = mock(Timeline.class);
 
-        boolean reached = new RunEnd(StandMode.ACT).reached(true, true, timeline);
+        boolean reached = new RunEnd(StandMode.ACT, false).reached(true, true, timeline);
 
         assertThat(reached).isFalse();
     }
@@ -106,7 +106,7 @@ class RunEndTest {
         Timeline timeline = mock(Timeline.class);
         when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean reached = new RunEnd(StandMode.ACT).reached(true, true, timeline);
+        boolean reached = new RunEnd(StandMode.ACT, false).reached(true, true, timeline);
 
         assertThat(reached).isTrue();
     }
@@ -115,7 +115,7 @@ class RunEndTest {
     void aReachedRunWithNoEventPendingEndsAtOnce() {
         Timeline timeline = mock(Timeline.class);
 
-        boolean reached = new RunEnd(StandMode.ACT).reached(true, false, timeline);
+        boolean reached = new RunEnd(StandMode.ACT, false).reached(true, false, timeline);
 
         assertThat(reached).isTrue();
     }
@@ -125,7 +125,7 @@ class RunEndTest {
         Timeline timeline = mock(Timeline.class);
         when(timeline.stalledFor(Duration.ofSeconds(3))).thenReturn(true);
 
-        boolean waiting = new RunEnd(StandMode.ACT).waitingOnTheReviewer(true, timeline);
+        boolean waiting = new RunEnd(StandMode.ACT, false).waitingOnTheReviewer(true, timeline);
 
         assertThat(waiting).isTrue();
     }
@@ -134,8 +134,20 @@ class RunEndTest {
     void aRunKeepsGoingWhileSomethingElseStillMovesBesideTheWaitingSweeps() {
         Timeline timeline = mock(Timeline.class);
 
-        boolean waiting = new RunEnd(StandMode.ACT).waitingOnTheReviewer(true, timeline);
+        boolean waiting = new RunEnd(StandMode.ACT, false).waitingOnTheReviewer(true, timeline);
 
         assertThat(waiting).isFalse();
+    }
+
+    @Test
+    void aDeployConflictNoMutationExpectedIsNotHeldAtTheConflictRelay() {
+        Timeline timeline = mock(Timeline.class);
+        when(timeline.lastOwner()).thenReturn("YOU");
+        when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
+        when(timeline.relayed("conflict")).thenReturn(true);
+
+        boolean held = new RunEnd(StandMode.ACT, false).held(timeline, true);
+
+        assertThat(held).isFalse();
     }
 }

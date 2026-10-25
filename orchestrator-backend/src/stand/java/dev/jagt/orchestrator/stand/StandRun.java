@@ -43,7 +43,7 @@ public final class StandRun implements AutoCloseable {
     private @Nullable StandOutcome last;
     private boolean resting;
     private boolean sweepsWaiting;
-    private final RunEnd end;
+    private RunEnd end;
 
     private StandRun(Path root, StandMarker marker, StandMode mode, StandProject project, StandHost host, JagtProcess jagt,
                      @Nullable Path replayed) {
@@ -55,7 +55,6 @@ public final class StandRun implements AutoCloseable {
         this.project = project;
         this.host = host;
         this.jagt = jagt;
-        this.end = new RunEnd(mode);
         this.awake = StandShell.holdAwake(root);
     }
 
@@ -125,6 +124,7 @@ public final class StandRun implements AutoCloseable {
         Timeline timeline = new Timeline(root.resolve("timeline.log"), new ContextRelays(new StandBooks(root).brief()));
         Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
         HumanStub human = new HumanStub(mode);
+        end = new RunEnd(mode, script.expectsDeployConflict());
         StandWorld world = new World(timeline, script.ref());
         List<WorldEvent> pending = new ArrayList<>(script.events());
         Instant start = Instant.now();

@@ -35,13 +35,14 @@ class MutationStandTest {
             Files.writeString(stand.root().resolve("ticket.md"), applied.ticket());
             stand.store().seedTicket("ABC-5", "Greet the world by default", applied.ticket(), "To Do");
 
-            StandOutcome outcome = stand.drive(applied.events().stream().reduce(Script.to("ABC-5", "DEPLOYED"),
-                    Script::with, (first, second) -> second));
+            Script script = applied.events().stream().reduce(Script.to("ABC-5", "DEPLOYED"), Script::with,
+                    (first, second) -> second);
+            StandOutcome outcome = stand.drive(applied.expectsDeployConflict() ? script.expectingDeployConflict() : script);
 
             RunRecord record = stand.record();
             SoftAssertions.assertSoftly(soft -> {
                 soft.assertThat(MutationProgress.lacking(mutation.kind(), outcome, record.history("ABC-5"),
-                        record.misses().size(), stand.store().awaitsTheReviewer(), conflictRelayed(record)))
+                        record.misses().size(), stand.store().awaitsTheReviewer(), conflictRelayed(record), applied.expectsDeployConflict()))
                         .as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
                 soft.assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             });

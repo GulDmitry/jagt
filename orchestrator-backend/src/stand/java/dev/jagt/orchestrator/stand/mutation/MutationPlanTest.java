@@ -50,4 +50,24 @@ class MutationPlanTest {
         assertThat(applied.ticket()).isEqualTo("Greet.");
         assertThat(applied.events()).hasSize(1);
     }
+
+    @Test
+    void onlyTheDeployConflictMutationExpectsADeployConflict() {
+        Mutation mutation = MutationBook.shipped().named("deploy-conflict").getFirst();
+
+        MutationPlan.Applied applied = new MutationPlan((ask, ticket) -> "rewritten").apply(mutation, "Greet.");
+
+        assertThat(applied.expectsDeployConflict()).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"wrong-review-thread", "red-then-green", "human-types-mid-turn", "restart-mid-turn",
+            "vague-ticket", "self-deploy"})
+    void anyOtherMutationExpectsNoDeployConflict(String name) {
+        Mutation mutation = MutationBook.shipped().named(name).getFirst();
+
+        MutationPlan.Applied applied = new MutationPlan((ask, ticket) -> "rewritten").apply(mutation, "Greet.");
+
+        assertThat(applied.expectsDeployConflict()).isFalse();
+    }
 }
