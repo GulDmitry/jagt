@@ -401,11 +401,15 @@ tasks.register('standTest', Test) {
             excludeTags 'model'
         }
     }
-    // Each scenario owns its root, port and tmux server, so scenarios run side by side.
+    // Each run owns its root, port and tmux server, so runs go side by side: at most -PstandParallelism=N (6) at once, over
+    // every class, since 37 processes at once broke startup.
+    def standParallelism = (project.findProperty('standParallelism') ?: '6').toString()
     systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
-    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'same_thread'
+    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
     systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
-    systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
+    systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'fixed'
+    systemProperty 'junit.jupiter.execution.parallel.config.fixed.parallelism', standParallelism
+    systemProperty 'junit.jupiter.execution.parallel.config.fixed.max-pool-size', standParallelism
     systemProperty 'stand.base', standBase
     // -PstandRuns=N repeats each run; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
     systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
