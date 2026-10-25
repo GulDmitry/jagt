@@ -222,7 +222,12 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                     + " task_notes.md.";
         }
         if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING) {
-            if (composing(session, taskId)) {
+            Optional<String> screen = shown(session, taskId);
+            if (screen.filter(agentRuntime::holdsDraft).isPresent()) {
+                if (resubmittedOwnNudge(screen.get(), session, taskId, task.alias())) {
+                    return "Instructions written to task_context.md; the nudge already sat unsent in the agent's"
+                            + " window, so it was sent.";
+                }
                 nudgeOnceSent(session, taskId, task.alias());
                 return "Instructions written to task_context.md; the human is typing in the agent's window, so the"
                         + " nudge waits until they send it.";
@@ -256,6 +261,28 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
             log.atDebug().setMessage("session screen unread").addKeyValue("task", taskId)
                     .addKeyValue("cause", unread.toString()).log();
             return false;
+        }
+    }
+
+    /** Our own nudge left unsent is no human's draft: Enter is pressed on it, never waited for. */
+    private boolean resubmittedOwnNudge(String screen, String session, String taskId, @Nullable String alias) {
+        boolean own = agentRuntime.draft(screen).filter(AgentSessions::isNudge).isPresent();
+        if (!own || !sessions.submitTaskWindow(session, taskId)) {
+            return false;
+        }
+        log.atInfo().setMessage("nudge resubmitted").addKeyValue("task", taskId).addKeyValue("alias", alias)
+                .addKeyValue("cause", "its own nudge sat unsent in the agent's input").log();
+        return true;
+    }
+
+    /** A screen that cannot be read is no screen. */
+    private Optional<String> shown(String session, String taskId) {
+        try {
+            return sessions.screenOf(session, taskId);
+        } catch (RuntimeException unread) {
+            log.atDebug().setMessage("session screen unread").addKeyValue("task", taskId)
+                    .addKeyValue("cause", unread.toString()).log();
+            return Optional.empty();
         }
     }
 

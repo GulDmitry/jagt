@@ -213,6 +213,23 @@ class AgentSessionsTest {
     }
 
     @Test
+    void sendsItsOwnUnsentNudgeInsteadOfWaitingForIt() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> nudge"));
+        when(agentRuntime.holdsDraft("> nudge")).thenReturn(true);
+        when(agentRuntime.draft("> nudge")).thenReturn(Optional.of(AgentSessions.NUDGE));
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.writeTaskContext("ABC-1", "new instructions");
+
+        assertThat(answer).doesNotContain("the human is typing");
+        verify(tmux).submitTaskWindow("jagt", "ABC-1");
+    }
+
+    @Test
     void nudgesOnceTheHumanHasSentTheirDraft() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
