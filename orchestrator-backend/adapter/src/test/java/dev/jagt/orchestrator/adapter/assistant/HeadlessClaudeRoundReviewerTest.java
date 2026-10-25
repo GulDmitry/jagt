@@ -28,13 +28,13 @@ class HeadlessClaudeRoundReviewerTest {
     private final ProcessRunner runner = mock(ProcessRunner.class);
     private final ReadOnlyTools reads = mock(ReadOnlyTools.class);
     private final UsageTracker usage = mock(UsageTracker.class);
-    private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+    private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
             ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
             AssistantProperties.empty());
 
     @Test
     void callsOnlyTheMcpToolsTheHumanNamesSoADiffCannotSendTextToAnyServer() {
-        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
                 ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withAllowedTools(List.of("mcp__acme__get_issue")));
         when(runner.run(any(Path.class), any(Duration.class), any()))
@@ -48,7 +48,7 @@ class HeadlessClaudeRoundReviewerTest {
 
     @Test
     void givesTheReviewOnlyTheReadsOfABareServerTheHumanNames() {
-        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
                 ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withAllowedTools(List.of("mcp__acme")));
         when(runner.run(any(Path.class), any(Duration.class), any()))
@@ -75,7 +75,7 @@ class HeadlessClaudeRoundReviewerTest {
 
     @Test
     void saysItLoadsAServerWhereTheHumanNamesOne() {
-        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
                 ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withAllowedTools(List.of("mcp__acme")));
 
@@ -84,7 +84,7 @@ class HeadlessClaudeRoundReviewerTest {
 
     @Test
     void saysItLoadsNoServerWhereTheHumanNamesOnlyOtherTools() {
-        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
                 ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withAllowedTools(List.of("Bash(ls:*)")));
 
@@ -231,7 +231,7 @@ class HeadlessClaudeRoundReviewerTest {
 
     @Test
     void loadsOnlyTheServersPinnedForAReview() {
-        HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+        HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
                 ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withMcpConfig("/cfg/mcp.json").withAllowedTools(List.of("mcp__acme")));
         when(runner.run(any(Path.class), any(Duration.class), any()))

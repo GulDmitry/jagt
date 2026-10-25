@@ -24,7 +24,7 @@ class HeadlessClaudeCommandAssistantTest {
 
     private final ProcessRunner runner = mock(ProcessRunner.class);
     private final HeadlessClaudeCommandAssistant assistant = new HeadlessClaudeCommandAssistant(
-            new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+            new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                     mock(UsageTracker.class), mock(ReadOnlyTools.class)));
     private final CommandAssistant.Menu menu = new CommandAssistant.Menu("ship <task>\nresume <url>",
             List.of("ship", "resume", "none"), List.of("ABC-5"));

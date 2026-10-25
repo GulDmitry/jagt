@@ -15,6 +15,7 @@ const phaseBar = document.getElementById('phases');
 const waitingLabel = document.getElementById('waiting');
 const autoReviewChip = document.getElementById('auto-review');
 const jobsChip = document.getElementById('jobs-pulse');
+const assistantChip = document.getElementById('assistant-down');
 const actChip = document.getElementById('act-stopped');
 const masterChip = document.getElementById('master-mode');
 
@@ -30,6 +31,18 @@ function renderJobs() {
   jobsChip.textContent = `${jobs.failing} of ${jobs.count} jobs failed`;
   jobsChip.dataset.tip = 'a job\u2019s last run failed; press for the jobs\nnext run: '
     + (due === null ? '-' : due > 0 ? countdown(due) : 'due');
+}
+
+// What has stopped is said; the hover names the provider's last error and when the next read probes.
+function renderAssistant() {
+  const down = store.assistant();
+  assistantChip.hidden = !down;
+  if (!down) {
+    return;
+  }
+  const due = down.retryAt - Date.now();
+  assistantChip.textContent = 'assistant unavailable';
+  assistantChip.dataset.tip = `${down.cause}\nnext read to probe: ${due > 0 ? countdown(due) : 'due'}`;
 }
 
 // An empty board has two causes and a human cannot act on the wrong one: nothing exists yet, or everything is
@@ -56,6 +69,7 @@ export function render(tasks, showing) {
   masterChip.textContent = 'Master: act';
   masterChip.dataset.tip = 'the Master presses the buttons you would; the Master report says what it may do';
   renderJobs();
+  renderAssistant();
   const stop = store.actStop();
   actChip.hidden = !stop;
   actChip.dataset.tip = {

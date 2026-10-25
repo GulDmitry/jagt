@@ -100,3 +100,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0082 A prompt before the harness is read off the window](0082-a-prompt-before-the-harness-is-read-off-the-window.md)
 - [0083 A replay answers the Master, a run leaves its verdict](0083-a-replay-answers-the-masters-answers-and-a-run-leaves-its-verdict.md)
 - [0084 Code intelligence stays a jdtls per worktree](0084-code-intelligence-stays-a-jdtls-per-worktree.md)
+- [0085 Headless reads stop behind a circuit breaker](0085-headless-reads-stop-behind-a-circuit-breaker.md)

@@ -31,7 +31,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
@@ -48,7 +48,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
@@ -64,7 +64,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
@@ -80,7 +80,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
@@ -97,7 +97,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
@@ -117,7 +117,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                 "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
                         + "\"openedAt\":\"\",\"threads\":[\"https://host/mr/9#note_1\\nbot: quote the pattern"
                         + "\\ndev: the rule IS a pattern\\nbot: then bound the input\"]}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -134,7 +134,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                 "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
                         + "\"openedAt\":\"\",\"threads\":[\"bot: " + "x".repeat(3000)
                         + "\\ndev: it is bound\\nbot: then bound the input\"]}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -152,7 +152,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
                 "openedAt":"2026-08-01T09:15:00Z","threads":[]}}""", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -170,7 +170,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
                 "signedInAs":"lee","threads":["https://host/mr/9#note_1\\nmia: Why is this loop not bounded?\\n\
                 lee: The page size bounds it, see Paging.java"]}}""", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -189,7 +189,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
                 "pipelineFailure":"LOG","openedAt":"","threads":[]}}""".replace("LOG", "x".repeat(5000)), ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -206,7 +206,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
                 "pipelineFailure":"LOG","openedAt":"","threads":[]}}""".replace("LOG", "x".repeat(2000)), ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -221,7 +221,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
                         + "\"openedAt\":\"\",\"threads\":[\"" + "x".repeat(2000) + "\"]}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -235,7 +235,7 @@ class HeadlessClaudeCodeHostAssistantTest {
     @ValueSource(strings = {"ABC-42", "ftp://host/mr/9"})
     void readsNoMergeRequestFromAnythingButAWebAddress(String mrUrl) {
         ProcessRunner runner = mock(ProcessRunner.class);
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assertThat(assistant.readMergeRequest(mrUrl).facts()).isEmpty();
@@ -247,7 +247,7 @@ class HeadlessClaudeCodeHostAssistantTest {
     @ValueSource(strings = {"ABC-42", "ftp://host/mr/9"})
     void sweepsNoReviewFromAnythingButAWebAddress(String mrUrl) {
         ProcessRunner runner = mock(ProcessRunner.class);
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assertThat(assistant.readReview(mrUrl).facts()).isEmpty();
@@ -260,7 +260,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 "{\"structured_output\":{\"exists\":true,\"sourceBranch\":\"ABC-42-fix\","
                         + "\"targetBranch\":\"main\",\"title\":\"Fix the widget\"}}", ""));
-        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readMergeRequest("https://host/mr/9").facts();

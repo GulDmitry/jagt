@@ -213,7 +213,7 @@ class TaskEventStreamTest {
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
         verify(broadcaster).scheduleAtFixedRate(heartbeat.capture(), anyLong(), anyLong(), any());
         MvcResult opened = MockMvcBuilders.standaloneSetup(new BoardApiController(mock(TaskViews.class), stream,
-                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC())).build()
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), Runnable::run, Clock.systemUTC()), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()))).build()
                 .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream")).andReturn();
         MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
 
@@ -231,7 +231,7 @@ class TaskEventStreamTest {
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
         verify(broadcaster).scheduleAtFixedRate(heartbeat.capture(), anyLong(), anyLong(), any());
         MvcResult opened = MockMvcBuilders.standaloneSetup(new BoardApiController(mock(TaskViews.class), stream,
-                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC())).build()
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), Runnable::run, Clock.systemUTC()), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()))).build()
                 .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream")).andReturn();
         MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
 
@@ -249,7 +249,7 @@ class TaskEventStreamTest {
         ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
         verify(broadcaster).scheduleAtFixedRate(heartbeat.capture(), anyLong(), anyLong(), any());
         MvcResult opened = MockMvcBuilders.standaloneSetup(new BoardApiController(mock(TaskViews.class), stream,
-                new GlobalCommands(List.of()), new Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC())).build()
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), Runnable::run, Clock.systemUTC()), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()))).build()
                 .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream")).andReturn();
         MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
 

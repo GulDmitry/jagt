@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.port.AssistantHealth;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.service.ActStop;
 import dev.jagt.orchestrator.service.TaskViews;
@@ -22,7 +23,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.time.Clock;
 import java.util.Map;
 
 @RestController
@@ -32,6 +32,7 @@ public class BoardApiController {
 
     public record Board(List<TaskView> tasks, List<String> projects, String autoReview,
                         boolean autoReviewEnabled, Jobs.Summary jobs, @Nullable ActStop actStop,
+                        AssistantHealth.@Nullable Outage assistant,
                         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases,
                         Map<String, List<String>> offers, String masterMode) {
     }
@@ -39,15 +40,14 @@ public class BoardApiController {
     private final TaskViews taskViews;
     private final TaskEventStream events;
     private final GlobalCommands globals;
-    private final Jobs jobs;
-    private final Clock clock;
+    private final HeaderState header;
 
     @GetMapping("/tasks")
     public Board tasks() {
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                jobs.summary(clock.millis()), snapshot.actStop(), BranchStrategy.choices(),
+                header.summary(), snapshot.actStop(), header.assistantOutage().orElse(null), BranchStrategy.choices(),
                 Phase.choices(),
                 offers(snapshot.tasks()), snapshot.masterMode());
     }
@@ -66,7 +66,7 @@ public class BoardApiController {
 
     @GetMapping("/jobs")
     public List<Jobs.Status> jobs() {
-        return jobs.statuses(clock.millis());
+        return header.statuses();
     }
 
     @GetMapping("/commands")

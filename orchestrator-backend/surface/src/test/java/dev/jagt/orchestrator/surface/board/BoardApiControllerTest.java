@@ -37,7 +37,7 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class), new GlobalCommands(List.of(
                     new Declared("stats", "what the calls cost", true, 100),
                     new Declared("do", "start a task", false, 40))),
-            new dev.jagt.orchestrator.job.Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC());
+            new HeaderState(new dev.jagt.orchestrator.job.Jobs(List.of(), Runnable::run, Clock.systemUTC()), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
 
     @Test
     void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
@@ -101,11 +101,25 @@ class BoardApiControllerTest {
     }
 
     @Test
+    void tellsTheBoardWhenTheAssistantIsUnavailable() {
+        var health = org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class);
+        var outage = new dev.jagt.orchestrator.port.AssistantHealth.Outage("529 overloaded", 5_000L);
+        when(health.outage()).thenReturn(java.util.Optional.of(outage));
+        when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60), List.of(), null, "off"));
+        BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), Runnable::run, Clock.systemUTC()),
+                health, Clock.systemUTC()));
+
+        assertThat(board.tasks().assistant()).isEqualTo(outage);
+    }
+
+    @Test
     void servesTheStatusOfEveryJobTheBackendRuns() {
         Job poll = mock(Job.class);
         when(poll.id()).thenReturn("poll-reviews");
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
-                new GlobalCommands(List.of()), new Jobs(List.of(poll), Runnable::run, Clock.systemUTC()), Clock.systemUTC());
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(poll), Runnable::run, Clock.systemUTC()), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
 
         assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
     }
@@ -116,7 +130,7 @@ class BoardApiControllerTest {
         SseEmitter browser = new SseEmitter(0L);
         when(stream.open()).thenReturn(browser);
         BoardApiController board = new BoardApiController(taskViews, stream, new GlobalCommands(List.of()),
-                new Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC());
+                new HeaderState(new Jobs(List.of(), Runnable::run, Clock.systemUTC()), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
 
         assertThat(board.events()).isSameAs(browser);
     }
@@ -144,7 +158,7 @@ class BoardApiControllerTest {
             public String run(String tail) { return ""; }
         };
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
-                new GlobalCommands(List.of(drafts)), new dev.jagt.orchestrator.job.Jobs(List.of(), Runnable::run, Clock.systemUTC()), Clock.systemUTC());
+                new GlobalCommands(List.of(drafts)), new HeaderState(new dev.jagt.orchestrator.job.Jobs(List.of(), Runnable::run, Clock.systemUTC()), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
         TaskView drafted = TaskView.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
                 true, null, Map.of());
         TaskView quiet = TaskView.of("ABC-2", TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),

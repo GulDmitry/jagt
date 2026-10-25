@@ -31,7 +31,7 @@ class HeadlessClaudeTrackerAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.findCandidates("assignee = currentUser()");
@@ -52,7 +52,7 @@ class HeadlessClaudeTrackerAssistantTest {
                 "cache_read_input_tokens":0,"output_tokens":170},
                  "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}""", ""));
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readTicket("ABC-42").facts();
@@ -68,7 +68,7 @@ class HeadlessClaudeTrackerAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 "{\"structured_output\":{\"keys\":[\" ABC-1 \",\"\",\"ABC-2\"]}}", ""));
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var keys = assistant.findCandidates("assignee = currentUser()").facts();
@@ -81,7 +81,7 @@ class HeadlessClaudeTrackerAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readTicket("ABC-42", List.of("the url was empty", "the key was lowercase"));
@@ -98,7 +98,7 @@ class HeadlessClaudeTrackerAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readTicket("ABC-42", List.of());
@@ -113,7 +113,7 @@ class HeadlessClaudeTrackerAssistantTest {
     @ValueSource(strings = {"", "  "})
     void readsNoTicketWithoutAReference(String ref) {
         ProcessRunner runner = mock(ProcessRunner.class);
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assertThat(assistant.readTicket(ref, List.of()).facts()).isEmpty();
@@ -126,7 +126,7 @@ class HeadlessClaudeTrackerAssistantTest {
     @ValueSource(strings = {"", "  "})
     void searchesNoTrackerWithoutAQuery(String query) {
         ProcessRunner runner = mock(ProcessRunner.class);
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assertThat(assistant.findCandidates(query).facts()).isEmpty();
@@ -139,7 +139,7 @@ class HeadlessClaudeTrackerAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(
                 new Processes.Result(0, "{\"structured_output\":{\"text\":\"  # Summary\\nbody  \"}}", ""),
                 new Processes.Result(0, "{\"structured_output\":{\"text\":\"  \"}}", ""));
-        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var copied = assistant.readTicketText("ABC-42").facts();

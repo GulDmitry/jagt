@@ -52,7 +52,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `.badge.required` on `--you-bg` — the act waiting on you now; `.badge.optional` on `--chip-bg`, whenever you like.
 - `.detail.problem` in `--danger` / `.detail.you` in `--you` — the card's own line: broken, your move.
 - `.waiting` pill on `--you-bg`, in the header — how many cards interrupt you.
-- `.chip.bad` in `--danger` — a job failed, or the backend is unreachable.
+- `.chip.bad` in `--danger` — a job failed, the backend is unreachable, or the assistant is unavailable.
 - `td.last.failed` in `--danger` — a job's last run failed; its dot, and a path check's, are `.checks` as above.
 - toast edge, 3px — `.toast` `--ok`, `.toast.error` `--danger`: the verb ran, or was refused.
 - a verb's key drawn after its name (`data-key`), and `button.apart` muted at the row's end until hovered.

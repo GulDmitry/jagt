@@ -192,9 +192,9 @@
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)
 
-- **Limit warnings** — Subscription limits are told once per period and never block a task.
+- **Limits** — Warned once per period, never gating; a stopped session wakes once at reset. Key: `orchestrator.usageLimits.wakeOnReset`, off.
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-limit-is-told-once-per-period-never-gated)
-- **Wake on reset** — A session stopped on a full window gets one nudge when it resets. Key: `orchestrator.usageLimits.wakeOnReset`, off by default.
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-stop-on-a-full-window-arms-one-wake)
-- **Spend** — A headless read stops at a spend ceiling; a finished task keeps its cost and `stats` ends with the deployed median.
+- **Spend** — A headless read stops at a spend ceiling or a provider outage; a finished task keeps its cost, `stats` ends with the median.
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-finished-task-keeps-what-it-cost)
+  [spec](../openspec/specs/usage-limits/spec.md#requirement-headless-reads-stop-after-repeated-provider-failures)

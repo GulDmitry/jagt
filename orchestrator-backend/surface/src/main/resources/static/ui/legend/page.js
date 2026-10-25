@@ -65,6 +65,7 @@ export const pageRows = () => [
   [[span('chip', 'auto-review off'), span('chip bad', '1 of 16 jobs failed'), span('chip', 'Master: act')],
     'in the header: nothing polls the requests \u00b7 a job whose last run failed, pressed for the jobs '
     + '\u00b7 the Master presses the buttons you would'],
-  [[span('chip bad', 'backend unreachable')],
-    'in the header: this page is cut off from the backend, and nothing on it can run'],
+  [[span('chip bad', 'backend unreachable'), span('chip bad', 'assistant unavailable')],
+    'in the header: this page is cut off from the backend, and nothing on it can run \u00b7 the model provider '
+    + 'failed repeatedly, so headless reads wait for one probe'],
 ];

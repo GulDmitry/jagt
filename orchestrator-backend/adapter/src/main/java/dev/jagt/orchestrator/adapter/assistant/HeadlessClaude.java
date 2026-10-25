@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.AssistantUnavailable;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
@@ -52,6 +52,8 @@ class HeadlessClaude {
             + " answered, never one recalled or guessed.";
     /** A replayed run answers these reads from its recording. */
     static final String NOT_REPLAYED = "'${orchestrator.agent.cli:claude}' != 'replay'";
+    /** The CLI's default ten retries outlast {@link #TIMEOUT}, so an outage would surface as a timeout, never as its error. */
+    static final String MAX_RETRIES = "CLAUDE_CODE_MAX_RETRIES=2";
     /** The CLI's own tool carrying the answer a {@code --json-schema} asks for. */
     static final String STRUCTURED_OUTPUT = "StructuredOutput";
     static final String RETRY_REASON = "\n\nYour last reply was prose without the " + STRUCTURED_OUTPUT
@@ -59,7 +61,7 @@ class HeadlessClaude {
     private static final String BUDGET_SUBTYPE = "error_max_budget_usd";
     private static final Pattern FENCE = Pattern.compile("```(?:json)?\\s*(\\{.*?})\\s*```", Pattern.DOTALL);
 
-    private final ProcessRunner processRunner;
+    private final AssistantProcess process;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
     private final UsageTracker usageTracker;
@@ -172,7 +174,7 @@ class HeadlessClaude {
     Reply run(Path cwd, Duration timeout, List<String> cmd, ReadScope scope, AssistantCallKind kind, String label) {
         String fence = UUID.randomUUID().toString();
         // A one-shot's prompt is never read again past its minutes, so the 1h TTL's double write price buys nothing.
-        List<String> fenced = new ArrayList<>(List.of("env", "FORCE_PROMPT_CACHING_5M=1"));
+        List<String> fenced = new ArrayList<>(List.of("env", "FORCE_PROMPT_CACHING_5M=1", MAX_RETRIES));
         fenced.add(cmd.getFirst());
         fenced.addAll(List.of("--max-budget-usd", String.format(Locale.ROOT, "%.2f", assistant.maxCostUsd())));
         fenced.addAll(cmd.subList(1, cmd.size()));
@@ -218,7 +220,9 @@ class HeadlessClaude {
     private Reply booked(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {
         Processes.Result result;
         try {
-            result = processRunner.run(cwd, timeout, cmd);
+            result = process.run(cwd, timeout, cmd);
+        } catch (AssistantUnavailable refused) {
+            throw refused;
         } catch (RuntimeException e) {
             // A timeout kills the CLI: no envelope, so the tokens already burned are unknowable, not zero.
             log.atWarn().setMessage("assistant call did not return")
@@ -229,6 +233,10 @@ class HeadlessClaude {
                     .log();
             return Reply.failed(TokenUsage.NONE, "did not return: " + e.getMessage());
         }
+        return judged(result, kind, label);
+    }
+
+    private Reply judged(Processes.Result result, AssistantCallKind kind, String label) {
         JsonNode envelope = parseEnvelope(result.stdout(), label);
         // Booked whatever the outcome: a call that errored or came back unusable was still paid for.
         TokenUsage usage = usageOf(envelope);

@@ -52,13 +52,45 @@ class HeadlessClaudeTest {
                 {"structured_output":{"exists":false,"failure":"no GitLab MCP tool in this session",\
                 "sourceBranch":"","targetBranch":"","title":""}}""", ""));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read https://git.example.com/g/p/-/merge_requests/7.",
                 MergeRequestRead.SCHEMA.json(), "https://git.example.com/g/p/-/merge_requests/7",
                 AssistantCallKind.MR_READ);
 
         assertThat(answer.facts()).isEmpty();
         assertThat(answer.failure()).isEqualTo("no GitLab MCP tool in this session");
+    }
+
+    @Test
+    void aReadRefusedByTheBreakerFailsAsUnavailableNotAsDidNotReturn() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(1, """
+{"duration_api_ms":0,"stop_reason":"stop_sequence",\
+"session_id":"d638fd9d-2a7c-449d-8e68-a64542931b9c","total_cost_usd":0,\
+"usage":{"output_tokens_details":{"thinking_tokens":0},"input_tokens":0,\
+"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,\
+"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard",\
+"cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"",\
+"iterations":[],"speed":"standard","fallback_credit":null},"modelUsage":{},"permission_denials":[],\
+"terminal_reason":"api_error","fast_mode_state":"off",\
+"fast_mode_disabled_reason":"sdk_opt_in_required","subagent_stats":{"spawned":0,\
+"requested":{"background":0,"foreground":0,"unset":0},"started_in_background":0,"max_depth":0,\
+"spawned_by_subagents":0,"completed":0,"failed":0,"killed":{"parent":0,"user":0,"system":0},\
+"refused":{"depth_limit":0,"concurrency_limit":0,"budget":0},"by_type":{}},"safety_stops":0,\
+"is_error":true,"num_turns":1,"subtype":"success","api_error_status":529,\
+"result":"API Error: 529 Overloaded. This is a server-side issue,\
+ usually temporary — try again in a moment. If it persists,\
+ check your inference gateway (127.0.0.1:18529).","type":"result","duration_ms":733,\
+"uuid":"02368b97-942b-4e63-9855-74344bfb179e","queued_turn_count":0,"result_index":0}""", ""));
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(
+                AssistantProperties.empty().withBreakerFailures(1), java.time.Clock.systemUTC())),
+                ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+                mock(ReadOnlyTools.class));
+        claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> claude.read("Read ABC-42.",
+                TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ))
+                .isInstanceOf(dev.jagt.orchestrator.port.AssistantUnavailable.class);
     }
 
     @Test
@@ -69,7 +101,7 @@ class HeadlessClaudeTest {
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         when(reads.lift(any())).thenReturn(Optional.of("no call reached the read gate"));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42",
                 AssistantCallKind.TICKET_READ);
 
@@ -83,7 +115,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         when(reads.allowed(AssistantCallKind.TICKET_READ)).thenReturn(List.of("mcp__acme__get*"));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), reads);
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
@@ -100,7 +132,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
@@ -115,7 +147,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
                 AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
@@ -131,7 +163,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty()
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty()
                 .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
@@ -149,7 +181,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
@@ -165,7 +197,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withModel("haiku"), mock(UsageTracker.class), mock(ReadOnlyTools.class));
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty().withModel("haiku"), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -179,7 +211,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withModel(""), mock(UsageTracker.class), mock(ReadOnlyTools.class));
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty().withModel(""), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -193,7 +225,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
@@ -208,7 +240,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
@@ -225,7 +257,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"result\":\"The request is open.\"}", ""))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
@@ -243,7 +275,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
@@ -259,7 +291,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
@@ -271,12 +303,28 @@ class HeadlessClaudeTest {
     }
 
     @Test
+    void capsTheCliRetriesSoAnOutageEndsInsideTheTimeoutWithItsOwnError() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(),
+                java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
+
+        claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("CLAUDE_CODE_MAX_RETRIES=2");
+    }
+
+    @Test
     void readsNoFactsFromAnAnswerCarryingOnlyTheSchemasGenericFields() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 "{\"type\":\"result\",\"is_error\":false,"
                         + "\"result\":\"{\\\"title\\\":\\\"Late invoice mail\\\",\\\"url\\\":\\\"\\\"}\"}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         var answer = claude.read("Read ABC-7.", TicketRead.SCHEMA.json(), "ABC-7", AssistantCallKind.TICKET_READ);
@@ -292,7 +340,7 @@ class HeadlessClaudeTest {
                 {"type":"result","is_error":false,
                  "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
                 \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}""", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         var facts = claude.read("Read ABC-7.", TicketRead.SCHEMA.json(), "ABC-7", AssistantCallKind.TICKET_READ).facts();
@@ -308,7 +356,7 @@ class HeadlessClaudeTest {
                 {"type":"result","is_error":false,
                  "result":"The search returned no matching issues.\\n\\n```json\\n{\\"failure\\": \\"\\", \\"keys\\": []}\\n```"}""", ""));
 
-        var facts = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var facts = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Find assignee = me.", TicketSearch.SCHEMA.json(), "assignee = me",
                 AssistantCallKind.INTAKE).facts();
 
@@ -328,7 +376,7 @@ class HeadlessClaudeTest {
                 {"type":"result","is_error":false,
                  "result":"I need the GitLab MCP server logged in before I can read this request."}""", ""));
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class))
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class))
                 .read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
                         AssistantCallKind.REVIEW_SWEEP);
 
@@ -350,7 +398,7 @@ class HeadlessClaudeTest {
                 new Processes.Result(0, """
                         {"structured_output":{"failure":"","project":"abc","reason":"named","rule":""}}""", ""));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Place ABC-42.", ProjectRead.schemaFor(Set.of("abc", "xyz")).json(),
                 "ABC-42", AssistantCallKind.ROUTE);
 
@@ -365,7 +413,7 @@ class HeadlessClaudeTest {
                 {"type":"result","is_error":false,
                  "result":"{\\"error\\":\\"the GitLab MCP server is not authenticated\\"}"}""", ""));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read https://host/mr/9.", MergeRequestRead.SCHEMA.json(),
                 "https://host/mr/9", AssistantCallKind.MR_READ);
 
@@ -379,7 +427,7 @@ class HeadlessClaudeTest {
                 """
                 {"type":"result","is_error":false,"result":"\\"no such merge request\\""}""", ""));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read https://host/mr/9.", MergeRequestRead.SCHEMA.json(),
                 "https://host/mr/9", AssistantCallKind.MR_READ);
 
@@ -395,7 +443,7 @@ class HeadlessClaudeTest {
                  "usage":{"input_tokens":5,"cache_creation_input_tokens":25000,\
                 "cache_read_input_tokens":0,"output_tokens":40},
                  "result":"the tracker MCP is not available"}""", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         var answer = claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
@@ -414,7 +462,7 @@ class HeadlessClaudeTest {
                  "structured_output":{"exists":false,"failure":"no tracker MCP tool"}}""", ""));
         UsageTracker usage = mock(UsageTracker.class);
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), usage, mock(ReadOnlyTools.class))
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(), usage, mock(ReadOnlyTools.class))
                 .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         verify(usage).record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(31_000, 0, 40, 0.06));
@@ -455,7 +503,7 @@ class HeadlessClaudeTest {
         log.start();
         ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
                 reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant read".equals(event.getMessage()))
@@ -474,7 +522,7 @@ class HeadlessClaudeTest {
         log.start();
         ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
                 mock(ReadOnlyTools.class)).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant tool calls denied".equals(event.getMessage()))
@@ -494,7 +542,7 @@ class HeadlessClaudeTest {
         log.start();
         ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
                 reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant read".equals(event.getMessage()))
@@ -512,7 +560,7 @@ class HeadlessClaudeTest {
         when(reads.allowed(AssistantCallKind.TICKET_READ)).thenReturn(List.of("mcp__acme__get*"));
         when(reads.fence(any(), any())).thenReturn(List.of("--settings", "{\"hooks\":{}}"));
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
                 reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         ArgumentCaptor<String> fence = ArgumentCaptor.captor();
@@ -546,7 +594,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withMaxCostUsd(1.5),
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty().withMaxCostUsd(1.5),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class))
                 .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -563,7 +611,7 @@ class HeadlessClaudeTest {
                 {"type":"result","subtype":"error_max_budget_usd","is_error":true,\
                 "errors":["Reached maximum budget ($0.70)"],"total_cost_usd":0.71}""", ""));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class))
                 .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -577,7 +625,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(2, "", "claude: not logged in"));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class))
                 .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -591,7 +639,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenThrow(new IllegalStateException("Command timed out after PT2M"));
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read ABC-42.",
                 TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -610,7 +658,7 @@ class HeadlessClaudeTest {
         ReadOnlyTools reads = mock(ReadOnlyTools.class);
         when(reads.refused(any())).thenReturn(first, second);
 
-        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
                 mock(UsageTracker.class), reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42",
                 AssistantCallKind.TICKET_READ);
 
@@ -628,7 +676,7 @@ class HeadlessClaudeTest {
         Logger assistantLog = (Logger) LoggerFactory.getLogger(HeadlessClaude.class);
         assistantLog.addAppender(log);
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+        new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
                 mock(ReadOnlyTools.class)).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42",
                 AssistantCallKind.TICKET_READ);
 

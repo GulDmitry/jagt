@@ -23,6 +23,7 @@ export async function refresh() {
       autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
       jobs: data.jobs,
       actStop: data.actStop,
+      assistant: data.assistant,
       masterMode: data.masterMode,
       offers: data.offers || {},
     });
