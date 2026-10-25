@@ -184,17 +184,8 @@ public final class StandRun implements AutoCloseable {
         String[] named = marker.scenario().split("/", 2);
         StandRunLog.keep(StandRunLog.DIR, new StandRunLog.Entry(Instant.now(), named[0], named.length > 1 ? named[1] : "",
                 replayed == null ? "live" : "replay", marker.outcome().equals(StandMarker.PASSED), found,
-                Duration.between(began, Instant.now()).toSeconds(), spend()), root.getFileName().toString());
-    }
-
-    private String spend() {
-        try {
-            Path usage = root.resolve("usage-by-day.jsonl");
-            String spent = Files.isRegularFile(usage) ? Files.readString(usage).strip() : "";
-            return spent.isEmpty() ? "unknown" : spent;
-        } catch (IOException e) {
-            return "unknown";
-        }
+                Duration.between(began, Instant.now()).toSeconds(),
+                StandSpend.read(root.resolve("usage-by-day.jsonl"))), root.getFileName().toString());
     }
 
     private void keepRecording() {

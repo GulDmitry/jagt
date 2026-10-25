@@ -17,7 +17,7 @@ public final class StandRunLog {
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
     public record Entry(Instant at, String scenario, String mode, String source, boolean passed, List<String> violations,
-                        long wallSeconds, String spend) {
+                        long wallSeconds, StandSpend spend) {
     }
 
     private StandRunLog() {
