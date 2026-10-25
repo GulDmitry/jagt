@@ -193,9 +193,10 @@ public final class StandRun implements AutoCloseable {
             return;
         }
         try {
-            Path kept = Files.createDirectories(Path.of("build", "stand", "recordings"))
+            Path kept = Files.createDirectories(StandRecordings.DIR)
                     .resolve(marker.scenario().replace('/', '-') + "-" + root.getFileName() + ".jsonl");
             Files.copy(Recorder.write(root, POLL), kept, StandardCopyOption.REPLACE_EXISTING);
+            StandRecordings.fold(StandRecordings.DIR);
             System.out.println("stand run " + marker.scenario() + " recorded: " + kept.toAbsolutePath());
         } catch (IOException | RuntimeException e) {
             System.out.println("stand run " + marker.scenario() + " not recorded: " + e);
