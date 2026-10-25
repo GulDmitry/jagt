@@ -29,4 +29,34 @@ class BackendSignalsTest {
 
         assertThat(signals.masterReads()).isZero();
     }
+
+    @Test
+    void waitsOnTheReviewerAfterThreeSweepsInARowSaidSo(@TempDir Path dir) throws Exception {
+        Path log = dir.resolve("jagt-backend.log");
+        Files.writeString(log, """
+                {"message":"sweep done","said":"sweep ABC-5: 1 thread(s) relayed, checks success"}
+                {"message":"sweep done","said":"sweep ABC-5: checks success, 1 thread(s) answered by the agent — waiting on the reviewer"}
+                {"message":"sweep done","said":"sweep ABC-5: checks success, 1 thread(s) answered by the agent — waiting on the reviewer"}
+                {"message":"sweep done","said":"sweep ABC-5: checks success, 1 thread(s) answered by the agent — waiting on the reviewer"}
+                """);
+
+        BackendSignals signals = BackendSignals.read(log);
+
+        assertThat(signals.waitingOnTheReviewer()).isTrue();
+    }
+
+    @Test
+    void doesNotWaitOnTheReviewerWhenASweepInTheLastThreeRelayedAThread(@TempDir Path dir) throws Exception {
+        Path log = dir.resolve("jagt-backend.log");
+        Files.writeString(log, """
+                {"message":"sweep done","said":"sweep ABC-5: checks success, 1 thread(s) answered by the agent — waiting on the reviewer"}
+                {"message":"sweep done","said":"sweep ABC-5: 1 thread(s) relayed, checks success"}
+                {"message":"sweep done","said":"sweep ABC-5: checks success, 1 thread(s) answered by the agent — waiting on the reviewer"}
+                {"message":"sweep done","said":"sweep ABC-5: checks success, 1 thread(s) answered by the agent — waiting on the reviewer"}
+                """);
+
+        BackendSignals signals = BackendSignals.read(log);
+
+        assertThat(signals.waitingOnTheReviewer()).isFalse();
+    }
 }

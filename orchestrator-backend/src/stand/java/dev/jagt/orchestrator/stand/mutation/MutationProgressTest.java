@@ -131,4 +131,13 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, false))
                 .isPresent();
     }
+
+    @Test
+    void aRunThatEndedWaitingOnTheReviewerPasses() {
+        StandOutcome outcome = new StandOutcome("IN_PROGRESS", "AGENT", Duration.ofSeconds(500), List.of(),
+                Path.of("/stand"), Ending.WAITING_ON_THE_REVIEWER, "", "", "PLAIN", 0);
+
+        assertThat(MutationProgress.lacking(Kind.WORLD, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false))
+                .isEmpty();
+    }
 }

@@ -42,6 +42,7 @@ public final class StandRun implements AutoCloseable {
     private @Nullable Duration slept;
     private @Nullable StandOutcome last;
     private boolean resting;
+    private boolean sweepsWaiting;
     private final RunEnd end;
 
     private StandRun(Path root, StandMarker marker, StandMode mode, StandProject project, StandHost host, JagtProcess jagt,
@@ -155,7 +156,7 @@ public final class StandRun implements AutoCloseable {
     private StandOutcome outcomeOf(Script script, Timeline timeline, Instant start, int unfired) {
         Optional<Timeline.Stop> stop = timeline.stop();
         StandOutcome.Ending ending = StandOutcome.Ending.of(timeline.lastStatus().equals(script.until()), slept != null,
-                stop.isPresent(), held(timeline), timeline.stalledFor(STALL));
+                stop.isPresent(), held(timeline), end.waitingOnTheReviewer(sweepsWaiting, timeline), timeline.stalledFor(STALL));
         String detail = switch (ending) {
             case SUSPENDED -> slept.toSeconds() + "s between two polls, the host was suspended";
             case STOPPED -> stop.get().trigger() + ": " + stop.get().evidence();
@@ -181,7 +182,7 @@ public final class StandRun implements AutoCloseable {
         }
         return !end.reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
                 && Instant.now().isBefore(deadline)
-                && !timeline.stalledFor(STALL) && !held(timeline);
+                && !timeline.stalledFor(STALL) && !held(timeline) && !end.waitingOnTheReviewer(sweepsWaiting, timeline);
     }
 
     private JsonNode tick(Timeline timeline) {
@@ -197,7 +198,9 @@ public final class StandRun implements AutoCloseable {
         timeline.record(state, board);
         snapshots.take(state);
         timeline.windows(StandShell.windows(root));
-        timeline.masterReads(BackendSignals.read(root.resolve("jagt-backend.log")).masterReads());
+        BackendSignals signals = BackendSignals.read(root.resolve("jagt-backend.log"));
+        timeline.masterReads(signals.masterReads());
+        sweepsWaiting = signals.waitingOnTheReviewer();
         return board;
     }
 

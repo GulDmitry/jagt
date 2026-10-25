@@ -5,6 +5,7 @@ import java.time.Duration;
 final class RunEnd {
 
     static final Duration QUIET = Duration.ofSeconds(60);
+    static final Duration SETTLED = Duration.ofSeconds(3);
     static final Duration HELD = Duration.ofMinutes(10);
 
     private final StandMode mode;
@@ -25,5 +26,9 @@ final class RunEnd {
 
     boolean reached(boolean untilReached, boolean eventsPending, Timeline timeline) {
         return untilReached && (!eventsPending || timeline.stalledFor(QUIET));
+    }
+
+    boolean waitingOnTheReviewer(boolean sweepsWaiting, Timeline timeline) {
+        return sweepsWaiting && timeline.stalledFor(SETTLED);
     }
 }

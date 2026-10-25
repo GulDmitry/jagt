@@ -33,7 +33,8 @@ public final class MutationProgress {
             return Optional.of("the mutation's event never fired and the session never asked");
         }
         boolean deployed = outcome.status().equals(TaskStatus.DEPLOYED.name());
-        boolean reviewed = outcome.withTheCodeHost() && awaitsTheReviewer
+        boolean reviewed = outcome.ending() == StandOutcome.Ending.WAITING_ON_THE_REVIEWER
+                || outcome.withTheCodeHost() && awaitsTheReviewer
                 && steps.stream().anyMatch(step -> step.status() == TaskStatus.CI_POLLING);
         boolean conflicted = conflictRelayed && steps.stream().anyMatch(step -> step.status() == TaskStatus.DEPLOY_CONFLICT);
         return deployed || conflicted || outcome.asked() || attack && misses > 0 || reviewed ? Optional.empty()

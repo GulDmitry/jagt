@@ -9,7 +9,7 @@ public record StandOutcome(String status, String owner, Duration took, List<Stri
 
     public enum Ending {
         REACHED("reached"), HELD("held by the human"), STALLED("stalled"), TIMED_OUT("timed out"),
-        SUSPENDED("host suspended"), STOPPED("stopped, human needed");
+        SUSPENDED("host suspended"), STOPPED("stopped, human needed"), WAITING_ON_THE_REVIEWER("waiting on the reviewer");
 
         private final String words;
 
@@ -21,7 +21,8 @@ public record StandOutcome(String status, String owner, Duration took, List<Stri
             return words;
         }
 
-        static Ending of(boolean reached, boolean suspended, boolean stopped, boolean held, boolean stalled) {
+        static Ending of(boolean reached, boolean suspended, boolean stopped, boolean held,
+                      boolean waitingOnTheReviewer, boolean stalled) {
             if (reached) {
                 return REACHED;
             }
@@ -33,6 +34,9 @@ public record StandOutcome(String status, String owner, Duration took, List<Stri
             }
             if (held) {
                 return HELD;
+            }
+            if (waitingOnTheReviewer) {
+                return WAITING_ON_THE_REVIEWER;
             }
             return stalled ? STALLED : TIMED_OUT;
         }

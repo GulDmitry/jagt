@@ -119,4 +119,23 @@ class RunEndTest {
 
         assertThat(reached).isTrue();
     }
+
+    @Test
+    void aRunEndsOnTheReviewerOnceTheSweepsWaitedAndNothingElseMovedForThreeSeconds() {
+        Timeline timeline = mock(Timeline.class);
+        when(timeline.stalledFor(Duration.ofSeconds(3))).thenReturn(true);
+
+        boolean waiting = new RunEnd(StandMode.ACT).waitingOnTheReviewer(true, timeline);
+
+        assertThat(waiting).isTrue();
+    }
+
+    @Test
+    void aRunKeepsGoingWhileSomethingElseStillMovesBesideTheWaitingSweeps() {
+        Timeline timeline = mock(Timeline.class);
+
+        boolean waiting = new RunEnd(StandMode.ACT).waitingOnTheReviewer(true, timeline);
+
+        assertThat(waiting).isFalse();
+    }
 }
