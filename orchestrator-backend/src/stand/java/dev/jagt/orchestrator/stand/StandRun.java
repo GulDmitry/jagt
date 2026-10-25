@@ -13,8 +13,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
+import org.opentest4j.TestAbortedException;
 import tools.jackson.databind.JsonNode;
 
 public final class StandRun implements AutoCloseable {
@@ -34,8 +36,12 @@ public final class StandRun implements AutoCloseable {
     private final @Nullable Path replayed;
     private final WorktreeSnapshots snapshots;
     private final Instant began = Instant.now();
+    private final Optional<Process> awake;
     private JagtProcess jagt;
     private StandMarker marker;
+    private Instant polled = Instant.now();
+    private @Nullable Duration slept;
+    private @Nullable StandOutcome last;
 
     private StandRun(Path root, StandMarker marker, StandMode mode, StandProject project, StandHost host, JagtProcess jagt,
                      @Nullable Path replayed) {
@@ -47,6 +53,7 @@ public final class StandRun implements AutoCloseable {
         this.project = project;
         this.host = host;
         this.jagt = jagt;
+        this.awake = StandShell.holdAwake(root);
     }
 
     public static StandRun start(String scenario, StandMode mode) throws IOException {
@@ -111,6 +118,7 @@ public final class StandRun implements AutoCloseable {
         timeline.note("open " + script.ref() + " answered "
                 + jagt.board().open(script.ref(), "proj", script.launchMode()).toString().replaceAll("\\s+", " "));
         Instant deadline = start.plus(script.timeout());
+        polled = Instant.now();
         while (going(script, timeline, deadline)) {
             JsonNode board = tick(timeline);
             pipelines.passDue(timeline);
@@ -118,26 +126,47 @@ public final class StandRun implements AutoCloseable {
             human.take(board, jagt.board(), timeline);
         }
         Instant settled = Instant.now().plus(script.settle());
-        while (replayed == null && timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(settled)) {
+        while (replayed == null && slept == null && timeline.lastStatus().equals(script.until())
+                && Instant.now().isBefore(settled)) {
             tick(timeline);
         }
-        return new StandOutcome(timeline.lastStatus(), timeline.lastOwner(), Duration.between(start, Instant.now()),
-                timeline.tail(20), root);
+        StandOutcome.Ending ending = StandOutcome.Ending.of(timeline.lastStatus().equals(script.until()), slept != null,
+                held(timeline), timeline.stalledFor(STALL));
+        String detail = slept == null ? "" : slept.toSeconds() + "s between two polls, the host was suspended";
+        StandOutcome outcome = new StandOutcome(timeline.lastStatus(), timeline.lastOwner(),
+                Duration.between(start, Instant.now()), timeline.tail(20), root, ending, detail);
+        last = outcome;
+        if (outcome.suspended()) {
+            timeline.note("host suspended: " + detail);
+            throw new TestAbortedException("stand run " + marker.scenario() + " ended, " + outcome.describe());
+        }
+        return outcome;
+    }
+
+    private static boolean held(Timeline timeline) {
+        return timeline.lastOwner().equals("YOU") && timeline.stalledFor(HELD);
     }
 
     private boolean going(Script script, Timeline timeline, Instant deadline) {
+        if (slept != null) {
+            return false;
+        }
         if (replayed != null) {
             ReplayLog replay = ReplayLog.read(root);
             boolean done = replay.drained() && timeline.lastStatus().equals(script.until());
             return replay.divergences().isEmpty() && !done && Instant.now().isBefore(deadline);
         }
-        boolean held = timeline.lastOwner().equals("YOU") && timeline.stalledFor(HELD);
         return !timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(deadline)
-                && !timeline.stalledFor(STALL) && !held;
+                && !timeline.stalledFor(STALL) && !held(timeline);
     }
 
     private JsonNode tick(Timeline timeline) {
         JagtProcess.pause(POLL);
+        Instant now = Instant.now();
+        if (HostSleep.between(polled, now)) {
+            slept = Duration.between(polled, now);
+        }
+        polled = now;
         KICKED.forEach(jagt.board()::run);
         JsonNode board = jagt.board().tasks();
         JsonNode state = jagt.board().state();
@@ -155,13 +184,21 @@ public final class StandRun implements AutoCloseable {
     public void close() throws IOException {
         jagt.close();
         host.close();
+        awake.ifPresent(Process::destroy);
         Files.writeString(root.resolve("screens.log"), StandShell.screens(root));
         StandShell.killTmux(root);
         printUsage();
         keepRecording();
-        StandReport.append(marker.scenario(), marker.outcome().equals(StandMarker.PASSED));
+        boolean suspended = last != null && last.suspended();
+        if (suspended) {
+            marker = marker.withOutcome(StandMarker.SUSPENDED);
+        }
+        StandReport.append(marker.scenario(), marker.outcome().equals(StandMarker.PASSED) ? StandMarker.PASSED
+                : suspended ? StandMarker.SUSPENDED : StandMarker.FAILED);
         keepRunRecord();
-        if (!marker.outcome().equals(StandMarker.PASSED)) {
+        if (suspended) {
+            System.out.println("stand run " + marker.scenario() + " host suspended: " + last.detail());
+        } else if (!marker.outcome().equals(StandMarker.PASSED)) {
             marker.withOutcome(StandMarker.FAILED).writeTo(root);
             System.out.println("stand run " + marker.scenario() + " failed; evidence: "
                     + StandEvidence.keep(root, marker.scenario(), StandEvidence.DIR).toAbsolutePath());
@@ -179,7 +216,8 @@ public final class StandRun implements AutoCloseable {
         }
         String[] named = marker.scenario().split("/", 2);
         StandRunLog.keep(StandRunLog.DIR, new StandRunLog.Entry(Instant.now(), named[0], named.length > 1 ? named[1] : "",
-                replayed == null ? "live" : "replay", marker.outcome().equals(StandMarker.PASSED), found,
+                replayed == null ? "live" : "replay", marker.outcome().equals(StandMarker.PASSED),
+                last == null ? "not driven" : last.ending().words(), last == null ? "" : last.detail(), found,
                 Duration.between(began, Instant.now()).toSeconds(),
                 StandSpend.read(root)), root.getFileName().toString());
     }

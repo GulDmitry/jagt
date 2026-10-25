@@ -11,6 +11,7 @@ public record StandMarker(String scenario, long pid, String outcome, long jagtPi
     public static final String RUNNING = "running";
     public static final String PASSED = "passed";
     public static final String FAILED = "failed";
+    public static final String SUSPENDED = "suspended";
 
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 

@@ -7,7 +7,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,6 +51,42 @@ public final class StandShell {
             Thread.currentThread().interrupt();
             return new Result(-1, "interrupted");
         }
+    }
+
+    public static Optional<List<String>> awakeCommand(String os, long pid, Predicate<String> installed) {
+        String host = os.toLowerCase(Locale.ROOT);
+        if (host.contains("mac") && installed.test("caffeinate")) {
+            return Optional.of(List.of("caffeinate", "-i", "-s", "-w", Long.toString(pid)));
+        }
+        if (host.contains("linux") && installed.test("systemd-inhibit")) {
+            return Optional.of(List.of("systemd-inhibit", "--what=idle:sleep", "--who=jagt-stand", "--why=stand run",
+                    "--mode=block", "tail", "--pid=" + pid, "-f", "/dev/null"));
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<Process> holdAwake(Path root) {
+        Optional<List<String>> command = awakeCommand(System.getProperty("os.name", ""), ProcessHandle.current().pid(),
+                StandShell::onPath);
+        String run = "stand run " + root.getFileName();
+        if (command.isEmpty()) {
+            System.out.println(run + " holds no wake lock: no caffeinate or systemd-inhibit here, the host may sleep mid-run");
+            return Optional.empty();
+        }
+        try {
+            Process lock = new ProcessBuilder(command.get()).redirectErrorStream(true)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
+            System.out.println(run + " holds a wake lock: " + command.get().getFirst());
+            return Optional.of(lock);
+        } catch (IOException e) {
+            System.out.println(run + " holds no wake lock: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private static boolean onPath(String name) {
+        return Stream.of(System.getenv().getOrDefault("PATH", "").split(java.io.File.pathSeparator))
+                .anyMatch(dir -> Files.isExecutable(Path.of(dir).resolve(name)));
     }
 
     public static void stopTree(ProcessHandle process) {
