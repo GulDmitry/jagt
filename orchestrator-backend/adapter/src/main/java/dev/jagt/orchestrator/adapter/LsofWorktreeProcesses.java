@@ -56,7 +56,7 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
             return;
         }
         for (Reapable r : reaped) {
-            processRunner.run(null, TIMEOUT, List.of("kill", "-9", r.pid()));
+            ProcessHandle.of(Long.parseLong(r.pid())).ifPresent(ProcessHandle::destroyForcibly);
         }
         log.atInfo().setMessage("worktree processes reaped")
                 .addKeyValue("path", worktree)
