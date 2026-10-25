@@ -27,7 +27,7 @@ public interface WorldEvent {
 
     static WorldEvent humanLine(String line) {
         return world -> {
-            if (world.relaysSeen() < 2) {
+            if (world.relaysSeen() < 1) {
                 return false;
             }
             world.say(line);
@@ -38,7 +38,7 @@ public interface WorldEvent {
 
     static WorldEvent restart() {
         return world -> {
-            if (world.relaysSeen() < 2) {
+            if (world.relaysSeen() < 1) {
                 return false;
             }
             world.note("jagt restarted while a step was pending");

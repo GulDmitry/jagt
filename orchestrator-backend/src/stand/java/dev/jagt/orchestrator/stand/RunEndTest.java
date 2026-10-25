@@ -91,4 +91,32 @@ class RunEndTest {
 
         assertThat(held).isFalse();
     }
+
+    @Test
+    void aReachedRunWaitsForAnEventNotFiredYet() {
+        Timeline timeline = mock(Timeline.class);
+
+        boolean reached = new RunEnd(StandMode.ACT).reached(true, true, timeline);
+
+        assertThat(reached).isFalse();
+    }
+
+    @Test
+    void aReachedRunStopsWaitingForAnEventAfterAQuietMinute() {
+        Timeline timeline = mock(Timeline.class);
+        when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
+
+        boolean reached = new RunEnd(StandMode.ACT).reached(true, true, timeline);
+
+        assertThat(reached).isTrue();
+    }
+
+    @Test
+    void aReachedRunWithNoEventPendingEndsAtOnce() {
+        Timeline timeline = mock(Timeline.class);
+
+        boolean reached = new RunEnd(StandMode.ACT).reached(true, false, timeline);
+
+        assertThat(reached).isTrue();
+    }
 }

@@ -131,7 +131,7 @@ public final class StandRun implements AutoCloseable {
                 + jagt.board().open(script.ref(), "proj", script.launchMode()).toString().replaceAll("\\s+", " "));
         Instant deadline = start.plus(script.timeout());
         polled = Instant.now();
-        while (going(script, timeline, deadline)) {
+        while (going(script, timeline, deadline, !pending.isEmpty())) {
             JsonNode board = tick(timeline);
             pipelines.passDue(timeline);
             pending.removeIf(event -> event.fire(world));
@@ -170,7 +170,7 @@ public final class StandRun implements AutoCloseable {
         return end.held(timeline, resting);
     }
 
-    private boolean going(Script script, Timeline timeline, Instant deadline) {
+    private boolean going(Script script, Timeline timeline, Instant deadline, boolean eventsPending) {
         if (slept != null || timeline.stop().isPresent()) {
             return false;
         }
@@ -179,7 +179,8 @@ public final class StandRun implements AutoCloseable {
             boolean done = replay.drained() && timeline.lastStatus().equals(script.until());
             return replay.divergences().isEmpty() && !done && Instant.now().isBefore(deadline);
         }
-        return !timeline.lastStatus().equals(script.until()) && Instant.now().isBefore(deadline)
+        return !end.reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
+                && Instant.now().isBefore(deadline)
                 && !timeline.stalledFor(STALL) && !held(timeline);
     }
 

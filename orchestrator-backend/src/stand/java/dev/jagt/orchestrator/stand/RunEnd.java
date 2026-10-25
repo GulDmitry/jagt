@@ -22,4 +22,8 @@ final class RunEnd {
         }
         return mode.humanEndsTheRun() && nothingToPress && timeline.stalledFor(QUIET) || timeline.stalledFor(HELD);
     }
+
+    boolean reached(boolean untilReached, boolean eventsPending, Timeline timeline) {
+        return untilReached && (!eventsPending || timeline.stalledFor(QUIET));
+    }
 }
