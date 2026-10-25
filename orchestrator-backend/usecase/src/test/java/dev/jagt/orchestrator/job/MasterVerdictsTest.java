@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -139,6 +140,118 @@ class MasterVerdictsTest {
 
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
         verify(decisions, never()).answered(any());
+    }
+
+    @Test
+    void putsTheTaskBackAndStopsItWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+        when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenThrow(new IllegalStateException("no window"));
+
+        assertThatThrownBy(() -> verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(state.task("ABC-1").orElseThrow())
+                .returns(TaskStatus.REVIEW_PENDING, TaskState::status)
+                .returns(Turn.Holder.HUMAN, live -> live.turnOrNone().holder())
+                .returns(TaskStop.Trigger.UNDELIVERED, live -> live.stop().trigger());
+    }
+
+    @Test
+    void leavesATaskThatMovedOnWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+        when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenAnswer(told -> {
+            state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 7_000)
+                    .withTurn(new Turn(Turn.Holder.SESSION, "ship", 9, "d", 7_000, Map.of(), List.of())));
+            throw new IllegalStateException("no window");
+        });
+
+        assertThatThrownBy(() -> verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(state.task("ABC-1").orElseThrow())
+                .returns(TaskStatus.SHIPPING, TaskState::status)
+                .returns(false, TaskState::stopped);
+    }
+
+    @Test
+    void countsNoRoundForAVerdictDroppedBecauseTheTaskMovedOn(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", read);
+        state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
+                .withTurn(new Turn(Turn.Holder.SESSION, "ship", 6, "d", 6_000, Map.of(), List.of())));
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+
+        assertThatThrownBy(() -> verdicts.act("ABC-1", read, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
+                .isInstanceOf(TaskMovedOn.class);
+
+        verify(decisions, never()).returned(any(), anyLong(), any());
+    }
+
+    @Test
+    void relaysNothingOfAPlanTheHumanMovedWhileTheMasterRead(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+        state.putTask("ABC-1", read);
+        state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.IN_PROGRESS, null, 6_000)
+                .withTurn(new Turn(Turn.Holder.SESSION, "plan", 6, "d", 6_000, Map.of(), List.of())));
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+
+        assertThatThrownBy(() -> verdicts.act("ABC-1", read, new MasterReview.Verdict(MasterReview.Kind.READY,
+                List.of(), List.of(), List.of(), 0, ""),
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)))
+                .isInstanceOf(TaskMovedOn.class);
+
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
     }
 
     @Test
@@ -1008,30 +1121,5 @@ class MasterVerdictsTest {
 
         assertThat(moved).isFalse();
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
-    }
-
-    @Test
-    void saysNothingMovedWhereTheFlowTurnedTheApprovedPlansReportAside(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        FlowReports reports = spy(new FlowReports(state, Clock.systemUTC()));
-        doReturn(false).when(reports).report(anyString(), any(), anyString());
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, reports, decisions,
-                new PlanApproval(state, relay, door));
-
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                acting);
-
-        assertThat(moved).isFalse();
     }
 }

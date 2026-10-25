@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -52,21 +53,26 @@ public class MasterVerdicts {
         return switch (verdict.kind()) {
             case NOT_READY -> returned(taskId, task, verdict, plan);
             case QUESTION -> {
-                decisions.returned(task, verdict.round(), List.of());
-                yield ask(taskId, task, verdict.question());
+                boolean asked = ask(taskId, task, verdict.question());
+                if (asked) {
+                    decisions.returned(task, verdict.round(), List.of());
+                }
+                yield asked;
             }
-            case READY -> {
-                decisions.returned(task, verdict.round(), List.of());
-                yield plan ? config.may(MasterRight.PLAN) && !task.planGate().keptForTheHuman()
-                        && go(taskId, task, verdict)
-                        : config.may(MasterRight.SHIP) && ship.ship(taskId, task);
-            }
+            case READY -> plan ? config.may(MasterRight.PLAN) && !task.planGate().keptForTheHuman()
+                    && go(taskId, task, verdict) : ready(taskId, task, verdict, config);
         };
+    }
+
+    private boolean ready(String taskId, TaskState task, MasterReview.Verdict verdict,
+                          ConfigService.ConfigFile.MasterConfig config) {
+        decisions.returned(task, verdict.round(), List.of());
+        return config.may(MasterRight.SHIP) && ship.ship(taskId, task);
     }
 
     /** Repeats are relayed marked, never dropped; they count toward the round ceiling like any round. */
     private boolean returned(String taskId, TaskState task, MasterReview.Verdict verdict, boolean plan) {
-        Set<MasterReview.Identity> repeated = decisions.returned(task, verdict.round(), verdict.findings());
+        Set<MasterReview.Identity> repeated = decisions.repeated(task, verdict.round(), verdict.findings());
         List<String> findings = verdict.findings().stream()
                 .map(said -> repeated.contains(said.identity()) ? said.line() + REPEAT : said.line()).toList();
         MasterMove returning = plan ? MasterMove.PLAN_NOT_READY : MasterMove.ROUND_NOT_READY;
@@ -74,6 +80,7 @@ public class MasterVerdicts {
         if (!relay.relayRound(taskId, returning.id(), String.join("\n", findings), claim)) {
             return false;
         }
+        decisions.returned(task, verdict.round(), verdict.findings());
         String ruled = verdict.findings().stream().filter(MasterReview.Said::settles).map(MasterReview.Said::line)
                 .collect(Collectors.joining("\n"));
         if (!ruled.isEmpty()) {
@@ -87,19 +94,36 @@ public class MasterVerdicts {
     /** Back to work in the claim itself, or the session's report is no transition and the verdict reads as this round's. */
     private StepRelay.Claim claiming(String taskId, TaskState read, AgentReport means, String message) {
         return new StepRelay.Claim(read, () -> reports.standing(taskId, read),
-                opensTheTurn -> reports.reportWhileStanding(taskId, read, FlowRules.relayed(), means, message, opensTheTurn));
+                opensTheTurn -> reports.reportWhileStanding(taskId, read, FlowRules.relayed(), means, message, opensTheTurn),
+                opened -> reports.undoClaim(taskId, read, opened));
     }
 
     private boolean go(String taskId, TaskState task, MasterReview.Verdict verdict) {
-        if (task.report().asks() && !verdict.advice().isEmpty()) {
-            relay.relay(taskId, MasterMove.PLAN_ANSWERED.id(), PLAN_ANSWERED + verdict.advice().stream().map(MasterReview.Said::line)
-                    .collect(Collectors.joining("\n")));
-        }
-        if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human")) {
+        StepRelay.Claim claim = claiming(taskId, advised(taskId, task, verdict), AgentReport.PLAIN, "master: the plan holds");
+        if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human", claim)) {
             return false;
         }
+        decisions.returned(task, verdict.round(), List.of());
         log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).log();
-        return reports.report(taskId, FlowRules.relayed(), "master: the plan holds");
+        return true;
+    }
+
+    /** The task as it stands once the plan's question is answered, which opens a turn of its own and moves no status. */
+    private TaskState advised(String taskId, TaskState task, MasterReview.Verdict verdict) {
+        if (!task.report().asks() || verdict.advice().isEmpty()) {
+            return task;
+        }
+        AtomicReference<TaskState> after = new AtomicReference<>(task);
+        relay.relay(taskId, MasterMove.PLAN_ANSWERED.id(), PLAN_ANSWERED + verdict.advice().stream()
+                        .map(MasterReview.Said::line).collect(Collectors.joining("\n")),
+                new StepRelay.Claim(task, () -> reports.standing(taskId, task),
+                        opens -> reports.claimWhileStanding(taskId, task, live -> {
+                            TaskState opened = opens.apply(live);
+                            after.set(opened);
+                            return opened;
+                        }),
+                        opened -> reports.undoClaim(taskId, task, opened)));
+        return after.get();
     }
 
     /**

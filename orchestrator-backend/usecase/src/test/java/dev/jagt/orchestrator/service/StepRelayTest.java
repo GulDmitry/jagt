@@ -62,7 +62,7 @@ class StepRelayTest {
                 .withRoot(root.toString()))), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         StepRelay.Claim claim = new StepRelay.Claim(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build(),
-                () -> true, opens -> FlowReports.Claimed.MOVED_ON);
+                () -> true, opens -> FlowReports.Claimed.MOVED_ON, opened -> false);
 
         assertThatThrownBy(() -> relay.relay("ABC-42", "deploy", "ABC-42 is deployed", claim))
                 .isInstanceOf(TaskMovedOn.class);

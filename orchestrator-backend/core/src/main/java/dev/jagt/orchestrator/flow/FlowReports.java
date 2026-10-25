@@ -5,10 +5,12 @@ import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -78,6 +80,35 @@ public class FlowReports {
         Optional<Landed> landed = report(taskId, status, means, message, (was, next) -> alsoRecord.apply(next),
                 task -> false, standing);
         return landed.isPresent() ? Claimed.LANDED : moved.get() ? Claimed.MOVED_ON : Claimed.GONE;
+    }
+
+    /** The same claim for a write that moves no status. */
+    public Claimed claimWhileStanding(String taskId, TaskState read, UnaryOperator<TaskState> write) {
+        AtomicReference<Claimed> claimed = new AtomicReference<>(Claimed.GONE);
+        tasks.updateTask(taskId, task -> {
+            boolean stands = standing(task, read);
+            claimed.set(stands ? Claimed.LANDED : Claimed.MOVED_ON);
+            return stands ? write.apply(task) : task;
+        });
+        return claimed.get();
+    }
+
+    /**
+     * Puts the task back as {@code read} had it and hands its turn to the human, while the turn is still the one the
+     * claim opened; false where the task moved on since, which is left as it is.
+     */
+    public boolean undoClaim(String taskId, TaskState read, Turn claimed) {
+        AtomicBoolean undone = new AtomicBoolean();
+        tasks.updateTask(taskId, task -> {
+            if (!task.turnOrNone().sameTurnAs(claimed)) {
+                return task;
+            }
+            undone.set(true);
+            long now = clock.millis();
+            return task.withStatus(read.status(), read.message(), now).withReport(read.report())
+                    .withPlanGate(read.planGate()).withTurn(claimed.closed(Turn.Holder.HUMAN, now));
+        });
+        return undone.get();
     }
 
     /** Whether the task is still where it was read: the same status, no relay or report since. */

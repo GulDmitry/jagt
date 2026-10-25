@@ -49,17 +49,29 @@ public class MasterDecisions {
         static final Rounds NONE = new Rounds(List.of(), List.of());
     }
 
-    /** The findings an earlier round made; a round acted on again is counted once. */
+    /** The findings of {@code findings} an earlier round already made, whatever is recorded of this one. */
+    public synchronized Set<Identity> repeated(TaskState task, long round, List<Said> findings) {
+        return seen(earlier(read(task), round), findings);
+    }
+
+    /** Records the round; a round acted on again is counted once. Answers what {@link #repeated} does. */
     public synchronized Set<Identity> returned(TaskState task, long round, List<Said> findings) {
         Rounds before = read(task);
-        List<Round> earlier = before.rounds().stream().filter(then -> then.round() != round).toList();
-        Set<Identity> seen = earlier.stream().flatMap(then -> then.settled().stream()).collect(Collectors.toSet());
-        Set<Identity> repeated = findings.stream().map(Said::identity).filter(seen::contains)
-                .collect(Collectors.toSet());
+        List<Round> earlier = earlier(before, round);
+        Set<Identity> repeated = seen(earlier, findings);
         List<Round> now = last(Stream.concat(earlier.stream(), Stream.of(new Round(round,
                 findings.stream().filter(Said::settles).map(Said::identity).toList()))).toList());
         write(task, new Rounds(now, before.answers()));
         return repeated;
+    }
+
+    private static List<Round> earlier(Rounds before, long round) {
+        return before.rounds().stream().filter(then -> then.round() != round).toList();
+    }
+
+    private static Set<Identity> seen(List<Round> earlier, List<Said> findings) {
+        Set<Identity> seen = earlier.stream().flatMap(then -> then.settled().stream()).collect(Collectors.toSet());
+        return findings.stream().map(Said::identity).filter(seen::contains).collect(Collectors.toSet());
     }
 
     public synchronized void answered(TaskState task) {

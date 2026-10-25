@@ -93,6 +93,7 @@ restart repeats none.
 - **THEN** its verdict, ready, not ready or a question, is dropped and logged with both turns, whatever it says
 - **AND** ABC-42 stays `SHIPPING` and its session is relayed nothing
 - **AND** a verdict that stands claims its status and turn in one write, and the session is told after it, outside any lock
+- **AND** where the session then cannot be told, the task is put back as it was read, stopped for the human with the cause
 
 #### Scenario: A hand-back made again with no relay between
 - **WHEN** the Master judged ABC-42's hand-back, and its session reports IN_PROGRESS then REVIEW_PENDING again

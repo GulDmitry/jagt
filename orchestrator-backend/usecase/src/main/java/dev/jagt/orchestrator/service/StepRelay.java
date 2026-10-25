@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.BooleanSupplier;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 /**
@@ -33,10 +35,11 @@ public class StepRelay {
 
     /**
      * The write that opens the turn together with what else must land with it, made while the task still stands as
-     * {@code read}; the session is told after the write, outside any lock.
+     * {@code read}; the session is told after the write, outside any lock. {@code undo} puts the task back, given the
+     * turn the write opened, and answers false where the task moved on since.
      */
     public record Claim(TaskState read, BooleanSupplier standing,
-                        Function<UnaryOperator<TaskState>, FlowReports.Claimed> write) {
+                        Function<UnaryOperator<TaskState>, FlowReports.Claimed> write, Predicate<Turn> undo) {
     }
 
     public boolean relay(String taskId, String step, String facts) {
@@ -112,8 +115,8 @@ public class StepRelay {
 
     private boolean opened(String taskId, String step, String facts, boolean round, @Nullable Claim claim,
                            Consumer<String> send) {
-        if (claim != null && !claim.standing().getAsBoolean()) {
-            throw dropped(taskId, step, claim);
+        if (claim != null) {
+            requireStanding(taskId, step, claim);
         }
         if (!door.opens(taskId, step)) {
             return false;
@@ -127,7 +130,13 @@ public class StepRelay {
             turns.opened(taskId, step, digest);
             return true;
         }
-        FlowReports.Claimed claimed = claim.write().apply(turns.opening(step, digest));
+        AtomicReference<Turn> opened = new AtomicReference<>();
+        UnaryOperator<TaskState> opening = turns.opening(step, digest);
+        FlowReports.Claimed claimed = claim.write().apply(task -> {
+            TaskState written = opening.apply(task);
+            opened.set(written.turnOrNone());
+            return written;
+        });
         if (claimed == FlowReports.Claimed.MOVED_ON) {
             throw dropped(taskId, step, claim);
         }
@@ -135,8 +144,32 @@ public class StepRelay {
             return false;
         }
         turns.announced(taskId, step);
-        send.accept(told(step, facts));
+        try {
+            send.accept(told(step, facts));
+        } catch (RuntimeException failure) {
+            undone(taskId, step, claim, opened.get(), failure);
+            throw failure;
+        }
         return true;
+    }
+
+    private void undone(String taskId, String step, Claim claim, Turn opened, RuntimeException failure) {
+        boolean undone = claim.undo().test(opened);
+        log.atError().setMessage("claimed step failed").addKeyValue("task", taskId).addKeyValue("step", step)
+                .addKeyValue("cause", failure.toString())
+                .addKeyValue("effect", undone ? "the claim undone, the task stopped for the human"
+                        : "the task had moved on, left as it is")
+                .setCause(failure).log();
+        if (undone) {
+            door.undelivered(taskId, step, failure.toString());
+        }
+    }
+
+    /** Throws where the task moved on since the claim's read, before any door records a miss against it. */
+    public void requireStanding(String taskId, String step, Claim claim) {
+        if (!claim.standing().getAsBoolean()) {
+            throw dropped(taskId, step, claim);
+        }
     }
 
     private TaskMovedOn dropped(String taskId, String step, Claim claim) {

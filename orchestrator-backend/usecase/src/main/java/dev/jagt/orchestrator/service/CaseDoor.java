@@ -99,6 +99,12 @@ public class CaseDoor {
         return false;
     }
 
+    /** A step whose telling failed after it was claimed: the claim is undone and the task waits for the human. */
+    public void undelivered(String taskId, String step, String cause) {
+        stops.stop(stateService.canonicalTaskId(taskId), TaskStop.Trigger.UNDELIVERED,
+                step + " could not be told to the session: " + cause);
+    }
+
     /** A round of a loop no thread count measures goes only while it runs below its ceiling; past it the task stops. */
     public boolean roundDue(String taskId, String step) {
         return stops.roundDue(stateService.canonicalTaskId(taskId), step);
