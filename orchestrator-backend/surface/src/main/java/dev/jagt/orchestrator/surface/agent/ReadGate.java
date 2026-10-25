@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 
+import org.springframework.util.PatternMatchUtils;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -48,7 +50,7 @@ public final class ReadGate {
 
     /** A bare server names none of its tools. */
     private static boolean names(String named, String tool) {
-        return Pattern.compile(Pattern.quote(named).replace("*", "\\E.*\\Q")).matcher(tool).matches();
+        return PatternMatchUtils.simpleMatch(named, tool);
     }
 
     /** A search naming no path searches where the call runs; a glob's own pattern may name a directory. */

@@ -36,6 +36,21 @@ class ReadGateTest {
         assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp")).get().asString().contains("refuses " + tool);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"mcp__acme__getaxb", "mcp__acme__get", "mcp__acme__get.x"})
+    void readsAQuestionMarkAndADotInAGivenNameAsThemselves(String tool) {
+        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get.x?"), false);
+
+        assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp")).get().asString().contains("refuses " + tool);
+    }
+
+    @Test
+    void letsThroughAGivenNameCarryingAQuestionMarkAndADot() {
+        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get.x?"), false);
+
+        assertThat(ReadGate.refusal(scope, "mcp__acme__get.x?", Map.of(), "/tmp")).isEmpty();
+    }
+
     @Test
     void refusesAWriteVerbMidNameThatOnlyAGlobAllowed() {
         ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*"), false, List.of("mcp__*__*_delete_*"));
