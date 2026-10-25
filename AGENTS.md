@@ -72,6 +72,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 
 - Gradle, **Groovy DSL only**. Never Maven, never Kotlin, `.kts` included.
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
+- **The industry-standard library for a job before our own code**: own code only for what is jagt's own, its why in a decision.
 - **Three collaborators per class is the target, five the ceiling**, delegates included (`CollaboratorCeilingTest`):
   group them into a component, never add a field.
 - **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
