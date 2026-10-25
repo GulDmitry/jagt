@@ -30,7 +30,9 @@ public record FinishedTask(
         List<StatusChange> history,
         // What the unattended reviewer concluded last, or null where nothing judged this task.
         @Nullable String masterVerdict,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
+        // List price of the agent session plus jagt's own reads of this task, or null where the session's spend was never read.
+        @Nullable Double costUsd
 ) {
 
     public FinishedTask {
@@ -44,7 +46,7 @@ public record FinishedTask(
     public static FinishedTask of(String id, TaskState task, long finishedAt, @Nullable String masterVerdict) {
         return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
                 task.rounds(), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict,
-                task.refusals());
+                task.refusals(), task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd());
     }
 
     /** Whether the reviewer read this task at all; every comparison below is over these and no others. */

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.UsageLimits;
 import dev.jagt.orchestrator.service.UsageLedger;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -8,6 +9,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.AgentSpend;
+import dev.jagt.orchestrator.task.FinishedTask;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -38,7 +41,7 @@ class UsageStatsRendererTest {
         UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out).contains("BY CALL");
         assertThat(out.indexOf("review sweep")).isLessThan(out.indexOf("ticket read"));
@@ -56,7 +59,7 @@ class UsageStatsRendererTest {
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
         tracker.chargeTask("ABC-2", TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
         assertThat(out).contains("average per call");
@@ -71,7 +74,7 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         state.removeTask("ABC-1");
-        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out.lines().filter(l -> l.startsWith("this session")).findFirst().orElseThrow())
@@ -83,7 +86,7 @@ class UsageStatsRendererTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
-        String out = new UsageStatsRenderer(new UsageTracker(state, mock(UsageLedger.class)), new UsageLimits(Optional.empty())).render(state.tasks());
+        String out = new UsageStatsRenderer(new UsageTracker(state, mock(UsageLedger.class)), new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out).doesNotContain("average per call");
@@ -134,7 +137,7 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out.lines().filter(l -> l.startsWith("ticket read")).findFirst().orElseThrow())
                 .endsWith("1/3");
@@ -152,7 +155,7 @@ class UsageStatsRendererTest {
                 .withAgentSpend(new AgentSpend(TokenUsage.ofCall(900_000, 0, 5_000, 1.80), Map.of())));
         state.putTask("ABC-3", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a3").build());
         String out = new UsageStatsRenderer(new UsageTracker(state, mock(UsageLedger.class)),
-                new UsageLimits(Optional.empty())).render(state.tasks());
+                new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out).contains("AGENT SESSION", "agents");
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
@@ -165,7 +168,7 @@ class UsageStatsRendererTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         String out = new UsageStatsRenderer(new UsageTracker(state, mock(UsageLedger.class)),
-                new UsageLimits(Optional.empty())).render(state.tasks());
+                new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out).doesNotContain("AGENT SESSION");
     }
@@ -177,8 +180,34 @@ class UsageStatsRendererTest {
         UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
-        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty()), mock(FinishedTasks.class)).render(state.tasks());
 
         assertThat(out).contains("average per call: 5.0k tokens");
+    }
+
+    @Test
+    void takesTheMedianCostOfDeployedTasksAndLeavesOutOneWithAnUnreadSpend() {
+        List<FinishedTask> finished = List.of(
+                new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 1.0),
+                new FinishedTask("ABC-2", null, null, List.of(), null, 9L, 0, null, 0,
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 4.0),
+                new FinishedTask("ABC-3", null, null, List.of(), null, 9L, 0, null, 0,
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null),
+                new FinishedTask("ABC-4", null, null, List.of(), null, 9L, 0, null, 0,
+                        List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, null)), null, null, 90.0));
+
+        assertThat(UsageStatsRenderer.costPerDeployed(finished))
+                .isEqualTo("median cost per deployed task: 2.50 USD (2 of 3 deployed with a known spend)\n");
+    }
+
+    @Test
+    void saysUnknownWhenNoDeployedTaskHasAKnownSpend() {
+        List<FinishedTask> finished = List.of(
+                new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null));
+
+        assertThat(UsageStatsRenderer.costPerDeployed(finished))
+                .isEqualTo("median cost per deployed task: unknown (1 deployed, none with a known spend)\n");
     }
 }

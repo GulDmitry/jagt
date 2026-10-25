@@ -196,5 +196,5 @@
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-limit-is-told-once-per-period-never-gated)
 - **Wake on reset** — A session stopped on a full window gets one nudge when it resets. Key: `orchestrator.usageLimits.wakeOnReset`, off by default.
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-stop-on-a-full-window-arms-one-wake)
-- **Spend ceiling** — A headless read stops at a spend ceiling and fails naming it.
-  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-headless-run-has-a-spend-ceiling)
+- **Spend** — A headless read stops at a spend ceiling; a finished task keeps its cost and `stats` ends with the deployed median.
+  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-finished-task-keeps-what-it-cost)

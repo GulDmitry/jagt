@@ -143,8 +143,25 @@ class FinishedTaskTest {
 
     @Test
     void tookNothingWhenNoStepWasEverRecorded() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 6_000L, 0, null, 0, List.of(), null, null);
+        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 6_000L, 0, null, 0, List.of(), null, null, null);
 
         assertThat(task.tookMillis()).isZero();
+    }
+
+    @Test
+    void costsTheSessionAndTheReadsTogetherOnceTheSessionSpendWasRead() {
+        var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE)
+                .usage(TokenUsage.ofCall(10, 0, 10, 0.5))
+                .agentSpend(new AgentSpend(TokenUsage.ofCall(10, 0, 10, 2.0), java.util.Map.of())).build(), 2L);
+
+        assertThat(task.costUsd()).isEqualTo(2.5);
+    }
+
+    @Test
+    void costsNothingKnownWhenTheSessionSpendWasNeverRead() {
+        var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE)
+                .usage(TokenUsage.ofCall(10, 0, 10, 0.5)).build(), 2L);
+
+        assertThat(task.costUsd()).isNull();
     }
 }

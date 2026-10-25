@@ -1,10 +1,13 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.UsageLimits;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,6 +15,8 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +39,7 @@ public class UsageStatsRenderer {
 
     private final UsageTracker usageTracker;
     private final UsageLimits limits;
+    private final FinishedTasks finished;
 
     public String render(Map<String, TaskState> tasks) {
         StringBuilder out = new StringBuilder(limits(limits.last()))
@@ -92,7 +98,20 @@ public class UsageStatsRenderer {
                     .append(" tokens — most of that is fixed per-process overhead, so making FEWER calls"
                             + " beats shortening a prompt.\n");
         }
-        return out.toString();
+        return out.append(costPerDeployed(finished.all())).toString();
+    }
+
+    /** Over the tasks that reached DEPLOYED; one whose session spend was never read is left out, not counted as 0. */
+    static String costPerDeployed(List<FinishedTask> finished) {
+        List<FinishedTask> deployed = finished.stream().filter(task -> task.reached(TaskStatus.DEPLOYED)).toList();
+        double[] costs = deployed.stream().map(FinishedTask::costUsd).filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue).sorted().toArray();
+        if (costs.length == 0) {
+            return "median cost per deployed task: unknown (" + deployed.size() + " deployed, none with a known spend)\n";
+        }
+        double median = (costs[(costs.length - 1) / 2] + costs[costs.length / 2]) / 2;
+        return String.format(Locale.ROOT, "median cost per deployed task: %.2f USD (%d of %d deployed with a known spend)%n",
+                median, costs.length, deployed.size());
     }
 
     static String limits(Optional<UsageLimits.Reading> reading) {
