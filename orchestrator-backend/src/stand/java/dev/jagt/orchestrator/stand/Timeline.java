@@ -10,9 +10,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 
@@ -27,6 +29,7 @@ public final class Timeline {
     private String lastReport = "";
     private int relaysSeen;
     private int masterReadsSeen;
+    private final Set<String> stepsRelayed = new HashSet<>();
     private String windows = "";
     private Instant lastChange = Instant.now();
     private @Nullable Stop stop;
@@ -79,6 +82,10 @@ public final class Timeline {
         return lastOwner;
     }
 
+    public boolean relayed(String step) {
+        return stepsRelayed.contains(step);
+    }
+
     public int relaysSeen() {
         return relaysSeen;
     }
@@ -121,6 +128,7 @@ public final class Timeline {
             return;
         }
         relaysSeen++;
+        stepsRelayed.addAll(steps);
         note(TimelineFile.relayLine(id, steps));
     }
 

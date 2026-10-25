@@ -17,6 +17,9 @@ final class RunEnd {
         if (!timeline.lastOwner().equals("YOU")) {
             return false;
         }
+        if (timeline.lastStatus().equals("DEPLOY_CONFLICT") && (timeline.relayed("conflict") || timeline.stalledFor(QUIET))) {
+            return true;
+        }
         return mode.humanEndsTheRun() && nothingToPress && timeline.stalledFor(QUIET) || timeline.stalledFor(HELD);
     }
 }

@@ -41,10 +41,14 @@ class MutationStandTest {
 
             RunRecord record = stand.record();
             assertThat(MutationProgress.lacking(mutation.kind(), outcome, record.history("ABC-5"), record.misses().size(),
-                    stand.store().awaitsTheReviewer())).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
+                    stand.store().awaitsTheReviewer(), conflictRelayed(record))).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             stand.passed();
         }
+    }
+
+    private static boolean conflictRelayed(RunRecord record) {
+        return record.timeline().relays().stream().anyMatch(relay -> relay.steps().contains("conflict"));
     }
 
     static Stream<Arguments> runs() {
