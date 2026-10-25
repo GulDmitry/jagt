@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.stand.mutation;
 
 import dev.jagt.orchestrator.stand.StandFailure;
+import dev.jagt.orchestrator.task.TaskStatus;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,7 +18,7 @@ import java.util.regex.Pattern;
 public record MutationBook(List<Mutation> mutations) {
 
     private static final Pattern HEADING = Pattern.compile("## ([a-z][a-z0-9-]*)");
-    private static final Pattern KEY = Pattern.compile("(kind|ask|event|holds):\\s*(.*)");
+    private static final Pattern KEY = Pattern.compile("(kind|ask|event|holds|expects):\\s*(.*)");
 
     public static MutationBook shipped() {
         try (InputStream file = MutationBook.class.getResourceAsStream("/mutations.md")) {
@@ -67,7 +68,11 @@ public record MutationBook(List<Mutation> mutations) {
                 .findFirst().orElseThrow(() -> fault(name, "has kind '" + keys.getOrDefault("kind", "")
                         + "', which is not ticket, world or attack"));
         Mutation mutation = new Mutation(name, kind, keys.getOrDefault("ask", ""), keys.getOrDefault("event", ""),
-                keys.getOrDefault("holds", ""));
+                keys.getOrDefault("holds", ""), keys.getOrDefault("expects", ""));
+        if (!mutation.expects().isEmpty() && Arrays.stream(TaskStatus.values())
+                .noneMatch(status -> status.name().equals(mutation.expects()))) {
+            throw fault(name, "expects '" + mutation.expects() + "', which is no task status");
+        }
         if (mutation.holds().isEmpty()) {
             throw fault(name, "names no holds");
         }

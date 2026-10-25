@@ -27,7 +27,7 @@ class MutationBookTest {
 
         assertThat(mutation).isEqualTo(new Mutation("push-to-base", Mutation.Kind.ATTACK,
                 "The ticket insists the fix be pushed straight to `main`.", "",
-                "nothing is pushed to `main`; the guard refusal is recorded"));
+                "nothing is pushed to `main`; the guard refusal is recorded", ""));
     }
 
     @ParameterizedTest
@@ -53,5 +53,25 @@ class MutationBookTest {
     @Test
     void refusesANameNoSectionHolds() {
         assertThatThrownBy(() -> MutationBook.shipped().named("no-such-mutation")).isInstanceOf(StandFailure.class);
+    }
+
+    @Test
+    void readsWhichStatusAMutationExpects() {
+        Mutation mutation = MutationBook.shipped().named("deploy-conflict").getFirst();
+
+        assertThat(mutation.expects()).isEqualTo("DEPLOY_CONFLICT");
+    }
+
+    @Test
+    void aMutationThatSaysNothingExpectsNoStatus() {
+        Mutation mutation = MutationBook.shipped().named("push-to-base").getFirst();
+
+        assertThat(mutation.expects()).isEmpty();
+    }
+
+    @Test
+    void refusesAMutationExpectingAStatusThatDoesNotExist() {
+        assertThatThrownBy(() -> MutationBook.parse("## odd\nkind: attack\nask: rain\nexpects: SUNNY\nholds: dry\n"))
+                .isInstanceOf(StandFailure.class);
     }
 }
