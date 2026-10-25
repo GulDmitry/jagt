@@ -22,12 +22,31 @@ public final class HumanStub {
         }
     }
 
+    public boolean nothingToPress(JsonNode board) {
+        for (JsonNode task : board.path("tasks")) {
+            for (JsonNode action : task.path("actions")) {
+                if (wouldPress(task, action) && !pressed.contains(turn(task, action))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean wouldPress(JsonNode task, JsonNode action) {
+        String verb = action.path("id").asString();
+        return humanMove(task, action, verb) && mode.pressedByTheHuman(verb);
+    }
+
+    private static String turn(JsonNode task, JsonNode action) {
+        return task.path("id").asString() + " " + task.path("history").size() + " " + action.path("id").asString();
+    }
+
     private void press(JsonNode task, StandBoard verbs, Timeline timeline) {
         String id = task.path("id").asString();
         for (JsonNode action : task.path("actions")) {
             String verb = action.path("id").asString();
-            String turn = id + " " + task.path("history").size() + " " + verb;
-            if (humanMove(task, action, verb) && mode.pressedByTheHuman(verb) && pressed.add(turn)) {
+            if (wouldPress(task, action) && pressed.add(turn(task, action))) {
                 timeline.note("human pressed " + verb + " on " + id + ": "
                         + verbs.press(id, verb).path("message").asString("").replaceAll("\\s+", " "));
             }

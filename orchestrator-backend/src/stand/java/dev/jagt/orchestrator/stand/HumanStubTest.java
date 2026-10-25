@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -88,5 +89,38 @@ class HumanStubTest {
         new HumanStub(StandMode.ACT).take(board, verbs, mock(Timeline.class));
 
         verify(verbs, never()).press(anyString(), anyString());
+    }
+
+    @Test
+    void hasNothingToPressOnADeployConflictOwnedByYou() {
+        JsonNode board = JsonMapper.builder().build().readTree("""
+                {"tasks":[{"id":"ABC-42","owner":"YOU","status":"DEPLOY_CONFLICT","history":[{},{}],
+                  "actions":[{"id":"resolve","primary":false},{"id":"done","primary":false}]}]}""");
+
+        boolean nothing = new HumanStub(StandMode.JUDGE).nothingToPress(board);
+
+        assertThat(nothing).isTrue();
+    }
+
+    @Test
+    void stillHasAShipToPressWhenYouOwnsAnUnpressedOne() {
+        JsonNode board = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
+
+        boolean nothing = new HumanStub(StandMode.JUDGE).nothingToPress(board);
+
+        assertThat(nothing).isFalse();
+    }
+
+    @Test
+    void hasNothingLeftToPressOnceTheShipWasPressed() {
+        StandBoard verbs = mock(StandBoard.class);
+        when(verbs.press("ABC-42", "ship")).thenReturn(JsonMapper.builder().build().createObjectNode());
+        JsonNode board = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
+        HumanStub human = new HumanStub(StandMode.JUDGE);
+        human.take(board, verbs, mock(Timeline.class));
+
+        boolean nothing = human.nothingToPress(board);
+
+        assertThat(nothing).isTrue();
     }
 }
