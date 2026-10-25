@@ -64,7 +64,8 @@ countdown SHALL be an absolute stamp (`core/format.js`).
 
 ### Requirement: Unattended work is a declared kind
 Each unattended job SHALL be a `job/Job`: id, one line for the human, an interval or `null` for once at startup, `run()`.
-`job/Jobs` ticks it, the one ticker: one thread per run, never overlapping, a throw booked against that job.
+`job/Jobs` schedules each on the shared `TaskScheduler` once ready: never overlapping itself, the next run stamped from the
+start of the last, a throw booked against that job.
 
 #### Scenario: Anything else running
 - **WHEN** you ask whether anything else runs behind your back
@@ -73,6 +74,10 @@ Each unattended job SHALL be a `job/Job`: id, one line for the human, an interva
 #### Scenario: A job names itself nothing
 - **WHEN** a job declares a blank id
 - **THEN** jagt refuses to start, naming the job's class
+
+#### Scenario: A job outlasts its interval
+- **WHEN** a run lasts longer than the job's interval
+- **THEN** the next run starts the moment it ends, never beside it
 
 ### Requirement: The activity report reads jagt's own log
 `command/ActivityReport` SHALL tail `logging.file.name` (ECS JSON) for entries carrying a `task` key, newest first.
@@ -117,31 +122,28 @@ adding their counts and dating the dropped wording (`RoutingMemory.merge`).
 - **WHEN** the two rules place in different projects
 - **THEN** both stand
 
-### Requirement: Jobs that keep the machine tidy
+### Requirement: Jobs that keep the machine tidy and read the tracker
 Each of these jobs SHALL do its one thing unasked:
 - `jarwatch`: each minute, tells you the jar this process runs from was rebuilt underneath it.
 - `orphanscan`: at startup, deletes jagt's own worktree residue and warns about leftovers holding work or secrets.
+- `ticket-prefetch`: reads each working task's ticket once, for the Master's next review of it.
+- `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready for one.
+- `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
 
 #### Scenario: A husk of a worktree
 - **WHEN** a worktree directory jagt cut has lost its checkout and holds only the editor's files
 - **THEN** `orphanscan` deletes it at startup
-
-### Requirement: Jobs that read the tracker
-Each of these jobs SHALL do its one thing unasked:
-- `ticket-prefetch`: reads each working task's ticket once, for the Master's next review of it.
-- `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready for one.
-- `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
 
 #### Scenario: The work landed
 - **WHEN** an item reaches `doneStatus` under `tracker.mode: close`
 - **THEN** `ticket-close` closes its task
 
 ### Requirement: A job runs now when asked
-`run <job>` SHALL make one job due at the next tick instead of at its interval.
+`run <job>` SHALL make one job due at once instead of at its interval.
 
 #### Scenario: Running a job now
 - **WHEN** you run `run orphanscan`
-- **THEN** it runs at the next tick; a job already running, or one nobody declared, is refused
+- **THEN** it runs at once; a job already running, or one nobody declared, is refused
 
 ### Requirement: Unattended starts are counted per day
 jagt SHALL count the starts it makes unasked per local day, in memory, from zero on a restart: a Master move in `act`

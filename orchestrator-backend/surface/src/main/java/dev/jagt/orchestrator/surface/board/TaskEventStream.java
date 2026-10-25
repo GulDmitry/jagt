@@ -2,10 +2,12 @@ package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.service.StateService;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -15,8 +17,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** No payload, so changes queued behind one another are one event. Fan-out never runs on the writing thread. */
@@ -27,15 +29,20 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
     private static final Duration HEARTBEAT = Duration.ofSeconds(20);
 
     private final StateService stateService;
-    private final ScheduledExecutorService broadcaster;
+    private final TaskScheduler scheduler;
+    private final Clock clock;
+    private final ExecutorService broadcaster;
+    private volatile @Nullable ScheduledFuture<?> heartbeat;
     private final AtomicBoolean broadcastQueued = new AtomicBoolean();
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();
     private volatile boolean closing;
     private final String started;
 
-    public TaskEventStream(StateService stateService, Clock clock,
-                           @Qualifier("boardBroadcaster") ScheduledExecutorService broadcaster) {
+    public TaskEventStream(StateService stateService, Clock clock, TaskScheduler scheduler,
+                           @Qualifier("boardBroadcaster") ExecutorService broadcaster) {
         this.stateService = stateService;
+        this.scheduler = scheduler;
+        this.clock = clock;
         this.broadcaster = broadcaster;
         this.started = Long.toString(clock.millis(), 36);
     }
@@ -43,8 +50,8 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
     @PostConstruct
     void followStateChanges() {
         stateService.onChange(written -> queueBroadcast());
-        broadcaster.scheduleAtFixedRate(() -> browsers.forEach(this::beat), HEARTBEAT.toMillis(),
-                HEARTBEAT.toMillis(), TimeUnit.MILLISECONDS);
+        heartbeat = scheduler.scheduleAtFixedRate(() -> browsers.forEach(this::beat), clock.instant().plus(HEARTBEAT),
+                HEARTBEAT);
     }
 
     private void queueBroadcast() {
@@ -95,6 +102,10 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
             browsers.clear();
         }
         open.forEach(this::end);
+        ScheduledFuture<?> beating = heartbeat;
+        if (beating != null) {
+            beating.cancel(false);
+        }
         // Not shutdownNow(): an interrupted write truncates the last update, and a drained task leaves the
         // queued flag set.
         broadcaster.shutdown();

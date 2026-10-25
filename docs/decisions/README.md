@@ -103,3 +103,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0085 Headless reads stop behind a circuit breaker](0085-headless-reads-stop-behind-a-circuit-breaker.md)
 - [0086 The breaker is Resilience4j's](0086-the-breaker-is-resilience4js.md)
 - [0087 The industry-standard library before our own code](0087-the-industry-standard-library-before-our-own-code.md)
+- [0088 Jobs and the heartbeat share one TaskScheduler](0088-jobs-and-the-heartbeat-run-on-one-task-scheduler.md)

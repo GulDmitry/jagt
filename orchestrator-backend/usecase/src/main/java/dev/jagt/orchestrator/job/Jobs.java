@@ -2,24 +2,25 @@ package dev.jagt.orchestrator.job;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.TriggerContext;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Every {@link Job} there is, on one ticker. A job runs on its own thread, never concurrently with itself, and a
- * run that throws is booked against that job alone.
+ * Every {@link Job} there is, each on the shared scheduler. A job never runs concurrently with itself, and a run
+ * that throws is booked against that job alone.
  */
 @Component
 @Slf4j
@@ -39,16 +40,19 @@ public class Jobs {
         private volatile @Nullable Long startedAt;
         private volatile @Nullable String lastError;
         private volatile @Nullable Duration every;
+        private volatile @Nullable ScheduledFuture<?> future;
     }
+
+    private static final Duration RETRY = Duration.ofSeconds(1);
 
     private final Map<String, Job> jobs = new LinkedHashMap<>();
     private final Map<String, Run> runs = new LinkedHashMap<>();
-    private final Executor workers;
+    private final TaskScheduler scheduler;
     private final Clock clock;
     private volatile boolean ready;
 
-    public Jobs(List<Job> declared, @Qualifier("jobWorkers") Executor workers, Clock clock) {
-        this.workers = workers;
+    public Jobs(List<Job> declared, TaskScheduler scheduler, Clock clock) {
+        this.scheduler = scheduler;
         this.clock = clock;
         for (Job job : declared) {
             if (job.id() == null || job.id().isBlank()) {
@@ -97,48 +101,74 @@ public class Jobs {
         if (run.running.get()) {
             throw new IllegalStateException("'" + id + "' is running now");
         }
-        run.nextAt = 0;
+        synchronized (run) {
+            run.nextAt = 0;
+            if (ready) {
+                cancel(run);
+                schedule(Objects.requireNonNull(jobs.get(id)));
+            }
+        }
+    }
+
+    private static void cancel(Run run) {
+        ScheduledFuture<?> pending = run.future;
+        if (pending != null) {
+            pending.cancel(false);
+        }
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    void startTicking() {
+    public void start() {
         ready = true;
+        jobs.values().forEach(this::schedule);
     }
 
-    @Scheduled(fixedDelay = 1000)
-    public void tick() {
-        if (!ready) {
+    private void schedule(Job job) {
+        Run run = Objects.requireNonNull(runs.get(job.id()));
+        run.future = scheduler.schedule(() -> execute(job, run), context -> next(job, run, context));
+    }
+
+    /** Stamped from the start of the last run, not its end: a job that outlasts its interval is due again at once. */
+    private @Nullable Instant next(Job job, Run run, TriggerContext context) {
+        Instant started = context.lastActualExecution();
+        if (started == null) {
+            return clock.instant();
+        }
+        try {
+            run.every = job.every();
+        } catch (RuntimeException e) {
+            fail(job.id(), run, e);
+            return started.plus(RETRY);
+        }
+        if (run.every == null) {
+            run.nextAt = Long.MAX_VALUE;
+            return null;
+        }
+        Instant next = started.plus(run.every);
+        run.nextAt = next.toEpochMilli();
+        return next;
+    }
+
+    private void execute(Job job, Run run) {
+        if (!run.running.compareAndSet(false, true)) {
             return;
         }
-        tick(clock.millis());
+        run.startedAt = clock.millis();
+        try {
+            job.run();
+            run.lastError = null;
+        } catch (Throwable t) {
+            fail(job.id(), run, t);
+        } finally {
+            run.running.set(false);
+        }
     }
 
-    void tick(long now) {
-        jobs.forEach((id, job) -> {
-            Run run = Objects.requireNonNull(runs.get(id));
-            if (run.nextAt > now || !run.running.compareAndSet(false, true)) {
-                return;
-            }
-            run.startedAt = now;
-            workers.execute(() -> {
-                try {
-                    // Asked in here so an interval that cannot be answered is booked as a failed run rather
-                    // than leaving the job stuck. Stamped from the tick, not the finish: a job that outlasts
-                    // its interval is due again the moment it ends.
-                    run.every = job.every();
-                    run.nextAt = run.every == null ? Long.MAX_VALUE : now + run.every.toMillis();
-                    job.run();
-                    run.lastError = null;
-                } catch (Throwable t) {
-                    run.lastError = t.toString();
-                    log.atError().setMessage("job failed")
-                            .addKeyValue("job", id)
-                            .addKeyValue("cause", t.toString())
-                            .log();
-                } finally {
-                    run.running.set(false);
-                }
-            });
-        });
+    private static void fail(String id, Run run, Throwable t) {
+        run.lastError = t.toString();
+        log.atError().setMessage("job failed")
+                .addKeyValue("job", id)
+                .addKeyValue("cause", t.toString())
+                .log();
     }
 }

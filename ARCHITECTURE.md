@@ -163,7 +163,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | add a launch shortcut | a `GlobalCommand` whose `part()` names the board form it opens |
 | replace a built-in verb | another `TaskCapability` for the same action with a higher `priority()` |
 | run something before/after a verb | a `flow/CapabilityInterceptor` for that action — never a new status |
-| add unattended work | one `Job`; `Jobs` tickers it and the `jobs` report lists it |
+| add unattended work | one `Job`; `Jobs` schedules it and the `jobs` report lists it |
 | notify somewhere else | one `Notifier` in `adapter/`; `Notifications` finds it and no caller changes |
 | support another host, tracker, agent or OS | one adapter behind its port, plus the `@ConditionalOnProperty` value |
 

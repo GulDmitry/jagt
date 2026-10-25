@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator;
 
+import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,10 +10,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -54,23 +56,22 @@ public class RuntimeWiring {
     }
 
     @Bean(destroyMethod = "")
-    public Executor jobWorkers() {
-        return Executors.newVirtualThreadPerTaskExecutor();
-    }
-
-    @Bean(destroyMethod = "")
-    public ScheduledExecutorService boardBroadcaster() {
-        return Executors.newSingleThreadScheduledExecutor(task -> {
+    public ExecutorService boardBroadcaster() {
+        return Executors.newSingleThreadExecutor(task -> {
             Thread thread = new Thread(task, "board-sse");
             thread.setDaemon(true);
             return thread;
         });
     }
 
-    /** Without one of its own, `@Scheduled` runs on the board broadcaster. */
+    /** One thread per job, which holds it for the whole run, and one for the board's heartbeat. */
     @Bean
-    public TaskScheduler taskScheduler() {
+    public TaskScheduler taskScheduler(List<Job> jobs, Clock clock) {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(jobs.size() + 1);
+        scheduler.setClock(clock);
+        scheduler.setDaemon(true);
+        scheduler.setRemoveOnCancelPolicy(true);
         scheduler.setThreadNamePrefix("scheduling-");
         return scheduler;
     }
