@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -22,6 +23,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -48,6 +50,24 @@ class StepRelayTest {
         relay.relay("ABC-42", "deploy", "ABC-42 is deployed:\n- proj: 01234567 on dev");
 
         verify(sessions).writeTaskContext("ABC-42", "ABC-42 is deployed:\n- proj: 01234567 on dev\n\nopen it in a browser");
+    }
+
+    @Test
+    void tellsTheSessionNothingWhenTheTaskMovedOnBetweenTheCheckAndTheClaim(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()))), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        StepRelay.Claim claim = new StepRelay.Claim(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build(),
+                () -> true, opens -> FlowReports.Claimed.MOVED_ON);
+
+        assertThatThrownBy(() -> relay.relay("ABC-42", "deploy", "ABC-42 is deployed", claim))
+                .isInstanceOf(TaskMovedOn.class);
+
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
     }
 
     @Test

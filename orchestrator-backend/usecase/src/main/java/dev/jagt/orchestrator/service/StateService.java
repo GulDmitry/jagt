@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 /**
@@ -83,17 +82,6 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     public StateFile read() {
         synchronized (lock) {
             return readUnlocked();
-        }
-    }
-
-    /**
-     * Runs {@code act} only while the task still has the status and turn {@code read} had, holding the write lock
-     * so no writer lands between the check and the act; empty where it moved on.
-     */
-    public <T> Optional<T> whileStanding(String taskId, TaskState read, Supplier<T> act) {
-        synchronized (lock) {
-            return task(taskId).filter(live -> live.status() == read.status()
-                    && live.turnOrNone().sameTurnAs(read.turnOrNone())).map(live -> act.get());
         }
     }
 

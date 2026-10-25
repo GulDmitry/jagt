@@ -32,7 +32,16 @@ public class TaskTurns {
     }
 
     public void opened(String taskId, String step, String digest) {
-        update(taskId, turn -> turn.relayed(step, digest, clock.millis()));
+        stateService.updateTask(stateService.canonicalTaskId(taskId), opening(step, digest));
+        announced(taskId, step);
+    }
+
+    /** The write that opens the session's turn, for a caller that makes it part of a larger one. */
+    public UnaryOperator<TaskState> opening(String step, String digest) {
+        return task -> task.withTurn(task.turnOrNone().relayed(step, digest, clock.millis()));
+    }
+
+    public void announced(String taskId, String step) {
         String id = stateService.canonicalTaskId(taskId);
         log.atInfo().setMessage("turn opened").addKeyValue("task", id).addKeyValue("step", step)
                 .addKeyValue("turn", of(id).id()).log();

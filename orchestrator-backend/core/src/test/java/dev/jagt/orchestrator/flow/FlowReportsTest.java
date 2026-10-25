@@ -42,6 +42,41 @@ class FlowReportsTest {
     }
 
     @Test
+    void landsNoReportOnATaskWhoseStatusMovedOnSinceItWasRead() {
+        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
+        TaskState live = read.withStatus(TaskStatus.SHIPPING, null, 6_000);
+        AtomicReference<TaskState> written = new AtomicReference<>();
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            written.set(write.apply(live));
+            return true;
+        });
+
+        FlowReports.Claimed claimed = reports.reportWhileStanding("ABC-1", read, TaskStatus.IN_PROGRESS,
+                AgentReport.PLAIN, "not ready", task -> task);
+
+        assertThat(claimed).isEqualTo(FlowReports.Claimed.MOVED_ON);
+        assertThat(written.get()).isSameAs(live);
+    }
+
+    @Test
+    void landsTheReportOnATaskStillWhereItWasRead() {
+        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
+        AtomicReference<TaskState> written = new AtomicReference<>();
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            written.set(write.apply(read));
+            return true;
+        });
+
+        FlowReports.Claimed claimed = reports.reportWhileStanding("ABC-1", read, TaskStatus.IN_PROGRESS,
+                AgentReport.PLAIN, "not ready", task -> task);
+
+        assertThat(claimed).isEqualTo(FlowReports.Claimed.LANDED);
+        assertThat(written.get().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
     void refusesToLetATaskTalkItselfOntoASharedBranch() {
         assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.DEPLOYED, "merged"))
                 .isInstanceOf(IllegalArgumentException.class)

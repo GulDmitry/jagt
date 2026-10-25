@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -28,18 +29,24 @@ import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -79,6 +86,86 @@ class MasterVerdictsTest {
 
         verify(sessions).writeTaskContext(eq("ABC-1"), contains("the guard is inverted"));
         verify(ship, never()).ship(anyString(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MasterReview.Kind.class, names = {"NOT_READY", "QUESTION"})
+    void dropsAVerdictOfATaskTheHumanShippedWhileTheMasterRead(MasterReview.Kind kind, @TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", read);
+        state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
+                .withTurn(new Turn(Turn.Holder.SESSION, "ship", 6, "d", 6_000, Map.of(), List.of())));
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+        MasterReview.Verdict verdict = new MasterReview.Verdict(kind,
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+                List.of(), List.of("override the gate?"), 0, "");
+
+        assertThatThrownBy(() -> verdicts.act("ABC-1", read, verdict, acting)).isInstanceOf(TaskMovedOn.class);
+
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.SHIPPING);
+    }
+
+    @Test
+    void dropsTheAnswerToAQuestionTheSessionMovedOnFromWhileTheMasterRead(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", read);
+        state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(Turn.Holder.SESSION, 2_000)));
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+
+        assertThatThrownBy(() -> verdicts.answered("ABC-1", read, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false))
+                .isInstanceOf(TaskMovedOn.class);
+
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
+        verify(decisions, never()).answered(any());
+    }
+
+    @Test
+    void writesNoStateWhileTheSessionIsBeingTold(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        state.putTask("ABC-2", task);
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door));
+        when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenAnswer(told ->
+                CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other)).get(2, TimeUnit.SECONDS)
+                        ? "told" : "not told");
+
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
+                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+
+        assertThat(moved).isTrue();
     }
 
     @Test
@@ -651,7 +738,7 @@ class MasterVerdictsTest {
         OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "asked-human",
                 "The reviewer asked the human: Add v3 beside v2, or replace it?"));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
+        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
                 List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
 
         assertThat(moved).isFalse();
@@ -698,7 +785,7 @@ class MasterVerdictsTest {
         OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "answered",
                 "The Master answered your question, standing in for the human:\nkeep v2 beside v3"));
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
+        boolean moved = verdicts.answered("ABC-1", state.task("ABC-1").orElseThrow(), "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
 
         assertThat(moved).isFalse();
         verify(decisions, never()).record(any(), anyString());

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -57,22 +58,20 @@ class MasterAnswerJobTest {
     }
 
     @Test
-    void setsNothingOnATaskWhoseSessionWentBackToWorkWhileTheMasterRead(@TempDir Path root) {
+    void marksNothingUnansweredOnATaskWhoseTurnMovedOnWhileTheMasterRead(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .message("keep v2?").report(AgentReport.QUESTION).build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenAnswer(read -> {
-            state.updateTask("ABC-1", task -> task.withReport(AgentReport.PLAIN)
-                    .withTurn(task.turnOrNone().closed(Turn.Holder.SESSION, 2_000)));
-            return Optional.of(new MasterPanel.Decision("keep v2 beside v3", ""));
-        });
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
+                .thenReturn(Optional.of(new MasterPanel.Decision("keep v2 beside v3", "")));
+        when(verdicts.answered(anyString(), any(), anyString(), any(), anyBoolean())).thenThrow(new TaskMovedOn("ABC-1"));
 
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
-        verify(verdicts, never()).answered(anyString(), any(), anyString(), any(), anyBoolean());
+        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.UNANSWERED)).isNull();
     }
 
     @Test

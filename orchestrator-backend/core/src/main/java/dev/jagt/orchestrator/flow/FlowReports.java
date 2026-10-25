@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 /**
  * The second door into the machine: a status the task itself reports, rather than one an action led to. Every
@@ -56,11 +57,49 @@ public class FlowReports {
     public Optional<Landed> report(String taskId, TaskStatus status, AgentReport means, @Nullable String message,
                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
                                    Predicate<TaskState> verificationOwed) {
+        return report(taskId, status, means, message, alsoRecord, verificationOwed, task -> true);
+    }
+
+    /** What a report made while standing found: it landed, the task moved on, or the task is not held. */
+    public enum Claimed { LANDED, MOVED_ON, GONE }
+
+    /**
+     * A report that lands only while the task still has the status and turn {@code read} had, judged in the write
+     * itself, so nothing lands between the check and the status.
+     */
+    public Claimed reportWhileStanding(String taskId, TaskState read, TaskStatus status, AgentReport means,
+                                       @Nullable String message, UnaryOperator<TaskState> alsoRecord) {
+        AtomicReference<Boolean> moved = new AtomicReference<>(false);
+        Predicate<TaskState> standing = task -> {
+            boolean stands = standing(task, read);
+            moved.set(!stands);
+            return stands;
+        };
+        Optional<Landed> landed = report(taskId, status, means, message, (was, next) -> alsoRecord.apply(next),
+                task -> false, standing);
+        return landed.isPresent() ? Claimed.LANDED : moved.get() ? Claimed.MOVED_ON : Claimed.GONE;
+    }
+
+    /** Whether the task is still where it was read: the same status, no relay or report since. */
+    public boolean standing(String taskId, TaskState read) {
+        return tasks.task(taskId).map(task -> standing(task, read)).orElse(true);
+    }
+
+    private static boolean standing(TaskState task, TaskState read) {
+        return task.status() == read.status() && task.turnOrNone().sameTurnAs(read.turnOrNone());
+    }
+
+    private Optional<Landed> report(String taskId, TaskStatus status, AgentReport means, @Nullable String message,
+                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
+                                    Predicate<TaskState> verificationOwed, Predicate<TaskState> standing) {
         // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving together
         // must not both pass on a status neither of them ends up leaving from.
         AtomicReference<Landed> landed = new AtomicReference<>();
         AtomicReference<String> refused = new AtomicReference<>();
         tasks.updateTask(taskId, task -> {
+            if (!standing.test(task)) {
+                return task;
+            }
             Optional<String> why = FlowRules.refusedReport(task.status(), status);
             if (why.isPresent()) {
                 refused.set(why.get());

@@ -1,12 +1,19 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * A step's facts are jagt's and come first; what the session is asked to do with them is the brief's. Every relay
@@ -16,6 +23,7 @@ import java.util.function.Consumer;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StepRelay {
 
     private final SessionBrief brief;
@@ -23,13 +31,29 @@ public class StepRelay {
     private final CaseDoor door;
     private final TaskTurns turns;
 
+    /**
+     * The write that opens the turn together with what else must land with it, made while the task still stands as
+     * {@code read}; the session is told after the write, outside any lock.
+     */
+    public record Claim(TaskState read, BooleanSupplier standing,
+                        Function<UnaryOperator<TaskState>, FlowReports.Claimed> write) {
+    }
+
     public boolean relay(String taskId, String step, String facts) {
         return opened(taskId, step, facts, false, told -> sessions.writeTaskContext(taskId, told));
+    }
+
+    public boolean relay(String taskId, String step, String facts, Claim claim) {
+        return opened(taskId, step, facts, false, claim, told -> sessions.writeTaskContext(taskId, told));
     }
 
     /** A round sent back to work, false too where the rounds of this step running reached their ceiling. */
     public boolean relayRound(String taskId, String step, String facts) {
         return opened(taskId, step, facts, true, told -> sessions.writeTaskContext(taskId, told));
+    }
+
+    public boolean relayRound(String taskId, String step, String facts, Claim claim) {
+        return opened(taskId, step, facts, true, claim, told -> sessions.writeTaskContext(taskId, told));
     }
 
     /** Written whatever the session already holds, as a hand-off that must land again. */
@@ -47,9 +71,17 @@ public class StepRelay {
         return opened(taskId, step, facts, false, told -> sessions.relayFresh(taskId, told));
     }
 
+    public boolean relayFresh(String taskId, String step, String facts, Claim claim) {
+        return opened(taskId, step, facts, false, claim, told -> sessions.relayFresh(taskId, told));
+    }
+
     /** Below an instruction still pending, which stands. */
     public boolean relayUnder(String taskId, String step, String facts, boolean fresh) {
         return opened(taskId, step, facts, false, told -> sessions.relayUnder(taskId, told, fresh));
+    }
+
+    public boolean relayUnder(String taskId, String step, String facts, boolean fresh, Claim claim) {
+        return opened(taskId, step, facts, false, claim, told -> sessions.relayUnder(taskId, told, fresh));
     }
 
     /** Typed into the session's window, which takes one line. */
@@ -75,6 +107,14 @@ public class StepRelay {
     }
 
     private boolean opened(String taskId, String step, String facts, boolean round, Consumer<String> send) {
+        return opened(taskId, step, facts, round, null, send);
+    }
+
+    private boolean opened(String taskId, String step, String facts, boolean round, @Nullable Claim claim,
+                           Consumer<String> send) {
+        if (claim != null && !claim.standing().getAsBoolean()) {
+            throw dropped(taskId, step, claim);
+        }
         if (!door.opens(taskId, step)) {
             return false;
         }
@@ -82,9 +122,30 @@ public class StepRelay {
         if (turns.of(taskId).holds(step, digest) || round && !door.roundDue(taskId, step)) {
             return false;
         }
+        if (claim == null) {
+            send.accept(told(step, facts));
+            turns.opened(taskId, step, digest);
+            return true;
+        }
+        FlowReports.Claimed claimed = claim.write().apply(turns.opening(step, digest));
+        if (claimed == FlowReports.Claimed.MOVED_ON) {
+            throw dropped(taskId, step, claim);
+        }
+        if (claimed == FlowReports.Claimed.GONE) {
+            return false;
+        }
+        turns.announced(taskId, step);
         send.accept(told(step, facts));
-        turns.opened(taskId, step, digest);
         return true;
+    }
+
+    private TaskMovedOn dropped(String taskId, String step, Claim claim) {
+        log.atInfo().setMessage("step dropped").addKeyValue("task", taskId).addKeyValue("step", step)
+                .addKeyValue("turn", claim.read().turnOrNone().id()).addKeyValue("turnNow", turns.of(taskId).id())
+                .addKeyValue("cause", "the task moved on while the step was decided")
+                .addKeyValue("effect", "nothing relayed, the status left as it is")
+                .log();
+        return new TaskMovedOn(taskId);
     }
 
     private String told(String step, String facts) {

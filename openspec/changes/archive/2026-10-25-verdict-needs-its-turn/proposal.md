@@ -5,7 +5,7 @@ set `IN_PROGRESS`, overwriting `SHIPPING` and leaving the session two contradict
 
 ## What Changes
 
-- A verdict acts only while the task has the status and turn it was read at, checked under the state lock.
+- A verdict and a Master's answer act only while the task has the status and turn they were read at: one write claims the status and the turn, the session is told after it.
 - Otherwise it is dropped and logged with the turn it answered and the turn now.
 
 ## Capabilities

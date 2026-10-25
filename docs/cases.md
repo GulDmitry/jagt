@@ -61,7 +61,7 @@ Families:
 | C6 | two tasks open at once → the cap of 24 is checked and registered under one lock | fa92f2f3 | `TaskProvisioningTest` |
 | C7 | a card is answered or a record comes from another stage → the card's own task answers; the record is waited for, not assumed | 9674c1f1, 901e955e | `BoardPageTest`, `ProcessRunnerTest` |
 | C8 | the session reports while the Master reads its question → the turn moved on, the Master's answer is dropped and nothing sets IN_PROGRESS again | seen 2026-10-24: IN_PROGRESS set three times on a task at work | `MasterAnswerJobTest` |
-| C9 | the human presses a verb (ship) while the Master reads the hand-back → the verdict is dropped, checked against status and turn under the state lock; the human's status and the session's one step stand | seen 2026-10-25 on the stand: ship overwritten by IN_PROGRESS, two contradictory steps, task stopped on a miss | `MasterReviewJobTest` |
+| C9 | the human presses a verb (ship) while the Master reads the hand-back → the verdict and the Master's answer are dropped, claimed against status and turn in one write, the session told after it; the human's status and the session's one step stand | seen 2026-10-25 on the stand: ship overwritten by IN_PROGRESS, two contradictory steps, task stopped on a miss | `MasterVerdictsTest`, `StepRelayTest`, `FlowReportsTest`, `MasterAnswerJobTest` |
 
 ## D — model overreach
 | id | the case, one line | defects | pinned by |

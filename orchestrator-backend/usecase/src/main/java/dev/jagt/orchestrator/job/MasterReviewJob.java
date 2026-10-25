@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -79,13 +80,10 @@ public class MasterReviewJob implements Job {
 
     private void act(String taskId, TaskState task, MasterReview.Verdict written,
                      ConfigService.ConfigFile.MasterConfig config) {
-        if (stateService.whileStanding(taskId, task, () -> verdicts.act(taskId, task, written, config)).isEmpty()) {
-            log.atInfo().setMessage("master verdict dropped").addKeyValue("task", taskId)
-                    .addKeyValue("turn", task.turnOrNone().id())
-                    .addKeyValue("turnNow", stateService.task(taskId).map(now -> now.turnOrNone().id()).orElse(-1L))
-                    .addKeyValue("cause", "the task moved on while the Master read")
-                    .addKeyValue("effect", "nothing relayed, the status left as it is")
-                    .log();
+        try {
+            verdicts.act(taskId, task, written, config);
+        } catch (TaskMovedOn dropped) {
+            return;
         }
     }
 

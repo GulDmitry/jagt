@@ -53,7 +53,7 @@ public class MasterVerdicts {
             case NOT_READY -> returned(taskId, task, verdict, plan);
             case QUESTION -> {
                 decisions.returned(task, verdict.round(), List.of());
-                yield ask(taskId, verdict.question());
+                yield ask(taskId, task, verdict.question());
             }
             case READY -> {
                 decisions.returned(task, verdict.round(), List.of());
@@ -70,7 +70,8 @@ public class MasterVerdicts {
         List<String> findings = verdict.findings().stream()
                 .map(said -> repeated.contains(said.identity()) ? said.line() + REPEAT : said.line()).toList();
         MasterMove returning = plan ? MasterMove.PLAN_NOT_READY : MasterMove.ROUND_NOT_READY;
-        if (!relay.relayRound(taskId, returning.id(), String.join("\n", findings))) {
+        StepRelay.Claim claim = claiming(taskId, task, AgentReport.PLAIN, "reviewer: not ready; relayed");
+        if (!relay.relayRound(taskId, returning.id(), String.join("\n", findings), claim)) {
             return false;
         }
         String ruled = verdict.findings().stream().filter(MasterReview.Said::settles).map(MasterReview.Said::line)
@@ -80,8 +81,13 @@ public class MasterVerdicts {
         }
         log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId)
                 .addKeyValue("findings", verdict.findings().size()).log();
-        // Back to work, or the session's report is no transition and the verdict reads as this round's.
-        return reports.report(taskId, FlowRules.relayed(), "reviewer: not ready; relayed");
+        return true;
+    }
+
+    /** Back to work in the claim itself, or the session's report is no transition and the verdict reads as this round's. */
+    private StepRelay.Claim claiming(String taskId, TaskState read, AgentReport means, String message) {
+        return new StepRelay.Claim(read, () -> reports.standing(taskId, read),
+                opensTheTurn -> reports.reportWhileStanding(taskId, read, FlowRules.relayed(), means, message, opensTheTurn));
     }
 
     private boolean go(String taskId, TaskState task, MasterReview.Verdict verdict) {
@@ -100,13 +106,14 @@ public class MasterVerdicts {
      * The session waits on the answer, so it is told the question, and back at work a hand-back after it is a new
      * round. The report is the one an agent makes when it stops rather than guess.
      */
-    private boolean ask(String taskId, String question) {
-        if (!relay.relay(taskId, MasterMove.ASKED_HUMAN.id(), "The reviewer asked the human: " + question)) {
+    private boolean ask(String taskId, TaskState task, String question) {
+        StepRelay.Claim claim = claiming(taskId, task, AgentReport.QUESTION, REVIEWER + question);
+        if (!relay.relay(taskId, MasterMove.ASKED_HUMAN.id(), "The reviewer asked the human: " + question, claim)) {
             return false;
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
                 .log();
-        return reports.report(taskId, FlowRules.relayed(), AgentReport.QUESTION, REVIEWER + question);
+        return true;
     }
 
     /** The Master's answer to a question, and the task back at work on it. */
@@ -123,10 +130,11 @@ public class MasterVerdicts {
     private boolean answer(String taskId, TaskState task, String question, String decision, String opened,
                            boolean freshSession) {
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
+        StepRelay.Claim claim = claiming(taskId, task, AgentReport.PLAIN, "master answered the question");
         boolean told = FlowRules.awaitsItsInstruction(task.status())
-                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.id(), answer, freshSession)
-                : freshSession ? relay.relayFresh(taskId, MasterMove.ANSWERED.id(), answer)
-                : relay.relay(taskId, MasterMove.ANSWERED.id(), answer);
+                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.id(), answer, freshSession, claim)
+                : freshSession ? relay.relayFresh(taskId, MasterMove.ANSWERED.id(), answer, claim)
+                : relay.relay(taskId, MasterMove.ANSWERED.id(), answer, claim);
         if (!told) {
             return false;
         }
@@ -134,7 +142,7 @@ public class MasterVerdicts {
         decisions.answered(task);
         log.atInfo().setMessage("master answered").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
                 .addKeyValue("decision", OneLine.clipped(decision)).log();
-        return reports.report(taskId, FlowRules.relayed(), "master answered the question");
+        return true;
     }
 
     public int answersOverThisTree(TaskState task) {

@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -76,11 +77,6 @@ public class MasterAnswerJob implements Job {
         turns.mark(taskId, TaskTurns.UNANSWERED, TaskTurns.asked(task));
     }
 
-    /** A report or a relay while the Master read moved the turn on: the question it read is no longer standing. */
-    private boolean standing(String taskId, TaskState task) {
-        return stateService.task(taskId).map(TaskState::turnOrNone).filter(task.turnOrNone()::sameTurnAs).isPresent();
-    }
-
     /** What no prose answer settles: a right only the human grants, a repository jagt attaches, a plan. */
     private static Optional<String> humans(TaskState task) {
         if (task.report() == AgentReport.PERMISSION) {
@@ -117,18 +113,15 @@ public class MasterAnswerJob implements Job {
         log.atInfo().setMessage("master answers").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .log();
         Optional<MasterPanel.Decision> decision = panel.answer(taskId, task, Objects.requireNonNull(task.message()), config, stuck);
-        if (decision.isPresent() && !standing(taskId, task)) {
-            log.atInfo().setMessage("master answer dropped").addKeyValue("task", taskId)
-                    .addKeyValue("cause", "the turn moved on while the Master read")
-                    .addKeyValue("effect", "nothing relayed, the status left as it is")
-                    .log();
+        try {
+            if (decision.isEmpty() || !verdicts.answered(taskId, task, Objects.requireNonNull(task.message()), decision.get(), stuck)) {
+                log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
+                        .addKeyValue("effect", "the question waits for the human")
+                        .log();
+                unanswered(taskId, task);
+            }
+        } catch (TaskMovedOn dropped) {
             return;
-        }
-        if (decision.isEmpty() || !verdicts.answered(taskId, task, Objects.requireNonNull(task.message()), decision.get(), stuck)) {
-            log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
-                    .addKeyValue("effect", "the question waits for the human")
-                    .log();
-            unanswered(taskId, task);
         }
     }
 }
