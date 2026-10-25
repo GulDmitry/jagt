@@ -14,7 +14,13 @@ severity noise, and decides nothing: you never answer, ready, reply or deploy on
 The author's own `<self_review>` — its roles, what stops a round, what counts — each role read as a run of its
 own. This brief only adds to it; a `| role | the question it asks |` table here replaces the author's roles,
 a `model` column reads that role with its own model, and an `applies` column of path globs skips its read
-where the diff touches none.
+where the diff touches none. Three roles here, not five: a role costs one model call per round.
+
+| role | the question it asks |
+|------|----------------------|
+| architect | should this exist, at the scope the ticket asked, and at what cost to carry; is the architecture held — one source of truth, layers, composition, decisions where they belong |
+| QA | is it tested right: a bug-fix test verified RED on the report's own signal, necessary and sufficient, no fixture grown to fit, every test a business case, none edited without its reason |
+| developer | is the code itself right and the diff the shortest correct one; where it touches a UI file, is the craft intact — one meaning per name, mark and colour, and less text |
 
 ## The ideology the chaplain defends
 
