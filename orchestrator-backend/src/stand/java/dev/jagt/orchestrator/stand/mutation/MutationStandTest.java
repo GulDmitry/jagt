@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.stand.mutation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import dev.jagt.orchestrator.stand.Script;
 import dev.jagt.orchestrator.stand.StandMode;
 import dev.jagt.orchestrator.stand.StandOutcome;
@@ -9,6 +7,7 @@ import dev.jagt.orchestrator.stand.StandRun;
 import dev.jagt.orchestrator.stand.invariant.RunRecord;
 import java.nio.file.Files;
 import java.util.stream.Stream;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -40,9 +39,12 @@ class MutationStandTest {
                     Script::with, (first, second) -> second));
 
             RunRecord record = stand.record();
-            assertThat(MutationProgress.lacking(mutation.kind(), outcome, record.history("ABC-5"), record.misses().size(),
-                    stand.store().awaitsTheReviewer(), conflictRelayed(record))).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
-            assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
+            SoftAssertions.assertSoftly(soft -> {
+                soft.assertThat(MutationProgress.lacking(mutation.kind(), outcome, record.history("ABC-5"),
+                        record.misses().size(), stand.store().awaitsTheReviewer(), conflictRelayed(record)))
+                        .as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
+                soft.assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
+            });
             stand.passed();
         }
     }
