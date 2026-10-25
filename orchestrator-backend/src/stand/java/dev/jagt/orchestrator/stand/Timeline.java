@@ -24,6 +24,7 @@ public final class Timeline {
     private final Map<String, String> lastSeen = new HashMap<>();
     private String lastStatus = "none";
     private String lastOwner = "none";
+    private String lastReport = "";
     private int relaysSeen;
     private String windows = "";
     private Instant lastChange = Instant.now();
@@ -62,6 +63,10 @@ public final class Timeline {
         return lastStatus;
     }
 
+    public String lastReport() {
+        return lastReport;
+    }
+
     public String lastOwner() {
         return lastOwner;
     }
@@ -92,6 +97,7 @@ public final class Timeline {
             stopped(id, found);
         }
         lastStatus = task.path("status").asString();
+        lastReport = task.path("report").asString("");
         lastOwner = owners.getOrDefault(id, "?");
         relays.changed(id, task).ifPresent(steps -> relayed(id, steps));
         String entry = id + " " + lastStatus + " owner=" + lastOwner + " "

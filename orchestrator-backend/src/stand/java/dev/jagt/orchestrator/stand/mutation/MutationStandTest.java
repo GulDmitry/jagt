@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.stand.Script;
 import dev.jagt.orchestrator.stand.StandMode;
 import dev.jagt.orchestrator.stand.StandOutcome;
 import dev.jagt.orchestrator.stand.StandRun;
+import dev.jagt.orchestrator.stand.invariant.RunRecord;
 import java.nio.file.Files;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Tag;
@@ -38,11 +39,9 @@ class MutationStandTest {
             StandOutcome outcome = stand.drive(applied.events().stream().reduce(Script.to("ABC-5", "DEPLOYED"),
                     Script::with, (first, second) -> second));
 
-            assertThat(outcome).as(mutation.holds() + "\n" + outcome.describe()).satisfiesAnyOf(
-                    deployed -> assertThat(deployed.status()).isEqualTo("DEPLOYED"),
-                    handedOver -> assertThat(handedOver.withTheHuman()).isTrue(),
-                    answered -> assertThat(answered.withTheCodeHost() && stand.store().awaitsTheReviewer()).isTrue());
-            assertThat(stand.record().histories()).as("the task was never closed: " + outcome.describe()).isNotEmpty();
+            RunRecord record = stand.record();
+            assertThat(MutationProgress.lacking(outcome, record.history("ABC-5"), record.misses().size(),
+                    stand.store().awaitsTheReviewer())).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             stand.passed();
         }

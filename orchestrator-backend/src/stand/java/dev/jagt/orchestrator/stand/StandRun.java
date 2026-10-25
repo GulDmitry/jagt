@@ -130,7 +130,7 @@ public final class StandRun implements AutoCloseable {
                 && Instant.now().isBefore(settled)) {
             tick(timeline);
         }
-        StandOutcome outcome = outcomeOf(script, timeline, start);
+        StandOutcome outcome = outcomeOf(script, timeline, start, pending.size());
         last = outcome;
         if (outcome.suspended()) {
             timeline.note("host suspended: " + outcome.detail());
@@ -139,7 +139,7 @@ public final class StandRun implements AutoCloseable {
         return outcome;
     }
 
-    private StandOutcome outcomeOf(Script script, Timeline timeline, Instant start) {
+    private StandOutcome outcomeOf(Script script, Timeline timeline, Instant start, int unfired) {
         Optional<Timeline.Stop> stop = timeline.stop();
         StandOutcome.Ending ending = StandOutcome.Ending.of(timeline.lastStatus().equals(script.until()), slept != null,
                 stop.isPresent(), held(timeline), timeline.stalledFor(STALL));
@@ -149,7 +149,8 @@ public final class StandRun implements AutoCloseable {
             default -> "";
         };
         return new StandOutcome(timeline.lastStatus(), timeline.lastOwner(), Duration.between(start, Instant.now()),
-                timeline.tail(20), root, ending, detail, stop.map(Timeline.Stop::trigger).orElse(""));
+                timeline.tail(20), root, ending, detail, stop.map(Timeline.Stop::trigger).orElse(""),
+                timeline.lastReport(), unfired);
     }
 
     private static boolean held(Timeline timeline) {

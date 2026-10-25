@@ -33,7 +33,7 @@ class StandOutcomeTest {
     @Test
     void aStoppedRunDescribesItselfWithTheStopsTriggerAndEvidence() {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "YOU", Duration.ofSeconds(90), List.of(), Path.of("/stand"),
-                Ending.STOPPED, "MISS: a push to main was refused", "MISS");
+                Ending.STOPPED, "MISS: a push to main was refused", "MISS", "PLAIN", 0);
 
         assertThat(outcome.describe()).startsWith("stopped, human needed (MISS: a push to main was refused): last status");
     }

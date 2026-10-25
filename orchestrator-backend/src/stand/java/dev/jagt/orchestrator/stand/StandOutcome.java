@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.util.List;
 
 public record StandOutcome(String status, String owner, Duration took, List<String> tail, Path root, Ending ending,
-                           String detail, String stopTrigger) {
+                           String detail, String stopTrigger, String report, int unfired) {
 
     public enum Ending {
         REACHED("reached"), HELD("held by the human"), STALLED("stalled"), TIMED_OUT("timed out"),
@@ -44,6 +44,10 @@ public record StandOutcome(String status, String owner, Duration took, List<Stri
 
     public boolean withTheCodeHost() {
         return owner.equals("CI");
+    }
+
+    public boolean asked() {
+        return report.equals("QUESTION") || report.equals("PERMISSION");
     }
 
     public boolean stopped() {
