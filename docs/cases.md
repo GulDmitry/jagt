@@ -119,3 +119,4 @@ Families:
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | L1 | a log is rolled at start → only a regular file moves; a directory of the log's name and its dotted siblings stay | seen 2026-10-24: a pitest mutant moved the surface module to surface.1 | `LogFileRollTest` |
+| L2 | a stand run is recorded → its spend holds the task sessions (state.json agentSpend) beside the headless kinds and a total; a source it cannot read is "unknown" with its cause, never 0 | seen 2026-10-25: the record held jagt's reads only, ~$0.10 of a live run | `StandSpendTest` |
