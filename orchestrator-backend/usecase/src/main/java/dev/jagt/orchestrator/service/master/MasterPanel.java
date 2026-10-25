@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.WorktreeFiles;
 import dev.jagt.orchestrator.service.master.MasterReview.Review;
 import dev.jagt.orchestrator.service.master.MasterReview.Verdict;
 import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.task.Outside;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -268,7 +269,7 @@ public class MasterPanel {
         return GOAL + "<role>You judge the plan of task " + taskId + ", which stopped before any code.</role>\n"
                 + "The brief you judge by:\n<brief>\n"
                 + brief + "\n</brief>\n" + round(taskId, task)
-                + (!read.ticket().isBlank() ? "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n"
+                + (!read.ticket().isBlank() ? "The ticket:\n" + Outside.fence("ticket", read.ticket()) + "\n"
                         : ticket(tracker, "plan") + "\n")
                 + (plan.isBlank() ? "" : "The plan, plan.md:\n<plan>\n" + plan + "\n</plan>\n")
                 + (task.probes().isEmpty() ? "" : "The acceptance probes jagt read from it; once it holds, jagt runs"
@@ -393,8 +394,8 @@ public class MasterPanel {
         String link = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
         return "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
                         .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + link + ".\n"
-                + (read.ticket().isBlank() ? "" : "The ticket, read for this round:\n<ticket>\n" + read.ticket()
-                        + "\n</ticket>\n")
+                + (read.ticket().isBlank() ? "" : "The ticket, read for this round:\n" + Outside.fence("ticket", read.ticket())
+                        + "\n")
                 + (read.diff().isBlank() ? "" : "The diff, read for this round:\n<diff>\n" + read.diff() + "</diff>\n")
                 + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
                         + "\n</session_notes>\n")

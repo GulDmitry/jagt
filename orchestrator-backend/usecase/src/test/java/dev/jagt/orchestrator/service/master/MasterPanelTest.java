@@ -72,7 +72,7 @@ class MasterPanelTest {
         String prompt = MasterPanel.quote("ABC-1", task,
                 new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""));
 
-        assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>");
+        assertThat(prompt).contains("<outside source=\"ticket\">\nSummary: accept v3 calls\n</outside>");
     }
 
     @Test
@@ -104,7 +104,7 @@ class MasterPanelTest {
         String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
                 new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""), false, true);
 
-        assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>",
+        assertThat(prompt).contains("<outside source=\"ticket\">\nSummary: accept v3 calls\n</outside>",
                 "<plan>\n1. add the v3 route\n</plan>", "whether this plan does what the ticket asks")
                 .doesNotContain("<session_notes>", "wrote no plan.md", "never answer question");
     }

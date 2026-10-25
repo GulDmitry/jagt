@@ -15,6 +15,7 @@ import tools.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;
 
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.DATA_RULE;
 import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.FAILURE_RULE;
 
 @Component
@@ -41,7 +42,7 @@ public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
                 + " — the link the item itself reports, never one you assemble. Where the item carries no"
                 + " summary of its own, WRITE the title yourself: at most eight words naming what the item"
                 + " asks for, from its description. Never answer exists=true with an empty title or an"
-                + " empty url." + FAILURE_RULE + "</rules>\n"
+                + " empty url." + FAILURE_RULE + DATA_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
         return claude.read(prompt + correcting(corrections), TicketRead.SCHEMA.json(), ticketRef,
                 AssistantCallKind.TICKET_READ).map(HeadlessClaudeTrackerAssistant::ticket);
@@ -56,7 +57,7 @@ public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
                 + "<task>Read the work item \"" + ticketRef + "\" with the matching MCP tool; if it is a URL,"
                 + " follow it.</task>\n"
                 + "<rules>Answer text with its summary, description, acceptance criteria and every comment, each"
-                + " under its own heading, VERBATIM: never summarise, shorten or add." + FAILURE_RULE
+                + " under its own heading, VERBATIM: never summarise, shorten or add." + FAILURE_RULE + DATA_RULE
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
         Answer<String> read = claude.read(prompt, TicketText.SCHEMA.json(), ticketRef,
@@ -74,7 +75,7 @@ public class HeadlessClaudeTrackerAssistant implements TrackerAssistant {
                 + " search.</task>\n"
                 + "<rules>Return keys: the canonical issue key of each item the search answered with, and"
                 + " NOTHING else — no item you were not shown, none you think belongs there. An empty list is"
-                + " the right answer where the search matched nothing." + FAILURE_RULE + "</rules>\n"
+                + " the right answer where the search matched nothing." + FAILURE_RULE + DATA_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
         return claude.read(prompt, TicketSearch.SCHEMA.json(), query, AssistantCallKind.INTAKE)
                 .map(HeadlessClaudeTrackerAssistant::keys);

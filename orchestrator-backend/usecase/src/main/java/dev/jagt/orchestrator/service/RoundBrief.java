@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.task.Outside;
 import dev.jagt.orchestrator.task.ReviewFacts;
 
 import java.util.ArrayList;
@@ -37,14 +38,13 @@ final class RoundBrief {
         if (steps.contains(CHECKS)) {
             brief.append("Checks: ").append(said).append(" — find out why and fix it.\n");
             if (!r.pipelineFailure().isBlank()) {
-                brief.append("<checks>\n").append(r.pipelineFailure()).append("\n</checks>\n");
+                brief.append(Outside.fence("checks", r.pipelineFailure())).append('\n');
             }
             brief.append(section(sessionBrief, CHECKS));
         }
         if (steps.contains(THREADS)) {
-            brief.append(section(sessionBrief, THREADS)).append("<threads>\n");
-            r.threads().forEach(thread -> brief.append(thread).append("\n\n"));
-            brief.append("</threads>\n");
+            brief.append(section(sessionBrief, THREADS))
+                    .append(Outside.fence("threads", String.join("\n\n", r.threads()))).append('\n');
         }
         brief.append(section(sessionBrief, steps.getLast()));
         return brief.toString().stripTrailing();

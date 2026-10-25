@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.DATA_RULE;
 import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.FAILURE_RULE;
 
 @Component
@@ -40,7 +41,7 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to).</task>\n"
                 + "<rules>Return exists=true"
                 + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, and its"
-                + " title." + FAILURE_RULE + "</rules>\n"
+                + " title." + FAILURE_RULE + DATA_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
         return claude.read(prompt, MergeRequestRead.SCHEMA.json(), mrUrl, AssistantCallKind.MR_READ)
                 .map(HeadlessClaudeCodeHostAssistant::request);
@@ -101,7 +102,7 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 </examples>
                 <failure>%s The pipelines are the ONE exception to it, and they change nothing about exists: a \
                 listing you could not get is pipelineStatus=unknown with failure="" and its cause in pipelineFailure.</failure>
-                Respond directly, no preamble.""".formatted(mrUrl, FAILURE_RULE.strip());
+                Respond directly, no preamble.""".formatted(mrUrl, (FAILURE_RULE + DATA_RULE).strip());
         return claude.read(prompt, ReviewRead.SCHEMA.json(), mrUrl, AssistantCallKind.REVIEW_SWEEP, REVIEW_TIMEOUT)
                 .map(HeadlessClaudeCodeHostAssistant::review);
     }

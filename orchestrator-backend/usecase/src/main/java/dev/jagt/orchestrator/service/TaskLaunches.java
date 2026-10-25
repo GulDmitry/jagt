@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.Outside;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
@@ -89,8 +90,8 @@ public class TaskLaunches {
                              @Nullable List<String> chosen,
                              Answer<TicketFacts> read) {
         TicketFacts f = placed.facts();
-        String instructions = withNotes("Implement " + f.key() + " — \"" + f.title()
-                + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
+        String instructions = withNotes("Implement " + f.key() + " — " + Outside.fence("ticket title", f.title())
+                + ". Read it via your issue-tracker MCP for full details, then work.", request.notes());
         String result = provisioning.initializeTask(newTask(f.key(), placed.projects(), instructions, request)
                 .title(f.title()).ticketUrl(f.url()).build());
         placement.created(f.key(), chosen, read.usage());
