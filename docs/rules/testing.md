@@ -82,7 +82,7 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 - `masterEval` reads the brief's `context` step; `SessionBriefContractTest` holds each relayed step naming a worktree or a git verb to what it grants.
 - Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,
   the deploy check.
-- `standTest`: real sessions on a local stand, held to invariants (`-Pmodelfree`: no tokens), 6 runs at once (`-PstandParallelism`); leaves only `build/stand/failed/`.
+- `standTest`: real sessions on a stand, held to invariants (`-Pmodelfree`: no tokens); 6 at once, jobs kicked per second; keeps `build/stand/failed`.
 - A live stand run records its model moves (`recording.jsonl`); `ReplayStandTest` replays one, no model, a turn it never answered a divergence.
 
 ### Linux, and one set of steps per host
