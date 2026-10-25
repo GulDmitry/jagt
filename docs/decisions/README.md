@@ -98,3 +98,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0080 A repeating round ends in one stop](0080-a-repeating-round-ends-in-one-stop.md)
 - [0081 A verdict answers a turn](0081-a-verdict-answers-a-turn.md)
 - [0082 A prompt before the harness is read off the window](0082-a-prompt-before-the-harness-is-read-off-the-window.md)
+- [0083 A replay answers the Master, a run leaves its verdict](0083-a-replay-answers-the-masters-answers-and-a-run-leaves-its-verdict.md)
