@@ -66,6 +66,16 @@ public final class StandRun implements AutoCloseable {
     }
 
     private static StandRun start(String scenario, StandMode mode, @Nullable Path replayed) throws IOException {
+        StandSlots.LIVE.take();
+        try {
+            return begin(scenario, mode, replayed);
+        } catch (IOException | RuntimeException e) {
+            StandSlots.LIVE.free();
+            throw e;
+        }
+    }
+
+    private static StandRun begin(String scenario, StandMode mode, @Nullable Path replayed) throws IOException {
         Path root = newRoot();
         StandMarker marker = StandMarker.started(scenario + "/" + mode.id()).writeTo(root);
         Files.createDirectories(root.resolve("tmux"));
@@ -192,6 +202,14 @@ public final class StandRun implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
+        try {
+            shutDown();
+        } finally {
+            StandSlots.LIVE.free();
+        }
+    }
+
+    private void shutDown() throws IOException {
         jagt.close();
         host.close();
         awake.ifPresent(Process::destroy);
