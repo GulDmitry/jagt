@@ -40,7 +40,7 @@ class MutationStandTest {
                     Script::with, (first, second) -> second));
 
             RunRecord record = stand.record();
-            assertThat(MutationProgress.lacking(outcome, record.history("ABC-5"), record.misses().size(),
+            assertThat(MutationProgress.lacking(mutation.kind(), outcome, record.history("ABC-5"), record.misses().size(),
                     stand.store().awaitsTheReviewer())).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
             stand.passed();
