@@ -21,7 +21,8 @@ import java.util.function.UnaryOperator;
 /**
  * A step's facts are jagt's and come first; what the session is asked to do with them is the brief's. Every relay
  * opens the session's turn. Each answers false where no case sends the step at the task's status, or where the
- * session still holds the turn this step opened with the same facts.
+ * session still holds the turn this step opened with the same facts. The turn is recorded before the session is
+ * told, and put back where telling it fails.
  * A step the brief leaves empty sends its facts alone.
  */
 @Service
@@ -66,8 +67,8 @@ public class StepRelay {
         if (!admission.admitted()) {
             return false;
         }
-        sessions.writeTaskContext(taskId, told(step, facts));
-        turns.opened(taskId, step, Turn.digestOf(facts), admission.status());
+        recorded(taskId, step, Turn.digestOf(facts), admission.status(),
+                () -> sessions.writeTaskContext(taskId, told(step, facts)));
         return true;
     }
 
@@ -95,8 +96,8 @@ public class StepRelay {
         if (!admission.admitted()) {
             return false;
         }
-        sessions.say(taskId, told(step, facts).replaceAll("\\s*\\n\\s*", " "));
-        turns.opened(taskId, step, Turn.digestOf(facts), admission.status());
+        recorded(taskId, step, Turn.digestOf(facts), admission.status(),
+                () -> sessions.say(taskId, told(step, facts).replaceAll("\\s*\\n\\s*", " ")));
         return true;
     }
 
@@ -107,8 +108,7 @@ public class StepRelay {
         if (turns.of(taskId).holds(step, digest) || !door.roundDue(taskId, step)) {
             return false;
         }
-        sessions.relayFresh(taskId, text);
-        turns.opened(taskId, step, digest, checked);
+        recorded(taskId, step, digest, checked, () -> sessions.relayFresh(taskId, text));
         return true;
     }
 
@@ -130,8 +130,7 @@ public class StepRelay {
             return false;
         }
         if (claim == null) {
-            send.accept(told(step, facts));
-            turns.opened(taskId, step, digest, admission.status());
+            recorded(taskId, step, digest, admission.status(), () -> send.accept(told(step, facts)));
             return true;
         }
         AtomicReference<Turn> opened = new AtomicReference<>();
@@ -155,6 +154,23 @@ public class StepRelay {
             throw failure;
         }
         return true;
+    }
+
+    private void recorded(String taskId, String step, String digest, @Nullable TaskStatus checked, Runnable send) {
+        Turn before = turns.of(taskId);
+        turns.opened(taskId, step, digest, checked);
+        Turn opened = turns.of(taskId);
+        try {
+            send.run();
+        } catch (RuntimeException failure) {
+            boolean restored = turns.restored(taskId, opened, before);
+            log.atError().setMessage("relay failed").addKeyValue("task", taskId).addKeyValue("step", step)
+                    .addKeyValue("cause", failure.toString())
+                    .addKeyValue("effect", restored ? "the turn put back, the step can be pressed again"
+                            : "the task had moved on, left as it is")
+                    .setCause(failure).log();
+            throw failure;
+        }
     }
 
     private void undone(String taskId, String step, Claim claim, Turn opened, RuntimeException failure) {

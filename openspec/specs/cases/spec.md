@@ -95,6 +95,11 @@ restart repeats none.
 - **AND** a verdict that stands claims its status and turn in one write, and the session is told after it, outside any lock
 - **AND** where the session then cannot be told, the task is put back as it was read, stopped for the human with the cause
 
+#### Scenario: jagt dies while the session is being told
+- **WHEN** ABC-42's step is relayed and jagt dies after the session was told
+- **THEN** the turn and its digest were recorded before the session was told, so pressing the step again sends nothing
+- **AND** where telling the session fails and jagt lives, the turn is put back and the step can be pressed again
+
 #### Scenario: A hand-back made again with no relay between
 - **WHEN** the Master judged ABC-42's hand-back, and its session reports IN_PROGRESS then REVIEW_PENDING again
 - **THEN** that verdict answers nothing, and the Master reads the new hand-back

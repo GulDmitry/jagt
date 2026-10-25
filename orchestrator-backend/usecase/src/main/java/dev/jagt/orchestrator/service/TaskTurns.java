@@ -38,6 +38,16 @@ public class TaskTurns {
         announced(taskId, step, checked);
     }
 
+    /** Puts {@code before} back where the turn is still the {@code opened} one; a turn moved on since stays. */
+    public boolean restored(String taskId, Turn opened, Turn before) {
+        boolean[] restored = new boolean[1];
+        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> {
+            restored[0] = task.turnOrNone().sameTurnAs(opened);
+            return restored[0] ? task.withTurn(before) : task;
+        });
+        return restored[0];
+    }
+
     /** The write that opens the session's turn, for a caller that makes it part of a larger one. */
     public UnaryOperator<TaskState> opening(String step, String digest) {
         return task -> task.withTurn(task.turnOrNone().relayed(step, digest, clock.millis()));

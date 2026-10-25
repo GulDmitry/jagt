@@ -120,6 +120,43 @@ class StepRelayTest {
     }
 
     @Test
+    void sendsAStepOnceWhenJagtDiesWhileTellingTheSession(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
+        when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed")).thenThrow(new Error("jagt died"));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+        assertThatThrownBy(() -> relay.relay("ABC-42", "deploy", "ABC-42 is deployed")).isInstanceOf(Error.class);
+
+        boolean again = relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(again).isFalse();
+        verify(sessions, times(1)).writeTaskContext("ABC-42", "ABC-42 is deployed");
+    }
+
+    @Test
+    void sendsAStepAgainWhenTellingTheSessionFailed(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
+        when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
+                .thenThrow(new IllegalStateException("window closed")).thenReturn("written");
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+        assertThatThrownBy(() -> relay.relay("ABC-42", "deploy", "ABC-42 is deployed"))
+                .isInstanceOf(IllegalStateException.class);
+
+        boolean again = relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
+
+        assertThat(again).isTrue();
+    }
+
+    @Test
     void relaysAStepACaseSendsAtTheTasksStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
