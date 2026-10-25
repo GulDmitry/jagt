@@ -24,7 +24,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "YOU", Duration.ofSeconds(986), List.of(), Path.of("/stand"),
                 Ending.HELD, "", "", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED), 0, false, false, false))
+        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED), 0, false, false, false, false))
                 .hasValueSatisfying(why -> assertThat(why).contains("never reported"));
     }
 
@@ -33,7 +33,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "YOU", Duration.ofSeconds(986), List.of(), Path.of("/stand"),
                 Ending.HELD, "", "", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false)).isPresent();
+        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false, false)).isPresent();
     }
 
     @Test
@@ -41,7 +41,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "YOU", Duration.ofSeconds(120), List.of(), Path.of("/stand"),
                 Ending.HELD, "", "", "QUESTION", 0);
 
-        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false)).isEmpty();
+        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false, false)).isEmpty();
     }
 
     @Test
@@ -49,7 +49,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("DEPLOYED", "none", Duration.ofSeconds(600), List.of(), Path.of("/stand"),
                 Ending.REACHED, "", "", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false)).isEmpty();
+        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false, false)).isEmpty();
     }
 
     @Test
@@ -57,7 +57,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "YOU", Duration.ofSeconds(200), List.of(), Path.of("/stand"),
                 Ending.STOPPED, "MISS: push to main refused", "MISS", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false)).isEmpty();
+        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false, false)).isEmpty();
     }
 
     @Test
@@ -65,7 +65,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("DEPLOY_CONFLICT", "YOU", Duration.ofSeconds(200), List.of(),
                 Path.of("/stand"), Ending.STOPPED, "MISS: step lost in a race", "MISS", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.WORLD, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false))
+        assertThat(MutationProgress.lacking(Kind.WORLD, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false, false))
                 .hasValueSatisfying(why -> assertThat(why).contains("world mutation hit a miss", "step lost in a race"));
     }
 
@@ -74,7 +74,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "YOU", Duration.ofSeconds(200), List.of(),
                 Path.of("/stand"), Ending.STOPPED, "MISS: step lost", "MISS", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.TICKET, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false))
+        assertThat(MutationProgress.lacking(Kind.TICKET, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false, false))
                 .isPresent();
     }
 
@@ -83,7 +83,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("CI_FAILED", "YOU", Duration.ofSeconds(200), List.of(), Path.of("/stand"),
                 Ending.STOPPED, "ROUNDS: three rounds", "ROUNDS", "QUESTION", 0);
 
-        assertThat(MutationProgress.lacking(Kind.WORLD, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false))
+        assertThat(MutationProgress.lacking(Kind.WORLD, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false, false))
                 .isEmpty();
     }
 
@@ -92,7 +92,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "YOU", Duration.ofSeconds(986), List.of(), Path.of("/stand"),
                 Ending.STOPPED, "STALLED: no change for 15 minutes", "STALLED", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false)).isPresent();
+        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 1, false, false, false, false)).isPresent();
     }
 
     @Test
@@ -101,7 +101,7 @@ class MutationProgressTest {
                 Ending.TIMED_OUT, "", "", "PLAIN", 0);
 
         assertThat(MutationProgress.lacking(Kind.ATTACK, outcome,
-                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.CI_POLLING, AT, "BOARD")), 0, true, false, false)).isEmpty();
+                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.CI_POLLING, AT, "BOARD")), 0, true, false, false, false)).isEmpty();
     }
 
     @Test
@@ -109,7 +109,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("DEPLOYED", "none", Duration.ofSeconds(600), List.of(), Path.of("/stand"),
                 Ending.REACHED, "", "", "PLAIN", 1);
 
-        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false)).isPresent();
+        assertThat(MutationProgress.lacking(Kind.ATTACK, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false, false)).isPresent();
     }
 
     @Test
@@ -118,7 +118,7 @@ class MutationProgressTest {
                 Path.of("/stand"), Ending.HELD, "", "", "PLAIN", 0);
 
         assertThat(MutationProgress.lacking(Kind.WORLD, outcome,
-                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, true, true))
+                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, true, true, true))
                 .isEmpty();
     }
 
@@ -128,8 +128,18 @@ class MutationProgressTest {
                 Path.of("/stand"), Ending.HELD, "", "", "PLAIN", 0);
 
         assertThat(MutationProgress.lacking(Kind.WORLD, outcome,
-                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, false, true))
+                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, false, true, true))
                 .isPresent();
+    }
+
+    @Test
+    void aTaskStoppedAtADeployConflictPassesWithoutTheConflictStepWhereNoStepComes() {
+        StandOutcome outcome = new StandOutcome("DEPLOY_CONFLICT", "YOU", Duration.ofSeconds(200), List.of(),
+                Path.of("/stand"), Ending.HELD, "", "", "PLAIN", 0);
+
+        assertThat(MutationProgress.lacking(Kind.WORLD, outcome,
+                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, false, true, false))
+                .isEmpty();
     }
 
     @Test
@@ -137,7 +147,7 @@ class MutationProgressTest {
         StandOutcome outcome = new StandOutcome("IN_PROGRESS", "AGENT", Duration.ofSeconds(500), List.of(),
                 Path.of("/stand"), Ending.WAITING_ON_THE_REVIEWER, "", "", "PLAIN", 0);
 
-        assertThat(MutationProgress.lacking(Kind.WORLD, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false))
+        assertThat(MutationProgress.lacking(Kind.WORLD, outcome, List.of(BOARD_OPENED, SESSION_STARTED), 0, false, false, false, false))
                 .isEmpty();
     }
 
@@ -147,7 +157,7 @@ class MutationProgressTest {
                 Path.of("/stand"), Ending.HELD, "", "", "PLAIN", 0);
 
         assertThat(MutationProgress.lacking(Kind.WORLD, outcome,
-                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, true, false))
+                List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")), 0, false, true, false, false))
                 .hasValueSatisfying(why -> assertThat(why).contains("deploy conflict"));
     }
 }

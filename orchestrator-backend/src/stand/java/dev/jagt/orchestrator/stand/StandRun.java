@@ -132,7 +132,7 @@ public final class StandRun implements AutoCloseable {
         Timeline timeline = new Timeline(root.resolve("timeline.log"), new ContextRelays(new StandBooks(root).brief()));
         Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
         HumanStub human = new HumanStub(mode);
-        end = new RunEnd(mode, script.expectsDeployConflict());
+        end = new RunEnd(mode, script.expectsDeployConflict(), script.conflictStepComes());
         StandWorld world = new World(timeline, script.ref());
         List<WorldEvent> pending = new ArrayList<>(script.events());
         Instant start = Instant.now();

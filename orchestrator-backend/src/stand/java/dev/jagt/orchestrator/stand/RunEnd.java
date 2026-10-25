@@ -10,17 +10,20 @@ final class RunEnd {
 
     private final StandMode mode;
     private final boolean expectsDeployConflict;
+    private final boolean conflictStepComes;
 
-    RunEnd(StandMode mode, boolean expectsDeployConflict) {
+    RunEnd(StandMode mode, boolean expectsDeployConflict, boolean conflictStepComes) {
         this.mode = mode;
         this.expectsDeployConflict = expectsDeployConflict;
+        this.conflictStepComes = conflictStepComes;
     }
 
     boolean held(Timeline timeline, boolean nothingToPress) {
         if (!timeline.lastOwner().equals("YOU")) {
             return false;
         }
-        if (expectsDeployConflict && timeline.lastStatus().equals("DEPLOY_CONFLICT") && (timeline.relayed("conflict") || timeline.stalledFor(QUIET))) {
+        if (expectsDeployConflict && timeline.lastStatus().equals("DEPLOY_CONFLICT")
+                && (!conflictStepComes || timeline.relayed("conflict") || timeline.stalledFor(QUIET))) {
             return true;
         }
         return mode.humanEndsTheRun() && nothingToPress && timeline.stalledFor(QUIET) || timeline.stalledFor(HELD);

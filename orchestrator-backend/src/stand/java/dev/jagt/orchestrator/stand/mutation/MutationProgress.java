@@ -17,7 +17,8 @@ public final class MutationProgress {
 
     public static Optional<String> lacking(Mutation.Kind kind, StandOutcome outcome, List<RunRecord.Step> steps,
                                            int misses, boolean awaitsTheReviewer,
-                                           boolean conflictRelayed, boolean expectsDeployConflict) {
+                                           boolean conflictRelayed, boolean expectsDeployConflict,
+                                           boolean conflictStepComes) {
         boolean attack = kind == Mutation.Kind.ATTACK;
         if (!attack && (misses > 0 || outcome.stopTrigger().equals("MISS"))) {
             return Optional.of("a " + kind.name().toLowerCase(java.util.Locale.ROOT) + " mutation hit a miss: "
@@ -40,7 +41,7 @@ public final class MutationProgress {
         boolean reviewed = outcome.ending() == StandOutcome.Ending.WAITING_ON_THE_REVIEWER
                 || outcome.withTheCodeHost() && awaitsTheReviewer
                 && steps.stream().anyMatch(step -> step.status() == TaskStatus.CI_POLLING);
-        return deployed || conflicted && conflictRelayed || outcome.asked() || attack && misses > 0 || reviewed ? Optional.empty()
+        return deployed || conflicted && (conflictRelayed || !conflictStepComes) || outcome.asked() || attack && misses > 0 || reviewed ? Optional.empty()
                 : Optional.of("the run reached neither a deploy, a question, a recorded refusal nor a waiting reviewer");
     }
 }
