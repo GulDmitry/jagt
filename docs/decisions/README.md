@@ -104,3 +104,6 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0086 The breaker is Resilience4j's](0086-the-breaker-is-resilience4js.md)
 - [0087 The industry-standard library before our own code](0087-the-industry-standard-library-before-our-own-code.md)
 - [0088 Jobs and the heartbeat share one TaskScheduler](0088-jobs-and-the-heartbeat-run-on-one-task-scheduler.md)
+- [0089 A verdict acts only at the turn it answered](0089-a-verdict-acts-only-at-the-turn-it-answered.md)
+- [0090 A relay is recorded before it is sent](0090-a-relay-is-recorded-before-it-is-sent.md)
+- [0091 The shipped Master reads three roles](0091-the-shipped-master-reads-three-roles.md)
