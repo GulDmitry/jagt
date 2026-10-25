@@ -29,7 +29,10 @@ public final class JagtProcess implements AutoCloseable {
     }
 
     public static JagtProcess start(Path root) {
-        int port = freePort();
+        return start(root, freePort());
+    }
+
+    public static JagtProcess start(Path root, int port) {
         String java = ProcessHandle.current().info().command().orElse("java");
         ProcessBuilder builder = new ProcessBuilder(List.of(java, "-jar", JAR.toString(), "--server.port=" + port,
                 "--orchestrator.open-terminal-window=false",
