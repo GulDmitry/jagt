@@ -856,6 +856,8 @@ class AgentStatusReportsTest {
 
         assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage)
                 .containsExactly("agent line held off the card");
+        assertThat(log.list.getFirst().getKeyValuePairs()).extracting(pair -> pair.key + "=" + pair.value)
+                .contains("task=ABC-1");
     }
 
     @Test

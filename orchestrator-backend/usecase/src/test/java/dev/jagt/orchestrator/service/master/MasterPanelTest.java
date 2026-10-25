@@ -954,4 +954,31 @@ class MasterPanelTest {
         verify(reviews).review(eq("ABC-1"), asked.capture());
         assertThat(asked.getValue().worktrees()).containsExactly(Path.of("/wt/ABC-1-proj"));
     }
+
+    @Test
+    void readsNoChangedPathsWhereNoRoleScopesItselfByGlobs(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(
+                "| role | question |\n| chaplain | should it exist |\n| developer | is the code right |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
+
+        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+
+        verify(quotes, never()).paths(task);
+    }
+
+    @Test
+    void listsNoUnprovenPremiseOfARoleWhoseReadFailed() {
+        String file = MasterPanel.verdictFile("ABC-42", MasterPanel.reads(TWO, List.of(
+                new Judgement("read failed", "", List.of(), "", List.of(new Premise("tests pass", "")), ""),
+                new Judgement("", "ready", List.of(), "", List.of(), ""))), List.of());
+
+        assertThat(file).doesNotContain("unproven [chaplain]");
+    }
 }

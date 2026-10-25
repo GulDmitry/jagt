@@ -11,7 +11,13 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import org.junit.jupiter.api.BeforeEach;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -27,6 +33,7 @@ import java.util.OptionalLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -733,5 +740,82 @@ class AgentSessionsTest {
 
         assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
         verify(tmux, never()).submitTaskWindow(anyString(), anyString());
+    }
+
+    @Test
+    void saysTheNudgeWasDeliveredWhenOnlyTheLastEnterSentIt() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        String left = "\u276f " + AgentSessions.NUDGE;
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("\u276f "), Optional.of(left), Optional.of(left),
+                Optional.of(left), Optional.of("\u276f "));
+        when(agentRuntime.draft(left)).thenReturn(Optional.of(AgentSessions.NUDGE));
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE)).thenReturn(true);
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        String answer = sessions.writeTaskContext("ABC-1", "probes failed");
+
+        assertThat(answer).contains("nudged");
+        verify(tmux, times(3)).submitTaskWindow("jagt", "ABC-1");
+    }
+
+    @Test
+    void refusesALineWhenJagtWasStoppedBeforeItWasSeenToLeaveTheInputAndKeepsTheStop() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", "use the cache")).thenAnswer(call -> {
+            Thread.currentThread().interrupt();
+            return true;
+        });
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        Throwable refused = catchThrowable(() -> sessions.say("ABC-1", "use the cache"));
+        boolean stopKept = Thread.interrupted();
+
+        assertThat(refused).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("jagt stopped before the line was seen to leave the input");
+        assertThat(stopKept).isTrue();
+    }
+
+    @Test
+    void pressesEnterAgainOnTheNudgeTypedOnceTheHumanSentTheirDraftAndItStayedUnsent() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        String draft = "> where is the merge re";
+        String left = "\u276f " + AgentSessions.NUDGE;
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of(draft), Optional.of("> "), Optional.of(left),
+                Optional.of("> "));
+        when(agentRuntime.holdsDraft(draft)).thenReturn(true);
+        when(agentRuntime.draft(left)).thenReturn(Optional.of(AgentSessions.NUDGE));
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE)).thenReturn(true);
+        when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.writeTaskContext("ABC-1", "new instructions");
+
+        verify(tmux, timeout(5000)).submitTaskWindow("jagt", "ABC-1");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void logsThatAFreshSessionWasStartedBecauseTheRoundWasAlreadyHandedBack() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
+        sessionsLog.addAppender(log);
+
+        sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "agent session started fresh".equals(event.getMessage()))
+                .flatExtracting(ILoggingEvent::getKeyValuePairs).extracting(pair -> pair.key + "=" + pair.value)
+                .contains("cause=the round was already handed back");
+        sessionsLog.detachAppender(log);
     }
 }
