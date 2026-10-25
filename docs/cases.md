@@ -48,6 +48,7 @@ Families:
 | B13 | a task's history passes 50 steps → its opening step, who opened the task, is kept and held time skips the gap after it | seen 2026-10-24: opener lost past 50 steps | `TaskStateTest`, `HeldTimeTest` |
 | B11 | two worktrees are provisioned at once, by one jagt process or several → both stay trusted in the agent CLI's config, no write lost | seen 2026-10-24: flaky trust test; on the stand 9 of 24 sessions on the trust dialog | `ClaudeTrustTest` |
 | B12 | jagt restarts after a deploy → the Master presses no deploy again, the session hears "is deployed" once: both kept on the task's turn | seen 2026-10-24: NothingToDeployException and a second "is deployed" after a restart | `MasterDeployJobTest`, `DeployCheckJobTest`, `TurnsTest` |
+| B15 | jagt restarts while a running session holds the turn → it is asked once to repeat its last report; no open session turn or no running session is asked nothing | seen 2026-10-25: a report sent while jagt was down was lost and the session waited | `RestartAskJobTest` |
 | B14 | the agent CLI rewrites its config between provisioning and launch → the worktree's trust is written again before the launch line | seen 2026-10-24 on the stand: 9 of 24 sessions on the trust dialog | `ClaudeAgentRuntimeTest`, `TmuxSessionHostTest` |
 
 ## C — turn collision

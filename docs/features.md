@@ -131,10 +131,10 @@
 - **Sessions in tmux** — Each agent runs in a tmux window, and a kitty window attaches to it, on `orchestrator.agent.model` where the notes name none.
   [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
 - **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
-- **Revive after a restart** — A restart brings the sessions back where they were.
+- **Revive after a restart** — Sessions return where they were, each holding the turn asked once to repeat its last report.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
-- **Open in your editor** — Open a task's worktree or diff in the editor you configure.
-  [spec](../openspec/specs/runtime/spec.md#requirement-the-editor-is-a-launcher)
+  [spec](../openspec/specs/session-brief/spec.md#requirement-a-restart-asks-for-the-report-it-may-have-lost)
+- **Open in your editor** — Open a worktree or diff in your editor. [spec](../openspec/specs/runtime/spec.md#requirement-the-editor-is-a-launcher)
 - **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Key: `orchestrator.claude.mcpConfig`.
   [spec](../openspec/specs/runtime/spec.md#requirement-a-sessions-servers-can-be-pinned)
 

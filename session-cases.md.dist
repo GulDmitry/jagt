@@ -225,6 +225,14 @@ by: jagt
 replies: any; question, permission
 A deploy conflicts, and the session resolves it in the deploy worktree.
 
+## restarted
+
+step: restarted
+at: any but DONE
+by: jagt
+replies: any; plain, question, permission, no_changes
+jagt was restarted, so a running session holding the turn repeats its last report.
+
 ## wake
 
 step: wake

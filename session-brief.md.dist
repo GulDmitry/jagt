@@ -65,6 +65,10 @@ Work there as in your other repositories.
 
 Continue where you stopped.
 
+## restarted
+
+Repeat your last status report.
+
 ## conflict
 
 That worktree is yours until it deploys, and finishing its merge is not a `git merge` of yours. Resolve it there,
