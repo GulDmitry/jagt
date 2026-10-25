@@ -333,6 +333,7 @@ public final class StandRun implements AutoCloseable {
         @Override
         public void restart() {
             jagt.close();
+            JagtProcess.keepOutput(root);
             jagt = JagtProcess.start(root);
             marker = marker.withJagt(jagt.pid(), jagt.port()).writeTo(root);
         }

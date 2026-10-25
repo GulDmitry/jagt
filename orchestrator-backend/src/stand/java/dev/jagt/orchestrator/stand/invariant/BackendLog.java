@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand.invariant;
 
+import dev.jagt.orchestrator.stand.JagtProcess;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,7 +22,8 @@ final class BackendLog {
     }
 
     static List<RunRecord.Relay> relays(Path log) {
-        return Stream.of(log.resolveSibling(log.getFileName() + ".1"), log).filter(Files::isRegularFile)
+        return Stream.of(log.resolveSibling(log.getFileName() + JagtProcess.BEFORE_RESTART),
+                        log.resolveSibling(log.getFileName() + ".1"), log).filter(Files::isRegularFile)
                 .flatMap(StateFiles::lines).filter(line -> line.startsWith("{") && line.contains(OPENED))
                 .flatMap(line -> relay(MAPPER.readTree(line), line).stream())
                 .sorted(Comparator.comparing(RunRecord.Relay::at))

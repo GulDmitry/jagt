@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.stand;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -12,6 +14,8 @@ import java.util.Map;
 public final class JagtProcess implements AutoCloseable {
 
     private static final Path JAR = Path.of("build", "libs", "jagt-run.jar").toAbsolutePath();
+    public static final String BEFORE_RESTART = ".before-restart";
+    private static final List<String> OUTPUTS = List.of("jagt.out", "jagt-backend.log");
     private static final Duration STARTUP = Duration.ofMinutes(5);
 
     private final Process process;
@@ -42,6 +46,19 @@ public final class JagtProcess implements AutoCloseable {
             return new JagtProcess(builder.start(), port).awaitReady(root);
         } catch (IOException e) {
             throw new StandFailure("cannot launch " + JAR + " under " + root, e);
+        }
+    }
+
+    public static void keepOutput(Path root) {
+        for (String name : OUTPUTS) {
+            Path file = root.resolve(name);
+            if (Files.isRegularFile(file)) {
+                try {
+                    Files.move(file, root.resolve(name + BEFORE_RESTART), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new StandFailure("cannot keep " + file + " before the restart", e);
+                }
+            }
         }
     }
 
