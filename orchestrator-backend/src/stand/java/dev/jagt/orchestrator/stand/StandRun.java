@@ -130,17 +130,26 @@ public final class StandRun implements AutoCloseable {
                 && Instant.now().isBefore(settled)) {
             tick(timeline);
         }
-        StandOutcome.Ending ending = StandOutcome.Ending.of(timeline.lastStatus().equals(script.until()), slept != null,
-                held(timeline), timeline.stalledFor(STALL));
-        String detail = slept == null ? "" : slept.toSeconds() + "s between two polls, the host was suspended";
-        StandOutcome outcome = new StandOutcome(timeline.lastStatus(), timeline.lastOwner(),
-                Duration.between(start, Instant.now()), timeline.tail(20), root, ending, detail);
+        StandOutcome outcome = outcomeOf(script, timeline, start);
         last = outcome;
         if (outcome.suspended()) {
-            timeline.note("host suspended: " + detail);
+            timeline.note("host suspended: " + outcome.detail());
             throw new TestAbortedException("stand run " + marker.scenario() + " ended, " + outcome.describe());
         }
         return outcome;
+    }
+
+    private StandOutcome outcomeOf(Script script, Timeline timeline, Instant start) {
+        Optional<Timeline.Stop> stop = timeline.stop();
+        StandOutcome.Ending ending = StandOutcome.Ending.of(timeline.lastStatus().equals(script.until()), slept != null,
+                stop.isPresent(), held(timeline), timeline.stalledFor(STALL));
+        String detail = switch (ending) {
+            case SUSPENDED -> slept.toSeconds() + "s between two polls, the host was suspended";
+            case STOPPED -> stop.get().trigger() + ": " + stop.get().evidence();
+            default -> "";
+        };
+        return new StandOutcome(timeline.lastStatus(), timeline.lastOwner(), Duration.between(start, Instant.now()),
+                timeline.tail(20), root, ending, detail, stop.map(Timeline.Stop::trigger).orElse(""));
     }
 
     private static boolean held(Timeline timeline) {
@@ -148,7 +157,7 @@ public final class StandRun implements AutoCloseable {
     }
 
     private boolean going(Script script, Timeline timeline, Instant deadline) {
-        if (slept != null) {
+        if (slept != null || timeline.stop().isPresent()) {
             return false;
         }
         if (replayed != null) {

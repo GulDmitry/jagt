@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 
 public final class Timeline {
@@ -25,6 +27,10 @@ public final class Timeline {
     private int relaysSeen;
     private String windows = "";
     private Instant lastChange = Instant.now();
+    private @Nullable Stop stop;
+
+    public record Stop(String trigger, String evidence) {
+    }
 
     public Timeline(Path file, ContextRelays relays) {
         this.file = file;
@@ -68,7 +74,23 @@ public final class Timeline {
         return List.copyOf(lines.subList(Math.max(0, lines.size() - count), lines.size()));
     }
 
+    public Optional<Stop> stop() {
+        return Optional.ofNullable(stop);
+    }
+
+    private void stopped(String id, JsonNode found) {
+        Stop seen = new Stop(found.path("trigger").asString(), found.path("evidence").asString());
+        if (!seen.equals(stop)) {
+            stop = seen;
+            note("task " + id + " stopped, human needed: " + seen.trigger() + ": " + seen.evidence());
+        }
+    }
+
     private void record(String id, JsonNode task, Map<String, String> owners) {
+        JsonNode found = task.path("stop");
+        if (found.isObject()) {
+            stopped(id, found);
+        }
         lastStatus = task.path("status").asString();
         lastOwner = owners.getOrDefault(id, "?");
         relays.changed(id, task).ifPresent(steps -> relayed(id, steps));

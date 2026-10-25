@@ -5,11 +5,11 @@ import java.time.Duration;
 import java.util.List;
 
 public record StandOutcome(String status, String owner, Duration took, List<String> tail, Path root, Ending ending,
-                           String detail) {
+                           String detail, String stopTrigger) {
 
     public enum Ending {
         REACHED("reached"), HELD("held by the human"), STALLED("stalled"), TIMED_OUT("timed out"),
-        SUSPENDED("host suspended");
+        SUSPENDED("host suspended"), STOPPED("stopped, human needed");
 
         private final String words;
 
@@ -21,12 +21,15 @@ public record StandOutcome(String status, String owner, Duration took, List<Stri
             return words;
         }
 
-        static Ending of(boolean reached, boolean suspended, boolean held, boolean stalled) {
+        static Ending of(boolean reached, boolean suspended, boolean stopped, boolean held, boolean stalled) {
             if (reached) {
                 return REACHED;
             }
             if (suspended) {
                 return SUSPENDED;
+            }
+            if (stopped) {
+                return STOPPED;
             }
             if (held) {
                 return HELD;
@@ -41,6 +44,10 @@ public record StandOutcome(String status, String owner, Duration took, List<Stri
 
     public boolean withTheCodeHost() {
         return owner.equals("CI");
+    }
+
+    public boolean stopped() {
+        return ending == Ending.STOPPED;
     }
 
     public boolean suspended() {
