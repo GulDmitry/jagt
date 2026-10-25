@@ -673,5 +673,33 @@ class ClaudeAgentRuntimeTest {
                 Clock.systemUTC());
 
         assertThat(runtime.working("\u001b[38;5;174m\u2736 Thinking\u2026\u001b[0m (12s \u00b7 esc to interrupt)\n\u276f ")).isTrue();
+        assertThat(runtime.working("\u2736 Clauded\u2026 (3s \u00b7 thinking)\n\u276f ")).isTrue();
+    }
+
+    @Test
+    void readsATurnRunningFromItsSpinnerLine() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
+
+        assertThat(runtime.working("\n\u001b[38;5;174m\u2736\u001b[39m \u001b[38;5;174mSprouti\u001b[38;5;216mng\u2026\u001b[38;5;174m \u001b[39m\n\u276f ")).isTrue();
+        assertThat(runtime.working("\u001b[38;5;174m\u2733\u001b[39m \u001b[38;5;174mSymbioting\u2026 \u001b[38;5;246m(5s \u00b7 \u001b[38;5;249mthinking\u001b[38;5;246m)\u001b[39m\n\u276f ")).isTrue();
+    }
+
+    @Test
+    void readsATurnIdleWhenOnlyItsFinishedLineOrADraftRemains() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.systemUTC());
+
+        assertThat(runtime.working("\u273b Brewed for 12s\n\u276f ")).isFalse();
+        assertThat(runtime.working("\u23fa Checking\u2026\n\u276f ")).isFalse();
+        assertThat(runtime.working("\u276f Sprouting\u2026")).isFalse();
+        assertThat(runtime.working("\u276f re-read the file and continue\u2026")).isFalse();
+        assertThat(runtime.working("Sprouting\u2026 is a word\n\u276f ")).isFalse();
     }
 }

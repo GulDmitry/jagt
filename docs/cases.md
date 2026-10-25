@@ -113,6 +113,7 @@ Families:
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | I1 | a session starts with pinned servers → the CLI's variadic `--mcp-config` never swallows the prompt | seen 2026-10-24 on the stand | `ClaudeAgentRuntimeTest` |
+| I2 | a turn runs on a CLI that no longer prints the interrupt hint → its spinner line (glyph, word, ellipsis) still reads as working; a finished line or a draft never does | found 2026-10-25 on a captured Claude 2.1.308 screen | `ClaudeAgentRuntimeTest` |
 
 ## L — the tests themselves
 | id | the case, one line | defects | pinned by |
