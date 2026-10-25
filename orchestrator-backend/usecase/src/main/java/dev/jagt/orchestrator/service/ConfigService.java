@@ -144,10 +144,16 @@ public class ConfigService implements LoopBreaker.Current {
         @With
         public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds,
                                   @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan,
-                                  @Nullable VisualizeConfig visualize, @Nullable DiagnoseConfig diagnose) {
+                                  @Nullable VisualizeConfig visualize, @Nullable DiagnoseConfig diagnose,
+                                  @Nullable String model) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null, null, null, null, null);
+                return new AgentConfig(null, null, null, null, null, null, null);
+            }
+
+            /** Blank: the agent CLI's own default. */
+            public String modelOrInherited() {
+                return model == null ? "" : model.strip();
             }
 
             public AutoplanConfig autoplanOrDefault() {

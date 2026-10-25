@@ -128,7 +128,7 @@
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
 
-- **Sessions in tmux** — Each agent runs in a tmux window, and a kitty window attaches to it.
+- **Sessions in tmux** — Each agent runs in a tmux window, and a kitty window attaches to it, on `orchestrator.agent.model` where the notes name none.
   [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
 - **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
 - **Revive after a restart** — A restart brings the sessions back where they were.

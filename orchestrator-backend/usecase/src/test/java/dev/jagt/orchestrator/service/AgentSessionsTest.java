@@ -371,6 +371,51 @@ class AgentSessionsTest {
     }
 
     @Test
+    void startsTheFreshSessionOnTheConfiguredModelWhenTheNotesNameNone() throws Exception {
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  agent:\n    model: sonnet\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.choosesModel()).thenReturn(true);
+        when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+        when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.openTaskTab("ABC-1", "auto");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
+    }
+
+    @Test
+    void startsTheFreshSessionOnTheNotesModelOverTheConfiguredOne() throws Exception {
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  agent:\n    model: sonnet\n");
+        Files.writeString(root.resolve("task_notes.md"), "next-model: opus\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.choosesModel()).thenReturn(true);
+        when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+        when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.openTaskTab("ABC-1", "auto");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "opus");
+    }
+
+    @Test
+    void startsTheFreshSessionOnTheCliDefaultWhenNeitherNotesNorConfigNameAModel() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.choosesModel()).thenReturn(true);
+        when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+        when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.openTaskTab("ABC-1", "auto");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    }
+
+    @Test
     void startsTheFreshSessionOnTheDefaultModelWhenTheRuntimeCannotChoose() throws Exception {
         Files.writeString(root.resolve("task_notes.md"), "next-model: sonnet\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());

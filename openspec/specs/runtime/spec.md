@@ -49,12 +49,18 @@ So SHALL a relay past the cache lifetime (`AgentRuntime.pastContinuing`), read o
 
 ### Requirement: A fresh start reads the notes
 A fresh start SHALL read `task_notes.md`, rewritten every hand-back and capped (`TaskNotes`). It SHALL run the model
-its `next-model: <name>` line names, else the CLI default. A name outside `AgentRuntime.models()` SHALL refuse the
-hand-back as `validation`; a runtime that cannot choose ignores it.
+its `next-model: <name>` line names, else `orchestrator.agent.model`, else the CLI default. A name outside
+`AgentRuntime.models()` SHALL refuse the hand-back as `validation`, or startup; a runtime that cannot choose ignores both.
 
-#### Scenario: The notes name an unknown model
+#### Scenario: The notes or the config name a model
 - **WHEN** a hand-back follows `next-model: gpt`
 - **THEN** it is refused as `validation`, naming the allowed models
+- **WHEN** `agent.model` is `gpt`
+- **THEN** startup is refused, naming `gpt` and the allowed models
+- **WHEN** a fresh start finds no `next-model:` line and `agent.model` is `sonnet`
+- **THEN** the session launches with `--model sonnet`
+- **WHEN** the notes say `next-model: opus` and `agent.model` is `sonnet`
+- **THEN** the session launches with `--model opus`
 
 ### Requirement: A detached launch gets its own session
 A launch SHALL leave jagt's process group, which Ctrl-C reaches and `ProcessBuilder.start()` never leaves:
@@ -176,15 +182,9 @@ jagt SHALL open a worktree and a diff only through `editorCommand` and the optio
 IDE service folders present in the base repository SHALL be copied into a fresh worktree.
 A file the worktree already holds SHALL stay as it is.
 
-#### Scenario: IntelliJ run configurations
-- **WHEN** the base repository holds `.idea/runConfigurations`
-- **THEN** a fresh worktree holds the same run configurations
-
-#### Scenario: VS Code launch file
-- **WHEN** the base repository holds `.vscode/launch.json`
-- **THEN** a fresh worktree holds the same file
-
-#### Scenario: Neither IDE
+#### Scenario: IDE service folders
+- **WHEN** the base repository holds `.idea/runConfigurations` or `.vscode/launch.json`
+- **THEN** a fresh worktree holds the same run configurations or file
 - **WHEN** the base repository holds no IDE service folder
 - **THEN** nothing is copied
 

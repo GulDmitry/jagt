@@ -58,7 +58,8 @@ orchestrator:
     # cli: codex          # claude | codex (stub, replay: test runs); read at startup, unlike the two below. A Codex worktree runs
     #                     # against its own CODEX_HOME, so your ~/.codex servers are not there.
     outputStyle: ""       # a Claude output style to start every sub-agent with
-    probeSeconds: 600     # how often every running session's liveness is probed
+    model: ""             # the model a session starts on when its notes name none; blank inherits your CLI default
+    probeSeconds: 600    # how often every running session's liveness is probed
     # sandbox:            # a session's shell writes only in its task's worktrees, /tmp, the user's temp dir and the tool caches;
     #                     # every host stays reachable. A write beyond asks you in the session's window
     #   enabled: true     # false: it writes wherever the agent CLI's own rules let it. Linux needs bwrap and socat

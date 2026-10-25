@@ -39,6 +39,7 @@ public final class StandConfig {
                   viewer: { tmuxSession: "%s", viewMode: shared, keepViewer: false }
                   agent:
                     cli: %s
+                    model: sonnet
                     autoplan: { enabled: false }
                     visualize: { enabled: false }
                     diagnose: { enabled: false }
