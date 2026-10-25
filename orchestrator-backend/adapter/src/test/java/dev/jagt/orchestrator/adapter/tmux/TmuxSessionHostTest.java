@@ -6,12 +6,19 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.SessionHost.WindowState;
 import dev.jagt.orchestrator.port.TerminalDriver;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -552,5 +559,77 @@ class TmuxSessionHostTest {
         ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).noneMatch(command -> command.contains("new-window"));
+    }
+
+    @Test
+    void submitsNothingWhereTheTaskHasNoWindow() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        assertThat(host.submitTaskWindow("jagt", "ABC-1")).isFalse();
+    }
+
+    @Test
+    void readsAnEmptyTailWhereTheAgentExitedPrintingNothing() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@1 100 1700000000 ABC-1\n", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("pgrep")))).thenReturn(new Processes.Result(1, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("capture-pane")))).thenReturn(new Processes.Result(0,
+                "[jagt] agent exited \u2014 window closes in 15s (Ctrl+C to close now)\n", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        assertThat(host.exitTail("jagt", "ABC-1")).contains("");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsWhereTheTaskWindowKeepsItsAutomaticName() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("automatic-rename")))).thenReturn(new Processes.Result(1, "", "no such window"));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger hostLog = (Logger) LoggerFactory.getLogger(TmuxSessionHost.class);
+        hostLog.addAppender(log);
+
+        host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "tmux window rename failed".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
+        hostLog.detachAppender(log);
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsWhereTheSessionOptionsWereNotApplied() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("escape-time")))).thenReturn(new Processes.Result(1, "", "unknown option"));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger hostLog = (Logger) LoggerFactory.getLogger(TmuxSessionHost.class);
+        hostLog.addAppender(log);
+
+        host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "tmux session options failed".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
+        hostLog.detachAppender(log);
     }
 }

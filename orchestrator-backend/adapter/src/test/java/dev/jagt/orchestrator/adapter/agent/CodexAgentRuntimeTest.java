@@ -235,4 +235,15 @@ class CodexAgentRuntimeTest {
     void keepsAConfiguredCommand() {
         assertThat(new CodexProperties("/opt/bin/codex").command()).isEqualTo("/opt/bin/codex");
     }
+
+    @Test
+    void namesItselfCodexWhereTheBoardSaysWhichAgentRuns() {
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
+                new McpEndpoint("http://127.0.0.1:8290/mcp"));
+
+        assertThat(runtime.displayName()).isEqualTo("Codex");
+    }
 }

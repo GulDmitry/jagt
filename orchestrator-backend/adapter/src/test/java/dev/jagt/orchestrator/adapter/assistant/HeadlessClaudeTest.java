@@ -20,6 +20,8 @@ import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.mockito.ArgumentCaptor;
@@ -596,5 +598,42 @@ class HeadlessClaudeTest {
         assertThat(answer.facts()).isEmpty();
         assertThat(answer.failure()).isEqualTo("did not return: Command timed out after PT2M");
         assertThat(answer.usage()).isEqualTo(TokenUsage.NONE);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true,false,true", "false,true,true", "false,false,false"})
+    void saysARetriedReadWasRefusedWhenEitherAttemptWasRefusedAtTheGate(boolean first, boolean second, boolean expected) {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"result\":\"The request is open.\"}", ""))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        ReadOnlyTools reads = mock(ReadOnlyTools.class);
+        when(reads.refused(any())).thenReturn(first, second);
+
+        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42",
+                AssistantCallKind.TICKET_READ);
+
+        assertThat(answer.refused()).isEqualTo(expected);
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsWhereACallReportedNoUsageSoItsCostIsKnownToBeUnaccounted() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":false}}", ""));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger assistantLog = (Logger) LoggerFactory.getLogger(HeadlessClaude.class);
+        assistantLog.addAppender(log);
+
+        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+                mock(ReadOnlyTools.class)).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42",
+                AssistantCallKind.TICKET_READ);
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "assistant call reported no usage".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
+        assistantLog.detachAppender(log);
     }
 }

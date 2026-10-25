@@ -4,7 +4,14 @@ import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class GitWorktreesTest {
@@ -1134,5 +1142,95 @@ class GitWorktreesTest {
         Path common = git.gitCommonDir(repo);
 
         assertThat(common).isEqualTo(repo.toRealPath().resolve(".git"));
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsWhereGitCouldNotRemoveTheWorktreeItWasAskedTo(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "init"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger worktreesLog = (Logger) LoggerFactory.getLogger(GitWorktrees.class);
+        worktreesLog.addAppender(log);
+        Path notAWorktree = Files.createDirectories(dir.resolve("leftover"));
+
+        git.removeWorktree(repo, notAWorktree, null);
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "git worktree remove failed".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
+        worktreesLog.detachAppender(log);
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsWhereGitCouldNotDeleteTheBranchItWasAskedTo(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "init"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger worktreesLog = (Logger) LoggerFactory.getLogger(GitWorktrees.class);
+        worktreesLog.addAppender(log);
+        Path notAWorktree = Files.createDirectories(dir.resolve("leftover"));
+
+        git.removeWorktree(repo, notAWorktree, "ABC-404");
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "git branch delete failed".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
+        worktreesLog.detachAppender(log);
+    }
+
+    @Test
+    void stillFindsTheWorktreeSomeoneElseCutOnTheTaskBranchAfterDeletingItsDirectoryByHand(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "init"));
+        runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-1",
+                dir.resolve("by-hand").toString(), "main"));
+        Path where = dir.toRealPath().resolve("by-hand");
+        Files.delete(where.resolve(".git"));
+        Files.delete(where);
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        Optional<Path> found = git.worktreeOf(repo, "ABC-1");
+
+        assertThat(found).contains(where);
+    }
+
+    @Test
+    void failsWithItsOwnCauseAloneWhenRecreatingABranchNobodyHadCheckedOut(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "branch", "ABC-1"));
+        Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        Throwable failure = catchThrowable(() -> git.createWorktree(repo, notADirectory.resolve("wt"), "ABC-1",
+                "origin/main", BranchStrategy.RECREATE));
+
+        assertThat(failure).isInstanceOf(RuntimeException.class).hasNoSuppressedExceptions();
     }
 }
