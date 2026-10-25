@@ -27,8 +27,6 @@ public final class StandRun implements AutoCloseable {
     private static final List<String> KICKED = List.of("verify", "master-review", "master-answer", "master-repo",
             "autoreview", "master-deploy", "deploy-check", "deploy-conflict");
     private static final Duration STALL = Duration.ofMinutes(15);
-    private static final Duration HELD = Duration.ofMinutes(10);
-    private static final int SETTLE_POLLS = 3;
 
     private final Path root;
     private final StandMode mode;
@@ -43,7 +41,8 @@ public final class StandRun implements AutoCloseable {
     private Instant polled = Instant.now();
     private @Nullable Duration slept;
     private @Nullable StandOutcome last;
-    private int resting;
+    private boolean resting;
+    private final RunEnd end;
 
     private StandRun(Path root, StandMarker marker, StandMode mode, StandProject project, StandHost host, JagtProcess jagt,
                      @Nullable Path replayed) {
@@ -55,6 +54,7 @@ public final class StandRun implements AutoCloseable {
         this.project = project;
         this.host = host;
         this.jagt = jagt;
+        this.end = new RunEnd(mode);
         this.awake = StandShell.holdAwake(root);
     }
 
@@ -136,7 +136,7 @@ public final class StandRun implements AutoCloseable {
             pipelines.passDue(timeline);
             pending.removeIf(event -> event.fire(world));
             human.take(board, jagt.board(), timeline);
-            resting = timeline.lastOwner().equals("YOU") && human.nothingToPress(board) ? resting + 1 : 0;
+            resting = human.nothingToPress(board);
         }
         Instant settled = Instant.now().plus(script.settle());
         while (replayed == null && slept == null && timeline.lastStatus().equals(script.until())
@@ -167,7 +167,7 @@ public final class StandRun implements AutoCloseable {
     }
 
     private boolean held(Timeline timeline) {
-        return timeline.lastOwner().equals("YOU") && (resting >= SETTLE_POLLS || timeline.stalledFor(HELD));
+        return end.held(timeline, resting);
     }
 
     private boolean going(Script script, Timeline timeline, Instant deadline) {
@@ -196,6 +196,7 @@ public final class StandRun implements AutoCloseable {
         timeline.record(state, board);
         snapshots.take(state);
         timeline.windows(StandShell.windows(root));
+        timeline.masterReads(BackendSignals.read(root.resolve("jagt-backend.log")).masterReads());
         return board;
     }
 

@@ -19,6 +19,16 @@ class TimelineTest {
             {"tasks":[{"id":"ABC-42","owner":"YOU"}]}""";
 
     @Test
+    void aMasterReadIsNotedOnceAndBreaksTheQuiet(@TempDir Path dir) throws Exception {
+        Timeline timeline = new Timeline(dir.resolve("timeline.log"), mock(ContextRelays.class));
+
+        timeline.masterReads(1);
+        timeline.masterReads(1);
+
+        assertThat(Files.readAllLines(dir.resolve("timeline.log"))).singleElement().asString().endsWith("stand master read");
+    }
+
+    @Test
     void aStoppedTaskIsReadWithItsTriggerAndEvidenceAndNotedOnce(@TempDir Path dir) throws Exception {
         Timeline timeline = new Timeline(dir.resolve("timeline.log"), mock(ContextRelays.class));
         JsonNode state = JsonMapper.builder().build().readTree(STOPPED);

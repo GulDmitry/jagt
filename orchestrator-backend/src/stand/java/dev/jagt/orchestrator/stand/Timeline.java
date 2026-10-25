@@ -26,6 +26,7 @@ public final class Timeline {
     private String lastOwner = "none";
     private String lastReport = "";
     private int relaysSeen;
+    private int masterReadsSeen;
     private String windows = "";
     private Instant lastChange = Instant.now();
     private @Nullable Stop stop;
@@ -42,6 +43,13 @@ public final class Timeline {
         Map<String, String> owners = new HashMap<>();
         board.path("tasks").forEach(task -> owners.put(task.path("id").asString(), task.path("owner").asString()));
         state.path("tasks").properties().forEach(task -> record(task.getKey(), task.getValue(), owners));
+    }
+
+    public void masterReads(int total) {
+        if (total > masterReadsSeen) {
+            note("master read");
+        }
+        masterReadsSeen = total;
     }
 
     public void windows(String names) {
