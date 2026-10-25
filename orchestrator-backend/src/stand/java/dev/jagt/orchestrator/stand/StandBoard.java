@@ -40,6 +40,14 @@ public final class StandBoard {
         return post("/api/tasks/actions/" + verb + "?task=" + task, "{}", READING);
     }
 
+    public void run(String job) {
+        try {
+            post("/api/commands/run?about=" + job, "{}", READING);
+        } catch (StandFailure running) {
+            return;
+        }
+    }
+
     public JsonNode say(String task, String line) {
         return post("/api/tasks/say?task=" + task, mapper.createObjectNode().put("line", line).toString(), READING);
     }

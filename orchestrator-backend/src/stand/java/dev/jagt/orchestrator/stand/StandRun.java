@@ -23,6 +23,9 @@ public final class StandRun implements AutoCloseable {
     private static final Duration POLL = Duration.ofSeconds(5);
     private static final Duration REPLAY_POLL = Duration.ofSeconds(1);
     private static final Duration PIPELINE = Duration.ofSeconds(20);
+    private static final Duration REPLAY_PIPELINE = Duration.ofSeconds(1);
+    private static final List<String> REPLAY_KICKED = List.of("verify", "master-review", "master-answer", "master-repo",
+            "autoreview", "master-deploy", "deploy-check", "deploy-conflict");
     private static final Duration STALL = Duration.ofMinutes(15);
     private static final Duration HELD = Duration.ofMinutes(10);
 
@@ -101,7 +104,7 @@ public final class StandRun implements AutoCloseable {
 
     public StandOutcome drive(Script script) {
         Timeline timeline = new Timeline(root.resolve("timeline.log"), new ContextRelays(new StandBooks(root).brief()));
-        Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
+        Pipelines pipelines = new Pipelines(host.store(), replayed == null ? PIPELINE : REPLAY_PIPELINE);
         HumanStub human = new HumanStub(mode);
         StandWorld world = new World(timeline, script.ref());
         List<WorldEvent> pending = new ArrayList<>(script.events());
@@ -136,6 +139,9 @@ public final class StandRun implements AutoCloseable {
 
     private JsonNode tick(Timeline timeline) {
         JagtProcess.pause(replayed == null ? POLL : REPLAY_POLL);
+        if (replayed != null) {
+            REPLAY_KICKED.forEach(jagt.board()::run);
+        }
         JsonNode board = jagt.board().tasks();
         JsonNode state = jagt.board().state();
         timeline.record(state, board);
