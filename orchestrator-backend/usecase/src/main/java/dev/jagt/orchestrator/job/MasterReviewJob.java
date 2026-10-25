@@ -66,7 +66,7 @@ public class MasterReviewJob implements Job {
             Optional<MasterReview.Verdict> verdict = reviews.of(task);
             read.put(taskId, verdict);
             verdict.filter(written -> written.answers(task))
-                    .ifPresent(written -> verdicts.act(taskId, task, written, config));
+                    .ifPresent(written -> act(taskId, task, written, config));
         });
         boolean questionsAnswered = config.may(MasterRight.ANSWER);
         // Asked LAST: a round holds this thread until every role answered, and verdicts already written go first.
@@ -75,6 +75,18 @@ public class MasterReviewJob implements Job {
                         .filter(written -> written.answers(entry.getValue())).isPresent(), questionsAnswered))
                 .findFirst()
                 .ifPresent(entry -> ask(entry.getKey(), entry.getValue(), config));
+    }
+
+    private void act(String taskId, TaskState task, MasterReview.Verdict written,
+                     ConfigService.ConfigFile.MasterConfig config) {
+        if (stateService.whileStanding(taskId, task, () -> verdicts.act(taskId, task, written, config)).isEmpty()) {
+            log.atInfo().setMessage("master verdict dropped").addKeyValue("task", taskId)
+                    .addKeyValue("turn", task.turnOrNone().id())
+                    .addKeyValue("turnNow", stateService.task(taskId).map(now -> now.turnOrNone().id()).orElse(-1L))
+                    .addKeyValue("cause", "the task moved on while the Master read")
+                    .addKeyValue("effect", "nothing relayed, the status left as it is")
+                    .log();
+        }
     }
 
     /** A question on a round the Master answers is the answer job's; a plan's question is read with the plan. */

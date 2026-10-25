@@ -112,6 +112,29 @@ class MasterReviewJobTest {
     }
 
     @Test
+    void dropsAVerdictWhenTheHumanShipsWhileTheMasterReads(@TempDir Path root) {
+        StateService state = stateIn(root);
+        TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
+                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        state.putTask("ABC-1", back);
+        new MasterReview().write(back, new MasterReview.Review(5, "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        master("judge");
+        MasterReview humanShipsWhileItReads = new MasterReview() {
+            @Override
+            public java.util.Optional<Verdict> of(TaskState task) {
+                state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
+                        .withTurn(new Turn(Turn.Holder.SESSION, "ship", 6, "d", 6_000, Map.of(), List.of())));
+                return super.of(task);
+            }
+        };
+
+        new MasterReviewJob(state, config, panel, humanShipsWhileItReads, verdicts).run();
+
+        verify(verdicts, never()).act(anyString(), any(), any(), any());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.SHIPPING);
+    }
+
+    @Test
     void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack(@TempDir Path root) {
         StateService state = stateIn(root);
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()

@@ -88,6 +88,11 @@ restart repeats none.
 - **WHEN** the Master is reading ABC-42's question and its session reports in the meantime
 - **THEN** the Master's answer is dropped and nothing sets ABC-42 `IN_PROGRESS`
 
+#### Scenario: A human presses a verb while the Master reads
+- **WHEN** the Master is reading ABC-42's hand-back and you press `ship`
+- **THEN** its verdict, ready, not ready or a question, is dropped and logged with both turns, whatever it says
+- **AND** ABC-42 stays `SHIPPING` and its session is relayed nothing; the check and the verdict's writes share one lock
+
 #### Scenario: A hand-back made again with no relay between
 - **WHEN** the Master judged ABC-42's hand-back, and its session reports IN_PROGRESS then REVIEW_PENDING again
 - **THEN** that verdict answers nothing, and the Master reads the new hand-back
