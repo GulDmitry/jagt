@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.replay;
 
+import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -16,16 +17,24 @@ import java.util.Optional;
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "replay")
 public class RecordedVerdicts {
 
+    private static final String ASKED = "The session working it stopped to ask:";
+
     private final Recording recording;
     private final List<RecordingLine.Judged> left;
+    private final List<RecordingLine.Answered> answers;
 
     public RecordedVerdicts(Recording recording) {
         this.recording = recording;
         this.left = new ArrayList<>(recording.lines().stream().filter(RecordingLine.Judged.class::isInstance)
                 .map(RecordingLine.Judged.class::cast).toList());
+        this.answers = new ArrayList<>(recording.lines().stream().filter(RecordingLine.Answered.class::isInstance)
+                .map(RecordingLine.Answered.class::cast).toList());
     }
 
     public synchronized Optional<Judgement> answer(String prompt) {
+        if (prompt.contains(ASKED)) {
+            return decision();
+        }
         if (left.isEmpty()) {
             recording.diverge("", "master", "the Master read a round the recording holds no verdict for");
             return Optional.empty();
@@ -36,5 +45,14 @@ public class RecordedVerdicts {
                 .findFirst().orElse(current.getFirst());
         left.remove(taken);
         return Optional.of(taken.judgement());
+    }
+
+    private Optional<Judgement> decision() {
+        if (answers.isEmpty()) {
+            recording.diverge("", "master", "the Master answered a question the recording holds no decision for");
+            return Optional.empty();
+        }
+        Finding decided = new Finding("", answers.removeFirst().decision(), "", "", "", "");
+        return Optional.of(new Judgement("", "ready", List.of(decided), "", List.of(), ""));
     }
 }

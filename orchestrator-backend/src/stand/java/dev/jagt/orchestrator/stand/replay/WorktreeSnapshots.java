@@ -21,7 +21,7 @@ public final class WorktreeSnapshots {
     static final String FILE = "snapshots.jsonl";
     static final String REVIEW = ".jagt/master-review.json";
     static final List<String> SESSION_FILES = List.of(Artifact.PLAN.fileName(), Artifact.VISUAL.fileName(),
-            Artifact.NOTES.fileName(), Artifact.REPLIES.fileName());
+            Artifact.NOTES.fileName(), Artifact.REPLIES.fileName(), Artifact.DECISIONS.fileName());
     private static final ObjectMapper JSON = JsonMapper.builder().build();
 
     private final Path file;

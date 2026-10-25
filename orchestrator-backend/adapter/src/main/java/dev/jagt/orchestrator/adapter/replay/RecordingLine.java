@@ -16,7 +16,8 @@ import java.util.Map;
         @JsonSubTypes.Type(value = RecordingLine.Wrote.class, name = "tree"),
         @JsonSubTypes.Type(value = RecordingLine.Pushed.class, name = "push"),
         @JsonSubTypes.Type(value = RecordingLine.Judged.class, name = "verdict"),
-        @JsonSubTypes.Type(value = RecordingLine.Read.class, name = "read")})
+        @JsonSubTypes.Type(value = RecordingLine.Read.class, name = "read"),
+        @JsonSubTypes.Type(value = RecordingLine.Answered.class, name = "answer")})
 public sealed interface RecordingLine {
 
     /** Turn 0 is the session's launch, which no relay opens. */
@@ -49,5 +50,9 @@ public sealed interface RecordingLine {
 
     /** A headless read's answer as the model gave it, by its call kind. */
     record Read(String kind, String ref, JsonNode answer) implements RecordingLine {
+    }
+
+    /** The decision the Master gave a session's question, flattened to one line. */
+    record Answered(String question, String decision) implements RecordingLine {
     }
 }

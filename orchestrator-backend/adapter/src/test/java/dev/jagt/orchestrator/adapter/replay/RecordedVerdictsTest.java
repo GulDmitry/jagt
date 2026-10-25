@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.replay;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,6 +24,30 @@ class RecordedVerdictsTest {
         Judgement read = verdicts.answer("<role>You are the QA of jagt's unattended reviewer</role>").orElseThrow();
 
         assertThat(read.verdict()).isEqualTo("ready");
+    }
+
+    @Test
+    void answersAQuestionWithTheRecordedDecisionAsItsFinding(@TempDir Path root) throws Exception {
+        Path file = root.resolve("recording.jsonl");
+        Files.writeString(file, """
+                {"type":"answer","question":"Keep the empty argument?","decision":"Greet World too."}
+                """);
+        RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
+
+        Judgement read = verdicts.answer("<role>You stand in for the human on task ABC-1.</role>\nThe session working it stopped to ask:\n<question>\nKeep it?\n</question>").orElseThrow();
+
+        assertThat(read.findings()).extracting(RoundReviewer.Finding::issue).containsExactly("Greet World too.");
+    }
+
+    @Test
+    void endsTheReplayWhenTheMasterAnswersPastTheRecording(@TempDir Path root) throws Exception {
+        Path file = root.resolve("recording.jsonl");
+        Files.writeString(file, "\n");
+        Recording recording = new Recording(file.toString());
+
+        new RecordedVerdicts(recording).answer("The session working it stopped to ask:\n<question>\nKeep it?\n</question>");
+
+        assertThat(recording.diverged()).isTrue();
     }
 
     @Test

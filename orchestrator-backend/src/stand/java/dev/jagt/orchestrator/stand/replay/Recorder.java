@@ -6,12 +6,14 @@ import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.stand.StandFailure;
 import dev.jagt.orchestrator.stand.StandShell;
 import dev.jagt.orchestrator.stand.invariant.RunRecord;
+import dev.jagt.orchestrator.task.Artifact;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,8 @@ public final class Recorder {
     public static final String FILE = "recording.jsonl";
     private static final ObjectMapper JSON = JsonMapper.builder().build();
     private static final String STATUS = "update_agent_status";
+    private static final String ASKED = "- asked: ";
+    private static final String DECIDED = " — decided: ";
 
     private record Timed(Instant at, RecordingLine line) {
     }
@@ -52,7 +56,8 @@ public final class Recorder {
             moveOf(event).ifPresent(line -> timed.add(new Timed(Instant.parse(event.field("@timestamp")), line)));
         }
         List<JsonNode> snapshots = snapshots(root.resolve(WorktreeSnapshots.FILE));
-        snapshots.stream().filter(snapshot -> snapshot.has("content")).forEach(snapshot -> wrote(timed, snapshot, poll));
+        snapshots.stream().filter(snapshot -> snapshot.has("content")).filter(snapshot -> !decisions(snapshot))
+                .forEach(snapshot -> wrote(timed, snapshot, poll));
         List<RecordingLine> lines = new ArrayList<>(timed.stream().map(Timed::line).toList());
         lines.stream().filter(RecordingLine.Move.class::isInstance).map(line -> ((RecordingLine.Move) line).task()).distinct()
                 .toList().forEach(task -> pushed(root.resolve("origin.git"), task, lines));
@@ -61,7 +66,25 @@ public final class Recorder {
                 .filter(snapshot -> !snapshot.path("review").path("reads").equals(
                         read.put(snapshot.path("task").asString(), snapshot.path("review").path("reads"))))
                 .forEach(snapshot -> judged(snapshot, lines));
+        answered(snapshots, lines);
         return lines;
+    }
+
+    private static boolean decisions(JsonNode snapshot) {
+        return snapshot.path("file").asString("").equals(Artifact.DECISIONS.fileName());
+    }
+
+    private static void answered(List<JsonNode> snapshots, List<RecordingLine> lines) {
+        Map<String, Integer> seen = new HashMap<>();
+        snapshots.stream().filter(Recorder::decisions).forEach(snapshot -> {
+            List<String> written = snapshot.path("content").asString().lines().toList();
+            written.subList(seen.getOrDefault(snapshot.path("task").asString(), 0), written.size()).stream()
+                    .filter(line -> line.startsWith(ASKED)).forEach(line -> {
+                        String[] parts = line.substring(ASKED.length()).split(DECIDED, 2);
+                        lines.add(new RecordingLine.Answered(parts[0], parts.length > 1 ? parts[1] : ""));
+                    });
+            seen.put(snapshot.path("task").asString(), written.size());
+        });
     }
 
     private static Optional<RecordingLine> moveOf(BackendEvents.Event event) {
