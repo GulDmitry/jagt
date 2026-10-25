@@ -3,12 +3,16 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.AssistantHealth;
 import dev.jagt.orchestrator.port.AssistantUnavailable;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig.SlidingWindowType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.time.Duration;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Stops headless reads after consecutive provider failures, then lets one probe through once the cool-down has
@@ -18,80 +22,88 @@ import java.util.Optional;
 @Slf4j
 class AssistantBreaker implements AssistantHealth {
 
-    private enum Phase {
-        CLOSED,
-        OPEN,
-        /** One read is in flight to learn whether the provider is back. */
-        PROBING
+    private static final class ProviderFailure extends RuntimeException {
+
+        ProviderFailure(String why) {
+            super(why, null, false, false);
+        }
     }
 
-    private final int threshold;
-    private final Duration cooldown;
+    private final CircuitBreaker breaker;
     private final Clock clock;
-    private Phase phase = Phase.CLOSED;
-    private int failures;
-    private long retryAt;
-    private String cause = "";
+    private final int threshold;
+    private final long cooldownMillis;
+    private volatile String cause = "";
+    private volatile long retryAt;
 
     AssistantBreaker(AssistantProperties assistant, Clock clock) {
-        this.threshold = assistant.breakerFailures();
-        this.cooldown = assistant.breakerCooldown();
         this.clock = clock;
+        this.threshold = assistant.breakerFailures();
+        this.cooldownMillis = assistant.breakerCooldown().toMillis();
+        this.breaker = CircuitBreaker.of("assistant", CircuitBreakerConfig.custom()
+                .clock(clock)
+                .slidingWindow(threshold, threshold, SlidingWindowType.COUNT_BASED)
+                .failureRateThreshold(100)
+                .waitDurationInOpenState(assistant.breakerCooldown())
+                .permittedNumberOfCallsInHalfOpenState(1)
+                .build());
+        breaker.getEventPublisher().onStateTransition(event -> transitioned(
+                event.getStateTransition().getFromState(), event.getStateTransition().getToState()));
     }
 
-    synchronized void admit() {
-        if (phase == Phase.CLOSED) {
-            return;
+    void admit() {
+        if (!breaker.tryAcquirePermission()) {
+            throw new AssistantUnavailable(cause);
         }
-        if (phase == Phase.OPEN && clock.millis() >= retryAt) {
-            phase = Phase.PROBING;
-            log.atInfo().setMessage("assistant probe started")
-                    .addKeyValue("cause", cause)
-                    .log();
-            return;
-        }
-        throw new AssistantUnavailable(cause);
     }
 
-    synchronized void succeeded() {
-        if (phase != Phase.CLOSED) {
-            log.atInfo().setMessage("assistant breaker closed")
-                    .addKeyValue("previous", phase.name().toLowerCase(java.util.Locale.ROOT))
-                    .addKeyValue("cause", cause)
-                    .log();
-        }
-        phase = Phase.CLOSED;
-        failures = 0;
-        cause = "";
+    void succeeded() {
+        breaker.onSuccess(0, TimeUnit.NANOSECONDS);
     }
 
-    synchronized void failed(String why) {
-        Phase before = phase;
+    void failed(String why) {
         cause = why;
-        failures++;
-        if (before != Phase.PROBING && failures < threshold) {
-            return;
+        breaker.onError(0, TimeUnit.NANOSECONDS, new ProviderFailure(why));
+    }
+
+    /** An outcome that says nothing about the provider frees a probe slot and leaves the streak alone. */
+    void inconclusive() {
+        breaker.releasePermission();
+    }
+
+    @Override
+    public Optional<Outage> outage() {
+        return breaker.getState() == CircuitBreaker.State.CLOSED
+                ? Optional.empty() : Optional.of(new Outage(cause, retryAt));
+    }
+
+    private void transitioned(CircuitBreaker.State from, CircuitBreaker.State to) {
+        switch (to) {
+            case OPEN -> opened(from);
+            case HALF_OPEN -> log.atInfo().setMessage("assistant probe started")
+                    .addKeyValue("cause", cause)
+                    .log();
+            case CLOSED -> closed(from);
+            default -> { }
         }
-        phase = Phase.OPEN;
-        retryAt = clock.millis() + cooldown.toMillis();
-        log.atWarn().setMessage(before == Phase.PROBING ? "assistant breaker reopened" : "assistant breaker opened")
-                .addKeyValue("cause", why)
-                .addKeyValue("attempt", failures)
+    }
+
+    private void opened(CircuitBreaker.State from) {
+        retryAt = clock.instant().toEpochMilli() + cooldownMillis;
+        log.atWarn().setMessage(from == CircuitBreaker.State.HALF_OPEN
+                        ? "assistant breaker reopened" : "assistant breaker opened")
+                .addKeyValue("cause", cause)
                 .addKeyValue("limit", threshold)
                 .addKeyValue("effect", "headless reads refused until the next probe")
                 .addKeyValue("fix", "orchestrator.assistant.breakerCooldown")
                 .log();
     }
 
-    /** An outcome that says nothing about the provider frees a probe slot and leaves the streak alone. */
-    synchronized void inconclusive() {
-        if (phase == Phase.PROBING) {
-            phase = Phase.OPEN;
-        }
-    }
-
-    @Override
-    public synchronized Optional<Outage> outage() {
-        return phase == Phase.CLOSED ? Optional.empty() : Optional.of(new Outage(cause, retryAt));
+    private void closed(CircuitBreaker.State from) {
+        log.atInfo().setMessage("assistant breaker closed")
+                .addKeyValue("previous", from.name().toLowerCase(Locale.ROOT))
+                .addKeyValue("cause", cause)
+                .log();
+        cause = "";
     }
 }

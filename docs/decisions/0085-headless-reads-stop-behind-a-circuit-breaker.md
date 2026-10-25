@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-25.
+Accepted 2026-10-25. Mechanism superseded by [0086](0086-the-breaker-is-resilience4js.md).
 
 ## Context
 

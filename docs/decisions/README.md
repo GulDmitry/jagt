@@ -101,3 +101,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0083 A replay answers the Master, a run leaves its verdict](0083-a-replay-answers-the-masters-answers-and-a-run-leaves-its-verdict.md)
 - [0084 Code intelligence stays a jdtls per worktree](0084-code-intelligence-stays-a-jdtls-per-worktree.md)
 - [0085 Headless reads stop behind a circuit breaker](0085-headless-reads-stop-behind-a-circuit-breaker.md)
+- [0086 The breaker is Resilience4j's](0086-the-breaker-is-resilience4js.md)

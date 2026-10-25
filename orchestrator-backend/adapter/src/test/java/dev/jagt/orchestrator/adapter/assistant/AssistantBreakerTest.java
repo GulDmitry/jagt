@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -31,7 +32,7 @@ class AssistantBreakerTest {
 
     @Test
     void refusesWithTheLastProviderErrorAfterThresholdFailuresInARow() {
-        when(clock.millis()).thenReturn(1_000L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(1_000L));
         breaker.failed("502 bad gateway");
         breaker.failed("502 bad gateway");
         breaker.failed("529 overloaded");
@@ -54,22 +55,22 @@ class AssistantBreakerTest {
 
     @Test
     void refusesUntilTheCooldownHasPassed() {
-        when(clock.millis()).thenReturn(0L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
-        when(clock.millis()).thenReturn(299_999L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(299_999L));
 
         assertThatThrownBy(breaker::admit).isInstanceOf(AssistantUnavailable.class);
     }
 
     @Test
     void closesWhenTheProbeSucceeds() {
-        when(clock.millis()).thenReturn(0L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
-        when(clock.millis()).thenReturn(300_000L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
 
         breaker.admit();
         breaker.succeeded();
@@ -80,25 +81,25 @@ class AssistantBreakerTest {
 
     @Test
     void reopensForAnotherCooldownWhenTheProbeFails() {
-        when(clock.millis()).thenReturn(0L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
-        when(clock.millis()).thenReturn(300_000L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
         breaker.admit();
 
         breaker.failed("503 unavailable");
 
-        assertThat(breaker.outage()).contains(new AssistantHealth.Outage("503 unavailable", 600_000L));
+        assertThat(breaker.outage()).contains(new AssistantHealth.Outage("503 unavailable", 600_001L));
     }
 
     @Test
     void refusesASecondReadWhileTheProbeIsInFlight() {
-        when(clock.millis()).thenReturn(0L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
-        when(clock.millis()).thenReturn(300_000L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
         breaker.admit();
 
         assertThatThrownBy(breaker::admit).isInstanceOf(AssistantUnavailable.class);
@@ -106,11 +107,11 @@ class AssistantBreakerTest {
 
     @Test
     void anInconclusiveProbeLetsTheNextReadProbeAgain() {
-        when(clock.millis()).thenReturn(0L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
         breaker.failed("529 overloaded");
-        when(clock.millis()).thenReturn(300_000L);
+        when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
         breaker.admit();
 
         breaker.inconclusive();
