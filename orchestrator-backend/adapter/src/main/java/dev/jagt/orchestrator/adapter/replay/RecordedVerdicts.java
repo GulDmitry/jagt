@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.replay;
 
+import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -17,8 +18,6 @@ import java.util.Optional;
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "replay")
 public class RecordedVerdicts {
 
-    private static final String ASKED = "The session working it stopped to ask:";
-
     private final Recording recording;
     private final List<RecordingLine.Judged> left;
     private final List<RecordingLine.Answered> answers;
@@ -32,7 +31,7 @@ public class RecordedVerdicts {
     }
 
     public synchronized Optional<Judgement> answer(String prompt) {
-        if (prompt.contains(ASKED)) {
+        if (prompt.contains(RoundReviewer.QUESTION_LEAD)) {
             return decision();
         }
         if (left.isEmpty()) {

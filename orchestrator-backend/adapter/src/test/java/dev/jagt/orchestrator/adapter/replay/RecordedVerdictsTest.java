@@ -34,7 +34,7 @@ class RecordedVerdictsTest {
                 """);
         RecordedVerdicts verdicts = new RecordedVerdicts(new Recording(file.toString()));
 
-        Judgement read = verdicts.answer("<role>You stand in for the human on task ABC-1.</role>\nThe session working it stopped to ask:\n<question>\nKeep it?\n</question>").orElseThrow();
+        Judgement read = verdicts.answer("<role>You stand in for the human on task ABC-1.</role>\n" + RoundReviewer.QUESTION_LEAD + "\n<question>\nKeep it?\n</question>").orElseThrow();
 
         assertThat(read.findings()).extracting(RoundReviewer.Finding::issue).containsExactly("Greet World too.");
     }
@@ -45,7 +45,7 @@ class RecordedVerdictsTest {
         Files.writeString(file, "\n");
         Recording recording = new Recording(file.toString());
 
-        new RecordedVerdicts(recording).answer("The session working it stopped to ask:\n<question>\nKeep it?\n</question>");
+        new RecordedVerdicts(recording).answer(RoundReviewer.QUESTION_LEAD + "\n<question>\nKeep it?\n</question>");
 
         assertThat(recording.diverged()).isTrue();
     }

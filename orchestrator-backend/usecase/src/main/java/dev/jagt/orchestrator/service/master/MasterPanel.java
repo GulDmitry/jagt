@@ -229,8 +229,8 @@ public class MasterPanel {
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
                                String decided, List<String> said, boolean stuck, boolean tracker) {
-        return GOAL + "<role>You stand in for the human on task " + taskId + ".</role>\nThe session working it"
-                + " stopped to ask:\n"
+        return GOAL + "<role>You stand in for the human on task " + taskId + ".</role>\n"
+                + RoundReviewer.QUESTION_LEAD + "\n"
                 + "<question>\n" + question + "\n</question>\n"
                 + "The brief you judge by:\n<brief>\n" + brief + "\n</brief>\n"
                 + "The brief the session works to, its %s filled per task:\n<author_brief>\n" + authorBrief
