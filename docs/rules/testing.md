@@ -19,12 +19,13 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 ### Every test pins a business case
 
 - A test pins what a spec scenario, a ticket or a contract promises: a serialised answer's shape is one.
-- Code that only forwards or holds — a getter, a controller calling a service — gets no test of its own.
-  The business case passing through it covers it.
+- Code that only forwards or holds — a getter, a controller calling a service — gets no test; the business case through it covers it.
 - Editing a test's assertion or expected value, or deleting it, needs a reason in the commit message.
 - The reason: its scenario changed in the same commit, or it asserted what nothing promised; never a red run, the code's to fix.
 - **A move is pinned by where it lands**: a report a unit sends is asserted once as the status it lands on,
   through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
+- **A reader of a vendor CLI's screen is pinned on a screen captured from the installed version**, never a hand-written
+  string: `working` kept "esc to interrupt" after Claude 2.1.308 dropped it (`docs/cases.md` I2).
 - Why: an edited test is the cheapest wrong fix, and a bug comes back through it
   ([Approved Scenarios](https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/)).
 
@@ -78,8 +79,7 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 - `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped
   `master-brief.md.dist`. Run it when either changes; a defect it passed: `master-lesson`.
 - Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority); `masterEval` also asserts what the read gate heard.
-- **A change to `session-brief.md.dist` runs `promptEval` and `masterEval` before its commit**; `masterEval` reads its
-  `context` step, and `SessionBriefContractTest` holds each relayed step naming a worktree or a git verb to what it grants.
+- `masterEval` reads the brief's `context` step; `SessionBriefContractTest` holds each relayed step naming a worktree or a git verb to what it grants.
 - Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,
   the deploy check.
 - `standTest`: real sessions on a local stand, held to invariants (`-Pmodelfree`: no tokens); leaves nothing but `build/stand/failed/`.
