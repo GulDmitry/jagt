@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,11 +62,12 @@ public class StepRelay {
 
     /** Written whatever the session already holds, as a hand-off that must land again. */
     public boolean write(String taskId, String step, String facts) {
-        if (!door.opens(taskId, step)) {
+        CaseDoor.Admission admission = door.opens(taskId, step);
+        if (!admission.admitted()) {
             return false;
         }
         sessions.writeTaskContext(taskId, told(step, facts));
-        turns.opened(taskId, step, Turn.digestOf(facts));
+        turns.opened(taskId, step, Turn.digestOf(facts), admission.status());
         return true;
     }
 
@@ -89,23 +91,24 @@ public class StepRelay {
 
     /** Typed into the session's window, which takes one line. */
     public boolean say(String taskId, String step, String facts) {
-        if (!door.opens(taskId, step)) {
+        CaseDoor.Admission admission = door.opens(taskId, step);
+        if (!admission.admitted()) {
             return false;
         }
         sessions.say(taskId, told(step, facts).replaceAll("\\s*\\n\\s*", " "));
-        turns.opened(taskId, step, Turn.digestOf(facts));
+        turns.opened(taskId, step, Turn.digestOf(facts), admission.status());
         return true;
     }
 
-    /** A round of text already holding its steps' sections, sent afresh; every step has passed the door. */
-    public boolean relayComposed(String taskId, List<String> steps, String text) {
+    /** A round of text already holding its steps' sections, sent afresh; every step has passed the door at {@code checked}. */
+    public boolean relayComposed(String taskId, List<String> steps, String text, @Nullable TaskStatus checked) {
         String step = String.join("+", steps);
         String digest = Turn.digestOf(text);
         if (turns.of(taskId).holds(step, digest) || !door.roundDue(taskId, step)) {
             return false;
         }
         sessions.relayFresh(taskId, text);
-        turns.opened(taskId, step, digest);
+        turns.opened(taskId, step, digest, checked);
         return true;
     }
 
@@ -118,7 +121,8 @@ public class StepRelay {
         if (claim != null) {
             requireStanding(taskId, step, claim);
         }
-        if (!door.opens(taskId, step)) {
+        CaseDoor.Admission admission = door.opens(taskId, step);
+        if (!admission.admitted()) {
             return false;
         }
         String digest = Turn.digestOf(facts);
@@ -127,7 +131,7 @@ public class StepRelay {
         }
         if (claim == null) {
             send.accept(told(step, facts));
-            turns.opened(taskId, step, digest);
+            turns.opened(taskId, step, digest, admission.status());
             return true;
         }
         AtomicReference<Turn> opened = new AtomicReference<>();
@@ -143,7 +147,7 @@ public class StepRelay {
         if (claimed == FlowReports.Claimed.GONE) {
             return false;
         }
-        turns.announced(taskId, step);
+        turns.announced(taskId, step, admission.status());
         try {
             send.accept(told(step, facts));
         } catch (RuntimeException failure) {

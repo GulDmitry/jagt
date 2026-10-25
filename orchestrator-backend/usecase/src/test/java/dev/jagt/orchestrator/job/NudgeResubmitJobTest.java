@@ -29,7 +29,7 @@ class NudgeResubmitJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        turns.opened("ABC-42", "round", "digest");
+        turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
         AgentSessions sessions = mock(AgentSessions.class);
         when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
 
@@ -44,7 +44,7 @@ class NudgeResubmitJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        turns.opened("ABC-42", "round", "digest");
+        turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
         AgentSessions sessions = mock(AgentSessions.class);
         when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
         NudgeResubmitJob job = new NudgeResubmitJob(state, sessions, turns);

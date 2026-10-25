@@ -36,12 +36,29 @@ class TaskTurnsTest {
         log.start();
         ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
 
-        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
 
         assertThat(List.copyOf(log.list)).filteredOn(event -> "turn opened".equals(event.getMessage()))
                 .singleElement().extracting(ILoggingEvent::getKeyValuePairs).asInstanceOf(InstanceOfAssertFactories.LIST)
                 .contains(new KeyValuePair("task", "ABC-42"), new KeyValuePair("step", "deploy"),
                         new KeyValuePair("turn", 1L));
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void logsTheStatusTheDoorAdmittedTheStepAtNotTheOneTheTaskHoldsByNow(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
+
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "turn opened".equals(event.getMessage()))
+                .singleElement().extracting(ILoggingEvent::getKeyValuePairs).asInstanceOf(InstanceOfAssertFactories.LIST)
+                .contains(new KeyValuePair("status", TaskStatus.REVIEWED));
     }
 
     @Test

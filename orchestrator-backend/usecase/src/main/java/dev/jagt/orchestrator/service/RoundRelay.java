@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,15 +22,20 @@ public class RoundRelay {
 
     public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said) {
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
-        if (!RoundBrief.steps(r, said).stream().allMatch(step -> door.opens(taskId, step))) {
-            return new SweepResult(SweepResult.Kind.REFUSED, read + ", checks " + said
-                    + " — no case sends this round at the task's status, so nothing was relayed; see misses.jsonl");
+        TaskStatus checked = null;
+        for (String step : RoundBrief.steps(r, said)) {
+            CaseDoor.Admission admission = door.opens(taskId, step);
+            if (!admission.admitted()) {
+                return new SweepResult(SweepResult.Kind.REFUSED, read + ", checks " + said
+                        + " — no case sends this round at the task's status, so nothing was relayed; see misses.jsonl");
+            }
+            checked = admission.status();
         }
         String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
         return switch (stops.round(taskId, r, brief)) {
             case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);
-            case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, said), brief)
+            case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, said), brief, checked)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)
                     : stops.stopped(taskId) ? stopped(read, said) : unchanged(read, said);
         };

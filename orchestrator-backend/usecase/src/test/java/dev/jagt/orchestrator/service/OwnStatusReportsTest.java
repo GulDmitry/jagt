@@ -122,7 +122,7 @@ class OwnStatusReportsTest {
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
         AgentStatusReports statusReports = mock(AgentStatusReports.class);
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage broke = new AgentStatusMessage("IN_PROGRESS", "the page 500s", null, null, Map.of());
@@ -145,7 +145,7 @@ class OwnStatusReportsTest {
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
         AgentStatusReports statusReports = mock(AgentStatusReports.class);
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
@@ -168,7 +168,7 @@ class OwnStatusReportsTest {
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
         AgentStatusReports statusReports = mock(AgentStatusReports.class);
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());
@@ -193,7 +193,7 @@ class OwnStatusReportsTest {
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2");
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
         AgentStatusReports statusReports = mock(AgentStatusReports.class);
         when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "fixed", null, null, Map.of());

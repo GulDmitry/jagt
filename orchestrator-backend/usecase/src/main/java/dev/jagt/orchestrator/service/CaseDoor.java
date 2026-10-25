@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -32,15 +33,20 @@ public class CaseDoor {
     private final MissLog misses;
     private final TaskStops stops;
 
+    /** The door's answer, with the status it read to give it: unknown for a task jagt does not hold. */
+    public record Admission(boolean admitted, @Nullable TaskStatus status) {
+    }
+
     /** A task jagt does not hold is left to the relay, which refuses it by name. */
-    public boolean opens(String taskId, String step) {
+    public Admission opens(String taskId, String step) {
         String id = stateService.canonicalTaskId(taskId);
         Optional<TaskStatus> status = stateService.task(id).map(TaskState::status);
         if (status.isEmpty()) {
-            return true;
+            return new Admission(true, null);
         }
-        return cases.book().sends(step, status.get(), CaseBook.By.of(OriginContext.current()))
+        boolean admitted = cases.book().sends(step, status.get(), CaseBook.By.of(OriginContext.current()))
                 || refused(id, step, status.get());
+        return new Admission(admitted, status.get());
     }
 
     /** Only the Master's press is held to a case, and a verb only a human presses is refused it outright. */

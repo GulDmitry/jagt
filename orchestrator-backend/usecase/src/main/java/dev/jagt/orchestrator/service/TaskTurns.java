@@ -3,9 +3,11 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -31,9 +33,9 @@ public class TaskTurns {
         return stateService.task(stateService.canonicalTaskId(taskId)).map(TaskState::turnOrNone).orElse(Turn.none());
     }
 
-    public void opened(String taskId, String step, String digest) {
+    public void opened(String taskId, String step, String digest, @Nullable TaskStatus checked) {
         stateService.updateTask(stateService.canonicalTaskId(taskId), opening(step, digest));
-        announced(taskId, step);
+        announced(taskId, step, checked);
     }
 
     /** The write that opens the session's turn, for a caller that makes it part of a larger one. */
@@ -41,9 +43,11 @@ public class TaskTurns {
         return task -> task.withTurn(task.turnOrNone().relayed(step, digest, clock.millis()));
     }
 
-    public void announced(String taskId, String step) {
+    /** {@code checked} is the status the door admitted the step at, not the one the task holds by now. */
+    public void announced(String taskId, String step, @Nullable TaskStatus checked) {
         String id = stateService.canonicalTaskId(taskId);
         log.atInfo().setMessage("turn opened").addKeyValue("task", id).addKeyValue("step", step)
+                .addKeyValue("status", checked == null ? "unknown" : checked)
                 .addKeyValue("turn", of(id).id()).log();
     }
 

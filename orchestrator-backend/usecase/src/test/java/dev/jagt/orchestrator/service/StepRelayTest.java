@@ -42,7 +42,7 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
@@ -57,7 +57,7 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
@@ -76,7 +76,7 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "wake")).thenReturn(true);
+        when(door.opens("ABC-42", "wake")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
@@ -92,7 +92,7 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
@@ -109,7 +109,7 @@ class StepRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
         relay.relay("ABC-42", "deploy", "ABC-42 is deployed");
 
@@ -253,11 +253,11 @@ class StepRelayTest {
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
         List<String> steps = List.of("round-threads", "round-threads-done");
-        relay.relayComposed("ABC-42", steps, "mia: Why is this loop not bounded?");
-        relay.relayComposed("ABC-42", steps, "mia: Why is this map not sorted?");
-        relay.relayComposed("ABC-42", steps, "mia: Why is this name so long?");
+        relay.relayComposed("ABC-42", steps, "mia: Why is this loop not bounded?", TaskStatus.REVIEWED);
+        relay.relayComposed("ABC-42", steps, "mia: Why is this map not sorted?", TaskStatus.REVIEWED);
+        relay.relayComposed("ABC-42", steps, "mia: Why is this name so long?", TaskStatus.REVIEWED);
 
-        boolean told = relay.relayComposed("ABC-42", steps, "mia: Why is this test so short?");
+        boolean told = relay.relayComposed("ABC-42", steps, "mia: Why is this test so short?", TaskStatus.REVIEWED);
 
         assertThat(told).isFalse();
         verify(sessions, times(3)).relayFresh(anyString(), anyString());
@@ -313,7 +313,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
@@ -331,7 +331,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(false, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
@@ -349,7 +349,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
@@ -367,7 +367,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(false, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
@@ -385,7 +385,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
@@ -403,7 +403,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(false, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
@@ -421,7 +421,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(true);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
@@ -439,7 +439,7 @@ class StepRelayTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         CaseDoor door = mock(CaseDoor.class);
-        when(door.opens("ABC-42", "deploy")).thenReturn(false);
+        when(door.opens("ABC-42", "deploy")).thenReturn(new CaseDoor.Admission(false, TaskStatus.REVIEWED));
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door, new TaskTurns(state, Clock.systemUTC()));
 
