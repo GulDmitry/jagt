@@ -273,7 +273,8 @@ class ProjectSetupTest {
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ConfigService config = spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)));
         doAnswer(call -> {
-            Files.createDirectory(root.resolve("jagt.yml.tmp"));
+            Files.delete(configFile);
+            Files.createDirectories(configFile.resolve("child"));
             throw new IllegalStateException("bad yaml");
         }).when(config).project("billing");
         ProjectSetup setup = new ProjectSetup(config, paths, git);

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.AtomicFiles;
+import java.util.stream.Collectors;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -13,7 +15,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Year;
@@ -65,9 +66,8 @@ public class UsageLedger {
             }
             fold(periods, today.toString(), kind, usage, usage.costUsd());
             periods.values().forEach(spend -> kept.add(mapper.writeValueAsString(written(spend))));
-            Path written = Files.createTempFile(file.getParent(), "usage-by-day", ".tmp");
-            Files.write(written, kept, StandardCharsets.UTF_8);
-            Files.move(written, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            AtomicFiles.write(file, kept.stream().map(line -> line + "\n").collect(Collectors.joining())
+                    .getBytes(StandardCharsets.UTF_8));
         } catch (IOException | RuntimeException e) {
             log.atWarn().setMessage("usage not recorded").addKeyValue("kind", kind)
                     .addKeyValue("cause", e.toString()).addKeyValue("effect", "day total short").log();

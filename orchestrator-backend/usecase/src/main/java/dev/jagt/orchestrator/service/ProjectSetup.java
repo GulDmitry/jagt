@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
 import dev.jagt.orchestrator.port.Problem;
@@ -15,7 +16,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,32 +158,23 @@ public class ProjectSetup {
 
     private String write(Entry entry) {
         Path file = real(paths.configFile());
-        Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try {
             String before = Files.readString(file, StandardCharsets.UTF_8);
-            Files.move(Files.writeString(temp, inserted(before, entry), StandardCharsets.UTF_8), file,
-                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            AtomicFiles.write(file, inserted(before, entry).getBytes(StandardCharsets.UTF_8));
             try {
                 configService.project(entry.key());
             } catch (RuntimeException unreadable) {
-                putBack(file, temp, before, unreadable);
+                putBack(file, before, unreadable);
             }
             return "Added " + entry.key() + " to jagt.yml";
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot change " + file + ": " + e.getMessage(), e);
-        } finally {
-            try {
-                Files.deleteIfExists(temp);
-            } catch (IOException ignored) {
-                // A left-over temporary file is overwritten by the next add.
-            }
         }
     }
 
-    private static void putBack(Path file, Path temp, String before, RuntimeException unreadable) {
+    private static void putBack(Path file, String before, RuntimeException unreadable) {
         try {
-            Files.move(Files.writeString(temp, before, StandardCharsets.UTF_8), file,
-                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            AtomicFiles.write(file, before.getBytes(StandardCharsets.UTF_8));
         } catch (IOException cannotRestore) {
             throw new IllegalStateException(file.getFileName() + " did not read after the change and could"
                     + " not be put back; fix it by hand: " + cannotRestore.getMessage(), cannotRestore);

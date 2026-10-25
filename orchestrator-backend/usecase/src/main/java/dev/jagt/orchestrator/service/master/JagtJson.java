@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.task.AtomicFiles;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
@@ -7,7 +8,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 /** A record jagt keeps for itself under a worktree's `.jagt/`, out of git. */
@@ -41,9 +41,7 @@ final class JagtJson {
     static boolean write(Path file, Object value) {
         try {
             Files.createDirectories(file.getParent());
-            Path temp = Files.createTempFile(file.getParent(), file.getFileName().toString(), ".tmp");
-            MAPPER.writeValue(temp.toFile(), value);
-            Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            AtomicFiles.write(file, MAPPER.writeValueAsBytes(value));
             return true;
         } catch (IOException | JacksonException unwritable) {
             log.atWarn().setMessage("record unwritten").addKeyValue("file", file)

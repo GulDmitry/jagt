@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.task.AtomicFiles;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -13,7 +15,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.BinaryOperator;
 
@@ -125,7 +126,6 @@ final class ClaudeTrust {
     }
 
     private static synchronized void rewrite(Path configFile, Path worktree, BinaryOperator<String> edit, String effect) {
-        Path staged = null;
         try (FileChannel channel = FileChannel.open(lockFile(configFile), StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE);
              FileLock held = channel.lock()) {
@@ -134,9 +134,7 @@ final class ClaudeTrust {
             if (updated == null) {
                 return;
             }
-            staged = Files.createTempFile(configFile.getParent(), ".claude", ".json");
-            Files.writeString(staged, updated);
-            Files.move(staged, configFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            AtomicFiles.write(configFile, updated.getBytes(StandardCharsets.UTF_8));
         } catch (IOException | JacksonException e) {
             log.atWarn().setMessage("trust config write failed")
                     .addKeyValue("file", configFile)
@@ -144,8 +142,6 @@ final class ClaudeTrust {
                     .addKeyValue("cause", e.toString())
                     .addKeyValue("effect", effect)
                     .log();
-        } finally {
-            discard(staged);
         }
     }
 
@@ -168,20 +164,6 @@ final class ClaudeTrust {
             } catch (IOException e) {
                 return worktree.toString();
             }
-        }
-    }
-
-    private static void discard(@Nullable Path staged) {
-        if (staged == null) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(staged);
-        } catch (IOException e) {
-            log.atWarn().setMessage("staged config left behind")
-                    .addKeyValue("file", staged)
-                    .addKeyValue("cause", e.toString())
-                    .log();
         }
     }
 }

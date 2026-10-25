@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.AtomicFiles;
+import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.ActionOrigin;
@@ -335,33 +337,14 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     private void writeUnlocked(StateFile state) {
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(state);
         backUpCurrentVersion();
-        Path temp = null;
         try {
-            temp = Files.createTempFile(stateFile.getParent(), "state", ".json.tmp");
-            Files.writeString(temp, json);
-            Files.move(temp, stateFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            AtomicFiles.write(stateFile, json.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             cache(null, null);
             throw new UncheckedIOException("Cannot write state file " + stateFile, e);
-        } finally {
-            discard(temp);
         }
         // Own writes never rely on the version key: two within one filesystem timestamp tick are the same by it.
         cache(state, FileVersion.of(stateFile));
-    }
-
-    private static void discard(@Nullable Path temp) {
-        if (temp == null) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(temp);
-        } catch (IOException e) {
-            log.atWarn().setMessage("staged state left behind")
-                    .addKeyValue("file", temp)
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        }
     }
 
     /** Best-effort: a failed backup must not stop the write — the live file matters more than its copy. */

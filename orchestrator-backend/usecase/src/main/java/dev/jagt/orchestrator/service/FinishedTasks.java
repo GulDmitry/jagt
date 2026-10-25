@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.FinishedTask;
@@ -14,12 +15,12 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
@@ -129,13 +130,8 @@ public class FinishedTasks {
                 StandardOpenOption.CREATE_NEW)), StandardCharsets.UTF_8)) {
             out.write(String.join("\n", lines.subList(0, lines.size() - kept)) + "\n");
         }
-        Path temp = Files.createTempFile(file.getParent(), "finished", ".tmp");
-        try {
-            Files.write(temp, lines.subList(lines.size() - kept, lines.size()), StandardCharsets.UTF_8);
-            Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        } finally {
-            Files.deleteIfExists(temp);
-        }
+        AtomicFiles.write(file, lines.subList(lines.size() - kept, lines.size()).stream().map(line -> line + "\n")
+                .collect(Collectors.joining()).getBytes(StandardCharsets.UTF_8));
         log.atInfo().setMessage("finished log packed").addKeyValue("archive", archive)
                 .addKeyValue("packed", lines.size() - kept).addKeyValue("kept", kept).log();
     }
