@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class VerifyJob implements Job {
 
+    private static final String FAILED = "verify:failed";
+
     private final StateService stateService;
     private final Verification verification;
     private final AgentStatusReports statusReports;
@@ -54,14 +56,20 @@ public class VerifyJob implements Job {
     @Override
     public void run() {
         stateService.tasks().entrySet().stream()
-                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()) && !entry.getValue().stopped())
+                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()) && !entry.getValue().stopped()
+                        && !entry.getValue().report().asks())
                 .forEach(entry -> verify(entry.getKey(), entry.getValue()));
     }
 
     private void verify(String taskId, TaskState task) {
+        Optional<String> key = verification.key(task);
+        if (key.filter(failing -> failing.equals(task.turnOrNone().mark(FAILED))).isPresent()) {
+            statusReports.verified(true, "the tree is unchanged since its verification failed; not run again", taskId);
+            return;
+        }
         Optional<String> failure = verification.failure(task);
         if (failure.isPresent()) {
-            returned(taskId, "verify", failure.get(), "verification failed; relayed");
+            returned(taskId, key, "verify", failure.get(), "verification failed; relayed");
             return;
         }
         List<Probe> probed = verification.probed(taskId, task);
@@ -73,14 +81,16 @@ public class VerifyJob implements Job {
             statusReports.verified(true, "verified", taskId);
             return;
         }
-        returned(taskId, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
+        returned(taskId, key, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
                 "acceptance probe failed; relayed");
     }
 
     /** A round stopped at its ceiling stays at VERIFYING, verified anew once the human lifts the stop. */
-    private void returned(String taskId, String step, String facts, String said) {
-        if (!relay.relayRound(taskId, step, facts)
-                && stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
+    private void returned(String taskId, Optional<String> key, String step, String facts, String said) {
+        if (relay.relayRound(taskId, step, facts)) {
+            key.ifPresent(failing -> stateService.updateTask(taskId,
+                    current -> current.withTurn(current.turnOrNone().withMark(FAILED, failing))));
+        } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
             return;
         }
         statusReports.verified(false, said, taskId);

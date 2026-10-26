@@ -136,7 +136,7 @@ public class FlowReports {
                 refused.set(why.get());
                 return task.refused(Guard.STATUS_REPORT);
             }
-            TaskStatus now = FlowRules.reported(task.status(), status, verificationOwed.test(task));
+            TaskStatus now = FlowRules.reported(task.status(), status, !means.asks() && verificationOwed.test(task));
             landed.set(new Landed(task.status(), now));
             TaskState said = FlowRules.holdsItsLine(task.status()) && !means.asks()
                     ? held(task, now, clock.millis())

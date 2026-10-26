@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.Probe;
@@ -10,10 +7,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -32,16 +26,12 @@ import static org.mockito.Mockito.when;
 class VerificationTest {
 
     @Test
-    void runsNothingForAProjectTheConfigurationNoLongerNames(@TempDir Path root) throws IOException {
-        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
-                orchestrator:
-                  projects: {}
-                """);
-        ConfigService config = new ConfigService(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withConfigFile(configFile.toString())), mock(AgentRuntime.class), mock(ActStops.class));
+    void runsNothingForAProjectTheConfigurationNoLongerNames() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
         Processes processes = mock(Processes.class);
 
-        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))
+        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .failure(TaskState.builder("gone", "/wt", TaskStatus.VERIFYING).build());
 
         assertThat(failure).isEmpty();
@@ -58,7 +48,7 @@ class VerificationTest {
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
                 .thenReturn(new Processes.Result(1, "out", errors));
 
-        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))
+        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
         assertThat(failure).hasValueSatisfying(text -> assertThat(text)
@@ -75,7 +65,7 @@ class VerificationTest {
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
                 .thenReturn(new Processes.Result(1, "", errors));
 
-        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))
+        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
         assertThat(failure).hasValueSatisfying(text -> assertThat(text).contains("exited 1\ne1\ne2\n"));
@@ -90,7 +80,7 @@ class VerificationTest {
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
                 .thenReturn(new Processes.Result(2, "2 tests failed", ""));
 
-        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))
+        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
         assertThat(failure).contains("[proj] `npm test` exited 2\n2 tests failed");
@@ -105,7 +95,7 @@ class VerificationTest {
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
                 .thenReturn(new Processes.Result(0, "ok", ""));
 
-        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))
+        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
         assertThat(failure).isEmpty();
@@ -120,7 +110,7 @@ class VerificationTest {
         Processes processes = mock(Processes.class);
         when(processes.run(any(), any(), eq(List.of("npm", "test")))).thenReturn(new Processes.Result(1, "", "red"));
 
-        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290))
+        Optional<String> failure = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .failure(TaskState.builder(List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("web", "/wt-web")),
                         TaskStatus.VERIFYING).build());
 
@@ -131,7 +121,7 @@ class VerificationTest {
     void runsNoProbeWhereThePlanDeclaredNone() {
         Processes processes = mock(Processes.class);
 
-        List<Probe> probed = new Verification(mock(ConfigService.class), processes, new AcceptanceProbing(processes, 8290))
+        List<Probe> probed = new Verification(mock(ConfigService.class), processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .probed("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
         assertThat(probed).isEmpty();
@@ -143,7 +133,7 @@ class VerificationTest {
         Processes processes = mock(Processes.class);
         when(processes.run(any(), any(), anyMap(), eq(List.of("./scripts/check")))).thenReturn(new Processes.Result(0, "", ""));
 
-        List<Probe> probed = new Verification(mock(ConfigService.class), processes, new AcceptanceProbing(processes, 8290))
+        List<Probe> probed = new Verification(mock(ConfigService.class), processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .probed("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
                         .probes(List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/check"), 0))).build());
 

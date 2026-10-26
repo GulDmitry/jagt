@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.Verification;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -25,6 +26,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,6 +61,53 @@ class VerifyJobTest {
         verify(relay).relayRound(eq("ABC-1"), eq("verify"), contains("BUILD FAILED"));
         verify(statusReports).verified(false, "verification failed; relayed", "ABC-1");
         verify(statusReports, never()).verified(eq(true), any(), any());
+    }
+
+    @Test
+    void runsNoProbeForAQuestionAtVerifying(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
+                .report(AgentReport.QUESTION).build());
+
+        new VerifyJob(state, verification, statusReports, relay).run();
+
+        verify(verification, never()).failure(any());
+        verify(relay, never()).relayRound(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void doesNotVerifyOrRelayATreeAgainAfterItsVerificationFailed(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        when(verification.key(any())).thenReturn(Optional.of("tree-1"));
+        when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
+        when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString())).thenReturn(true);
+        new VerifyJob(state, verification, statusReports, relay).run();
+
+        new VerifyJob(state, verification, statusReports, relay).run();
+
+        verify(verification, times(1)).failure(any());
+        verify(relay, times(1)).relayRound(eq("ABC-1"), eq("verify"), anyString());
+        verify(statusReports).verified(true, "the tree is unchanged since its verification failed; not run again",
+                "ABC-1");
+    }
+
+    @Test
+    void verifiesAChangedTreeAgainAfterAFailedVerification(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        when(verification.key(any())).thenReturn(Optional.of("tree-1"), Optional.of("tree-2"));
+        when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
+        when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString())).thenReturn(true);
+        new VerifyJob(state, verification, statusReports, relay).run();
+
+        new VerifyJob(state, verification, statusReports, relay).run();
+
+        verify(verification, times(2)).failure(any());
+        verify(relay, times(2)).relayRound(eq("ABC-1"), eq("verify"), anyString());
     }
 
     @Test

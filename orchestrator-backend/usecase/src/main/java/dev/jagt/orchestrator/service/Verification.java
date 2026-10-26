@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * The project's own command, run by jagt rather than by the agent that says it passed. An agent's "done and
@@ -33,6 +35,13 @@ public class Verification {
     private final ConfigService configService;
     private final Processes processes;
     private final AcceptanceProbing probing;
+    private final WorktreeChanges changes;
+
+    /** What a run is over: the worktree's tree state and the probes declared. EMPTY where git could not read the tree. */
+    public Optional<String> key(TaskState task) {
+        String probes = task.probes().stream().map(Probe::toString).collect(Collectors.joining("\n"));
+        return changes.state(task).map(tree -> Turn.digestOf(tree + "\n" + probes));
+    }
 
     /** The first failure the commands reported: empty means every one of them passed, or none is configured. */
     public Optional<String> failure(TaskState task) {

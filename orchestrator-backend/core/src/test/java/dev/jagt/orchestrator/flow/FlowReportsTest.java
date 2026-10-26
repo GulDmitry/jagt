@@ -214,6 +214,20 @@ class FlowReportsTest {
     }
 
     @Test
+    void aQuestionIsNotHeldForAVerificationRun() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            write.apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+            return true;
+        });
+
+        var landed = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, AgentReport.QUESTION, "which widget?",
+                (was, task) -> task, task -> true);
+
+        assertThat(landed).contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING));
+    }
+
+    @Test
     void tellsTheSessionWhyItsReportWasRefusedInTheStatusItIsIn() {
         when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
             UnaryOperator<TaskState> write = call.getArgument(1);
