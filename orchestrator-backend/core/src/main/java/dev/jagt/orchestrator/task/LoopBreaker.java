@@ -6,9 +6,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that resolved no thread
+ * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that brought no new note
  * and left the same job failing, a ship asked past {@code ships} within {@code window} that answered a round
- * bringing the open threads to no new low, or a round of one step past {@code rounds} sent running.
+ * bringing no new note, or a round of one step past {@code rounds} sent running.
  */
 public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration window) {
 
@@ -33,13 +33,13 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration win
         int stalled = stalled(trail.rounds());
         return stalled < stalledRounds ? Optional.empty()
                 : Optional.of(new TaskStop(TaskStop.Trigger.STALLED, now,
-                        stalled + " rounds running resolved no thread; " + evidence(trail, history, now)));
+                        stalled + " rounds running brought no new note; " + evidence(trail, history, now)));
     }
 
     public Optional<TaskStop> beforeShip(RoundTrail trail, List<StatusChange> history, long now) {
         return shipped(trail, history, now) < ships ? Optional.empty()
                 : Optional.of(new TaskStop(TaskStop.Trigger.SHIPS, now,
-                        "a ship asked past " + ships + " without a new low in " + window.toHours() + "h; " + evidence(trail, history, now)));
+                        "a ship asked past " + ships + " without a new note in " + window.toHours() + "h; " + evidence(trail, history, now)));
     }
 
     private static int stalled(List<RoundTrail.Round> rounds) {
@@ -47,7 +47,7 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration win
         for (int i = rounds.size() - 1; i > 0; i--) {
             RoundTrail.Round round = rounds.get(i);
             RoundTrail.Round before = rounds.get(i - 1);
-            if (round.threads() < before.threads() || !round.failing().equals(before.failing())) {
+            if (!round.notes().equals(before.notes()) || !round.failing().equals(before.failing())) {
                 break;
             }
             stalled++;
@@ -58,21 +58,20 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration win
     private long shipped(RoundTrail trail, List<StatusChange> history, long now) {
         long from = Math.max(trail.since(), now - window.toMillis());
         return history.stream().filter(step -> step.status() == TaskStatus.SHIPPING && step.at() > from)
-                .filter(step -> !reachedNewLow(trail.rounds(), step.at())).count();
+                .filter(step -> !broughtNewNote(trail.rounds(), step.at())).count();
     }
 
-    private static boolean reachedNewLow(List<RoundTrail.Round> rounds, long shipAt) {
+    private static boolean broughtNewNote(List<RoundTrail.Round> rounds, long shipAt) {
         int answered = -1;
         for (int i = 0; i < rounds.size() && rounds.get(i).at() <= shipAt; i++) {
             answered = i;
         }
-        return answered > 0 && rounds.subList(0, answered).stream().mapToInt(RoundTrail.Round::threads).min()
-                .getAsInt() > rounds.get(answered).threads();
+        return answered > 0 && !rounds.get(answered).notes().equals(rounds.get(answered - 1).notes());
     }
 
     private String evidence(RoundTrail trail, List<StatusChange> history, long now) {
         return "threads per round: " + trail.rounds().stream().map(round -> String.valueOf(round.threads()))
                 .collect(Collectors.joining(", "))
-                + "; ships without a new low in " + window.toHours() + "h: " + shipped(trail, history, now);
+                + "; ships without a new note in " + window.toHours() + "h: " + shipped(trail, history, now);
     }
 }

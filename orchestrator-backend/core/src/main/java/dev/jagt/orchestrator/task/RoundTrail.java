@@ -11,8 +11,13 @@ public record RoundTrail(List<Round> rounds, long since) {
 
     public static final int MAX_ROUNDS = 20;
 
-    /** {@code failing} is the failing job's name, blank while the checks are not red. */
-    public record Round(long at, int threads, String failing, String digest) {
+    /** {@code failing} is the failing job's name, blank while the checks are not red; {@code notes} the round's note fingerprint. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Round(long at, int threads, String failing, String digest, String notes) {
+
+        public Round {
+            notes = notes == null ? "" : notes;
+        }
     }
 
     public RoundTrail {
@@ -31,6 +36,12 @@ public record RoundTrail(List<Round> rounds, long since) {
         List<Round> grown = new ArrayList<>(rounds);
         grown.add(round);
         return new RoundTrail(grown.subList(Math.max(0, grown.size() - MAX_ROUNDS), grown.size()), since);
+    }
+
+    /** Open threads carrying the very notes of the last round, with the checks not red then nor now. */
+    public boolean noNewNote(String notes, String failing) {
+        return !notes.isBlank() && !rounds.isEmpty() && rounds.getLast().notes().equals(notes)
+                && rounds.getLast().failing().isBlank() && failing.isBlank();
     }
 
     public boolean relayed(String digest) {

@@ -39,7 +39,7 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
         ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
-                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of());
+                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of(), List.of());
         stops.round("ABC-42", round, "brief 1");
         stops.round("ABC-42", round, "brief 2");
         stops.round("ABC-42", round, "brief 3");
@@ -77,13 +77,13 @@ class TaskStopsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .trail(RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "same")))
+                .trail(RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "same", "")))
                 .stop(new TaskStop(TaskStop.Trigger.STALLED, 2, "3 rounds")).build());
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
 
         stops.lift("ABC-42");
 
-        assertThat(stops.round("ABC-42", new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of()), "same"))
+        assertThat(stops.round("ABC-42", new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of()), "same"))
                 .isEqualTo(TaskStops.Relay.RELAY);
     }
 
@@ -134,7 +134,7 @@ class TaskStopsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
-        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of());
+        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of());
 
         TaskStops.Relay first = stops.round("ABC-42", round, "brief");
         TaskStops.Relay again = stops.round("ABC-42", round, "brief");
@@ -152,11 +152,46 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
 
         stops.round("ABC-42", new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed", List.of("x"), 0,
-                List.of()), "red");
+                List.of(), List.of()), "red");
         stops.round("ABC-42", new ReviewFacts(true, false, "running", "unit-tests\nCartTest failed", List.of("x"), 0,
-                List.of()), "running");
+                List.of(), List.of()), "running");
 
         assertThat(state.task("ABC-42").orElseThrow().trailOrNone().rounds()).extracting(RoundTrail.Round::failing)
                 .containsExactly("unit-tests", "");
+    }
+
+    @Test
+    void answersAReadOfTheSameThreadsAndNewestNotesAsUnchangedWhateverTheCopiedText(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        ReviewFacts first = new ReviewFacts(true, false, "success", "",
+                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough."), 0, List.of(), List.of("note_7"));
+        ReviewFacts second = new ReviewFacts(true, false, "success", "",
+                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough, conceded."), 0, List.of(), List.of("note_7"));
+
+        stops.round("ABC-42", first, "brief with one copy");
+        TaskStops.Relay again = stops.round("ABC-42", second, "brief with another copy");
+
+        assertThat(again).isEqualTo(TaskStops.Relay.UNCHANGED);
+        assertThat(state.task("ABC-42").orElseThrow().trailOrNone().rounds()).hasSize(1);
+    }
+
+    @Test
+    void relaysARoundWhereANewNoteCameOnTheSameThread(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        ReviewFacts first = new ReviewFacts(true, false, "success", "",
+                List.of("https://host/mr/1#note_1\nmia: Why?"), 0, List.of(), List.of("note_7"));
+        ReviewFacts second = new ReviewFacts(true, false, "success", "",
+                List.of("https://host/mr/1#note_1\nmia: Why?\nmia: And this?"), 0, List.of(), List.of("note_8"));
+
+        stops.round("ABC-42", first, "brief one");
+        TaskStops.Relay next = stops.round("ABC-42", second, "brief two");
+
+        assertThat(next).isEqualTo(TaskStops.Relay.RELAY);
     }
 }

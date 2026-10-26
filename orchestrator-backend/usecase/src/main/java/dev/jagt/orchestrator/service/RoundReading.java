@@ -68,7 +68,8 @@ public class RoundReading {
                 round.pipelineFailure().isBlank() ? "" : "[" + project + "] " + round.pipelineFailure(),
                 round.threads().stream().map(thread -> "[" + project + "] " + thread).toList(),
                 round.openedAt(),
-                round.awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList());
+                round.awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList(),
+                round.newestNotes());
     }
 
     /**
@@ -85,7 +86,8 @@ public class RoundReading {
                 worst.pipelineStatus(), worst.pipelineFailure(),
                 rounds.stream().flatMap(round -> round.threads().stream()).toList(),
                 longestOpen(rounds),
-                rounds.stream().flatMap(round -> round.awaitingReviewer().stream()).toList());
+                rounds.stream().flatMap(round -> round.awaitingReviewer().stream()).toList(),
+                rounds.stream().flatMap(round -> round.newestNotes().stream()).toList());
     }
 
     /** The OLDEST request: how long the review has been hanging is the longest any of them has waited. */

@@ -3,11 +3,14 @@ package dev.jagt.orchestrator.task;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * One review round: whether it is APPROVED, the latest pipeline result, and every discussion THREAD still awaiting
  * the agent's answer — one entry per thread, its notes pre-formatted oldest first as {@code <author>: <body>}, so a
- * reviewer answering a reply reads as the exchange it is. {@code awaitingReviewer} holds the unresolved threads whose
+ * reviewer answering a reply reads as the exchange it is. {@code newestNotes} holds, per thread and in its order, the
+ * host's id of that thread's newest note. {@code awaitingReviewer} holds the unresolved threads whose
  * newest note is the agent's own. Plus {@code pipelineFailure}, what the host says went wrong when that result is a
  * failure, or why the listing could not be got when it is unknown. {@code exists=false} means the HOST says there is
  * no such request — a read that failed carries no facts at all, and no caller may merge the two. {@code openedAt} is
@@ -15,19 +18,37 @@ import java.util.Locale;
  * resumed on.
  */
 public record ReviewFacts(boolean exists, boolean approved, String pipelineStatus, String pipelineFailure,
-                          List<String> threads, long openedAt, List<String> awaitingReviewer) {
+                          List<String> threads, long openedAt, List<String> awaitingReviewer,
+                          List<String> newestNotes) {
 
     public ReviewFacts {
         pipelineFailure = pipelineFailure == null ? "" : pipelineFailure;
         awaitingReviewer = awaitingReviewer == null ? List.of() : List.copyOf(awaitingReviewer);
+        newestNotes = newestNotes == null ? List.of() : List.copyOf(newestNotes);
+    }
+
+    /** Equal for two reads of the same open threads with the same newest notes, whatever the copied text. */
+    public String noteFingerprint() {
+        return IntStream.range(0, threads.size())
+                .mapToObj(i -> threads.get(i).strip().lines().findFirst().orElse("")
+                        + " " + (i < newestNotes.size() ? newestNotes.get(i) : ""))
+                .sorted().collect(Collectors.joining("\n"));
     }
 
     /** The threads whose newest note is by {@code account} moved to {@code awaitingReviewer}; blank moves none. */
     public ReviewFacts answeredBy(String account) {
         List<String> open = new ArrayList<>();
+        List<String> openNotes = new ArrayList<>();
         List<String> answered = new ArrayList<>(awaitingReviewer);
-        threads.forEach(thread -> (newestAuthorIs(thread, account) ? answered : open).add(thread));
-        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered);
+        for (int i = 0; i < threads.size(); i++) {
+            if (newestAuthorIs(threads.get(i), account)) {
+                answered.add(threads.get(i));
+            } else {
+                open.add(threads.get(i));
+                openNotes.add(i < newestNotes.size() ? newestNotes.get(i) : "");
+            }
+        }
+        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered, openNotes);
     }
 
     private static boolean newestAuthorIs(String thread, String account) {

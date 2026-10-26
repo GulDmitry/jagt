@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-10-23. Supersedes the ships-with-progress part of
+Accepted 2026-10-23. Its measure, the open-thread low, is superseded by
+[0093](0093-only-a-new-note-is-progress.md). Supersedes the ships-with-progress part of
 [0061](0061-jagt-stops-a-task-it-suspects-it-is-looping.md).
 
 ## Context

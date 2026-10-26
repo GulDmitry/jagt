@@ -12,10 +12,11 @@ class LoopBreakerTest {
     private final LoopBreaker breaker = new LoopBreaker(3, 4, 3, Duration.ofHours(24));
 
     @Test
-    void stopsAfterThreeRoundsRunningThatResolvedNoThreadWithTheSameJobFailing() {
-        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 10, "unit-tests", "a"),
-                new RoundTrail.Round(2, 10, "unit-tests", "b"), new RoundTrail.Round(3, 10, "unit-tests", "c"),
-                new RoundTrail.Round(4, 11, "unit-tests", "d")), 0);
+    void stopsAfterThreeRoundsRunningThatBroughtNoNewNoteWithTheSameJobFailing() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 10, "unit-tests", "a", "t1 note_1"),
+                new RoundTrail.Round(2, 10, "unit-tests", "b", "t1 note_1"),
+                new RoundTrail.Round(3, 10, "unit-tests", "c", "t1 note_1"),
+                new RoundTrail.Round(4, 11, "unit-tests", "d", "t1 note_1")), 0);
 
         var stop = breaker.afterRound(watch, List.of(), 5);
 
@@ -26,29 +27,38 @@ class LoopBreakerTest {
     }
 
     @Test
-    void keepsRelayingTheObservedRoundsWhereThreadsKeptBeingResolved() {
-        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 10, "sonar", "a"),
-                new RoundTrail.Round(2, 10, "sonar", "b"), new RoundTrail.Round(3, 6, "", "c"),
-                new RoundTrail.Round(4, 5, "", "d"), new RoundTrail.Round(5, 5, "", "e"),
-                new RoundTrail.Round(6, 5, "", "f")), 0);
+    void keepsRelayingWhereEveryRoundBroughtANewNote() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 10, "sonar", "a", "t1 note_1"),
+                new RoundTrail.Round(2, 10, "sonar", "b", "t1 note_2"), new RoundTrail.Round(3, 6, "", "c", "t1 note_3"),
+                new RoundTrail.Round(4, 5, "", "d", "t1 note_4"), new RoundTrail.Round(5, 5, "", "e", "t1 note_5"),
+                new RoundTrail.Round(6, 5, "", "f", "t1 note_6")), 0);
 
         assertThat(breaker.afterRound(watch, List.of(), 7)).isEmpty();
     }
 
     @Test
+    void countsAgainFromANewNoteWhereTheRoundsBeforeBroughtNone() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 2, "", "a", "t1 note_1"),
+                new RoundTrail.Round(2, 2, "", "b", "t1 note_1"), new RoundTrail.Round(3, 2, "", "c", "t1 note_1"),
+                new RoundTrail.Round(4, 2, "", "d", "t1 note_2"), new RoundTrail.Round(5, 2, "", "e", "t1 note_2")), 0);
+
+        assertThat(breaker.afterRound(watch, List.of(), 6)).isEmpty();
+    }
+
+    @Test
     void keepsRelayingWhenAnotherJobFailsThanTheRoundBefore() {
-        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 10, "unit-tests", "a"),
-                new RoundTrail.Round(2, 10, "unit-tests", "b"), new RoundTrail.Round(3, 10, "unit-tests", "c"),
-                new RoundTrail.Round(4, 10, "lint", "d")), 0);
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 10, "unit-tests", "a", ""),
+                new RoundTrail.Round(2, 10, "unit-tests", "b", ""), new RoundTrail.Round(3, 10, "unit-tests", "c", ""),
+                new RoundTrail.Round(4, 10, "lint", "d", "")), 0);
 
         assertThat(breaker.afterRound(watch, List.of(), 5)).isEmpty();
     }
 
     @Test
-    void stopsTheFifthShipWithinTheWindowWhereThreadsOscillateWithoutANewLow() {
-        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 5, "", "a"),
-                new RoundTrail.Round(1_500, 6, "", "b"), new RoundTrail.Round(2_500, 5, "", "c"),
-                new RoundTrail.Round(3_500, 6, "", "d"), new RoundTrail.Round(4_500, 5, "", "e")), 0);
+    void stopsTheFifthShipWithinTheWindowWhereNoRoundBroughtANewNote() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 5, "", "a", ""),
+                new RoundTrail.Round(1_500, 6, "", "b", ""), new RoundTrail.Round(2_500, 5, "", "c", ""),
+                new RoundTrail.Round(3_500, 6, "", "d", ""), new RoundTrail.Round(4_500, 5, "", "e", "")), 0);
         List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
@@ -58,16 +68,16 @@ class LoopBreakerTest {
 
         assertThat(stop).hasValueSatisfying(it -> {
             assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.SHIPS);
-            assertThat(it.evidence()).contains("ships without a new low in 24h: 4")
+            assertThat(it.evidence()).contains("ships without a new note in 24h: 4")
                     .contains("threads per round: 5, 6, 5, 6, 5");
         });
     }
 
     @Test
-    void letsATaskShipAgainWhileEveryRoundBroughtThreadsToANewLow() {
-        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 3, "", "a"),
-                new RoundTrail.Round(1_500, 2, "", "b"), new RoundTrail.Round(2_500, 1, "", "c"),
-                new RoundTrail.Round(3_500, 0, "", "d")), 0);
+    void letsATaskShipAgainWhileEveryRoundBroughtANewNote() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 3, "", "a", "t1 note_1"),
+                new RoundTrail.Round(1_500, 2, "", "b", "t1 note_2"), new RoundTrail.Round(2_500, 1, "", "c", "t1 note_3"),
+                new RoundTrail.Round(3_500, 0, "", "d", "t1 note_4")), 0);
         List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
@@ -87,7 +97,7 @@ class LoopBreakerTest {
         var stop = breaker.beforeShip(RoundTrail.none(), history, 5_000);
 
         assertThat(stop).hasValueSatisfying(it -> assertThat(it.evidence())
-                .contains("ships without a new low in 24h: 4"));
+                .contains("ships without a new note in 24h: 4"));
     }
 
     @Test
@@ -141,8 +151,8 @@ class LoopBreakerTest {
 
     @Test
     void countsAShipAsAnsweringTheRoundReadAtTheSameMoment() {
-        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(100, 5, "", "a"),
-                new RoundTrail.Round(1_000, 3, "", "b")), 0);
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(100, 5, "", "a", "t1 note_1"),
+                new RoundTrail.Round(1_000, 3, "", "b", "t1 note_2")), 0);
         List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER));
 
         var stop = new LoopBreaker(3, 1, 3, Duration.ofHours(24)).beforeShip(watch, history, 2_000);

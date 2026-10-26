@@ -26,8 +26,8 @@ orchestrator:
   maxStartsPerDay: 50      # unattended starts per local day (act moves, tracker intake, auto-review polls); past it they
                            # wait for tomorrow or for you pressing `act stopped`. Counted in memory: a restart begins at zero
   loopBreaker:             # stops a task jagt suspects it is looping on, whoever asked; only your `lift` resumes it
-    stalledRounds: 3       # rounds relayed running that resolved no thread and left the same job failing (at most 19)
-    ships: 4               # ships within autoReview.windowHours whose round left open threads at no new low;
+    stalledRounds: 3       # rounds relayed running that brought no new note and left the same job failing (at most 19)
+    ships: 4               # ships within autoReview.windowHours whose round brought no new note;
                            # the next one jagt would press unasked stops the task
     rounds: 3              # rounds of one step sent back running in 24h: a red verification or probe, a not-ready
                            # plan or round, repeats included; the next one stops the task (at most 19)

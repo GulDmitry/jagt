@@ -160,32 +160,30 @@ separate from `act-stopped`. While it stands the Master SHALL only judge, and in
 nothing; a human press SHALL never be refused. It SHALL lift on the next local day, or when you press the header's
 `act stopped`, which names its cause in the hover.
 
-#### Scenario: The ceiling is reached
+#### Scenario: The ceiling is reached, and lifts
 - **WHEN** the 50th unattended start of a local day is taken
 - **THEN** the Master only judges, intake and auto-review start nothing, and `act stopped`'s hover names the 50
-
-#### Scenario: The stop lifts
-- **WHEN** the next local day begins, or you press `act stopped` while the daily stop stands
-- **THEN** it is gone and starts count from zero
+- **AND** when the next local day begins, or you press `act stopped`, it is gone and starts count from zero
 
 ### Requirement: jagt stops a task it suspects it is looping
 `TaskStops` SHALL stop a task, its status kept, on any trigger since the last `lift`:
-`loopBreaker.stalledRounds` (3) relayed rounds running that each left as many threads open and the same job failing;
-a Master ship past `loopBreaker.ships` (4) within `autoReview.windowHours`;
+`loopBreaker.stalledRounds` (3) relayed rounds running that each brought no new note and left the same job failing;
+a Master ship past `loopBreaker.ships` (4) within `autoReview.windowHours` that answered a round bringing no new note;
 a failed verification or probe, a not-ready plan or round, repeats too, or a review round, sent back past `loopBreaker.rounds` (3) running in 24h.
 
 #### Scenario: Rounds that resolve nothing
-- **WHEN** ABC-42 gets a fourth relayed round with 10 threads open and `unit-tests` failing, as the three before
+- **WHEN** ABC-42 gets a fourth relayed round with the same newest notes and `unit-tests` failing, as the three before
 - **THEN** nothing is relayed, the card asks `lift the stop`, and one notification names the rounds
 
-#### Scenario: Ships with progress
-- **WHEN** ABC-42 shipped five times today while its threads fell from 10 to 5, and the Master would ship again
+#### Scenario: A new note resets the count
+- **WHEN** ABC-42 shipped five times today, every round before a ship bringing a new note, and the Master would ship again
 - **THEN** it ships, and nothing stops it
+- **AND** a new thread or note, by anyone, restarts the `stalledRounds` count: two idle rounds, a note, two idle rounds count two
 
 #### Scenario: Ships going round
-- **WHEN** ABC-42 shipped four times today while its threads went 5, 6, 5, 6, and the Master would ship again
-- **THEN** it presses nothing and the hover says `ships without a new low in 24h: 4`
-- **AND** a ship counts only if its round left no fewer threads open than the lowest before it; the first round sets that low
+- **WHEN** ABC-42 shipped four times today and no round before a ship brought a new note, and the Master would ship again
+- **THEN** it presses nothing and the hover says `ships without a new note in 24h: 4`
+- **AND** a ship counts unless the round it answered carries a fingerprint other than the round before it; the first round counts
 
 #### Scenario: Red rounds running
 - **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth

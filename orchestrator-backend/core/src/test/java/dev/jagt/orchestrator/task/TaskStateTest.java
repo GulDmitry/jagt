@@ -560,7 +560,7 @@ class TaskStateTest {
     void keepsTheStopAndTheTrailItWasGivenAndClearsTheStopOnALift() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running");
-        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a"));
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a", ""));
 
         TaskState stopped = task.withStop(stop).withTrail(trail);
         TaskState lifted = stopped.lifted(9);

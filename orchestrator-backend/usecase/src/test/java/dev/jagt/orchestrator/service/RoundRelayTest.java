@@ -51,7 +51,7 @@ class RoundRelayTest {
         RoundRelay relay = new RoundRelay(new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock),
                 new StepRelay(new SessionBrief(paths), sessions, door,
                         new TaskTurns(state, clock)), door, new SessionBrief(paths));
-        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_1\nbot: rename x"), 0, List.of());
+        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_1\nbot: rename x"), 0, List.of(), List.of());
         relay.relay("ABC-42", "https://host/mr/1", round, "running");
 
         SweepResult again = relay.relay("ABC-42", "https://host/mr/1", round, "running");
@@ -76,7 +76,7 @@ class RoundRelayTest {
                         new TaskTurns(state, clock)), door, new SessionBrief(paths));
 
         SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
-                new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0, List.of()), "running");
+                new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0, List.of(), List.of()), "running");
 
         assertThat(result.kind()).isEqualTo(SweepResult.Kind.STOPPED);
         verify(sessions, never()).relayFresh(anyString(), anyString());
@@ -97,7 +97,7 @@ class RoundRelayTest {
         SweepResult result = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, clock)), door, new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
                 new ReviewFacts(true, false, "success", "", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
-                        0, List.of()), "success");
+                        0, List.of(), List.of()), "success");
 
         assertThat(result.message()).contains("2 thread(s) relayed");
         verify(sessions).relayFresh(eq("ABC-42"), contains("review_replies.md"));
@@ -116,7 +116,7 @@ class RoundRelayTest {
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), clock));
         RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, clock)), door, new SessionBrief(paths));
-        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0, List.of());
+        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0, List.of(), List.of());
         relay.relay("ABC-42", "http://mr/1", round, "success");
 
         SweepResult again = relay.relay("ABC-42", "http://mr/1", round, "success");
@@ -139,7 +139,7 @@ class RoundRelayTest {
                 new TaskTurns(state, clock)), door, new SessionBrief(paths));
 
         SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
-                new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0, List.of()), "running");
+                new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_9\nlee: why?"), 0, List.of(), List.of()), "running");
 
         assertThat(result.kind()).isEqualTo(SweepResult.Kind.REFUSED);
         verify(sessions, never()).relayFresh(anyString(), anyString());

@@ -182,6 +182,24 @@ class HeadlessClaudeCodeHostAssistantTest {
     }
 
     @Test
+    void carriesTheNewestNoteIdOfEachOpenThreadAlongWithIt() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
+                "signedInAs":"lee","newestNotes":["note_2","note_5"],\
+                "threads":["https://host/mr/9#note_1\\nmia: Why?","https://host/mr/9#note_4\\nmia: And?"]}}""", ""));
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().newestNotes()).containsExactly("note_2", "note_5");
+    }
+
+    @Test
     void cutsAFailureLogTooLongToRelayIntoAWorktreeFile() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,

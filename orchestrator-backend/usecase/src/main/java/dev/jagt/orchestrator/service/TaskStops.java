@@ -46,16 +46,18 @@ public class TaskStops {
                 task -> breaker.beforeRound(step, task.turnOrNone(), task.trailOrNone(), clock.millis())).isEmpty();
     }
 
-    /** A round identical to the last one relayed is not news, whatever was relayed in between. */
+    /** A round identical to the last one relayed, or bringing no new note on green checks, is not news. */
     public Relay round(String taskId, ReviewFacts facts, String brief) {
         String digest = Turn.digestOf(brief);
+        String notes = facts.noteFingerprint();
+        String failing = failing(facts);
         AtomicBoolean unchanged = new AtomicBoolean();
         LoopBreaker breaker = breakers.current();
         Optional<TaskStop> stop = trip(taskId, task -> {
             RoundTrail trail = task.trailOrNone();
-            unchanged.set(trail.relayed(digest));
+            unchanged.set(trail.relayed(digest) || trail.noNewNote(notes, failing));
             return unchanged.get() ? task : task.withTrail(trail.withRound(
-                    new RoundTrail.Round(clock.millis(), facts.threads().size(), failing(facts), digest)));
+                    new RoundTrail.Round(clock.millis(), facts.threads().size(), failing, digest, notes)));
         }, task -> unchanged.get() ? Optional.empty()
                 : breaker.afterRound(task.trailOrNone(), task.history(), clock.millis()));
         return stop.isPresent() ? Relay.STOPPED : unchanged.get() ? Relay.UNCHANGED : Relay.RELAY;

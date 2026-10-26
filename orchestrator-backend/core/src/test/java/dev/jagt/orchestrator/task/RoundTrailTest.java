@@ -10,8 +10,8 @@ class RoundTrailTest {
 
     @Test
     void appendsARoundAndKeepsTheLiftItCountsFrom() {
-        RoundTrail grown = RoundTrail.liftedAt(500).withRound(new RoundTrail.Round(600, 3, "", "a"))
-                .withRound(new RoundTrail.Round(700, 2, "", "b"));
+        RoundTrail grown = RoundTrail.liftedAt(500).withRound(new RoundTrail.Round(600, 3, "", "a", ""))
+                .withRound(new RoundTrail.Round(700, 2, "", "b", ""));
 
         assertThat(grown.rounds()).extracting(RoundTrail.Round::digest).containsExactly("a", "b");
         assertThat(grown.since()).isEqualTo(500);
@@ -21,7 +21,7 @@ class RoundTrailTest {
     void keepsOnlyTheLastTwentyRounds() {
         RoundTrail grown = RoundTrail.none();
         for (int i = 1; i <= 21; i++) {
-            grown = grown.withRound(new RoundTrail.Round(i, 1, "", "d" + i));
+            grown = grown.withRound(new RoundTrail.Round(i, 1, "", "d" + i, ""));
         }
 
         assertThat(grown.rounds()).extracting(RoundTrail.Round::at)
@@ -30,8 +30,8 @@ class RoundTrailTest {
 
     @Test
     void saysTheLastRoundWasRelayedOnlyForItsOwnDigest() {
-        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 3, "", "a"))
-                .withRound(new RoundTrail.Round(2, 3, "", "b"));
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 3, "", "a", ""))
+                .withRound(new RoundTrail.Round(2, 3, "", "b", ""));
 
         assertThat(trail.relayed("b")).isTrue();
         assertThat(trail.relayed("a")).isFalse();

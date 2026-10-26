@@ -31,12 +31,12 @@ class ReviewReaderTest {
     @Test
     void answersTheRoundWithWhatTheReadCameBackWith() {
         when(assistant.readReview("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
-                new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of())), TokenUsage.NONE));
+                new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of())), TokenUsage.NONE));
 
         var facts = new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
                 .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
-        assertThat(facts).contains(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of()));
+        assertThat(facts).contains(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of()));
     }
 
     @Test
@@ -53,7 +53,7 @@ class ReviewReaderTest {
     @Test
     void believesAHostSayingThereIsNoSuchRequestWithoutPayingToHearItAgain() {
         when(assistant.readReview("https://host/g/p/-/merge_requests/7")).thenReturn(new Answer<>(
-                Optional.of(new ReviewFacts(false, false, "unknown", "", List.of(), 0, List.of())), TokenUsage.NONE));
+                Optional.of(new ReviewFacts(false, false, "unknown", "", List.of(), 0, List.of(), List.of())), TokenUsage.NONE));
 
         new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-1", "https://host/g/p/-/merge_requests/7");
@@ -107,7 +107,7 @@ class ReviewReaderTest {
     @Test
     void asksAgainForARoundWhoseFailureLinesBelongToARunThatDidNotFail() {
         when(assistant.readReview("https://host/g/p/-/merge_requests/7")).thenReturn(new Answer<>(
-                Optional.of(new ReviewFacts(true, false, "success", "lint failed", List.of(), 0, List.of())), TokenUsage.NONE));
+                Optional.of(new ReviewFacts(true, false, "success", "lint failed", List.of(), 0, List.of(), List.of())), TokenUsage.NONE));
 
         new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-1", "https://host/g/p/-/merge_requests/7");

@@ -103,6 +103,7 @@ Families:
 | F7 | a request only a reviewer can move on is polled → read at the longest interval, not the ramp | seen 2026-10-24: 71 sweeps in 18h | `AutoReviewCadenceTest` |
 | F8 | a verification stays red or the Master returns a round, new or repeated → `loopBreaker.rounds` back, the next stops the task | 0065 rule E: no ceiling; repeats asked the Master itself in `act` | `StepRelayTest`, `MasterVerdictsTest`, `LoopBreakerTest` |
 | F9 | the agent declined a thread and the reviewer has not answered → it waits on the reviewer, not a round every poll | seen 2026-10-24 on the stand: 20 min of relays | `RoundOutcomeTest`, `HeadlessClaudeCodeHostAssistantTest`, `StepRelayTest` |
+| F10 | a reviewer's concession ends a pushed-back thread and the session has nothing to answer → the round is relayed once; the same open threads with the same newest notes are not relayed again, and only rounds bringing no new note count toward the ceilings | seen 2026-10-26: a bot's concession on a pushed-back thread was relayed every poll, the Master re-shipped nothing three times and the task stopped | `TaskStopsTest`, `LoopBreakerTest`, `ReviewFactsTest`, `HeadlessClaudeCodeHostAssistantTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |

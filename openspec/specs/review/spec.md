@@ -18,13 +18,9 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 - **WHEN** a comment is wrong
 - **THEN** the agent changes nothing and replies with the one technical reason
 
-#### Scenario: Unclear, or a design decision
-- **WHEN** a comment is unclear or forces a design decision
-- **THEN** the agent asks: NEEDS INPUT on the board
-
-#### Scenario: Contradicts the code
-- **WHEN** a comment contradicts what the code enforces
-- **THEN** the agent asks before the code picks a side
+#### Scenario: Unclear, a design decision, or against the code
+- **WHEN** a comment is unclear, forces a design decision or contradicts what the code enforces
+- **THEN** the agent asks, before the code picks a side: NEEDS INPUT on the board
 
 #### Scenario: Already handled
 - **WHEN** a comment was already handled
@@ -164,13 +160,9 @@ draft is spent, and the announcement stands until the human ends it.
 ### Requirement: Resume takes over a request
 `resume <url>` SHALL make the request's source branch the task and its target the base, leaving conflicts for the session.
 
-#### Scenario: Other branch convention
-- **WHEN** its branch follows another convention (`feature/x`)
-- **THEN** taken over as-is
-
-#### Scenario: Target deleted
-- **WHEN** its target branch was deleted since
-- **THEN** it works; only the next `ship` needs one
+#### Scenario: Other branch convention, or target deleted
+- **WHEN** its branch follows another convention (`feature/x`), or its target branch was deleted since
+- **THEN** taken over as-is; it works, only the next `ship` needs a target
 
 #### Scenario: Branch already a task
 - **WHEN** its branch belongs to a task
@@ -192,9 +184,15 @@ A GitHub request with no review required SHALL count as approved once someone ap
 - **THEN** approved
 
 ### Requirement: An unchanged round is relayed once
-`TaskStops.round` SHALL keep a digest of the last round brief relayed into a task. A brief equal to it SHALL NOT be
-relayed again, whatever overwrote `task_context.md` in between. A `lift` SHALL forget it.
+`TaskStops.round` SHALL keep a digest of the last round brief relayed into a task and the round's note fingerprint:
+the sorted pairs of each open thread's link and newest note id, as the host gives them. A brief equal to the digest
+SHALL NOT be relayed again, whatever overwrote `task_context.md` in between. Neither SHALL a round with open threads
+whose fingerprint equals the last one's while the checks are red in neither. A `lift` SHALL forget both.
 
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
 - **THEN** the sweep says the round is unchanged and no fresh session starts
+
+#### Scenario: A reviewer's concession is not a loop
+- **WHEN** a thread's newest note is the reviewer's and two polls read it unchanged, the copied text differing
+- **THEN** only the first poll relays, and the second says the round is unchanged
