@@ -68,6 +68,25 @@ A repro SHALL count only when it shows the report's signal. The default SHALL be
 - **WHEN** `diagnose.enabled` is `false` or unset
 - **THEN** the brief says nothing of diagnosing and the session works as before
 
+### Requirement: A session judges each switch that is on
+A session SHALL answer each of `autoplan`, `visualize` and `diagnose` that is on as `yes — <why>` or `no — <why>`.
+The answers go in `switches` (`protocol/SwitchJudgements`) of its first `update_agent_status` report, whatever status it reports.
+jagt SHALL refuse that report as `validation`, naming the switch and the form, when one is missing, lacks its why or is
+unknown; reports after the first need none and a later answer replaces an earlier. The answers SHALL be kept on the task.
+The card's hover and the Artifacts tab SHALL show them, as `visualize: no — <why>`.
+
+#### Scenario: A switch left unanswered
+- **WHEN** `visualize` is on and the first report of ABC-42 carries no `switches` answer for it
+- **THEN** the report is refused as `validation` naming `visualize`, and the task stays NEW
+
+#### Scenario: A switch that is off
+- **WHEN** `visualize` is off and the first report of ABC-42 carries no answer for it
+- **THEN** the report is accepted
+
+#### Scenario: A no with its why
+- **WHEN** a session reports `switches: {"visualize": "no — config-only change"}`
+- **THEN** the card's hover and the Artifacts tab of ABC-42 read `visualize: no — config-only change`
+
 ### Requirement: The brief is a file you may copy
 What jagt tells a session at a step SHALL be that step's facts, then its `## <step>` section of `session-brief.md`
 beside `jagt.yml`, copied from `session-brief.md.dist`; a section the copy lacks SHALL be read from the `.dist`, and

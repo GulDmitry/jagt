@@ -816,4 +816,17 @@ class BoardCardTest extends BoardPageContext {
         assertThat(page.locator("article button[data-action=deploy]")).isVisible();
         assertThat(page.locator("article button.again")).hasCount(0);
     }
+
+    @Test
+    void aCardsHoverSaysWhatTheSessionJudgedOnEachSwitch() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").title("Widget layout is off")
+                .switches(java.util.Map.of("visualize", "no — config-only change"))
+                .lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("article .title")).hasAttribute("data-tip", "visualize: no — config-only change");
+    }
 }

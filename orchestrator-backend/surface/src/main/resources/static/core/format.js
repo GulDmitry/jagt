@@ -53,3 +53,6 @@ function marked(line) {
 
 export const reportParts = (said) => said.trimEnd().split('\n')
   .flatMap((line, index) => (index ? [{kind: 'text', text: '\n'}, ...marked(line)] : marked(line)));
+
+// What the session judged on each switch, one `name: yes — why` line apiece; empty where it judged none.
+export const switchLines = (task) => Object.entries(task.switches || {}).map(([name, said]) => `${name}: ${said}`);

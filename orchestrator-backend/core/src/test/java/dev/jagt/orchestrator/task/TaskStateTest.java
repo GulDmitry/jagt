@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.task;
 
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +70,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null, null);
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -113,7 +113,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null);
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
@@ -601,5 +601,18 @@ class TaskStateTest {
 
         assertThat(asked.asksForARepository()).isTrue();
         assertThat(asked.lastActiveTimestamp()).isEqualTo(7_000);
+    }
+
+    @Test
+    void keepsTheSessionsSwitchJudgementsThroughStateJsonAndLetsTheLastWordStand() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
+                .judged(Map.of("visualize", "no — config-only change", "autoplan", "no — one file"))
+                .judged(Map.of("visualize", "yes — a screen changed"));
+        JsonMapper mapper = new JsonMapper();
+
+        TaskState reread = mapper.readValue(mapper.writeValueAsString(task), TaskState.class);
+
+        assertThat(reread.switches()).containsOnly(Map.entry("visualize", "yes — a screen changed"),
+                Map.entry("autoplan", "no — one file"));
     }
 }

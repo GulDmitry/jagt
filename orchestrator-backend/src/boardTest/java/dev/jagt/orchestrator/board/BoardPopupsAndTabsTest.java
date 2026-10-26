@@ -430,4 +430,17 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         org.assertj.core.api.Assertions.assertThat(first.locator("td").nth(3).boundingBox().width)
                 .isEqualTo(second.locator("td").nth(3).boundingBox().width);
     }
+
+    @Test
+    void theArtifactsTabSaysWhatTheSessionJudgedOnEachSwitch() {
+        state.putTask("ABC-6", TaskState.builder("alpha", root.resolve("ABC-6-alpha").toString(), TaskStatus.IN_PROGRESS)
+                .alias("a6").switches(java.util.Map.of("visualize", "no — config-only change"))
+                .lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#pane .tabs button[data-tab=artifacts]").click();
+
+        assertThat(page.locator("#pane .artifacts .switches")).hasText("visualize: no — config-only change");
+    }
 }

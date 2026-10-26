@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.protocol.SwitchJudgements;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.RoundTrail;
 import dev.jagt.orchestrator.task.Turn;
@@ -166,6 +167,14 @@ public class ConfigService implements LoopBreaker.Current {
 
             public DiagnoseConfig diagnoseOrDefault() {
                 return diagnose == null ? DiagnoseConfig.defaults() : diagnose;
+            }
+
+            /** The switches a session judges that are on, in {@link SwitchJudgements#NAMES} order. */
+            public List<String> switchesOn() {
+                Map<String, Boolean> on = Map.of("autoplan", autoplanOrDefault().enabledOrDefault(),
+                        "visualize", visualizeOrDefault().enabledOrDefault(),
+                        "diagnose", diagnoseOrDefault().enabledOrDefault());
+                return SwitchJudgements.NAMES.stream().filter(on::get).toList();
             }
 
             public SandboxConfig sandboxOrDefault() {

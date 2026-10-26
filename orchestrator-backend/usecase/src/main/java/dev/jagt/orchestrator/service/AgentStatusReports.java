@@ -89,6 +89,12 @@ public class AgentStatusReports {
                 List.copyOf(configService.load().projects().keySet()));
     }
 
+    /** As {@link #contextFor}, for a session's own report: its first one owes a judgement on each switch that is on. */
+    public MessageContext sessionContextFor(String taskId) {
+        boolean first = stateService.task(taskId).filter(task -> task.status() == TaskStatus.NEW).isPresent();
+        return contextFor(taskId).withSwitchesOwed(first ? configService.load().agent().switchesOn() : List.of());
+    }
+
     /** The task's repositories, primary first: which link a human follows first is the session's own. */
     private List<String> known(String taskId) {
         return stateService.task(taskId).map(TaskState::projects).orElse(List.of());
@@ -104,7 +110,8 @@ public class AgentStatusReports {
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
         FlowReports.Landed written = flow.report(taskId, newStatus, means, shortMessage,
                 (was, next) -> closed(planned(was, linked(was, next, url, requestsByProject))
-                        .withRepoRequest(said.needsProject()), closesTurn), verificationOwed)
+                        .withRepoRequest(said.needsProject())
+                        .judged(said.switches()), closesTurn), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (said.noPlan()) {
             stateService.updateTask(taskId, task -> task.withPlanGate(PlanGate.OPEN));

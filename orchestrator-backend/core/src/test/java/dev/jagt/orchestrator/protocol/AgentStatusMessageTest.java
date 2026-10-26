@@ -216,7 +216,7 @@ class AgentStatusMessageTest {
     @Test
     void carriesTheProjectAQuestionNeedsWhenItIsConfiguredAndNotOnTheTask() {
         var said = new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", null, Map.of(), null,
-                "registry", null);
+                "registry", null, Map.of());
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
         assertThat(said.reportViolations(context)).isEmpty();
@@ -225,7 +225,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectNoConfigurationHasNamingTheOnesThereAre() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "ghost", null);
+        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "ghost", null, Map.of());
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
         assertThat(said.reportViolations(context)).singleElement().satisfies(violation -> {
@@ -236,7 +236,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectTheTaskAlreadyHoldsNamingItsProjects() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "api", null);
+        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "api", null, Map.of());
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
         assertThat(said.reportViolations(context)).singleElement().satisfies(violation -> {
@@ -247,7 +247,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectNeededOutsideAQuestion() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", "progress", null, Map.of(), null, "registry", null);
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", "progress", null, Map.of(), null, "registry", null, Map.of());
 
         assertThat(said.reportViolations(new MessageContext(List.of("api"), false, List.of("api", "registry"))))
                 .singleElement().satisfies(violation -> assertThat(violation.expected())
@@ -265,7 +265,7 @@ class AgentStatusMessageTest {
     void refusesAReasonLongerThanOneSentenceNamingTheLimit() {
         var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
                 "the human asked for the billing repository because the invoice export reads it, and the change"
-                        + " crosses both sides of the contract");
+                        + " crosses both sides of the contract", Map.of());
 
         assertThat(said.violations(MessageContext.NONE)).singleElement()
                 .satisfies(violation -> assertThat(violation).hasToString("why: at most 120 characters, not 129"));
@@ -274,8 +274,34 @@ class AgentStatusMessageTest {
     @Test
     void acceptsAReportWithItsReason() {
         var said = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of(), null, null,
-                "work done, tests green, ready for review");
+                "work done, tests green, ready for review", Map.of());
 
         assertThat(said.violations(MessageContext.NONE)).isEmpty();
+    }
+
+    @Test
+    void refusesTheFirstReportThatLeavesOutASwitchThatIsOn() {
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+                "starting work", Map.of());
+
+        assertThat(said.violations(MessageContext.NONE.withSwitchesOwed(List.of("visualize"))))
+                .extracting(Violation::field).containsExactly("switches");
+    }
+
+    @Test
+    void acceptsTheFirstReportWhenNoSwitchIsOwed() {
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+                "starting work", Map.of());
+
+        assertThat(said.violations(MessageContext.NONE)).isEmpty();
+    }
+
+    @Test
+    void carriesTheJudgementsOfAnAcceptedReport() {
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+                "starting work", Map.of("visualize", "no — config-only change"));
+
+        assertThat(said.accepted(MessageContext.NONE).orElseThrow().switches())
+                .containsExactly(Map.entry("visualize", "no — config-only change"));
     }
 }

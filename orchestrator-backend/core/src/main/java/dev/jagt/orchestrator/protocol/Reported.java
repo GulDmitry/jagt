@@ -14,9 +14,11 @@ import java.util.Map;
  * carries.
  */
 public record Reported(TaskStatus status, AgentReport claimed, @Nullable String detail, @Nullable String link,
-                       Map<String, String> requests, boolean noPlan, @Nullable String needsProject) {
+                       Map<String, String> requests, boolean noPlan, @Nullable String needsProject,
+                       Map<String, String> switches) {
 
     public Reported {
         requests = requests == null ? Map.of() : Map.copyOf(requests);
+        switches = switches == null ? Map.of() : Map.copyOf(switches);
     }
 }

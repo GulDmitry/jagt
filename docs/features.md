@@ -32,19 +32,17 @@
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 
-- **One row per task** — Each task is a row with its status, age and checks, kept in its place.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row)
-- **Open task beside the list** — Pick a task and its detail opens next to the list.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
+- **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
+  [row](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row) ·
+  [open](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
 - **Session and Files tabs** — Read the session's screen as it stands and type a line to it; read a task's plan, notes and sketch rendered.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
-- **Add a project** — Add a repository to the configuration from the board, never by hand.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-a-project-is-added-from-the-board)
-- **Run a job now** — Any unattended job runs now, from its row. [spec](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
-- **Keys for verbs** — Every verb shows its key, and one that asks first asks on its key too.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key)
-- **Who asked** — Each step of a task's history names who asked for it, the first one what opened the task.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)
+- **Add a project, run a job now** — Add a repository to the configuration from the board, never by hand; any unattended job runs now, from its row.
+  [add](../openspec/specs/board-workspace/spec.md#requirement-a-project-is-added-from-the-board) ·
+  [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
+- **Keys for verbs, who asked** — Every verb shows its key, even one that asks first; each history step names who asked.
+  [keys](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key) ·
+  [who](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)
 
 ## Cases · [spec](../openspec/specs/cases/spec.md)
 
@@ -148,6 +146,8 @@
   [spec](../openspec/specs/session-brief/spec.md#requirement-visualize)
 - **Diagnose** — A session diagnoses a bug from facts and a control before code. Key: `orchestrator.agent.diagnose.enabled`, off by default.
   [spec](../openspec/specs/session-brief/spec.md#requirement-diagnose)
+- **Switch judgements** — A session says yes or no, with why, to each switch that is on, and the board shows it.
+  [spec](../openspec/specs/session-brief/spec.md#requirement-a-session-judges-each-switch-that-is-on)
 
 ## Spec changes · [spec](../openspec/specs/spec-changes/spec.md)
 

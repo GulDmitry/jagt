@@ -361,4 +361,21 @@ class SubAgentBriefingTest {
 
         assertThat(briefing).contains("1. Work.", "<hard_safety>", "push only to `ABC-42`");
     }
+
+    @Test
+    void asksForTheJudgementOfEverySwitchThatIsOnInTheFirstReport(@TempDir Path root) throws Exception {
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        new ConfigService.ConfigFile.VisualizeConfig(true),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(briefing).contains("first status report carries `switches`: for each of visualize");
+    }
 }

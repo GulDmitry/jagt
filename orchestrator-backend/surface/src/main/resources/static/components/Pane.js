@@ -1,7 +1,7 @@
 // The one task open in full: its card, then a tab of what is known about it.
 
 import {Card} from './Card.js';
-import {reportParts} from '../core/format.js';
+import {reportParts, switchLines} from '../core/format.js';
 import {html} from './html.js';
 import {Report} from './Report.js';
 import {draw} from '../ui/mermaid.js';
@@ -40,6 +40,7 @@ const Round = ({shown, offered}) => html`<section class="round" role="tabpanel" 
 
 // `shown` is what the tab read, `{names, name, html}`, or null while it reads; `html` is rendered by the server.
 const Artifacts = ({task, shown}) => html`<section class="artifacts" role="tabpanel" id="panel-artifacts" aria-labelledby="tab-artifacts">
+  ${switchLines(task).length ? html`<p class="muted switches">${switchLines(task).map((line, at) => html`${at ? html`<br/>` : ''}${line}`)}</p>` : ''}
   ${shown === null ? html`<p class="muted">reading…</p>`
     : !shown.names.length ? html`<p class="muted">No document of this task is in its worktree.</p>`
       : html`<div class="doc-names">${shown.names.map((name) => html`<button data-file=${name} data-task=${task.id}

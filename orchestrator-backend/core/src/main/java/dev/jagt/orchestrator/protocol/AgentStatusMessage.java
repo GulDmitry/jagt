@@ -27,7 +27,7 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 public record AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
                                  @Nullable String reviewRequestUrl, Map<String, String> reviewRequests,
                                  @Nullable String taskId, @Nullable String needsProject,
-                                 @Nullable String why) implements Message {
+                                 @Nullable String why, Map<String, String> switches) implements Message {
 
     /** The wire spelling of what a report means; absent is progress. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "permission", "no_changes",
@@ -70,6 +70,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                     + " Master's word; the message says why.")
             .text("taskId", "Optional explicit task id or alias (Master use). Sub-agents may only target their"
                     + " own task.")
+            .pairs(SwitchJudgements.FIELD, SwitchJudgements.DESCRIBES,
+                    List.of(Map.of("visualize", "no — config-only change, nothing to draw")))
             .required(Why.FIELD, "string", Why.DESCRIBES);
 
     public AgentStatusMessage {
@@ -82,28 +84,29 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         needsProject = absent(needsProject);
         why = absent(why);
         reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
+        switches = switches == null ? Map.of() : Map.copyOf(switches);
     }
 
     /** The five-field form, for jagt's own reports, which name no task of someone else's. */
     public AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
                               @Nullable String reviewRequestUrl, Map<String, String> reviewRequests) {
-        this(status, message, outcome, reviewRequestUrl, reviewRequests, null, null, null);
+        this(status, message, outcome, reviewRequestUrl, reviewRequests, null, null, null, Map.of());
     }
 
     public static AgentStatusMessage of(@Nullable String status, @Nullable String message) {
-        return new AgentStatusMessage(status, message, null, null, Map.of(), null, null, null);
+        return new AgentStatusMessage(status, message, null, null, Map.of(), null, null, null, Map.of());
     }
 
     public AgentStatusMessage withOutcome(@Nullable String outcome) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why, switches);
     }
 
     public AgentStatusMessage withReviewRequestUrl(@Nullable String reviewRequestUrl) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why, switches);
     }
 
     public AgentStatusMessage withReviewRequests(Map<String, String> reviewRequests) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why);
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why, switches);
     }
 
     /**
@@ -114,12 +117,13 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
     public List<Violation> violations(MessageContext context) {
         List<Violation> found = new ArrayList<>();
         Why.violation(why).ifPresent(found::add);
+        found.addAll(SwitchJudgements.violations(switches, context.switchesOwed()));
         found.addAll(reportViolations(context));
         return List.copyOf(found);
     }
 
     /**
-     * Every rule but the sender's reason, which a report jagt writes for itself does not give. {@code projectsOnTask}
+     * Every rule but the sender's reason and switch judgements, which a report jagt writes for itself does not give. {@code projectsOnTask}
      * empty means the task is unknown, which is a different refusal and not this one's to make.
      */
     public List<Violation> reportViolations(MessageContext context) {
@@ -181,7 +185,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             return Optional.empty();
         }
         return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), message,
-                link(context.projectsOnTask()), reviewRequests, noPlan(), needsProject));
+                link(context.projectsOnTask()), reviewRequests, noPlan(), needsProject,
+                SwitchJudgements.normalised(switches)));
     }
 
     private boolean noPlan() {

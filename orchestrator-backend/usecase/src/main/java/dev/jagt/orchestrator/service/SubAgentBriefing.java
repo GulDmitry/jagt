@@ -26,7 +26,9 @@ public class SubAgentBriefing {
                      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
         String taskId = request.taskId();
         String switches = planFirstSentence(request.mode()) + autoplanSentence(autoplan)
-                + visualizeSentence(visualize) + diagnoseSentence(diagnose);
+                + visualizeSentence(visualize) + diagnoseSentence(diagnose)
+                + judgementSentence(new ConfigService.ConfigFile.AgentConfig(null, null, null, autoplan, visualize,
+                        diagnose, null).switchesOn());
         return TASK.formatted(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
                         repo.remoteUrl(), repo.worktreePath(), alsoYours(repo, repos) + deployWorktrees(taskId, repos))
                 + brief.section("context").filter(context -> !context.isBlank()).map(context -> context + "\n\n")
@@ -68,6 +70,12 @@ public class SubAgentBriefing {
         return "plan".equalsIgnoreCase(mode)
                 ? " PLAN FIRST: the human asked for a plan. Plan before your first edit, as above."
                 : "";
+    }
+
+    private static String judgementSentence(List<String> on) {
+        return on.isEmpty() ? ""
+                : " Your first status report carries `switches`: for each of " + String.join(", ", on)
+                + " `yes — <why>` or `no — <why>`, whether you judged it needed.";
     }
 
     private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {

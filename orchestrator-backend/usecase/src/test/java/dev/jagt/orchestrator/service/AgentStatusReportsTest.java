@@ -737,7 +737,7 @@ class AgentStatusReportsTest {
                 configService);
 
         reports.report(new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", null, Map.of(), null,
-                "registry", null), "ABC-1");
+                "registry", null, Map.of()), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isEqualTo("registry");
     }
@@ -754,7 +754,7 @@ class AgentStatusReportsTest {
                 configService);
 
         assertThatThrownBy(() -> reports.report(new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null,
-                Map.of(), null, "ghost", null), "ABC-1")).isInstanceOf(IllegalArgumentException.class)
+                Map.of(), null, "ghost", null, Map.of()), "ABC-1")).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("needsProject").hasMessageContaining("[proj]");
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isNull();
     }
@@ -890,5 +890,65 @@ class AgentStatusReportsTest {
         reports.report(TaskStatus.IN_PROGRESS, "back to work", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isNull();
+    }
+
+    @Test
+    void owesAJudgementOnEverySwitchThatIsOnToASessionStillInNew(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withAgent(
+                ConfigService.ConfigFile.AgentConfig.defaults()
+                        .withVisualize(new ConfigService.ConfigFile.VisualizeConfig(true))));
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        assertThat(reports.sessionContextFor("ABC-1").switchesOwed()).containsExactly("visualize");
+    }
+
+    @Test
+    void owesNoJudgementOnASwitchThatIsOff(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        assertThat(reports.sessionContextFor("ABC-1").switchesOwed()).isEmpty();
+    }
+
+    @Test
+    void owesNoJudgementOnceTheTaskHasLeftNew(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withAgent(
+                ConfigService.ConfigFile.AgentConfig.defaults()
+                        .withVisualize(new ConfigService.ConfigFile.VisualizeConfig(true))));
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        assertThat(reports.sessionContextFor("ABC-1").switchesOwed()).isEmpty();
+    }
+
+    @Test
+    void recordsTheJudgementsAReportCarriesOnTheTask(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null, null,
+                Map.of("visualize", "no — config-only change")), "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().switches())
+                .containsExactly(Map.entry("visualize", "no — config-only change"));
     }
 }

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 
 /**
@@ -70,7 +71,9 @@ public record TaskState(
         // The project key a session asked to have a repository of, until one is added or it reports anything else.
         @Nullable String repoRequest,
         // Absent in a file written before the turn existed, which reads as no turn open.
-        @Nullable Turn turn
+        @Nullable Turn turn,
+        // Switch name to the session's "yes — why" or "no — why"; empty until it judged one.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> switches
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -82,6 +85,7 @@ public record TaskState(
         refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
         probes = probes == null ? List.of() : List.copyOf(probes);
         checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
+        switches = switches == null ? Map.of() : Map.copyOf(switches);
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
@@ -129,7 +133,8 @@ public record TaskState(
             @JsonProperty("loop") @Nullable Loop loop,
             @JsonProperty("conflict") @Nullable ConflictWatch conflict,
             @JsonProperty("repoRequest") @Nullable String repoRequest,
-            @JsonProperty("turn") @Nullable Turn turn) {
+            @JsonProperty("turn") @Nullable Turn turn,
+            @JsonProperty("switches") @Nullable Map<String, String> switches) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -141,7 +146,7 @@ public record TaskState(
                 unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
-                Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn);
+                Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn, switches == null ? Map.of() : switches);
     }
 
     record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
@@ -551,6 +556,16 @@ public record TaskState(
     }
 
     /** Does NOT touch lastActiveTimestamp: the gate moves by a human's word or by the session declaring no plan. */
+    /** What the session judged, merged over what it judged before: the last word on a switch stands. */
+    public TaskState judged(Map<String, String> judged) {
+        if (judged.isEmpty()) {
+            return this;
+        }
+        Map<String, String> merged = new TreeMap<>(switches);
+        merged.putAll(judged);
+        return toBuilder().switches(merged).build();
+    }
+
     public TaskState withTurn(Turn turn) {
         return toBuilder().turn(turn).build();
     }
@@ -586,7 +601,7 @@ public record TaskState(
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).checksUnread(checksUnread)
                 .approved(approved)
                 .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
-                .planGate(planGate).trail(trail).stop(stop).conflict(conflict).repoRequest(repoRequest).turn(turn);
+                .planGate(planGate).trail(trail).stop(stop).conflict(conflict).repoRequest(repoRequest).turn(turn).switches(switches);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -622,6 +637,7 @@ public record TaskState(
         private @Nullable ConflictWatch conflict;
         private @Nullable String repoRequest;
         private @Nullable Turn turn;
+        private Map<String, String> switches = Map.of();
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -793,6 +809,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder switches(Map<String, String> switches) {
+            this.switches = switches;
+            return this;
+        }
+
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
@@ -800,7 +821,7 @@ public record TaskState(
             return new TaskState(repos, status, lastActiveTimestamp, message, report, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, checksUnread, approved, usage, agentSpend, log, refusals, gitTrust,
-                    probes, planGate, trail, stop, conflict, repoRequest, turn);
+                    probes, planGate, trail, stop, conflict, repoRequest, turn, switches == null ? Map.of() : switches);
         }
     }
 }
