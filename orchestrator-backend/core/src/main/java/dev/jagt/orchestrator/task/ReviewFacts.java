@@ -27,11 +27,14 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
         newestNotes = newestNotes == null ? List.of() : List.copyOf(newestNotes);
     }
 
-    /** Equal for two reads of the same open threads with the same newest notes, whatever the copied text. */
+    /** Equal for two reads of the same open threads with the same newest notes, whatever the copied text; empty where any id is unknown. */
     public String noteFingerprint() {
+        if (newestNotes.size() != threads.size() || newestNotes.stream().anyMatch(String::isBlank)) {
+            return "";
+        }
         return IntStream.range(0, threads.size())
                 .mapToObj(i -> threads.get(i).strip().lines().findFirst().orElse("")
-                        + " " + (i < newestNotes.size() ? newestNotes.get(i) : ""))
+                        + " " + newestNotes.get(i))
                 .sorted().collect(Collectors.joining("\n"));
     }
 

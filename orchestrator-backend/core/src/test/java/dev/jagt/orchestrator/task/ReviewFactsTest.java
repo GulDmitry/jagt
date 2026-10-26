@@ -98,4 +98,12 @@ class ReviewFactsTest {
 
         assertThat(before.noteFingerprint()).isNotEqualTo(after.noteFingerprint());
     }
+
+    @Test
+    void fingerprintsNothingWhereAReadMissesAThreadsNewestNoteId() {
+        ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a", "l2\nrev: b"), 7,
+                List.of(), List.of("note_1"));
+
+        assertThat(facts.noteFingerprint()).isEmpty();
+    }
 }
