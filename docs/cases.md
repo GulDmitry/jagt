@@ -137,3 +137,8 @@ Families:
 | L12 | the review sweep says "waiting on the reviewer" three polls in a row and nothing else moves for 3 s → the run ends "waiting on the reviewer", a pass-eligible ending, instead of idling to the timeout | seen 2026-10-25: the stand has no reviewer to answer, so runs with an answered thread waited out the clock | `BackendSignalsTest`, `RunEndTest`, `StandOutcomeTest`, `MutationProgressTest` |
 | L13 | jagt is restarted mid-run → the second binds the first's port and the marker keeps it | seen 2026-10-25, jagt-stand-68761-8: second jagt on another port, the session's `.mcp.json` still named the first, its status reports got ECONNREFUSED | `StandRestartTest` |
 | L14 | the deploy-conflict mutation runs in judge → the task rests at DEPLOY_CONFLICT owned by YOU and no `conflict` step is relayed (`relays-in: act` in `mutations.md`: only act hands the session the conflict, decision 0013); the run is held at once there and passes without the step, act still needs it | seen 2026-10-25: a judge run waited a minute for and then failed on a conflict step jagt never sends | `MutationBookTest`, `MutationProgressTest`, `RunEndTest` |
+
+## M — anything else
+| id | the case, one line | defects | pinned by |
+|----|--------------------|---------|-----------|
+| M1 | a ticket keeps its acceptance criteria in a field the tracker's default read omits → the plan carries each criterion tagged here, elsewhere or wrong, and a plan without the section is refused | seen 2026-10-26: 16 criteria never reached `plan.md`, the plan was approved without them | `PlanCriteriaTest`, `HandBackTest`, `AgentStatusReportsTest` |

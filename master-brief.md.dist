@@ -45,6 +45,8 @@ Each is wrong wherever it appears, whatever the author's own rules say; the patt
 - **`unasked scope`** — the diff goes past the ticket further than its own fix needs. A reviewer's suggestion is
   no ticket: what lies beyond is named as a task of its own, not done. A removal the ticket's own wording could
   mean is not scope but a question.
+- **`dropped criterion`** — a plan's `## Acceptance criteria` omits a criterion the ticket names, or tags it
+  `elsewhere` or `wrong` where the ticket does not bear that out.
 
 ## Three rounds, and the answer each deserved
 

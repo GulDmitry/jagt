@@ -536,6 +536,22 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void refusesAPlanWithoutAcceptanceCriteria(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        Files.writeString(root.resolve("plan.md"), "# Plan\n1. change the guide\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()), configService),
+                configService);
+
+        assertThatThrownBy(() -> reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("## Acceptance criteria");
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
     void keepsThePollingWindowWhileTheAgentRepeatsThatItIsWaitingOnTheSameChecks(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
@@ -610,7 +626,7 @@ class AgentStatusReportsTest {
     void recordsTheProbesAPlanDeclaresAsItIsPutUp(@TempDir Path root) throws IOException {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        Files.writeString(root.resolve("plan.md"), "# Plan\n```probes\nartifact docs/guide.md\n```\n");
+        Files.writeString(root.resolve("plan.md"), "# Plan\n## Acceptance criteria\n- [here] guide exists\n```probes\nartifact docs/guide.md\n```\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
@@ -627,7 +643,7 @@ class AgentStatusReportsTest {
     void refusesAPlanWhoseProbesBlockHoldsALineNoProbeReads(@TempDir Path root) throws IOException {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        Files.writeString(root.resolve("plan.md"), "```probes\ncommand ./gradlew test | tee out.log\n```\n");
+        Files.writeString(root.resolve("plan.md"), "## Acceptance criteria\n- [here] builds\n```probes\ncommand ./gradlew test | tee out.log\n```\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),

@@ -8,6 +8,8 @@
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-declares-its-probes-in-one-form)
 - **Probes run by jagt** — jagt runs the plan's probes itself before a hand-back and records what they printed.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-jagt-runs-the-probes-at-verifying)
+- **Tagged criteria** — A plan lists the ticket's acceptance criteria, each tagged here, elsewhere or wrong; one without is refused.
+  [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-carries-its-tagged-acceptance-criteria)
 
 ## Attention · [spec](../openspec/specs/attention/spec.md)
 
@@ -34,9 +36,7 @@
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row)
 - **Open task beside the list** — Pick a task and its detail opens next to the list.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
-- **Session tab** — Read the session's screen as it stands and type a line to it.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
-- **Files tab** — Read a task's plan, notes and sketch rendered, without opening its worktree.
+- **Session and Files tabs** — Read the session's screen as it stands and type a line to it; read a task's plan, notes and sketch rendered.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
 - **Add a project** — Add a repository to the configuration from the board, never by hand.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-a-project-is-added-from-the-board)

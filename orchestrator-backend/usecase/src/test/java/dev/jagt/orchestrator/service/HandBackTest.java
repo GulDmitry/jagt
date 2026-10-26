@@ -74,14 +74,14 @@ class HandBackTest {
     }
 
     @Test
-    void readsNoProbesAndFindsNoFaultWhereTheSessionPutUpNoPlanFile(@TempDir Path worktree) {
+    void refusesAPlanPutUpWithNoPlanFile(@TempDir Path worktree) {
         HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
         PlanProbes.Read read = handBack.planProbes(TaskState.builder("proj", worktree.toString(),
                 TaskStatus.PLAN_PENDING).build());
 
         assertThat(read.probes()).isEmpty();
-        assertThat(read.violations()).isEmpty();
+        assertThat(read.violations()).singleElement().asString().contains("## Acceptance criteria");
     }
 
     @Test
