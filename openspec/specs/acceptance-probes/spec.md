@@ -88,4 +88,4 @@ The last failing run's key is kept on the turn's marks. A question or permission
 
 #### Scenario: An unchanged tree is not verified twice
 - **WHEN** a task is at `VERIFYING` with the tree state and probes of its last failing run
-- **THEN** nothing runs and nothing is relayed; the task lands `REVIEW_PENDING`, its message saying the failure stands
+- **THEN** no probe runs, nothing is relayed, and the task stops for you naming the standing failure

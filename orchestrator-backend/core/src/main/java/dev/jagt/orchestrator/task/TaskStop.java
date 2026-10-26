@@ -8,7 +8,8 @@ public record TaskStop(Trigger trigger, long at, String evidence) {
         STALLED(Trigger.DEFECT), SHIPS(Trigger.DEFECT), MISS("Add a case if one should send it"),
         ROUNDS("Read what the session made of the last one"),
         CHECKS("Check that the code host's MCP can list the pipelines"),
-        UNDELIVERED("Check that the session's window is running");
+        UNDELIVERED("Check that the session's window is running"),
+        UNCHANGED_FAILURE("Change the tree, or read why the failure stands");
 
         private static final String DEFECT = "Likely a jagt defect: inspect the sweeps in the log";
 

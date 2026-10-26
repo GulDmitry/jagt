@@ -7,7 +7,7 @@ identical failure relayed again, three times; the Master's answer was dropped an
 
 - A report that asks lands where a question lands, never at `VERIFYING`, and a question standing there runs nothing.
 - A verification is keyed on the worktree's tree state and the declared probes; the key of the last failing run is
-  kept on the task's turn, and an unchanged key runs and relays nothing: the task goes to the human with the failure noted.
+  kept on the task's turn, and an unchanged key runs and relays nothing: the task stops for the human, naming the standing failure.
 
 ## Capabilities
 

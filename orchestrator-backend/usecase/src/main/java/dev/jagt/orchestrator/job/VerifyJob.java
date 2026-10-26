@@ -3,10 +3,12 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.Verification;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class VerifyJob implements Job {
     private final Verification verification;
     private final AgentStatusReports statusReports;
     private final StepRelay relay;
+    private final TaskStops stops;
 
     @Override
     public String id() {
@@ -64,7 +67,8 @@ public class VerifyJob implements Job {
     private void verify(String taskId, TaskState task) {
         Optional<String> key = verification.key(task);
         if (key.filter(failing -> failing.equals(task.turnOrNone().mark(FAILED))).isPresent()) {
-            statusReports.verified(true, "the tree is unchanged since its verification failed; not run again", taskId);
+            stops.stop(taskId, TaskStop.Trigger.UNCHANGED_FAILURE, "handed back the tree its verification failed on: "
+                    + standing(task));
             return;
         }
         Optional<String> failure = verification.failure(task);
@@ -83,6 +87,12 @@ public class VerifyJob implements Job {
         }
         returned(taskId, key, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
                 "acceptance probe failed; relayed");
+    }
+
+    private static String standing(TaskState task) {
+        String probes = task.probes().stream().filter(Probe::failed).map(Probe::toString)
+                .collect(Collectors.joining("; "));
+        return probes.isEmpty() ? "the project's verify command" : probes;
     }
 
     /** A round stopped at its ceiling stays at VERIFYING, verified anew once the human lifts the stop. */
