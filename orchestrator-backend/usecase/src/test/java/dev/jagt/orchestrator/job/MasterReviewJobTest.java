@@ -102,7 +102,7 @@ class MasterReviewJobTest {
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
                 .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(5, "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview().write(back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
         new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
@@ -118,7 +118,7 @@ class MasterReviewJobTest {
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
                 .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(5, "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview().write(back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         master("judge");
         when(verdicts.act(anyString(), any(), any(), any())).thenThrow(new TaskMovedOn("ABC-1"));
 
@@ -133,7 +133,7 @@ class MasterReviewJobTest {
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
                 .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(3, "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview().write(back, new MasterReview.Review(3, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
         new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();

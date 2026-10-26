@@ -26,11 +26,11 @@ class RoundQuotesTest {
     void keepsAReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", List.of(new MasterReview.Read("qa",
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task);
+        boolean carried = quotes.carried(task, "in1");
 
         assertThat(carried).isTrue();
         assertThat(reviews.readsTheRoundInFront(task)).isTrue();
@@ -40,11 +40,11 @@ class RoundQuotesTest {
     void readsTheRoundAnewWhenTheTasksOwnDiffChanged(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", List.of(new MasterReview.Read("qa",
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("def456"));
 
-        boolean carried = quotes.carried(task);
+        boolean carried = quotes.carried(task, "in1");
 
         assertThat(carried).isFalse();
         assertThat(reviews.readsTheRoundInFront(task)).isFalse();
@@ -54,11 +54,11 @@ class RoundQuotesTest {
     void keepsANotReadyVerdictWhenTheSessionHandedBackTheSameOwnDiffAndKind(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .report(AgentReport.NO_CHANGES).lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "NO_CHANGES", List.of(new MasterReview.Read("qa",
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", "NO_CHANGES", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "not ready", List.of(new Finding("Foo.java", "drops v2", "", "wrong", "", "missing")), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task);
+        boolean carried = quotes.carried(task, "in1");
 
         assertThat(carried).isTrue();
         assertThat(reviews.of(task).orElseThrow().kind()).isEqualTo(MasterReview.Kind.NOT_READY);
@@ -68,11 +68,11 @@ class RoundQuotesTest {
     void readsTheRoundAnewWhenTheHandBackIsOfAnotherKind(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .report(AgentReport.NO_CHANGES).lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", List.of(new MasterReview.Read("qa",
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task);
+        boolean carried = quotes.carried(task, "in1");
 
         assertThat(carried).isFalse();
     }
@@ -81,11 +81,47 @@ class RoundQuotesTest {
     void readsTheRoundAnewWhereTheVerdictWasStoredBeforeItKeptTheReportKind(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", null, List.of(new MasterReview.Read("qa",
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", null, "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task);
+        boolean carried = quotes.carried(task, "in1");
+
+        assertThat(carried).isFalse();
+    }
+
+    @Test
+    void readsTheRoundAnewWhenTheHumanSaidSomethingNewOverTheSameDiffAndKind(@TempDir Path worktree) {
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .lastActiveTimestamp(5_000).build();
+        when(facts.ask("ABC-1", task)).thenReturn("Summary");
+        when(facts.notes(task)).thenReturn("");
+        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
+        when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
+        String read = quotes.inputs("ABC-1", task).orElseThrow();
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", read, List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2", "drop v1")));
+
+        boolean carried = quotes.carried(task, quotes.inputs("ABC-1", task).orElseThrow());
+
+        assertThat(carried).isFalse();
+    }
+
+    @Test
+    void readsTheRoundAnewWhenTheSessionsNotesChangedOverTheSameDiffAndKind(@TempDir Path worktree) {
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .lastActiveTimestamp(5_000).build();
+        when(facts.ask("ABC-1", task)).thenReturn("Summary");
+        when(facts.humanSaid(task)).thenReturn(Optional.of(List.of()));
+        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
+        when(facts.notes(task)).thenReturn("");
+        String read = quotes.inputs("ABC-1", task).orElseThrow();
+        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", read, List.of(new MasterReview.Read("qa",
+                new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        when(facts.notes(task)).thenReturn("disputed: the guard is right");
+
+        boolean carried = quotes.carried(task, quotes.inputs("ABC-1", task).orElseThrow());
 
         assertThat(carried).isFalse();
     }

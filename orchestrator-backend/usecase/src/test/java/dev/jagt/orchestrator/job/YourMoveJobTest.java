@@ -278,7 +278,7 @@ class YourMoveJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.PLAN_PENDING).alias("a1").build());
         job.run();
         TaskState judged = state.task("ABC-1").orElseThrow();
-        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", List.of(new MasterReview.Read("qa",
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", "", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
 
         job.run();
@@ -323,7 +323,7 @@ class YourMoveJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").build());
         job.run();
         TaskState judged = state.task("ABC-1").orElseThrow();
-        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", List.of(new MasterReview.Read("qa",
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", "", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(1));
@@ -349,7 +349,7 @@ class YourMoveJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").build());
         job.run();
         TaskState judged = state.task("ABC-1").orElseThrow();
-        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", List.of(new MasterReview.Read("qa",
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", "", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(10));
@@ -372,7 +372,7 @@ class YourMoveJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.PLAN_PENDING).alias("a1").build());
         job.run();
         TaskState judged = state.task("ABC-1").orElseThrow();
-        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", List.of(new MasterReview.Read("qa",
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", "", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(1));
@@ -528,7 +528,7 @@ class YourMoveJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("http://mr/1").build());
         job.run();
         TaskState judged = state.task("ABC-1").orElseThrow();
-        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", List.of(new MasterReview.Read("qa",
+        new MasterReview().write(judged, new MasterReview.Review(judged.statusSince(), "", "", "", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         job.run();
         clock.advance(Duration.ofSeconds(10));

@@ -81,19 +81,21 @@ public class MasterReview {
 
     /**
      * {@code round} names the turn jagt asked about, {@code ownDiff} the task's own diff it read, blank where a
-     * role could not read the round; {@code report} is the hand-back's kind, null in a review stored before it was
-     * kept.
+     * role could not read the round; {@code report} is the hand-back's kind and {@code inputs} a digest of the
+     * stored texts the round quoted, both null in a review stored before they were kept.
      */
     @With
-    public record Review(long round, String ownDiff, @Nullable String report, List<Read> reads) {
+    public record Review(long round, String ownDiff, @Nullable String report, @Nullable String inputs,
+                         List<Read> reads) {
 
-        static Review of(TaskState task, String ownDiff, List<Read> reads) {
-            return new Review(task.turnOrNone().id(), ownDiff, task.report().name(), reads);
+        static Review of(TaskState task, String ownDiff, String inputs, List<Read> reads) {
+            return new Review(task.turnOrNone().id(), ownDiff, task.report().name(), inputs, reads);
         }
 
-        /** Whether it read what the hand-back in front presents: the same own diff, the same kind of report. */
-        boolean readsInputsOf(TaskState task, String own) {
-            return !ownDiff.isBlank() && ownDiff.equals(own) && task.report().name().equals(report);
+        /** Whether it read what the hand-back in front presents: the same own diff, report kind and quoted texts. */
+        boolean readsInputsOf(TaskState task, String own, String quoted) {
+            return !ownDiff.isBlank() && !quoted.isBlank() && ownDiff.equals(own)
+                    && task.report().name().equals(report) && quoted.equals(inputs);
         }
     }
 

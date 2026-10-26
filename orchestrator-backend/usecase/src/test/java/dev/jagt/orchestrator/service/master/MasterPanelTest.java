@@ -799,7 +799,7 @@ class MasterPanelTest {
         RoundQuotes quotes = mock(RoundQuotes.class);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-        when(quotes.carried(task)).thenReturn(true);
+        when(quotes.carried(task, "")).thenReturn(true);
 
         boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 

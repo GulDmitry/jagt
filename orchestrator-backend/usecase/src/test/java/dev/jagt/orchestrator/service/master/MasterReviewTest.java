@@ -39,7 +39,7 @@ class MasterReviewTest {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         Finding inverted = new Finding("Foo.java", "the guard is inverted", "inverted guard", "blocking", "check()",
                 "behaviour");
-        reviews.write(task, new MasterReview.Review(1, "", "", List.of(
+        reviews.write(task, new MasterReview.Review(1, "", "", "", List.of(
                 new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")),
                 new MasterReview.Read("developer", new Judgement("", "not ready", List.of(inverted), "", List.of(), "")))),
                 "");
@@ -54,7 +54,7 @@ class MasterReviewTest {
     void writesTheFileForTheHumanBesideTheVerdict(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        reviews.write(task, new MasterReview.Review(1, "", "", List.of()), "VERDICT: ready\n");
+        reviews.write(task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n");
 
         assertThat(worktree.resolve(MasterReview.FILE)).content().isEqualTo("VERDICT: ready\n");
     }
@@ -63,7 +63,7 @@ class MasterReviewTest {
     void doesNotTakeAVerdictAskedAboutAnEarlierHandBackForTheOneInFrontHoweverLateItWasWritten(@TempDir Path worktree) {
         TaskState handedBackAgain = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-        reviews.write(handedBackAgain, new MasterReview.Review(3, "", "", List.of()), "");
+        reviews.write(handedBackAgain, new MasterReview.Review(3, "", "", "", List.of()), "");
 
         assertThat(reviews.readsTheRoundInFront(handedBackAgain)).isFalse();
     }
@@ -72,7 +72,7 @@ class MasterReviewTest {
     void takesAVerdictAskedAboutTheHandBackInFrontAsAboutIt(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-        reviews.write(task, new MasterReview.Review(5, "", "", List.of()), "");
+        reviews.write(task, new MasterReview.Review(5, "", "", "", List.of()), "");
 
         assertThat(reviews.readsTheRoundInFront(task)).isTrue();
     }
@@ -82,7 +82,7 @@ class MasterReviewTest {
         Turn handedBack = new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of());
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .build().withTurn(handedBack);
-        reviews.write(task, new MasterReview.Review(5, "", "", List.of()), "");
+        reviews.write(task, new MasterReview.Review(5, "", "", "", List.of()), "");
 
         TaskState handedBackAgain = task.withTurn(handedBack.closed(Turn.Holder.SESSION, 6_000)
                 .closed(Turn.Holder.MASTER, 7_000));
@@ -94,7 +94,7 @@ class MasterReviewTest {
     void makesARestampedVerdictAnswerTheHandBackInFront(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-        reviews.write(task, new MasterReview.Review(3, "abc123", "", List.of()), "");
+        reviews.write(task, new MasterReview.Review(3, "abc123", "", "", List.of()), "");
 
         boolean restamped = reviews.restamp(task);
 
@@ -119,7 +119,7 @@ class MasterReviewTest {
     void saysNothingWasWrittenForATaskWithNoWorktree() {
         TaskState task = TaskState.builder("proj", "", TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.write(task, new MasterReview.Review(1, "", "", List.of()), "VERDICT: ready\n")).isFalse();
+        assertThat(reviews.write(task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n")).isFalse();
     }
 
     @Test
@@ -127,7 +127,7 @@ class MasterReviewTest {
         Files.writeString(worktree.resolve(".jagt"), "in the way");
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        boolean written = reviews.write(task, new MasterReview.Review(1, "", "", List.of()), "VERDICT: ready\n");
+        boolean written = reviews.write(task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n");
 
         assertThat(written).isFalse();
         assertThat(worktree.resolve(MasterReview.FILE)).content().isEqualTo("VERDICT: ready\n");
@@ -137,7 +137,7 @@ class MasterReviewTest {
     void saysBothFilesWereWrittenWhereTheyWere(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.write(task, new MasterReview.Review(1, "", "", List.of()), "VERDICT: ready\n")).isTrue();
+        assertThat(reviews.write(task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n")).isTrue();
     }
 
     @Test
@@ -149,19 +149,19 @@ class MasterReviewTest {
 
         MasterReview.Review stored = reviews.stored(task).orElseThrow();
 
-        assertThat(stored.readsInputsOf(task, "abc123")).isFalse();
+        assertThat(stored.readsInputsOf(task, "abc123", "in1")).isFalse();
     }
 
     @Test
     void remembersTheKindOfTheHandBackItReadBesideTheOwnDiff(@TempDir Path worktree) {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .report(dev.jagt.orchestrator.task.AgentReport.NO_CHANGES).build();
-        reviews.write(task, MasterReview.Review.of(task, "abc123", List.of()), "");
+        reviews.write(task, MasterReview.Review.of(task, "abc123", "in1", List.of()), "");
 
         MasterReview.Review stored = reviews.stored(task).orElseThrow();
 
-        assertThat(stored.readsInputsOf(task, "abc123")).isTrue();
-        assertThat(stored.readsInputsOf(task, "def456")).isFalse();
+        assertThat(stored.readsInputsOf(task, "abc123", "in1")).isTrue();
+        assertThat(stored.readsInputsOf(task, "def456", "in1")).isFalse();
     }
 
     @Test
