@@ -142,3 +142,4 @@ Families:
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | M1 | a ticket keeps its acceptance criteria in a field the tracker's default read omits → the plan carries each criterion tagged here, elsewhere or wrong, and a plan without the section is refused | seen 2026-10-26: 16 criteria never reached `plan.md`, the plan was approved without them | `PlanCriteriaTest`, `HandBackTest`, `AgentStatusReportsTest` |
+| M2 | a ship finds nothing to commit, push or post → its session may reply `no_changes`, which both ship cases take; the task is not stopped | seen 2026-10-26: a ship with nothing new to push replied no_changes, the task stopped and new review comments were never relayed | `CaseDoorTest` |

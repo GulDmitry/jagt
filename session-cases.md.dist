@@ -134,7 +134,7 @@ An acceptance probe of the plan failed on a hand-back.
 step: ship
 at: IN_PROGRESS, VERIFYING, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED, REVIEWED, DEPLOYED, REVERTED
 by: human
-replies: REVIEW_PENDING, CI_POLLING; plain, question, permission
+replies: REVIEW_PENDING, CI_POLLING; plain, question, permission, no_changes
 You shipped the task, so the session commits, pushes and opens its requests.
 
 ## ship-by-master
@@ -142,7 +142,7 @@ You shipped the task, so the session commits, pushes and opens its requests.
 step: ship
 at: REVIEW_PENDING
 by: master
-replies: REVIEW_PENDING, CI_POLLING; plain, question, permission
+replies: REVIEW_PENDING, CI_POLLING; plain, question, permission, no_changes
 The Master read the hand-back and shipped it.
 
 ## round-checks-polled

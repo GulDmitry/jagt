@@ -150,3 +150,7 @@ human extends the cases.
 - **WHEN** ABC-42's deploy check is open and its session reports CI_POLLING
 - **THEN** the report is refused and not applied, the turn passes to the human, and the card asks `lift the stop`
 - **AND** `misses.jsonl` names `deploy` with `by: session`, `got` and `expected`
+
+#### Scenario: A ship with nothing new to push
+- **WHEN** the Master ships ABC-42 whose tree is clean and branch pushed, and its session replies CI_POLLING with `no_changes`
+- **THEN** the reply is taken and ABC-42 is not stopped

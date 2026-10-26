@@ -8,6 +8,8 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -106,6 +108,23 @@ class CaseDoorTest {
         boolean byMove = OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", "ship"));
 
         assertThat(byMove).isFalse();
+    }
+
+    @Test
+    void takesNoChangesFromAShipTheMasterPressedOnACleanPushedTree(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .turn(Turn.none().relayed("ship", "d1", 100)).build());
+        CaseDoor door = doorOver(paths, state);
+
+        boolean taken = OriginContext.as(ActionOrigin.MASTER,
+                () -> door.takes("ABC-42", TaskStatus.CI_POLLING, AgentReport.NO_CHANGES));
+
+        assertThat(taken).isTrue();
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
     }
 
     @Test
