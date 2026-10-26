@@ -89,6 +89,7 @@ Families:
 | E9 | jagt starts with the machine checks off → its own case file is still checked; an empty book never starts | seen 2026-10-24 on the stand: 451 misses in 15 min | `StartupValidationTest` |
 | E10 | a read cannot list a task's pipelines → three running since the lift stop the task with the reads' causes | seen 2026-10-24 on the stand: 8 unknown reads in 15 min, nobody told | `ChecksUnreadTest`, `RoundRecordTest`, `RoundOutcomeTest` |
 | E11 | a session at NEW sits on a prompt that fires no hook, the trust dialog → within seconds a stop waiting on it, its cause named, no key sent | seen 2026-10-24 on the stand: 9 of 24 sessions, ended 10 min later as no sign of life | `LaunchExitsTest`, `ClaudeAgentRuntimeTest`, `SessionProbeTest`, `WatchdogServiceTest` |
+| E12 | the Master presses a verb the machine refuses (a deploy of a branch already on dev) → one WARN naming task, cmd and cause, the press not counted, the other tasks still served; never an ERROR from the job runner | seen 2026-10-26 in the live log: master-deploy failed with Nothing to deploy | `MasterPressTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

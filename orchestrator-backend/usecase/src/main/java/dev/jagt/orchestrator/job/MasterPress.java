@@ -24,7 +24,7 @@ class MasterPress {
     private final ConfigService config;
     private final TaskTurns turns;
 
-    /** False where the press was left to the human. */
+    /** False where the press was left to the human or refused. */
     boolean press(String taskId, TaskState task, TaskAction action) {
         Optional<String> touched = humanPaths.touched(task);
         String left = task.turnOrNone().mark(TaskTurns.LEFT);
@@ -41,16 +41,22 @@ class MasterPress {
         if (left != null) {
             turns.unmark(taskId, TaskTurns.LEFT);
         }
-        execute(taskId, action);
-        return true;
+        return execute(taskId, action);
     }
 
-    /** A verb no path of the task can keep from the human. */
-    void execute(String taskId, TaskAction action) {
+    /** A verb no path of the task can keep from the human; false where the move was refused. */
+    boolean execute(String taskId, TaskAction action) {
         log.atInfo().setMessage("master presses").addKeyValue("task", taskId).addKeyValue("cmd", action.id()).log();
         // Through the same door a human's press uses, so an illegal move is refused rather than taken, and
         // stamped as the Master's so what a verb does on its behalf can differ from what it does on yours.
-        OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, action));
+        try {
+            OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, action));
+        } catch (IllegalArgumentException | IllegalStateException refused) {
+            log.atWarn().setMessage("master press refused").addKeyValue("task", taskId)
+                    .addKeyValue("cmd", action.id()).addKeyValue("cause", refused.getMessage()).log();
+            return false;
+        }
         config.startTaken();
+        return true;
     }
 }

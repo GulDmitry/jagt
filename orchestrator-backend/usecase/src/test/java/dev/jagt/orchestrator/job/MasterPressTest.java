@@ -14,13 +14,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -137,5 +141,29 @@ class MasterPressTest {
                 .press("ABC-1", task, TaskAction.DEPLOY);
 
         assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.LEFT)).isNull();
+    }
+
+    @Test
+    void takesARefusedDeployAsAnOutcomeNotAFault(@TempDir Path root) {
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
+        when(humanPaths.touched(task)).thenReturn(Optional.empty());
+        doThrow(new IllegalStateException("Nothing to deploy")).when(commands).execute("ABC-1", TaskAction.DEPLOY);
+
+        boolean pressed = new MasterPress(commands, humanPaths, config, new TaskTurns(new StateService(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))), Clock.systemUTC())).press("ABC-1", task, TaskAction.DEPLOY);
+
+        assertThat(pressed).isFalse();
+        verify(config, never()).startTaken();
+    }
+
+    @Test
+    void letsAFaultOtherThanARefusalEscape(@TempDir Path root) {
+        doThrow(new UncheckedIOException(new IOException("disk gone"))).when(commands).execute("ABC-1", TaskAction.DEPLOY);
+        MasterPress press = new MasterPress(commands, humanPaths, config, new TaskTurns(new StateService(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))), Clock.systemUTC()));
+
+        assertThatThrownBy(() -> press.execute("ABC-1", TaskAction.DEPLOY)).isInstanceOf(UncheckedIOException.class);
     }
 }
