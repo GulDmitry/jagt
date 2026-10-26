@@ -157,7 +157,8 @@ class MasterModeFlowTest {
         judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
         provisioning.initializeTask(NewTask.builder(TASK, "proj").instructions("Fix the widget")
                 .title("Widget layout is off").build());
-        Files.writeString(worktree().resolve("plan.md"), "Move the widget left.\n");
+        Files.writeString(worktree().resolve("plan.md"),
+                "## Acceptance criteria\n\n- [here] The widget sits left.\n\nMove the widget left.\n");
 
         agentReports("PLAN_PENDING", "plan written", "");
 
