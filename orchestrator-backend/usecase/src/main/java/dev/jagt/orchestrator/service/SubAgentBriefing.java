@@ -27,8 +27,8 @@ public class SubAgentBriefing {
         String taskId = request.taskId();
         String switches = planFirstSentence(request.mode()) + autoplanSentence(autoplan)
                 + visualizeSentence(visualize) + diagnoseSentence(diagnose)
-                + judgementSentence(new ConfigService.ConfigFile.AgentConfig(null, null, null, autoplan, visualize,
-                        diagnose, null).switchesOn());
+                + judgementSentence(ConfigService.ConfigFile.AgentConfig.defaults().withAutoplan(autoplan)
+                        .withVisualize(visualize).withDiagnose(diagnose).switchesOn());
         return TASK.formatted(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
                         repo.remoteUrl(), repo.worktreePath(), alsoYours(repo, repos) + deployWorktrees(taskId, repos))
                 + brief.section("context").filter(context -> !context.isBlank()).map(context -> context + "\n\n")
