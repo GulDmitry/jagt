@@ -64,8 +64,8 @@ answer a question. It SHALL press `add-repo` for a repository a session asked fo
 - **THEN** the Master deploys it, never reverts; `mine: [deploy, revert]` leaves the press yours
 - **WHEN** the press is refused, as a deploy of ABC-42 with no commit beyond dev
 - **THEN** one WARN names the task, the verb and the cause, no ERROR; the other tasks of the tick are still served
-- **WHEN** a round has nothing to ship
-- **THEN** it presses nothing; the task waits for you
+- **WHEN** a hand-back has nothing new to ship: branch pushed unchanged, nothing uncommitted, no replies drafted
+- **THEN** it presses nothing, and the task waits for you; an unpushed commit, uncommitted work or drafted replies make it due
 
 ### Requirement: The human keeps what mine and humanPaths name
 `master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`

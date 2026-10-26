@@ -33,13 +33,13 @@ class WorktreeChangesTest {
     }
 
     @Test
-    void findsNothingToShipWhereNoRepositoryHoldsWorkAndNoneIsInReview() {
+    void findsNothingNewToShipWhereNoRepositoryHoldsWorkAndNoneIsInReview() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
 
-        boolean anyToShip = new WorktreeChanges(configService, inspection)
-                .anyToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
+        boolean anythingNew = new WorktreeChanges(configService, inspection)
+                .anythingNewToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
 
-        assertThat(anyToShip).isFalse();
+        assertThat(anythingNew).isFalse();
     }
 
     @Test
@@ -167,21 +167,40 @@ class WorktreeChangesTest {
     }
 
     @Test
-    void shipsNothingWhereARequestIsOpenButNoRepositoryHoldsNewWork() {
+    void shipsNothingNewWhereARequestIsOpenAndTheBranchIsPushedUnchanged() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+        when(inspection.aheadOfTarget(Path.of("/repo"), Path.of("/wt"), "main")).thenReturn(true);
         TaskState task = TaskState.builder(List.of(new TaskRepo("demo", "/wt", null, "https://host/demo/-/merge_requests/1", null)),
                 TaskStatus.REVIEW_PENDING).build();
 
-        assertThat(new WorktreeChanges(configService, inspection).anyToShip(task)).isFalse();
+        assertThat(new WorktreeChanges(configService, inspection).anythingNewToShip(task)).isFalse();
     }
 
     @Test
-    void shipsATaskWhoseRepositoryHoldsWorkNoRequestCarriesYet() {
+    void shipsACommitTheRemoteBranchDoesNotHoldYet() {
+        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+        when(inspection.unpublished(Path.of("/repo"), Path.of("/wt"))).thenReturn(true);
+
+        assertThat(new WorktreeChanges(configService, inspection)
+                .anythingNewToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build())).isTrue();
+    }
+
+    @Test
+    void shipsWhereGitCannotSayWhetherAnythingIsNew() {
+        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+        when(inspection.unpublished(Path.of("/repo"), Path.of("/wt"))).thenThrow(new IllegalStateException("git failed"));
+
+        assertThat(new WorktreeChanges(configService, inspection)
+                .anythingNewToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build())).isTrue();
+    }
+
+    @Test
+    void shipsAnUncommittedChangeNoRequestCarriesYet() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
         when(inspection.hasUncommittedChanges(Path.of("/repo"), Path.of("/wt"))).thenReturn(true);
 
         assertThat(new WorktreeChanges(configService, inspection)
-                .anyToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build())).isTrue();
+                .anythingNewToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build())).isTrue();
     }
 
     @Test

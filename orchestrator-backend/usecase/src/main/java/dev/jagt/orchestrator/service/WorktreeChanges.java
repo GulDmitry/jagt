@@ -93,11 +93,21 @@ public class WorktreeChanges {
         }
     }
 
-    /** Whether a ship would carry anything: work some repository holds. An open request alone is not that. */
-    public boolean anyToShip(TaskState task) {
-        return task.repos().stream().anyMatch(repo -> holdsWork(Objects.requireNonNull(repo.project()),
-                Objects.requireNonNull(repo.worktreePath()),
-                targetBranch(task, configService.project(Objects.requireNonNull(repo.project())).baseBranch())));
+    /**
+     * Whether some repository holds work no ship has carried yet: uncommitted changes, or a HEAD its remote
+     * branch lacks. A worktree git cannot answer for counts as holding it, as in {@link #holdsWork}.
+     */
+    public boolean anythingNewToShip(TaskState task) {
+        return task.repos().stream().anyMatch(repo -> {
+            Path worktree = Path.of(Objects.requireNonNull(repo.worktreePath()));
+            Path project = projectPath(Objects.requireNonNull(repo.project()));
+            try {
+                return inspection.hasUncommittedChanges(project, worktree) || inspection.unpublished(project, worktree);
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+                return true;
+            }
+        });
     }
 
     /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */

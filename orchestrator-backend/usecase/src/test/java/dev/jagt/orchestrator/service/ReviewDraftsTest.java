@@ -113,4 +113,42 @@ class ReviewDraftsTest {
 
         assertThat(pending).isTrue();
     }
+
+    @Test
+    void holdsDraftsWhereTheFileCarriesRepliesForTheOpenRound(@TempDir Path worktree) throws IOException {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Files.setLastModifiedTime(Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
+                FileTime.fromMillis(3_000));
+
+        boolean drafted = new ReviewDrafts(config).drafted(TaskState.builder("api", worktree.toString(),
+                TaskStatus.REVIEW_PENDING).mrCreatedAt(2_000).build());
+
+        assertThat(drafted).isTrue();
+    }
+
+    @Test
+    void holdsNoDraftsWhereTheFileIsBlank(@TempDir Path worktree) throws IOException {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Files.writeString(worktree.resolve("review_replies.md"), "  \n\n");
+
+        boolean drafted = new ReviewDrafts(config).drafted(TaskState.builder("api", worktree.toString(),
+                TaskStatus.REVIEW_PENDING).mrCreatedAt(2_000).build());
+
+        assertThat(drafted).isFalse();
+    }
+
+    @Test
+    void holdsNoDraftsWhereTheRepliesWereShippedWithAnEarlierRound(@TempDir Path worktree) throws IOException {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Files.setLastModifiedTime(Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
+                FileTime.fromMillis(1_000));
+
+        boolean drafted = new ReviewDrafts(config).drafted(TaskState.builder("api", worktree.toString(),
+                TaskStatus.REVIEW_PENDING).mrCreatedAt(2_000).build());
+
+        assertThat(drafted).isFalse();
+    }
 }

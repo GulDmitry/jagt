@@ -104,6 +104,7 @@ Families:
 | F8 | a verification stays red or the Master returns a round, new or repeated → `loopBreaker.rounds` back, the next stops the task | 0065 rule E: no ceiling; repeats asked the Master itself in `act` | `StepRelayTest`, `MasterVerdictsTest`, `LoopBreakerTest` |
 | F9 | the agent declined a thread and the reviewer has not answered → it waits on the reviewer, not a round every poll | seen 2026-10-24 on the stand: 20 min of relays | `RoundOutcomeTest`, `HeadlessClaudeCodeHostAssistantTest`, `StepRelayTest` |
 | F10 | a reviewer's concession ends a pushed-back thread and the session has nothing to answer → the round is relayed once; the same open threads with the same newest notes are not relayed again, and only rounds bringing no new note count toward the ceilings | seen 2026-10-26: a bot's concession on a pushed-back thread was relayed every poll, the Master re-shipped nothing three times and the task stopped | `TaskStopsTest`, `LoopBreakerTest`, `ReviewFactsTest`, `HeadlessClaudeCodeHostAssistantTest` |
+| F11 | a hand-back with nothing new is shipped again → the Master ships only uncommitted work, an unpushed HEAD or drafted replies | seen 2026-10-26: the Master shipped an unchanged pushed branch five times; each ship found nothing and auto-review relayed again | `ShipDueTest`, `WorktreeChangesTest`, `WorktreeInspectionTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |

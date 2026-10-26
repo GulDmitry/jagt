@@ -71,6 +71,18 @@ public class WorktreeInspection {
                 .expectSuccess("git rev-list count in " + worktree).stdout().trim()));
     }
 
+    /** Whether HEAD is not what {@code origin/<branch>} holds; a branch never pushed has no such ref and counts as new. */
+    public boolean unpublished(Path projectPath, Path worktree) {
+        return git.locked(projectPath, () -> {
+            String branch = git.run(worktree, List.of("git", "rev-parse", "--abbrev-ref", "HEAD"))
+                    .expectSuccess("git rev-parse branch in " + worktree).stdout().strip();
+            String head = git.run(worktree, List.of("git", "rev-parse", "HEAD"))
+                    .expectSuccess("git rev-parse in " + worktree).stdout().strip();
+            var remote = git.run(worktree, List.of("git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/" + branch));
+            return remote.exitCode() != 0 || !head.equals(remote.stdout().strip());
+        });
+    }
+
     /** Everything the worktree changed since it left its base at origin, committed and not; new files by name. */
     public String changesSince(Path projectPath, Path worktree, String baseBranch) {
         List<String> generated = WorktreeFiles.generated(agentRuntime);

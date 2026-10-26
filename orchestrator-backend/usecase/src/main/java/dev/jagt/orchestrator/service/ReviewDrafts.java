@@ -49,6 +49,17 @@ public class ReviewDrafts {
         return file != null && Files.isRegularFile(file) && spent(file, task, postsEveryDraft());
     }
 
+    /** Replies written and not yet spent by a ship; a blank file holds none. */
+    public boolean drafted(TaskState task) {
+        Path file = draftsIn(task.worktreePath());
+        try {
+            return file != null && Files.isRegularFile(file) && !Files.readString(file).isBlank()
+                    && !spent(file, task, postsEveryDraft());
+        } catch (IOException e) {
+            return true;
+        }
+    }
+
     private boolean postsEveryDraft() {
         return configService.load().codeReview().shipPostsEveryDraft();
     }
