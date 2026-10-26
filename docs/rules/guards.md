@@ -20,7 +20,7 @@ A review judges a guard against this file. The records it condenses keep the evi
 | `HostCliLine` | `gh`/`glab` wherever a line names them | a word reader, not a shell | the code host's branch protection |
 | `.jagt/hooks/pre-push` | a push leaving a session's worktree | refusals the session could edit | the code host's branch protection |
 | `GitStateGuard` | `ship`, `deploy`, `revert`, a Master read | a digest per config key and hook, against the trusted one | the human's `trust` |
-| CLI's OS sandbox | a session's shell writing | path allow-list (`WorktreeSandbox`) | the human, asked by the CLI |
+| CLI's OS sandbox, opt-in | a session's shell writing | path allow-list (`WorktreeSandbox`) | the human, asked by the CLI |
 
 ## What a review reports
 

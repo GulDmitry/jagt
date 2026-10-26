@@ -237,7 +237,7 @@ public class ConfigService implements LoopBreaker.Current {
             }
 
             public boolean enabledOrDefault() {
-                return enabled == null || enabled;
+                return enabled != null && enabled;
             }
 
             public List<String> allowWriteOrEmpty() {

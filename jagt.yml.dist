@@ -60,9 +60,10 @@ orchestrator:
     outputStyle: ""       # a Claude output style to start every sub-agent with
     model: ""             # the model a session starts on when its notes name none; blank inherits your CLI default
     probeSeconds: 600    # how often every running session's liveness is probed
-    # sandbox:            # a session's shell writes only in its task's worktrees, /tmp, the user's temp dir and the tool caches;
-    #                     # every host stays reachable. A write beyond asks you in the session's window
-    #   enabled: true     # false: it writes wherever the agent CLI's own rules let it. Linux needs bwrap and socat
+    sandbox:              # true: a session's shell writes only in its task's worktrees, /tmp, the user's temp dir and the tool caches;
+                          # a write beyond asks you in the session's window. Claude's sandbox then lets only its web proxy out, which
+                          # a JVM build (Gradle, Maven) does not use: it cannot reach the network
+      enabled: false      # off: it writes wherever the agent CLI's own rules let it. Linux needs bwrap and socat when true
     #   allowWrite: []    # added to those, e.g. ~/www/specs
     #   excludedCommands: []   # run outside it beside git's remote verbs and ssh, e.g. "~/bin/db-tunnel *"
     # autoplan:           # a session plans first, unasked, when its task is large or unclear; the plan says why

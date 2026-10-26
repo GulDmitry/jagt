@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.SandboxConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,7 +20,8 @@ class ClaudeSandboxCheckTest {
     @Test
     void refusesToStartOnLinuxWhenTheSandboxLacksItsRelay() {
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigFile.defaults());
+        when(config.load()).thenReturn(ConfigFile.defaults().withAgent(AgentConfig.defaults()
+                .withSandbox(SandboxConfig.defaults().withEnabled(true))));
         Host host = mock(Host.class);
         when(host.onPath("bwrap")).thenReturn(true);
 
@@ -39,7 +42,8 @@ class ClaudeSandboxCheckTest {
     @Test
     void reportsNothingOnLinuxOnceBothRelaysAreInstalled() {
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigFile.defaults());
+        when(config.load()).thenReturn(ConfigFile.defaults().withAgent(AgentConfig.defaults()
+                .withSandbox(SandboxConfig.defaults().withEnabled(true))));
         Host host = mock(Host.class);
         when(host.onPath("bwrap")).thenReturn(true);
         when(host.onPath("socat")).thenReturn(true);

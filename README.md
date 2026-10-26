@@ -34,7 +34,7 @@ flowchart LR
 - **The machine owns every move.** Statuses and actions live in one compiler-checked table; a model only judges.
 - **A deterministic protocol.** A session reports through a schema-checked MCP message; every violation comes
   back at once, typed: validation, business, permission or transient.
-- **A session writes only inside its task**, under the agent CLI's own OS sandbox.
+- **A session can write only inside its task**, opt-in, under the agent CLI's own OS sandbox.
 - **The Master** reviews every round in your place; in `act` it ships and deploys, and your word overrules it.
 - **jagt runs the checks itself**: a plan's acceptance probes, and a valid spec change before any hand-back.
 - **Any agent CLI, no token.** Tracker and code host are read through your own MCP.

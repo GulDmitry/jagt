@@ -117,6 +117,7 @@ Families:
 |----|--------------------|---------|-----------|
 | I1 | a session starts with pinned servers → the CLI's variadic `--mcp-config` never swallows the prompt | seen 2026-10-24 on the stand | `ClaudeAgentRuntimeTest` |
 | I2 | a turn runs on a CLI that no longer prints the interrupt hint → its spinner line (glyph, word, ellipsis) still reads as working; a finished line or a draft never does | found 2026-10-25 on a captured Claude 2.1.308 screen | `ClaudeAgentRuntimeTest` |
+| I3 | a session's Gradle or Maven runs under Claude's sandbox → it reaches Maven Central, so the sandbox is off unless `sandbox.enabled: true` | seen 2026-10-26: `Could not HEAD 'https://repo.maven.apache.org/...' > Operation not permitted`, curl in the same shell got 200 | `WorktreeSandboxTest` |
 
 ## L — the tests themselves
 | id | the case, one line | defects | pinned by |

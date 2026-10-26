@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-10-15. Reopens nothing; holds [0025](0025-the-board-is-no-way-around-the-token.md)'s sandbox condition
+Accepted 2026-10-15. "On by default" superseded by [0092](0092-the-session-sandbox-is-opt-in.md): opt-in.
+Reopens nothing; holds [0025](0025-the-board-is-no-way-around-the-token.md)'s sandbox condition
 open.
 
 ## Context
@@ -19,7 +20,7 @@ open.
 
 ## Decision
 
-- The agent CLI's own OS sandbox, on by default: Claude's `sandbox` block, Codex's `workspace-write` with
+- The agent CLI's own OS sandbox, opt-in (`sandbox.enabled: true`): Claude's `sandbox` block, Codex's `workspace-write` with
   `network_access`. A write list, not a network list: every host stays reachable.
 - jagt writes the list (`WorktreeSandbox`): the task's worktrees and git directories, `/tmp`, the tool caches, the
   human's `sandbox.allowWrite`, each resolved to its real path.

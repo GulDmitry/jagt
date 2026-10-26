@@ -59,7 +59,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0041 jagt runs a plan's probes](0041-a-plans-probes-are-run-by-jagt.md)
 - [0042 Kept paths stay human](0042-a-path-list-keeps-a-step-with-the-human.md)
 - [0043 `act` stops itself](0043-act-stops-itself-after-three-bad-endings.md)
-- [0044 Sandboxed writes](0044-a-session-writes-only-inside-its-task.md)
+- [0044 Sandboxed writes, opt-in since 0092](0044-a-session-writes-only-inside-its-task.md)
 - [0045 Bounded stores](0045-every-store-jagt-writes-has-a-ceiling.md)
 - [0046 Preact, no build](0046-the-board-renders-preact-components-with-no-build.md)
 - [0047 The editor is a launcher](0047-the-editor-is-a-launcher.md)
@@ -107,3 +107,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0089 A verdict acts only at the turn it answered](0089-a-verdict-acts-only-at-the-turn-it-answered.md)
 - [0090 A relay is recorded before it is sent](0090-a-relay-is-recorded-before-it-is-sent.md)
 - [0091 The shipped Master reads three roles](0091-the-shipped-master-reads-three-roles.md)
+- [0092 The sandbox is opt-in](0092-the-session-sandbox-is-opt-in.md)
