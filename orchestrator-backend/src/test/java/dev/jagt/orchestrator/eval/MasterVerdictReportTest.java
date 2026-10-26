@@ -19,7 +19,7 @@ class MasterVerdictReportTest {
 
     @Test
     void aFailingCaseShowsEachRolesFindingsAndReasoningBesideWhatWasExpected() {
-        Review review = new Review(7, "", List.of(
+        Review review = new Review(7, "", "", List.of(
                 new Read("architect", new Judgement("", "not_ready", List.of(
                         new Finding("A.java", "leaks the caller", "", "blocking", "run", "leak")),
                         "", List.of(new Premise("A names its caller", "grep: A.java:3")), "")),
@@ -44,7 +44,7 @@ class MasterVerdictReportTest {
     @Test
     void theStoredVerdictIsReadFromTheWorktreesJagtDirectory(@TempDir Path worktree) throws Exception {
         Files.createDirectories(worktree.resolve(".jagt"));
-        Review review = new Review(2, "", List.of(new Read("developer", new Judgement("", "ready", List.of(),
+        Review review = new Review(2, "", "", List.of(new Read("developer", new Judgement("", "ready", List.of(),
                 "", List.of(), ""))));
         new JsonMapper().writeValue(worktree.resolve(".jagt/master-review.json").toFile(), review);
 

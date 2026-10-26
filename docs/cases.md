@@ -106,6 +106,7 @@ Families:
 | F10 | a reviewer's concession ends a pushed-back thread and the session has nothing to answer → the round is relayed once; the same open threads with the same newest notes are not relayed again, and only rounds bringing no new note count toward the ceilings | seen 2026-10-26: a bot's concession on a pushed-back thread was relayed every poll, the Master re-shipped nothing three times and the task stopped | `TaskStopsTest`, `LoopBreakerTest`, `ReviewFactsTest`, `HeadlessClaudeCodeHostAssistantTest` |
 | F11 | a hand-back with nothing new is shipped again → the Master ships only uncommitted work, an unpushed HEAD or drafted replies | seen 2026-10-26: the Master shipped an unchanged pushed branch five times; each ship found nothing and auto-review relayed again | `ShipDueTest`, `WorktreeChangesTest`, `WorktreeInspectionTest` |
 | F12 | a question or an unchanged tree sits at VERIFYING → no probe runs and nothing is relayed twice; an unchanged failing tree stops the task for the human | seen 2026-10-26: an unchanged tree's probe failure was relayed three times over a question; the Master's answer was dropped and the task stopped | `VerifyJobTest`, `FlowReportsTest` |
+| F13 | a new turn hands back the diff and kind the Master already judged → its verdict is reused, not reviewed again | seen 2026-10-26: 17 Master reviews asked over one unchanged diff, one per turn | `RoundQuotesTest`, `MasterReviewTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |

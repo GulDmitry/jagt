@@ -38,11 +38,11 @@ public class RoundQuotes {
         return facts.ownDiff(task);
     }
 
-    /** A ready verdict still stands while only the base moved; any other is read again with the reply beside it. */
+    /** A verdict, ready or not, still stands while the hand-back's inputs are the ones it read; else it is read again. */
     boolean carried(TaskState task) {
         Optional<String> own = facts.ownDiff(task);
-        boolean same = own.isPresent() && reviews.of(task).filter(verdict -> verdict.kind() == MasterReview.Kind.READY
-                && verdict.ownDiff().equals(own.get())).isPresent();
+        boolean same = own.isPresent() && reviews.stored(task).filter(review -> review.readsInputsOf(task, own.get()))
+                .filter(review -> MasterReview.Verdict.of(review).kind() != MasterReview.Kind.QUESTION).isPresent();
         return same && reviews.restamp(task);
     }
 

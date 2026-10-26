@@ -73,6 +73,8 @@ public class MasterPanel {
         if (quotes.carried(task)) {
             return true;
         }
+        log.atInfo().setMessage("master review asked").addKeyValue("task", taskId)
+                .addKeyValue("alias", task.alias()).log();
         String brief = masters.get();
         List<Path> worktrees = worktrees(task);
         List<Role> named = roles(brief, briefs.author());
@@ -107,7 +109,7 @@ public class MasterPanel {
         }
         List<MasterReview.Read> reads = reads(roles, judgements);
         boolean allRead = judgements.stream().allMatch(judgement -> judgement.failure().isBlank());
-        Review review = new Review(task.turnOrNone().id(), allRead ? quotes.ownDiff(task).orElse("") : "", reads);
+        Review review = Review.of(task, allRead ? quotes.ownDiff(task).orElse("") : "", reads);
         return stored.write(task, review,
                 verdictFile(taskId, reads, named.stream().filter(role -> !roles.contains(role)).toList()));
     }
@@ -118,6 +120,8 @@ public class MasterPanel {
         if (brief.isEmpty()) {
             return false;
         }
+        log.atInfo().setMessage("master review asked").addKeyValue("task", taskId)
+                .addKeyValue("alias", task.alias()).log();
         Optional<RoundRead> read = quotes.plan(taskId, task);
         Judgement judged = read.isEmpty() ? Judgement.failed(HUMAN_UNREAD)
                 : reviews.review(taskId, new RoundReviewer.Round("", planPrompt(taskId, task, brief.get(),
@@ -125,7 +129,7 @@ public class MasterPanel {
                         reviews.loadsMcpServer()),
                         worktrees(task), config.modelOrInherited()));
         List<MasterReview.Read> reads = reads(List.of(PLANNER), List.of(judged));
-        return stored.write(task, new Review(task.turnOrNone().id(), "", reads), verdictFile(taskId, reads, List.of()));
+        return stored.write(task, Review.of(task, "", reads), verdictFile(taskId, reads, List.of()));
     }
 
     private static final Role PLANNER = new Role("planner", "whether the plan does what the ticket asks", "",
@@ -208,7 +212,7 @@ public class MasterPanel {
 
     /** For a human: what the verdict rests on, advice and skipped roles included; nothing reads it back. */
     static String verdictFile(String taskId, List<MasterReview.Read> reads, List<Role> skipped) {
-        Verdict verdict = Verdict.of(new Review(0, "", reads));
+        Verdict verdict = Verdict.of(new Review(0, "", "", reads));
         StringBuilder file = new StringBuilder("# " + taskId + " — master review\n\n");
         skipped.forEach(role -> file.append("# skipped [").append(role.name()).append("] no changed path matches ")
                 .append(String.join(", ", role.applies())).append('\n'));

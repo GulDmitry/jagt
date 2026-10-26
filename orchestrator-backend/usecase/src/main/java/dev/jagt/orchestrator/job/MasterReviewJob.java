@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -24,7 +23,6 @@ import java.util.Optional;
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class MasterReviewJob implements Job {
 
     private final StateService stateService;
@@ -95,9 +93,6 @@ public class MasterReviewJob implements Job {
     }
 
     private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        log.atInfo().setMessage("master review asked").addKeyValue("task", taskId)
-                .addKeyValue("alias", task.alias())
-                .log();
         if (FlowRules.holdsAPlan(task.status())) {
             panel.plan(taskId, task, config);
         } else {

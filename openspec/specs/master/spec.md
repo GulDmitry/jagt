@@ -170,8 +170,8 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 - **THEN** only a blocking reason reopens it
 
 ### Requirement: A task's work stays in the task
-Work a task needs SHALL be done in it, on its own branch, and the Master SHALL open no task: work its answer names as
-a new task opens nothing, the session told only you open a task. A repository the task lacks is asked for with
+Work a task needs SHALL be done in it, on its own branch, and the Master SHALL open no task: work its answer names as a
+new task opens nothing, the session told only you open a task. A repository the task lacks is asked for with
 `needsProject` and attached by `add-repo`, never opened as a task.
 
 #### Scenario: The Master's answer holds a `do` line
@@ -187,14 +187,14 @@ a fail (`MasterRecord`); it changes no brief.
 - **THEN** `master` shows a `lesson:` line: what to paste into `/master-lesson`
 
 ### Requirement: A base-only move keeps the verdict
-`MasterPanel.review` SHALL keep the last ready verdict while the task's own diff keeps its stored identifier
-(`WorktreeInspection.ownDiffId`: the diff since the merge-base, line numbers and index lines left out, hashed). The kept
-verdict answers the hand-back in front; none is stored where a role could not read the round or an untracked file is held.
+`MasterPanel.review` SHALL keep the last ready or not-ready verdict while the hand-back keeps the inputs it read: the
+task's own diff identifier (`WorktreeInspection.ownDiffId`) and the report kind. It answers the hand-back in front;
+none is stored where a role could not read the round or an untracked file is held; a question is never kept.
 
-#### Scenario: Only the base moved
-- **WHEN** ABC-42 is rebased onto a moved base and handed back with the same own diff
-- **THEN** no role reads it; the last ready verdict stands
+#### Scenario: An unchanged hand-back is not reviewed twice
+- **WHEN** ABC-42 is rebased onto a moved base, or its session hands back `no_changes` again, over the same own diff
+- **THEN** no role reads it; the last verdict stands for the new turn
 
 #### Scenario: A reply or a change of its own
-- **WHEN** ABC-42 is handed back with any change of its own, or the same own diff after a not-ready verdict
+- **WHEN** ABC-42 is handed back with any change of its own, or with another kind of report than the verdict read
 - **THEN** each role reads the round again, the reply beside it

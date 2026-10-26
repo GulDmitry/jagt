@@ -81,10 +81,20 @@ public class MasterReview {
 
     /**
      * {@code round} names the turn jagt asked about, {@code ownDiff} the task's own diff it read, blank where a
-     * role could not read the round.
+     * role could not read the round; {@code report} is the hand-back's kind, null in a review stored before it was
+     * kept.
      */
     @With
-    public record Review(long round, String ownDiff, List<Read> reads) {
+    public record Review(long round, String ownDiff, @Nullable String report, List<Read> reads) {
+
+        static Review of(TaskState task, String ownDiff, List<Read> reads) {
+            return new Review(task.turnOrNone().id(), ownDiff, task.report().name(), reads);
+        }
+
+        /** Whether it read what the hand-back in front presents: the same own diff, the same kind of report. */
+        boolean readsInputsOf(TaskState task, String own) {
+            return !ownDiff.isBlank() && ownDiff.equals(own) && task.report().name().equals(report);
+        }
     }
 
     /** A finding as the round's reader named it, with the role that made it. */
