@@ -76,7 +76,7 @@ public class SessionReports {
     }
 
     public String turnEnded(String taskId, Report report, boolean sentOn, boolean pausedOnBackgroundWork) {
-        record(taskId, SessionProbe.State.IDLE, report);
+        record(taskId, pausedOnBackgroundWork ? SessionProbe.State.WORKING : SessionProbe.State.IDLE, report);
         return turnEnds.answer(taskId, report.task(), sentOn, pausedOnBackgroundWork);
     }
 

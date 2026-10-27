@@ -95,6 +95,16 @@ class SessionReportsTest {
     }
 
     @Test
+    void reportsASessionWaitingOnItsOwnBackgroundWorkAsWorkingSoItIsNeverCold() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
+
+        new SessionReports(signs, runtime, turnEnds)
+                .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, true);
+
+        verify(signs).record("ABC-1", SessionProbe.State.WORKING, null, null);
+    }
+
+    @Test
     void handsACompactedSessionItsBriefBack() {
         when(runtime.compactedStart()).thenReturn("compact");
 
