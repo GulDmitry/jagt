@@ -56,9 +56,9 @@ class LoopBreakerTest {
 
     @Test
     void stopsTheFifthShipWithinTheWindowWhereNoRoundBroughtANewNote() {
-        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 5, "", "a", ""),
-                new RoundTrail.Round(1_500, 6, "", "b", ""), new RoundTrail.Round(2_500, 5, "", "c", ""),
-                new RoundTrail.Round(3_500, 6, "", "d", ""), new RoundTrail.Round(4_500, 5, "", "e", "")), 0);
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 5, "", "a", "t1 note_1"),
+                new RoundTrail.Round(1_500, 6, "", "b", "t1 note_1"), new RoundTrail.Round(2_500, 5, "", "c", "t1 note_1"),
+                new RoundTrail.Round(3_500, 6, "", "d", "t1 note_1"), new RoundTrail.Round(4_500, 5, "", "e", "t1 note_1")), 0);
         List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
@@ -71,6 +71,28 @@ class LoopBreakerTest {
             assertThat(it.evidence()).contains("ships without a new note in 24h: 4")
                     .contains("threads per round: 5, 6, 5, 6, 5");
         });
+    }
+
+    @Test
+    void neverStopsAsStalledRoundsWhoseNoteFingerprintIsBlank() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(1, 10, "unit-tests", "a", ""),
+                new RoundTrail.Round(2, 10, "unit-tests", "b", ""), new RoundTrail.Round(3, 10, "unit-tests", "c", ""),
+                new RoundTrail.Round(4, 10, "unit-tests", "d", "")), 0);
+
+        assertThat(breaker.afterRound(watch, List.of(), 5)).isEmpty();
+    }
+
+    @Test
+    void countsNoShipTowardTheCeilingWhereTheAnsweringRoundHasABlankNoteFingerprint() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 5, "", "a", ""),
+                new RoundTrail.Round(1_500, 6, "", "b", ""), new RoundTrail.Round(2_500, 5, "", "c", ""),
+                new RoundTrail.Round(3_500, 6, "", "d", ""), new RoundTrail.Round(4_500, 5, "", "e", "")), 0);
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
+
+        assertThat(breaker.beforeShip(watch, history, 5_000)).isEmpty();
     }
 
     @Test

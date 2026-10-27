@@ -47,7 +47,7 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration win
         for (int i = rounds.size() - 1; i > 0; i--) {
             RoundTrail.Round round = rounds.get(i);
             RoundTrail.Round before = rounds.get(i - 1);
-            if (!round.notes().equals(before.notes()) || !round.failing().equals(before.failing())) {
+            if (!round.repeats(before.notes()) || !round.failing().equals(before.failing())) {
                 break;
             }
             stalled++;
@@ -66,7 +66,7 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration win
         for (int i = 0; i < rounds.size() && rounds.get(i).at() <= shipAt; i++) {
             answered = i;
         }
-        return answered > 0 && !rounds.get(answered).notes().equals(rounds.get(answered - 1).notes());
+        return answered > 0 && !rounds.get(answered).repeats(rounds.get(answered - 1).notes());
     }
 
     private String evidence(RoundTrail trail, List<StatusChange> history, long now) {

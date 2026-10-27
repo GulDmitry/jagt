@@ -18,6 +18,11 @@ public record RoundTrail(List<Round> rounds, long since) {
         public Round {
             notes = notes == null ? "" : notes;
         }
+
+        /** Blank notes are unknown, never a repeat. */
+        public boolean repeats(String other) {
+            return !notes.isBlank() && notes.equals(other);
+        }
     }
 
     public RoundTrail {
@@ -40,7 +45,7 @@ public record RoundTrail(List<Round> rounds, long since) {
 
     /** Open threads carrying the very notes of the last round, with the checks not red then nor now. */
     public boolean noNewNote(String notes, String failing) {
-        return !notes.isBlank() && !rounds.isEmpty() && rounds.getLast().notes().equals(notes)
+        return !rounds.isEmpty() && rounds.getLast().repeats(notes)
                 && rounds.getLast().failing().isBlank() && failing.isBlank();
     }
 

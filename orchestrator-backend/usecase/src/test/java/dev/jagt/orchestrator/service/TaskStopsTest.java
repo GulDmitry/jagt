@@ -43,7 +43,7 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
-                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of(), List.of());
+                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of(), List.of("note_1", "note_2"));
         stops.round("ABC-42", round, "brief 1");
         stops.round("ABC-42", round, "brief 2");
         stops.round("ABC-42", round, "brief 3");
