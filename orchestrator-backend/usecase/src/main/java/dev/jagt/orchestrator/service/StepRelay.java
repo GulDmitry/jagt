@@ -77,10 +77,6 @@ public class StepRelay {
         return opened(taskId, step, facts, false, told -> sessions.relayFresh(taskId, told));
     }
 
-    public boolean relayFresh(String taskId, String step, String facts, Claim claim) {
-        return opened(taskId, step, facts, false, claim, told -> sessions.relayFresh(taskId, told));
-    }
-
     /** Below an instruction still pending, which stands. */
     public boolean relayUnder(String taskId, String step, String facts, boolean fresh) {
         return opened(taskId, step, facts, false, told -> sessions.relayUnder(taskId, told, fresh));

@@ -107,6 +107,7 @@ Families:
 | F11 | a hand-back with nothing new is shipped again → the Master ships only uncommitted work, an unpushed HEAD or drafted replies | seen 2026-10-26: the Master shipped an unchanged pushed branch five times; each ship found nothing and auto-review relayed again | `ShipDueTest`, `WorktreeChangesTest`, `WorktreeInspectionTest` |
 | F12 | a question or an unchanged tree sits at VERIFYING → no probe runs and nothing is relayed twice; an unchanged failing tree stops the task for the human | seen 2026-10-26: an unchanged tree's probe failure was relayed three times over a question; the Master's answer was dropped and the task stopped | `VerifyJobTest`, `FlowReportsTest` |
 | F13 | a new turn hands back the diff and kind the Master already judged → its verdict is reused, not reviewed again | seen 2026-10-26: 17 Master reviews asked over one unchanged diff, one per turn | `RoundQuotesTest`, `MasterReviewTest` |
+| F14 | a session that changes no code (a stage check) keeps asking → each Master answer lands in the same session; past three the answer changes the approach, the ninth stops for the human | seen 2026-10-27: 4 session restarts in 7 minutes, each losing what the session had tried | `MasterVerdictsTest`, `MasterAnswerJobTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |

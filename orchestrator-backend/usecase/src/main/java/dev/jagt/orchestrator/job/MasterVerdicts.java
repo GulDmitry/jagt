@@ -141,23 +141,20 @@ public class MasterVerdicts {
     }
 
     /** The Master's answer to a question, and the task back at work on it. */
-    public boolean answered(String taskId, TaskState task, String question, MasterPanel.Decision decision,
-                            boolean freshSession) {
+    public boolean answered(String taskId, TaskState task, String question, MasterPanel.Decision decision) {
         return OriginContext.as(ActionOrigin.MASTER,
-                () -> answer(taskId, task, question, decision.text(), opened(decision), freshSession));
+                () -> answer(taskId, task, question, decision.text(), opened(decision)));
     }
 
     private static String opened(MasterPanel.Decision decision) {
         return decision.newTask().isBlank() ? "" : "\n" + decision.newTask() + "\n" + NOT_OPENED;
     }
 
-    private boolean answer(String taskId, TaskState task, String question, String decision, String opened,
-                           boolean freshSession) {
+    private boolean answer(String taskId, TaskState task, String question, String decision, String opened) {
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
         StepRelay.Claim claim = claiming(taskId, task, AgentReport.PLAIN, "master answered the question");
         boolean told = FlowRules.awaitsItsInstruction(task.status())
-                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.id(), answer, freshSession, claim)
-                : freshSession ? relay.relayFresh(taskId, MasterMove.ANSWERED.id(), answer, claim)
+                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.id(), answer, false, claim)
                 : relay.relay(taskId, MasterMove.ANSWERED.id(), answer, claim);
         if (!told) {
             return false;

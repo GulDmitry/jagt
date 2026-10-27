@@ -108,13 +108,13 @@ public class MasterAnswerJob implements Job {
             unanswered(taskId, task);
             return;
         }
-        // Answers nothing acted on change the approach: a session with fresh tools, a change in the worktrees.
+        // Answers nothing acted on change the approach, in the same session.
         boolean stuck = given >= MasterDecisions.ANSWERS_PER_TREE;
         log.atInfo().setMessage("master answers").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .log();
         Optional<MasterPanel.Decision> decision = panel.answer(taskId, task, Objects.requireNonNull(task.message()), config, stuck);
         try {
-            if (decision.isEmpty() || !verdicts.answered(taskId, task, Objects.requireNonNull(task.message()), decision.get(), stuck)) {
+            if (decision.isEmpty() || !verdicts.answered(taskId, task, Objects.requireNonNull(task.message()), decision.get())) {
                 log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
                         .addKeyValue("effect", "the question waits for the human")
                         .log();

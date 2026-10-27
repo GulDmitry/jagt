@@ -20,12 +20,14 @@ reader that should have been its strongest.
   change and insists on it.
 - A check the task's own request turns red is the task's to turn green, older code included; an override or a
   human's action is no answer while a change in the worktrees can pass it.
-- Three answers over an unchanged tree change the approach — a fresh session, the best option taken — and only a
+- Three answers over an unchanged tree change the approach — in the same session, the best option taken — and only a
   ninth, a runaway, reaches the human; a decision the task did not move after is no settlement.
 
 ## Rejected
 
 - Handing a repeated question to the human: in `act` a question reaching them is a bug unless `master.mine` keeps it.
+- A fresh session per answer past three: a restart per answer loses what a session that changes no code (a stage
+  check) already tried.
 
 ## Reopen when
 

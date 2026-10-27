@@ -135,7 +135,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
 
-        assertThatThrownBy(() -> verdicts.answered("ABC-1", read, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false))
+        assertThatThrownBy(() -> verdicts.answered("ABC-1", read, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", "")))
                 .isInstanceOf(TaskMovedOn.class);
 
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
@@ -368,7 +368,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
@@ -392,14 +392,14 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
 
-        verdicts.answered("ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""), false);
+        verdicts.answered("ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
 
         verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"), eq(false));
         verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
     }
 
     @Test
-    void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path root) throws Exception {
+    void keepsTheSessionOfAStageCheckAnsweredAgainOverTheSameTree(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
@@ -414,9 +414,10 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
 
-        verdicts.answered("ABC-1", task, "override the gate?", new MasterPanel.Decision("refactor the shared block", ""), true);
+        verdicts.answered("ABC-1", task, "override the gate?", new MasterPanel.Decision("refactor the shared block", ""));
 
-        verify(sessions).relayFresh(eq("ABC-1"), contains("refactor the shared block"));
+        verify(sessions).writeTaskContext(eq("ABC-1"), contains("refactor the shared block"));
+        verify(sessions, never()).relayFresh(anyString(), anyString());
     }
 
     @Test
@@ -874,7 +875,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
 
-        verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""), false);
+        verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""));
 
         verify(decisions).record(task, "- asked: keep v2? — decided: keep v2 beside v3");
         verify(decisions).answered(task);
@@ -898,7 +899,7 @@ class MasterVerdictsTest {
         OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "answered",
                 "The Master answered your question, standing in for the human:\nkeep v2 beside v3"));
 
-        boolean moved = verdicts.answered("ABC-1", state.task("ABC-1").orElseThrow(), "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
+        boolean moved = verdicts.answered("ABC-1", state.task("ABC-1").orElseThrow(), "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 
         assertThat(moved).isFalse();
         verify(decisions, never()).record(any(), anyString());
@@ -921,7 +922,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay, door));
 
         verdicts.answered("ABC-1", task, "a second request?",
-                new MasterPanel.Decision("drop the old keys here", "do proj drop the old keys from main"), false);
+                new MasterPanel.Decision("drop the old keys here", "do proj drop the old keys from main"));
 
         verify(sessions).writeTaskContext(eq("ABC-1"), contains("Not opened: only the human opens a task."));
     }
@@ -985,7 +986,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
+        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 
         assertThat(moved).isFalse();
     }

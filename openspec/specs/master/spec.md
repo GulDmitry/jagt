@@ -107,7 +107,7 @@ Master's `done` is refused.
 
 #### Scenario: Questions repeat over an unchanged tree
 - **WHEN** they repeat
-- **THEN** after three, a fresh session and an answer that changes the worktrees; the ninth is a runaway, yours
+- **THEN** after three, an answer that changes the approach, in the same session; the ninth is a runaway, yours
 
 #### Scenario: It is unsure what the ticket asks
 - **WHEN** the ticket could mean "switch" or "add beside"

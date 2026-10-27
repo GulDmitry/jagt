@@ -54,7 +54,7 @@ class MasterAnswerJobTest {
 
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
-        verify(verdicts).answered("ABC-1", asking, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""), false);
+        verify(verdicts).answered("ABC-1", asking, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
     }
 
     @Test
@@ -67,7 +67,7 @@ class MasterAnswerJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
                 .thenReturn(Optional.of(new MasterPanel.Decision("keep v2 beside v3", "")));
-        when(verdicts.answered(anyString(), any(), anyString(), any(), anyBoolean())).thenThrow(new TaskMovedOn("ABC-1"));
+        when(verdicts.answered(anyString(), any(), anyString(), any())).thenThrow(new TaskMovedOn("ABC-1"));
 
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
@@ -211,7 +211,7 @@ class MasterAnswerJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of(new MasterPanel.Decision("keep v2", "")));
-        when(verdicts.answered(anyString(), any(), anyString(), any(), anyBoolean())).thenReturn(false);
+        when(verdicts.answered(anyString(), any(), anyString(), any())).thenReturn(false);
         MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
 
         job.run();
