@@ -264,6 +264,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                   "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
                   "enableAllProjectMcpServers": true,
                   "autoMemoryEnabled": false,
+                  "idleCompaction": false,
                   "permissions": {
                     "allow": [%s]
                   }

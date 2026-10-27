@@ -374,6 +374,15 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void keepsAnIdleTaskSessionUncompactedSoAColdPromptStillFindsItCold() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+
+        boolean idleCompaction = new JsonMapper().readTree(json).path("idleCompaction").asBoolean(true);
+
+        assertThat(idleCompaction).isFalse();
+    }
+
+    @Test
     void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
         String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 
