@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
+import java.time.Duration;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.task.MasterRight;
 import org.junit.jupiter.api.Test;
@@ -428,5 +429,17 @@ class ConfigServiceTest {
         assertThat(breaker.rounds()).isEqualTo(5);
         assertThat(breaker.ships()).isEqualTo(6);
         assertThat(breaker.stalledRounds()).isEqualTo(7);
+    }
+
+    @ParameterizedTest
+    @CsvSource({",PT1H", "1h,PT1H", "2h,PT2H", "90m,PT1H30M", "0,PT0S", "nonsense,PT1H"})
+    void resolvesHowLongAnIdleSessionKeepsItsCache(String written, Duration expected) {
+        assertThat(AgentConfig.defaults().withCacheLifetime(written).cacheLifetimeOrDefault()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource({",PT30M", "10m,PT10M", "0,PT0S"})
+    void resolvesHowStaleTheNotesMayGetAtATurnEnd(String written, Duration expected) {
+        assertThat(AgentConfig.defaults().withNotesEvery(written).notesEveryOrDefault()).isEqualTo(expected);
     }
 }

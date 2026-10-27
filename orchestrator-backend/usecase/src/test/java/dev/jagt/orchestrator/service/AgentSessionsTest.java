@@ -276,7 +276,7 @@ class AgentSessionsTest {
     void startsAFreshSessionForNewInstructionsWhenTheConversationIdledPastItsCacheLifetime() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(agentRuntime.pastContinuing(root)).thenReturn(true);
+        when(agentRuntime.pastContinuing(root, java.time.Duration.ofHours(1))).thenReturn(true);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         String answer = sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
@@ -294,7 +294,7 @@ class AgentSessionsTest {
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
         when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
-        when(agentRuntime.pastContinuing(root)).thenReturn(false, true);
+        when(agentRuntime.pastContinuing(root, java.time.Duration.ofHours(1))).thenReturn(false, true);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
@@ -451,7 +451,7 @@ class AgentSessionsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
-        when(agentRuntime.pastContinuing(root)).thenReturn(false);
+        when(agentRuntime.pastContinuing(root, java.time.Duration.ofHours(1))).thenReturn(false);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
@@ -879,5 +879,18 @@ class AgentSessionsTest {
                 .flatExtracting(ILoggingEvent::getKeyValuePairs).extracting(pair -> pair.key + "=" + pair.value)
                 .contains("cause=the round was already handed back");
         sessionsLog.detachAppender(log);
+    }
+
+    @Test
+    void startsAFreshSessionForAColdPromptWhateverTheConversationsCacheSays() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.pastContinuing(root, java.time.Duration.ofHours(1))).thenReturn(false);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.relayUnderCold("ABC-1", "and handle empty files");
+
+        assertThat(root.resolve("task_context.md")).hasContent("and handle empty files");
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 }

@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -108,6 +109,60 @@ final class ClaudeTranscripts {
                     .log();
             return Optional.empty();
         }
+    }
+
+    /** The newest conversation's last human prompts and model text, oldest first; the oldest is cut to fit. */
+    static Optional<String> tail(Path projectsDir, Path sessionDirectory, int maxChars) {
+        Optional<Path> newest = newestLog(projectsDir, sessionDirectory);
+        if (newest.isEmpty()) {
+            return Optional.empty();
+        }
+        List<String> said = new ArrayList<>();
+        try (Stream<String> lines = Files.lines(newest.get())) {
+            lines.forEach(line -> spoken(line).ifPresent(said::add));
+        } catch (IOException | RuntimeException unreadable) {
+            log.atWarn().setMessage("conversation unreadable").addKeyValue("path", newest.get())
+                    .addKeyValue("cause", unreadable.toString()).log();
+            return Optional.empty();
+        }
+        LinkedList<String> kept = new LinkedList<>();
+        int left = maxChars;
+        for (int at = said.size() - 1; at >= 0 && left > 0; at--) {
+            String entry = said.get(at);
+            String fitted = entry.length() > left ? entry.substring(entry.length() - left) : entry;
+            kept.addFirst(fitted);
+            left -= fitted.length() + 1;
+        }
+        return kept.isEmpty() ? Optional.empty() : Optional.of(String.join("\n", kept));
+    }
+
+    private static Optional<String> spoken(String line) {
+        Optional<String> human = typed(line);
+        if (human.isPresent()) {
+            return human.filter(text -> !text.isBlank()).map(text -> "human: " + oneLine(text));
+        }
+        if (!line.contains("\"assistant\"")) {
+            return Optional.empty();
+        }
+        try {
+            JsonNode entry = JSON.readTree(line);
+            if (!"assistant".equals(entry.path("type").asString(""))) {
+                return Optional.empty();
+            }
+            StringBuilder text = new StringBuilder();
+            entry.path("message").path("content").forEach(block -> {
+                if ("text".equals(block.path("type").asString(""))) {
+                    text.append(block.path("text").asString(""));
+                }
+            });
+            return text.toString().isBlank() ? Optional.empty() : Optional.of("assistant: " + oneLine(text.toString()));
+        } catch (JacksonException partial) {
+            return Optional.empty();
+        }
+    }
+
+    private static String oneLine(String text) {
+        return text.strip().replaceAll("\\s*\\R\\s*", " / ");
     }
 
     private static Optional<String> typed(String line) {

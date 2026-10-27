@@ -59,6 +59,8 @@ orchestrator:
     #                     # against its own CODEX_HOME, so your ~/.codex servers are not there.
     outputStyle: ""       # a Claude output style to start every sub-agent with
     model: ""             # the model a session starts on when its notes name none; blank inherits your CLI default
+    cacheLifetime: 1h     # idle past this, a prompt goes to a fresh session; 0: never (a local model)
+    notesEvery: 30m       # task_notes.md older than this at a turn end: the session rewrites it once; 0: never
     probeSeconds: 600    # how often every running session's liveness is probed
     sandbox:              # true: a session's shell writes only in its task's worktrees, /tmp, the user's temp dir and the tool caches;
                           # a write beyond asks you in the session's window. Claude's sandbox then lets only its web proxy out, which

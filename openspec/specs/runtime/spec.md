@@ -129,14 +129,14 @@ The payload adds the session's log (else derived from the worktree), which gives
 - **THEN** it costs a detail, never the report
 
 ### Requirement: What jagt answers a hook, the harness reads
-The hook SHALL print jagt's answer. Two hooks are answered: `gate=PreToolUse`, scoped to the shell tool and the
-file-writing tools (it holds writes while a plan waits, [task-flow](../task-flow/spec.md)); and `turn-end=Stop`.
-A session is never launched in its CLI's own plan mode. `turn-end` refuses once a turn that leaves the agent's move
-unreported (`Move.endsUnreported`), and shows the human alone a round handed to the Master (`AgentRuntime.toldTheHuman`).
+The hook SHALL print jagt's answer. Three hooks are answered: `gate=PreToolUse`, scoped to the shell tool and the file-writing tools (it holds
+writes while a plan waits, [task-flow](../task-flow/spec.md)); `turn-end=Stop`; and `prompt-gate=UserPromptSubmit`, answered by
+[cold-prompts](../cold-prompts/spec.md). A session is never launched in its CLI's own plan mode. `turn-end` refuses once a turn that leaves the
+agent's move unreported (`Move.endsUnreported`), and shows the human alone a round handed to the Master (`AgentRuntime.toldTheHuman`).
 
 #### Scenario: jagt is unreachable
-- **WHEN** `gate` or `turn-end` cannot reach jagt
-- **THEN** neither refuses anything
+- **WHEN** `gate`, `turn-end` or `prompt-gate` cannot reach jagt
+- **THEN** none refuses anything
 
 ### Requirement: A start after compaction is answered with the task
 After a compaction the start SHALL be answered with the task key, also its branch, the title, the board status and the

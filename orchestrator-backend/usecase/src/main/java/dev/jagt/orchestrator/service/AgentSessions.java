@@ -156,7 +156,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     }
 
     public String writeTaskContext(String taskId, String instructions) {
-        return relay(taskId, instructions, false);
+        return relay(taskId, instructions, null);
     }
 
     /**
@@ -182,23 +182,34 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     /** Work on a round already handed back needs the notes and the brief, not the conversation that wrote them. */
     public String relayFresh(String taskId, String instructions) {
-        return relay(taskId, instructions, true);
+        return relay(taskId, instructions, ROUND_HANDED_BACK);
     }
 
     /** Keeps what the context file holds above its last addition, so an instruction still pending is not lost. */
     public String relayUnder(String taskId, String addition, boolean fresh) {
+        return under(taskId, addition, fresh ? ROUND_HANDED_BACK : null);
+    }
+
+    /** The same, always on a fresh session: its caller has already seen the conversation go cold. */
+    public String relayUnderCold(String taskId, String addition) {
+        return under(taskId, addition, "a prompt typed after the cache lifetime");
+    }
+
+    private String under(String taskId, String addition, @Nullable String freshBecause) {
         String id = stateService.canonicalTaskId(taskId);
         Path contextFile = Path.of(requireTask(id).worktreePath()).resolve(Artifact.CONTEXT.fileName());
         synchronized (relayLock(id)) {
             String standing = WorktreeFiles.read(contextFile).map(held -> held.contains(UNDER)
                     ? held.substring(0, held.indexOf(UNDER)) : held).orElse("");
-            return relay(id, standing.isBlank() ? addition : standing + UNDER + addition, fresh);
+            return relay(id, standing.isBlank() ? addition : standing + UNDER + addition, freshBecause);
         }
     }
 
     private static final String UNDER = "\n\n--- added by jagt; the instruction above still stands ---\n\n";
 
-    private String relay(String taskId, String instructions, boolean fresh) {
+    private static final String ROUND_HANDED_BACK = "the round was already handed back";
+
+    private String relay(String taskId, String instructions, @Nullable String freshBecause) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
@@ -215,8 +226,9 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         // A file on disk doesn't wake a running agent session — nudge it directly.
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
-        if (fresh || agentRuntime.pastContinuing(Path.of(task.worktreePath()))) {
-            startFresh(taskId, task, config, fresh ? "the round was already handed back"
+        Duration cacheLifetime = config.agent().cacheLifetimeOrDefault();
+        if (freshBecause != null || agentRuntime.pastContinuing(Path.of(task.worktreePath()), cacheLifetime)) {
+            startFresh(taskId, task, config, freshBecause != null ? freshBecause
                     : "conversation idle past its cache lifetime");
             return "Instructions written to task_context.md; a fresh session was started to read them with"
                     + " task_notes.md.";
@@ -299,8 +311,10 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                     Thread.sleep(DRAFT_POLL);
                 }
                 stateService.task(taskId).ifPresent(task -> {
-                    if (agentRuntime.pastContinuing(Path.of(task.worktreePath()))) {
-                        startFresh(taskId, task, configService.load(), "conversation idle past its cache lifetime");
+                    ConfigService.ConfigFile config = configService.load();
+                    if (agentRuntime.pastContinuing(Path.of(task.worktreePath()),
+                            config.agent().cacheLifetimeOrDefault())) {
+                        startFresh(taskId, task, config, "conversation idle past its cache lifetime");
                     } else if (running(session, taskId) && sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
                         undelivered(session, taskId, NUDGE);
                     }

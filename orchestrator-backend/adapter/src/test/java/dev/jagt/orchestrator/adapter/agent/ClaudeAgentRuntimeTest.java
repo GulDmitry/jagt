@@ -716,4 +716,49 @@ class ClaudeAgentRuntimeTest {
         assertThat(runtime.working("\u276f re-read the file and continue\u2026")).isFalse();
         assertThat(runtime.working("Sprouting\u2026 is a word\n\u276f ")).isFalse();
     }
+
+    @Test
+    void asksJagtBeforeATypedPromptReachesTheModelAndWaitsLongerForTheAnswer(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+
+        new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
+                .provisionWorktree(AgentWorktree.of(worktree, root));
+
+        var hook = new JsonMapper()
+                .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
+                .path("hooks").path("UserPromptSubmit");
+        assertThat(hook).hasSize(1);
+        assertThat(hook.path(0).path("hooks").path(0).path("command").asString(""))
+                .contains("/api/agent/session/prompt", "-m 10", worktree.toString());
+        assertThat(hook.path(0).path("hooks").path(0).path("timeout").asInt()).isEqualTo(15);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"3660000, 3600000, true", "3540000, 3600000, false", "999999999, 0, false"})
+    void judgesAConversationColdOnlyPastANonZeroCacheLifetime(long idleMillis, long lifetimeMillis, boolean cold) {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+                Clock.fixed(java.time.Instant.ofEpochMilli(1_000_000_000L), java.time.ZoneOffset.UTC));
+
+        boolean past = runtime.pastCacheLifetime(1_000_000_000L - idleMillis, java.time.Duration.ofMillis(lifetimeMillis));
+
+        assertThat(past).isEqualTo(cold);
+    }
+
+    @Test
+    void blocksAPromptInTheShapeClaudeReadsAsBlocked() {
+        String blocked = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
+                .blockedPrompt("went to a fresh session");
+
+        assertThat(blocked).isEqualTo("{\"decision\": \"block\", \"reason\": \"went to a fresh session\"}");
+    }
 }

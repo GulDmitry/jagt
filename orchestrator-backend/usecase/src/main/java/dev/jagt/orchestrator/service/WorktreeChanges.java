@@ -132,6 +132,34 @@ public class WorktreeChanges {
         return diff.length() > MAX_QUOTED ? "" : diff.toString();
     }
 
+    /** Each repository's commits and changed files since its base, each at most {@code maxLines} lines. */
+    public String history(TaskState task, int maxLines) {
+        StringBuilder history = new StringBuilder();
+        for (TaskRepo repo : task.repos()) {
+            history.append("# ").append(repo.project()).append('\n');
+            try {
+                String project = Objects.requireNonNull(repo.project());
+                String base = task.baseBranchOr(configService.project(project).baseBranch());
+                Path worktree = Path.of(repo.worktreePath());
+                history.append("commits:\n")
+                        .append(capped(inspection.commitsSince(projectPath(project), worktree, base), maxLines))
+                        .append("changed:\n")
+                        .append(capped(inspection.statSince(projectPath(project), worktree, base), maxLines));
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+                history.append("jagt could not read it: ").append(e.getMessage()).append('\n');
+            }
+        }
+        return history.toString();
+    }
+
+    private static String capped(String lines, int maxLines) {
+        List<String> all = lines.lines().toList();
+        String kept = all.stream().limit(maxLines).collect(java.util.stream.Collectors.joining("\n", "", "\n"));
+        return all.size() > maxLines ? kept + "... " + (all.size() - maxLines) + " more lines\n"
+                : all.isEmpty() ? "(none)\n" : kept;
+    }
+
     /** Each repository's changed paths since its base, by project; EMPTY where git could not answer for one. */
     public Optional<Map<String, List<String>>> paths(TaskState task) {
         Map<String, List<String>> paths = new LinkedHashMap<>();

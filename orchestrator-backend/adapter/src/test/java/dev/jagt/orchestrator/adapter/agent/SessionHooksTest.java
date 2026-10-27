@@ -42,4 +42,10 @@ class SessionHooksTest {
         assertThat(SessionHooks.continuingEnds("a-cli-that-ships-no-hooks")).isEmpty();
         assertThat(SessionHooks.compactedStart("a-cli-that-ships-no-hooks")).isEmpty();
     }
+
+    @Test
+    void declaresTheEventAPromptIsAnsweredOnWithoutMappingItToAState() {
+        assertThat(SessionHooks.promptGate("claude")).contains("UserPromptSubmit");
+        assertThat(SessionHooks.of("claude")).doesNotContainKey("UserPromptSubmit");
+    }
 }

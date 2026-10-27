@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -62,6 +63,7 @@ public class SessionProbe {
     private final AgentRuntime runtime;
     private final Map<String, Halt> halted = new ConcurrentHashMap<>();
     private final Map<String, Long> movingSince = new ConcurrentHashMap<>();
+    private final Map<String, Long> atAPromptSince = new ConcurrentHashMap<>();
     private final Map<String, Path> reportedLog = new ConcurrentHashMap<>();
 
     /** Read per run, so a changed interval applies without a restart. */
@@ -85,6 +87,7 @@ public class SessionProbe {
     public void keepOnly(Collection<String> taskIds) {
         halted.keySet().retainAll(taskIds);
         movingSince.keySet().retainAll(taskIds);
+        atAPromptSince.keySet().retainAll(taskIds);
         reportedLog.keySet().retainAll(taskIds);
     }
 
@@ -93,6 +96,11 @@ public class SessionProbe {
      * one event are stamped on arrival and can share a millisecond or arrive out of order.
      */
     public void report(String taskId, State state, @Nullable String cause, long at) {
+        if (state == State.IDLE || state == State.FAILED) {
+            atAPromptSince.putIfAbsent(taskId, at);
+        } else if (state == State.WORKING || state == State.GONE) {
+            atAPromptSince.remove(taskId);
+        }
         if (state == State.WORKING) {
             movingSince.put(taskId, at);
             halted.remove(taskId);
@@ -109,6 +117,12 @@ public class SessionProbe {
     /** When the session last reported itself moving, which is when its current turn began; 0 where it never did. */
     public long turnStartedAt(String taskId) {
         return movingSince.getOrDefault(taskId, 0L);
+    }
+
+    /** Since when the session has stood at a prompt, from the turn's end; EMPTY while it works or nothing was reported. */
+    public OptionalLong atAPromptSince(String taskId) {
+        Long since = atAPromptSince.get(taskId);
+        return since == null ? OptionalLong.empty() : OptionalLong.of(since);
     }
 
     /** A session that names the file it appends to takes the guessing out of finding it. */

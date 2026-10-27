@@ -156,4 +156,37 @@ class ClaudeTranscriptsTest {
     void aSuiteRunReadsSessionLogsFromInsideTheBuildNeverFromTheHumansHome() {
         assertThat(ClaudeTranscripts.projectsDir()).startsWithRaw(Path.of("").toAbsolutePath());
     }
+
+    @Test
+    void tailsTheHumansPromptsAndTheModelsTextAndNothingTheToolsSaid(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("session.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"fix the login"}}
+                {"type":"assistant","message":{"content":[{"type":"text","text":"Looking at it."},{"type":"tool_use","input":{"command":"SECRET-INPUT"}}]}}
+                {"type":"user","entrypoint":"cli","message":{"content":[{"type":"tool_result","content":"SECRET-OUTPUT"}]}}
+                {"type":"assistant","message":{"content":[{"type":"text","text":"Fixed."}]}}
+                """);
+
+        String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000).orElseThrow();
+
+        assertThat(tail).isEqualTo("human: fix the login\nassistant: Looking at it.\nassistant: Fixed.");
+    }
+
+    @Test
+    void keepsTheNewestWordsWhenTheTailExceedsItsCap(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("session.jsonl"), """
+                {"type":"assistant","message":{"content":[{"type":"text","text":"oldest words"}]}}
+                {"type":"assistant","message":{"content":[{"type":"text","text":"newest words"}]}}
+                """);
+
+        String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 30).orElseThrow();
+
+        assertThat(tail).isEqualTo(" words\nassistant: newest words");
+    }
+
+    @Test
+    void tailsNothingWhereTheSessionKeepsNoLog(@TempDir Path root) {
+        assertThat(ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000)).isEmpty();
+    }
 }

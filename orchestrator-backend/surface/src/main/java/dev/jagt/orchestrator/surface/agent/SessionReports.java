@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.agent;
 
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.service.TaskFacts;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -107,25 +108,10 @@ public class SessionReports {
                 || !compacted.equalsIgnoreCase(startedBy.strip())) {
             return "";
         }
-        return "You are jagt's sub-agent for " + taskId + facts(task) + ". The task is its branch, " + taskId
+        return "You are jagt's sub-agent for " + taskId + TaskFacts.of(task) + ". The task is its branch, " + taskId
                 + ". In this worktree task_request.md is what"
                 + " the task was opened with and task_context.md the instruction standing now: re-read both, and the"
                 + " repository's own agent instructions, before doing anything else.\n";
     }
 
-    private static String facts(@Nullable TaskState task) {
-        if (task == null) {
-            return "";
-        }
-        String asked = task.report().asks()
-                ? "; your open question: " + task.message()
-                : present(task.message()) ? "; your last report: " + task.message() : "";
-        return (present(task.title()) ? " — " + task.title() : "")
-                + (present(task.ticketUrl()) ? " (" + task.ticketUrl() + ")" : "")
-                + ". On the board: " + task.status() + asked;
-    }
-
-    private static boolean present(@Nullable String value) {
-        return value != null && !value.isBlank();
-    }
 }

@@ -98,6 +98,20 @@ public class WorktreeInspection {
         });
     }
 
+    /** The commits since the worktree left its base at origin, one line each, newest first. */
+    public String commitsSince(Path projectPath, Path worktree, String baseBranch) {
+        return git.locked(projectPath, () -> git.run(worktree,
+                        List.of("git", "log", "--oneline", "--no-color", mergeBase(worktree, baseBranch) + "..HEAD"))
+                .expectSuccess("git log in " + worktree).stdout());
+    }
+
+    /** Which files differ from the base, committed and not, with their line counts. */
+    public String statSince(Path projectPath, Path worktree, String baseBranch) {
+        return git.locked(projectPath, () -> git.run(worktree,
+                        List.of("git", "diff", "--stat", "--no-color", mergeBase(worktree, baseBranch)))
+                .expectSuccess("git diff --stat in " + worktree).stdout());
+    }
+
     /** Identifies the work itself: unchanged by a move of the base, EMPTY while a file is new and untracked. */
     public Optional<String> ownDiffId(Path projectPath, Path worktree, String baseBranch) {
         List<String> generated = WorktreeFiles.generated(agentRuntime);

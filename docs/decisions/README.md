@@ -109,3 +109,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0091 The shipped Master reads three roles](0091-the-shipped-master-reads-three-roles.md)
 - [0092 The sandbox is opt-in](0092-the-session-sandbox-is-opt-in.md)
 - [0093 Only a new note is progress](0093-only-a-new-note-is-progress.md)
+- [0094 A cold prompt goes to a fresh session](0094-a-prompt-typed-into-a-cold-session-goes-to-a-fresh-one.md)

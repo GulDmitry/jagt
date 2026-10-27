@@ -27,12 +27,13 @@ final class SessionHooks {
     private static final String COMPACTED_START = "compacted-start";
     private static final String BLOCKING_NOTIFICATION = "blocking-notification";
     private static final String TURN_END = "turn-end";
+    private static final String PROMPT_GATE = "prompt-gate";
     private static final String TURN_FAILURE = "turn-failure";
     private static final String RATE_LIMIT_ERROR = "rate-limit-error";
     private static final String CONTINUING_END = "continuing-end";
     private static final String TRUST_DIALOG = "trust-dialog";
     private static final Set<String> NOT_A_STATE =
-            Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END, TURN_FAILURE, RATE_LIMIT_ERROR,
+            Set.of(GATE, PROMPT_GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END, TURN_FAILURE, RATE_LIMIT_ERROR,
                     CONTINUING_END, TRUST_DIALOG);
 
     /** The event this CLI answers with allow or deny, or nothing where it has none. */
@@ -43,6 +44,11 @@ final class SessionHooks {
     /** The event ending every turn, answered with whether the turn may end, or nothing where it has none. */
     static Optional<String> turnEnd(String runtime) {
         return Optional.ofNullable(declared(runtime).getProperty(TURN_END));
+    }
+
+    /** The event firing as a human submits a prompt, answered with whether it may reach the model; none where absent. */
+    static Optional<String> promptGate(String runtime) {
+        return Optional.ofNullable(declared(runtime).getProperty(PROMPT_GATE));
     }
 
     /** The event ending a turn on an API error, or nothing where this CLI has none. */

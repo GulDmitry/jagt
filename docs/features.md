@@ -119,9 +119,8 @@
 - **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
   [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
 - **Take over** — A new task can take over an open review request. [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
-- **Red round** — A failing pipeline sends the task back to its session.
+- **Red round** — A failing pipeline sends the task back to its session; three reads that cannot list the pipelines stop it, with their causes.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)
-- **Unreadable checks** — Three reads running that cannot list the pipelines stop the task, with the reads' causes.
   [spec](../openspec/specs/review/spec.md#requirement-pipeline-status-keeps-the-hosts-wording)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
@@ -132,6 +131,7 @@
 - **Revive after a restart** — Sessions return where they were, each holding the turn asked once to repeat its last report.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
   [spec](../openspec/specs/session-brief/spec.md#requirement-a-restart-asks-for-the-report-it-may-have-lost)
+- **Cold prompts** — Past the cache lifetime, a typed prompt starts fresh. [spec](../openspec/specs/cold-prompts/spec.md)
 - **Open in your editor** — Open a worktree or diff in your editor. [spec](../openspec/specs/runtime/spec.md#requirement-the-editor-is-a-launcher)
 - **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Key: `orchestrator.claude.mcpConfig`.
   [spec](../openspec/specs/runtime/spec.md#requirement-a-sessions-servers-can-be-pinned)

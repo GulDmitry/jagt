@@ -56,7 +56,7 @@ class AgentSessionControllerTest {
         when(reports.turnFailed("ABC-1", report)).thenReturn(true);
 
         new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, null, "rate_limit", null, java.util.List.of()));
+                new SessionHookReport(null, null, null, null, "rate_limit", null, java.util.List.of(), null));
 
         verify(wakes).arm("ABC-1");
     }
@@ -69,7 +69,7 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, null, "overloaded", null, java.util.List.of()));
+                new SessionHookReport(null, null, null, null, "overloaded", null, java.util.List.of(), null));
 
         verify(wakes, never()).arm("ABC-1");
     }
@@ -175,7 +175,7 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).turnEnd("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, true, null, null, java.util.List.of(Map.of("id", "b1"))));
+                new SessionHookReport(null, null, null, true, null, null, java.util.List.of(Map.of("id", "b1")), null));
 
         verify(reports).turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), true, true);
     }

@@ -24,7 +24,8 @@ public record SessionHookReport(@JsonProperty("transcript_path") @Nullable Strin
                                 @JsonProperty("stop_hook_active") @Nullable Boolean continuing,
                                 @JsonProperty("error") @Nullable String error,
                                 @JsonProperty("reason") @Nullable String reason,
-                                @JsonProperty("background_tasks") List<Object> backgroundTasks) implements Message {
+                                @JsonProperty("background_tasks") List<Object> backgroundTasks,
+                                @JsonProperty("prompt") @Nullable String prompt) implements Message {
 
     public SessionHookReport {
         transcriptPath = absent(transcriptPath);
@@ -32,11 +33,12 @@ public record SessionHookReport(@JsonProperty("transcript_path") @Nullable Strin
         message = absent(message);
         error = absent(error);
         reason = absent(reason);
+        prompt = absent(prompt);
         backgroundTasks = backgroundTasks == null ? List.of() : backgroundTasks;
     }
 
     public SessionHookReport(@Nullable String transcriptPath, @Nullable String source, @Nullable String message) {
-        this(transcriptPath, source, message, null, null, null, List.of());
+        this(transcriptPath, source, message, null, null, null, List.of(), null);
     }
 
     /** Nothing was posted at all, which is a state the address alone still reports. */
@@ -47,6 +49,11 @@ public record SessionHookReport(@JsonProperty("transcript_path") @Nullable Strin
     /** The turn ending was itself sent on by a refusal, so refusing again could never resolve. */
     public boolean sentOn() {
         return Boolean.TRUE.equals(continuing);
+    }
+
+    /** What the human typed, which only a prompt hook carries; blank where it is not one. */
+    public String typed() {
+        return prompt == null ? "" : prompt;
     }
 
     /** Work still in flight wakes the session back up: a pause, not a stop. */

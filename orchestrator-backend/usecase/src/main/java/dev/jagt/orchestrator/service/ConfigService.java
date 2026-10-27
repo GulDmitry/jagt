@@ -29,7 +29,9 @@ import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
 
 import java.nio.file.Files;
+import org.springframework.boot.convert.DurationStyle;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -146,10 +148,32 @@ public class ConfigService implements LoopBreaker.Current {
         public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds,
                                   @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan,
                                   @Nullable VisualizeConfig visualize, @Nullable DiagnoseConfig diagnose,
-                                  @Nullable String model) {
+                                  @Nullable String model, @Nullable String cacheLifetime,
+                                  @Nullable String notesEvery) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null, null, null, null, null, null);
+                return new AgentConfig(null, null, null, null, null, null, null, null, null);
+            }
+
+            /** Idle for this long, a session's prompt cache is gone; zero means a session is never judged cold. */
+            public Duration cacheLifetimeOrDefault() {
+                return duration(cacheLifetime, Duration.ofHours(1));
+            }
+
+            /** How stale task_notes.md may be at a turn end before the session is asked once to rewrite it; zero: never. */
+            public Duration notesEveryOrDefault() {
+                return duration(notesEvery, Duration.ofMinutes(30));
+            }
+
+            private static Duration duration(@Nullable String written, Duration unset) {
+                if (written == null || written.isBlank()) {
+                    return unset;
+                }
+                try {
+                    return DurationStyle.detectAndParse(written.strip(), ChronoUnit.SECONDS);
+                } catch (IllegalArgumentException unreadable) {
+                    return unset;
+                }
             }
 
             /** Blank: the agent CLI's own default. */

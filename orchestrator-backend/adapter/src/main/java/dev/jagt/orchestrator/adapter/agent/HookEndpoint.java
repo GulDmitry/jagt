@@ -13,6 +13,8 @@ import java.nio.file.Path;
 @Component
 public class HookEndpoint {
 
+    static final int PROMPT_GATE_SECONDS = 10;
+
     private final String url;
     private final String gateUrl;
 
@@ -29,6 +31,11 @@ public class HookEndpoint {
      *  a stopped backend look like a rule. */
     public String gateCommand(Path worktree) {
         return command(worktree, "tool", gateUrl);
+    }
+
+    /** A prompt hook waits for a fresh session to launch before it answers, so it is allowed longer than the rest. */
+    public String promptCommand(Path worktree) {
+        return command(worktree, "prompt", url, PROMPT_GATE_SECONDS);
     }
 
     /** A headless read's gate fails closed: exit 2 refuses the call when jagt cannot answer. */
@@ -49,7 +56,11 @@ public class HookEndpoint {
     }
 
     private String command(Path worktree, String state, String base) {
-        return "curl -sf -m 2 -X POST --data-binary @- -H 'Content-Type: application/json' -H "
+        return command(worktree, state, base, 2);
+    }
+
+    private String command(Path worktree, String state, String base, int seconds) {
+        return "curl -sf -m " + seconds + " -X POST --data-binary @- -H 'Content-Type: application/json' -H "
                 + AbstractAgentRuntime.shellQuote(McpEndpoint.CALLER_HEADER + ": "
                         + McpEndpoint.callerHeaderValue(worktree))
                 + " " + AbstractAgentRuntime.shellQuote(base + "/" + state) + " || true";

@@ -95,10 +95,15 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 + " " + shellQuote(claude.mcpConfig()) + " --strict-mcp-config";
     }
 
-    /** The prompt cache's lifetime: https://code.claude.com/docs/en/prompt-caching#cache-lifetime */
+    /** https://code.claude.com/docs/en/prompt-caching#cache-lifetime */
     @Override
-    public boolean pastContinuing(Path worktree) {
-        return clock.millis() - lastSessionActivity(worktree).orElse(0) > CACHE_LIFETIME.toMillis();
+    public boolean pastCacheLifetime(long lastActiveMillis, Duration cacheLifetime) {
+        return !cacheLifetime.isZero() && clock.millis() - lastActiveMillis > cacheLifetime.toMillis();
+    }
+
+    @Override
+    public Optional<String> conversationTail(Path worktree, int maxChars) {
+        return ClaudeTranscripts.tail(ClaudeTranscripts.projectsDir(), worktree, maxChars);
     }
 
     @Override
@@ -234,8 +239,6 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     /** On the command as well as in the settings, which a worktree provisioned before them does not carry. */
     private static final String COMPACT_ENV = "CLAUDE_CODE_AUTO_COMPACT_WINDOW=" + COMPACT_AT_TOKENS + " ";
 
-    private static final Duration CACHE_LIFETIME = Duration.ofHours(1);
-
     /**
      * Without {@code enableAllProjectMcpServers} a spawned session stops at a "New MCP server found" prompt, and
      * without the allow-list the permission classifier gates individual calls — prompts nobody answers. A
@@ -357,6 +360,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public String blockedPrompt(String reason) {
+        return refusedTurnEnd(reason);
+    }
+
+    @Override
     public String toldTheHuman(String line) {
         return "{\"systemMessage\": " + quoted(line) + "}";
     }
@@ -394,6 +402,9 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                 .map(event -> hook(event.getKey(), hooks.command(worktree, event.getValue()))),
                         SessionHooks.turnEnd("claude").stream()
                                 .map(event -> hook(event, hooks.command(worktree, "turn-end"))),
+                        SessionHooks.promptGate("claude").stream()
+                                .map(event -> hook(event, hooks.promptCommand(worktree),
+                                        HookEndpoint.PROMPT_GATE_SECONDS + 5)),
                         SessionHooks.turnFailure("claude").stream()
                                 .map(event -> hook(event, hooks.command(worktree, "turn-failure"))),
                         // Scoped to the tools that can push or write a file: a hook on all of them would sit in
@@ -409,9 +420,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     private static String hook(String event, String command) {
+        return hook(event, command, 5);
+    }
+
+    private static String hook(String event, String command, int timeoutSeconds) {
         return """
-                %s: [{"hooks": [{"type": "command", "command": %s, "timeout": 5}]}]"""
-                .formatted(quoted(event), quoted(command));
+                %s: [{"hooks": [{"type": "command", "command": %s, "timeout": %d}]}]"""
+                .formatted(quoted(event), quoted(command), timeoutSeconds);
     }
 
     /** Serialized rather than hand-quoted: a control character in a path would make the whole file unreadable,

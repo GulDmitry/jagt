@@ -46,10 +46,15 @@ public interface AgentRuntime {
 
     /**
      * Whether the worktree's conversation is past its worth continuing: the CLI rereads the whole history
-     * uncached, so new work goes to a fresh session reading the task's files. False where a conversation is
-     * always continued.
+     * uncached once it has been idle for {@code cacheLifetime}, so new work goes to a fresh session reading the
+     * task's files. False where a conversation is always continued, and for a zero lifetime.
      */
-    default boolean pastContinuing(Path worktree) {
+    default boolean pastContinuing(Path worktree, Duration cacheLifetime) {
+        return lastSessionActivity(worktree).stream().anyMatch(at -> pastCacheLifetime(at, cacheLifetime));
+    }
+
+    /** Whether a conversation last active at {@code lastActiveMillis} has lost its cache; false where none expires. */
+    default boolean pastCacheLifetime(long lastActiveMillis, Duration cacheLifetime) {
         return false;
     }
 
@@ -173,6 +178,19 @@ public interface AgentRuntime {
     /** The answer that keeps this CLI's turn going with {@code reason} as its next input; blank where it cannot. */
     default String refusedTurnEnd(String reason) {
         return "";
+    }
+
+    /** The answer that stops a typed prompt from reaching the model, {@code reason} shown; blank where it cannot. */
+    default String blockedPrompt(String reason) {
+        return "";
+    }
+
+    /**
+     * What the conversation in {@code worktree} last said, newest kept within {@code maxChars}: the human's prompts
+     * and the model's own text, never a tool's input or output. Empty where this runtime keeps no record to read.
+     */
+    default Optional<String> conversationTail(Path worktree, int maxChars) {
+        return Optional.empty();
     }
 
     /** The answer that shows {@code line} to the human and not to the model; blank where this CLI cannot. */
