@@ -143,7 +143,7 @@ class MasterVerdictEvalTest {
         stateService.putTask(taskId, task);
         Optional<MasterReview.Verdict> verdict;
         try {
-            verdict = awaitVerdict(task);
+            verdict = awaitVerdict(taskId);
         } finally {
             stateService.removeTask(taskId);
         }
@@ -165,10 +165,10 @@ class MasterVerdictEvalTest {
                 && Path.of(call.cwd()).normalize().startsWith(worktree.normalize()));
     }
 
-    private Optional<MasterReview.Verdict> awaitVerdict(TaskState task) {
+    private Optional<MasterReview.Verdict> awaitVerdict(String taskId) {
         try {
             return await().atMost(VERDICT_WAIT).pollInterval(Duration.ofSeconds(2))
-                    .until(() -> reviews.of(task), Optional::isPresent);
+                    .until(() -> stateService.task(taskId).flatMap(reviews::of), Optional::isPresent);
         } catch (ConditionTimeoutException noVerdict) {
             return Optional.empty();
         }

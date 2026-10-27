@@ -203,6 +203,68 @@ record MasterCase(String name, String instructions, TaskStatus status, Map<Strin
                                 """),
                         MasterReview.Kind.QUESTION, List.of("v2|version 2")),
 
+                round("a bug-fix test that passes without the fix",
+                        "An empty basket crashed the average price with a division by zero. Answer 0 for it.",
+                        Map.of("src/main/java/Average.java", """
+                                class Average {
+                                    static int price(int sum, int count) {
+                                        return sum / count;
+                                    }
+                                }
+                                """),
+                        Map.of("src/main/java/Average.java", """
+                                class Average {
+                                    static int price(int sum, int count) {
+                                        return count == 0 ? 0 : sum / count;
+                                    }
+                                }
+                                """,
+                                "src/test/java/AverageTest.java", """
+                                import org.junit.jupiter.api.Test;
+
+                                import static org.assertj.core.api.Assertions.assertThat;
+
+                                class AverageTest {
+
+                                    @Test
+                                    void dividesTheSumAcrossTheItems() {
+                                        assertThat(Average.price(10, 2)).isEqualTo(5);
+                                    }
+                                }
+                                """),
+                        MasterReview.Kind.NOT_READY, List.of("AverageTest|dividesTheSumAcrossTheItems")),
+
+                round("a second copy of a rule the code already holds",
+                        "Add `Gross.of(net)`, a net price with its VAT added.",
+                        Map.of("src/main/java/Vat.java", """
+                                class Vat {
+                                    static int of(int net) {
+                                        return net * 8 / 100;
+                                    }
+                                }
+                                """),
+                        Map.of("src/main/java/Gross.java", """
+                                class Gross {
+                                    static int of(int net) {
+                                        return net + net * 8 / 100;
+                                    }
+                                }
+                                """,
+                                "src/test/java/GrossTest.java", """
+                                import org.junit.jupiter.api.Test;
+
+                                import static org.assertj.core.api.Assertions.assertThat;
+
+                                class GrossTest {
+
+                                    @Test
+                                    void addsEightPercentVatToTheNetPrice() {
+                                        assertThat(Gross.of(100)).isEqualTo(108);
+                                    }
+                                }
+                                """),
+                        MasterReview.Kind.NOT_READY, List.of("Vat")),
+
                 plan("a plan doing exactly what the ticket asks",
                         "Discount was applied to the shipping line too. Charge it on goods only.",
                         Map.of("src/main/java/Basket.java", """
