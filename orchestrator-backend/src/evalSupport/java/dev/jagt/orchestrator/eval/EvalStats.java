@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.eval;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +17,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
 import java.util.HexFormat;
+import java.util.OptionalDouble;
 
 public final class EvalStats {
 
@@ -26,7 +28,8 @@ public final class EvalStats {
     private EvalStats() {
     }
 
-    public record Entry(String at, String suite, String name, boolean passed, int runs, String model, String brief) {
+    public record Entry(String at, String suite, String name, boolean passed, int runs, String model, String brief,
+                        double seconds, OptionalDouble costUsd, int stalled) {
     }
 
     static String briefHash(String file) {
@@ -41,14 +44,14 @@ public final class EvalStats {
         }
     }
 
-    public static void record(String name, boolean passed, int runs) {
+    public static void record(String name, boolean passed, int runs, double seconds, OptionalDouble costUsd, int stalled) {
         String file = System.getProperty("eval.stats");
         if (file == null) {
             return;
         }
         Entry entry = new Entry(Instant.now(Clock.system(ZoneOffset.UTC)).toString(), System.getProperty("eval.suite", "unknown"), name, passed,
                 runs, System.getProperty("eval.model", "default"),
-                briefHash(System.getProperty("eval.brief.file")));
+                briefHash(System.getProperty("eval.brief.file")), seconds, costUsd, stalled);
         try {
             append(Path.of(file), entry);
         } catch (IOException | JacksonException unwritable) {
@@ -61,10 +64,12 @@ public final class EvalStats {
         if (Files.isRegularFile(file) && Files.size(file) >= CEILING_BYTES) {
             Files.move(file, file.resolveSibling(file.getFileName() + ".1"), StandardCopyOption.REPLACE_EXISTING);
         }
-        String line = MAPPER.createObjectNode()
+        ObjectNode node = MAPPER.createObjectNode()
                 .put("at", entry.at()).put("suite", entry.suite()).put("case", entry.name())
                 .put("passed", entry.passed()).put("runs", entry.runs()).put("model", entry.model()).put("brief", entry.brief())
-                .toString() + "\n";
+                .put("seconds", entry.seconds());
+        entry.costUsd().ifPresent(cost -> node.put("costUsd", cost));
+        String line = node.put("stalled", entry.stalled()).toString() + "\n";
         Files.writeString(file, line, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 }

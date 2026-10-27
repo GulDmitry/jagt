@@ -2,6 +2,10 @@ package dev.jagt.orchestrator.prompteval;
 
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
+import dev.jagt.orchestrator.eval.EvalStalled;
+import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -23,6 +27,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 import java.nio.file.Path;
+import java.util.OptionalDouble;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,6 +59,8 @@ class CommandMappingEvalTest {
     private PaletteContext board;
     @Autowired
     private CommandAssistant assistant;
+    @Autowired
+    private UsageTracker usage;
 
     @BeforeEach
     void fourTasksBetweenThemOfferingEveryVerbTheRowsAskFor() {
@@ -77,14 +84,20 @@ class CommandMappingEvalTest {
     @ParameterizedTest
     @MethodSource("cases")
     void mapsTheOperatorsOwnWordsOntoOneCommandAndOneTask(CommandMappingCase expected) {
-        EvalQuorum.configured().hold(expected.request(), () -> {
+        EvalQuorum.configured().hold(expected.request(), this::commandMapSpend, () -> {
             Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.menu());
 
-            assertThat(answer.facts()).isPresent();
+            if (answer.facts().isEmpty()) {
+                throw EvalStalled.because("no proposal: " + answer.failure());
+            }
             assertThat(answer.facts().orElseThrow().command()).isEqualTo(expected.command());
             assertThat(answer.facts().orElseThrow().task()).isIn(expected.taskId(), expected.taskAlias());
             assertThat(answer.facts().orElseThrow().ticket()).isEqualTo(expected.ticket());
         });
+    }
+
+    private OptionalDouble commandMapSpend() {
+        return OptionalDouble.of(usage.sessionByKind().getOrDefault(AssistantCallKind.COMMAND_MAP, TokenUsage.NONE).costUsd());
     }
 
     static java.util.List<CommandMappingCase> cases() {

@@ -77,8 +77,8 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 - `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant: run it on a
   change to the mapping prompt, a `TaskAction`'s hint, the task-list shape or the model.
 - `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped
-  `master-brief.md.dist`. Run it when either changes; a defect it passed: `master-lesson`.
-- Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority); `masterEval` also asserts what the read gate heard.
+  `master-brief.md.dist`, asserting what the read gate heard. Run it when either changes; a defect it passed: `master-lesson`.
+- Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), each recording seconds, cost and stalls in `eval-stats.jsonl`.
 - `masterEval` reads the brief's `context` step; `SessionBriefContractTest` holds each relayed step naming a worktree or a git verb to what it grants.
 - Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,
   the deploy check.

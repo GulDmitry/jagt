@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.mastereval;
 
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
+import dev.jagt.orchestrator.eval.EvalStalled;
 import dev.jagt.orchestrator.eval.MasterVerdictReport;
 import dev.jagt.orchestrator.surface.agent.ReadGateController;
 import org.mockito.Mockito;
@@ -31,6 +32,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -124,7 +126,11 @@ class MasterVerdictEvalTest {
     @ParameterizedTest
     @MethodSource("rounds")
     void handsBackTheVerdictAHumanWouldHave(MasterCase round) {
-        EvalQuorum.configured().hold(round.instructions(), () -> oneRun(round));
+        EvalQuorum.configured().hold(round.instructions(), this::masterReviewSpend, () -> oneRun(round));
+    }
+
+    private OptionalDouble masterReviewSpend() {
+        return OptionalDouble.of(usage.sessionByKind().getOrDefault(AssistantCallKind.MASTER_REVIEW, TokenUsage.NONE).costUsd());
     }
 
     private void oneRun(MasterCase round) throws Exception {
@@ -142,7 +148,9 @@ class MasterVerdictEvalTest {
             stateService.removeTask(taskId);
         }
 
-        assertThat(verdict).describedAs("no verdict inside %s", VERDICT_WAIT).isPresent();
+        if (verdict.isEmpty()) {
+            throw EvalStalled.because("no verdict inside " + VERDICT_WAIT);
+        }
         String report = MasterVerdictReport.of(round.verdict() + ", naming " + round.names(), worktree);
         assertThat(verdict.orElseThrow().kind()).describedAs("%s", report).isEqualTo(round.verdict());
         MasterReview.Verdict judged = verdict.orElseThrow();
