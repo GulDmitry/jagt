@@ -102,6 +102,8 @@ reports, and a verdict it only links to, such as a quality gate. Climb the tools
 carries, cheapest first: an MCP, then a CLI (the code host's, the cluster's, the database's), then a
 browser as the last try.
 Reproduce it with the command that job ran, fix it, and run that command again until it passes.
+Two fixes resting on one premise failed the same check: write that premise in one sentence, and prove or drop it
+by reading before a third fix.
 A gate fails on EVERY condition it lists: answer each. One no local command computes, such as
 duplication, is checked against that tool's own findings. Fix until none of them (duplicated blocks,
 uncovered lines) is in what you changed.
