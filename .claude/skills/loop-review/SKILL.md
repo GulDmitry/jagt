@@ -14,6 +14,8 @@ Input: the lines of `stops.jsonl` (beside `state.json`) with no line of their ow
    work, or a round no work could pass), a case (no case moves the task on), jagt (a sweep, a count or a stale read).
    Rounds whose input changed (a new commit, new notes, a different verdict) are work, not a loop: the fix then is a
    count that only counts identical rounds, as the trail's fingerprint already does for checks.
+   A loop may alternate (asks A, gets X, asks B, gets Y, asks A again): compare each round with every earlier one,
+   not only the last; a pair that recurs with nothing new between is a loop.
 3. **Name the class, not the case**, in two to four words, as `docs/cases.md` names its families.
 4. **Fix where it belongs**:
    - Master → `master-lesson`.
