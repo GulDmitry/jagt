@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -34,10 +36,12 @@ class TaskStopsTest {
 
     @Test
     void stopsATaskWhoseRoundsResolveNothingAndTellsTheHumanOnce(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
                 List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of(), List.of());
         stops.round("ABC-42", round, "brief 1");
@@ -56,8 +60,9 @@ class TaskStopsTest {
 
     @Test
     void refusesTheFifthUnaskedShipWithinTheWindow(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).history(List.of(
                 new StatusChange(TaskStatus.SHIPPING, 99_000_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 99_200_000, ActionOrigin.MASTER),
@@ -65,7 +70,8 @@ class TaskStopsTest {
                 new StatusChange(TaskStatus.SHIPPING, 99_600_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.REVIEW_PENDING, 99_800_000, ActionOrigin.MCP))).build());
 
-        boolean may = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock).mayShip("ABC-42");
+        boolean may = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock).mayShip("ABC-42");
 
         assertThat(may).isFalse();
         assertThat(state.task("ABC-42").orElseThrow().stop())
@@ -74,12 +80,14 @@ class TaskStopsTest {
 
     @Test
     void relaysTheStoppedRoundAgainOnceTheHumanLiftsTheStop(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .trail(RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "same", "")))
                 .stop(new TaskStop(TaskStop.Trigger.STALLED, 2, "3 rounds")).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
 
         stops.lift("ABC-42");
 
@@ -89,10 +97,12 @@ class TaskStopsTest {
 
     @Test
     void letsAFreshTaskShip(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
 
         assertThat(stops.mayShip("ABC-42")).isTrue();
         assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
@@ -100,12 +110,14 @@ class TaskStopsTest {
 
     @Test
     void reportsATaskStoppedOnlyOnceAStopStandsOnIt(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .stop(new TaskStop(TaskStop.Trigger.STALLED, 2, "3 rounds")).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
 
         assertThat(stops.stopped("ABC-1")).isFalse();
         assertThat(stops.stopped("ABC-2")).isTrue();
@@ -114,10 +126,12 @@ class TaskStopsTest {
 
     @Test
     void answersATripWithTheStopItWroteAndLaterWithTheOneStanding(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         TaskStop first = new TaskStop(TaskStop.Trigger.CHECKS, 5, "3 reads could not list the checks");
 
         Optional<TaskStop> tripped = stops.trip("ABC-42", task -> Optional.of(first));
@@ -130,10 +144,12 @@ class TaskStopsTest {
 
     @Test
     void answersARoundTheLastRelayedOneRepeatsAsUnchanged(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of());
 
         TaskStops.Relay first = stops.round("ABC-42", round, "brief");
@@ -146,10 +162,12 @@ class TaskStopsTest {
 
     @Test
     void recordsTheFirstLineOfTheFailureOnlyForARedRound(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
 
         stops.round("ABC-42", new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed", List.of("x"), 0,
                 List.of(), List.of()), "red");
@@ -162,10 +180,12 @@ class TaskStopsTest {
 
     @Test
     void answersAReadOfTheSameThreadsAndNewestNotesAsUnchangedWhateverTheCopiedText(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts first = new ReviewFacts(true, false, "success", "",
                 List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough."), 0, List.of(), List.of("note_7"));
         ReviewFacts second = new ReviewFacts(true, false, "success", "",
@@ -180,10 +200,12 @@ class TaskStopsTest {
 
     @Test
     void relaysARoundWhereANewNoteCameOnTheSameThread(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, notifications, clock);
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts first = new ReviewFacts(true, false, "success", "",
                 List.of("https://host/mr/1#note_1\nmia: Why?"), 0, List.of(), List.of("note_7"));
         ReviewFacts second = new ReviewFacts(true, false, "success", "",
@@ -193,5 +215,38 @@ class TaskStopsTest {
         TaskStops.Relay next = stops.round("ABC-42", second, "brief two");
 
         assertThat(next).isEqualTo(TaskStops.Relay.RELAY);
+    }
+
+    @Test
+    void journalsAStopOnceWhenItTrips(@TempDir Path root) throws IOException {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("cart").build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        stops.stop("ABC-42", TaskStop.Trigger.CHECKS, "3 reads could not list the checks");
+        stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "later");
+
+        assertThat(Files.readAllLines(root.resolve("stops.jsonl"))).containsExactly(
+                "{\"at\":100000000,\"task\":\"ABC-42\",\"alias\":\"cart\",\"trigger\":\"CHECKS\","
+                        + "\"status\":\"CI_POLLING\",\"evidence\":\"3 reads could not list the checks\"}");
+    }
+
+    @Test
+    void journalsNothingWhenALiftClearsTheStop(@TempDir Path root) throws IOException {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+        stops.stop("ABC-42", TaskStop.Trigger.CHECKS, "3 reads could not list the checks");
+
+        stops.lift("ABC-42");
+
+        assertThat(Files.readAllLines(root.resolve("stops.jsonl"))).hasSize(1);
+        assertThat(stops.stopped("ABC-42")).isFalse();
     }
 }

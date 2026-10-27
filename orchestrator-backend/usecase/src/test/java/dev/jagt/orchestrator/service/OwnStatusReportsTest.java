@@ -129,7 +129,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         reports.report(broke, "ABC-42");
@@ -152,7 +152,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
@@ -175,7 +175,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
@@ -200,7 +200,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run), Clock.systemUTC())),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC()));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);

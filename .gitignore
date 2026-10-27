@@ -45,6 +45,8 @@ master-cases.md
 # Steps no case sends, written beside state.json
 misses.jsonl
 misses.jsonl.1
+stops.jsonl
+stops.jsonl.1
 # What the router worked out about this install: written by it, edited by you, local to this machine
 memory/
 

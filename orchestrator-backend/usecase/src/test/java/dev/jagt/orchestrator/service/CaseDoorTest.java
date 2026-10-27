@@ -34,7 +34,7 @@ class CaseDoorTest {
         return new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new Notifications(List.of(), Runnable::run), Clock.systemUTC()));
+                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
     }
 
     @Test

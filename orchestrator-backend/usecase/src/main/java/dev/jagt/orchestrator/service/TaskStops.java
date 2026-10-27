@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoundTrail;
@@ -10,12 +8,11 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
-import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,14 +22,13 @@ import java.util.function.UnaryOperator;
 /** The one writer of a task's stop: tripped by the loop breaker or a miss, announced once, cleared by a lift. */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class TaskStops {
 
     public enum Relay { RELAY, UNCHANGED, STOPPED }
 
     private final StateService stateService;
     private final LoopBreaker.Current breakers;
-    private final Notifications notifications;
+    private final StopAnnouncements announcements;
     private final Clock clock;
 
     public void stop(String taskId, TaskStop.Trigger trigger, String evidence) {
@@ -87,6 +83,7 @@ public class TaskStops {
                                     Function<TaskState, Optional<TaskStop>> check) {
         AtomicReference<@Nullable TaskStop> standing = new AtomicReference<>();
         AtomicReference<@Nullable TaskStop> tripped = new AtomicReference<>();
+        AtomicReference<@Nullable TaskState> stoppedTask = new AtomicReference<>();
         stateService.updateTask(taskId, task -> {
             if (task.stopped()) {
                 standing.set(task.stop());
@@ -95,27 +92,17 @@ public class TaskStops {
             TaskState recorded = record.apply(task);
             Optional<TaskStop> stop = check.apply(recorded);
             stop.ifPresent(tripped::set);
+            stop.ifPresent(s -> stoppedTask.set(recorded));
             stop.ifPresent(standing::set);
             return stop.map(recorded::withStop).orElse(recorded);
         });
-        Optional.ofNullable(tripped.get()).ifPresent(stop -> announce(taskId, stop));
+        Optional.ofNullable(tripped.get())
+                .ifPresent(stop -> announcements.announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));
         return Optional.ofNullable(standing.get());
     }
 
     private static String failing(ReviewFacts facts) {
         return Pipeline.of(facts.pipelineStatus()) == Pipeline.RED
                 ? facts.pipelineFailure().lines().findFirst().orElse("") : "";
-    }
-
-
-    private void announce(String taskId, TaskStop stop) {
-        String alias = stateService.task(taskId).map(TaskState::alias).orElse(taskId);
-        log.atWarn().setMessage("task stopped").addKeyValue("task", taskId).addKeyValue("alias", alias)
-                .addKeyValue("cause", stop.trigger().name().toLowerCase(Locale.ROOT))
-                .addKeyValue("said", OneLine.clipped(stop.evidence()))
-                .addKeyValue("effect", "auto-review and the master leave the task")
-                .addKeyValue("fix", "lift " + alias)
-                .log();
-        notifications.send(new Notification(Notification.Topic.INSTALL, taskId, "jagt stopped a task", stop.reading()));
     }
 }

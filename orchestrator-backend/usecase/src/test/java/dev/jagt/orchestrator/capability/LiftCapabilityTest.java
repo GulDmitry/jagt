@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.StopAnnouncements;
+import dev.jagt.orchestrator.service.StopLog;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -24,12 +26,13 @@ class LiftCapabilityTest {
 
     @Test
     void clearsTheStopAndTellsTheHumanWhatMovesAgain(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .stop(new TaskStop(TaskStop.Trigger.STALLED, 2, "3 rounds")).build());
         LiftCapability lift = new LiftCapability(new TaskStops(state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new Notifications(List.of(), Runnable::run),
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()));
 
         var outcome = lift.run("ABC-1");
