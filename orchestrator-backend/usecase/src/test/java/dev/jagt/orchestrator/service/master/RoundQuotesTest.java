@@ -1,50 +1,69 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class RoundQuotesTest {
 
     private final RoundFacts facts = mock(RoundFacts.class);
-    private final MasterReview reviews = new MasterReview();
+    private final MasterReview reviews = new MasterReview(mock(StateService.class));
     private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
 
     @Test
     void keepsAReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
-        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
+        task = state.task("a1").orElseThrow();
+        when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task, "in1");
+        boolean carried = quotes.carried("a1", task, "in1");
 
         assertThat(carried).isTrue();
+        task = state.task("a1").orElseThrow();
         assertThat(reviews.readsTheRoundInFront(task)).isTrue();
     }
 
     @Test
     void readsTheRoundAnewWhenTheTasksOwnDiffChanged(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
-        when(facts.ownDiff(task)).thenReturn(Optional.of("def456"));
+        task = state.task("a1").orElseThrow();
+        when(facts.ownDiff(any())).thenReturn(Optional.of("def456"));
 
-        boolean carried = quotes.carried(task, "in1");
+        boolean carried = quotes.carried("a1", task, "in1");
 
         assertThat(carried).isFalse();
         assertThat(reviews.readsTheRoundInFront(task)).isFalse();
@@ -52,76 +71,107 @@ class RoundQuotesTest {
 
     @Test
     void keepsANotReadyVerdictWhenTheSessionHandedBackTheSameOwnDiffAndKind(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .report(AgentReport.NO_CHANGES).lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "NO_CHANGES", "in1", List.of(new MasterReview.Read("qa",
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(1_000, "abc123", "NO_CHANGES", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "not ready", List.of(new Finding("Foo.java", "drops v2", "", "wrong", "", "missing")), "", List.of(), "")))), "");
-        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
+        task = state.task("a1").orElseThrow();
+        when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task, "in1");
+        boolean carried = quotes.carried("a1", task, "in1");
 
         assertThat(carried).isTrue();
+        task = state.task("a1").orElseThrow();
         assertThat(reviews.of(task).orElseThrow().kind()).isEqualTo(MasterReview.Kind.NOT_READY);
     }
 
     @Test
     void readsTheRoundAnewWhenTheHandBackIsOfAnotherKind(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .report(AgentReport.NO_CHANGES).lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
-        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
+        task = state.task("a1").orElseThrow();
+        when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task, "in1");
+        boolean carried = quotes.carried("a1", task, "in1");
 
         assertThat(carried).isFalse();
     }
 
     @Test
     void readsTheRoundAnewWhereTheVerdictWasStoredBeforeItKeptTheReportKind(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", null, "in1", List.of(new MasterReview.Read("qa",
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(1_000, "abc123", null, "in1", List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
-        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
+        task = state.task("a1").orElseThrow();
+        when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-        boolean carried = quotes.carried(task, "in1");
+        boolean carried = quotes.carried("a1", task, "in1");
 
         assertThat(carried).isFalse();
     }
 
     @Test
     void readsTheRoundAnewWhenTheHumanSaidSomethingNewOverTheSameDiffAndKind(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        when(facts.ask("ABC-1", task)).thenReturn("Summary");
-        when(facts.notes(task)).thenReturn("");
-        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
-        when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
+        when(facts.ask(eq("ABC-1"), any())).thenReturn("Summary");
+        when(facts.notes(any())).thenReturn("");
+        when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+        when(facts.humanSaid(any())).thenReturn(Optional.of(List.of("keep v2")));
         String read = quotes.inputs("ABC-1", task).orElseThrow();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", read, List.of(new MasterReview.Read("qa",
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(1_000, "abc123", "PLAIN", read, List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
-        when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2", "drop v1")));
+        task = state.task("a1").orElseThrow();
+        when(facts.humanSaid(any())).thenReturn(Optional.of(List.of("keep v2", "drop v1")));
 
-        boolean carried = quotes.carried(task, quotes.inputs("ABC-1", task).orElseThrow());
+        boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
 
         assertThat(carried).isFalse();
     }
 
     @Test
     void readsTheRoundAnewWhenTheSessionsNotesChangedOverTheSameDiffAndKind(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(5_000).build();
-        when(facts.ask("ABC-1", task)).thenReturn("Summary");
-        when(facts.humanSaid(task)).thenReturn(Optional.of(List.of()));
-        when(facts.ownDiff(task)).thenReturn(Optional.of("abc123"));
-        when(facts.notes(task)).thenReturn("");
+        when(facts.ask(eq("ABC-1"), any())).thenReturn("Summary");
+        when(facts.humanSaid(any())).thenReturn(Optional.of(List.of()));
+        when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+        when(facts.notes(any())).thenReturn("");
         String read = quotes.inputs("ABC-1", task).orElseThrow();
-        reviews.write(task, new MasterReview.Review(1_000, "abc123", "PLAIN", read, List.of(new MasterReview.Read("qa",
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(1_000, "abc123", "PLAIN", read, List.of(new MasterReview.Read("qa",
                 new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
-        when(facts.notes(task)).thenReturn("disputed: the guard is right");
+        task = state.task("a1").orElseThrow();
+        when(facts.notes(any())).thenReturn("disputed: the guard is right");
 
-        boolean carried = quotes.carried(task, quotes.inputs("ABC-1", task).orElseThrow());
+        boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
 
         assertThat(carried).isFalse();
     }

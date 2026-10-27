@@ -53,12 +53,12 @@ public class RoundQuotes {
     }
 
     /** A verdict, ready or not, still stands while the hand-back's inputs are the ones it read; else it is read again. */
-    boolean carried(TaskState task, String inputs) {
+    boolean carried(String taskId, TaskState task, String inputs) {
         Optional<String> own = facts.ownDiff(task);
         boolean same = own.isPresent() && reviews.stored(task)
                 .filter(review -> review.readsInputsOf(task, own.get(), inputs))
                 .filter(review -> MasterReview.Verdict.of(review).kind() != MasterReview.Kind.QUESTION).isPresent();
-        return same && reviews.restamp(task);
+        return same && reviews.restamp(taskId, task);
     }
 
     String planFile(TaskState task) {

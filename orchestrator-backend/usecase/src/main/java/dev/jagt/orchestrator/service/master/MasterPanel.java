@@ -71,7 +71,7 @@ public class MasterPanel {
             return false;
         }
         String inputs = quotes.inputs(taskId, task).orElse("");
-        if (quotes.carried(task, inputs)) {
+        if (quotes.carried(taskId, task, inputs)) {
             return true;
         }
         log.atInfo().setMessage("master review asked").addKeyValue("task", taskId)
@@ -111,7 +111,7 @@ public class MasterPanel {
         List<MasterReview.Read> reads = reads(roles, judgements);
         boolean allRead = judgements.stream().allMatch(judgement -> judgement.failure().isBlank());
         Review review = Review.of(task, allRead ? quotes.ownDiff(task).orElse("") : "", inputs, reads);
-        return stored.write(task, review,
+        return stored.write(taskId, task, review,
                 verdictFile(taskId, reads, named.stream().filter(role -> !roles.contains(role)).toList()));
     }
 
@@ -130,7 +130,7 @@ public class MasterPanel {
                         reviews.loadsMcpServer()),
                         worktrees(task), config.modelOrInherited()));
         List<MasterReview.Read> reads = reads(List.of(PLANNER), List.of(judged));
-        return stored.write(task, Review.of(task, "", "", reads), verdictFile(taskId, reads, List.of()));
+        return stored.write(taskId, task, Review.of(task, "", "", reads), verdictFile(taskId, reads, List.of()));
     }
 
     private static final Role PLANNER = new Role("planner", "whether the plan does what the ticket asks", "",

@@ -53,7 +53,7 @@ class MasterReviewJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
         master("off");
 
-        new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
+        new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
 
         verify(panel, never()).review(anyString(), any(), any());
     }
@@ -66,7 +66,7 @@ class MasterReviewJobTest {
         state.putTask("ABC-1", back);
         ConfigService.ConfigFile.MasterConfig master = master("judge");
 
-        new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
+        new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
 
         verify(panel).review("ABC-1", back, master);
     }
@@ -78,7 +78,7 @@ class MasterReviewJobTest {
         state.putTask("ABC-1", planned);
         ConfigService.ConfigFile.MasterConfig master = master("judge");
 
-        new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
+        new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
 
         verify(panel).plan("ABC-1", planned, master);
         verify(panel, never()).review(anyString(), any(), any());
@@ -90,7 +90,7 @@ class MasterReviewJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         master("judge");
 
-        new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
+        new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
 
         verify(panel, never()).review(anyString(), any(), any());
         verify(panel, never()).plan(anyString(), any(), any());
@@ -102,10 +102,11 @@ class MasterReviewJobTest {
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
                 .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview(state).write("ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        back = state.task("ABC-1").orElseThrow();
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
-        new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
+        new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
 
         verify(verdicts).act(eq("ABC-1"), eq(back),
                 any(MasterReview.Verdict.class), eq(master));
@@ -118,11 +119,12 @@ class MasterReviewJobTest {
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
                 .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview(state).write("ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        back = state.task("ABC-1").orElseThrow();
         master("judge");
         when(verdicts.act(anyString(), any(), any(), any())).thenThrow(new TaskMovedOn("ABC-1"));
 
-        new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
+        new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
 
         verify(verdicts).act(eq("ABC-1"), eq(back), any(MasterReview.Verdict.class), any());
     }
@@ -133,10 +135,11 @@ class MasterReviewJobTest {
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
                 .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
-        new MasterReview().write(back, new MasterReview.Review(3, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        new MasterReview(state).write("ABC-1", back, new MasterReview.Review(3, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
+        back = state.task("ABC-1").orElseThrow();
         ConfigService.ConfigFile.MasterConfig master = master("act");
 
-        new MasterReviewJob(state, config, panel, new MasterReview(), verdicts).run();
+        new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
 
         verify(verdicts, never()).act(anyString(), any(), any(), any());
         verify(panel).review("ABC-1", back, master);

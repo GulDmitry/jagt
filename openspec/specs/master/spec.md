@@ -20,7 +20,7 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 #### Scenario: A round read before you look
 - **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
 - **THEN** each round is read into the worktree's `master-review.md`; it presses nothing
-- **AND** a verdict answers only the hand-back it was asked about, however late it is written
+- **AND** a verdict answers only the hand-back it was asked about, however late it is written; a file jagt did not write answers none
 
 #### Scenario: The Master is reading a round
 - **WHEN** it is under review

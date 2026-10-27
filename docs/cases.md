@@ -118,6 +118,11 @@ Families:
 | G4 | a reviewer answers the agent's reply → read as answered, not as a comment nobody answered | 97ebd363 | `ReviewSweepServiceTest`, `ReviewRoundCase` |
 | G5 | a field's teaching word is parsed → the parser reads the word, never a sentence | d779aa20 | `AgentStatusMessageTest`, `AgentStatusReportsTest` |
 
+## H — a guard
+| id | the case, one line | defects | pinned by |
+|----|--------------------|---------|-----------|
+| H1 | a session writes the verdict file itself, a ready one naming the round in front → no verdict: only a file hashing to what jagt recorded counts, and a review no role read is a question | seen 2026-10-27, a probe: an empty-reads verdict shipped a request unread | `MasterReviewTest` |
+
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -7,11 +9,13 @@ import dev.jagt.orchestrator.port.RoundReviewer.Premise;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +36,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class MasterPanelTest {
+
+    @TempDir
+    Path stateRoot;
+
+    private StateService state() {
+        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(stateRoot.toString()).withStateFile(stateRoot.resolve("state.json").toString())));
+    }
 
     private static final List<MasterPanel.Role> TWO = List.of(
             new MasterPanel.Role("chaplain", "should it exist", "", List.of()),
@@ -170,7 +182,7 @@ class MasterPanelTest {
         when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
@@ -191,7 +203,7 @@ class MasterPanelTest {
         when(reviews.loadsMcpServer()).thenReturn(true);
         when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
@@ -222,7 +234,7 @@ class MasterPanelTest {
                 new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), "")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
@@ -249,7 +261,7 @@ class MasterPanelTest {
             return Judgement.failed("stopped");
         });
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         assertThat(worktree.resolve(MasterReview.FILE)).content().contains("developer started: false");
@@ -396,7 +408,7 @@ class MasterPanelTest {
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         verify(reviews, never()).review(any(), any());
@@ -470,7 +482,7 @@ class MasterPanelTest {
         when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/Main.java")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         verify(reviews, times(1)).review(eq("ABC-1"), argThat(round -> round.prompt().contains("QA")));
@@ -493,7 +505,7 @@ class MasterPanelTest {
         when(quotes.paths(task)).thenReturn(Optional.empty());
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
@@ -512,7 +524,7 @@ class MasterPanelTest {
         when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/Main.java")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
@@ -585,7 +597,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.empty());
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(written).isFalse();
         verify(reviews, never()).review(any(), any());
@@ -601,7 +613,7 @@ class MasterPanelTest {
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(written).isTrue();
         assertThat(worktree.resolve(MasterReview.FILE)).exists();
@@ -617,7 +629,7 @@ class MasterPanelTest {
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(written).isFalse();
     }
@@ -630,7 +642,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.empty());
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(written).isFalse();
         assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
@@ -647,7 +659,7 @@ class MasterPanelTest {
         when(quotes.planFile(task)).thenReturn("1. add the v3 route");
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(written).isTrue();
         assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -663,7 +675,7 @@ class MasterPanelTest {
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
         when(quotes.plan("ABC-1", task)).thenReturn(Optional.empty());
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview()).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         verify(reviews, never()).review(any(), any());
         assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -682,7 +694,7 @@ class MasterPanelTest {
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "answer", List.of(
                 new Finding("", "keep v2 beside v3", "", "blocking", "", "")), "", List.of(), "do proj drop the old keys"));
 
-        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .answer("ABC-1", task, "outcome=question — keep v2?", new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null), false);
 
         assertThat(decision).contains(new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys"));
@@ -699,7 +711,7 @@ class MasterPanelTest {
         when(quotes.question(task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "answer", List.of(), "", List.of(), ""));
 
-        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .answer("ABC-1", task, "outcome=question — keep v2?", new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null), false);
 
         assertThat(decision).isEmpty();
@@ -717,7 +729,7 @@ class MasterPanelTest {
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("stopped", "", List.of(
                 new Finding("", "keep v2", "", "blocking", "", "")), "", List.of(), ""));
 
-        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .answer("ABC-1", task, "outcome=question — keep v2?", new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null), false);
 
         assertThat(decision).isEmpty();
@@ -732,7 +744,7 @@ class MasterPanelTest {
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
         when(quotes.question(task)).thenReturn(Optional.empty());
 
-        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        Optional<MasterPanel.Decision> decision = new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .answer("ABC-1", task, "outcome=question — keep v2?", new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null), false);
 
         assertThat(decision).isEmpty();
@@ -799,9 +811,9 @@ class MasterPanelTest {
         RoundQuotes quotes = mock(RoundQuotes.class);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-        when(quotes.carried(task, "")).thenReturn(true);
+        when(quotes.carried("ABC-1", task, "")).thenReturn(true);
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(written).isTrue();
         verify(reviews, never()).review(any(), any());
@@ -819,7 +831,7 @@ class MasterPanelTest {
         when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
         when(reviews.review(eq("ABC-1"), any())).thenThrow(new IllegalStateException("cli gone"));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview()).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
                 .contains("The reviewer could not read the round: the review threw java.lang.IllegalStateException: cli gone")
@@ -839,11 +851,13 @@ class MasterPanelTest {
         when(quotes.ownDiff(task)).thenReturn(Optional.of("abc123"));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-        MasterReview stored = new MasterReview();
+        StateService state = state();
+        state.putTask("ABC-1", task);
+        MasterReview stored = new MasterReview(state);
 
         new MasterPanel(reviews, briefs, quotes, stored).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
-        assertThat(stored.of(task)).get().returns("abc123", MasterReview.Verdict::ownDiff)
+        assertThat(stored.of(state.task("ABC-1").orElseThrow())).get().returns("abc123", MasterReview.Verdict::ownDiff)
                 .returns(5L, MasterReview.Verdict::round);
     }
 
@@ -859,11 +873,13 @@ class MasterPanelTest {
         when(quotes.ownDiff(task)).thenReturn(Optional.of("abc123"));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("no tracker tool"));
 
-        MasterReview stored = new MasterReview();
+        StateService state = state();
+        state.putTask("ABC-1", task);
+        MasterReview stored = new MasterReview(state);
 
         new MasterPanel(reviews, briefs, quotes, stored).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
-        assertThat(stored.of(task)).get().returns("", MasterReview.Verdict::ownDiff);
+        assertThat(stored.of(state.task("ABC-1").orElseThrow())).get().returns("", MasterReview.Verdict::ownDiff);
     }
 
     @Test
@@ -882,7 +898,7 @@ class MasterPanelTest {
         });
         Thread.currentThread().interrupt();
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(Thread.interrupted()).isTrue();
         assertThat(written).isFalse();
@@ -898,7 +914,7 @@ class MasterPanelTest {
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
         when(quotes.plan("ABC-1", task)).thenReturn(Optional.empty());
 
-        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview()).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+        boolean written = new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).plan("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         assertThat(written).isFalse();
     }
@@ -947,7 +963,7 @@ class MasterPanelTest {
         when(quotes.question(task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview()).answer("ABC-1", task, "keep v2?",
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state())).answer("ABC-1", task, "keep v2?",
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null), false);
 
         ArgumentCaptor<RoundReviewer.Round> asked = ArgumentCaptor.captor();
@@ -967,7 +983,7 @@ class MasterPanelTest {
         when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-        new MasterPanel(reviews, briefs, quotes, new MasterReview())
+        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         verify(quotes, never()).paths(task);

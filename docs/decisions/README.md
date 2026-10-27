@@ -110,3 +110,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0092 The sandbox is opt-in](0092-the-session-sandbox-is-opt-in.md)
 - [0093 Only a new note is progress](0093-only-a-new-note-is-progress.md)
 - [0094 A cold prompt goes to a fresh session](0094-a-prompt-typed-into-a-cold-session-goes-to-a-fresh-one.md)
+- [0095 A verdict file jagt did not write is no verdict](0095-a-verdict-file-jagt-did-not-write-is-no-verdict.md)

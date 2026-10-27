@@ -3,8 +3,10 @@ package dev.jagt.orchestrator.service.master;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.OneLine;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
+import lombok.RequiredArgsConstructor;
 import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -24,11 +26,15 @@ import java.util.stream.Stream;
  * rendered for a human beside the diff, which nothing reads back. It is the ONE thing the reviewer writes.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class MasterReview {
 
     public static final String FILE = Artifact.REVIEW.fileName();
     static final String STORED = "master-review.json";
+    static final String SEAL = "master-review:seal";
+
+    private final StateService state;
 
     /** What the reviewer concluded, or empty where it has not written. */
     public Optional<Verdict> of(TaskState task) {
@@ -37,12 +43,22 @@ public class MasterReview {
 
     Optional<Review> stored(TaskState task) {
         String worktree = task.worktreePath();
-        return worktree == null || worktree.isBlank() ? Optional.empty()
-                : JagtJson.read(JagtJson.in(worktree, STORED), Review.class);
+        if (worktree == null || worktree.isBlank()) {
+            return Optional.empty();
+        }
+        Path file = JagtJson.in(worktree, STORED);
+        return JagtJson.bytes(file).flatMap(bytes -> {
+            if (JagtJson.fingerprint(bytes).equals(task.turnOrNone().mark(SEAL))) {
+                return JagtJson.parse(file, bytes, Review.class);
+            }
+            log.atWarn().setMessage("master review not written by jagt").addKeyValue("alias", task.alias())
+                    .addKeyValue("file", file).addKeyValue("cause", "fingerprint differs from the stored one").log();
+            return Optional.empty();
+        });
     }
 
     /** False where either file could not be written; the typed record is written last, so it never runs ahead. */
-    public boolean write(TaskState task, Review review, String markdown) {
+    public boolean write(String taskId, TaskState task, Review review, String markdown) {
         Path file = file(task);
         if (file == null) {
             return false;
@@ -54,13 +70,21 @@ public class MasterReview {
                     .addKeyValue("cause", unwritable.toString()).log();
             return false;
         }
-        return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), review);
+        return store(taskId, task, review);
     }
 
     /** Makes the stored verdict answer the hand-back in front; false where there was none or it stayed as it was. */
-    public boolean restamp(TaskState task) {
-        return stored(task).map(review -> JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED),
-                review.withRound(task.turnOrNone().id()))).orElse(false);
+    public boolean restamp(String taskId, TaskState task) {
+        return stored(task).map(review -> store(taskId, task, review.withRound(task.turnOrNone().id()))).orElse(false);
+    }
+
+    /** The fingerprint is recorded before the file lands, so a reader never meets a verdict without its seal. */
+    private boolean store(String taskId, TaskState task, Review review) {
+        return JagtJson.serialise(review).map(bytes -> {
+            String fingerprint = JagtJson.fingerprint(bytes);
+            state.updateTask(taskId, current -> current.withTurn(current.turnOrNone().withMark(SEAL, fingerprint)));
+            return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
+        }).orElse(false);
     }
 
     /** Whether the reviewer has looked at the task AS IT STANDS, rather than at an earlier hand-back. */
@@ -135,11 +159,12 @@ public class MasterReview {
 
     /**
      * Ready only where every role found nothing that stops a round; any role's question or failure to read makes it
-     * a question, the first of them the one asked.
+     * a question, the first of them the one asked; a round no role read is a question too.
      */
     public record Verdict(Kind kind, List<Said> findings, List<Said> advice, List<String> questions, long round,
                           String ownDiff) {
 
+        private static final String NO_ROLE_READ = "No role read the round";
         private static final Finding NAMING_NOTHING = new Finding("", "not ready, naming nothing", "", "blocking",
                 "", "");
 
@@ -148,6 +173,9 @@ public class MasterReview {
             List<Said> advice = new ArrayList<>();
             List<String> questions = new ArrayList<>();
             review.reads().forEach(read -> sort(read, findings, advice, questions));
+            if (review.reads().isEmpty()) {
+                questions.add(NO_ROLE_READ);
+            }
             Kind kind = !questions.isEmpty() ? Kind.QUESTION : findings.isEmpty() ? Kind.READY : Kind.NOT_READY;
             return new Verdict(kind, findings, advice, questions, review.round(), review.ownDiff());
         }
