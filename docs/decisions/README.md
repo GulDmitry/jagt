@@ -111,3 +111,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0093 Only a new note is progress](0093-only-a-new-note-is-progress.md)
 - [0094 A cold prompt goes to a fresh session](0094-a-prompt-typed-into-a-cold-session-goes-to-a-fresh-one.md)
 - [0095 A verdict file jagt did not write is no verdict](0095-a-verdict-file-jagt-did-not-write-is-no-verdict.md)
+- [0096 The Master keeps a call per role](0096-the-master-keeps-a-call-per-role.md)
