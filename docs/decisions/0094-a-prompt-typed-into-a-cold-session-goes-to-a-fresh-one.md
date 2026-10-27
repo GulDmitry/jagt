@@ -2,6 +2,8 @@
 
 [← decisions](README.md) · extends [0001](0001-a-task-session-lives-one-round.md) · rule: [`runtime`](../../openspec/specs/runtime/spec.md)
 
+Superseded in part by [0097](0097-idle-is-read-from-the-session-transcript.md).
+
 ## Status
 
 Accepted 2026-10-27.

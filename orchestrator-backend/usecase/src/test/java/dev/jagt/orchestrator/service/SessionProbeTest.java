@@ -379,26 +379,4 @@ class SessionProbeTest {
         assertThat(probe.of("ABC-1", task, 300_000, 10_060_000))
                 .map(SessionProbe.Silence::reported).contains(SessionProbe.State.GONE);
     }
-
-    @Test
-    void dateAPromptFromTheTurnEndNotFromTheIdleNoticeAMinuteLater() {
-        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
-                mock(AgentRuntime.class));
-
-        probe.report("ABC-1", SessionProbe.State.IDLE, null, 10_000_000);
-        probe.report("ABC-1", SessionProbe.State.IDLE, "waiting for input", 10_060_000);
-
-        assertThat(probe.atAPromptSince("ABC-1")).hasValue(10_000_000);
-    }
-
-    @Test
-    void standsAtNoPromptOnceThePromptStartedAnotherTurn() {
-        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
-                mock(AgentRuntime.class));
-
-        probe.report("ABC-1", SessionProbe.State.IDLE, null, 10_000_000);
-        probe.report("ABC-1", SessionProbe.State.WORKING, null, 10_100_000);
-
-        assertThat(probe.atAPromptSince("ABC-1")).isEmpty();
-    }
 }

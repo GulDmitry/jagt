@@ -162,6 +162,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public OptionalLong turnEndedAt(Path worktree) {
+        return ClaudeTranscripts.turnEndedAt(ClaudeTranscripts.projectsDir(), worktree);
+    }
+
+    @Override
     public Path systemKnowledgeFile(Path worktree) {
         if (rootNamesFree(worktree)) {
             return worktree.resolve(SYSTEM_KNOWLEDGE_FILE);

@@ -1,23 +1,23 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.OptionalLong;
+import java.nio.file.Path;
 
-/** Whether a session standing at a prompt has been idle past its cache lifetime, measured from its turn's end. */
+/** Whether a session has been idle past its cache lifetime, measured from its turn's end in the session's own record. */
 @Component
 @RequiredArgsConstructor
 public class ColdSessions {
 
-    private final SessionProbe probe;
     private final AgentRuntime runtime;
     private final ConfigService configService;
 
-    public boolean isCold(String taskId) {
-        OptionalLong since = probe.atAPromptSince(taskId);
-        return since.isPresent() && runtime.pastCacheLifetime(since.getAsLong(),
-                configService.load().agent().cacheLifetimeOrDefault());
+    public boolean isCold(TaskState task) {
+        String worktree = task.worktreePath();
+        return worktree != null && !worktree.isBlank() && runtime.turnEndedAt(Path.of(worktree)).stream()
+                .anyMatch(at -> runtime.pastCacheLifetime(at, configService.load().agent().cacheLifetimeOrDefault()));
     }
 }

@@ -31,7 +31,7 @@ public class PromptGate {
 
     public String answer(String taskId, @Nullable TaskState task, String prompt) {
         if (task == null || prompt.isBlank() || prompt.startsWith(SLASH_COMMAND) || prompt.contains(PASTED_IMAGE)
-                || !cold.isCold(taskId)) {
+                || !cold.isCold(task)) {
             return "";
         }
         try {

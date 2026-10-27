@@ -109,6 +109,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0091 The shipped Master reads three roles](0091-the-shipped-master-reads-three-roles.md)
 - [0092 The sandbox is opt-in](0092-the-session-sandbox-is-opt-in.md)
 - [0093 Only a new note is progress](0093-only-a-new-note-is-progress.md)
-- [0094 A cold prompt goes to a fresh session](0094-a-prompt-typed-into-a-cold-session-goes-to-a-fresh-one.md)
+- [0094 A cold prompt goes to a fresh session](0094-a-prompt-typed-into-a-cold-session-goes-to-a-fresh-one.md) (superseded in part by 0097)
 - [0095 A verdict file jagt did not write is no verdict](0095-a-verdict-file-jagt-did-not-write-is-no-verdict.md)
 - [0096 The Master keeps a call per role](0096-the-master-keeps-a-call-per-role.md)
+- [0097 Idle is read from the session transcript](0097-idle-is-read-from-the-session-transcript.md)

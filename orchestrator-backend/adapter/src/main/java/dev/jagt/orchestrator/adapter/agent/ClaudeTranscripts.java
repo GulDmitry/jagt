@@ -11,11 +11,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -29,6 +32,9 @@ final class ClaudeTranscripts {
 
     private static final String SUFFIX = ".jsonl";
     private static final String ENTRYPOINT = "\"entrypoint\":";
+    private static final String ASSISTANT = "\"assistant\"";
+    private static final String TURN_END = "\"system\"";
+    private static final Set<String> TURN_ENDS = Set.of("stop_hook_summary", "turn_duration");
     private static final JsonMapper JSON = new JsonMapper();
 
     private ClaudeTranscripts() {
@@ -74,6 +80,57 @@ final class ClaudeTranscripts {
                     .addKeyValue("cause", e.toString())
                     .log();
             return 0;
+        }
+    }
+
+    /**
+     * When the session's last turn ended, by its own record; EMPTY while a turn is open or where none is kept. A new
+     * prompt and a compaction are no entry of the turn, so an idle compaction does not reset idle.
+     */
+    static OptionalLong turnEndedAt(Path projectsDir, Path sessionDirectory) {
+        Path dir = projectsDir.resolve(slug(sessionDirectory));
+        if (!Files.isDirectory(dir)) {
+            return OptionalLong.empty();
+        }
+        Path newest;
+        try (Stream<Path> logs = Files.list(dir)) {
+            newest = logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
+                    .filter(ClaudeTranscripts::interactive)
+                    .max(Comparator.comparingLong(FileStamps::modified)).orElse(null);
+        } catch (IOException | RuntimeException unreadable) {
+            return unreadableRecord(dir, unreadable);
+        }
+        if (newest == null) {
+            return OptionalLong.empty();
+        }
+        long[] last = {0, 0};
+        try (Stream<String> lines = Files.lines(newest)) {
+            lines.filter(line -> line.contains(ASSISTANT) || line.contains(TURN_END))
+                    .forEach(line -> stamp(line, last));
+        } catch (IOException | RuntimeException unreadable) {
+            return unreadableRecord(newest, unreadable);
+        }
+        return last[1] > 0 && last[1] >= last[0] ? OptionalLong.of(last[1]) : OptionalLong.empty();
+    }
+
+    private static OptionalLong unreadableRecord(Path path, Exception unreadable) {
+        log.atWarn().setMessage("turn end unreadable").addKeyValue("path", path)
+                .addKeyValue("cause", unreadable.toString()).log();
+        return OptionalLong.empty();
+    }
+
+    private static void stamp(String line, long[] last) {
+        try {
+            JsonNode entry = JSON.readTree(line);
+            String type = entry.path("type").asString("");
+            long at = Instant.parse(entry.path("timestamp").asString("")).toEpochMilli();
+            if ("assistant".equals(type)) {
+                last[0] = at;
+            } else if ("system".equals(type) && TURN_ENDS.contains(entry.path("subtype").asString(""))) {
+                last[1] = at;
+            }
+        } catch (JacksonException | DateTimeParseException notAnEntryOfTheTurn) {
+            return;
         }
     }
 

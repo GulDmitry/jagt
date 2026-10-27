@@ -130,6 +130,7 @@ Families:
 | I2 | a turn runs on a CLI that no longer prints the interrupt hint → its spinner line (glyph, word, ellipsis) still reads as working; a finished line or a draft never does | found 2026-10-25 on a captured Claude 2.1.308 screen | `ClaudeAgentRuntimeTest` |
 | I3 | a session's Gradle or Maven runs under Claude's sandbox → it reaches Maven Central, so the sandbox is off unless `sandbox.enabled: true` | seen 2026-10-26: `Could not HEAD 'https://repo.maven.apache.org/...' > Operation not permitted`, curl in the same shell got 200 | `WorktreeSandboxTest` |
 | I4 | a session sits idle past its cache, the CLI compacts it unasked → the compaction's start does not read as work, so the next prompt goes to a fresh session | seen 2026-10-27: compacted 54 min after the turn, a prompt 21 min later passed the gate into the old conversation | `ClaudeAgentRuntimeTest` |
+| I5 | a session idles past its cache and jagt restarts or loses the hook's mark → a prompt still goes to a fresh session, idle read from the transcript's turn end | seen 2026-10-27: turn ended 13:16Z, a prompt at 18:06Z passed the gate as warm | `ColdSessionsTest`, `ClaudeTranscriptsTest` |
 
 ## L — the tests themselves
 | id | the case, one line | defects | pinned by |
