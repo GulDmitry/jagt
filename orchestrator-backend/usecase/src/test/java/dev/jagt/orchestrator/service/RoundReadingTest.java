@@ -20,7 +20,7 @@ class RoundReadingTest {
 
     private final StateService stateService = mock(StateService.class);
     private final ReviewReader reviewReader = mock(ReviewReader.class);
-    private final RoundReading reading = new RoundReading(stateService, reviewReader);
+    private final RoundReading reading = new RoundReading(stateService, reviewReader, mock(MergedRequests.class));
 
     @Test
     void saysThereIsNoRequestToReadWithoutTouchingTheCodeHost() {

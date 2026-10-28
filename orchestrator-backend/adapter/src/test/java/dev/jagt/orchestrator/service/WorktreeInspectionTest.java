@@ -342,4 +342,78 @@ class WorktreeInspectionTest {
 
         assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
     }
+
+    @Test
+    void readsABranchMergedByAMergeCommitAsMerged(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
+        Files.writeString(repo.resolve("g.txt"), "work");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "merge", "-q", "--no-ff",
+                "-m", "Merge ABC-42", "ABC-42"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "ABC-42"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.mergedIntoTarget(repo, repo, "main")).isTrue();
+    }
+
+    @Test
+    void readsABranchWithCommitsTheTargetLacksAsNotMerged(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
+        Files.writeString(repo.resolve("g.txt"), "work");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
+    }
+
+    @Test
+    void readsABranchThatNeverDivergedAsNotMerged(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        Files.writeString(repo.resolve("g.txt"), "later");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "later"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "ABC-42"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
+    }
 }

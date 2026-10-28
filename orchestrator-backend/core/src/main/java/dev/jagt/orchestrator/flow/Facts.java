@@ -12,10 +12,11 @@ import java.util.function.BooleanSupplier;
  * two prices.
  */
 public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive,
-                    boolean gitStateChanged, boolean stopped, boolean repoRequested) {
+                    boolean gitStateChanged, boolean stopped, boolean repoRequested,
+                    boolean requestMerged) {
 
     public static Facts projected(TaskState task) {
         return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> false, task.gitStateChanged(),
-                task.stopped(), task.asksForARepository());
+                task.stopped(), task.asksForARepository(), task.requestsMerged());
     }
 }

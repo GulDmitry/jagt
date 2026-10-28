@@ -37,7 +37,7 @@ public final class FlowRules {
                 .from(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING, TaskStatus.REVIEW_PENDING,
                         TaskStatus.SHIPPING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.REVIEWED,
                         TaskStatus.DEPLOYED, TaskStatus.REVERTED)
-                .when((status, facts) -> !facts.gitStateChanged() && switch (status) {
+                .when((status, facts) -> !facts.gitStateChanged() && !facts.requestMerged() && switch (status) {
                     case IN_PROGRESS, VERIFYING, REVIEW_PENDING -> true;
                     case SHIPPING -> !facts.agentLive().getAsBoolean();
                     default -> facts.hasReviewRequest();

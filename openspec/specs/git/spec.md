@@ -83,8 +83,7 @@ the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 Siblings SHALL derive one deploy path (`<taskId>-deploy`): `hasDeployWorktree` asks git who cut it,
 `mergeIntoAndPush` **refuses** another repository's, only DEPLOY_CONFLICT resumes. Every press starts the merge over
 unless the human's own work sits there (staged, committed or part done; committed only with its base
-on the target). Editor residue is **deleted** (`clearEditorResidue`); anything else left and named
-(`StaleDeployPathException`).
+on the target). Editor residue is **deleted** (`clearEditorResidue`); anything else left and named (`StaleDeployPathException`).
 
 #### Scenario: Blocked path
 - **WHEN** `deploy` keeps refusing over the deploy directory
@@ -102,12 +101,14 @@ approves ONE commit: only the next relay replaces `task_context.md`; re-reading 
 ### Requirement: Ship hands the work to the agent
 `ship` SHALL send ONE `ShipService` instruction for every repository holding work (changed in its worktree or ahead of
 its target): commit, push, open or update a request against its own target, every link in one `update_agent_status`
-(`reviewRequests`). jagt runs no git, calls no host; the task waits in SHIPPING.
+(`reviewRequests`). jagt calls no host and writes no git; the task waits in SHIPPING.
 Nothing to ship or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened.
+A request is merged when, after a fetch, a merge commit of its target took the branch tip in (`mergedIntoTarget`).
 
 #### Scenario: Ship
 - **WHEN** `ship ABC-42`
 - **THEN** a commit, push and request per repository onto its base
+- **AND** with !571 merged, nothing is shipped and no SHIPPING step is recorded; a squash-merged or never-diverged branch reads as not merged
 
 ### Requirement: A new base is reported by the session
 A session that rebased onto a new base on the human's or the Master's word SHALL report it with `retarget_task`;
@@ -153,8 +154,7 @@ call but a read, however wrapped (quoted as data, it runs); a line naming the bo
 ### Requirement: Repositories multiply worktrees, not agents
 `task/TaskRepo` SHALL be a list, `repos.get(0)` running the session. Creation is all-or-nothing (`resolveRepos`),
 unwinding what was cut wherever it fails; a task's repositories are one scope (`findByWorktree`). A round is merged
-as the least finished (`RoundReading.merged`): approved only when all are, the **worst** pipeline, each comment
-prefixed with its repository.
+as the least finished (`RoundReading.merged`): approved only when all are, the **worst** pipeline, each comment prefixed with its repository.
 
 #### Scenario: Independent
 - **WHEN** two repositories move independently
@@ -165,8 +165,7 @@ prefixed with its repository.
 - **THEN** one task, one session, a worktree per repository
 
 ### Requirement: Done retires checkouts, never in bulk
-`done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. `prune all`
-MUST be refused by name.
+`done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. `prune all` MUST be refused by name.
 
 #### Scenario: Diff worktrees
 - **WHEN** `done <task>` with `jagt-diff-*` worktrees

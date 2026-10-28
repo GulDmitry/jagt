@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * A ship worth pressing unasked: the task holds something new to ship, and one more ship trips no loop stop.
+ * A ship worth pressing unasked: a request still open, something new to ship, and one more ship trips no loop stop.
  * A tree the last ship was pressed on is not new, whatever git still counts as uncommitted.
  */
 @Component
@@ -21,7 +21,8 @@ class ShipDue {
     private final TaskStops stops;
 
     boolean due(String taskId, TaskState task) {
-        return !shippedAsItStands(task) && (changes.anythingNewToShip(task) || drafts.drafted(task)) && stops.mayShip(taskId);
+        return !task.requestsMerged() && !shippedAsItStands(task)
+                && (changes.anythingNewToShip(task) || drafts.drafted(task)) && stops.mayShip(taskId);
     }
 
     private boolean shippedAsItStands(TaskState task) {

@@ -34,8 +34,10 @@ public class RoundReading {
 
     private final StateService stateService;
     private final ReviewReader reviewReader;
+    private final MergedRequests mergedRequests;
 
     public Read read(String taskId) {
+        mergedRequests.refresh(taskId);
         List<TaskRepo> repos = stateService.task(taskId).map(TaskState::repos).orElse(List.of());
         List<TaskRepo> reviewed = repos.stream().filter(TaskRepo::hasReviewRequest).toList();
         if (reviewed.isEmpty()) {

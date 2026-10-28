@@ -8,11 +8,11 @@ A task's life: which status allows which action, where each outcome leads, and h
 
 ### Requirement: One table owns the life of a task
 `flow/FlowRules` SHALL hold, in one compiler-checked Java file, which statuses allow which action and what each outcome leads to. Its guard MUST
-read `flow/Facts`: an open request, a live deploy, and a liveness probe the projection passes as "no" (a spawn per row).
+read `flow/Facts`: an open request, a request found merged, a live deploy, and a liveness probe the projection passes as "no" (a spawn per row).
 
 #### Scenario: An action is asked
 - **WHEN** an action is asked
-- **THEN** `FlowRules` allows or refuses it
+- **THEN** `FlowRules` allows or refuses it: `ship` is refused once git found every request of ABC-42 merged, !571 included
 
 ### Requirement: Fourteen statuses
 A task SHALL be: `NEW` nothing reported; `PLAN_PENDING` a plan waits for you; `IN_PROGRESS` the agent works; `VERIFYING` jagt runs the project's

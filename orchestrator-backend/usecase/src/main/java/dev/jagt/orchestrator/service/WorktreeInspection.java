@@ -71,6 +71,27 @@ public class WorktreeInspection {
                 .expectSuccess("git rev-list count in " + worktree).stdout().trim()));
     }
 
+    /**
+     * Whether a merge commit of {@code origin/<target>}, fetched now, took this worktree's HEAD in as a parent: a
+     * branch cut from the target and never committed to is inside it too, and a squash or fast-forward leaves no
+     * such parent. A fetch that fails answers NOT merged.
+     */
+    public boolean mergedIntoTarget(Path projectPath, Path worktree, String targetBranch) {
+        return git.locked(projectPath, () -> {
+            String target = "origin/" + targetBranch;
+            boolean fetched = git.run(worktree, List.of("git", "fetch", "origin",
+                    "+refs/heads/" + targetBranch + ":refs/remotes/" + target)).exitCode() == 0;
+            if (!fetched) {
+                return false;
+            }
+            String head = git.run(worktree, List.of("git", "rev-parse", "HEAD"))
+                    .expectSuccess("git rev-parse in " + worktree).stdout().strip();
+            return git.run(worktree, List.of("git", "rev-list", "--merges", "--parents", "--ancestry-path",
+                            head + ".." + target)).stdout().lines()
+                    .anyMatch(line -> Stream.of(line.strip().split("\\s+")).skip(2).anyMatch(head::equals));
+        });
+    }
+
     /** Whether HEAD is not what {@code origin/<branch>} holds; a branch never pushed has no such ref and counts as new. */
     public boolean unpublished(Path projectPath, Path worktree) {
         return git.locked(projectPath, () -> {

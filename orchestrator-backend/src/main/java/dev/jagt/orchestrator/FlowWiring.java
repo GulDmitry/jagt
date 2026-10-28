@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator;
 
+import dev.jagt.orchestrator.capability.ship.MergedGuard;
 import dev.jagt.orchestrator.capability.trust.GitStateGuard;
 import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.FlowEngine;
@@ -10,6 +11,7 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.capability.StopGuard;
+import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,11 @@ public class FlowWiring {
     @Bean
     public CapabilityInterceptor shipGitGuard(TrustedGitState trusted) {
         return new GitStateGuard(TaskAction.SHIP, trusted);
+    }
+
+    @Bean
+    public CapabilityInterceptor shipMerged(MergedRequests merged) {
+        return new MergedGuard(merged);
     }
 
     @Bean

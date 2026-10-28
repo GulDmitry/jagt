@@ -117,3 +117,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0099 The session rebases its own branch](0099-the-session-rebases-its-own-branch-onto-the-moved-target.md)
 - [0100 A stop is scoped to the request it was counted on](0100-a-stop-is-scoped-to-its-request.md)
 - [0101 A strike is the Master's only after its own last move](0101-a-strike-is-the-masters-only-after-its-own-last-move.md)
+- [0102 A request is merged when its tip reached the target in git](0102-a-request-is-merged-when-its-tip-reached-the-target-in-git.md)

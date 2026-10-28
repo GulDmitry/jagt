@@ -16,7 +16,7 @@ import java.util.stream.IntStream;
 public final class LegalMoves {
 
     private static final List<Facts> EVERY_FACT = IntStream.range(0, 64).mapToObj(bits -> new Facts(bit(bits, 0),
-            bit(bits, 1), () -> bit(bits, 2), bit(bits, 3), bit(bits, 4), bit(bits, 5))).toList();
+            bit(bits, 1), () -> bit(bits, 2), bit(bits, 3), bit(bits, 4), bit(bits, 5), false)).toList();
 
     private LegalMoves() {
     }

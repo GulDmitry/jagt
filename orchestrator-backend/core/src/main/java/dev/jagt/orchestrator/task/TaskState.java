@@ -232,6 +232,12 @@ public record TaskState(
         return repos.stream().anyMatch(TaskRepo::hasReviewRequest);
     }
 
+    /** True when every repository has a request and git found each one inside its target: nothing is left to ship. */
+    @JsonIgnore
+    public boolean requestsMerged() {
+        return repos.stream().allMatch(repo -> repo.hasReviewRequest() && repo.wasMerged());
+    }
+
     /** A recorded merge is one no revert has taken out yet. */
     @JsonIgnore
     public boolean hasLiveDeploy() {
@@ -443,6 +449,10 @@ public record TaskState(
 
     public TaskState withMrUrl(String mrUrl, long now) {
         return withMrUrl(primary().project(), mrUrl, now);
+    }
+
+    public TaskState withMerged(String project, boolean merged) {
+        return toBuilder().repos(mapRepo(project, repo -> repo.withMerged(merged))).build();
     }
 
     public TaskState withRemoteUrl(String project, String remoteUrl) {
