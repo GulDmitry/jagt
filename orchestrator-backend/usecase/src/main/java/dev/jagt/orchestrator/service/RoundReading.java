@@ -27,7 +27,7 @@ public class RoundReading {
     public record Refused(SweepResult result) implements Read {
     }
 
-    public record Round(String mrUrl, ReviewFacts facts) implements Read {
+    public record Round(String mrUrl, ReviewFacts facts, String tip) implements Read {
     }
 
     private static final int CAUSE_LIMIT = 200;
@@ -66,7 +66,8 @@ public class RoundReading {
             }
             rounds.add(reviewed.size() == 1 ? read.get() : named(Objects.requireNonNull(repo.project()), read.get()));
         }
-        return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds));
+        return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds),
+                mergedRequests.pushedTips(taskId));
     }
 
     private static String cause(String failure) {

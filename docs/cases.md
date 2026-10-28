@@ -51,6 +51,7 @@ Families:
 | B15 | jagt restarts while a running session holds the turn → it is asked once to repeat its last report; no open session turn or no running session is asked nothing | seen 2026-10-25: a report sent while jagt was down was lost and the session waited | `RestartAskJobTest` |
 | B14 | the agent CLI rewrites its config between provisioning and launch → the worktree's trust is written again before the launch line | seen 2026-10-24 on the stand: 9 of 24 sessions on the trust dialog | `ClaudeAgentRuntimeTest`, `TmuxSessionHostTest` |
 | B16 | a task is reopened and done again the same day → each `done` keeps its own snapshot, named to the second, never over the first | seen 2026-10-28: a same-day second `done` replaced the first snapshot's documents | `FinishedArtifactsTest` |
+| B17 | the same job fails on the same pushed tip and the brief quoting it reads differently → the round is not relayed again; a round is digested by its facts, not its wording | seen 2026-10-28: one failure was relayed twice in two hours as a fresh session, three rounds in 24h stopped the task | `TaskStopsTest`, `WorktreeInspectionTest` |
 
 ## C — turn collision
 | id | the case, one line | defects | pinned by |

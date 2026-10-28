@@ -95,13 +95,22 @@ public class WorktreeInspection {
     /** Whether HEAD is not what {@code origin/<branch>} holds; a branch never pushed has no such ref and counts as new. */
     public boolean unpublished(Path projectPath, Path worktree) {
         return git.locked(projectPath, () -> {
-            String branch = git.run(worktree, List.of("git", "rev-parse", "--abbrev-ref", "HEAD"))
-                    .expectSuccess("git rev-parse branch in " + worktree).stdout().strip();
             String head = git.run(worktree, List.of("git", "rev-parse", "HEAD"))
                     .expectSuccess("git rev-parse in " + worktree).stdout().strip();
-            var remote = git.run(worktree, List.of("git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/" + branch));
-            return remote.exitCode() != 0 || !head.equals(remote.stdout().strip());
+            return pushedTipIn(worktree).filter(head::equals).isEmpty();
         });
+    }
+
+    /** The commit {@code origin/<branch>} holds for this worktree's branch, empty for a branch never pushed. */
+    public Optional<String> pushedTip(Path projectPath, Path worktree) {
+        return git.locked(projectPath, () -> pushedTipIn(worktree));
+    }
+
+    private Optional<String> pushedTipIn(Path worktree) {
+        String branch = git.run(worktree, List.of("git", "rev-parse", "--abbrev-ref", "HEAD"))
+                .expectSuccess("git rev-parse branch in " + worktree).stdout().strip();
+        var remote = git.run(worktree, List.of("git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/" + branch));
+        return remote.exitCode() == 0 ? Optional.of(remote.stdout().strip()) : Optional.empty();
     }
 
     /** Everything the worktree changed since it left its base at origin, committed and not; new files by name. */

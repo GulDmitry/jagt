@@ -118,3 +118,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0100 A stop is scoped to the request it was counted on](0100-a-stop-is-scoped-to-its-request.md)
 - [0101 A strike is the Master's only after its own last move](0101-a-strike-is-the-masters-only-after-its-own-last-move.md)
 - [0102 A request is merged when its tip reached the target in git](0102-a-request-is-merged-when-its-tip-reached-the-target-in-git.md)
+- [0103 A round is the same by its facts, not its brief](0103-a-round-is-the-same-by-its-facts-not-its-brief.md)

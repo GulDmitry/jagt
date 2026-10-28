@@ -279,6 +279,29 @@ class WorktreeInspectionTest {
     }
 
     @Test
+    void namesTheCommitTheRemoteBranchHoldsOnceThePushLanded(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.pushedTip(repo, repo)).isEmpty();
+
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-42"));
+        String head = runner.run(repo, timeout, List.of("git", "rev-parse", "HEAD")).stdout().strip();
+
+        assertThat(git.pushedTip(repo, repo)).contains(head);
+    }
+
+    @Test
     void readsOneBranchNamePerLineIgnoringBlanks() {
         assertThat(WorktreeInspection.branchNames("ABC-40\nABC-41\n\n  main  \n")).containsExactly(
                 "ABC-40", "ABC-41", "main");

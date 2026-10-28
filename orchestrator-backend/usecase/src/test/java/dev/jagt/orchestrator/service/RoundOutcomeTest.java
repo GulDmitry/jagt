@@ -26,7 +26,7 @@ class RoundOutcomeTest {
     void recordsTheRoundItJudges() {
         ReviewFacts facts = new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of());
 
-        outcome.settle("ABC-1", "http://mr/1", facts);
+        outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         verify(roundRecord).record("ABC-1", facts);
     }
@@ -37,14 +37,14 @@ class RoundOutcomeTest {
         when(roundRecord.record("ABC-1", facts)).thenReturn(Optional.of(new TaskStop(TaskStop.Trigger.CHECKS,
                 3_000, "3 reads running could not list the checks: list_pipelines: 403 Forbidden")));
 
-        var result = outcome.settle("ABC-1", "http://mr/1", facts);
+        var result = outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.STOPPED);
     }
 
     @Test
     void advancesToApprovedOnceAHumanApprovedAndNoThreadIsLeftOpen() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of()), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
         verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED);
@@ -53,7 +53,7 @@ class RoundOutcomeTest {
 
     @Test
     void marksAGreenRoundReviewedWhileNobodyHasApprovedItYet() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of()), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
         verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED);
@@ -62,7 +62,7 @@ class RoundOutcomeTest {
 
     @Test
     void leavesAGreenThisSweepCouldNotReReadOutOfTheReviewedDecision() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of()), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
@@ -70,7 +70,7 @@ class RoundOutcomeTest {
 
     @Test
     void holdsATaskBackWhileItsChecksAreStillRunning() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of()));
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of()), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("checks running");
@@ -79,7 +79,7 @@ class RoundOutcomeTest {
 
     @Test
     void stopsTheTaskOnTheBoardWhenItsChecksReadRed() {
-        outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0, List.of(), List.of()));
+        outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0, List.of(), List.of()), "");
 
         verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED);
     }
@@ -87,10 +87,10 @@ class RoundOutcomeTest {
     @Test
     void neverAdvancesARoundWithThreadsLeftEvenWhenApproved() {
         ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of("coderabbit (a.java:3): rename x"), 0, List.of(), List.of());
-        when(relay.relay("ABC-1", "http://mr/1", facts, "success")).thenReturn(
+        when(relay.relay("ABC-1", "http://mr/1", facts, "success", "")).thenReturn(
                 new ReviewSweepService.SweepResult(ReviewSweepService.SweepResult.Kind.RELAYED, "relayed"));
 
-        var result = outcome.settle("ABC-1", "http://mr/1", facts);
+        var result = outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
         verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
@@ -101,9 +101,9 @@ class RoundOutcomeTest {
     void waitsOnTheReviewerWhileTheAgentsDeclineIsTheNewestNoteReadTwice() {
         ReviewFacts facts = new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(
                 "http://mr/1#note_1\nmia: Should this cache expire?\nagent: No change: entries are immutable"), List.of());
-        outcome.settle("ABC-1", "http://mr/1", facts);
+        outcome.settle("ABC-1", "http://mr/1", facts, "");
 
-        var result = outcome.settle("ABC-1", "http://mr/1", facts);
+        var result = outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("waiting on the reviewer");

@@ -42,10 +42,11 @@ public class TaskStops {
     }
 
     /** A round identical to the last one relayed, bringing no new note on green checks, or met by a standing question, is not news. */
-    public Relay round(String taskId, ReviewFacts facts, String brief) {
-        String digest = Turn.digestOf(brief);
+    public Relay round(String taskId, ReviewFacts facts, String brief, String tip) {
         String notes = facts.noteFingerprint();
         String failing = failing(facts);
+        String key = factKey(facts, failing, notes, tip);
+        String digest = Turn.digestOf(key.isEmpty() ? brief : key);
         AtomicReference<Relay> verdict = new AtomicReference<>(Relay.RELAY);
         LoopBreaker breaker = breakers.current();
         Optional<TaskStop> stop = trip(taskId, task -> {
@@ -105,6 +106,14 @@ public class TaskStops {
         Optional.ofNullable(tripped.get())
                 .ifPresent(stop -> announcements.announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));
         return Optional.ofNullable(standing.get());
+    }
+
+    /** Equal for one round read twice, the brief's wording aside; empty where a fact it turns on is unknown. */
+    private static String factKey(ReviewFacts facts, String failing, String notes, String tip) {
+        boolean red = Pipeline.of(facts.pipelineStatus()) == Pipeline.RED;
+        boolean unknown = red && (failing.isBlank() || tip.isBlank())
+                || !facts.threads().isEmpty() && notes.isBlank() || !red && facts.threads().isEmpty();
+        return unknown ? "" : (red ? failing + "@" + tip : "") + "\n" + notes;
     }
 
     private static String failing(ReviewFacts facts) {

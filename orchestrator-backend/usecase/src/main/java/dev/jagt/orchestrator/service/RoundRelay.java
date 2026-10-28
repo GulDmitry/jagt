@@ -20,7 +20,7 @@ public class RoundRelay {
     private final CaseDoor door;
     private final SessionBrief sessionBrief;
 
-    public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said) {
+    public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said, String tip) {
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
         TaskStatus checked = null;
         for (String step : RoundBrief.steps(r, said)) {
@@ -32,7 +32,7 @@ public class RoundRelay {
             checked = admission.status();
         }
         String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
-        return switch (stops.round(taskId, r, brief)) {
+        return switch (stops.round(taskId, r, brief, tip)) {
             case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);
             case ASKING -> asking(read, said);

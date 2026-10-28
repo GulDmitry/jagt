@@ -20,7 +20,7 @@ public class RoundOutcome {
     private final AgentStatusReports statusReports;
     private final RoundRelay relay;
 
-    public SweepResult settle(String taskId, String mrUrl, ReviewFacts r) {
+    public SweepResult settle(String taskId, String mrUrl, ReviewFacts r, String tip) {
         // THIS round's own read is what decides and what is relayed; the word the CARD carries is the last one
         // a round managed to read, and a green nobody looked at must not mark the task REVIEWED.
         String said = RoundRecord.orUnknown(r.pipelineStatus());
@@ -51,6 +51,6 @@ public class RoundOutcome {
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved yet, not approved — waiting");
         }
-        return relay.relay(taskId, mrUrl, r, said);
+        return relay.relay(taskId, mrUrl, r, said, tip);
     }
 }

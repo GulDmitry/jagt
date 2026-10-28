@@ -40,7 +40,7 @@ public class ReviewSweepService {
         try {
             SweepResult result = switch (reading.read(taskId)) {
                 case RoundReading.Refused refused -> refused.result();
-                case RoundReading.Round round -> outcome.settle(taskId, round.mrUrl(), round.facts());
+                case RoundReading.Round round -> outcome.settle(taskId, round.mrUrl(), round.facts(), round.tip());
             };
             String alias = stateService.task(taskId).map(TaskState::alias).orElse(null);
             log.atInfo().setMessage("sweep done").addKeyValue("task", taskId).addKeyValue("alias", alias)
