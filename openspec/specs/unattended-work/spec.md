@@ -14,10 +14,7 @@ fully automated. Rounds: [review](../review/spec.md). Detection SHALL be determi
 #### Scenario: Sweep by hand
 - **WHEN** you type `review <task>`
 - **THEN** it runs the sweep
-
-#### Scenario: Not your move
-- **WHEN** a round answered every comment and changed no code
-- **THEN** it is not your move: the open threads are the reviewer's
+- **AND** a round that answered every comment and changed no code is not your move: the open threads are the reviewer's
 
 ### Requirement: An open request is what the poller watches
 `AutoReviewCadence.polls` SHALL watch an open request, never a status: a request exists and the task is not DONE. At
@@ -186,6 +183,8 @@ Every stop SHALL append a line `{at, task, alias, trigger, status, evidence}` to
 - **WHEN** ABC-42 shipped four times today and no round before a ship brought a new note, and the Master would ship again
 - **THEN** it presses nothing and the hover says `ships without a new note in 24h: 4`
 - **AND** a ship counts unless the round it answered carries a fingerprint other than the round before it; the first round counts
+
+- **AND** nothing is pressed on the tree the last ship was pressed on, untracked paths included; a changed or unreadable one is due
 
 #### Scenario: Red rounds running
 - **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth

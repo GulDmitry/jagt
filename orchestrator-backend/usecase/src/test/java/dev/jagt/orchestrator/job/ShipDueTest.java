@@ -4,10 +4,14 @@ import dev.jagt.orchestrator.service.ReviewDrafts;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Optional;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,5 +53,27 @@ class ShipDueTest {
         when(changes.anythingNewToShip(task)).thenReturn(true);
 
         assertThat(new ShipDue(changes, drafts, stops).due("ABC-42", task)).isFalse();
+    }
+
+    @Test
+    void aShipPressedOnThisVeryTreeIsNotDueAgain() {
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING)
+                .build().withTurn(Turn.none().withMark(TaskTurns.PRESSED_SHIP, "tree-1;"));
+        when(changes.anythingNewToShip(task)).thenReturn(true);
+        when(changes.state(task)).thenReturn(Optional.of("tree-1;"));
+        when(stops.mayShip("ABC-42")).thenReturn(true);
+
+        assertThat(new ShipDue(changes, drafts, stops).due("ABC-42", task)).isFalse();
+    }
+
+    @Test
+    void aTreeChangedSinceTheLastPressIsDue() {
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING)
+                .build().withTurn(Turn.none().withMark(TaskTurns.PRESSED_SHIP, "tree-1;"));
+        when(changes.anythingNewToShip(task)).thenReturn(true);
+        when(changes.state(task)).thenReturn(Optional.of("tree-2;"));
+        when(stops.mayShip("ABC-42")).thenReturn(true);
+
+        assertThat(new ShipDue(changes, drafts, stops).due("ABC-42", task)).isTrue();
     }
 }

@@ -25,6 +25,8 @@ public class TaskTurns {
     public static final String UNANSWERED = "unanswered";
     /** The arrival at which the Master pressed deploy. */
     public static final String PRESSED_DEPLOY = "press:deploy";
+    /** The tree, as {@code WorktreeChanges#state} reads it, on which the Master pressed ship. */
+    public static final String PRESSED_SHIP = "press:ship";
 
     private final StateService stateService;
     private final Clock clock;
