@@ -31,7 +31,7 @@ class IntakeStartTest {
     @Test
     void startsTheTaskInTheProjectTheItemWasPlacedIn() {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withLabels(List.of("backend"));
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed("api"));
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
         when(launcher.launch(any(), any())).thenReturn(Launched.created("ABC-42", "started"));
 
         boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
@@ -56,7 +56,7 @@ class IntakeStartTest {
     @Test
     void stopsThePollWhereTheBoardRefusedTheLaunch() {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed("api"));
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
         when(launcher.launch(any(), any()))
                 .thenThrow(new IllegalArgumentException("24 tasks are already open, which is the limit"));
 
@@ -80,7 +80,7 @@ class IntakeStartTest {
     @Test
     void turnsAwayAnItemTheLauncherDeclinedAndGoesOnToTheNext() {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed("api"));
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
         when(launcher.launch(any(), any())).thenReturn(Launched.refused("ABC-42 is already a task"));
 
         boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));

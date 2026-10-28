@@ -35,10 +35,9 @@ class RoutingTest {
 
     @Test
     void treatsMissingEvidenceAsNone() {
-        RoutingQuestion question = new RoutingQuestion(TicketFacts.defaults(), null, null, null, null);
+        RoutingQuestion question = new RoutingQuestion(TicketFacts.defaults(), null, null, null);
 
         assertThat(question.projects()).isEmpty();
-        assertThat(question.suggested()).isEmpty();
         assertThat(question.precedents()).isEmpty();
         assertThat(question.rules()).isEmpty();
     }

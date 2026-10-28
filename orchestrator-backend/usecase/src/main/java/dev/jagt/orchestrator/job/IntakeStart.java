@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,14 +36,14 @@ public class IntakeStart {
         if (placement instanceof ProjectRouting.Unreadable) {
             return false;
         }
-        Optional<String> project = placement.project();
-        if (project.isEmpty()) {
+        List<String> projects = placement.projects();
+        if (projects.isEmpty()) {
             history.turnAway(item.key(), placement.reason());
             return true;
         }
         try {
             Launched launched = launcher.launch(
-                    LaunchRequest.of(item.key()).withProject(project.get()),
+                    LaunchRequest.of(item.key()).withProject(String.join(",", projects)),
                     new Answer<>(Optional.of(item), ready.paid()));
             if (!launched.created()) {
                 history.turnAway(item.key(), launched.message());
@@ -50,7 +51,7 @@ public class IntakeStart {
             }
             log.atInfo().setMessage("intake started a task")
                     .addKeyValue("task", item.key())
-                    .addKeyValue("project", project.get())
+                    .addKeyValue("project", String.join(",", projects))
                     .addKeyValue("stage", item.trackerStatus())
                     .log();
             return true;

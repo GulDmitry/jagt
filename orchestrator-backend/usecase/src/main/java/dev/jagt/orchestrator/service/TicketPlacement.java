@@ -55,9 +55,10 @@ public class TicketPlacement {
         }
         // A human who named a project has settled it; only an unplaced one is worth asking about.
         ProjectRouting.Placement placement = routing.projectFor(f);
-        return placement.project().<Outcome>map(project -> new Placed(f, List.of(project)))
-                .orElseGet(() -> new Refused("error: " + f.key() + " not placed in a configured project: "
-                        + placement.reason() + " — say which: do " + f.key() + " <project>"));
+        return placement.projects().isEmpty()
+                ? new Refused("error: " + f.key() + " not placed in a configured project: "
+                        + placement.reason() + " — say which: do " + f.key() + " <project>")
+                : new Placed(f, placement.projects());
     }
 
     /** Only NOW does the task exist, so only now can the read that named it be charged to it. */

@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Which repository an item's work belongs in: the one project its labels name, else a read of the item itself —
+ * Which repositories an item's work belongs in: every project its labels name, else a read of the item itself —
  * against what each repository is, and against where items like it were actually done.
  */
 @Component
@@ -41,20 +41,20 @@ public class ProjectRouting {
     /** A router that answered nothing has not said the item fits nowhere: only {@link Undecided} has. */
     public sealed interface Placement {
 
-        default Optional<String> project() {
-            return this instanceof Placed placed ? Optional.of(placed.key()) : Optional.empty();
+        default List<String> projects() {
+            return this instanceof Placed placed ? placed.keys() : List.of();
         }
 
         default String reason() {
             return switch (this) {
-                case Placed placed -> "placed in " + placed.key();
+                case Placed placed -> "placed in " + String.join(", ", placed.keys());
                 case Undecided undecided -> undecided.why();
                 case Unreadable unreadable -> unreadable.cause();
             };
         }
     }
 
-    public record Placed(String key) implements Placement {
+    public record Placed(List<String> keys) implements Placement {
     }
 
     public record Undecided(String why) implements Placement {
@@ -67,22 +67,20 @@ public class ProjectRouting {
         Map<String, ProjectConfig> projects = configService.load().projects();
         // Nothing to confirm where there is nothing to choose between.
         if (projects.size() == 1) {
-            return new Placed(projects.keySet().iterator().next());
+            return new Placed(List.of(projects.keySet().iterator().next()));
         }
-        List<String> suggested = projectsMatching(item, labelsOf(projects));
-        if (suggested.size() == 1) {
-            return new Placed(suggested.get(0));
+        List<String> labelled = projectsMatching(item, labelsOf(projects));
+        if (!labelled.isEmpty()) {
+            return new Placed(labelled);
         }
-        return asked(item, projects, suggested, RoutingQuestion.defaults()
+        return asked(item, projects, RoutingQuestion.defaults()
                 .withItem(item)
                 .withProjects(aboutEach(projects))
-                .withSuggested(suggested)
                 .withPrecedents(precedents())
                 .withRules(memory.rules()));
     }
 
-    private Placement asked(TicketFacts item, Map<String, ProjectConfig> projects,
-                            List<String> suggested, RoutingQuestion question) {
+    private Placement asked(TicketFacts item, Map<String, ProjectConfig> projects, RoutingQuestion question) {
         Answer<RoutingAnswer> answer = assistant.routeProject(question);
         if (answer.facts().isEmpty()) {
             log.atWarn().setMessage("project routing unreadable")
@@ -99,20 +97,12 @@ public class ProjectRouting {
             log.atInfo().setMessage("project routing undecided")
                     .addKeyValue("ref", item.key())
                     .addKeyValue("answered", chosen)
-                    .addKeyValue("suggested", String.join(",", suggested))
                     .log();
             return new Undecided("the router read it and placed it in no configured project (answered '"
                     + chosen + "')");
         }
-        if (!suggested.isEmpty() && !suggested.contains(chosen)) {
-            log.atInfo().setMessage("project routing overruled the labels")
-                    .addKeyValue("ref", item.key())
-                    .addKeyValue("suggested", String.join(",", suggested))
-                    .addKeyValue("chose", chosen)
-                    .log();
-        }
-        learn(item, suggested, routed);
-        return new Placed(chosen);
+        learn(item, routed);
+        return new Placed(List.of(chosen));
     }
 
     /**
@@ -154,12 +144,8 @@ public class ProjectRouting {
                         && !task.projects().contains(project));
     }
 
-    /**
-     * A rule is kept only where the labels did NOT already place the item: what the machine can work out is
-     * not worth a line, and a memory full of the obvious is one nobody reads.
-     */
-    private void learn(TicketFacts item, List<String> suggested, RoutingAnswer routed) {
-        if (!routed.teaches() || suggested.contains(routed.project())) {
+    private void learn(TicketFacts item, RoutingAnswer routed) {
+        if (!routed.teaches()) {
             return;
         }
         if (memory.remember(routed.rule(), routed.project())) {

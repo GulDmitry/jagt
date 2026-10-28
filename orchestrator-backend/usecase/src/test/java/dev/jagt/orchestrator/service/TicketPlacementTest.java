@@ -36,7 +36,7 @@ class TicketPlacementTest {
 
     @Test
     void asksTheRouterWhereToPutAnItemNobodyNamedAProjectFor() {
-        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Placed("group-a"));
+        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Placed(List.of("group-a")));
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
                 .withUrl("https://tracker/ABC-42");
 

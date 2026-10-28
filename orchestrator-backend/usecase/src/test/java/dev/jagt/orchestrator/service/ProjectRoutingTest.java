@@ -66,7 +66,7 @@ class ProjectRoutingTest {
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
 
         assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
-                .isEqualTo(new ProjectRouting.Placed("api"));
+                .isEqualTo(new ProjectRouting.Placed(List.of("api")));
         verify(assistant, never()).routeProject(any());
     }
 
@@ -80,12 +80,12 @@ class ProjectRoutingTest {
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
 
-        assertThat(routing.projectFor(item)).isEqualTo(new ProjectRouting.Placed("api"));
+        assertThat(routing.projectFor(item)).isEqualTo(new ProjectRouting.Placed(List.of("api")));
         verify(assistant, never()).routeProject(any());
     }
 
     @Test
-    void asksTheRouterWhereTheLabelsNameMoreThanOneRepository() {
+    void placesAnItemInEveryRepositoryItsLabelsNameWithoutAskingTheRouter() {
         RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString())), Clock.systemUTC());
         ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
@@ -93,10 +93,9 @@ class ProjectRoutingTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(finished.all()).thenReturn(List.of());
-        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("web", "")), TokenUsage.NONE));
 
-        assertThat(routing.projectFor(item)).isEqualTo(new ProjectRouting.Placed("web"));
+        assertThat(routing.projectFor(item).projects()).containsExactlyInAnyOrder("api", "web");
+        verify(assistant, never()).routeProject(any());
     }
 
     @Test

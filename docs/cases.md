@@ -74,6 +74,7 @@ Families:
 | D4 | a human opened a plan, or a call was denied → the human approves and grants; the Master never answers in act | 9cad8f04, eccb21fa, d5f3fe99 | `MasterAnswerJobTest`, `MasterCommandTest`, `AgentStatusReportsTest` |
 | D5 | the reviewer's framing, severity and comments → fresh session per round, severity one of five, listener wiring never passed as scope | 9eb5cf78, 2a3a40b3, d733224f | `MasterSessionTest`, `SchemaTest`, `ReviewSweepServiceTest` |
 | D6 | a label or command word is mapped → only schema-listed values pass; a layer label is not a repository | 1b5868c6, 452eb3b4 | `IntakeRoutingTest`, `CommandMappingEvalTest`, `PaletteContextTest` |
+| D7 | an item's labels name several projects → every one is attached; a repository leaves a multi-repo task only by an approved plan line | seen 2026-10-28: labels `sng` + `sobrado-connect` placed in one project, the other dropped unlogged | `ProjectRoutingTest`, `PlanRepositoriesTest`, `HandBackTest` |
 
 ## E — missing ending
 | id | the case, one line | defects | pinned by |

@@ -37,10 +37,7 @@ public class HeadlessClaudeRoutingAssistant implements RoutingAssistant {
                 + " is.</task>\n"
                 + "<rules>The repositories configured here, each with what it is:\n"
                 + listed(question.projects())
-                + "\nIts labels " + item.labels() + " matched " + question.suggested() + ". That is a"
-                + " SUGGESTION and nothing more — whoever filed the item wrote those labels, and a label"
-                + " naming a layer rather than a system places nothing. Confirm it against what the item"
-                + " actually asks for, and answer a different key where the item says otherwise.\n"
+                + "\n"
                 + written(question.rules())
                 + precedents(question.precedents())
                 + "Answer project with the ONE key whose repository the work belongs in, or "
@@ -55,7 +52,7 @@ public class HeadlessClaudeRoutingAssistant implements RoutingAssistant {
                 + "</rules>\n"
                 + "<examples>\n"
                 + "Repositories shop (the storefront) and ledger (invoicing); item \"ABC-42 — Invoice PDF shows the"
-                + " wrong VAT\", labelled frontend, which matched shop, its description saying the VAT sum is"
+                + " wrong VAT\", its description saying the VAT sum is"
                 + " computed by the invoicing service: project=ledger, reason=\"the VAT sum is computed there\".\n"
                 + "Same repositories; item \"ABC-43 — Make it faster\" with no description: project="
                 + ProjectRead.NONE + ", reason=\"the item names no system\".\n"

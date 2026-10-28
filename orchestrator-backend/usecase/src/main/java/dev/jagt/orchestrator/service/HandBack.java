@@ -3,8 +3,10 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.protocol.PlanCriteria;
 import dev.jagt.orchestrator.protocol.PlanProbes;
+import dev.jagt.orchestrator.protocol.PlanRepositories;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,17 +41,18 @@ public class HandBack {
 
     public PlanProbes.Read planProbes(TaskState task) {
         Path plan = Path.of(task.worktreePath()).resolve(Artifact.PLAN.fileName());
+        List<String> projects = task.repos().stream().map(TaskRepo::project).toList();
         if (!Files.isRegularFile(plan)) {
-            return planRead("");
+            return planRead("", projects);
         }
-        return WorktreeFiles.read(plan).map(HandBack::planRead).orElseGet(() -> new PlanProbes.Read(List.of(),
+        return WorktreeFiles.read(plan).map(text -> planRead(text, projects)).orElseGet(() -> new PlanProbes.Read(List.of(),
                 List.of(new Violation(Artifact.PLAN.fileName(), "jagt could not read it; check its permissions"))));
     }
 
-    private static PlanProbes.Read planRead(String plan) {
+    private static PlanProbes.Read planRead(String plan, List<String> projects) {
         PlanProbes.Read probes = PlanProbes.of(plan);
-        List<Violation> violations = Stream.concat(probes.violations().stream(),
-                PlanCriteria.violationsIn(plan).stream()).toList();
+        List<Violation> violations = Stream.of(probes.violations(), PlanCriteria.violationsIn(plan),
+                PlanRepositories.violationsIn(plan, projects)).flatMap(List::stream).toList();
         return new PlanProbes.Read(probes.probes(), violations);
     }
 

@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -94,5 +95,18 @@ class HandBackTest {
                 TaskStatus.PLAN_PENDING).build());
 
         assertThat(read.violations()).singleElement().asString().contains("jagt could not read it");
+    }
+
+    @Test
+    void refusesAPlanOfASeveralRepositoryTaskThatNamesNoRepositories(@TempDir Path worktree) throws IOException {
+        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n");
+        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
+                .repos(List.of(new TaskRepo("api", worktree.toString(), null, null, null),
+                        new TaskRepo("web", worktree.toString(), null, null, null))).build();
+
+        PlanProbes.Read read = handBack.planProbes(task);
+
+        assertThat(read.violations()).singleElement().asString().contains("## Repositories");
     }
 }
