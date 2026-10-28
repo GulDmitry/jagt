@@ -92,6 +92,7 @@ Families:
 | E10 | a read cannot list a task's pipelines → three running since the lift stop the task with the reads' causes | seen 2026-10-24 on the stand: 8 unknown reads in 15 min, nobody told | `ChecksUnreadTest`, `RoundRecordTest`, `RoundOutcomeTest` |
 | E11 | a session at NEW sits on a prompt that fires no hook, the trust dialog → within seconds a stop waiting on it, its cause named, no key sent | seen 2026-10-24 on the stand: 9 of 24 sessions, ended 10 min later as no sign of life | `LaunchExitsTest`, `ClaudeAgentRuntimeTest`, `SessionProbeTest`, `WatchdogServiceTest` |
 | E12 | the Master presses a verb the machine refuses (a deploy of a branch already on dev) → one WARN naming task, cmd and cause, the press not counted, the other tasks still served; never an ERROR from the job runner | seen 2026-10-26 in the live log: master-deploy failed with Nothing to deploy | `MasterPressTest` |
+| E14 | a task the Master moved once goes silent after the human's or the session's own step → no strike; only a silence right after the Master's own move counts toward stopping `act` | seen 2026-10-28: three such silences stopped `act` twice in an hour | `MasterBrakeTest` |
 | E13 | a change typed into the terminal at DEPLOYED, REVIEWED, APPROVED, CI_POLLING or CI_FAILED ends its turn unseen → the turn end is refused once, naming IN_PROGRESS or reverting it; the second end on the same tree passes | seen 2026-10-26: tree dirty after a deploy, no round reached the Master, nothing shipped | `TurnEndsTreeTest`, `TurnTreeTest` |
 
 ## F — unbounded loop / no ceiling

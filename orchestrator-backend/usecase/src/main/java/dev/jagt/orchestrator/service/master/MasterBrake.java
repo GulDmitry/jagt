@@ -84,6 +84,11 @@ public class MasterBrake {
         return task.history().stream().anyMatch(step -> step.origin() == ActionOrigin.MASTER);
     }
 
+    private static boolean silenceFollowsTheMaster(TaskState task) {
+        return task.history().stream().filter(step -> step.at() <= task.silentSince())
+                .reduce((first, second) -> second).map(StatusChange::origin).orElse(null) == ActionOrigin.MASTER;
+    }
+
     private static List<Ending> endings(String id, TaskState task, Seen was) {
         List<Ending> endings = new ArrayList<>();
         for (StatusChange step : task.history()) {
@@ -96,7 +101,7 @@ public class MasterBrake {
                 default -> { }
             }
         }
-        if (task.agentIsSilent() && task.silentSince() != was.silence()) {
+        if (task.agentIsSilent() && task.silentSince() != was.silence() && silenceFollowsTheMaster(task)) {
             endings.add(new Ending(id, task.silentSince(), true, "silent: " + task.silentBecause()));
         }
         return endings;

@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-10-14. Adds to [0018](0018-the-master-judges-by-default.md).
+Accepted 2026-10-14. Adds to [0018](0018-the-master-judges-by-default.md). Amended by
+[0101](0101-a-strike-is-the-masters-only-after-its-own-last-move.md): a silence strikes only after the Master's own last move.
 
 ## Context
 

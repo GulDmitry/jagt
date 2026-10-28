@@ -41,6 +41,72 @@ class MasterBrakeTest {
     }
 
     @Test
+    void countsNoSilenceAfterTheSessionReportedItself(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+
+        brake.observe(Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.IN_PROGRESS, 20, ActionOrigin.MCP)))
+                        .silentSince(30).silentBecause("idle").build(),
+                "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.IN_PROGRESS, 21, ActionOrigin.MCP)))
+                        .silentSince(31).silentBecause("idle").build(),
+                "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.IN_PROGRESS, 22, ActionOrigin.MCP)))
+                        .silentSince(32).silentBecause("idle").build()));
+
+        assertThat(root.resolve("act-stopped")).doesNotExist();
+    }
+
+    @Test
+    void stopsActWhenThreeSessionsFallSilentRightAfterTheMastersMove(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+
+        brake.observe(Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.IN_PROGRESS, 10, ActionOrigin.MASTER)))
+                        .silentSince(30).silentBecause("idle").build(),
+                "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.IN_PROGRESS, 11, ActionOrigin.MASTER)))
+                        .silentSince(31).silentBecause("idle").build(),
+                "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.IN_PROGRESS, 12, ActionOrigin.MASTER)))
+                        .silentSince(32).silentBecause("idle").build()));
+
+        assertThat(root.resolve("act-stopped")).exists();
+    }
+
+    @Test
+    void countsNoSilenceAfterTheHumansOwnMove(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+
+        brake.observe(Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.IN_PROGRESS, 20, ActionOrigin.BOARD)))
+                        .silentSince(30).silentBecause("idle").build(),
+                "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.IN_PROGRESS, 21, ActionOrigin.BOARD)))
+                        .silentSince(31).silentBecause("idle").build(),
+                "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.IN_PROGRESS).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.IN_PROGRESS, 22, ActionOrigin.BOARD)))
+                        .silentSince(32).silentBecause("idle").build()));
+
+        assertThat(root.resolve("act-stopped")).doesNotExist();
+    }
+
+    @Test
     void keepsActWhereADeployCameBetweenTheBadEndings(@TempDir Path root) {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));

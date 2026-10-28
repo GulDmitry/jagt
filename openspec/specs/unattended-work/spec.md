@@ -23,10 +23,7 @@ Rounds: [review](../review/spec.md). Detection SHALL be deterministic (a cadence
 #### Scenario: Comments after hand-back
 - **WHEN** comments arrive after the agent handed back
 - **THEN** the next poll picks them up
-
-#### Scenario: Threads never resolved
-- **WHEN** the reviewer never resolves the threads
-- **THEN** polls continue; the agent is re-briefed only when the round changed
+- **AND** threads the reviewer never resolves keep polls going; the agent is re-briefed only when the round changed
 
 #### Scenario: Deployed, green, unapproved
 - **WHEN** a deployed task comes back green and unapproved
@@ -46,10 +43,7 @@ elapsed, off, or nothing). `AutoReviewScheduler.decide` SHALL translate the same
 #### Scenario: An open request nothing polls
 - **WHEN** a request is open and nothing polls it
 - **THEN** the card says `polling off` or `cannot time this`: `sweep` by hand
-
-#### Scenario: Unreadable round
-- **WHEN** a poll cannot read the round
-- **THEN** it is retried, then one desktop ping names what stopped it
+- **AND** a round a poll cannot read is retried, then one desktop ping names what stopped it
 
 ### Requirement: Polling is the install's property
 Whether polling runs SHALL be said once above the grid (`Board.autoReview` → `cadence.summary()`), never per card. A card's countdown SHALL be an
@@ -91,12 +85,17 @@ job.
 - **THEN** the log holds this run, its `.1` the run before
 
 ### Requirement: `act` stops itself after three bad endings
-Three tasks in a row the Master moved in `act` ending silent, in a deploy conflict or reverted SHALL stop `act` (`MasterBrake`); a deploy resets the
-count.
+Three tasks in a row the Master moved in `act` ending silent, in a deploy conflict or reverted SHALL stop `act`
+(`MasterBrake`). A silence counts after its own last move; a deploy resets the count.
 
 #### Scenario: Three tasks it moved end badly in a row
 - **WHEN** the third one is stamped silent, conflicts on deploy or is reverted
 - **THEN** it only judges, across restarts, until you press the header's `act stopped`
+
+#### Scenario: Only a silence after its own move counts
+- **WHEN** the Master ships ABC-42 and its session falls silent
+- **THEN** a strike is counted
+- **AND** where you converse in ABC-42's window and its session idles, none is
 
 ### Requirement: Every Master step is seen in one window
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following `jagt-master.log`, one line per Master step

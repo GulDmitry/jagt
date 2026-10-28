@@ -58,7 +58,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0040 Git runs what was trusted](0040-git-runs-only-what-the-human-trusted.md)
 - [0041 jagt runs a plan's probes](0041-a-plans-probes-are-run-by-jagt.md)
 - [0042 Kept paths stay human](0042-a-path-list-keeps-a-step-with-the-human.md)
-- [0043 `act` stops itself](0043-act-stops-itself-after-three-bad-endings.md)
+- [0043 `act` stops itself](0043-act-stops-itself-after-three-bad-endings.md) (amended by 0101)
 - [0044 Sandboxed writes, opt-in since 0092](0044-a-session-writes-only-inside-its-task.md)
 - [0045 Bounded stores](0045-every-store-jagt-writes-has-a-ceiling.md)
 - [0046 Preact, no build](0046-the-board-renders-preact-components-with-no-build.md)
@@ -116,3 +116,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0098 Ghostty is driven through AppleScript](0098-ghostty-is-driven-through-applescript.md)
 - [0099 The session rebases its own branch](0099-the-session-rebases-its-own-branch-onto-the-moved-target.md)
 - [0100 A stop is scoped to the request it was counted on](0100-a-stop-is-scoped-to-its-request.md)
+- [0101 A strike is the Master's only after its own last move](0101-a-strike-is-the-masters-only-after-its-own-last-move.md)
