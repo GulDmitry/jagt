@@ -18,7 +18,7 @@ Agent terminals SHALL be windows in a session host (`port/SessionHost`, tmux tod
 ### Requirement: One name is one tmux window
 Opening a window SHALL first kill any same-named one; liveness SHALL be the child processes of `#{pane_pid}`. An
 exited agent's window SHALL close after showing its tail 15s; an interactive shell MUST NEVER be left in it.
-A missing session or server lists no windows; any other failed `list-windows` is unknown, never "none".
+A missing session or server lists none; any other failed `list-windows` is unknown: a job or the watchdog decides nothing, a pressed verb is refused.
 
 #### Scenario: The agent exits, or the windows cannot be listed
 - **WHEN** the agent process in a window exits

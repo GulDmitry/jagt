@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import java.time.Clock;
 import dev.jagt.orchestrator.port.SessionHost;
@@ -892,5 +893,17 @@ class AgentSessionsTest {
 
         assertThat(root.resolve("task_context.md")).hasContent("and handle empty files");
         verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    }
+
+    @Test
+    void refusesAPressedFocusWithTheCauseWhereTheSessionsWindowsCannotBeListed() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenThrow(new SessionHost.WindowsUnreadable(
+                "tmux list-windows jagt failed (exit 1): server timed out"));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThatThrownBy(() -> sessions.focusTask("ABC-1")).isInstanceOf(Refusal.class)
+                .hasMessageContaining("server timed out");
     }
 }

@@ -130,12 +130,17 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
         String dedicatedTitle = sessions.sessionName(config.viewer().session());
-        boolean revived = sessions.taskWindowState(session, taskId) != SessionHost.WindowState.AGENT_RUNNING;
-        if (revived) {
-            sessions.reviveTaskWindow(session, dedicatedTitle, taskId, task.alias(),
-                    Path.of(task.worktreePath()));
+        boolean revived;
+        try {
+            revived = sessions.taskWindowState(session, taskId) != SessionHost.WindowState.AGENT_RUNNING;
+            if (revived) {
+                sessions.reviveTaskWindow(session, dedicatedTitle, taskId, task.alias(),
+                        Path.of(task.worktreePath()));
+            }
+            sessions.focusTaskWindow(session, dedicatedTitle, taskId);
+        } catch (SessionHost.WindowsUnreadable unread) {
+            throw Refusal.byState("Nothing was focused: " + unread.getMessage());
         }
-        sessions.focusTaskWindow(session, dedicatedTitle, taskId);
         return "Focused tab '" + taskId + "'" + viewer(terminalDriver.reveal(dedicatedTitle))
                 + (revived ? "; the session was down, re-entered its " + agentRuntime.displayName()
                         + " session" : "");

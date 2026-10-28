@@ -25,6 +25,14 @@ public interface SessionHost {
         AGENT_RUNNING
     }
 
+    /** The session's windows could not be listed, which says nothing about whether one exists; the cause is in the message. */
+    class WindowsUnreadable extends IllegalStateException {
+
+        public WindowsUnreadable(String message) {
+            super(message);
+        }
+    }
+
     /** The session name to use, given whatever the human configured (blank included). */
     String sessionName(@Nullable String configured);
 
@@ -77,6 +85,6 @@ public interface SessionHost {
     /** Closes every window a task owns, and answers how many there were; a throw when they cannot be listed. */
     int killTaskWindows(String session, String taskId);
 
-    /** When the window last showed any activity, as epoch millis — 0 when unknown. */
+    /** When the window last showed any activity, as epoch millis — 0 when there is none; a throw when unreadable. */
     long lastWindowActivityMillis(String session, String taskId);
 }

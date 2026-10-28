@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.OneLine;
@@ -93,9 +94,12 @@ public class WatchdogService implements Job {
 
     private void verdict(String taskId, TaskState task, long now) {
         long staleMs = properties.watchdog().staleAfter().toMillis();
-        Optional<SessionProbe.Silence> silence = watches(task.status())
-                ? probe.of(taskId, task, staleMs, now)
-                : Optional.empty();
+        Optional<SessionProbe.Silence> silence;
+        try {
+            silence = watches(task.status()) ? probe.of(taskId, task, staleMs, now) : Optional.empty();
+        } catch (SessionHost.WindowsUnreadable unknown) {
+            return;
+        }
         stamp(taskId, task, silence.orElse(null));
         if (silence.isEmpty()) {
             alertedSince.remove(taskId);

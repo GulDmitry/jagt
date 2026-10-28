@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.SessionHost;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -157,6 +158,8 @@ public class Jobs {
         try {
             job.run();
             run.lastError = null;
+        } catch (SessionHost.WindowsUnreadable unknown) {
+            // Already logged where it was read: this round decides nothing and the next one asks again.
         } catch (Throwable t) {
             fail(job.id(), run, t);
         } finally {

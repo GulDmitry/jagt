@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -378,5 +379,20 @@ class SessionProbeTest {
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_060_000))
                 .map(SessionProbe.Silence::reported).contains(SessionProbe.State.GONE);
+    }
+
+    @Test
+    void readsNoSilenceFromAWindowListThatCannotBeRead() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        SessionHost sessions = mock(SessionHost.class);
+        when(sessions.lastWindowActivityMillis(any(), anyString())).thenThrow(new SessionHost.WindowsUnreadable(
+                "tmux list-windows jagt failed (exit 1): server timed out"));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_000_000L).build();
+        SessionProbe probe = new SessionProbe(config, sessions, mock(AgentRuntime.class));
+
+        assertThatThrownBy(() -> probe.of("ABC-1", task, 300_000, 10_000_000))
+                .isInstanceOf(SessionHost.WindowsUnreadable.class);
     }
 }

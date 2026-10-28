@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.SessionHost;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -393,5 +394,23 @@ class WatchdogServiceTest {
                 .waiting("ABC-1", "the trust dialog");
 
         assertThat(state.task("ABC-1").orElseThrow().agentIsSilent()).isTrue();
+    }
+
+    @Test
+    void alertsNobodyAndKeepsItsVerdictWhereTheSessionsWindowsCannotBeListed(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(1_000).silentSince(1_000).build());
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong())).thenThrow(new SessionHost.WindowsUnreadable(
+                "tmux list-windows jagt failed (exit 1): server timed out"));
+
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+
+        assertThat(state.task("ABC-1").orElseThrow().silentSince()).isEqualTo(1_000);
+        verifyNoInteractions(notifications);
     }
 }
