@@ -21,6 +21,10 @@ import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.service.TaskViews;
+import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.surface.mcp.MasterToken;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +57,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @Tag("e2e")
@@ -102,6 +108,10 @@ class ReviewAndDeployFlowTest {
     private TaskProvisioning provisioning;
     @Autowired
     private StateService stateService;
+    @Autowired
+    private TaskStops stops;
+    @Autowired
+    private TaskViews views;
     @Autowired
     private OrchestratorPaths paths;
     @Autowired
@@ -348,6 +358,60 @@ class ReviewAndDeployFlowTest {
 
         assertThat(task().history()).extracting(StatusChange::status, StatusChange::origin)
                 .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.MCP));
+    }
+
+    @Test
+    void aFollowUpRequestAfterAMergedOneLiftsTheStopAndIsReadByTheNextSweep(@TempDir Path clone) throws Exception {
+        shipTheFirstRound();
+        for (String round : List.of("second", "third", "fourth")) {
+            agentHandsBack(round + " round");
+            act("ship");
+            agentReports("CI_POLLING", "review request: " + request(), request());
+        }
+        agentHandsBack("fifth round");
+        assertThat(stops.mayShip(TASK)).isFalse();
+        assertThat(task().stop().trigger()).isEqualTo(TaskStop.Trigger.SHIPS);
+        assertThat(task().stop().request()).isEqualTo(request());
+        assertThat(actionsOfTheTask()).contains("ship");
+        long ships = shipSteps();
+        String main = E2eWorkspace.git(origin(), "rev-parse", "main").strip();
+
+        try {
+            E2eWorkspace.git(clone, "clone", "-q", E2eWorkspace.remoteUrl(origin()), ".");
+            E2eWorkspace.git(clone, "config", "user.email", "e2e@example.com");
+            E2eWorkspace.git(clone, "config", "user.name", "jagt e2e");
+            E2eWorkspace.git(clone, "merge", "--no-ff", "-m", "Merge " + TASK, "origin/" + TASK);
+            E2eWorkspace.git(clone, "push", "-q", "origin", "main");
+
+            assertThat(act("ship")).contains("already merged");
+            assertThat(shipSteps()).isEqualTo(ships);
+            assertThat(actionsOfTheTask()).doesNotContain("ship");
+
+            String followUp = request().replace("/merge_requests/1", "/merge_requests/2");
+            when(assistant.readReview(followUp)).thenReturn(new Answer<>(Optional.of(
+                    new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of())), TokenUsage.NONE));
+            agentReports("IN_PROGRESS", "more work after the merge");
+            Files.writeString(worktree().resolve("widget.txt"), "follow-up\n");
+            agentCommitsAndPushes(worktree(), TASK + " follow-up");
+            agentReports("CI_POLLING", "review request: " + followUp, followUp);
+
+            assertThat(task().stopped()).isFalse();
+            assertThat(stops.mayShip(TASK)).isTrue();
+            assertThat(act("sweep")).doesNotContain("stopped");
+            verify(assistant, atLeastOnce()).readReview(followUp);
+        } finally {
+            E2eWorkspace.git(clone, "push", "-q", "--force", "origin", main + ":refs/heads/main");
+            E2eWorkspace.git(repo(), "fetch", "-q", "origin");
+        }
+    }
+
+    private long shipSteps() {
+        return task().history().stream().filter(step -> step.status() == TaskStatus.SHIPPING).count();
+    }
+
+    private List<String> actionsOfTheTask() {
+        return views.all().stream().filter(view -> view.id().equals(TASK)).findFirst().orElseThrow()
+                .actions().stream().map(TaskView.ActionView::id).toList();
     }
 
     private String shipTheFirstRound() throws Exception {
