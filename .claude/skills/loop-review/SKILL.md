@@ -1,6 +1,6 @@
 ---
 name: loop-review
-description: Find why jagt stopped a task (the card's `lift the stop`) and fix the cause, one stop at a time from `stops.jsonl`. Use when a card shows `lift the stop`, a `task stopped` line appears in the log, or the refresh reaches its loop step.
+description: Run BEFORE answering anything about a stopped task — a pasted card with `lift the stop`, a question why a task stopped or whether to lift, a `task stopped` log line, or the refresh's loop step. Finds who looped and fixes the cause, and records each stop with its lift verdict in `stops-reviewed.jsonl`; no lift is advised before that line exists.
 ---
 
 # A stop is a defect until shown otherwise
@@ -23,5 +23,9 @@ Input: the lines of `stops.jsonl` (beside `state.json`) with no line of their ow
    - case → `cases` spec plus a case.
    - jagt → a regression test verified RED, a `docs/cases.md` row, a `Defect-family` trailer.
    - A stop that rightly stopped (the human really had to decide) gets no fix, with one clause why.
-5. **Append one line to `stops-reviewed.jsonl`**: `{"at":…, "task":…, "who":…, "class":…, "fix":"<sha or why none>"}`.
-6. Tell the human which stops may be lifted now, and what changed for each.
+5. **Append one line to `stops-reviewed.jsonl`**: `{"at":…, "task":…, "trigger":…, "who":…, "class":…, "fix":"<sha or why none>",
+   "lift":"<safe, or what must be true first>"}`. A stop of a class already in the file reuses its class and lift verdict.
+6. Tell the human which stops may be lifted now, and what changed for each. No lift is advised before its line exists.
+7. **A verdict that changes when a class may be lifted rewrites that trigger's `next` in `task/TaskStop`**, in the
+   fix's commit, so every install reads it on the card's hover. Generic words only: no task, project, path, host or
+   vendor of this machine; the cases that taught it stay in `stops-reviewed.jsonl`.
