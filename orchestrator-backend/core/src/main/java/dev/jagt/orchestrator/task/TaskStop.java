@@ -17,26 +17,38 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         this(trigger, at, evidence, null);
     }
 
-    /** {@code next} is what a human reads after the evidence. */
+    /** {@code reason} is the stop in five words or fewer; {@code next} is what a human reads after the evidence. */
     public enum Trigger {
-        STALLED(Trigger.DEFECT, true), SHIPS(Trigger.DEFECT, true), MISS("Add a case if one should send it"),
-        ROUNDS("Read what the session made of the last one"),
-        CHECKS("Check that the code host's MCP can list the pipelines"),
-        UNDELIVERED("Check that the session's window is running"),
-        UNCHANGED_FAILURE("Change the tree, or read why the failure stands");
+        STALLED("rounds bring nothing new", Trigger.DEFECT, true),
+        SHIPS("ships with no new note", Trigger.DEFECT, true),
+        MISS("no case for this step", "Add a case if one should send it"),
+        ROUNDS("same round sent too often", "Read what the session made of the last one"),
+        CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines"),
+        UNDELIVERED("a step never landed", "Check that the session's window is running"),
+        UNCHANGED_FAILURE("same failure again", "Change the tree, or read why the failure stands");
 
         private static final String DEFECT = "Likely a jagt defect: inspect the sweeps in the log";
 
+        private final String reason;
         private final String next;
         private final boolean countedOnRequest;
 
-        Trigger(String next) {
-            this(next, false);
+        Trigger(String reason, String next) {
+            this(reason, next, false);
         }
 
-        Trigger(String next, boolean countedOnRequest) {
+        Trigger(String reason, String next, boolean countedOnRequest) {
+            this.reason = reason;
             this.next = next;
             this.countedOnRequest = countedOnRequest;
+        }
+
+        public String reason() {
+            return reason;
+        }
+
+        public String next() {
+            return next;
         }
     }
 

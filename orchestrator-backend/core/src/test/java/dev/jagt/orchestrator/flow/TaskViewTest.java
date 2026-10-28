@@ -258,4 +258,26 @@ class TaskViewTest {
 
         assertThat(view.statusLabel()).isEqualTo("master review");
     }
+
+    @Test
+    void carriesTheStopsReasonEvidenceAdviceAndTimeWhereJagtStoppedTheTask() {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
+                .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1_700_000_000_000L, "a ship asked past 3 without a new note"))
+                .build();
+
+        TaskView view = TaskView.of("ABC-42", stopped, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.ask()).isEqualTo("lift the stop \u2014 ships with no new note");
+        assertThat(view.stop()).isEqualTo(new TaskView.Stop("ships with no new note",
+                "a ship asked past 3 without a new note", "Likely a jagt defect: inspect the sweeps in the log",
+                1_700_000_000_000L));
+    }
+
+    @Test
+    void carriesNoStopWhereJagtStoppedNothing() {
+        TaskView view = TaskView.of("ABC-42", TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).build(), false,
+                AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.stop()).isNull();
+    }
 }

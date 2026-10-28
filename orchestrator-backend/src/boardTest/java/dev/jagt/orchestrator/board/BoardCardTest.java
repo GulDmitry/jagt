@@ -829,4 +829,24 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("article .title")).hasAttribute("data-tip", "visualize: no — config-only change");
     }
+
+    @Test
+    void aStoppedCardAsksToLiftTheStopWithItsReasonAndHoldsTheEvidenceInTheSameHover() {
+        state.putTask("ABC-42", TaskState.builder("alpha", root.resolve("ABC-42-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .stop(new dev.jagt.orchestrator.task.TaskStop(dev.jagt.orchestrator.task.TaskStop.Trigger.SHIPS,
+                        1_700_000_000_000L, "a ship asked past 3 without a new note"))
+                .lastActiveTimestamp(System.currentTimeMillis()).build());
+
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        assertThat(page.locator("article .badge")).hasText("lift the stop \u2014 ships with no new note");
+        assertThat(page.locator("article .badge")).hasAttribute("data-tip", Pattern.compile(
+                "a ship asked past 3 without a new note\\nLikely a jagt defect: inspect the sweeps in the log"
+                        + "\\nstopped 14 Nov 2023, 22:13 UTC"));
+    }
 }

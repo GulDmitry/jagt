@@ -62,13 +62,10 @@ job.
 - **WHEN** you ask whether anything else runs behind your back
 - **THEN** the header shows the next unattended job, and one that failed; `jobs` has the detail
 
-#### Scenario: A job names itself nothing
+#### Scenario: A job names itself nothing, or outlasts its interval
 - **WHEN** a job declares a blank id
 - **THEN** jagt refuses to start, naming the job's class
-
-#### Scenario: A job outlasts its interval
-- **WHEN** a run lasts longer than the job's interval
-- **THEN** the next run starts the moment it ends, never beside it
+- **AND** a run lasting longer than the job's interval is followed the moment it ends, never beside it
 
 ### Requirement: The activity report reads jagt's own log
 `command/ActivityReport` SHALL tail `logging.file.name` (ECS JSON) for entries carrying a `task` key, newest first.
@@ -113,10 +110,7 @@ When a written rule leaves `memory/routing.md` at its ceiling, one read of the w
 #### Scenario: Two wordings place in one project
 - **WHEN** the read names two rules placing in one project
 - **THEN** the dropped one's count joins the kept one's, and it stays as a dated line
-
-#### Scenario: The read names rules placing in different projects
-- **WHEN** the two rules place in different projects
-- **THEN** both stand
+- **AND** two rules placing in different projects both stand
 
 ### Requirement: Jobs that keep the machine tidy and read the tracker
 Each of these jobs SHALL do its one thing unasked: - `jarwatch`: each minute, tells you the jar this process runs from was rebuilt underneath it. -
@@ -185,9 +179,15 @@ round bringing no new note; a failed verification or probe, a not-ready plan or 
 - **THEN** nothing is sent, nobody is asked, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`
 
 ### Requirement: A stopped task waits for your lift
-Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board SHALL ring it `jagt stopped`, its
-hover the evidence. Only a human's `lift`, or a new request replacing the one the stop was counted on, SHALL clear it and count anew. A stop counted
-on no request SHALL stand.
+Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board
+SHALL ring it `jagt stopped`, its move line `lift the stop` followed by the stop's short reason. That line's hover
+SHALL carry the evidence, the trigger's advice and the stop's time in UTC. Only a human's `lift`, or a new request
+replacing the one the stop was counted on, SHALL clear it and count anew. A stop counted on no request SHALL stand.
+
+#### Scenario: A stopped task says why
+- **WHEN** ABC-42 is stopped on SHIPS
+- **THEN** its card reads `lift the stop — ships with no new note`
+- **AND** the hover shows the evidence, the advice to inspect the sweeps in the log, and when it stopped
 
 #### Scenario: You press a verb on a stopped task
 - **WHEN** you press `ship` or `deploy` on a stopped task
@@ -195,5 +195,6 @@ on no request SHALL stand.
 
 #### Scenario: A new request replaces the one the stop was counted on
 - **WHEN** ABC-42 was stopped on !571 and opens !573
-- **THEN** the stop lifts, the count restarts, the log says `stop lifted` with `cause=new request`, and the auto-review sweep reads !573
-- **AND** a stop counted on no request stands: a failed verification stays stopped when !573 opens
+- **THEN** the stop lifts, the count restarts, and the auto-review sweep reads !573
+- **AND** the log says `stop lifted` with `cause=new request`
+- **AND** a stop counted on no request, such as a failed verification, stands until you press `lift`

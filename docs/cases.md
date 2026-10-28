@@ -146,6 +146,11 @@ Families:
 |----|--------------------|---------|-----------|
 | J1 | a long-lived branch's request listed commits its moved target already held; the session was forbidden to rebase → it rebases onto the target and lease-pushes, ordered by the `ship` step | seen 2026-10-28 | `SubAgentBriefingTest`, `SessionBriefTest`, `ToolGateTest` |
 
+## K — the board
+| id | the case, one line | defects | pinned by |
+|----|--------------------|---------|-----------|
+| K1 | a task jagt stopped shows `lift the stop` → the line adds the stop's short reason and its hover the evidence, the advice and the time | seen 2026-10-28: the card said to read the hover, which held nothing | `TaskViewTest`, `BoardCardTest` |
+
 ## L — the tests themselves
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

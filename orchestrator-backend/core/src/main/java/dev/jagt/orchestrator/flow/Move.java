@@ -32,7 +32,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         if (facts.stopped()) {
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "lift the stop",
                     FlowRules.allowed(status, facts), TaskAction.LIFT,
-                    "jagt stopped this task; read the hover, then lift or close");
+                    "jagt stopped this task; hover for what it saw and what to check, then lift or close");
         }
         if (facts.repoRequested() && asking(status, round)) {
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "add the repository",

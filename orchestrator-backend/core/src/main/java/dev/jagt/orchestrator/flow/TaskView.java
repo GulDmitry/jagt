@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 
 import org.jspecify.annotations.Nullable;
 
@@ -58,8 +59,19 @@ public record TaskView(
         // Whether the request is approved; null until a read has said. No status can answer this.
         @Nullable Boolean approved,
         // What the session judged on each switch that was on: name to "yes — why" or "no — why".
-        Map<String, String> switches
+        Map<String, String> switches,
+        // Why jagt stopped it; null while it is not stopped.
+        @Nullable Stop stop
 ) {
+
+    /** {@code reason} is the stop in a few words, {@code evidence} what it saw, {@code next} what a human reads after. */
+    public record Stop(String reason, String evidence, String next, long at) {
+
+        static @Nullable Stop of(@Nullable TaskStop stop) {
+            return stop == null ? null
+                    : new Stop(stop.trigger().reason(), stop.evidence(), stop.trigger().next(), stop.at());
+        }
+    }
 
     /** One status the task passed through, in the words the board shows it by. */
     public record Step(TaskStatus status, String label, long at, @Nullable ActionOrigin origin, @Nullable String why) {
@@ -85,6 +97,7 @@ public record TaskView(
     public static TaskView of(String id, TaskState task, RoundState round, AutoReviewWatch autoReview,
                               Map<String, String> deployBranches) {
         boolean draftedReplies = round.draftedReplies();
+        Stop stop = Stop.of(task.stop());
         Move move = Move.forTask(task.status(), Facts.projected(task), round, task.agentIsSilent(),
                 autoReview == null ? AutoReviewWatch.none() : autoReview);
         boolean deployed = task.hasLiveDeploy();
@@ -97,7 +110,7 @@ public record TaskView(
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
                 round.masterReading() ? "master review"
                         : task.status().label(), move.phase(),
-                move.owner(), move.attention(), move.ask(), move.hint(), actions,
+                move.owner(), move.attention(), asked(move, stop), move.hint(), actions,
                 confirmations(id, task, deployBranches), line.text(), line.kind(), webLink(task.ticketUrl()),
                 webLink(task.mrUrl()),
                 task.repos().stream()
@@ -107,7 +120,11 @@ public record TaskView(
                 task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
                         change.origin(), change.why())).toList(), deployed, draftedReplies, autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
-                task.hasReviewRequest() ? task.approved() : null, task.switches());
+                task.hasReviewRequest() ? task.approved() : null, task.switches(), stop);
+    }
+
+    private static @Nullable String asked(Move move, @Nullable Stop stop) {
+        return stop != null && move.primary() == TaskAction.LIFT ? move.ask() + " — " + stop.reason() : move.ask();
     }
 
     private static Map<String, String> confirmations(String id, TaskState task, Map<String, String> deployBranches) {

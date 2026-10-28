@@ -1,5 +1,7 @@
 // Formatted exactly as the server prints them: one elapsed time must not read "1h" here and "2h" there.
 
+import {full} from './time.js';
+
 export const duration = (millis) => {
   const minutes = Math.max(0, Math.floor(millis / 60000));
   if (minutes < 60) return `${minutes}m`;
@@ -56,3 +58,6 @@ export const reportParts = (said) => said.trimEnd().split('\n')
 
 // What the session judged on each switch, one `name: yes — why` line apiece; empty where it judged none.
 export const switchLines = (task) => Object.entries(task.switches || {}).map(([name, said]) => `${name}: ${said}`);
+
+// What jagt saw when it stopped the task, its advice, and when; the reason on the line is the server's.
+export const stopLines = (task) => (task.stop ? [task.stop.evidence, task.stop.next, `stopped ${full(task.stop.at)}`] : []);
