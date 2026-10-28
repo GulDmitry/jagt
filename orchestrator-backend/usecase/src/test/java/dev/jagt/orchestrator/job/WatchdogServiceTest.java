@@ -273,7 +273,7 @@ class WatchdogServiceTest {
     }
 
     @Test
-    void alertsAgainTheMomentTheStaleWindowHasExactlyPassed(@TempDir Path root) {
+    void alertsOnceForOneSilenceAcrossManyStaleWindows(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
@@ -283,8 +283,30 @@ class WatchdogServiceTest {
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)));
         Clock clock = mock(Clock.class);
-        when(clock.millis()).thenReturn(10_000_000L, 10_299_999L, 10_300_000L);
+        when(clock.millis()).thenReturn(10_000_000L, 10_300_000L, 10_600_000L, 12_000_000L);
         WatchdogService watchdog = new WatchdogService(state, notifications, properties, probe, clock);
+
+        watchdog.run();
+        watchdog.run();
+        watchdog.run();
+        watchdog.run();
+
+        verify(notifications, times(1)).send(any());
+    }
+
+    @Test
+    void alertsAgainWhenTheSilenceEndedAndANewOneBegan(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong())).thenReturn(
+                Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)),
+                Optional.empty(),
+                Optional.of(new SessionProbe.Silence(9_000_000, SessionProbe.State.GONE, null)));
+        WatchdogService watchdog = new WatchdogService(state, notifications, properties, probe, Clock.systemUTC());
 
         watchdog.run();
         watchdog.run();

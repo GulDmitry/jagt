@@ -36,7 +36,7 @@ threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overrul
 
 #### Scenario: Silent stop
 - **WHEN** a session stops unannounced
-- **THEN** NEEDS YOU, Focus highlighted
+- **THEN** NEEDS YOU, Focus highlighted; logged and notified once per silence, a new one alerting again
 
 #### Scenario: A permission prompt
 - **WHEN** a session sits at one

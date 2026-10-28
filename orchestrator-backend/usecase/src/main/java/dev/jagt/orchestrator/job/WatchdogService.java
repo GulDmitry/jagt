@@ -36,7 +36,7 @@ public class WatchdogService implements Job {
     private final OrchestratorProperties properties;
     private final SessionProbe probe;
     private final Clock clock;
-    private final Map<String, Long> lastAlertAt = new ConcurrentHashMap<>();
+    private final Map<String, Long> alertedSince = new ConcurrentHashMap<>();
 
     @Override
     public String id() {
@@ -98,18 +98,17 @@ public class WatchdogService implements Job {
                 : Optional.empty();
         stamp(taskId, task, silence.orElse(null));
         if (silence.isEmpty()) {
-            lastAlertAt.remove(taskId);
+            alertedSince.remove(taskId);
             return;
         }
         // The wait FOLLOWING an agent's own question was announced when it asked.
         boolean announcedWhenItAsked = silence.get().atAPrompt()
                 && task.report().asks();
-        // Re-alert at most once per stale window to avoid notification spam.
-        if (announcedWhenItAsked || now - lastAlertAt.getOrDefault(taskId, 0L) < staleMs) {
+        if (announcedWhenItAsked || Objects.equals(alertedSince.get(taskId), silence.get().since())) {
             return;
         }
         String said = body(silence.get());
-        lastAlertAt.put(taskId, now);
+        alertedSince.put(taskId, silence.get().since());
         log.atWarn().setMessage("task stopped")
                 .addKeyValue("task", taskId)
                 .addKeyValue("said", OneLine.clipped(said))

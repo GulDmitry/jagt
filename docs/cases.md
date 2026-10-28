@@ -112,6 +112,7 @@ Families:
 | F13 | a new turn hands back the diff and kind the Master already judged → its verdict is reused, not reviewed again | seen 2026-10-26: 17 Master reviews asked over one unchanged diff, one per turn | `RoundQuotesTest`, `MasterReviewTest` |
 | F14 | a session that changes no code (a stage check) keeps asking → each Master answer lands in the same session; past three the answer changes the approach, the ninth stops for the human | seen 2026-10-27: 4 session restarts in 7 minutes, each losing what the session had tried | `MasterVerdictsTest`, `MasterAnswerJobTest` |
 | F15 | a round's note fingerprint is blank (note ids unknown) → it is never a repeat: no stalled run, no futile ship counted | seen 2026-10-27: three blank-fingerprint rounds stalled a task and a SHIPS stop read "ships without a new note in 24h: 4" | `LoopBreakerTest` |
+| F16 | a session stays silent across several stale windows → one alert at the silence's start; only a new silence alerts again | seen 2026-10-28: one 35-minute silence logged 7 alerts | `WatchdogServiceTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |
