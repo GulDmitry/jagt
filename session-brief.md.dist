@@ -21,7 +21,7 @@ uncommitted, and report REVIEW_PENDING again.
 
 jagt ran the acceptance probes of the plan you were given a go on, and those above failed. Make them pass, leave
 the fix uncommitted, and report REVIEW_PENDING again. A probe that is itself wrong changes only with a new plan:
-write it into plan.md and report PLAN_PENDING.
+report IN_PROGRESS, write it into plan.md and report PLAN_PENDING; the plan is read and approved again.
 
 ## plan
 

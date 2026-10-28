@@ -159,6 +159,12 @@ class FlowRulesTest {
     }
 
     @Test
+    void refusesAPlanReportedFromVerifyingAndNamesTheWayBack() {
+        assertThat(FlowRules.refusedReport(TaskStatus.VERIFYING, TaskStatus.PLAN_PENDING))
+                .get().asString().contains("report IN_PROGRESS first, then PLAN_PENDING with the new probes");
+    }
+
+    @Test
     void holdsAHandBackAtVerifyingWhileTheProjectStillOwesAVerificationRun() {
         assertThat(FlowRules.reported(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, true))
                 .isEqualTo(TaskStatus.VERIFYING);

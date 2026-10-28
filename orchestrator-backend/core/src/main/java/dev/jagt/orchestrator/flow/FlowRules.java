@@ -174,7 +174,9 @@ public final class FlowRules {
         }
         if (to == TaskStatus.PLAN_PENDING && !BEFORE_THE_CODE.contains(from)) {
             return Optional.of(to + " cannot be reported by a task that is already " + from
-                    + " — a plan is what comes before the code, not after it");
+                    + " — a plan is what comes before the code, not after it"
+                    + (from == TaskStatus.VERIFYING
+                            ? "; report IN_PROGRESS first, then PLAN_PENDING with the new probes" : ""));
         }
         if (to == TaskStatus.CI_POLLING && !BEFORE_THE_VERDICT.contains(from)) {
             return Optional.of(to + " cannot be reported by a task that is already " + from

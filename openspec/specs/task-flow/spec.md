@@ -50,10 +50,7 @@ reason the agent acts on: no task talks itself onto a shared branch, out of one,
 #### Scenario: A forbidden report
 - **WHEN** `FlowRules.refusedReport` refuses an agent's report
 - **THEN** the agent gets the reason
-
-#### Scenario: A session approves itself
-- **WHEN** a session reports `APPROVED`
-- **THEN** it is refused; only the round read lands it
+- **AND** a session reporting `APPROVED` is refused: only the round read lands it
 
 ### Requirement: A hand-back waits at VERIFYING
 `FlowRules.reported` SHALL redirect a hand-back owing a verification run to `VERIFYING`; no action leads there and
@@ -102,10 +99,7 @@ the report's logged; a question alone reaches it, until the next report. A round
 #### Scenario: A report at a held status
 - **WHEN** a `DEPLOY_CONFLICT` task's agent reports `no changes`
 - **THEN** the task stays and its card keeps the conflict, the report's line logged
-
-#### Scenario: An approval after deploy
-- **WHEN** a poll reads `APPROVED` past `DEPLOYED`
-- **THEN** the task stays
+- **AND** a poll reading `APPROVED` past `DEPLOYED` leaves the task there
 
 ### Requirement: Nothing below flow decides a status
 A capability SHALL report `OK` / `RELAYED` / `CONFLICT` / `PARTIAL` / `GONE` plus the sentence and the stamp, so
@@ -170,6 +164,11 @@ a session's write to any file but `plan.md`, `task_visual.md` and `task_notes.md
 #### Scenario: A task that needs no plan
 - **WHEN** an autoplan session reports `IN_PROGRESS` with `outcome=no_plan`
 - **THEN** the gate opens, and in `plan` mode the report is refused
+
+#### Scenario: A ratified probe is replaced
+- **WHEN** a session at `IN_PROGRESS` reports `PLAN_PENDING` with a new probes block
+- **THEN** the probes are read anew and the plan waits for approval
+- **AND** from `VERIFYING` the report is refused, naming `IN_PROGRESS` first
 
 #### Scenario: A task reopened in plan mode
 - **WHEN** a task whose gate is open is reopened with `mode=plan`

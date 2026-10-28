@@ -20,7 +20,7 @@ Families:
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | A1 | a brief or prompt rule says what the machine refuses or cannot act on → the text matches the machine, one meaning per rule | 86b25a02, 9d26669b, 3de263cf, c6c1af3d, 81999b1d, f854b297 | `SessionBriefContractTest`, `MasterModeFlowTest`, `TextBudgetTest` |
-| A2 | a refusal the session cannot cure by resending its fields → comes back as a state refusal (business), not validation | 9d2099e6, 63bfea5f, fe85432b, 40872621 | `FlowEngineTest`, `TaskProvisioningTest`, `AgentStatusReportsTest`, `RevertServiceTest`, `ToolFailureTest`, `DeployServiceTest` |
+| A2 | a refusal the session cannot cure by resending its fields → comes back as a state refusal (business), not validation | 9d2099e6, 63bfea5f, fe85432b, 40872621 | `FlowEngineTest`, `TaskProvisioningTest`, `AgentStatusReportsTest`, `RevertServiceTest`, `ToolFailureTest`, `DeployServiceTest`, `FlowRulesTest` |
 | A3 | an MCP tool description is read to choose or call it → it states what the tool does now, in the brief's words (tab, revert, focus) | 06fa3c41, 5177b163, 41b5f8c5, 92fe8bed, f34e55c8 | `McpProtocolServiceTest`, `AgentSessionsTest` |
 | A4 | a text names the guards and read-only branches jagt holds → it names every repository's base and deploy branch and every refusal | 1eab604c, 6e41139b, 0c3c239b, e0fe388a, 9d859b72 | `SubAgentBriefingTest`, `MasterPanelTest` |
 | A5 | the Master or a reader is sent to read a ticket → only through a server it loads, else told the ticket was not read | 196acdb8, 8d9aa78b, 02788338, 29bc9e5c | `MasterPanelTest`, `ReadOnlyToolsTest`, `MeteredAssistantTest`, `TicketReaderTest` |
