@@ -86,7 +86,7 @@ public class MasterVerdicts {
         if (!ruled.isEmpty()) {
             decisions.record(task, ruled);
         }
-        log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId)
+        log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .addKeyValue("findings", verdict.findings().size()).log();
         return true;
     }
@@ -104,7 +104,7 @@ public class MasterVerdicts {
             return false;
         }
         decisions.returned(task, verdict.round(), List.of());
-        log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).log();
+        log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).addKeyValue("alias", task.alias()).log();
         return true;
     }
 
@@ -135,8 +135,8 @@ public class MasterVerdicts {
         if (!relay.relay(taskId, MasterMove.ASKED_HUMAN.id(), "The reviewer asked the human: " + question, claim)) {
             return false;
         }
-        log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
-                .log();
+        log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
+                .addKeyValue("question", OneLine.clipped(question)).log();
         return true;
     }
 
@@ -161,7 +161,8 @@ public class MasterVerdicts {
         }
         decisions.record(task, "- asked: " + question + " — decided: " + decision.replace('\n', ' '));
         decisions.answered(task);
-        log.atInfo().setMessage("master answered").addKeyValue("task", taskId).addKeyValue("question", OneLine.clipped(question))
+        log.atInfo().setMessage("master answered").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
+                .addKeyValue("question", OneLine.clipped(question))
                 .addKeyValue("decision", OneLine.clipped(decision)).log();
         return true;
     }
