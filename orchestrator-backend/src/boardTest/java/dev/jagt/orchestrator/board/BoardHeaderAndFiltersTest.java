@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.Duration;
 import java.util.regex.Pattern;
@@ -311,6 +312,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void anOpenTipOnTheJobsChipFollowsItsCountdownThroughARepaint() {
         breakable.breakIt();
         long now = System.currentTimeMillis();

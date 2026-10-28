@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.job.Jobs;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.nio.file.Files;
 import java.util.regex.Pattern;
@@ -87,6 +88,7 @@ class BoardInteractionLogTest extends BoardPageContext {
     }
 
     @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void theFailedJobsChipAppearingIsLoggedWithoutAStatus() throws Exception {
         breakable.breakIt();
         Page page = session.newPage();

@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,6 +78,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void aFailedJobOpensFromTheHeaderAsATableWhoseRowRunsItNow() {
         breakable.breakIt();
         Page page = session.newPage();
@@ -398,6 +400,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void theJobsTableTurnsAFailedJobRedWithoutReopeningTheReport() {
         breakable.breakIt();
         Page page = session.newPage();
