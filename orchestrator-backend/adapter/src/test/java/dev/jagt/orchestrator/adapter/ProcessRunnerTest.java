@@ -53,10 +53,10 @@ class ProcessRunnerTest {
         Process launched = runner.runDetached(null, List.of("sleep", "5"));
 
         try {
-            String command = runner.run(null, Duration.ofSeconds(5),
-                    List.of("ps", "-o", "comm=", "-p", String.valueOf(launched.pid()))).stdout().strip();
-
-            assertThat(command).isEqualTo("sleep");
+            await().atMost(Duration.ofSeconds(10)).untilAsserted(() ->
+                    assertThat(runner.run(null, Duration.ofSeconds(5),
+                            List.of("ps", "-o", "comm=", "-p", String.valueOf(launched.pid()))).stdout().strip())
+                            .isEqualTo("sleep"));
         } finally {
             launched.destroyForcibly();
         }

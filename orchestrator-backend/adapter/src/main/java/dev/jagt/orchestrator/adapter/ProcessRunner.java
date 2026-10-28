@@ -41,6 +41,9 @@ public class ProcessRunner implements Processes {
     public Process runDetached(@Nullable Path workingDir, List<String> command) {
         try {
             List<String> detached = detachedFrom(command);
+            if (!command.get(0).contains("/") && !Executables.onPath(command.get(0))) {
+                throw new IllegalStateException("Failed to launch: " + String.join(" ", command) + " (not on PATH)");
+            }
             long startedAt = System.nanoTime();
             ProcessBuilder builder = new ProcessBuilder(detached);
             if (workingDir != null) {

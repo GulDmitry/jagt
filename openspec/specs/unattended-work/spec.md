@@ -113,10 +113,9 @@ When a written rule leaves `memory/routing.md` at its ceiling, one read of the w
 - **AND** two rules placing in different projects both stand
 
 ### Requirement: Jobs that keep the machine tidy and read the tracker
-Each of these jobs SHALL do its one thing unasked: - `jarwatch`: each minute, tells you the jar this process runs from was rebuilt underneath it. -
-`orphanscan`: at startup, deletes jagt's own worktree residue and warns about leftovers holding work or secrets. - `ticket-prefetch`: reads each
-working task's ticket once, for the Master's next review of it. - `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready
-for one. - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
+Each job SHALL do its one thing unasked: - `jarwatch`: each minute, says its jar was rebuilt. - `orphanscan`: at startup, deletes
+jagt's worktree residue, warns of leftovers with work/secrets. - `ticket-prefetch`: reads each working task's ticket once for the Master. - `intake`:
+`tracker.mode` `take`/`both` starts a task on each ready item. - `ticket-close`: `close`/`both` closes a task at its item's `doneStatus`.
 
 #### Scenario: A husk of a worktree
 - **WHEN** a worktree directory jagt cut has lost its checkout and holds only the editor's files
