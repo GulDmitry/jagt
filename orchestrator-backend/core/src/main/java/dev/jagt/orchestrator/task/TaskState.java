@@ -259,6 +259,7 @@ public record TaskState(
         return toBuilder().status(status).lastActiveTimestamp(now).message(message).report(AgentReport.PLAIN)
                 .silentSince(0)
                 .silentBecause(null)
+                .conflict(status == TaskStatus.DEPLOY_CONFLICT ? conflict : null)
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
     }

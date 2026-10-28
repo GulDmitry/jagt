@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ConflictHandOffTest {
@@ -91,6 +92,22 @@ class ConflictHandOffTest {
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", conflict);
 
         verify(stall).watch("ABC-42", conflict);
+    }
+
+    @Test
+    void finishesNothingWhilePathsRemainUnstaged(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        when(stall.handed("ABC-42")).thenReturn(true);
+
+        new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
+                new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
+                Path.of("/src/ABC-42-deploy"), false, new ConflictWatch.Progress(7, 0, "d")));
+
+        verifyNoInteractions(finish);
     }
 
     @Test

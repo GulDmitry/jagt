@@ -77,11 +77,11 @@ staged in full it MUST finish the press ([0013](../../../docs/decisions/0013-a-d
 
 #### Scenario: A conflict where the Master acts
 - **WHEN** the session stages its resolution in full
-- **THEN** jagt finishes the deploy
+- **THEN** jagt finishes the deploy; ABC-42 stopped meanwhile, nothing is pressed and the log says so once, the tick after the lift finishes it
 
 ### Requirement: A stalled deploy conflict is the human's
 A handed conflict unchanged for `conflictStallMinutes` SHALL tell the human once. Its card SHALL name the paths unmerged, where and since when,
-across a restart (`TaskState.conflict`, [0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)).
+across a restart (`TaskState.conflict`, [0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)); a status past it clears it.
 
 #### Scenario: A conflict nobody works
 - **WHEN** ABC-42's deploy worktree has not changed for `conflictStallMinutes`
@@ -162,8 +162,6 @@ write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused
 #### Scenario: Approved
 - **WHEN** you press `approve-plan`, or the Master in `act` finds a plan holds
 - **THEN** the gate opens and the task is `IN_PROGRESS`; a `plan`-mode plan the Master found holding waits for you
-
-#### Scenario: A task that needs no plan
 - **WHEN** an autoplan session reports `IN_PROGRESS` with `outcome=no_plan`
 - **THEN** the gate opens, and in `plan` mode the report is refused
 
