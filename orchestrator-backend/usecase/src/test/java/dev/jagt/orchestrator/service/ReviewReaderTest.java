@@ -36,7 +36,7 @@ class ReviewReaderTest {
         var facts = new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
                 .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
-        assertThat(facts).contains(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of()));
+        assertThat(facts.facts()).contains(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of()));
     }
 
     @Test

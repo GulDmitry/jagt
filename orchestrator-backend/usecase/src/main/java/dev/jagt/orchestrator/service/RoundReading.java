@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -29,6 +30,8 @@ public class RoundReading {
     public record Round(String mrUrl, ReviewFacts facts) implements Read {
     }
 
+    private static final int CAUSE_LIMIT = 200;
+
     private final StateService stateService;
     private final ReviewReader reviewReader;
 
@@ -49,10 +52,11 @@ public class RoundReading {
         // One unreadable request fails the WHOLE sweep: half a task's repositories cannot say "green".
         List<ReviewFacts> rounds = new ArrayList<>();
         for (TaskRepo repo : reviewed) {
-            Optional<ReviewFacts> read = reviewReader.read(taskId, Objects.requireNonNull(repo.mrUrl()));
+            Answer<ReviewFacts> answer = reviewReader.read(taskId, Objects.requireNonNull(repo.mrUrl()));
+            Optional<ReviewFacts> read = answer.facts();
             if (read.isEmpty()) {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
-                        "error: read failed: " + repo.mrUrl() + " (cause in the log)"));
+                        "error: read failed: " + repo.mrUrl() + " " + cause(answer.failure())));
             }
             if (!read.get().exists()) {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
@@ -61,6 +65,11 @@ public class RoundReading {
             rounds.add(reviewed.size() == 1 ? read.get() : named(Objects.requireNonNull(repo.project()), read.get()));
         }
         return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds));
+    }
+
+    private static String cause(String failure) {
+        String line = failure.strip().replaceAll("\\s+", " ");
+        return line.isEmpty() ? "(cause in the log)" : "— " + (line.length() > CAUSE_LIMIT ? line.substring(0, CAUSE_LIMIT) + "…" : line);
     }
 
     private static ReviewFacts named(String project, ReviewFacts round) {
