@@ -146,9 +146,11 @@ class JudgeModeFlowTest {
 
         handBackTheFirstRound();
 
+        Path context = worktree().resolve("task_context.md");
+        await().atMost(A_FEW_TICKS).pollInterval(Duration.ofMillis(500))
+                .until(() -> Files.readString(context).contains("the guard is inverted"));
         assertThat(awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).status())
                 .isEqualTo(TaskStatus.IN_PROGRESS);
-        assertThat(Files.readString(worktree().resolve("task_context.md"))).contains("the guard is inverted");
     }
 
     @Test
