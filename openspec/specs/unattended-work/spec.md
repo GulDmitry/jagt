@@ -198,4 +198,3 @@ replacing the one the stop was counted on, SHALL clear it and count anew. A stop
 - **WHEN** ABC-42 was stopped on !571 and opens !573
 - **THEN** the stop lifts, the count restarts, and the auto-review sweep reads !573
 - **AND** the log says `stop lifted` with `cause=new request`
-- **AND** a stop counted on no request, such as a failed verification, stands until you press `lift`
