@@ -125,8 +125,8 @@
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
 
-- **Sessions in tmux** — Each agent runs in a tmux window, and a kitty window attaches to it, on `orchestrator.agent.model` where the notes name none.
-  [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
+- **Sessions in tmux** — Each agent runs in a tmux window, viewed in kitty or Ghostty (`orchestrator.terminal`),
+  on `orchestrator.agent.model` where the notes name none. [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
 - **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
 - **Revive after a restart** — Sessions return where they were, each holding the turn asked once to repeat its last report.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)

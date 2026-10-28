@@ -35,6 +35,7 @@ orchestrator:
                            # you get one banner, and the card says how many paths are unmerged, where, since when
   keepAwake: false         # true: macOS stays awake while the Master acts, auto-review polls or `take` runs
   interactionLog: true     # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`
+  # terminal: kitty       # kitty | ghostty: the viewer; ghostty is macOS only and needs Ghostty 1.3 or newer
   # kittyCommand: kitty   # if the binary is not on PATH
   # kittyFontSize: 13     # blank keeps kitty.conf's own
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs

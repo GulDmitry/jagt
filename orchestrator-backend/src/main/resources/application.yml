@@ -44,8 +44,10 @@ orchestrator:
   root: ${ORCHESTRATOR_ROOT:}
   config-file: ${ORCHESTRATOR_CONFIG_FILE:}
   state-file: ${ORCHESTRATOR_STATE_FILE:}
-  # macos | linux — selects the notifier and the kitty driver.
+  # macos | linux — selects the notifier.
   platform: macos
+  # kitty | ghostty — the viewer terminal; ghostty needs macOS and Ghostty 1.3 or newer.
+  terminal: kitty
   # kitty-command: kitty   # override the kitty binary if not on PATH
   # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own
   # Any CLI launcher, resolved on PATH and in the usual install dirs; the worktree path is appended.

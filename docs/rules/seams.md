@@ -8,9 +8,9 @@ Linux and macOS, with terminals, notifiers, editors
 and agent runtimes (any MCP-capable CLI) behind a **strategy interface**: an
 implementation plus a config value, never `if claude` or `if macos`.
 
-- Selected by config: `UserNotifier` and `TerminalDriver` by `orchestrator.platform` (macos default, linux;
-  kitty the one driver), `EditorDriver` by `orchestrator.editor-command`, `AgentRuntime` and `SubscriptionUsage`
-  by `orchestrator.agent.cli` (claude default, codex).
+- Selected by config: `UserNotifier` by `orchestrator.platform` (macos default, linux). `TerminalDriver` by
+  `orchestrator.terminal` (kitty default, ghostty on macOS only). `EditorDriver` by `orchestrator.editor-command`.
+  `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex).
 - **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`);
   a notifier reaching nothing logs and returns.
 - **The tracker and the code host are not seams of jagt's**: a model reads them through the MCP of whoever

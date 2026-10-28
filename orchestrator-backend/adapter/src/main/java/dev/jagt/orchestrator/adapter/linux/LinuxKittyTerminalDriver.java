@@ -16,6 +16,7 @@ import java.util.List;
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.platform", havingValue = "linux", matchIfMissing = false)
+@ConditionalOnProperty(name = "orchestrator.terminal", havingValue = "kitty", matchIfMissing = true)
 public class LinuxKittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     public LinuxKittyTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties,

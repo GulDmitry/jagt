@@ -19,6 +19,11 @@ public class OsaScript {
         processRunner.run(null, TIMEOUT, List.of("osascript", "-e", script)).expectSuccess("osascript");
     }
 
+    public String answer(String script) {
+        return processRunner.run(null, TIMEOUT, List.of("osascript", "-e", script)).expectSuccess("osascript")
+                .stdout().strip();
+    }
+
     public static String string(String value) {
         return '"' + value.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
     }

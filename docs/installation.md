@@ -14,6 +14,7 @@ absolute path in `jagt.yml` to pin one.
 | [Claude Code](https://claude.com/claude-code) | reads every ticket, merge request and review round, headless — whichever CLI writes the code | its own installer |
 | [tmux](https://github.com/tmux/tmux) | the session an agent lives in, outliving the board and the window | `brew install tmux` · `apt install tmux` |
 | [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent | `brew install kitty` · `apt install kitty` |
+| [Ghostty](https://ghostty.org) 1.3+ | the alternative to kitty on macOS, `terminal: ghostty` | `brew install --cask ghostty` |
 | [bubblewrap](https://github.com/containers/bubblewrap) + socat | Claude's sandbox, only when `sandbox.enabled: true` keeps a session's writes in its task | built in · `apt install bubblewrap socat` |
 | [IntelliJ IDEA](https://www.jetbrains.com/idea/) or [VS Code](https://code.visualstudio.com/) | opens the worktree at the `ide` checkpoint | `idea` or `code` on PATH, or installed as an application |
 
@@ -73,7 +74,7 @@ on: 24 h of polling one request costs $3–$7.
 
 ```yaml
 orchestrator:
-  platform: linux         # selects the notifier and the kitty driver
+  platform: linux         # selects the notifier
   editorCommand: [idea]   # or [code]; editorDiffCommand is optional
 ```
 

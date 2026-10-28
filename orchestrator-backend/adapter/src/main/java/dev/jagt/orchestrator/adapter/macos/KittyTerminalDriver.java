@@ -14,6 +14,7 @@ import java.util.List;
  *  application only. */
 @Component
 @ConditionalOnProperty(name = "orchestrator.platform", havingValue = "macos", matchIfMissing = true)
+@ConditionalOnProperty(name = "orchestrator.terminal", havingValue = "kitty", matchIfMissing = true)
 public class KittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     /**
