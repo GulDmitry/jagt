@@ -35,15 +35,11 @@ A session jagt revives SHALL re-enter (`AgentRuntime.reviveCommand`, Claude `--c
 the window, not the context. A human's `respawn` SHALL be fresh, as SHALL a review round (`AgentSessions.relayFresh`).
 So SHALL a relay past the cache lifetime (`AgentRuntime.pastContinuing`), read on the session's own log as it is sent.
 
-#### Scenario: The tmux server is lost
+#### Scenario: The tmux server is lost, a relay comes late, or a round comes early
 - **WHEN** jagt revives a session after its tmux server died
 - **THEN** the revived session re-enters with `--continue`
-
-#### Scenario: A relay comes late
 - **WHEN** a relay comes after the cache lifetime
 - **THEN** the session starts fresh from the current `task_notes.md`, on the model its `next-model:` line names
-
-#### Scenario: A review round comes early, or the human respawns
 - **WHEN** a review round comes within the cache lifetime, a headless run wrote after the session, or `respawn` runs
 - **THEN** the session starts fresh
 
@@ -88,11 +84,9 @@ Claude Code's auto-mode classifier blocks calls not pre-approved: the backend SH
 `.claude/settings.json` covers sessions there. Every sub-agent worktree's generated `.claude/settings.local.json` MUST
 carry `enableAllProjectMcpServers: true`, `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` and `agentAllowedTools`.
 
-#### Scenario: A worktree setting is missing
+#### Scenario: A worktree setting is missing, or the generated settings change
 - **WHEN** a worktree lacks either
 - **THEN** `ship` / `feedback` stall on an invisible prompt, or `git commit` freezes
-
-#### Scenario: The generated settings change
 - **WHEN** they change while a worktree already exists
 - **THEN** it keeps its old file until patched or re-created: only `initialize_task` writes it
 
@@ -132,11 +126,18 @@ The payload adds the session's log (else derived from the worktree), which gives
 The hook SHALL print jagt's answer. Three hooks are answered: `gate=PreToolUse`, scoped to the shell tool and the file-writing tools (it holds
 writes while a plan waits, [task-flow](../task-flow/spec.md)); `turn-end=Stop`; and `prompt-gate=UserPromptSubmit`, answered by
 [cold-prompts](../cold-prompts/spec.md). A session is never launched in its CLI's own plan mode. `turn-end` refuses once a turn that leaves the
-agent's move unreported (`Move.endsUnreported`), and shows the human alone a round handed to the Master (`AgentRuntime.toldTheHuman`).
+agent's move unreported (`Move.endsUnreported`). It also refuses once a turn that changed the tree and reported nothing (`TurnTree`), at every status
+but REVERTED, DEPLOY_CONFLICT and DONE. It shows the human alone a round handed to the Master (`AgentRuntime.toldTheHuman`).
 
 #### Scenario: jagt is unreachable
 - **WHEN** `gate`, `turn-end` or `prompt-gate` cannot reach jagt
 - **THEN** none refuses anything
+
+#### Scenario: A change typed in after the deploy
+- **WHEN** a turn at DEPLOYED ends with the tree changed and nothing reported
+- **THEN** the end is refused once, and the second end on the same tree passes
+- **WHEN** a turn at DEPLOYED ends with the tree as the last end left it
+- **THEN** the turn ends
 
 ### Requirement: A start after compaction is answered with the task
 After a compaction the start SHALL be answered with the task key, also its branch, the title, the board status and the
@@ -169,11 +170,9 @@ A REVIEW_PENDING SHALL be refused past 3 lines the task added to the repository'
 A command jagt waits on (`ProcessRunner.run`) SHALL be killed with every descendant when its timeout passes, when the
 wait is interrupted and when jagt stops. A detached launch SHALL be left running: it outlives jagt by design.
 
-#### Scenario: A headless run times out
+#### Scenario: A headless run times out, or jagt stops mid-run
 - **WHEN** a command times out while a child it spawned is still running
 - **THEN** the command and the child are both killed
-
-#### Scenario: jagt stops mid-run
 - **WHEN** jagt stops while it waits on a command
 - **THEN** the command is killed, and its caller is told it was stopped (`Processes.Stopped`), never an exit code to judge
 

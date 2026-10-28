@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
 import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.service.TurnTree;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -32,7 +33,8 @@ class TurnEndsTest {
     private final SessionProbe probe = mock(SessionProbe.class);
     private final AgentRuntime runtime = mock(AgentRuntime.class);
     private final ConfigService config = mock(ConfigService.class);
-    private final NotesDue notes = new NotesDue(Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC));
+    private final TurnTree turnTree = new TurnTree(null, null);
+    private final NotesDue notes =new NotesDue(Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC));
 
     @Test
     void sendsOnATurnThatEndsWithTheAgentsMoveUnreported() {
@@ -41,7 +43,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(1_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
@@ -53,7 +55,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("keep v2?").report(AgentReport.QUESTION).lastActiveTimestamp(1_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
@@ -66,7 +68,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(reportedAt).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEmpty();
     }
@@ -81,7 +83,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(3_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"systemMessage\": \"with the Master\"}");
     }
@@ -94,7 +96,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(3_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEmpty();
     }
@@ -106,7 +108,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(1_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, sentOn, paused);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, sentOn, paused);
 
         assertThat(answered).isEmpty();
     }
@@ -121,7 +123,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1")
                 .lastActiveTimestamp(3_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"systemMessage\": \"verification first\"}");
     }
@@ -136,7 +138,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(3_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
@@ -149,7 +151,7 @@ class TurnEndsTest {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(3_000L).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes).answer("ABC-1", task, true, false);
+        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, true, false);
 
         assertThat(answered).isEmpty();
     }

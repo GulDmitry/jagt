@@ -52,6 +52,18 @@ class MoveTest {
     }
 
     @ParameterizedTest
+    @CsvSource({
+            "DEPLOYED, true",
+            "APPROVED, true",
+            "CI_FAILED, true",
+            "REVERTED, false",
+            "DEPLOY_CONFLICT, false",
+            "DONE, false"})
+    void measuresATurnByTheTreeAtEveryStatusButTheEndedOnes(TaskStatus status, boolean onTheTree) {
+        assertThat(Move.endsOnTheTree(status)).isEqualTo(onTheTree);
+    }
+
+    @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "PLAN_PENDING"})
     void leavesWhatTheMasterHasYetToReadOffTheHumansMoves(TaskStatus status) {
         Move move = Move.forTask(status, new Facts(false, false, () -> false, false, false, false),

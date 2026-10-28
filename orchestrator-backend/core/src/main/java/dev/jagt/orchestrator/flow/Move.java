@@ -178,6 +178,11 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         return ownerOf(status) == Owner.AGENT && !FlowRules.awaitingVerification(status);
     }
 
+    /** Where the tree, not the status, tells whether a turn did work nobody reported. */
+    public static boolean endsOnTheTree(TaskStatus status) {
+        return status != TaskStatus.REVERTED && status != TaskStatus.DEPLOY_CONFLICT && status != TaskStatus.DONE;
+    }
+
     /** Whose turn a status ALONE means. */
     public static Owner ownerOf(TaskStatus status) {
         return turnOf(status, RoundState.NONE);
