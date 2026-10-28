@@ -44,12 +44,16 @@ public interface SessionHost {
      */
     void reviveTaskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias, Path worktreePath);
 
-    /** A window following a file as it grows, opened where it is missing and left alone where it is there. */
+    /**
+     * A window following a file as it grows, opened where it is missing and left alone where it is there or where
+     * the session's windows cannot be listed.
+     */
     void keepFeedWindow(String session, String name, Path file);
 
     /** Brings the task's window to whoever is attached; false when there is no such window. */
     boolean focusTaskWindow(String session, String dedicatedTitle, String taskId);
 
+    /** A session that cannot list its windows throws: unknown is never {@link WindowState#MISSING}. */
     WindowState taskWindowState(String session, String taskId);
 
     /**
@@ -70,7 +74,7 @@ public interface SessionHost {
     /** Presses Enter in the task's window, sending what its input holds; false when it is gone. */
     boolean submitTaskWindow(String session, String taskId);
 
-    /** Closes every window a task owns, and answers how many there were. */
+    /** Closes every window a task owns, and answers how many there were; a throw when they cannot be listed. */
     int killTaskWindows(String session, String taskId);
 
     /** When the window last showed any activity, as epoch millis — 0 when unknown. */

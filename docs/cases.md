@@ -98,6 +98,7 @@ Families:
 | E15 | a task stopped on unreadable checks or an unchanged failure gets a new request → the stop lifts, a new request is a new pipeline | seen 2026-10-28: a stop on a merged request's pipeline refused the replacing request's sweeps | `TaskStateTest` |
 | E13 | a change typed into the terminal at DEPLOYED, REVIEWED, APPROVED, CI_POLLING or CI_FAILED ends its turn unseen → the turn end is refused once, naming IN_PROGRESS or reverting it; the second end on the same tree passes | seen 2026-10-26: tree dirty after a deploy, no round reached the Master, nothing shipped | `TurnEndsTreeTest`, `TurnTreeTest` |
 | E15 | `resume <url>` cannot read the request → the refusal names what stopped the read on one line, clipped as the sweep line is, never "cause in the log" | seen 2026-10-28: the sweep named its failure, resume still said "cause in the log" | `TaskResumeTest` |
+| E16 | tmux cannot list a session's windows → no window is opened, closed or reported missing and the cause is logged; an absent session still lists none | seen 2026-10-28: a failed list read as no `master` window, a second one opened beside the first | `TmuxSessionHostTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

@@ -18,10 +18,13 @@ Agent terminals SHALL be windows in a session host (`port/SessionHost`, tmux tod
 ### Requirement: One name is one tmux window
 Opening a window SHALL first kill any same-named one; liveness SHALL be the child processes of `#{pane_pid}`. An
 exited agent's window SHALL close after showing its tail 15s; an interactive shell MUST NEVER be left in it.
+A missing session or server lists no windows; any other failed `list-windows` is unknown, never "none".
 
-#### Scenario: The agent exits
+#### Scenario: The agent exits, or the windows cannot be listed
 - **WHEN** the agent process in a window exits
 - **THEN** the window shows its tail for 15s, holding no process, and closes, leaving no shell behind
+- **WHEN** tmux cannot list the session's windows for any cause but a missing session or server
+- **THEN** jagt opens, closes and renames no window, logs `tmux windows unreadable` with the cause, and opens no second window beside one that exists
 
 ### Requirement: Closing the viewer only detaches
 Closing the viewer SHALL only detach; killing SHALL be explicit — `done` or `close_task_tab`.
@@ -151,8 +154,7 @@ last report: the open question, else the status message.
 ### Requirement: jagt reaps a worktree's processes
 Each sub-agent spawns its own language server (jdtls ~1–2 GB per Java worktree), never released. jagt SHALL reap
 it on `done` (`port/WorktreeProcesses`, `LsofWorktreeProcesses.reap`).
-`orchestrator.agent-disabled-plugins` SHALL write `enabledPlugins: {"<name>": false}` into worktree settings,
-default empty.
+`orchestrator.agent-disabled-plugins` SHALL write `enabledPlugins: {"<name>": false}` into worktree settings, default empty.
 
 #### Scenario: A Java task is done
 - **WHEN** `done` runs
@@ -178,8 +180,7 @@ wait is interrupted and when jagt stops. A detached launch SHALL be left running
 
 ### Requirement: The editor is a launcher
 jagt SHALL open a worktree and a diff only through `editorCommand` and the optional `editorDiffCommand`, naming no editor.
-IDE service folders present in the base repository SHALL be copied into a fresh worktree.
-A file the worktree already holds SHALL stay as it is.
+IDE service folders present in the base repository SHALL be copied into a fresh worktree. A file the worktree already holds SHALL stay as it is.
 
 #### Scenario: IDE service folders
 - **WHEN** the base repository holds `.idea/runConfigurations` or `.vscode/launch.json`

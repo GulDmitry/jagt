@@ -104,7 +104,7 @@ class TmuxSessionHostTest {
     @Test
     void reportsAMissingWindowWhereTheSessionListsNone() {
         Processes processes = mock(Processes.class);
-        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
@@ -152,7 +152,7 @@ class TmuxSessionHostTest {
     @Test
     void killsNothingWhereTheSessionListsNoWindow() {
         Processes processes = mock(Processes.class);
-        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
@@ -164,7 +164,7 @@ class TmuxSessionHostTest {
     void refusesToFocusAWindowTheTaskDoesNotHave() {
         Processes processes = mock(Processes.class);
         TerminalDriver terminal = mock(TerminalDriver.class);
-        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 terminal, mock(AgentRuntime.class));
@@ -237,7 +237,7 @@ class TmuxSessionHostTest {
     @Test
     void nudgesNoWindowTheTaskDoesNotHave() {
         Processes processes = mock(Processes.class);
-        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
@@ -321,7 +321,7 @@ class TmuxSessionHostTest {
     @Test
     void reportsNoScreenForATaskWithoutAWindow() {
         Processes processes = mock(Processes.class);
-        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
@@ -564,7 +564,7 @@ class TmuxSessionHostTest {
     @Test
     void submitsNothingWhereTheTaskHasNoWindow() {
         Processes processes = mock(Processes.class);
-        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server"));
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
@@ -631,5 +631,80 @@ class TmuxSessionHostTest {
         assertThat(List.copyOf(log.list)).filteredOn(event -> "tmux session options failed".equals(event.getMessage()))
                 .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
         hostLog.detachAppender(log);
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void opensNoFeedWindowAndNamesTheCauseWhereTheSessionsWindowsCannotBeListed() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(1, "", "protocol version mismatch"));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger hostLog = (Logger) LoggerFactory.getLogger(TmuxSessionHost.class);
+        hostLog.addAppender(log);
+
+        host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
+
+        verify(processes, never()).run(isNull(), any(Duration.class),
+                argThat((List<String> command) -> command.contains("new-window")));
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "tmux windows unreadable".equals(event.getMessage()))
+                .flatExtracting(ILoggingEvent::getKeyValuePairs)
+                .anySatisfy(pair -> assertThat(pair.value).isEqualTo("protocol version mismatch"));
+        hostLog.detachAppender(log);
+    }
+
+    @Test
+    void opensNoSecondFeedWindowWhereOneByThatNameExists() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0,
+                "@1 100 1700000000 master\n@2 200 1700000500 xmaster\n", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
+
+        verify(processes, never()).run(isNull(), any(Duration.class),
+                argThat((List<String> command) -> command.contains("new-window")));
+    }
+
+    @Test
+    void opensOneFeedWindowWhereNoneByThatNameExists() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0,
+                "@2 200 1700000500 xmaster\n", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
+
+        verify(processes).run(isNull(), any(Duration.class),
+                argThat((List<String> command) -> command.contains("new-window")));
+    }
+
+    @Test
+    void opensNoTaskWindowWhereTheSessionsWindowsCannotBeListed() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(1, "", "server timed out"));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        assertThatThrownBy(() -> host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, ""))
+                .isInstanceOf(IllegalStateException.class);
+        verify(processes, never()).run(isNull(), any(Duration.class),
+                argThat((List<String> command) -> command.contains("new-window")));
     }
 }

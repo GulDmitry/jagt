@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 @Service
@@ -93,9 +94,13 @@ public class TmuxSessionHost implements SessionHost {
     public void keepFeedWindow(String session, String name, Path file) {
         synchronized (lock) {
             ensureSession(session);
-            if (findWindowId(session, name).isEmpty()) {
-                newWindow(session, name, VIEWER_CWD,
-                        "tail -n 200 -F '" + file.toString().replace("'", "'\\''") + "'");
+            try {
+                if (findWindowId(session, name).isEmpty()) {
+                    newWindow(session, name, VIEWER_CWD,
+                            "tail -n 200 -F '" + file.toString().replace("'", "'\\''") + "'");
+                }
+            } catch (WindowsUnreadable unread) {
+                // Already logged where it was read; a window that may exist is never opened again.
             }
         }
     }
@@ -221,12 +226,7 @@ public class TmuxSessionHost implements SessionHost {
     @Override
     public int killTaskWindows(String session, String taskId) {
         synchronized (lock) {
-            var windows = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-windows",
-                    "-t", "=" + session, "-F", "#{window_id} #{window_name}"));
-            if (windows.exitCode() != 0) {
-                return 0;
-            }
-            List<String> ids = windows.stdout().lines()
+            List<String> ids = windowLines(session, "#{window_id} #{window_name}").stream()
                     .filter(line -> line.endsWith(" " + taskId))
                     .map(line -> line.substring(0, line.indexOf(' ')))
                     .toList();
@@ -251,7 +251,11 @@ public class TmuxSessionHost implements SessionHost {
     @Override
     public long lastWindowActivityMillis(String session, String taskId) {
         synchronized (lock) {
-            return findWindow(session, taskId).map(window -> window.activitySeconds() * 1000L).orElse(0L);
+            try {
+                return findWindow(session, taskId).map(window -> window.activitySeconds() * 1000L).orElse(0L);
+            } catch (WindowsUnreadable unread) {
+                return 0L;
+            }
         }
     }
 
@@ -263,16 +267,40 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     private Optional<Window> findWindow(String session, String taskId) {
-        var windows = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-windows",
-                "-t", "=" + session, "-F", "#{window_id} #{pane_pid} #{window_activity} #{window_name}"));
-        if (windows.exitCode() != 0) {
-            return Optional.empty();
-        }
-        return windows.stdout().lines()
+        return windowLines(session, "#{window_id} #{pane_pid} #{window_activity} #{window_name}").stream()
                 .filter(line -> line.endsWith(" " + taskId))
                 .map(line -> line.split(" ", 4))
                 .map(fields -> new Window(fields[0], fields[1], Long.parseLong(fields[2])))
                 .findFirst();
+    }
+
+    /** A session or server that is not there lists no windows; any other failure is unknown, never "none". */
+    private List<String> windowLines(String session, String format) {
+        var windows = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-windows",
+                "-t", "=" + session, "-F", format));
+        if (windows.exitCode() == 0) {
+            return windows.stdout().lines().toList();
+        }
+        if (SESSION_ABSENT.matcher(windows.stderr()).find()) {
+            return List.of();
+        }
+        log.atWarn().setMessage("tmux windows unreadable")
+                .addKeyValue("session", session)
+                .addKeyValue("cause", OneLine.clipped(windows.stderr()))
+                .addKeyValue("effect", "no window opened, closed or reported this round")
+                .log();
+        throw new WindowsUnreadable(session, windows);
+    }
+
+    private static final Pattern SESSION_ABSENT =
+            Pattern.compile("no server running|can't find session|error connecting to");
+
+    /** The windows could not be listed, which says nothing about whether one exists. */
+    static final class WindowsUnreadable extends IllegalStateException {
+
+        WindowsUnreadable(String session, Processes.Result result) {
+            super("tmux list-windows " + session + " failed (exit " + result.exitCode() + "): " + result.stderr());
+        }
     }
 
     private void ensureSession(String session) {
