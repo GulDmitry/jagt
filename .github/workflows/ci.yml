@@ -87,6 +87,14 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" "$asset" --generate-notes --verify-tag
           fi
+      # Tags stay, so a pruned version can still be checked out and rebuilt.
+      - name: keep the newest 10 releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 1000 --json tagName,createdAt \
+            -q 'sort_by(.createdAt) | reverse | .[10:] | .[].tagName' |
+            while read -r tag; do gh release delete "$tag" --yes; done
 
   linux:
     name: e2e matrix + Linux drivers
