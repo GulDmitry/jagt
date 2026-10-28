@@ -846,7 +846,7 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("article .badge")).hasText("lift the stop \u2014 ships with no new note");
         assertThat(page.locator("article .badge")).hasAttribute("data-tip", Pattern.compile(
-                "a ship asked past 3 without a new note\\nLikely a jagt defect: inspect the sweeps in the log"
+                "a ship asked past 3 without a new note\\nCheck a new note or commit waits to ship; if one does, report a jagt defect"
                         + "\\nstopped 14 Nov 2023, 22:13 UTC"));
     }
 }

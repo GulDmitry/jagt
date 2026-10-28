@@ -269,7 +269,7 @@ class TaskViewTest {
 
         assertThat(view.ask()).isEqualTo("lift the stop \u2014 ships with no new note");
         assertThat(view.stop()).isEqualTo(new TaskView.Stop("ships with no new note",
-                "a ship asked past 3 without a new note", "Likely a jagt defect: inspect the sweeps in the log",
+                "a ship asked past 3 without a new note", "Check a new note or commit waits to ship; if one does, report a jagt defect",
                 1_700_000_000_000L));
     }
 

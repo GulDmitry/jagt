@@ -186,7 +186,7 @@ CHECKS and UNCHANGED_FAILURE stops are counted on a request; the others SHALL st
 #### Scenario: A stopped task says why
 - **WHEN** ABC-42 is stopped on SHIPS
 - **THEN** its card reads `lift the stop — ships with no new note`
-- **AND** the hover shows the evidence, the advice to inspect the sweeps in the log, and when it stopped
+- **AND** the hover shows the evidence, its trigger's advice, and when it stopped
 
 #### Scenario: You press a verb on a stopped task
 - **WHEN** you press `ship` or `deploy` on a stopped task

@@ -79,7 +79,7 @@ class AutoReviewCadenceTest {
         AutoReviewWatch watch = cadence.watch(task, 3L);
 
         assertThat(watch.note()).startsWith("no case sends deploy at IN_PROGRESS, set off by master")
-                .contains("Add a case").endsWith("lift or close");
+                .contains("add a case").endsWith("lift or close");
     }
 
     @Test

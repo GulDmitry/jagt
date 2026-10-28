@@ -66,7 +66,7 @@ export const cards = [
     title: 'Cache headers, retried', owner: 'YOU', attention: 'REQUIRED', ask: 'lift the stop — ships with no new note',
     hint: 'jagt stopped this task; hover for what it saw and what to check, then lift or close', status: 'CI_POLLING',
     statusLabel: 'out for review', stop: {reason: 'ships with no new note', at: now - 20 * MINUTE,
-      evidence: 'a ship asked past 3 without a new note in 24h', next: 'Likely a jagt defect: inspect the sweeps in the log'},
+      evidence: 'a ship asked past 3 without a new note in 24h', next: 'Check a new note or commit waits to ship; if one does, report a jagt defect'},
     actions: [verb('lift', 'Lift stop', 'flow', {primary: true}), verb('done', 'Done', 'flow'), ...tools]}),
   card('a pasted paragraph', {id: 'own-1', alias: 'a9', title: 'Spike: '
     + 'warm the cache on start, measure the first request, compare with a lazy load, and write down the numbers '

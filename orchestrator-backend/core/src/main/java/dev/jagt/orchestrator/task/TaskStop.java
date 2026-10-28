@@ -19,15 +19,14 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
 
     /** {@code reason} is the stop in five words or fewer; {@code next} is what a human reads after the evidence. */
     public enum Trigger {
-        STALLED("rounds bring nothing new", Trigger.DEFECT, true),
-        SHIPS("ships with no new note", Trigger.DEFECT, true),
-        MISS("no case for this step", "Add a case if one should send it"),
-        ROUNDS("same round sent too often", "Read what the session made of the last one"),
+        STALLED("rounds bring nothing new", "Give the session what the rounds lacked; if nothing was missing, report a jagt defect", true),
+        SHIPS("ships with no new note", "Check a new note or commit waits to ship; if one does, report a jagt defect", true),
+        MISS("no case for this step", "Set off by jagt or the Master: report a jagt defect; by a session: add a case if one should send it"),
+        ROUNDS("same round sent too often", "Answer the session's question, or give it what it lacked"),
         CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines", true),
         UNDELIVERED("a step never landed", "Check that the session's window is running"),
-        UNCHANGED_FAILURE("same failure again", "Change the tree, or read why the failure stands", true);
+        UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", true);
 
-        private static final String DEFECT = "Likely a jagt defect: inspect the sweeps in the log";
 
         private final String reason;
         private final String next;
