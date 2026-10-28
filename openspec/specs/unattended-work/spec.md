@@ -180,10 +180,10 @@ round bringing no new note; a failed verification or probe, a not-ready plan or 
 - **THEN** nothing is sent, nobody is asked, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`
 
 ### Requirement: A stopped task waits for your lift
-Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board
-SHALL ring it `jagt stopped`, its move line `lift the stop` followed by the stop's short reason. That line's hover
-SHALL carry the evidence, the trigger's advice and the stop's time in UTC. Only a human's `lift`, or a new request
-replacing the one the stop was counted on, SHALL clear it and count anew. A stop counted on no request SHALL stand.
+Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board SHALL ring it `jagt stopped`, its
+move line `lift the stop` followed by the stop's short reason. That line's hover SHALL carry the evidence, the trigger's advice and the stop's time
+in UTC. Only a human's `lift`, or a new request replacing the one the stop was counted on, SHALL clear it and count anew. Only SHIPS, STALLED,
+CHECKS and UNCHANGED_FAILURE stops are counted on a request; the others SHALL stand.
 
 #### Scenario: A stopped task says why
 - **WHEN** ABC-42 is stopped on SHIPS

@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.task;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -644,10 +646,22 @@ class TaskStateTest {
     void keepsAStopCountedOnNoRequestWhenARequestReplacesTheOneOpen() {
         TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
                 .withMrUrl("https://host/mr/571", 1_000)
-                .withStop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 2, "same failure"));
+                .withStop(new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running"));
 
         TaskState reopened = stopped.withMrUrl("https://host/mr/573", 3_000);
 
         assertThat(reopened.stop()).isEqualTo(stopped.stop());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStop.Trigger.class, names = {"CHECKS", "UNCHANGED_FAILURE"})
+    void liftsAPipelineStopWhenARequestReplacesTheOneItWasCountedOn(TaskStop.Trigger trigger) {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(trigger, 2, "evidence").countedOn(List.of("https://host/mr/571")));
+
+        TaskState reopened = stopped.withMrUrl("https://host/mr/573", 3_000);
+
+        assertThat(reopened.stopped()).isFalse();
     }
 }

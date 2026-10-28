@@ -23,9 +23,9 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         SHIPS("ships with no new note", Trigger.DEFECT, true),
         MISS("no case for this step", "Add a case if one should send it"),
         ROUNDS("same round sent too often", "Read what the session made of the last one"),
-        CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines"),
+        CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines", true),
         UNDELIVERED("a step never landed", "Check that the session's window is running"),
-        UNCHANGED_FAILURE("same failure again", "Change the tree, or read why the failure stands");
+        UNCHANGED_FAILURE("same failure again", "Change the tree, or read why the failure stands", true);
 
         private static final String DEFECT = "Likely a jagt defect: inspect the sweeps in the log";
 

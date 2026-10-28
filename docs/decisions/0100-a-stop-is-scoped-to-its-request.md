@@ -15,7 +15,8 @@ Accepted 2026-10-28. Amends [0061](0061-jagt-stops-a-task-it-suspects-it-is-loop
 
 ## Decision
 
-- `TaskStop.request` records the request URLs a SHIPS or STALLED stop was counted on; other triggers record none.
+- `TaskStop.request` records the request URLs a SHIPS, STALLED, CHECKS or UNCHANGED_FAILURE stop was counted on;
+  ROUNDS, MISS and UNDELIVERED record none.
 - A request written for a repository that leaves a recorded URL out of the task's requests voids the stop.
 - It clears through `TaskState.lifted`, the one clearing path, and logs `stop lifted` with `cause=new request`.
 - A stop with no request, and the same request written again, stand.
@@ -25,7 +26,8 @@ Accepted 2026-10-28. Amends [0061](0061-jagt-stops-a-task-it-suspects-it-is-loop
 ## Rejected
 
 - Lifting on any write of a request URL: a repeated CI_POLLING on the same request would clear the stop.
-- Recording a request on every trigger: a failed verification or plan says nothing about a request.
+- Recording a request on every trigger: a failed verification or plan, a missed case or an undelivered step says nothing about a request.
+- Leaving CHECKS and UNCHANGED_FAILURE unscoped: both are facts about one request's pipeline, and a new request is a new pipeline.
 
 ## Reopen when
 
