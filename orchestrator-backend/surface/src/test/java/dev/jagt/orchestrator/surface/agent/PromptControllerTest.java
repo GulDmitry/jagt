@@ -27,7 +27,7 @@ class PromptControllerTest {
     @Test
     void reportsTheSessionWorkingWhenTheGateLetsThePromptThrough() {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-        when(gate.answer("ABC-1", task, "go on")).thenReturn("");
+        when(gate.answer("ABC-1", task, "go on", Optional.empty())).thenReturn("");
         when(sessions.report("working", "/wt/ABC-1-proj", typed)).thenReturn("");
 
         String answered = new PromptController(state, gate, sessions).prompt("/wt/ABC-1-proj", typed);
@@ -39,7 +39,7 @@ class PromptControllerTest {
     @Test
     void answersTheGatesBlockWithoutReportingTheSessionWorking() {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-        when(gate.answer("ABC-1", task, "go on")).thenReturn("{\"decision\": \"block\"}");
+        when(gate.answer("ABC-1", task, "go on", Optional.empty())).thenReturn("{\"decision\": \"block\"}");
 
         String answered = new PromptController(state, gate, sessions).prompt("/wt/ABC-1-proj", typed);
 
@@ -56,6 +56,18 @@ class PromptControllerTest {
 
         assertThat(answered).isEmpty();
         verify(gate, never()).answer(org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString());
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void judgesThePromptByTheLogTheHookNamed() {
+        SessionHookReport named = new SessionHookReport("/logs/s.jsonl", null, null, null, null, null,
+                java.util.List.of(), "go on");
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        when(gate.answer("ABC-1", task, "go on", Optional.of(java.nio.file.Path.of("/logs/s.jsonl")))).thenReturn("{}");
+
+        String answered = new PromptController(state, gate, sessions).prompt("/wt/ABC-1-proj", named);
+
+        assertThat(answered).isEqualTo("{}");
     }
 }

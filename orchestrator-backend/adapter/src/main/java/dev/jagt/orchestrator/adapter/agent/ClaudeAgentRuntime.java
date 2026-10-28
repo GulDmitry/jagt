@@ -162,8 +162,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
-    public OptionalLong turnEndedAt(Path worktree) {
-        return ClaudeTranscripts.turnEndedAt(ClaudeTranscripts.projectsDir(), worktree);
+    public OptionalLong turnEndedAt(Path sessionLog) {
+        return ClaudeTranscripts.turnEndedAt(sessionLog);
     }
 
     @Override

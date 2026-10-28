@@ -200,7 +200,7 @@ class ClaudeTranscriptsTest {
                 {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T13:16:31.000Z"}
                 """);
 
-        var endedAt = ClaudeTranscripts.turnEndedAt(root, Path.of("/wt/ABC-1-proj"));
+        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
 
         assertThat(endedAt).hasValue(Instant.parse("2026-10-27T13:16:31Z").toEpochMilli());
     }
@@ -217,7 +217,7 @@ class ClaudeTranscriptsTest {
                 {"type":"user","timestamp":"2026-10-27T18:06:12.000Z"}
                 """);
 
-        var endedAt = ClaudeTranscripts.turnEndedAt(root, Path.of("/wt/ABC-1-proj"));
+        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
 
         assertThat(endedAt).hasValue(Instant.parse("2026-10-27T13:16:31Z").toEpochMilli());
     }
@@ -232,27 +232,41 @@ class ClaudeTranscriptsTest {
                 {"type":"assistant","timestamp":"2026-10-27T18:06:20.000Z"}
                 """);
 
-        var endedAt = ClaudeTranscripts.turnEndedAt(root, Path.of("/wt/ABC-1-proj"));
+        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
 
         assertThat(endedAt).isEmpty();
     }
 
     @Test
-    void readsTheTurnEndFromTheInteractiveLogNotANewerHeadlessOne(@TempDir Path root) throws Exception {
+    void readsTheTurnEndFromTheNamedLogNotANewerOneBesideIt(@TempDir Path root) throws Exception {
         Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
-        Files.setLastModifiedTime(Files.writeString(logs.resolve("session.jsonl"), """
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("s.jsonl"), """
                 {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T13:00:00.000Z"}
                 {"type":"assistant","timestamp":"2026-10-27T13:16:30.000Z"}
                 {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T13:16:31.000Z"}
                 """), FileTime.fromMillis(1_700_000_000_000L));
-        Files.setLastModifiedTime(Files.writeString(logs.resolve("headless.jsonl"), """
-                {"type":"user","entrypoint":"sdk-cli","timestamp":"2026-10-27T17:00:00.000Z"}
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("newer.jsonl"), """
+                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T17:00:00.000Z"}
                 {"type":"assistant","timestamp":"2026-10-27T17:00:05.000Z"}
                 {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T17:00:06.000Z"}
                 """), FileTime.fromMillis(1_700_000_600_000L));
 
-        var endedAt = ClaudeTranscripts.turnEndedAt(root, Path.of("/wt/ABC-1-proj"));
+        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
 
         assertThat(endedAt).hasValue(Instant.parse("2026-10-27T13:16:31Z").toEpochMilli());
+    }
+
+    @Test
+    void answersNoTurnEndForASessionWhoseLogDoesNotExistYet(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("old.jsonl"), """
+                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T13:00:00.000Z"}
+                {"type":"assistant","timestamp":"2026-10-27T13:16:30.000Z"}
+                {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T13:16:31.000Z"}
+                """);
+
+        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("fresh.jsonl"));
+
+        assertThat(endedAt).isEmpty();
     }
 }

@@ -20,7 +20,8 @@ cleared it on 2026-10-27: the turn ended 13:16Z, a prompt came at 18:06Z, and th
 - A turn is open when an assistant entry is newer than the last turn end: no idle, no cold prompt.
 - Only assistant and turn-end entries are read. The new prompt in the log is no objection, and an idle compaction
   (`compact_boundary` plus its summary) does not reset idle.
-- Headless runs share the directory; only the newest interactive log is read.
+- The turn end is read from the log the prompting session names, never the newest in the directory:
+  a fresh session has no log yet and is not cold.
 - `SessionProbe` keeps no prompt mark.
 
 ## Rejected

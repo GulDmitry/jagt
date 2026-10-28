@@ -152,8 +152,8 @@ public interface AgentRuntime {
         return List.of();
     }
 
-    /** When the session in {@code worktree} ended its last turn, by its own record; EMPTY while a turn is open or where none is kept. */
-    default OptionalLong turnEndedAt(Path worktree) {
+    /** When the session keeping {@code sessionLog} ended its last turn; EMPTY while a turn is open, where the log does not exist yet or none is kept. */
+    default OptionalLong turnEndedAt(Path sessionLog) {
         return OptionalLong.empty();
     }
 

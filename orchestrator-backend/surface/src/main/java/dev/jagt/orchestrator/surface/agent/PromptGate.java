@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Path;
+import java.util.Optional;
+
 /**
  * A prompt typed into a session whose cache has expired is the same instruction as one jagt relays, so it goes to a
  * fresh session. The human's message is never lost: it is blocked only after it is on disk and the fresh window is
@@ -29,9 +32,9 @@ public class PromptGate {
     private final ColdPrompts coldPrompts;
     private final AgentRuntime runtime;
 
-    public String answer(String taskId, @Nullable TaskState task, String prompt) {
+    public String answer(String taskId, @Nullable TaskState task, String prompt, Optional<Path> sessionLog) {
         if (task == null || prompt.isBlank() || prompt.startsWith(SLASH_COMMAND) || prompt.contains(PASTED_IMAGE)
-                || !cold.isCold(task)) {
+                || !cold.isCold(sessionLog)) {
             return "";
         }
         try {

@@ -84,31 +84,20 @@ final class ClaudeTranscripts {
     }
 
     /**
-     * When the session's last turn ended, by its own record; EMPTY while a turn is open or where none is kept. A new
-     * prompt and a compaction are no entry of the turn, so an idle compaction does not reset idle.
+     * When the session that keeps {@code sessionLog} ended its last turn; EMPTY while a turn is open or where the log
+     * does not exist yet. A new prompt and a compaction are no entry of the turn, so an idle compaction does not
+     * reset idle.
      */
-    static OptionalLong turnEndedAt(Path projectsDir, Path sessionDirectory) {
-        Path dir = projectsDir.resolve(slug(sessionDirectory));
-        if (!Files.isDirectory(dir)) {
-            return OptionalLong.empty();
-        }
-        Path newest;
-        try (Stream<Path> logs = Files.list(dir)) {
-            newest = logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
-                    .filter(ClaudeTranscripts::interactive)
-                    .max(Comparator.comparingLong(FileStamps::modified)).orElse(null);
-        } catch (IOException | RuntimeException unreadable) {
-            return unreadableRecord(dir, unreadable);
-        }
-        if (newest == null) {
+    static OptionalLong turnEndedAt(Path sessionLog) {
+        if (!Files.isRegularFile(sessionLog)) {
             return OptionalLong.empty();
         }
         long[] last = {0, 0};
-        try (Stream<String> lines = Files.lines(newest)) {
+        try (Stream<String> lines = Files.lines(sessionLog)) {
             lines.filter(line -> line.contains(ASSISTANT) || line.contains(TURN_END))
                     .forEach(line -> stamp(line, last));
         } catch (IOException | RuntimeException unreadable) {
-            return unreadableRecord(newest, unreadable);
+            return unreadableRecord(sessionLog, unreadable);
         }
         return last[1] > 0 && last[1] >= last[0] ? OptionalLong.of(last[1]) : OptionalLong.empty();
     }
