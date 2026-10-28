@@ -44,6 +44,28 @@ class ReadOnlyToolsTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"mcp__gitlab__whoami", "mcp__gitlab__discover_tools", "mcp__gitlab__get_job_trace",
+            "mcp__gitlab__list_pipeline_jobs"})
+    void allowsAReadThatAsksWhoIsSignedInOrWhichToolsTheHostHas(String tool) {
+        var pinned = AssistantProperties.empty().withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
+
+        List<String> allowed = new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), null).allowed(AssistantCallKind.MR_READ);
+
+        assertThat(allowed).anyMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"mcp__gitlab__create_merge_request", "mcp__gitlab__update_merge_request",
+            "mcp__gitlab__merge_merge_request", "mcp__gitlab__delete_branch", "mcp__gitlab__post_note"})
+    void neverAllowsAWriteOfTheServerWhoseReadsAreAllowed(String tool) {
+        var pinned = AssistantProperties.empty().withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
+
+        List<String> allowed = new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), null).allowed(AssistantCallKind.MR_READ);
+
+        assertThat(allowed).noneMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"mcp__gitlab__save_note", "mcp__gitlab__create_note", "mcp__gitlab__resolve_discussions"})
     void refusesAWriteWhoseNameHoldsDiscussionsOrNotes(String tool) {
         assertThat(ReadOnlyTools.MCP_WRITES)

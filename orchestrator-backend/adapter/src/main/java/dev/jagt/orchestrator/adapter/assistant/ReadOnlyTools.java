@@ -31,7 +31,7 @@ class ReadOnlyTools {
      * {@code query} is none: a database server's query runs SQL.
      */
     private static final List<String> READ_VERBS = List.of("get", "list", "search", "read", "fetch", "find",
-            "describe", "lookup");
+            "describe", "lookup", "whoami", "discover");
 
     /** A read named by what it returns, not by a verb. */
     private static final List<String> READ_NOUNS = List.of("discussions", "notes");
