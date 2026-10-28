@@ -57,6 +57,7 @@ class ToolGateTest {
             "git push origin ABC-42:ABC-42",
             "git push origin refs/heads/ABC-42:refs/heads/ABC-42",
             "git push --force-with-lease origin ABC-42",
+            "git fetch && git rebase origin/release/x && git push --force-with-lease origin ABC-42",
             "git push -o ci.skip origin ABC-42",
             "git add -A && git commit -m 'ABC-42 fix' && git push origin ABC-42",
             "git fetch origin dev",

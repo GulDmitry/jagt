@@ -18,14 +18,18 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 
 ### Requirement: Nothing rewrites what left the machine
 `GitDeploy` (`HEAD:<target>`) and `GitWorktrees` (`refs/heads/x:refs/heads/x`) SHALL push **one** branch, never
-`--force` or `-u`; no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6), bar the resume
-rebase's `--force-with-lease` of the task's own branch. `detachUpstream` unsets the inherited `origin/<baseBranch>` at
-creation. Each git call locks its repository (shared checkout). A task named after a base or
-deploy branch MUST be refused.
+`--force` or `-u`; no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6). The one exception:
+a rebase of the task's own branch onto its request's target. The resume or the session pushes it under
+`--force-with-lease` when the target moved on. `detachUpstream` unsets the inherited `origin/<baseBranch>` at creation. Each
+git call locks its repository (shared checkout). A task named after a base or deploy branch MUST be refused.
 
 #### Scenario: Release request
 - **WHEN** resuming a `dev` → `main` request
 - **THEN** refused
+
+#### Scenario: Target moved on
+- **WHEN** the target gained commits after the branch was cut, or the session ships
+- **THEN** it rebases onto the target and lease-pushes before the request is updated, so the request lists only the task's commits
 
 ### Requirement: No verdict gates deploy
 `FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, PLAN_PENDING, IN_PROGRESS,
@@ -118,10 +122,9 @@ jagt records it (`TaskRetarget`) only once origin has the branch and every workt
 - **THEN** it is refused and the base stays
 
 ### Requirement: Resume reconciles origin and target
-`rebaseOntoTarget` SHALL put it on what origin holds: fast-forwarded when behind, REFUSED when both sides carry commits,
-left alone when only this machine's do. Then it replays on its target, pushed back under a lease, a refusal
-undoing it; a CONFLICTING rebase stands in the worktree for the session. One this machine never had comes from
-`origin/<branch>`, not the request's target.
+`rebaseOntoTarget` SHALL put it on what origin holds: fast-forwarded when behind, REFUSED when both sides carry commits, left alone
+when only this machine's do. Then it replays on its target, pushed back under a lease, a refusal undoing it; a CONFLICTING rebase
+stands in the worktree for the session. One this machine never had comes from `origin/<branch>`, not the request's target.
 
 #### Scenario: Base checkout
 - **WHEN** the base repository holds the branch
@@ -138,10 +141,9 @@ guardrail: a runtime-built push, an alias or a script passes; `deploy`, `revert`
 - **THEN** a stub runs the repository's own, re-resolved at run time with the override off, guard first
 
 ### Requirement: ToolGate refuses the line
-`ToolGate` (`POST /api/agent/tool`) SHALL refuse that push too. It also refuses a push naming no branch, deleting the
-task's (`--de`, `-ud`) or forced unleased; `HEAD` unless bare and unmoved; `send-pack`, `http-push`, `receive-pack`;
-a `gh`/`glab` call but a read, however wrapped (quoted as data, it runs); a line naming the board's port or the
-Master's token.
+`ToolGate` (`POST /api/agent/tool`) SHALL refuse that push too. It also refuses a push naming no branch, deleting the task's
+(`--de`, `-ud`) or forced unleased; `HEAD` unless bare and unmoved; `send-pack`, `http-push`, `receive-pack`; a `gh`/`glab`
+call but a read, however wrapped (quoted as data, it runs); a line naming the board's port or the Master's token.
 
 #### Scenario: Skipping the hook
 - **WHEN** a push line holds `--no-verify`, `git -c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c` or

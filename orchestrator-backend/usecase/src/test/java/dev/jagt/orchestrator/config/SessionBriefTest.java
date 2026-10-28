@@ -20,6 +20,18 @@ class SessionBriefTest {
     }
 
     @Test
+    void theShipStepRebasesOntoTheMovedTargetBeforeItPushes(@TempDir Path root) throws Exception {
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        String ship = brief.section("ship").orElseThrow();
+
+        assertThat(ship).contains("`git fetch`", "`git rebase`", "`--force-with-lease`");
+        assertThat(ship.indexOf("`git rebase`")).isLessThan(ship.indexOf("Push the branch named above"));
+        assertThat(ship.indexOf("Push the branch named above")).isLessThan(ship.indexOf("Open the request"));
+    }
+
+    @Test
     void readsTheShippedStepTheHumansCopyLacks(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("session-brief.md"), "## verify\n\nrun it\n");
         Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");

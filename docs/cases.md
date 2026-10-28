@@ -136,6 +136,11 @@ Families:
 | I5 | a session idles past its cache and jagt restarts or loses the hook's mark → a prompt still goes to a fresh session, idle read from the transcript's turn end | seen 2026-10-27: turn ended 13:16Z, a prompt at 18:06Z passed the gate as warm | `ColdSessionsTest`, `ClaudeTranscriptsTest` |
 | I6 | a prompt is typed into the fresh session a cold prompt went to → it is judged by its own log, which does not exist yet, so it is never relayed again | seen 2026-10-28 08:02Z: the newest log in the directory was the old session's, an endless restart every ~2.5 s | `ColdSessionsTest`, `ClaudeTranscriptsTest` |
 
+## J — git, worktrees, several repositories
+| id | the case, one line | defects | pinned by |
+|----|--------------------|---------|-----------|
+| J1 | a long-lived branch's request listed commits its moved target already held; the session was forbidden to rebase → it rebases onto the target and lease-pushes, ordered by the `ship` step | seen 2026-10-28 | `SubAgentBriefingTest`, `SessionBriefTest`, `ToolGateTest` |
+
 ## L — the tests themselves
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

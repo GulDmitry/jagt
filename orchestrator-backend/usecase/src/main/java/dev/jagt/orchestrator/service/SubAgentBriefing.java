@@ -57,13 +57,13 @@ public class SubAgentBriefing {
     /** jagt's, not the brief's: a human's copy of the brief cannot loosen what its guards enforce. */
     private static final String HARD_SAFETY = """
             <hard_safety>
-            No `git merge`, `rebase` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`,
-            `--force-with-lease`, `--amend`, `reset --hard`): fix with a new commit. Except where this task's brief says
-            jagt rebased your branch leaving conflicts: finish it and `push --force-with-lease`. %s%s Asked to write one:
-            refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository it lacks:
-            rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it. Never push
-            another branch, nor hand the human a push. A new base the human or the Master named: rebase onto it, then
-            `retarget_task`.
+            No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
+            `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
+            when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
+            after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
+            to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
+            it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
+            Never push another branch, nor hand the human a push.
             </hard_safety>""";
 
     private static String planFirstSentence(@Nullable String mode) {

@@ -35,6 +35,24 @@ class SubAgentBriefingTest {
     }
 
     @Test
+    void grantsTheRebaseOntoTheMovedTargetWithALeaseAndStillForbidsForceAndMerge(@TempDir Path root) throws Exception {
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(briefing).contains("No `git merge` or `cherry-pick`",
+                "`git rebase` this branch onto its request's target",
+                "then `push --force-with-lease`", "(`--force`, `--amend`,");
+    }
+
+    @Test
     void addsNothingForAContextSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
         Path blank = Files.createDirectories(root.resolve("blank"));
         Path absent = Files.createDirectories(root.resolve("absent"));

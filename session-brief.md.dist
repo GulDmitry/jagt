@@ -83,7 +83,10 @@ This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.
 1. Commit ALL current changes. Where the request is still to be opened, the message is the title above, EXACTLY.
    Where it is already open: a CONCISE one-line message STARTING with the task, then ONLY what you just changed,
    imperative, max ~10 words. Example: "ABC-42 Guard null sort key, fix header toggle".
-2. Push the branch named above.
+2. `git fetch`, then in EACH repository: where `origin/<its target listed above>` holds commits this branch lacks,
+   `git rebase` this branch onto it. Resolve conflicts on the code's own terms (rule 1 if you cannot). Then push
+   with `--force-with-lease`. Where the target did not move, push plainly. Do this before anything below: the request
+   lists only this task's commits. Push the branch named above, nothing else.
 3. Open the request each repository is missing via your code-host MCP: source the branch above -> the target
    listed above, with the title above EXACTLY as given. Leave the description empty, or one line for a decision
    the diff cannot show — never a report of what you did.

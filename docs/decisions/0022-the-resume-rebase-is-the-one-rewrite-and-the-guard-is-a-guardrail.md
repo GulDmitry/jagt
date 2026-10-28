@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-10-08. Supersedes the 0005 bullet "no `--force`, no `--force-with-lease`" and widens 0004's
+Accepted 2026-10-08. Amended by [0099](0099-the-session-rebases-its-own-branch-onto-the-moved-target.md): the session
+rebases too. Supersedes the 0005 bullet "no `--force`, no `--force-with-lease`" and widens 0004's
 "`--no-verify` skips it".
 
 ## Context

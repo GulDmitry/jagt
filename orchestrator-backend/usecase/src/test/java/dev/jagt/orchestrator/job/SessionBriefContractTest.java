@@ -132,7 +132,7 @@ class SessionBriefContractTest {
         verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());
         assertThat(relayed.getValue()).contains("web: /w/ABC-42,", "api: /w/ABC-42-api,", "Push branch ABC-42.",
                         "ONE commit and ONE push PER REPOSITORY listed above")
-                .doesNotContain("rebase", "cherry-pick", "--force", "--amend", "reset --hard", "git merge");
+                .doesNotContain("cherry-pick", "--amend", "reset --hard", "git merge");
         assertThat(brief).contains("(your CWD): /w/ABC-42\n", "api: /w/ABC-42-api", "push only to `ABC-42`");
     }
 
@@ -156,7 +156,6 @@ class SessionBriefContractTest {
         verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue().instructions()).contains("`git rebase --continue`",
                 "`git push --force-with-lease origin widget-fix`").doesNotContain("cherry-pick", "--amend");
-        assertThat(brief).contains("jagt rebased your branch leaving conflicts", "`push --force-with-lease`",
-                "push only to `widget-fix`");
+        assertThat(brief).contains("`push --force-with-lease`", "push only to `widget-fix`");
     }
 }
