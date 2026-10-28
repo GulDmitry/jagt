@@ -60,4 +60,15 @@ class SessionBriefTest {
 
         assertThat(brief.line("start")).isEqualTo("Read the notes, then work.");
     }
+
+    @Test
+    void aCarriedTaskKeepsItsBoardStatusUntilAChangeBegins(@TempDir Path root) throws Exception {
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(brief.line("start"))
+                .contains("One carried from a previous session keeps the status the board shows")
+                .contains("answer a question and end your turn without a report")
+                .contains("report IN_PROGRESS when a change begins");
+    }
 }

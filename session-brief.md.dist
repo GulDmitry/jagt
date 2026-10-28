@@ -175,8 +175,10 @@ Do NOT push or post anything yourself.
 
 ## start
 
-You are the sub-agent for this worktree. Read task_notes.md (if present) and task_context.md, and set your status
-to IN_PROGRESS via update_agent_status. Then work on the task by the rules already in your context.
+You are the sub-agent for this worktree. Read task_notes.md (if present) and task_context.md. A task new to you: set
+your status to IN_PROGRESS via update_agent_status. One carried from a previous session keeps the status the board
+shows until you start a change: answer a question and end your turn without a report; report IN_PROGRESS when a
+change begins. Then work on the task by the rules already in your context.
 
 ## revive
 
