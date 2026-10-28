@@ -32,11 +32,17 @@ public record FinishedTask(
         @Nullable String masterVerdict,
         @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
         // List price of the agent session plus jagt's own reads of this task, or null where the session's spend was never read.
-        @Nullable Double costUsd
+        @Nullable Double costUsd,
+        // The task's own reads and the agent sessions' spend apart, null where nothing was counted.
+        @Nullable TokenUsage usage,
+        @Nullable TokenUsage agentUsage,
+        // The session logs the agent spend was read from: paths only, the logs themselves are not kept.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> transcripts
 ) {
 
     public FinishedTask {
         refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
+        transcripts = transcripts == null ? List.of() : List.copyOf(transcripts);
     }
 
     public static FinishedTask of(String id, TaskState task, long finishedAt) {
@@ -46,7 +52,13 @@ public record FinishedTask(
     public static FinishedTask of(String id, TaskState task, long finishedAt, @Nullable String masterVerdict) {
         return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
                 task.rounds(), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict,
-                task.refusals(), task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd());
+                task.refusals(), task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd(),
+                countedOrNull(task.usageOrNone()), countedOrNull(task.agentSpendOrNone().usageOrNone()),
+                List.copyOf(task.agentSpendOrNone().marks().keySet()));
+    }
+
+    private static @Nullable TokenUsage countedOrNull(TokenUsage usage) {
+        return usage.isNone() ? null : usage;
     }
 
     /** Whether the reviewer read this task at all; every comparison below is over these and no others. */

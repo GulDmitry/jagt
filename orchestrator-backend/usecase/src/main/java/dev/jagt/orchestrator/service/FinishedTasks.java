@@ -20,6 +20,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
@@ -58,9 +59,13 @@ public class FinishedTasks {
      * verdict is read HERE, from a worktree about to go — the kept artifacts are for a human and nothing
      * parses them, so a verdict nobody put in this record could never be compared with what happened next.
      */
-    public void record(String taskId) {
-        stateService.task(taskId).ifPresent(task -> append(FinishedTask.of(taskId, task,
-                clock.millis(), reviews.of(task).map(MasterReview.Verdict::said).orElse(null))));
+    public Optional<FinishedTask> record(String taskId) {
+        return stateService.task(taskId).map(task -> {
+            FinishedTask finished = FinishedTask.of(taskId, task, clock.millis(),
+                    reviews.of(task).map(MasterReview.Verdict::said).orElse(null));
+            append(finished);
+            return finished;
+        });
     }
 
     /** Newest first. A line written by an older jagt that no longer parses is skipped, never fatal. */

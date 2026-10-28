@@ -189,13 +189,13 @@ class UsageStatsRendererTest {
     void takesTheMedianCostOfDeployedTasksAndLeavesOutOneWithAnUnreadSpend() {
         List<FinishedTask> finished = List.of(
                 new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 1.0),
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 1.0, null, null, null),
                 new FinishedTask("ABC-2", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 4.0),
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 4.0, null, null, null),
                 new FinishedTask("ABC-3", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null),
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null, null, null, null),
                 new FinishedTask("ABC-4", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, null)), null, null, 90.0));
+                        List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, null)), null, null, 90.0, null, null, null));
 
         assertThat(UsageStatsRenderer.costPerDeployed(finished))
                 .isEqualTo("median cost per deployed task: 2.50 USD (2 of 3 deployed with a known spend)\n");
@@ -205,7 +205,7 @@ class UsageStatsRendererTest {
     void saysUnknownWhenNoDeployedTaskHasAKnownSpend() {
         List<FinishedTask> finished = List.of(
                 new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null));
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null, null, null, null));
 
         assertThat(UsageStatsRenderer.costPerDeployed(finished))
                 .isEqualTo("median cost per deployed task: unknown (1 deployed, none with a known spend)\n");

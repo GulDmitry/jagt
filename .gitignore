@@ -56,7 +56,7 @@ finished.jsonl
 usage-by-day.jsonl
 interactions.jsonl
 interactions.jsonl.1
-/artifacts/
+/archive/
 # The masterEval suite's own root, trusted once by a human and rebuilt each run, and its run lock
 .master-eval/
 .master-eval.lock

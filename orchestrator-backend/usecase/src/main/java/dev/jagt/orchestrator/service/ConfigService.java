@@ -62,7 +62,20 @@ public class ConfigService implements LoopBreaker.Current {
                              @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
                              @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
                              @Nullable Integer maxStartsPerDay, @Nullable LoopBreakerConfig loopBreaker,
-                             @Nullable Integer conflictStallMinutes) {
+                             @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive) {
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record ArchiveConfig(@Nullable Integer maxMegabytes) {
+
+            public static ArchiveConfig defaults() {
+                return new ArchiveConfig(null);
+            }
+
+            public long maxBytesOrDefault() {
+                return (maxMegabytes == null || maxMegabytes <= 0 ? 20L : maxMegabytes) * 1024 * 1024;
+            }
+        }
 
         /** Each round ceiling read as at most one below what a task keeps of its rounds. */
         @JsonIgnoreProperties(ignoreUnknown = true)
@@ -448,7 +461,7 @@ public class ConfigService implements LoopBreaker.Current {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null);
         }
 
         /** Unattended starts one local day may hold before the rest wait for tomorrow or for you. */
@@ -501,6 +514,11 @@ public class ConfigService implements LoopBreaker.Current {
         @Override
         public TrackerConfig tracker() {
             return tracker == null ? TrackerConfig.defaults() : tracker;
+        }
+
+        @Override
+        public ArchiveConfig archive() {
+            return archive == null ? ArchiveConfig.defaults() : archive;
         }
 
     }

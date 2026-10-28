@@ -23,8 +23,7 @@ public class DoneCapability implements TaskCapability {
     @Override
     public Outcome run(String taskId) {
         // Before retirement: it drops the state entry, and the record is built from it.
-        finished.record(taskId);
-        artifacts.keep(taskId);
+        finished.record(taskId).ifPresent(artifacts::keep);
         return Outcome.gone(retirement.retire(taskId));
     }
 }

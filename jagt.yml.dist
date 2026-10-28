@@ -1,7 +1,7 @@
 # jagt — your whole configuration, and the only file there is: `cp jagt.yml.dist jagt.yml`, then fill in ONE
 # project. Every other key already has the value shown and can stay commented out.
 # `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview`, `master`, `tracker`, `maxStartsPerDay`,
-# `loopBreaker` and `conflictStallMinutes` are re-read on every access; every other key is read once, at startup.
+# `loopBreaker`, `conflictStallMinutes` and `archive` are re-read on every access; every other key is read once, at startup.
 
 orchestrator:
 
@@ -23,6 +23,8 @@ orchestrator:
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
+  archive:
+    maxMegabytes: 20       # `archive/` beside state.json, what `done` keeps; past it the oldest snapshots go first
   maxStartsPerDay: 50      # unattended starts per local day (act moves, tracker intake, auto-review polls); past it they
                            # wait for tomorrow or for you pressing `act stopped`. Counted in memory: a restart begins at zero
   loopBreaker:             # stops a task jagt suspects it is looping on, whoever asked; only your `lift` resumes it

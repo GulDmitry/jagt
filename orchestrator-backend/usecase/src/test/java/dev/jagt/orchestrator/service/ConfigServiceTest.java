@@ -324,6 +324,12 @@ class ConfigServiceTest {
     }
 
     @ParameterizedTest
+    @CsvSource(value = {"null,20971520", "0,20971520", "1,1048576", "5,5242880"}, nullValues = "null")
+    void resolvesHowManyBytesTheArchiveMayHold(Integer configured, long expected) {
+        assertThat(ConfigFile.ArchiveConfig.defaults().withMaxMegabytes(configured).maxBytesOrDefault()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
     @CsvSource(value = {"null,30", "0,30", "1,1", "12,12"}, nullValues = "null")
     void resolvesHowManyFilesAnAutoplanReads(Integer configured, int expected) {
         assertThat(ConfigFile.AutoplanConfig.defaults().withFiles(configured).filesOrDefault()).isEqualTo(expected);

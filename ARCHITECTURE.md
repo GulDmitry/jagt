@@ -119,7 +119,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | a round | what the agent means to answer, before anything is posted | `review_replies.md` |
 | any report | the sentence, its stamp, whose move it is | `state.json` |
 | `deploy` | the merge commit `revert` walks back | the deploy branch, and `deployCommit` on the task |
-| `done` | the documents, copied out before the worktree goes | `artifacts/<date>-<taskId>/`, beside `state.json` |
+| `done` | the documents and `finished.json`, copied out before the worktree goes | `archive/<yyMMdd-HHmmss>-<taskId>/`, beside `state.json` |
 
 - **Only the middle is in git**: branch, commits and request outlive the task; the documents are copied out
   first (`capability/done/FinishedArtifacts`) and never read back, so changing their format migrates nothing.

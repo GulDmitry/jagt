@@ -143,7 +143,7 @@ class FinishedTaskTest {
 
     @Test
     void tookNothingWhenNoStepWasEverRecorded() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 6_000L, 0, null, 0, List.of(), null, null, null);
+        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 6_000L, 0, null, 0, List.of(), null, null, null, null, null, null);
 
         assertThat(task.tookMillis()).isZero();
     }
@@ -163,5 +163,26 @@ class FinishedTaskTest {
                 .usage(TokenUsage.ofCall(10, 0, 10, 0.5)).build(), 2L);
 
         assertThat(task.costUsd()).isNull();
+    }
+
+    @Test
+    void carriesBothUsageBreakdownsAndTheTranscriptPaths() {
+        var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE)
+                .usage(TokenUsage.ofCall(10, 0, 10, 0.5))
+                .agentSpend(new AgentSpend(TokenUsage.ofCall(30, 5, 20, 2.0), java.util.Map.of("/logs/a.jsonl", 9L)))
+                .build(), 2L);
+
+        assertThat(task.usage()).isEqualTo(TokenUsage.ofCall(10, 0, 10, 0.5));
+        assertThat(task.agentUsage()).isEqualTo(TokenUsage.ofCall(30, 5, 20, 2.0));
+        assertThat(task.transcripts()).containsExactly("/logs/a.jsonl");
+    }
+
+    @Test
+    void carriesNoUsageForACountThatNeverReadAnything() {
+        var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE).build(), 2L);
+
+        assertThat(task.usage()).isNull();
+        assertThat(task.agentUsage()).isNull();
+        assertThat(task.transcripts()).isEmpty();
     }
 }
