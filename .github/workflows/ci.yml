@@ -87,13 +87,17 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" "$asset" --generate-notes --verify-tag
           fi
-      # Tags stay, so a pruned version can still be checked out and rebuilt.
-      - name: keep the newest 10 releases
+      # A patch supersedes the patches before it; tags stay, so a pruned version can still be checked out and rebuilt.
+      - name: keep every patch of the current minor and the last patch of the ten minors before it
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release list --limit 1000 --json tagName,createdAt \
-            -q 'sort_by(.createdAt) | reverse | .[10:] | .[].tagName' |
+          gh release list --limit 1000 --json tagName,createdAt -q '
+            map(. + {minor: (.tagName | try capture("^v(?<v>[0-9]+[.][0-9]+)").v catch .)})
+            | sort_by(.createdAt) | reverse | .[0].minor as $cur
+            | ([.[] | select(.minor != $cur)] | group_by(.minor) | map(max_by(.createdAt))
+               | sort_by(.createdAt) | reverse | .[:10] | map(.tagName)) as $lasts
+            | .[] | select(.minor != $cur and (.tagName as $t | $lasts | index($t) | not)) | .tagName' |
             while read -r tag; do gh release delete "$tag" --yes; done
 
   linux:
