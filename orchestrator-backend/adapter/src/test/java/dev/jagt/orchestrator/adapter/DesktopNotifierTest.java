@@ -29,4 +29,15 @@ class DesktopNotifierTest {
 
         verify(os).notify("jagt · restart needed", "the running jar was rebuilt", null);
     }
+
+    @Test
+    void namesTheAliasBeforeTheTaskIdInTheBannerTitle() {
+        UserNotifier os = mock(UserNotifier.class);
+
+        new DesktopNotifier(os, "8290")
+                .deliver(Notification.watchdog("ABC-42", "agent stopped", "silent for 6 min").withAlias("p3"));
+
+        verify(os).notify("jagt · p3 · ABC-42 · agent stopped", "silent for 6 min",
+                "http://localhost:8290/?task=ABC-42");
+    }
 }

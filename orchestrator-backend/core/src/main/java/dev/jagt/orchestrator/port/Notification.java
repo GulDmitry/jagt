@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.port;
 import org.jspecify.annotations.Nullable;
 
 /** Something a human must be told, carrying what KIND of thing it is so a channel can route on that. */
-public record Notification(Topic topic, @Nullable String taskId, String title, String body) {
+public record Notification(Topic topic, @Nullable String taskId, @Nullable String alias, String title, String body) {
 
     /** What the notification is ABOUT. A channel takes or leaves a notification by this, not by its wording. */
     public enum Topic {
@@ -20,22 +20,26 @@ public record Notification(Topic topic, @Nullable String taskId, String title, S
     }
 
     public static Notification fromAgent(@Nullable String taskId, String title, String body) {
-        return new Notification(Topic.AGENT, taskId, title, body);
+        return new Notification(Topic.AGENT, taskId, null, title, body);
     }
 
     public static Notification watchdog(String taskId, String title, String body) {
-        return new Notification(Topic.WATCHDOG, taskId, title, body);
+        return new Notification(Topic.WATCHDOG, taskId, null, title, body);
     }
 
     public static Notification housekeeping(String title, String body) {
-        return new Notification(Topic.HOUSEKEEPING, null, title, body);
+        return new Notification(Topic.HOUSEKEEPING, null, null, title, body);
     }
 
     public static Notification install(String title, String body) {
-        return new Notification(Topic.INSTALL, null, title, body);
+        return new Notification(Topic.INSTALL, null, null, title, body);
     }
 
     public static Notification usage(String title, String body) {
-        return new Notification(Topic.USAGE, null, title, body);
+        return new Notification(Topic.USAGE, null, null, title, body);
+    }
+
+    public Notification withAlias(@Nullable String alias) {
+        return new Notification(topic, taskId, alias, title, body);
     }
 }

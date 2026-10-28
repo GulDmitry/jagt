@@ -73,7 +73,7 @@ class CommandServiceTest {
         CommandService guarded = new CommandService(flow, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())));
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())));
 
         assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER,
                 () -> guarded.execute("ABC-1", TaskAction.DONE)))
@@ -91,7 +91,7 @@ class CommandServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
         CommandService guarded = new CommandService(flow, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())));
 
         OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 

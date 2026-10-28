@@ -78,7 +78,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -105,7 +105,7 @@ class MasterVerdictsTest {
                 .withTurn(new Turn(Turn.Holder.SESSION, "ship", 6, "d", 6_000, Map.of(), List.of())));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -131,7 +131,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", read);
         state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(Turn.Holder.SESSION, 2_000)));
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -154,7 +154,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -182,7 +182,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -215,7 +215,7 @@ class MasterVerdictsTest {
         state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
                 .withTurn(new Turn(Turn.Holder.SESSION, "ship", 6, "d", 6_000, Map.of(), List.of())));
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -241,7 +241,7 @@ class MasterVerdictsTest {
         state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.IN_PROGRESS, null, 6_000)
                 .withTurn(new Turn(Turn.Holder.SESSION, "plan", 6, "d", 6_000, Map.of(), List.of())));
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -267,7 +267,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         state.putTask("ABC-2", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -294,7 +294,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -318,7 +318,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -341,7 +341,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -364,7 +364,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -388,7 +388,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
         state.putTask("ABC-42", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -410,7 +410,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -433,7 +433,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -457,7 +457,7 @@ class MasterVerdictsTest {
         decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -483,7 +483,7 @@ class MasterVerdictsTest {
         decisions.returned(task, 5, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -507,7 +507,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -542,7 +542,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -567,7 +567,7 @@ class MasterVerdictsTest {
         when(ship.ship("ABC-1", task)).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -592,7 +592,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -616,7 +616,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -640,7 +640,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -668,7 +668,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -691,7 +691,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -718,7 +718,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -742,7 +742,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -767,7 +767,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -794,7 +794,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -818,7 +818,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -846,7 +846,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -871,7 +871,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -893,7 +893,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -917,7 +917,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -940,7 +940,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         doReturn(3).when(decisions).answersOverThisTree(task);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -960,7 +960,7 @@ class MasterVerdictsTest {
         TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -982,7 +982,7 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -1004,7 +1004,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -1027,7 +1027,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -1050,7 +1050,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -1084,7 +1084,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
@@ -1113,7 +1113,7 @@ class MasterVerdictsTest {
         state.putTask("ABC-1", planned);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,

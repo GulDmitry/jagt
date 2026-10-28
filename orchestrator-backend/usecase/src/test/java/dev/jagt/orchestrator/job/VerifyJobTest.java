@@ -52,7 +52,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(statusReports).verified(true, "verified", "ABC-1");
         verify(relay, never()).relayRound(eq("ABC-1"), anyString(), anyString());
@@ -68,7 +68,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(relay).relayRound(eq("ABC-1"), eq("verify"), contains("BUILD FAILED"));
         verify(statusReports).verified(false, "verification failed; relayed", "ABC-1");
@@ -85,7 +85,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(verification, never()).failure(any());
         verify(relay, never()).relayRound(anyString(), anyString(), anyString());
@@ -102,11 +102,11 @@ class VerifyJobTest {
         when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString())).thenReturn(true);
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(verification, times(1)).failure(any());
         verify(relay, times(1)).relayRound(eq("ABC-1"), eq("verify"), anyString());
@@ -125,11 +125,11 @@ class VerifyJobTest {
         when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString())).thenReturn(true);
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(verification, times(2)).failure(any());
         verify(relay, times(2)).relayRound(eq("ABC-1"), eq("verify"), anyString());
@@ -144,7 +144,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(verification, never()).failure(any());
     }
@@ -162,7 +162,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(relay).relayRound(eq("ABC-1"), eq("probes"), eq("artifact docs/guide.md — FAILED\nno such file"));
         verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-1");
@@ -184,7 +184,7 @@ class VerifyJobTest {
 
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(statusReports, never()).verified(eq(false), any(), any());
     }

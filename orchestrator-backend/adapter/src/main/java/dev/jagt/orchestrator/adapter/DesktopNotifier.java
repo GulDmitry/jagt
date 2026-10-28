@@ -38,7 +38,10 @@ public class DesktopNotifier implements Notifier {
     private static String title(Notification notification) {
         String subject = notification.title() == null || notification.title().isBlank()
                 ? notification.topic().name().toLowerCase(java.util.Locale.ROOT) : notification.title();
-        return notification.taskId() == null ? "jagt · " + subject
-                : "jagt · " + notification.taskId() + " · " + subject;
+        if (notification.taskId() == null) {
+            return "jagt · " + subject;
+        }
+        String alias = notification.alias() == null || notification.alias().isBlank() ? "" : notification.alias() + " · ";
+        return "jagt · " + alias + notification.taskId() + " · " + subject;
     }
 }

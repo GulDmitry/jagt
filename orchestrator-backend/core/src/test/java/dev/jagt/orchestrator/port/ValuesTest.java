@@ -49,7 +49,7 @@ class ValuesTest {
     void routesAnAgentNotificationOnItsTopicWithTheTaskItIsAbout() {
         Notification told = Notification.fromAgent("ABC-1", "question", "which branch?");
 
-        assertThat(told).isEqualTo(new Notification(Notification.Topic.AGENT, "ABC-1", "question", "which branch?"));
+        assertThat(told).isEqualTo(new Notification(Notification.Topic.AGENT, "ABC-1", null, "question", "which branch?"));
     }
 
     @Test

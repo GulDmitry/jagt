@@ -128,6 +128,8 @@ on it.
 #### Scenario: Clicking a notification
 - **WHEN** the human clicks one
 - **THEN** the board opens filtered to that task; elsewhere the title names the task
+- **WHEN** `ABC-42`, shown on its card as `p3`, stops
+- **THEN** the banner reads `jagt · p3 · ABC-42 · agent stopped`; a task without a short name reads `jagt · ABC-42 · agent stopped`
 
 ### Requirement: Facts sit on the thing they are about
 The task number SHALL open the ticket, the `MR` chip the request; across repositories each project's name opens its

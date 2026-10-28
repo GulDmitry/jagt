@@ -2,9 +2,13 @@ package dev.jagt.orchestrator.notify;
 
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.Notifier;
+import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -23,7 +27,7 @@ class NotificationsTest {
         when(interested.takes(any())).thenReturn(true);
         Notification orphans = Notification.housekeeping("2 orphaned worktree(s)", "see the log");
 
-        new Notifications(List.of(uninterested, interested), Runnable::run).send(orphans);
+        new Notifications(List.of(uninterested, interested), mock(TaskStore.class), Runnable::run).send(orphans);
 
         verify(uninterested, never()).deliver(any());
         verify(interested).deliver(orphans);
@@ -38,8 +42,22 @@ class NotificationsTest {
         doThrow(new RuntimeException("no notification daemon")).when(broken).deliver(any());
         Notification alert = Notification.watchdog("ABC-42", "agent unresponsive", "silent for 6 min");
 
-        new Notifications(List.of(broken, working), Runnable::run).send(alert);
+        new Notifications(List.of(broken, working), mock(TaskStore.class), Runnable::run).send(alert);
 
         verify(working).deliver(alert);
+    }
+
+    @Test
+    void handsChannelsTheTasksAliasWhenTheNotificationIsAboutATask() {
+        Notifier channel = mock(Notifier.class);
+        TaskStore tasks = mock(TaskStore.class);
+        when(channel.takes(any())).thenReturn(true);
+        when(tasks.task("ABC-42")).thenReturn(Optional.of(
+                TaskState.builder("api", "/wt/ABC-42-api", TaskStatus.IN_PROGRESS).alias("p3").build()));
+
+        new Notifications(List.of(channel), tasks, Runnable::run)
+                .send(Notification.watchdog("ABC-42", "agent stopped", "silent for 6 min"));
+
+        verify(channel).deliver(Notification.watchdog("ABC-42", "agent stopped", "silent for 6 min").withAlias("p3"));
     }
 }

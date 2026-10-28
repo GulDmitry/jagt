@@ -64,7 +64,7 @@ class ShipServiceTest {
         door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), stateService,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(stateService, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                        new StopAnnouncements(new Notifications(List.of(), stateService, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));

@@ -28,7 +28,7 @@ public class StopAnnouncements {
                 .addKeyValue("effect", "auto-review and the master leave the task")
                 .addKeyValue("fix", "lift " + alias)
                 .log();
-        notifications.send(new Notification(Notification.Topic.INSTALL, taskId, "jagt stopped a task", stop.reading()));
+        notifications.send(new Notification(Notification.Topic.INSTALL, taskId, null, "jagt stopped a task", stop.reading()));
         journal.record(new StopLog.Stop(stop.at(), taskId, alias, trigger, task.status(), stop.evidence()));
     }
 }

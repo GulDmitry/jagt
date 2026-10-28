@@ -32,7 +32,7 @@ class LiftCapabilityTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .stop(new TaskStop(TaskStop.Trigger.STALLED, 2, "3 rounds")).build());
         LiftCapability lift = new LiftCapability(new TaskStops(state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), Runnable::run), new StopLog(new JsonMapper(), paths)),
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()));
 
         var outcome = lift.run("ABC-1");
