@@ -37,6 +37,8 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 `update_agent_status` SHALL take `outcome` (`question` | `no_changes` | `progress`) and `reviewRequestUrl`, the brief ending
 all three at REVIEW_PENDING. What a report means SHALL be the task's `task/AgentReport`, never a marker read out of its
 line; an outcome typed into the message is words. A `state.json` from before SHALL read it once from the line's marker.
+Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeChanges`, one `git status` per report);
+NO_CHANGES SHALL highlight nothing.
 
 #### Scenario: Clean round, nobody approved
 - **WHEN** a round comes back clean, unapproved
@@ -53,10 +55,6 @@ line; an outcome typed into the message is words. A `state.json` from before SHA
 #### Scenario: A question from before the field
 - **WHEN** jagt starts on a `state.json` whose line reads `awaiting: which database`
 - **THEN** the card reads `NEEDS INPUT: which database`
-
-### Requirement: no_changes is checked
-Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeChanges`, one `git status` per report).
-NO_CHANGES SHALL highlight nothing.
 
 #### Scenario: Claimed no change, files changed
 - **WHEN** the agent says it changed nothing but files changed
@@ -122,33 +120,29 @@ newest note, `FIXED | NO CHANGE | QUESTION`, reply.
 ### Requirement: Drafted replies are a file
 `TaskViews` SHALL stat `review_replies.md` for presence, never a count; `ReviewDrafts.pending` SHALL want it newer than
 `mrCreatedAt`. jagt SHALL never delete the file; the agent is asked to.
+`CodeReviewConfig.shipPostsEveryDraft` SHALL decide when drafts are spent: under `postReviewReplies=false` or a partial
+`reviewReplyAuthors` filter none is, and the announcement stands until the human ends it.
 
 #### Scenario: Stale reply file
 - **WHEN** the file predates `mrCreatedAt`
 - **THEN** nothing is pending
 
+#### Scenario: Posting off
+- **WHEN** you `ship` under `postReviewReplies=false`
+- **THEN** the announcement stands
+
 ### Requirement: The replies report reads the file
 `replies [task]` (`command/ReviewRepliesReport`) SHALL print every block off the file, never the badge, unrecognised shape
 included. The card's drafted-replies line SHALL be its only button (`GlobalCommand.aboutOneTask`).
+A line typed at it SHALL be said (`AgentSessions.say` → `nudgeTaskWindow`), never relayed: a relay overwrites `task_context.md`.
 
 #### Scenario: What will be posted
 - **WHEN** you ask what will be posted
 - **THEN** `replies <task>` or the card's drafted-replies line shows every draft
 
-### Requirement: A line typed at the report is said
-A line typed at the replies report SHALL be said (`AgentSessions.say` → `nudgeTaskWindow`), never relayed: a relay overwrites `task_context.md`.
-
 #### Scenario: A drafted reply is wrong
 - **WHEN** you say so under the open `replies` report
 - **THEN** the session answers into the same report
-
-### Requirement: Who posts decides when drafts are spent
-`CodeReviewConfig.shipPostsEveryDraft` SHALL decide: under `postReviewReplies=false` or a partial `reviewReplyAuthors` filter no
-draft is spent, and the announcement stands until the human ends it.
-
-#### Scenario: Posting off
-- **WHEN** you `ship` under `postReviewReplies=false`
-- **THEN** the announcement stands
 
 ### Requirement: One sweep per task
 `ReviewSweepService` SHALL guard one review sweep per task at a time, ticks queueing in `Jobs`.
@@ -188,6 +182,7 @@ A GitHub request with no review required SHALL count as approved once someone ap
 the sorted pairs of each open thread's link and newest note id, as the host gives them. A brief equal to the digest
 SHALL NOT be relayed again, whatever overwrote `task_context.md` in between. Neither SHALL a round with open threads
 whose fingerprint equals the last one's while the checks are red in neither. A `lift` SHALL forget both.
+While the task's last report asks the human, a sweep SHALL relay nothing and start no session, and say it waits on the human.
 
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
@@ -196,3 +191,7 @@ whose fingerprint equals the last one's while the checks are red in neither. A `
 #### Scenario: A reviewer's concession is not a loop
 - **WHEN** a thread's newest note is the reviewer's and two polls read it unchanged, the copied text differing
 - **THEN** only the first poll relays, and the second says the round is unchanged
+
+#### Scenario: Red checks over a question
+- **WHEN** ABC-42's session asked the human and the checks are still red
+- **THEN** the sweep relays nothing until the human answers

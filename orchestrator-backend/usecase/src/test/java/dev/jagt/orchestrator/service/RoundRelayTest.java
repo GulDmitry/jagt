@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -58,6 +59,29 @@ class RoundRelayTest {
 
         assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
         verify(sessions, times(1)).relayFresh(eq("ABC-42"), anyString());
+    }
+
+    @Test
+    void relaysNothingWhileTheAgentsQuestionStandsAndTheChecksAreRed(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .report(AgentReport.QUESTION).build());
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
+                new MissLog(new JsonMapper(), paths, clock),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+        RoundRelay relay = new RoundRelay(new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock),
+                new StepRelay(new SessionBrief(paths), sessions, door,
+                        new TaskTurns(state, clock)), door, new SessionBrief(paths));
+
+        SweepResult result = relay.relay("ABC-42", "https://host/mr/1",
+                new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed", List.of(), 0, List.of(), List.of()), "failed");
+
+        assertThat(result.kind()).isEqualTo(SweepResult.Kind.PENDING);
+        verify(sessions, never()).relayFresh(anyString(), anyString());
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
     }
 
     @Test

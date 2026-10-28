@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * A round with work for the agent, relayed unless it is the last one again, the task stands stopped, or no case
+ * A round with work for the agent, relayed unless it is the last one again, the agent's question stands, the task stands stopped, or no case
  * sends one of its steps at the task's status.
  */
 @Service
@@ -35,6 +35,7 @@ public class RoundRelay {
         return switch (stops.round(taskId, r, brief)) {
             case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);
+            case ASKING -> asking(read, said);
             case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, said), brief, checked)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)
                     : stops.stopped(taskId) ? stopped(read, said) : unchanged(read, said);
@@ -44,6 +45,11 @@ public class RoundRelay {
     private static SweepResult stopped(String read, String said) {
         return new SweepResult(SweepResult.Kind.STOPPED, read + ", checks " + said
                 + " — jagt stopped this task, so nothing was relayed; `lift` it first");
+    }
+
+    private static SweepResult asking(String read, String said) {
+        return new SweepResult(SweepResult.Kind.PENDING, read + ", checks " + said
+                + " — the agent asked and waits for the human, so nothing was relayed");
     }
 
     private static SweepResult unchanged(String read, String said) {

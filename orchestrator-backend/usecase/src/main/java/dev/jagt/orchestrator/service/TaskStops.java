@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -24,7 +23,7 @@ import java.util.function.UnaryOperator;
 @RequiredArgsConstructor
 public class TaskStops {
 
-    public enum Relay { RELAY, UNCHANGED, STOPPED }
+    public enum Relay { RELAY, UNCHANGED, ASKING, STOPPED }
 
     private final StateService stateService;
     private final LoopBreaker.Current breakers;
@@ -42,21 +41,28 @@ public class TaskStops {
                 task -> breaker.beforeRound(step, task.turnOrNone(), task.trailOrNone(), clock.millis())).isEmpty();
     }
 
-    /** A round identical to the last one relayed, or bringing no new note on green checks, is not news. */
+    /** A round identical to the last one relayed, bringing no new note on green checks, or met by a standing question, is not news. */
     public Relay round(String taskId, ReviewFacts facts, String brief) {
         String digest = Turn.digestOf(brief);
         String notes = facts.noteFingerprint();
         String failing = failing(facts);
-        AtomicBoolean unchanged = new AtomicBoolean();
+        AtomicReference<Relay> verdict = new AtomicReference<>(Relay.RELAY);
         LoopBreaker breaker = breakers.current();
         Optional<TaskStop> stop = trip(taskId, task -> {
-            RoundTrail trail = task.trailOrNone();
-            unchanged.set(trail.relayed(digest) || trail.noNewNote(notes, failing));
-            return unchanged.get() ? task : task.withTrail(trail.withRound(
+            verdict.set(verdictOn(task, digest, notes, failing));
+            return verdict.get() != Relay.RELAY ? task : task.withTrail(task.trailOrNone().withRound(
                     new RoundTrail.Round(clock.millis(), facts.threads().size(), failing, digest, notes)));
-        }, task -> unchanged.get() ? Optional.empty()
+        }, task -> verdict.get() != Relay.RELAY ? Optional.empty()
                 : breaker.afterRound(task.trailOrNone(), task.history(), clock.millis()));
-        return stop.isPresent() ? Relay.STOPPED : unchanged.get() ? Relay.UNCHANGED : Relay.RELAY;
+        return stop.isPresent() ? Relay.STOPPED : verdict.get();
+    }
+
+    private static Relay verdictOn(TaskState task, String digest, String notes, String failing) {
+        if (task.report().asks()) {
+            return Relay.ASKING;
+        }
+        RoundTrail trail = task.trailOrNone();
+        return trail.relayed(digest) || trail.noNewNote(notes, failing) ? Relay.UNCHANGED : Relay.RELAY;
     }
 
     public boolean mayShip(String taskId) {
