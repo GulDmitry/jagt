@@ -96,6 +96,25 @@ class TaskStopsTest {
     }
 
     @Test
+    void countsAShipsStopOnTheRequestOpenAndAVerificationStopOnNone(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withMrUrl("https://host/mr/571", 1));
+        state.putTask("ABC-43", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withMrUrl("https://host/mr/572", 1));
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "4 ships");
+        stops.stop("ABC-43", TaskStop.Trigger.ROUNDS, "3 rounds");
+
+        assertThat(state.task("ABC-42").orElseThrow().stop().request()).isEqualTo("https://host/mr/571");
+        assertThat(state.task("ABC-43").orElseThrow().stop().request()).isNull();
+    }
+
+    @Test
     void letsAFreshTaskShip(@TempDir Path root) {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));

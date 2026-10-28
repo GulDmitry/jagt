@@ -615,4 +615,39 @@ class TaskStateTest {
         assertThat(reread.switches()).containsOnly(Map.entry("visualize", "yes — a screen changed"),
                 Map.entry("autoplan", "no — one file"));
     }
+
+    @Test
+    void liftsAStopCountedOnARequestWhenAnotherRequestReplacesIt() {
+        TaskState shipped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571"))
+                .withTrail(RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a", "")));
+
+        TaskState reopened = shipped.withMrUrl("https://host/mr/573", 3_000);
+
+        assertThat(reopened.stopped()).isFalse();
+        assertThat(reopened.trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
+    }
+
+    @Test
+    void keepsAStopWhenTheSameRequestIsWrittenAgain() {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571"));
+
+        TaskState again = stopped.withMrUrl("https://host/mr/571", 3_000);
+
+        assertThat(again.stop()).isEqualTo(stopped.stop());
+    }
+
+    @Test
+    void keepsAStopCountedOnNoRequestWhenARequestReplacesTheOneOpen() {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 2, "same failure"));
+
+        TaskState reopened = stopped.withMrUrl("https://host/mr/573", 3_000);
+
+        assertThat(reopened.stop()).isEqualTo(stopped.stop());
+    }
 }

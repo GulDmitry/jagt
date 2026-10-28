@@ -115,3 +115,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0097 Idle is read from the session transcript](0097-idle-is-read-from-the-session-transcript.md)
 - [0098 Ghostty is driven through AppleScript](0098-ghostty-is-driven-through-applescript.md)
 - [0099 The session rebases its own branch](0099-the-session-rebases-its-own-branch-onto-the-moved-target.md)
+- [0100 A stop is scoped to the request it was counted on](0100-a-stop-is-scoped-to-its-request.md)

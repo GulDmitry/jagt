@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.RequiredArgsConstructor;
@@ -121,7 +122,19 @@ public class AgentStatusReports {
         // An agent that stops to ask usually keeps its status, so the message is the only thing that changed.
         boolean askedNow = means.asks() && !current.map(TaskState::report).orElse(AgentReport.PLAIN).asks();
         logChange(taskId, current.map(TaskState::alias).orElse(null), previous, landed, shortMessage, means, askedNow);
+        logReplacedStop(taskId, current);
         return answer(taskId, newStatus, landed, shortMessage);
+    }
+
+    private void logReplacedStop(String taskId, Optional<TaskState> before) {
+        TaskStop standing = before.map(TaskState::stop).orElse(null);
+        if (standing != null && stateService.task(taskId).filter(TaskState::stopped).isEmpty()) {
+            log.atInfo().setMessage("stop lifted").addKeyValue("task", taskId)
+                    .addKeyValue("trigger", standing.trigger())
+                    .addKeyValue("cause", "new request")
+                    .addKeyValue("request", standing.request())
+                    .log();
+        }
     }
 
     private void logChange(String taskId, @Nullable String alias, TaskStatus previous, TaskStatus landed,

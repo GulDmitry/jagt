@@ -7,6 +7,7 @@
 ## Status
 
 Accepted 2026-10-24. Records the round ceiling 7ef6aa0a introduced without a record.
+Amended by [0100](0100-a-stop-is-scoped-to-its-request.md): a new request replacing the counted one also clears the stop.
 
 ## Context
 

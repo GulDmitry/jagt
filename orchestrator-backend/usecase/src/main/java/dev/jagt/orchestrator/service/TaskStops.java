@@ -94,7 +94,7 @@ public class TaskStops {
             stop.ifPresent(tripped::set);
             stop.ifPresent(s -> stoppedTask.set(recorded));
             stop.ifPresent(standing::set);
-            return stop.map(recorded::withStop).orElse(recorded);
+            return stop.map(s -> recorded.withStop(s.countedOn(recorded.requests()))).orElse(recorded);
         });
         Optional.ofNullable(tripped.get())
                 .ifPresent(stop -> announcements.announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));

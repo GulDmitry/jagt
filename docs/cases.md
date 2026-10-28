@@ -127,6 +127,7 @@ Families:
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | H1 | a session writes the verdict file itself, a ready one naming the round in front → no verdict: only a file hashing to what jagt recorded counts, and a review no role read is a question | seen 2026-10-27, a probe: an empty-reads verdict shipped a request unread | `MasterReviewTest` |
+| H2 | a stop counted on a request outlives it, the session opens a follow-up request → the stop lifts with the replaced request and the count restarts; a stop counted on no request stands | seen 2026-10-28: auto-review refused a follow-up request as stopped, a SHIPS stop counted on the merged one | `TaskStateTest` |
 
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |

@@ -8,6 +8,7 @@ Accepted 2026-10-22. Adds to [0043](0043-act-stops-itself-after-three-bad-ending
 [0049](0049-unattended-starts-have-a-daily-ceiling.md).
 Superseded in part by [0070](0070-a-ship-counts-only-without-a-new-low.md): ships with progress no longer count.
 Superseded in part by [0080](0080-a-repeating-round-ends-in-one-stop.md): the stop stands on the task.
+Amended by [0100](0100-a-stop-is-scoped-to-its-request.md): a new request replacing the counted one also clears it.
 
 ## Context
 
