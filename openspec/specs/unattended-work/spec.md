@@ -88,11 +88,7 @@ Three tasks in a row the Master moved in `act` ending silent, in a deploy confli
 #### Scenario: Three tasks it moved end badly in a row
 - **WHEN** the third one is stamped silent, conflicts on deploy or is reverted
 - **THEN** it only judges, across restarts, until you press the header's `act stopped`
-
-#### Scenario: Only a silence after its own move counts
-- **WHEN** the Master ships ABC-42 and its session falls silent
-- **THEN** a strike is counted
-- **AND** where you converse in ABC-42's window and its session idles, none is
+- **AND** a strike counts when the Master ships ABC-42 and its session falls silent, none where you converse in its window and it idles
 
 ### Requirement: Every Master step is seen in one window
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following `jagt-master.log`, one line per Master step
@@ -118,11 +114,9 @@ Each of these jobs SHALL do its one thing unasked: - `jarwatch`: each minute, te
 working task's ticket once, for the Master's next review of it. - `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready
 for one. - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
 
-#### Scenario: A husk of a worktree
+#### Scenario: A husk of a worktree, work that landed
 - **WHEN** a worktree directory jagt cut has lost its checkout and holds only the editor's files
 - **THEN** `orphanscan` deletes it at startup
-
-#### Scenario: The work landed
 - **WHEN** an item reaches `doneStatus` under `tracker.mode: close`
 - **THEN** `ticket-close` closes its task
 
@@ -178,6 +172,10 @@ round bringing no new note; a failed verification or probe, a not-ready plan or 
 #### Scenario: Red rounds running
 - **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth
 - **THEN** nothing is sent, nobody is asked, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`
+
+#### Scenario: A result outlives its round
+- **WHEN** ABC-42's probes finish failed after you shipped it
+- **THEN** nothing is relayed, reported, recorded or stopped, and the log says `verification outdated`; one on its own round is relayed as before
 
 ### Requirement: A stopped task waits for your lift
 Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board SHALL ring it `jagt stopped`, its

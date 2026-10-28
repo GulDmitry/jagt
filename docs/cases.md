@@ -67,6 +67,7 @@ Families:
 | C9 | the human presses a verb (ship) while the Master reads the hand-back → the verdict and the Master's answer are dropped, claimed against status and turn in one write, the session told after it, a failed telling undone and stopped; the human's status and the session's one step stand, no round counted for a dropped verdict | seen 2026-10-25 on the stand: ship overwritten by IN_PROGRESS, two contradictory steps, task stopped on a miss | `MasterVerdictsTest`, `StepRelayTest`, `FlowReportsTest`, `MasterAnswerJobTest` |
 | C10 | a step is relayed and jagt dies while the session is told → the turn and its digest are recorded before the send, so a press again tells it nothing twice; a failed send puts the turn back and stops the task for the human | seen 2026-10-25 on the stand (run -8): relayed 11:10:48, turn opened 11:10:49 | `StepRelayTest` |
 | C11 | the session asked the human and the checks are still red → the sweep relays nothing and starts no session until the human answers | seen 2026-10-28: a fresh session ended the one holding the question, three times in 24h, and the ceiling stopped the task | `RoundRelayTest` |
+| C12 | a verification outlasts the round it was taken for (the human shipped meanwhile) → the result is dropped, never relayed, reported or stopped on | seen 2026-10-28: 2.5-minute probes failed after a ship, the case door refused the relay and the task stopped | `VerifyJobTest` |
 
 ## D — model overreach
 | id | the case, one line | defects | pinned by |

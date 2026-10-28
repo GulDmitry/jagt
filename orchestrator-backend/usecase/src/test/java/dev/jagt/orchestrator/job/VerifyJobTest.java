@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -187,5 +188,66 @@ class VerifyJobTest {
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
 
         verify(statusReports, never()).verified(eq(false), any(), any());
+    }
+
+    @Test
+    void dropsFailedProbesWhenTheHumanShippedTheTaskMeanwhile(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        Probe failed = Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/guide.md"), 0).probed(false, "no such file");
+        when(verification.failure(any())).thenReturn(Optional.empty());
+        when(verification.probed(eq("ABC-42"), any())).thenAnswer(shipped -> {
+            state.updateTask("ABC-42", task -> task.withStatus(TaskStatus.CI_POLLING, null, 5L));
+            return List.of(failed);
+        });
+
+        new VerifyJob(state, verification, statusReports, relay,
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+
+        verify(relay, never()).relayRound(anyString(), anyString(), anyString());
+        verify(statusReports, never()).verified(anyBoolean(), any(), any());
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+        assertThat(state.task("ABC-42").orElseThrow().probes()).isEmpty();
+    }
+
+    @Test
+    void dropsAFailedVerifyCommandWhenTheHumanShippedTheTaskMeanwhile(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        when(verification.failure(any())).thenAnswer(shipped -> {
+            state.updateTask("ABC-42", task -> task.withStatus(TaskStatus.CI_POLLING, null, 5L));
+            return Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED");
+        });
+
+        new VerifyJob(state, verification, statusReports, relay,
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+
+        verify(relay, never()).relayRound(anyString(), anyString(), anyString());
+        verify(statusReports, never()).verified(anyBoolean(), any(), any());
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    }
+
+    @Test
+    void relaysFailedProbesWhileTheTaskIsStillOnTheRoundTheyWereTakenFor(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        Probe failed = Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/guide.md"), 0).probed(false, "no such file");
+        when(verification.failure(any())).thenReturn(Optional.empty());
+        when(verification.probed(eq("ABC-42"), any())).thenReturn(List.of(failed));
+
+        new VerifyJob(state, verification, statusReports, relay,
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).run();
+
+        verify(relay).relayRound("ABC-42", "probes", "artifact docs/guide.md — FAILED\nno such file");
+        verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-42");
     }
 }

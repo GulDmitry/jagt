@@ -73,10 +73,15 @@ public class VerifyJob implements Job {
         }
         Optional<String> failure = verification.failure(task);
         if (failure.isPresent()) {
-            returned(taskId, key, "verify", failure.get(), "verification failed; relayed");
+            if (stillThisRound(taskId, task, "verify")) {
+                returned(taskId, key, "verify", failure.get(), "verification failed; relayed");
+            }
             return;
         }
         List<Probe> probed = verification.probed(taskId, task);
+        if (!stillThisRound(taskId, task, "probes")) {
+            return;
+        }
         if (!probed.isEmpty()) {
             stateService.updateTask(taskId, current -> current.withProbes(probed));
         }
@@ -87,6 +92,17 @@ public class VerifyJob implements Job {
         }
         returned(taskId, key, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
                 "acceptance probe failed; relayed");
+    }
+
+    private boolean stillThisRound(String taskId, TaskState taken, String step) {
+        Optional<TaskState> now = stateService.task(taskId);
+        boolean same = now.filter(task -> task.status() == taken.status() && task.statusSince() == taken.statusSince())
+                .isPresent();
+        if (!same) {
+            log.atInfo().setMessage("verification outdated").addKeyValue("task", taskId).addKeyValue("step", step)
+                    .addKeyValue("status", now.map(task -> task.status().name()).orElse("gone")).log();
+        }
+        return same;
     }
 
     private static String standing(TaskState task) {
