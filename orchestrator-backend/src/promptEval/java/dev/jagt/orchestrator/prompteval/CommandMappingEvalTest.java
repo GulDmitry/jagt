@@ -3,9 +3,6 @@ package dev.jagt.orchestrator.prompteval;
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
-import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.TokenUsage;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -28,6 +25,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 import java.nio.file.Path;
 import java.util.OptionalDouble;
+import java.util.concurrent.atomic.DoubleAdder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,6 +39,8 @@ class CommandMappingEvalTest {
 
     @TempDir
     static Path workspace;
+
+    private static final java.util.concurrent.atomic.AtomicBoolean SEEDED = new java.util.concurrent.atomic.AtomicBoolean();
 
     @DynamicPropertySource
     static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) throws Exception {
@@ -59,33 +59,38 @@ class CommandMappingEvalTest {
     private PaletteContext board;
     @Autowired
     private CommandAssistant assistant;
-    @Autowired
-    private UsageTracker usage;
 
     @BeforeEach
     void fourTasksBetweenThemOfferingEveryVerbTheRowsAskFor() {
-        stateService.putTask("ABC-23", TaskState.builder("shop", workspace.resolve("ABC-23").toString(),
-                        TaskStatus.PLAN_PENDING)
-                .alias("a4").title("Search ignores accented letters").build());
-        stateService.putTask("ABC-42", TaskState.builder("shop", workspace.resolve("ABC-42").toString(),
-                        TaskStatus.REVIEW_PENDING)
-                .alias("a1").title("Login form rejects a valid e-mail")
-                .mrUrl("https://example.invalid/shop/merge_requests/1").build());
-        stateService.putTask("ABC-7", TaskState.builder("shop", workspace.resolve("ABC-7").toString(),
-                        TaskStatus.CI_POLLING)
-                .alias("a2").title("Cart total ignores the discount")
-                .mrUrl("https://example.invalid/shop/merge_requests/2").build());
-        stateService.putTask("ABC-15", TaskState.builder("shop", workspace.resolve("ABC-15").toString(),
-                        TaskStatus.DEPLOYED)
-                .alias("a3").title("Checkout times out on a slow network")
-                .mrUrl("https://example.invalid/shop/merge_requests/3").deployCommit("c0ffee1").build());
+        synchronized (SEEDED) {
+            if (SEEDED.getAndSet(true)) {
+                return;
+            }
+            stateService.putTask("ABC-23", TaskState.builder("shop", workspace.resolve("ABC-23").toString(),
+                            TaskStatus.PLAN_PENDING)
+                    .alias("a4").title("Search ignores accented letters").build());
+            stateService.putTask("ABC-42", TaskState.builder("shop", workspace.resolve("ABC-42").toString(),
+                            TaskStatus.REVIEW_PENDING)
+                    .alias("a1").title("Login form rejects a valid e-mail")
+                    .mrUrl("https://example.invalid/shop/merge_requests/1").build());
+            stateService.putTask("ABC-7", TaskState.builder("shop", workspace.resolve("ABC-7").toString(),
+                            TaskStatus.CI_POLLING)
+                    .alias("a2").title("Cart total ignores the discount")
+                    .mrUrl("https://example.invalid/shop/merge_requests/2").build());
+            stateService.putTask("ABC-15", TaskState.builder("shop", workspace.resolve("ABC-15").toString(),
+                            TaskStatus.DEPLOYED)
+                    .alias("a3").title("Checkout times out on a slow network")
+                    .mrUrl("https://example.invalid/shop/merge_requests/3").deployCommit("c0ffee1").build());
+        }
     }
 
     @ParameterizedTest
     @MethodSource("cases")
     void mapsTheOperatorsOwnWordsOntoOneCommandAndOneTask(CommandMappingCase expected) {
-        EvalQuorum.configured().hold(expected.request(), this::commandMapSpend, () -> {
+        DoubleAdder paid = new DoubleAdder();
+        EvalQuorum.configured().hold(expected.request(), () -> OptionalDouble.of(paid.sum()), () -> {
             Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.menu());
+            paid.add(answer.usage().costUsd());
 
             if (answer.facts().isEmpty()) {
                 throw EvalStalled.because("no proposal: " + answer.failure());
@@ -94,10 +99,6 @@ class CommandMappingEvalTest {
             assertThat(answer.facts().orElseThrow().task()).isIn(expected.taskId(), expected.taskAlias());
             assertThat(answer.facts().orElseThrow().ticket()).isEqualTo(expected.ticket());
         });
-    }
-
-    private OptionalDouble commandMapSpend() {
-        return OptionalDouble.of(usage.sessionByKind().getOrDefault(AssistantCallKind.COMMAND_MAP, TokenUsage.NONE).costUsd());
     }
 
     static java.util.List<CommandMappingCase> cases() {

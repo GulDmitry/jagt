@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +44,7 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.import=",
         "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false"})
 @org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
-class MasterVerdictEvalTest {
+abstract class MasterVerdictEvalTest {
 
     @MockitoBean
     private UserNotifier userNotifier;
@@ -175,6 +176,9 @@ class MasterVerdictEvalTest {
     }
 
     static List<MasterCase> rounds() {
-        return MasterCase.matrix();
+        List<MasterCase> matrix = MasterCase.matrix();
+        return IntStream.range(0, matrix.size())
+                .filter(index -> index % MasterEvalWorkspace.shards() == MasterEvalWorkspace.shard())
+                .mapToObj(matrix::get).toList();
     }
 }

@@ -449,6 +449,17 @@ tasks.register('masterEval', Test) {
     testClassesDirs = sourceSets.masterEval.output.classesDirs
     classpath = sourceSets.masterEval.runtimeClasspath
     useJUnitPlatform()
+    // A review is one task per tick, so rounds go in parallel only across JVMs: one per shard class, each a full context.
+    int shards = (project.findProperty('masterShards') ?: '3') as int
+    if (shards < 1 || shards > 6) {
+        throw new GradleException("-PmasterShards ${shards} must be between 1 and 6, the shard classes there are.")
+    }
+    maxParallelForks = shards
+    forkEvery = 1
+    systemProperty 'masterEval.shards', shards
+    filter {
+        (0..<shards).each { includeTestsMatching "*MasterVerdictEvalShard${it}Test" }
+    }
     ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
         if (project.hasProperty(property)) {
             systemProperty key, project.property(property)
@@ -487,6 +498,11 @@ tasks.register('promptEval', Test) {
     testClassesDirs = sourceSets.promptEval.output.classesDirs
     classpath = sourceSets.promptEval.runtimeClasspath
     useJUnitPlatform()
+    // The rows are independent calls of the assistant's CLI, so they run side by side; -PevalParallelism sizes the pool.
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
+    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
+    systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'fixed'
+    systemProperty 'junit.jupiter.execution.parallel.config.fixed.parallelism', project.findProperty('evalParallelism') ?: '6'
     ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
         if (project.hasProperty(property)) {
             systemProperty key, project.property(property)

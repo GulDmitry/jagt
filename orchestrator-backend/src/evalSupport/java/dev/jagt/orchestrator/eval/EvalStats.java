@@ -6,6 +6,8 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,7 +62,14 @@ public final class EvalStats {
         }
     }
 
-    static void append(Path file, Entry entry) throws IOException {
+    static synchronized void append(Path file, Entry entry) throws IOException {
+        try (FileChannel guard = FileChannel.open(file.resolveSibling(file.getFileName() + ".lock"),
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE); FileLock held = guard.lock()) {
+            appendHeld(file, entry);
+        }
+    }
+
+    private static void appendHeld(Path file, Entry entry) throws IOException {
         if (Files.isRegularFile(file) && Files.size(file) >= CEILING_BYTES) {
             Files.move(file, file.resolveSibling(file.getFileName() + ".1"), StandardCopyOption.REPLACE_EXISTING);
         }
