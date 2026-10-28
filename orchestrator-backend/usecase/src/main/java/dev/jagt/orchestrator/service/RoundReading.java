@@ -70,7 +70,7 @@ public class RoundReading {
                 mergedRequests.pushedTips(taskId));
     }
 
-    private static String cause(String failure) {
+    static String cause(String failure) {
         String line = failure.strip().replaceAll("\\s+", " ");
         return line.isEmpty() ? "(cause in the log)" : "— " + (line.length() > CAUSE_LIMIT ? line.substring(0, CAUSE_LIMIT) + "…" : line);
     }

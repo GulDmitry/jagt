@@ -96,6 +96,7 @@ Families:
 | E12 | the Master presses a verb the machine refuses (a deploy of a branch already on dev) → one WARN naming task, cmd and cause, the press not counted, the other tasks still served; never an ERROR from the job runner | seen 2026-10-26 in the live log: master-deploy failed with Nothing to deploy | `MasterPressTest` |
 | E14 | a task the Master moved once goes silent after the human's or the session's own step → no strike; only a silence right after the Master's own move counts toward stopping `act` | seen 2026-10-28: three such silences stopped `act` twice in an hour | `MasterBrakeTest` |
 | E13 | a change typed into the terminal at DEPLOYED, REVIEWED, APPROVED, CI_POLLING or CI_FAILED ends its turn unseen → the turn end is refused once, naming IN_PROGRESS or reverting it; the second end on the same tree passes | seen 2026-10-26: tree dirty after a deploy, no round reached the Master, nothing shipped | `TurnEndsTreeTest`, `TurnTreeTest` |
+| E15 | `resume <url>` cannot read the request → the refusal names what stopped the read on one line, clipped as the sweep line is, never "cause in the log" | seen 2026-10-28: the sweep named its failure, resume still said "cause in the log" | `TaskResumeTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

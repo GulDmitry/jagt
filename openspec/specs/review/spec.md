@@ -164,7 +164,7 @@ A line typed at it SHALL be said (`AgentSessions.say` → `nudgeTaskWindow`), ne
 
 #### Scenario: No working MCP server
 - **WHEN** no MCP server for that host works
-- **THEN** refused as unread, never missing, naming the servers down
+- **THEN** refused as unread, never missing, naming what stopped the read on one line
 
 #### Scenario: No such request
 - **WHEN** the host answers there is no such request

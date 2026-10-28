@@ -24,8 +24,8 @@ public class TaskResume {
         var request = read.facts();
         // Two different answers: merging them reports a live request as missing.
         if (request.isEmpty()) {
-            return Launched.refused("error: read failed: " + reviewRequestUrl + " (cause in the log) —"
-                    + " nothing is known about it");
+            return Launched.refused("error: read failed: " + reviewRequestUrl + " "
+                    + RoundReading.cause(read.failure()) + " — nothing is known about it");
         }
         if (!request.get().exists()) {
             return Launched.refused("error: no such review request: " + reviewRequestUrl + " (the host says"

@@ -63,6 +63,15 @@ class TaskResumeTest {
     }
 
     @Test
+    void namesWhatStoppedTheReadOfAnUnreadableRequestOnOneLine() {
+        when(reviewReader.readRequest("https://host/mr/1")).thenReturn(
+                Answer.failed(TokenUsage.NONE, "no MCP server\nreaches   host"));
+
+        assertThat(resume.resume("https://host/mr/1").message())
+                .isEqualTo("error: read failed: https://host/mr/1 — no MCP server reaches host — nothing is known about it");
+    }
+
+    @Test
     void refusesARequestTheHostItselfSaysDoesNotExist() {
         when(reviewReader.readRequest("https://host/mr/1")).thenReturn(new Answer<>(
                 Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
