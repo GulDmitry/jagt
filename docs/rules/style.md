@@ -60,7 +60,7 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   `EnglishAndUtcTest` and `BoardAssetsTest` fail a call that reads the machine's or the browser's locale, zone or clock.
 - **Lombok carries the mechanical boilerplate and nothing else**, one set tree-wide, `core/` included
   ([0107](../decisions/0107-one-lombok-set-core-included.md)): `@RequiredArgsConstructor`, `@Slf4j` (not in `core/`),
-  `@With`, `@Builder(toBuilder = true)` on records, `@StandardException`, `@Getter` on a stateful class.
+  `@With`, `@Builder(toBuilder = true)` on records, `@Getter` on a stateful class.
   `lombok.config` refuses every other annotation (`flagUsage = error`).
   By hand when not mechanical: `OrchestratorPaths`' validating constructor, `TaskState.withStatus` stamping history,
   `TaskState.builder(project, worktree, status)`.

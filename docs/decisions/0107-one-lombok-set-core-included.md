@@ -19,7 +19,7 @@ Accepted 2026-10-29.
 
 - One set everywhere, `core/` included: `@RequiredArgsConstructor`, `@Slf4j` (`core/` does not log),
   `@With` on records, `@Builder(toBuilder = true)` on records with defaults (defaults in a hand-declared
-  `<Name>Builder` stub), `@StandardException`, `@Getter` only on a stateful class a record cannot be.
+  `<Name>Builder` stub), `@Getter` only on a stateful class a record cannot be.
 - Every other annotation is `flagUsage = error` in `orchestrator-backend/lombok.config`, so the build enforces the
   set and no text does.
 - A hand-written constructor, wither or builder stays where it validates, stamps or computes.
@@ -36,6 +36,7 @@ Accepted 2026-10-29.
 - `@Singular`, `@Jacksonized`, `@SuperBuilder`, `@WithBy`: a second way to build or bind what a record's builder does.
 - `val`, `var`: the type is stated.
 - `@Log`, `@CustomLog` and every logger but `@Slf4j`: one logging facade.
+- `@StandardException`: its generated constructors are never called from main, and `ProductionConstructorTest` rejects them.
 - `@Tolerate`: Lombok has no `flagUsage` key for it, so it is the one rejection no build enforces.
 
 ## Reopen when
