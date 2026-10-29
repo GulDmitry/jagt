@@ -122,7 +122,8 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
         n.path("newestNotes").forEach(id -> newestNotes.add(id.asString("")));
         return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
                 n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
-                threads, HostStamp.epochMillis(n.path("openedAt").asString("")), List.of(), newestNotes)
+                threads, HostStamp.epochMillis(n.path("openedAt").asString("")), List.of(), newestNotes,
+                n.path("pipelineUrl").asString(""))
                 .answeredBy(n.path("signedInAs").asString(""));
     }
 

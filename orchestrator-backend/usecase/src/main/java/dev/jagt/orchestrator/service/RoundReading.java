@@ -81,7 +81,7 @@ public class RoundReading {
                 round.threads().stream().map(thread -> "[" + project + "] " + thread).toList(),
                 round.openedAt(),
                 round.awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList(),
-                round.newestNotes());
+                round.newestNotes(), round.pipelineUrl());
     }
 
     /**
@@ -99,7 +99,8 @@ public class RoundReading {
                 rounds.stream().flatMap(round -> round.threads().stream()).toList(),
                 longestOpen(rounds),
                 rounds.stream().flatMap(round -> round.awaitingReviewer().stream()).toList(),
-                rounds.stream().flatMap(round -> round.newestNotes().stream()).toList());
+                rounds.stream().flatMap(round -> round.newestNotes().stream()).toList(),
+                worst.pipelineUrl());
     }
 
     /** The OLDEST request: how long the review has been hanging is the longest any of them has waited. */

@@ -28,12 +28,12 @@ record ReviewRoundCase(String name, ReviewFacts round, TaskStatus expected, Stri
                 new ReviewRoundCase("the request cannot be read", null,
                         TaskStatus.CI_POLLING, "error: read failed", false),
                 new ReviewRoundCase("the host says there is no such request",
-                        new ReviewFacts(false, false, "none", "", List.of(), 0, List.of(), List.of()),
+                        new ReviewFacts(false, false, "none", "", List.of(), 0, List.of(), List.of(), ""),
                         TaskStatus.CI_POLLING, "no such request", false));
     }
 
     private static ReviewFacts facts(boolean approved, String pipeline, List<String> threads) {
-        return new ReviewFacts(true, approved, pipeline, "", threads, 0, List.of(), List.of());
+        return new ReviewFacts(true, approved, pipeline, "", threads, 0, List.of(), List.of(), "");
     }
 
     @Override

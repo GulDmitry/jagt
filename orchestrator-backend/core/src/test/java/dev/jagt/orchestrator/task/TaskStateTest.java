@@ -72,7 +72,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null);
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, null, null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of());
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -88,6 +88,17 @@ class TaskStateTest {
         assertThat(round.mrCreatedAt()).isEqualTo(2_000L);
         assertThat(round.lastPolledAt()).isZero();
         assertThat(round.primary().mrUrl()).isEqualTo("https://host/mr/9");
+    }
+
+    @Test
+    void forgetsTheInfraRetriesOfARoundWhenANewRoundIsShipped() {
+        TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("https://host/mr/9")
+                .infraRetries(List.of(InfraRetry.armed(5_000, "https://host/p/1", "unit-tests", "runner_system_failure")))
+                .build();
+
+        TaskState round = polling.withReviewRound("https://host/mr/9", 2_000L);
+
+        assertThat(round.infraRetries()).isEmpty();
     }
 
     @Test
@@ -115,7 +126,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null);
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of());
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 

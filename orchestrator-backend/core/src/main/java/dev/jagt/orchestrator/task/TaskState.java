@@ -73,7 +73,9 @@ public record TaskState(
         // Absent in a file written before the turn existed, which reads as no turn open.
         @Nullable Turn turn,
         // Switch name to the session's "yes — why" or "no — why"; empty until it judged one.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> switches
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> switches,
+        // The re-runs of a pipeline that died on infrastructure: the ones sent, and at most one still armed.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<InfraRetry> infraRetries
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -86,6 +88,7 @@ public record TaskState(
         probes = probes == null ? List.of() : List.copyOf(probes);
         checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
         switches = switches == null ? Map.of() : Map.copyOf(switches);
+        infraRetries = infraRetries == null ? List.of() : List.copyOf(infraRetries);
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
@@ -134,7 +137,8 @@ public record TaskState(
             @JsonProperty("conflict") @Nullable ConflictWatch conflict,
             @JsonProperty("repoRequest") @Nullable String repoRequest,
             @JsonProperty("turn") @Nullable Turn turn,
-            @JsonProperty("switches") @Nullable Map<String, String> switches) {
+            @JsonProperty("switches") @Nullable Map<String, String> switches,
+            @JsonProperty("infraRetries") @Nullable List<InfraRetry> infraRetries) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -146,7 +150,8 @@ public record TaskState(
                 unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
-                Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn, switches == null ? Map.of() : switches);
+                Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn, switches == null ? Map.of() : switches,
+                infraRetries == null ? List.of() : infraRetries);
     }
 
     record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
@@ -268,7 +273,7 @@ public record TaskState(
     public TaskState withReviewRound(@Nullable String project, String reviewRequestUrl, long now) {
         return relinked(project, reviewRequestUrl, now).lastActiveTimestamp(now)
                 // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
-                .pipelineStatus(null).checksUnread(List.of()).approved(null)
+                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
                 .build();
@@ -347,6 +352,10 @@ public record TaskState(
     @JsonIgnore
     public boolean pipelineUnread() {
         return !checksUnread.isEmpty();
+    }
+
+    public TaskState withInfraRetries(List<InfraRetry> retries) {
+        return toBuilder().infraRetries(retries).build();
     }
 
     public TaskState withApproved(Boolean approved) {
@@ -445,7 +454,7 @@ public record TaskState(
         }
         TaskState base = stop != null && stop.voidedBy(requestsOf(repos)) ? lifted(now) : this;
         return base.toBuilder().repos(repos).requestOpenedAt(now)
-                .pipelineStatus(null).checksUnread(List.of()).approved(null);
+                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null);
     }
 
     public TaskState withMrUrl(String mrUrl, long now) {
@@ -623,7 +632,8 @@ public record TaskState(
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).checksUnread(checksUnread)
                 .approved(approved)
                 .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
-                .planGate(planGate).trail(trail).stop(stop).conflict(conflict).repoRequest(repoRequest).turn(turn).switches(switches);
+                .planGate(planGate).trail(trail).stop(stop).conflict(conflict).repoRequest(repoRequest).turn(turn).switches(switches)
+                .infraRetries(infraRetries);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
@@ -645,6 +655,7 @@ public record TaskState(
         private @Nullable Boolean autoReview;
         private @Nullable String pipelineStatus;
         private List<ChecksUnread> checksUnread = List.of();
+        private List<InfraRetry> infraRetries = List.of();
         private @Nullable Boolean approved;
         private @Nullable TokenUsage usage;
         private @Nullable AgentSpend agentSpend;
@@ -766,6 +777,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder infraRetries(List<InfraRetry> infraRetries) {
+            this.infraRetries = infraRetries;
+            return this;
+        }
+
         public Builder approved(@Nullable Boolean approved) {
             this.approved = approved;
             return this;
@@ -843,7 +859,8 @@ public record TaskState(
             return new TaskState(repos, status, lastActiveTimestamp, message, report, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
                     autoReview, pipelineStatus, checksUnread, approved, usage, agentSpend, log, refusals, gitTrust,
-                    probes, planGate, trail, stop, conflict, repoRequest, turn, switches == null ? Map.of() : switches);
+                    probes, planGate, trail, stop, conflict, repoRequest, turn, switches == null ? Map.of() : switches,
+                    infraRetries);
         }
     }
 }

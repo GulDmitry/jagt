@@ -15,16 +15,17 @@ import java.util.stream.IntStream;
  * failure, or why the listing could not be got when it is unknown. {@code exists=false} means the HOST says there is
  * no such request — a read that failed carries no facts at all, and no caller may merge the two. {@code openedAt} is
  * the HOST's stamp, 0 when unknown; jagt's own is never substituted, being wrong by days for a request a task was
- * resumed on.
+ * resumed on. {@code pipelineUrl} is the address of the newest pipeline, blank when there is none.
  */
 public record ReviewFacts(boolean exists, boolean approved, String pipelineStatus, String pipelineFailure,
                           List<String> threads, long openedAt, List<String> awaitingReviewer,
-                          List<String> newestNotes) {
+                          List<String> newestNotes, String pipelineUrl) {
 
     public ReviewFacts {
         pipelineFailure = pipelineFailure == null ? "" : pipelineFailure;
         awaitingReviewer = awaitingReviewer == null ? List.of() : List.copyOf(awaitingReviewer);
         newestNotes = newestNotes == null ? List.of() : List.copyOf(newestNotes);
+        pipelineUrl = pipelineUrl == null ? "" : pipelineUrl;
     }
 
     /** Equal for two reads of the same open threads with the same newest notes, whatever the copied text; empty where any id is unknown. */
@@ -40,7 +41,7 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
 
     /** The same round with its checks left unsaid. */
     public ReviewFacts withoutChecks() {
-        return new ReviewFacts(exists, approved, "", "", threads, openedAt, awaitingReviewer, newestNotes);
+        return new ReviewFacts(exists, approved, "", "", threads, openedAt, awaitingReviewer, newestNotes, "");
     }
 
     /** The threads whose newest note is by {@code account} moved to {@code awaitingReviewer}; blank moves none. */
@@ -56,7 +57,7 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
                 openNotes.add(i < newestNotes.size() ? newestNotes.get(i) : "");
             }
         }
-        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered, openNotes);
+        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered, openNotes, pipelineUrl);
     }
 
     private static boolean newestAuthorIs(String thread, String account) {
