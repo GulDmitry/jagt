@@ -63,9 +63,8 @@ class RingsTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"flow", "task", "port", "protocol"})
-    void theCentreCarriesNoFrameworkAtAll(String ring) {
-        assertThat(sources(ring).filter(text -> text.contains("org.springframework")
-                || text.contains("lombok"))).isEmpty();
+    void theCentreCarriesNoSpring(String ring) {
+        assertThat(sources(ring).filter(text -> text.contains("org.springframework"))).isEmpty();
     }
 
     @ParameterizedTest

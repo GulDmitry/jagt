@@ -82,7 +82,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
   seam in `main` that only tests call (`ProductionConstructorTest`).
 - **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`EnglishAndUtcTest`, `BoardAssetsTest`).
 - **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsTest`).
-- **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring and no Lombok.
+- **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring.
+  Lombok: [0107](docs/decisions/0107-one-lombok-set-core-included.md)'s set only.
 - **The board has no build step, no CDN and no external asset** ([`docs/rules/design.md`](docs/rules/design.md)).
 - **A capability the board cannot express is a bug**: per-task verbs from `Move.actions()`, global from `GlobalCommand` beans; no surface has a list.
 - **No GUI or keystroke automation, ever.** Keystrokes land in whatever is focused.

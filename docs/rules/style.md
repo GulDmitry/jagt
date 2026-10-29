@@ -58,8 +58,10 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   (`surface/mcp/McpTools`, `Move.actions()`).
 - **English and UTC only**, set in `main` ([0055](../decisions/0055-jagt-speaks-english-and-keeps-utc.md)):
   `EnglishAndUtcTest` and `BoardAssetsTest` fail a call that reads the machine's or the browser's locale, zone or clock.
-- **Lombok carries the mechanical boilerplate and nothing else**: `@RequiredArgsConstructor`, `@Slf4j`,
-  `@With` for a record's positional copy-withers (`@With` and `@Builder` work on records).
+- **Lombok carries the mechanical boilerplate and nothing else**, one set tree-wide, `core/` included
+  ([0107](../decisions/0107-one-lombok-set-core-included.md)): `@RequiredArgsConstructor`, `@Slf4j` (not in `core/`),
+  `@With`, `@Builder(toBuilder = true)` on records, `@StandardException`, `@Getter` on a stateful class.
+  `lombok.config` refuses every other annotation (`flagUsage = error`).
   By hand when not mechanical: `OrchestratorPaths`' validating constructor, `TaskState.withStatus` stamping history,
   `TaskState.builder(project, worktree, status)`.
 - **What may be null is `@Nullable`**, all else not: NullAway fails the build

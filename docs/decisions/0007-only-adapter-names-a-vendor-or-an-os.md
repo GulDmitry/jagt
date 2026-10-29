@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-07-25 (`5ab120b`), recorded retroactively 2026-10-02.
+Accepted 2026-07-25 (`5ab120b`), recorded retroactively 2026-10-02. Lombok clause superseded by [0107](0107-one-lombok-set-core-included.md).
 
 ## Context
 

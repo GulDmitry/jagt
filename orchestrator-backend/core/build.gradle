@@ -2,8 +2,8 @@ plugins {
     id 'java-library'
 }
 
-// No Spring and no Lombok, deliberately: the records and the rules are exercised without a container, and the
-// build is what stops that becoming a promise. Jackson is here because the record IS the state file's format.
+// No Spring, deliberately: the records and the rules are exercised without a container, and the build is what
+// stops that becoming a promise. Jackson is here because the record IS the state file's format.
 dependencies {
     api 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'tools.jackson.core:jackson-databind'

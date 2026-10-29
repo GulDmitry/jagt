@@ -131,10 +131,9 @@ allprojects {
     }
 }
 
-// Everything but the centre: `:core` must not have Lombok even on its processor path, so the build refuses it
-// rather than a comment asking nobody to add it. The annotation processor resolves outside the platform, so
-// its version is named here.
-configure(allprojects - project(':core')) {
+// Lombok's set is decided in docs/decisions/0107; lombok.config refuses the rest. The annotation processor
+// resolves outside the platform, so its version is named here.
+allprojects {
     dependencies {
         compileOnly "org.projectlombok:lombok:${lombokVersion}"
         annotationProcessor "org.projectlombok:lombok:${lombokVersion}"

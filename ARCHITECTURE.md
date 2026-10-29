@@ -56,7 +56,8 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - `task/`, `flow/` and `port/` depend on no other ring; `protocol/` only on them; `task/` on neither `flow/` nor
   `port/`, and `port/` not on `flow/`.
 - no two top-level folders depend on each other, either way round.
-- those four import no Spring and no Lombok. Jackson annotations stay: the record **is** the file format.
+- those four import no Spring; Lombok per [0107](docs/decisions/0107-one-lombok-set-core-included.md).
+  Jackson annotations stay: the record **is** the file format.
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
 - no ring between the centre and the edge depends on `adapter/`.
@@ -262,7 +263,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 
 | module | holds | sees |
 |--------|-------|------|
-| `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring, no Lombok |
+| `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
 | `:surface` | `surface/` | `:core`, `:usecase` |

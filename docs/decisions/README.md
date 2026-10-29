@@ -122,3 +122,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0104 Loops are bounded per task](0104-loops-are-bounded-per-task.md)
 - [0105 Infrastructure failures are waited out](0105-infrastructure-failures-are-waited-out.md)
 - [0106 A session waits for a dependency, and jagt says when to probe](0106-a-session-waits-for-a-dependency-jagt-says-when-to-probe.md)
+- [0107 One Lombok set for the whole tree, core included](0107-one-lombok-set-core-included.md)
