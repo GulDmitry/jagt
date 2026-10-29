@@ -256,6 +256,13 @@ class FlowRulesTest {
     }
 
     @ParameterizedTest
+    @CsvSource({"NEW, REVIEWED", "IN_PROGRESS, REVIEWED", "IN_PROGRESS, APPROVED", "VERIFYING, APPROVED",
+            "SHIPPING, REVIEWED", "PLAN_PENDING, REVIEWED", "REVIEW_PENDING, APPROVED"})
+    void leavesATaskItsSessionWorksInWhereItIsWhenItsRunReadsGreen(TaskStatus busy, TaskStatus verdict) {
+        assertThat(FlowRules.readLands(busy, verdict)).isEqualTo(busy);
+    }
+
+    @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "DEPLOYED"})
     void leavesATaskSomeoneIsOnWhereItIsWhenItsRunReadsRed(TaskStatus busy) {
         assertThat(FlowRules.readLands(busy, TaskStatus.CI_FAILED)).isEqualTo(busy);

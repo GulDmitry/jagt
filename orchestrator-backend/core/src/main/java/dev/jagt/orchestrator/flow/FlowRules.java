@@ -227,18 +227,12 @@ public final class FlowRules {
         return EnumSet.copyOf(READ_FROM_THE_HOST);
     }
 
-    /**
-     * Where a round read lands. Red stops a task only where the round waits on the host, a session on it keeps
-     * going; a verdict never undoes a deploy, since that would ask shipped work for an approval.
-     */
+    /** Where a round read lands: only a task waiting on the host moves, a session on its status keeps it. */
     public static TaskStatus readLands(TaskStatus from, TaskStatus read) {
         if (!READ_FROM_THE_HOST.contains(read)) {
             throw new IllegalArgumentException(read + " is not what a read of the review round concludes");
         }
-        if (read == TaskStatus.CI_FAILED) {
-            return WAITING_ON_THE_HOST.contains(from) ? TaskStatus.CI_FAILED : from;
-        }
-        return HELD_AGAINST_A_REPORT.contains(from) || PAST_THE_REVIEW.contains(from) ? from : read;
+        return WAITING_ON_THE_HOST.contains(from) ? read : from;
     }
 
     /**
@@ -406,10 +400,6 @@ public final class FlowRules {
 
     private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
             TaskStatus.REVIEWED, TaskStatus.APPROVED);
-
-    /** Statuses a round is BEHIND: the code went to the shared branch without waiting for what it says. */
-    private static final Set<TaskStatus> PAST_THE_REVIEW = EnumSet.of(TaskStatus.DEPLOY_CONFLICT,
-            TaskStatus.DEPLOYED, TaskStatus.DONE);
 
     /** Statuses the work has been handed over from, so a tracker reaching its own last stage may close it. */
     private static final Set<TaskStatus> HANDED_OVER = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,

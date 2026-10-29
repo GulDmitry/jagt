@@ -90,14 +90,16 @@ across a restart (`TaskState.conflict`, [0063](../../../docs/decisions/0063-a-st
 ### Requirement: Statuses a report cannot move
 A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT` until deployed: refusing errors every
 call of that session. Its card SHALL keep the status's line (`FlowRules.holdsItsLine`), the report's logged; a question alone reaches it, until the
-next report. A round read MUST leave a `DEPLOYED`, `DEPLOY_CONFLICT` or `DONE` task in place: shipped work never goes back to approval, and MUST
-leave a `QUESTION` or `PERMISSION` standing (`FlowRules.standsThroughARead`): only the session's next report or a human answers it.
+next report. A round read MUST move only a task waiting on the host (`FlowRules.waitsOnTheHost`) and leave every other status in place, its checks
+alone updated: shipped work never goes back to approval, a session's work is never overwritten. It MUST leave a `QUESTION` or `PERMISSION` standing
+(`FlowRules.standsThroughARead`): only the session's next report or a human answers it.
 
 #### Scenario: A report at a held status
 - **WHEN** a `DEPLOY_CONFLICT` task's agent reports `no changes`
 - **THEN** the task stays and its card keeps the conflict, the report's line logged
 - **AND** a poll reading `APPROVED` past `DEPLOYED` leaves the task there
 - **AND** a poll reading ABC-42 green leaves its `QUESTION` asking, the question on the card
+- **AND** a poll reading ABC-42 approved at `IN_PROGRESS` leaves it there, its checks and approval recorded
 
 ### Requirement: A follow-up request after a merged one
 A task needing more work after its request merged SHALL go back to `IN_PROGRESS`; its next ship's request replaces the merged one.
@@ -109,10 +111,6 @@ A task needing more work after its request merged SHALL go back to `IN_PROGRESS`
 ### Requirement: Nothing below flow decides a status
 A capability SHALL report `OK` / `RELAYED` / `CONFLICT` / `PARTIAL` / `GONE` plus the sentence and the stamp, so work serves several statuses. Its
 sentence MAY name the status; nothing parses it. `withStatus` MUST appear only in `flow/` and its implementing record.
-
-#### Scenario: Grepping for withStatus
-- **WHEN** the sources are grepped
-- **THEN** only `flow/` and its record match
 
 ### Requirement: PARTIAL refuses
 `PARTIAL` SHALL be the one refusing outcome, stamped on the task first and thrown second: half a change is recorded.
