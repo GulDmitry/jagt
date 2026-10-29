@@ -37,7 +37,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
   did is live, so pressing repeats it.
 - dotted underline — `a.id`, `a.mr-age`, `button.offer`: the text opens something.
 - 9px dot — `.checks.red` / `.checks.green` filled: a verdict is in. `.checks.running` hollow ring, carrying
-  the board's one `@keyframes`: waiting, as hollow means everywhere — under a said line too. The ring says it,
+  the board's one `@keyframes`: waiting, as hollow means everywhere — under a said line too, or a retry pending. The ring says it,
   the pulse only draws the eye (`prefers-reduced-motion` safe).
 - `✓` on the request, or `.tick` closing `.repos`: approved.
 - in a round's replies — `.block` head, its `.verdict` green fixed / amber a question / grey pushed back;

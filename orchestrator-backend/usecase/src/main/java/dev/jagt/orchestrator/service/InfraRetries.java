@@ -41,7 +41,8 @@ public class InfraRetries {
             }
             List<InfraRetry> sent = InfraRetry.sentSince(task.infraRetries(), task.trailOrNone());
             Optional<InfraRetry> next = properties.before(sent.size())
-                    .map(wait -> InfraRetry.armed(clock.millis() + wait.toMillis(), pipelineUrl, jobs, reason));
+                    .map(wait -> InfraRetry.armed(clock.millis() + wait.toMillis(), pipelineUrl, jobs, reason,
+                            sent.size() + 1, properties.backoff().size()));
             armed.set(next);
             return next.map(retry -> task.withInfraRetries(with(sent, retry))).orElse(task);
         });
@@ -93,9 +94,8 @@ public class InfraRetries {
 
     /** What the armed retry waits on and when it goes, as a human reads it; blank where none is armed. */
     public String reading(String taskId) {
-        return stateService.task(taskId).flatMap(task -> InfraRetry.pending(task.infraRetries()).map(retry ->
-                retry.reading(InfraRetry.sentSince(task.infraRetries(), task.trailOrNone()).size() + 1,
-                        properties.backoff().size()))).orElse("");
+        return stateService.task(taskId).flatMap(task -> InfraRetry.pending(task.infraRetries()))
+                .map(InfraRetry::reading).orElse("");
     }
 
     private static List<InfraRetry> with(List<InfraRetry> kept, InfraRetry retry) {

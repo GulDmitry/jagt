@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -12,6 +13,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * One task as a human surface sees it: ONE projection for every front-end. Serialized straight to JSON, which is
@@ -119,8 +121,21 @@ public record TaskView(
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
                 task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
                         change.origin(), change.why())).toList(), deployed, draftedReplies, autoReview,
-                Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
+                checks(task), checksSaid(task), task.pipelineUnread(),
                 task.hasReviewRequest() ? task.approved() : null, task.switches(), stop);
+    }
+
+    private static Optional<InfraRetry> awaitingRetry(TaskState task) {
+        return Pipeline.of(task.pipelineStatus()) == Pipeline.RED ? InfraRetry.pending(task.infraRetries()) : Optional.empty();
+    }
+
+    /** A red whose retry is armed reads as running: its verdict is not in. */
+    private static Pipeline checks(TaskState task) {
+        return awaitingRetry(task).isPresent() ? Pipeline.RUNNING : Pipeline.of(task.pipelineStatus());
+    }
+
+    private static @Nullable String checksSaid(TaskState task) {
+        return awaitingRetry(task).map(InfraRetry::reading).orElse(task.pipelineStatus());
     }
 
     private static @Nullable String asked(Move move, @Nullable Stop stop) {

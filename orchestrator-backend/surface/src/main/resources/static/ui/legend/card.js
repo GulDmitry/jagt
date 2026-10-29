@@ -87,7 +87,7 @@ export const cardRows = () => [
   [[requestChip('id', 'ABC-42'), requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age', 'MR 2d')],
     'the ticket \u00b7 the request and how long it has been open \u00b7 green \u2713: approved'],
   [[span('checks red', ''), span('checks green', ''), span('checks running', '')],
-    'its checks: failed \u00b7 passed \u00b7 still running. No dot: no pipeline, or nothing read it'],
+    'its checks: failed \u00b7 passed \u00b7 still running, or a retry pending. No dot: no pipeline, or nothing read it'],
   [[repositories()],
     'a task spanning repositories: each name opens its request \u00b7 \u2713 approved'],
   [[offerButton()],

@@ -280,4 +280,25 @@ class TaskViewTest {
 
         assertThat(view.stop()).isNull();
     }
+
+    @Test
+    void showsARedWhoseRetryIsArmedAsRunningWithWhatItWaitsOn() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://host/mr/1").pipelineStatus("failed")
+                .infraRetries(List.of(InfraRetry.armed(36_000_000, "https://host.invalid/p/1", "unit-tests",
+                        "runner_system_failure", 1, 3))).build(), false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.pipeline()).isEqualTo(Pipeline.RUNNING);
+        assertThat(view.pipelineSaid()).isEqualTo("runner_system_failure: unit-tests · retry 1/3 at 10:00 UTC");
+    }
+
+    @Test
+    void showsARedWithNoRetryArmedAsRed() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
+                .mrUrl("http://host/mr/1").pipelineStatus("failed").build(), false, AutoReviewWatch.none(),
+                Map.of("proj", "dev"));
+
+        assertThat(view.pipeline()).isEqualTo(Pipeline.RED);
+        assertThat(view.pipelineSaid()).isEqualTo("failed");
+    }
 }

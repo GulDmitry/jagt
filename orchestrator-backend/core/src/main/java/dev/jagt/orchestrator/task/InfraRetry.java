@@ -8,9 +8,9 @@ import java.util.Optional;
 
 /**
  * A re-run of a pipeline that died on infrastructure: due at {@code at} while not {@code sent}, the moment it was
- * sent after. {@code jobs} and {@code reason} are what the host said failed.
+ * sent after. {@code jobs} and {@code reason} are what the host said failed; it is retry {@code attempt} of {@code of}.
  */
-public record InfraRetry(long at, String pipelineUrl, String jobs, String reason, boolean sent) {
+public record InfraRetry(long at, String pipelineUrl, String jobs, String reason, boolean sent, int attempt, int of) {
 
     public InfraRetry {
         pipelineUrl = pipelineUrl == null ? "" : pipelineUrl;
@@ -18,8 +18,8 @@ public record InfraRetry(long at, String pipelineUrl, String jobs, String reason
         reason = reason == null ? "" : reason;
     }
 
-    public static InfraRetry armed(long at, String pipelineUrl, String jobs, String reason) {
-        return new InfraRetry(at, pipelineUrl, jobs, reason, false);
+    public static InfraRetry armed(long at, String pipelineUrl, String jobs, String reason, int attempt, int of) {
+        return new InfraRetry(at, pipelineUrl, jobs, reason, false, attempt, of);
     }
 
     /** The one retry still waiting for its time. */
@@ -27,15 +27,15 @@ public record InfraRetry(long at, String pipelineUrl, String jobs, String reason
         return retries.stream().filter(retry -> !retry.sent()).findFirst();
     }
 
-    /** What is waiting and when: the host's reason, the jobs, and which of {@code of} retries this is. */
-    public String reading(int attempt, int of) {
+    /** What is waiting and when: the host's reason, the jobs, and which retry this is. */
+    public String reading() {
         return reason + ": " + jobs + " · retry " + attempt + "/" + of + " at "
                 + DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC)
                         .format(java.time.Instant.ofEpochMilli(at)) + " UTC";
     }
 
     public InfraRetry sentAt(long now) {
-        return new InfraRetry(now, pipelineUrl, jobs, reason, true);
+        return new InfraRetry(now, pipelineUrl, jobs, reason, true, attempt, of);
     }
 
     /** The retries sent after the last lift, oldest first. */

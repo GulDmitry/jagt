@@ -36,7 +36,7 @@ class RedCausesTest {
         when(pipelines.failedJobs("https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "unit-tests", "runner_system_failure"))), TokenUsage.NONE));
         when(retries.arm("ABC-42", "https://host.invalid/p/1", "unit-tests", "runner_system_failure"))
-                .thenReturn(Optional.of(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure")));
+                .thenReturn(Optional.of(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3)));
         when(retries.reading("ABC-42")).thenReturn("runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC");
 
         RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);

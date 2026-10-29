@@ -24,7 +24,7 @@ class InfraRetryJobTest {
     private final PipelineRetry pipelines = mock(PipelineRetry.class);
     private final TaskStops stops = mock(TaskStops.class);
     private final InfraRetryJob job = new InfraRetryJob(retries, pipelines, stops);
-    private final InfraRetry armed = InfraRetry.armed(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure");
+    private final InfraRetry armed = InfraRetry.armed(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
 
     @Test
     void reRunsAPipelineWhoseFailedJobsStillDiedOnInfrastructure() {

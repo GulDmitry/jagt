@@ -34,7 +34,7 @@ class BoardStyleguideTest extends BoardPageContext {
 
         page.navigate("http://localhost:" + port + "/styleguide.html");
 
-        assertThat(page.locator("figure.state > article")).hasCount(17);
+        assertThat(page.locator("figure.state > article")).hasCount(18);
         assertThat(page.locator("figure.state #tasks")).hasCount(3);
         assertThat(page.locator("figure.state #pane article")).hasCount(6);
         assertThat(page.locator("figure.state .round .block")).hasCount(3);

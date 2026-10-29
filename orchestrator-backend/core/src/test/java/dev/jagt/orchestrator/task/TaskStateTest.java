@@ -93,7 +93,7 @@ class TaskStateTest {
     @Test
     void forgetsTheInfraRetriesOfARoundWhenANewRoundIsShipped() {
         TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("https://host/mr/9")
-                .infraRetries(List.of(InfraRetry.armed(5_000, "https://host/p/1", "unit-tests", "runner_system_failure")))
+                .infraRetries(List.of(InfraRetry.armed(5_000, "https://host/p/1", "unit-tests", "runner_system_failure", 1, 3)))
                 .build();
 
         TaskState round = polling.withReviewRound("https://host/mr/9", 2_000L);

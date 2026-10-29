@@ -12,9 +12,9 @@ class InfraRetryTest {
     @Test
     void stopsTheTaskWithTheJobAndItsReasonOnceTheLastRetryWasSent() {
         List<InfraRetry> retries = List.of(
-                new InfraRetry(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true),
-                new InfraRetry(2_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true),
-                new InfraRetry(3_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true));
+                new InfraRetry(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
+                new InfraRetry(2_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
+                new InfraRetry(3_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3));
 
         Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.none(), 3, 4_000);
 
@@ -25,8 +25,8 @@ class InfraRetryTest {
     @Test
     void leavesTheTaskWaitingWhileARetryIsLeft() {
         List<InfraRetry> retries = List.of(
-                new InfraRetry(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true),
-                InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure"));
+                new InfraRetry(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
+                InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3));
 
         Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.none(), 2, 4_000);
 
@@ -36,8 +36,8 @@ class InfraRetryTest {
     @Test
     void countsNoRetrySentBeforeTheLift() {
         List<InfraRetry> retries = List.of(
-                new InfraRetry(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true),
-                new InfraRetry(2_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true));
+                new InfraRetry(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
+                new InfraRetry(2_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3));
 
         Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.liftedAt(1_500), 2, 4_000);
 
