@@ -19,6 +19,8 @@ Accepted 2026-10-29. Extends [0105](0105-infrastructure-failures-are-waited-out.
 - The read is `StopReadJob`, every 5 minutes, whatever auto-review says; it runs while the stop stands.
 - It goes through `RoundReading`, the read a sweep makes.
 - A read that lists the checks and is not red voids the stop through `TaskStops`; red, unknown or unreadable keeps it.
+- A read the host refuses as "no such request" is its own kind, `GONE`, and voids the stop too.
+- The refusal kinds that void a stop are one set beside `endOnRead`.
 - The probe records the checks and approval it listed through `RoundRecord`, so the card shows what ended the stop.
 - The probe relays, ships and presses nothing: the next tick of whoever waited on the stop acts.
 

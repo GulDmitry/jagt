@@ -12,8 +12,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -24,6 +26,10 @@ import java.util.function.UnaryOperator;
 public class TaskStops {
 
     public enum Relay { RELAY, UNCHANGED, ASKING, STOPPED }
+
+    /** The refusals of a read that show the checks a stop waited on are gone; any other refusal says nothing about them. */
+    private static final Set<ReviewSweepService.SweepResult.Kind> DISPROVING_REFUSALS =
+            EnumSet.of(ReviewSweepService.SweepResult.Kind.GONE);
 
     private final StateService stateService;
     private final LoopBreaker.Current breakers;
@@ -96,8 +102,16 @@ public class TaskStops {
 
     /** The stop a read of the checks ended: one whose trigger ends on a read, and the read listed the checks, not red. */
     public Optional<TaskStop> endOnRead(String taskId, Pipeline read) {
+        return endWhen(taskId, read != Pipeline.UNKNOWN && read != Pipeline.RED);
+    }
+
+    /** The stop a refused read ended: one whose trigger ends on a read, and the refusal says the checks are no more. */
+    public Optional<TaskStop> endOnRefusal(String taskId, ReviewSweepService.SweepResult.Kind refusal) {
+        return endWhen(taskId, DISPROVING_REFUSALS.contains(refusal));
+    }
+
+    private Optional<TaskStop> endWhen(String taskId, boolean disproves) {
         AtomicReference<@Nullable TaskStop> ended = new AtomicReference<>();
-        boolean disproves = read != Pipeline.UNKNOWN && read != Pipeline.RED;
         stateService.updateTask(taskId, task -> {
             TaskStop stop = task.stop();
             if (!disproves || stop == null || stop.trigger().ends() != TaskStop.Trigger.Ends.HOST_READ) {

@@ -69,7 +69,8 @@ class AutoReviewPolls {
                     () -> reviewSweep.sweep(taskId));
             // A round nobody could read is the one outcome an unattended poll must not keep to itself: the
             // retries are spent, and every further tick would say the same thing to the same log.
-            if (result.kind() == ReviewSweepService.SweepResult.Kind.UNREADABLE
+            if ((result.kind() == ReviewSweepService.SweepResult.Kind.UNREADABLE
+                    || result.kind() == ReviewSweepService.SweepResult.Kind.GONE)
                     && unreadableNotified.add(taskId + "@" + round)) {
                 notifications.send(Notification.fromAgent(taskId, "auto-review", result.message()));
             }

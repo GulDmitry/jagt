@@ -237,7 +237,7 @@ class RoundReadingTest {
         var read = reading.read("ABC-1");
 
         assertThat(read).isInstanceOfSatisfying(RoundReading.Refused.class, refused -> {
-            assertThat(refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
+            assertThat(refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.GONE);
             assertThat(refused.result().message()).isEqualTo("error: no such request: http://mr/1 (the host says so)");
         });
     }

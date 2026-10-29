@@ -61,7 +61,7 @@ public class RoundReading {
                         "error: read failed: " + repo.mrUrl() + " " + cause(answer.failure())));
             }
             if (!read.get().exists()) {
-                return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
+                return new Refused(new SweepResult(SweepResult.Kind.GONE,
                         "error: no such request: " + repo.mrUrl() + " (the host says so)"));
             }
             if (read.get().merged()) {

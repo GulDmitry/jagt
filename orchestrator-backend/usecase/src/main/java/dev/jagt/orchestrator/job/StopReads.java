@@ -19,12 +19,18 @@ class StopReads {
     private final RoundRecord record;
 
     void probe(String taskId) {
-        if (reading.read(taskId) instanceof RoundReading.Round round) {
-            record.recordListed(taskId, round.facts());
-            Pipeline pipeline = Pipeline.of(round.facts().pipelineStatus());
-            stops.endOnRead(taskId, pipeline).ifPresent(stop -> log.atInfo().setMessage("stop voided by read")
-                    .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())
-                    .addKeyValue("pipeline", pipeline).log());
+        switch (reading.read(taskId)) {
+            case RoundReading.Round round -> {
+                record.recordListed(taskId, round.facts());
+                Pipeline pipeline = Pipeline.of(round.facts().pipelineStatus());
+                stops.endOnRead(taskId, pipeline).ifPresent(stop -> log.atInfo().setMessage("stop voided by read")
+                        .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())
+                        .addKeyValue("pipeline", pipeline).log());
+            }
+            case RoundReading.Refused refused -> stops.endOnRefusal(taskId, refused.result().kind())
+                    .ifPresent(stop -> log.atInfo().setMessage("stop voided by read")
+                            .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())
+                            .addKeyValue("request", "gone").log());
         }
     }
 }

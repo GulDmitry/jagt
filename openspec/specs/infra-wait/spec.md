@@ -51,6 +51,11 @@ A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the tas
 - **THEN** the task's checks and approval read that green, not the pre-outage word
 - **AND** the read writes nothing else: no relay, no status move, no message to the session
 
+#### Scenario: The request is gone
+- **WHEN** a task stopped as `INFRA` or `CHECKS` and the host says the request the stop was counted on no longer exists
+- **THEN** the stop is voided and the log says `stop voided by read` once, with `request=gone`
+- **AND** a read refused because the host or CLI cannot answer leaves the stop standing
+
 #### Scenario: The host is still failing
 - **WHEN** the read of a task stopped as `INFRA` is red, or lists no checks at all
 - **THEN** the stop stands and the read is made again at the next poll

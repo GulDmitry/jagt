@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -41,7 +43,8 @@ class StopReadsTest {
 
         reads.probe("ABC-42");
 
-        verifyNoInteractions(stops, record);
+        verifyNoInteractions(record);
+        verify(stops, never()).endOnRead(any(), any());
     }
 
     @Test
@@ -52,5 +55,15 @@ class StopReadsTest {
         reads.probe("ABC-42");
 
         verify(record).recordListed("ABC-42", green);
+    }
+
+    @Test
+    void asksTheStopToEndWhereTheHostSaysTheRequestIsGone() {
+        when(reading.read("ABC-42")).thenReturn(new RoundReading.Refused(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.GONE, "error: no such request")));
+
+        reads.probe("ABC-42");
+
+        verify(stops).endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE);
     }
 }
