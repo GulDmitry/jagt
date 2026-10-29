@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.adapter.codehost;
 
 import lombok.RequiredArgsConstructor;
 
+import dev.jagt.orchestrator.task.GitRemote;
+
 import java.net.URI;
 import java.util.Optional;
 
@@ -41,5 +43,21 @@ record PipelineAddress(Kind kind, String hostname, String project, String id) {
             }
         }
         return Optional.empty();
+    }
+
+    /** A repository's remote in either shape; GitHub where the host says so, a GitLab otherwise. */
+    static Optional<PipelineAddress> ofRemote(String remoteUrl, String commit) {
+        String project = GitRemote.projectPath(remoteUrl);
+        if (project == null || commit.isBlank()) {
+            return Optional.empty();
+        }
+        String remote = remoteUrl.strip();
+        String host = remote.contains("://") ? URI.create(remote).getHost()
+                : remote.substring(remote.indexOf('@') + 1, remote.indexOf(':'));
+        if (host == null) {
+            return Optional.empty();
+        }
+        Kind kind = host.contains("github") ? Kind.GITHUB : Kind.GITLAB;
+        return Optional.of(new PipelineAddress(kind, host, project, commit));
     }
 }

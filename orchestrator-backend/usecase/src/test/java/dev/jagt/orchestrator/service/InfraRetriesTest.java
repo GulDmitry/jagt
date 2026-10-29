@@ -155,10 +155,10 @@ class InfraRetriesTest {
     }
 
     @Test
-    void sendsNoDueRetryOfADeployedTaskWhoseRequestIsRed(@TempDir Path dir) {
+    void sendsTheDueRetryOfADeployedTaskWhoseDeployPipelineDiedOnInfrastructure(@TempDir Path dir) {
         StateService state = state(dir);
-        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).pipelineStatus("failed").build());
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).pipelineStatus("success").build());
 
-        assertThat(retries(state).stillWaiting("ABC-42")).isFalse();
+        assertThat(retries(state).stillWaiting("ABC-42")).isTrue();
     }
 }

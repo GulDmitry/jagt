@@ -286,4 +286,36 @@ class FlowReportsTest {
         assertThat(written.get().report()).isEqualTo(asked);
         assertThat(written.get().message()).isEqualTo("squash or keep the commits?");
     }
+
+    @Test
+    void handsADeployedTaskBackWhenItsDeployPipelineIsRedOnTheCode() {
+        reports.readDeploy("ABC-1", true, "deploy pipeline red");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState handed = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(handed.message()).isEqualTo("deploy pipeline red");
+    }
+
+    @Test
+    void keepsADeployedTaskDeployedWhileItsPipelineIsOnlyWaited() {
+        reports.readDeploy("ABC-1", false, "waiting on its pipeline");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState said = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        assertThat(said.status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(said.message()).isEqualTo("waiting on its pipeline");
+    }
+
+    @Test
+    void movesNoTaskThatIsNotLiveOnTheDeployBranchWhateverItsDeployPipelineSays() {
+        reports.readDeploy("ABC-1", true, "deploy pipeline red");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState reverted = TaskState.builder("proj", "/wt", TaskStatus.REVERTED).build();
+        assertThat(write.getValue().apply(reverted)).isSameAs(reverted);
+    }
 }

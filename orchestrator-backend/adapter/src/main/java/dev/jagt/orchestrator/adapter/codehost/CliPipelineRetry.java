@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.OneLine;
@@ -32,6 +34,7 @@ public class CliPipelineRetry implements PipelineRetry {
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
     private static final Set<String> NOT_SIGNED_IN = Set.of("401", "not logged in", "auth login");
     private static final Set<String> RAN_FINE = Set.of("success", "skipped", "neutral");
+    private static final CommitPipeline NO_PIPELINE = new CommitPipeline("none", "");
     private static final JsonMapper JSON = new JsonMapper();
 
     private final Processes processes;
@@ -54,6 +57,18 @@ public class CliPipelineRetry implements PipelineRetry {
                     "projects/" + encoded(address) + "/pipelines/" + address.id() + "/retry"));
             case GITHUB -> run(address, List.of("run", "rerun", address.id(), "--failed", "-R", address.project()));
         }).orElseGet(() -> notAPipeline(pipelineUrl));
+    }
+
+    @Override
+    public Answer<CommitPipeline> onCommit(String remoteUrl, String sha) {
+        return PipelineAddress.ofRemote(remoteUrl, sha).map(address -> switch (address.kind()) {
+            case GITLAB -> parsed(run(address, List.of("api", "--hostname", address.hostname(),
+                    "projects/" + encoded(address) + "/pipelines?sha=" + address.id() + "&per_page=1")),
+                    "glab", CliPipelineRetry::gitlabPipeline);
+            case GITHUB -> parsed(run(address, List.of("run", "list", "--commit", address.id(), "--json",
+                    "status,conclusion,url", "--limit", "100", "-R", address.project())),
+                    "gh", CliPipelineRetry::githubPipeline);
+        }).orElseGet(() -> Answer.failed(TokenUsage.NONE, "not the address of a repository: " + OneLine.clipped(remoteUrl)));
     }
 
     private Answer<String> run(PipelineAddress address, List<String> arguments) {
@@ -81,8 +96,7 @@ public class CliPipelineRetry implements PipelineRetry {
         return cli + " exited " + result.exitCode() + (lower.isEmpty() ? "" : ": " + said);
     }
 
-    private static Answer<List<FailedJob>> parsed(Answer<String> output, String cli,
-                                                  Function<String, List<FailedJob>> reader) {
+    private static <T> Answer<T> parsed(Answer<String> output, String cli, Function<String, T> reader) {
         if (output.facts().isEmpty()) {
             return Answer.failed(TokenUsage.NONE, output.failure());
         }
@@ -91,6 +105,25 @@ public class CliPipelineRetry implements PipelineRetry {
         } catch (JacksonException e) {
             return Answer.failed(TokenUsage.NONE, cli + " gave output that is not JSON");
         }
+    }
+
+    private static CommitPipeline gitlabPipeline(String output) {
+        JsonNode newest = JSON.readTree(output).path(0);
+        return newest.isMissingNode() ? NO_PIPELINE
+                : new CommitPipeline(newest.path("status").asString(""), newest.path("web_url").asString(""));
+    }
+
+    private static CommitPipeline githubPipeline(String output) {
+        CommitPipeline worst = NO_PIPELINE;
+        for (JsonNode run : JSON.readTree(output)) {
+            String status = run.path("status").asString("");
+            String said = "completed".equals(status) ? run.path("conclusion").asString("") : status;
+            CommitPipeline read = new CommitPipeline(RAN_FINE.contains(said) ? "success" : said, run.path("url").asString(""));
+            if (worst == NO_PIPELINE || Pipeline.of(read.status()).severity() < Pipeline.of(worst.status()).severity()) {
+                worst = read;
+            }
+        }
+        return worst;
     }
 
     private static List<FailedJob> gitlabJobs(String output) {

@@ -336,6 +336,11 @@ public final class FlowRules {
         return status == TaskStatus.DEPLOYED;
     }
 
+    /** Where a read of the pipeline on a deploy commit lands: only a task live on the deploy branch moves, and only on a red the code owns. */
+    public static TaskStatus deployReadLands(TaskStatus from, boolean redOnTheCode) {
+        return from == TaskStatus.DEPLOYED && redOnTheCode ? TaskStatus.DEPLOY_CONFLICT : from;
+    }
+
     /** A plan waiting to be read, rather than a round of code. */
     public static boolean holdsAPlan(TaskStatus status) {
         return status == TaskStatus.PLAN_PENDING;

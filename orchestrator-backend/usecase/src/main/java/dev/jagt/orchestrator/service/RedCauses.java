@@ -38,13 +38,27 @@ public class RedCauses {
 
     public Verdict judge(String taskId, ReviewFacts facts, Pipeline checks) {
         if (checks != Pipeline.RED) {
-            retries.clear(taskId, checks == Pipeline.GREEN);
+            if (retries.applies(taskId)) {
+                retries.clear(taskId, checks == Pipeline.GREEN);
+            }
             return Verdict.CODE;
         }
-        if (!properties.waits() || facts.pipelineUrl().isBlank() || !retries.applies(taskId)) {
+        if (facts.pipelineUrl().isBlank() || !retries.applies(taskId)) {
             return Verdict.CODE;
         }
-        Answer<List<FailedJob>> failed = pipelines.failedJobs(facts.pipelineUrl());
+        return judgeRed(taskId, facts.pipelineUrl());
+    }
+
+    /** The same ask of the pipeline a deploy commit ran, which no round of the review request carries. */
+    public Verdict judgeDeploy(String taskId, String pipelineUrl) {
+        return pipelineUrl.isBlank() ? Verdict.CODE : judgeRed(taskId, pipelineUrl);
+    }
+
+    private Verdict judgeRed(String taskId, String pipelineUrl) {
+        if (!properties.waits()) {
+            return Verdict.CODE;
+        }
+        Answer<List<FailedJob>> failed = pipelines.failedJobs(pipelineUrl);
         if (failed.facts().isEmpty()) {
             log.atWarn().setMessage("failed jobs unreadable").addKeyValue("task", taskId)
                     .addKeyValue("cause", failed.failure()).log();
@@ -54,7 +68,7 @@ public class RedCauses {
             retries.clear(taskId, true);
             return Verdict.CODE;
         }
-        return waitOut(taskId, facts.pipelineUrl(), failed.facts().get());
+        return waitOut(taskId, pipelineUrl, failed.facts().get());
     }
 
     private Verdict waitOut(String taskId, String pipelineUrl, List<FailedJob> failed) {

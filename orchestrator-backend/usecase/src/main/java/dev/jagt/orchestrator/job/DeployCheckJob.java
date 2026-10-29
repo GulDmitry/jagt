@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -20,8 +21,9 @@ import java.util.stream.Collectors;
 
 /**
  * Asks every deployed task's session to check the change where it landed, once per deploy, as the brief's deploy
- * section says. A check that fails is the session's IN_PROGRESS, and the round goes round again: reviewed, deployed,
- * checked.
+ * section says, and only once the pipeline jagt reads on each deploy commit is green; until then the card says what
+ * the deploy waits on. A check that fails is the session's IN_PROGRESS, and the round goes round again: reviewed,
+ * deployed, checked.
  */
 @Service
 @RequiredArgsConstructor
@@ -30,7 +32,10 @@ public class DeployCheckJob implements Job {
     private final StateService stateService;
     private final ConfigService configService;
     private final StepRelay relay;
+    private final DeployPipelines pipelines;
+    private final FlowReports reports;
     private static final String STEP = "deploy";
+    private static final Duration READ_EVERY = Duration.ofMinutes(1);
 
     @Override
     public String id() {
@@ -44,12 +49,12 @@ public class DeployCheckJob implements Job {
 
     @Override
     public String describe() {
-        return "ask each deployed task's session to check the change where it landed";
+        return "ask each deployed task's session to check the change where it landed, once its pipeline is green";
     }
 
     @Override
     public Duration every() {
-        return Duration.ofSeconds(20);
+        return READ_EVERY;
     }
 
     @Override
@@ -59,8 +64,28 @@ public class DeployCheckJob implements Job {
                 return;
             }
             landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP, Turn.digestOf(landed)))
-                    .ifPresent(landed -> relay.relay(taskId, STEP, landed));
+                    .ifPresent(landed -> settle(taskId, task, landed));
         });
+    }
+
+    private void settle(String taskId, TaskState task, String landed) {
+        DeployPipelines.Reading reading = pipelines.read(taskId, task);
+        String stamp = "deployed to " + deployBranches(task);
+        switch (reading.kind()) {
+            case GREEN -> {
+                reports.readDeploy(taskId, false, stamp);
+                relay.relay(taskId, STEP, landed);
+            }
+            case WAITING, RED -> reports.readDeploy(taskId, false,
+                    stamp + " — waiting on its pipeline: " + reading.said());
+        }
+    }
+
+    private String deployBranches(TaskState task) {
+        Map<String, ProjectConfig> projects = configService.load().projects();
+        return task.repos().stream().map(repo -> projects.get(repo.project()))
+                .filter(project -> project != null && project.deployBranch() != null).map(ProjectConfig::deployBranch)
+                .distinct().collect(Collectors.joining(", "));
     }
 
     private Optional<String> landed(String taskId, TaskState task) {

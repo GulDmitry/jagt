@@ -80,10 +80,11 @@ public class InfraRetries {
         return stateService.task(taskId).filter(task -> FlowRules.waitsOnTheHost(task.status())).isPresent();
     }
 
-    /** The task waits on its checks, is not stopped, and they still read red: a human may have acted since the retry was armed. */
+    /** The task is not stopped and its checks still read red, or it is live on the deploy branch, whose own pipeline a retry was armed for. */
     public boolean stillWaiting(String taskId) {
-        return stateService.task(taskId).filter(task -> FlowRules.waitsOnTheHost(task.status()) && !task.stopped())
-                .filter(task -> Pipeline.of(task.pipelineStatus()) == Pipeline.RED).isPresent();
+        return stateService.task(taskId).filter(task -> !task.stopped() && (FlowRules.checkedWhereItLanded(task.status())
+                || FlowRules.waitsOnTheHost(task.status()) && Pipeline.of(task.pipelineStatus()) == Pipeline.RED))
+                .isPresent();
     }
 
     /** The stop once the last wait is spent and the pipeline is red on infrastructure again. */

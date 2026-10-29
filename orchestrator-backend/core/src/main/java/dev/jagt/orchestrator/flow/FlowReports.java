@@ -172,4 +172,26 @@ public class FlowReports {
         });
         return Optional.ofNullable(landed.get());
     }
+
+    /**
+     * What jagt read of the pipeline on a deployed task's commit: the line the task carries while it is open, or
+     * the deploy handed back for a red the code owns. A task that is not live on the deploy branch is left alone,
+     * and so is one already saying it; false where nothing was written.
+     */
+    public boolean readDeploy(String taskId, boolean redOnTheCode, String message) {
+        AtomicBoolean written = new AtomicBoolean();
+        tasks.updateTask(taskId, task -> {
+            if (!FlowRules.checkedWhereItLanded(task.status())) {
+                return task;
+            }
+            TaskStatus now = FlowRules.deployReadLands(task.status(), redOnTheCode);
+            if (now == task.status() && message.equals(task.message())) {
+                return task;
+            }
+            written.set(true);
+            TaskState said = task.withStatus(now, message, now != task.status(), clock.millis());
+            return now == task.status() ? said.withReport(task.report()) : said;
+        });
+        return written.get();
+    }
 }

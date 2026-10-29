@@ -112,6 +112,8 @@ class RedCausesTest {
 
     @Test
     void forgetsEveryRetryOnceTheRunWentGreen() {
+        when(retries.applies("ABC-42")).thenReturn(true);
+
         causes.judge("ABC-42", red, Pipeline.GREEN);
 
         verify(retries).clear("ABC-42", true);
@@ -119,6 +121,8 @@ class RedCausesTest {
 
     @Test
     void forgetsOnlyTheArmedRetryWhileTheRunIsStillGoing() {
+        when(retries.applies("ABC-42")).thenReturn(true);
+
         causes.judge("ABC-42", red, Pipeline.RUNNING);
 
         verify(retries).clear("ABC-42", false);
@@ -135,5 +139,38 @@ class RedCausesTest {
         verifyNoInteractions(pipelines);
         verify(retries, never()).arm(any(), any(), any(), any());
         verify(retries, never()).exhausted(any());
+    }
+
+    @Test
+    void keepsTheRetriesOfADeployWhenTheReviewRequestOfATaskPastItsReviewReadsGreen() {
+        when(retries.applies("ABC-42")).thenReturn(false);
+
+        causes.judge("ABC-42", red, Pipeline.GREEN);
+
+        verify(retries, never()).clear(any(), org.mockito.ArgumentMatchers.anyBoolean());
+    }
+
+    @Test
+    void waitsOutADeployPipelineWhoseEveryFailedJobDiedOnInfrastructure() {
+        when(pipelines.failedJobs("https://host.invalid/p/9")).thenReturn(new Answer<>(Optional.of(
+                List.of(new FailedJob("1", "unit-tests", "runner_system_failure"))), TokenUsage.NONE));
+        when(retries.arm("ABC-42", "https://host.invalid/p/9", "unit-tests", "runner_system_failure"))
+                .thenReturn(Optional.of(InfraRetry.armed(9_000, "https://host.invalid/p/9", "unit-tests", "runner_system_failure", 1, 3)));
+
+        RedCauses.Verdict verdict = causes.judgeDeploy("ABC-42", "https://host.invalid/p/9");
+
+        assertThat(verdict.cause()).isEqualTo(RedCause.INFRASTRUCTURE);
+        assertThat(verdict.retryLeft()).isTrue();
+    }
+
+    @Test
+    void handsADeployPipelineToTheSessionWhenAFailedJobFailedItsScript() {
+        when(pipelines.failedJobs("https://host.invalid/p/9")).thenReturn(new Answer<>(Optional.of(
+                List.of(new FailedJob("2", "static-analysis", "script_failure"))), TokenUsage.NONE));
+
+        RedCauses.Verdict verdict = causes.judgeDeploy("ABC-42", "https://host.invalid/p/9");
+
+        assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
+        assertThat(verdict.retryLeft()).isFalse();
     }
 }

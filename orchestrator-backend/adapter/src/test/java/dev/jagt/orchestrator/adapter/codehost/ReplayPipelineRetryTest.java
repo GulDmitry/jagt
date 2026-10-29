@@ -25,4 +25,9 @@ class ReplayPipelineRetryTest {
 
         assertThat(answer.facts()).isEmpty();
     }
+
+    @Test
+    void aReplayedRunReadsNoCommitFromAHost() {
+        assertThat(replay.onCommit("https://git.example.invalid/shop/web.git", "0123abc").facts()).isEmpty();
+    }
 }

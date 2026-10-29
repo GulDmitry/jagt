@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -23,5 +24,10 @@ public class ReplayPipelineRetry implements PipelineRetry {
     @Override
     public Answer<String> retryFailed(String pipelineUrl) {
         return Answer.failed(TokenUsage.NONE, "a replayed run sends nothing to a host");
+    }
+
+    @Override
+    public Answer<CommitPipeline> onCommit(String remoteUrl, String sha) {
+        return Answer.failed(TokenUsage.NONE, "a replayed run reaches no host");
     }
 }
