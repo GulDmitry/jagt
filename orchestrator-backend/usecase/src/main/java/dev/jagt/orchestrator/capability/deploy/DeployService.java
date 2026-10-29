@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
+import dev.jagt.orchestrator.task.DeployRedLine;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -47,6 +48,7 @@ public class DeployService {
         TaskState task = requireTask(taskId);
         List<Target> targets = deployTargets.all(task);
         targets.forEach(DeployTargets::requireDeployable);
+        requireTheFixStaged(task, taskId);
         Landing landing = new Landing();
         int from = resumeFrom(task, taskId, targets);
         for (int i = from; i < targets.size(); i++) {
@@ -63,6 +65,18 @@ public class DeployService {
             throw landing.idle;
         }
         return deployed(taskId, targets, from, landing.merged, landing.nothingToDo);
+    }
+
+    /** A deploy handed back for its pipeline finishes with the session's fix, not with a merge of the task again. */
+    private void requireTheFixStaged(TaskState task, String taskId) {
+        deployTargets.stopped(task, taskId)
+                .filter(target -> DeployRedLine.marks(task.message())
+                        && !gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))
+                .ifPresent(target -> {
+                    throw Refusal.byState("deploy " + taskId + " waits on the session's fix in "
+                            + GitDeploy.deployWorktreePath(target.path(), taskId) + ": it is not staged in full yet."
+                            + " Stage it, then deploy again.");
+                });
     }
 
     private static final class Landing {

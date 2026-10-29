@@ -7,11 +7,11 @@ import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.RedCauses;
+import dev.jagt.orchestrator.task.DeployRedLine;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -44,18 +44,10 @@ public class DeployPipelines {
     /** How long after the push a host listing no pipeline for a commit still counts as one about to come. */
     public static final Duration NO_PIPELINE_AFTER = Duration.ofMinutes(10);
 
-    /** What a deploy handed back for its pipeline says it was handed back for. */
-    public static final String RED_CAUSE = "red pipeline on the deploy commit";
-
     private final PipelineRetry pipelines;
     private final RedCauses causes;
     private final DeployFixWorktrees fixes;
     private final Clock clock;
-
-    /** Whether a task's line says it was handed back for a red deploy pipeline. */
-    public static boolean marks(@Nullable String line) {
-        return line != null && line.startsWith(RED_CAUSE);
-    }
 
     /** The first red the code owns, else the first repository still open, else green. */
     public Reading read(String taskId, TaskState task) {
@@ -130,6 +122,6 @@ public class DeployPipelines {
                     .addKeyValue("effect", "the deploy stays open, tried again").log();
             return Reading.waiting(at + "red on the code, its deploy worktree not opened: " + e.getMessage());
         }
-        return new Reading(Kind.RED, RED_CAUSE + ": " + label, project, url);
+        return new Reading(Kind.RED, DeployRedLine.CAUSE + ": " + label, project, url);
     }
 }

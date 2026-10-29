@@ -126,6 +126,11 @@ A fix staged there SHALL be committed and pushed by the next `deploy`, never by 
 - **THEN** jagt commits it and pushes it to `dev` through `deploy`, and ABC-42 is `DEPLOYED` on the new commit
 - **AND** the pipeline on that commit is read, and the session is asked once it is green
 
+#### Scenario: A press before the fix
+- **WHEN** a `deploy` is pressed on ABC-42 while nothing is staged in its fix worktree
+- **THEN** it is refused, saying the deploy waits on the session's fix in that worktree
+- **AND** the worktree and the status stay
+
 #### Scenario: The deploy worktree cannot be opened
 - **WHEN** the pipeline is red on the code and the worktree path holds a checkout jagt did not cut
 - **THEN** the deploy stays open, its line says why, and the next read tries again

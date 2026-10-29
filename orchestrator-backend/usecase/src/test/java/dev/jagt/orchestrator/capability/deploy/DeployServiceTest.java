@@ -95,6 +95,8 @@ class DeployServiceTest {
                 .deployCommit("cafebabe1234").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", null))));
         GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("f1xf1x5678");
         when(git.isFix(any(), eq("f1xf1x5678"))).thenReturn(true);
@@ -105,6 +107,29 @@ class DeployServiceTest {
         TaskRepo repo = state.task("ABC-1").orElseThrow().repos().getFirst();
         assertThat(repo.deployCommit()).isEqualTo("cafebabe1234");
         assertThat(repo.deployTip()).isEqualTo("f1xf1x5678");
+    }
+
+    @Test
+    void refusesAPressWhileTheDeployWaitsOnTheSessionsFixAndLeavesTheStatusAlone(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1")
+                .message("red pipeline on the deploy commit: proj cafebabe").deployCommit("cafebabe1234").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", null))));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
+        when(git.deployResolved(Path.of("/repo"), "ABC-1", "dev")).thenReturn(false);
+        DeployService deploys = new DeployService(state, new DeployTargets(config, git), git);
+
+        assertThatThrownBy(() -> deploys.deploy("a1")).isInstanceOf(Refusal.class)
+                .hasMessageContaining("waits on the session's fix in /ABC-1-deploy");
+
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(state.task("ABC-1").orElseThrow().message()).startsWith("red pipeline on the deploy commit");
+        verify(git, never()).mergeIntoAndPush(any(), anyString(), anyString());
     }
 
     @Test

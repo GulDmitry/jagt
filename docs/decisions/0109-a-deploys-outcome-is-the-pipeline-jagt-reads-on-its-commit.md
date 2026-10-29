@@ -24,6 +24,7 @@ Accepted 2026-10-29. Extends [0013](0013-a-deploy-conflict-is-the-sessions-in-ac
   `DEPLOY_CONFLICT`, the worktree cut from the deploy branch, the status line naming `red pipeline on the deploy commit`.
 - The session fixes the merge result there and stages it, as for a conflict; jagt commits and pushes it through the deploy path, then reads again.
 - In `judge` the card says NEEDS YOU, as for a conflict; nothing is pressed.
+- A press on a fix worktree with nothing staged is refused and keeps it: the deploy waits on the fix.
 - A pipeline that is unknown or cannot be read keeps the deploy open, and ends on the next successful read.
 - No pipeline settles the deploy where none can come: the host lists none `NO_PIPELINE_AFTER` (10 minutes) after the push,
   or the repository has no host address.
