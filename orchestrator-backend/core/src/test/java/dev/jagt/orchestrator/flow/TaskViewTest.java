@@ -252,6 +252,14 @@ class TaskViewTest {
     }
 
     @Test
+    void namesAReviewedTaskAsAwaitingTheApprovalOfItsReviewers() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/wt", TaskStatus.REVIEWED).build(),
+                RoundState.NONE, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.statusLabel()).isEqualTo("awaiting approval");
+    }
+
+    @Test
     void namesTheMasterAsTheStatusLabelWhileItReadsTheRound() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).build(),
                 RoundState.NONE.withMasterReading(true), AutoReviewWatch.none(), Map.of("api", "dev"));

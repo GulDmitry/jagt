@@ -133,7 +133,7 @@ leftover message cannot flip one.
 - **THEN** `NEEDS` is not red
 
 ### Requirement: The board says, never infers
-The board SHALL render `TaskStatus.label()` (`out for review`, `not shipped`, `not approved`), a state, never a
+The board SHALL render `TaskStatus.label()` (`out for review`, `not shipped`, `awaiting approval`), a state, never a
 move; the enum name is the wire value `state.json` carries. `RoundRecord.record` SHALL stamp
 `TaskState.approved` with the pipeline, null until read: an empty ring beside the request until it lands.
 

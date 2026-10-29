@@ -9,7 +9,7 @@ public enum TaskStatus {
     SHIPPING("pushing"),
     CI_POLLING("out for review"),
     CI_FAILED("checks failed"),
-    REVIEWED("not approved"),
+    REVIEWED("awaiting approval"),
     APPROVED("approved"),
     DEPLOY_CONFLICT("deploy conflict"),
     DEPLOYED("deployed"),
