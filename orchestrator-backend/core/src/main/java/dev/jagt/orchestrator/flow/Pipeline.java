@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Locale;
@@ -8,6 +9,7 @@ import java.util.Locale;
  * What the code host last said about the checks, as a verdict rather than as its own wording: every host spells
  * this differently, and anything matching on the words would agree with the next reader only by luck.
  */
+@RequiredArgsConstructor
 public enum Pipeline {
 
     /** Failed, errored, cancelled, timed out, or waiting on a human — nothing green will come of this run. */
@@ -25,10 +27,6 @@ public enum Pipeline {
 
     /** Worst first, for merging several repositories' rounds into one. */
     private final int severity;
-
-    Pipeline(int severity) {
-        this.severity = severity;
-    }
 
     public int severity() {
         return severity;

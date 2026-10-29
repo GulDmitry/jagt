@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.task;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 public enum TaskStatus {
     NEW("starting"),
     PLAN_PENDING("plan waiting"),
@@ -18,10 +21,6 @@ public enum TaskStatus {
 
     /** The enum name is the wire value; this is the same status in words, naming a STATE rather than a next move. */
     private final String label;
-
-    TaskStatus(String label) {
-        this.label = label;
-    }
 
     public String label() {
         return label;

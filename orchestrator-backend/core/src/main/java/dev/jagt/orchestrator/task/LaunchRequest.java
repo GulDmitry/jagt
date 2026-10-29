@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Set;
  * target with the review request, null = the project's own.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@With
 public record LaunchRequest(@Nullable String ref, @Nullable String project, @Nullable String mode,
                             @Nullable String strategy, @Nullable String baseBranch, @Nullable String notes) {
 
@@ -81,30 +83,6 @@ public record LaunchRequest(@Nullable String ref, @Nullable String project, @Nul
         List<String> named = Arrays.stream(token.split(",")).map(String::strip)
                 .filter(key -> !key.isEmpty()).toList();
         return !named.isEmpty() && known.containsAll(named);
-    }
-
-    public LaunchRequest withRef(@Nullable String ref) {
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
-    }
-
-    public LaunchRequest withProject(@Nullable String project) {
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
-    }
-
-    public LaunchRequest withMode(@Nullable String mode) {
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
-    }
-
-    public LaunchRequest withStrategy(@Nullable String strategy) {
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
-    }
-
-    public LaunchRequest withBaseBranch(@Nullable String baseBranch) {
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
-    }
-
-    public LaunchRequest withNotes(@Nullable String notes) {
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 
     /** Blanks become nulls: a surface that posts "" and one that omits the token must look the same. */

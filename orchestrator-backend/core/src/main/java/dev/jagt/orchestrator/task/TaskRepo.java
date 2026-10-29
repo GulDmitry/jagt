@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
@@ -17,8 +18,8 @@ import java.util.Objects;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record TaskRepo(@Nullable String project, @Nullable String worktreePath, @Nullable String remoteUrl,
-                       @Nullable String mrUrl, @Nullable String deployCommit,
+public record TaskRepo(@Nullable String project, @Nullable String worktreePath, @With @Nullable String remoteUrl,
+                       @Nullable String mrUrl, @With @Nullable String deployCommit,
                        @Nullable Boolean merged) {
 
     public TaskRepo(@Nullable String project, @Nullable String worktreePath, @Nullable String remoteUrl,
@@ -36,16 +37,8 @@ public record TaskRepo(@Nullable String project, @Nullable String worktreePath, 
         return new TaskRepo(project, worktreePath, null, null, null);
     }
 
-    public TaskRepo withRemoteUrl(@Nullable String remoteUrl) {
-        return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit, merged);
-    }
-
     public TaskRepo withMrUrl(@Nullable String mrUrl) {
         return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit, wasMerged() && Objects.equals(this.mrUrl, mrUrl));
-    }
-
-    public TaskRepo withDeployCommit(@Nullable String deployCommit) {
-        return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit, merged);
     }
 
     public TaskRepo withMerged(boolean merged) {

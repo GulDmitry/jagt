@@ -1,9 +1,12 @@
 package dev.jagt.orchestrator.task;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * What a metered model call was FOR, so the once-per-task reads can be told apart from the poll that repeats up
  * to hourly.
  */
+@RequiredArgsConstructor
 public enum AssistantCallKind {
 
     /** Reading the work item behind `do` — once per task. */
@@ -22,10 +25,6 @@ public enum AssistantCallKind {
     MASTER_REVIEW("master review");
 
     private final String label;
-
-    AssistantCallKind(String label) {
-        this.label = label;
-    }
 
     public String label() {
         return label;

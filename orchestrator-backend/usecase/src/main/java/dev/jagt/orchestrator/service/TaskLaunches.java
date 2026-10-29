@@ -104,7 +104,7 @@ public class TaskLaunches {
         return head.length() <= TITLE_MAX ? head : head.substring(0, TITLE_MAX).strip() + "…";
     }
 
-    private static NewTask.Builder newTask(String taskId, List<String> projectKeys, String instructions,
+    private static NewTask.NewTaskBuilder newTask(String taskId, List<String> projectKeys, String instructions,
                                            LaunchRequest request) {
         return NewTask.builder(taskId, projectKeys.get(0))
                 .alsoIn(projectKeys.subList(1, projectKeys.size()))

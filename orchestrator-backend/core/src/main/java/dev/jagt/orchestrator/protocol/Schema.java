@@ -4,6 +4,8 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import java.util.Map;
  * <p>The rendering is the only copy. A schema written out by hand beside the code that reads the fields drifts
  * from it silently, which is the duplication this replaces.
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Schema {
 
     private static final JsonMapper MAPPER = new JsonMapper();
@@ -26,10 +29,6 @@ public final class Schema {
     private final @Nullable String description;
     private final ObjectNode properties = MAPPER.createObjectNode();
     private final List<String> required = new ArrayList<>();
-
-    private Schema(@Nullable String description) {
-        this.description = description;
-    }
 
     public static Schema of(@Nullable String description) {
         return new Schema(description);

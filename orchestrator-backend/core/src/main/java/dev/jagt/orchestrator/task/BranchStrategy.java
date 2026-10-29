@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
@@ -10,6 +11,7 @@ import java.util.Locale;
  * What a launch does about a branch of this name that already exists. The words and what each one means live
  * here alone: a surface offering the choice renders these hints rather than a copy of them.
  */
+@RequiredArgsConstructor
 public enum BranchStrategy {
 
     FRESH("stop if the branch exists"),
@@ -17,10 +19,6 @@ public enum BranchStrategy {
     RESUME("continue the branch and its commits");
 
     private final String hint;
-
-    BranchStrategy(String hint) {
-        this.hint = hint;
-    }
 
     /** The spelling every surface accepts and shows. */
     public String id() {

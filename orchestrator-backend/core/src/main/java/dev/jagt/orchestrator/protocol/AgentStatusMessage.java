@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.task.TaskStatus;
 
+import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -24,8 +25,8 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
  * VIOLATION to report back, not an exception on the way in.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
-                                 @Nullable String reviewRequestUrl, Map<String, String> reviewRequests,
+public record AgentStatusMessage(@Nullable String status, @Nullable String message, @With @Nullable String outcome,
+                                 @With @Nullable String reviewRequestUrl, @With Map<String, String> reviewRequests,
                                  @Nullable String taskId, @Nullable String needsProject,
                                  @Nullable String why, Map<String, String> switches) implements Message {
 
@@ -97,18 +98,6 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
 
     public static AgentStatusMessage of(@Nullable String status, @Nullable String message) {
         return new AgentStatusMessage(status, message, null, null, Map.of(), null, null, null, Map.of());
-    }
-
-    public AgentStatusMessage withOutcome(@Nullable String outcome) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why, switches);
-    }
-
-    public AgentStatusMessage withReviewRequestUrl(@Nullable String reviewRequestUrl) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why, switches);
-    }
-
-    public AgentStatusMessage withReviewRequests(Map<String, String> reviewRequests) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId, needsProject, why, switches);
     }
 
     /**

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
@@ -17,7 +18,7 @@ import java.util.TreeSet;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record GitTrust(Map<String, String> recorded, @Nullable String changed) {
+public record GitTrust(Map<String, String> recorded, @With @Nullable String changed) {
 
     public GitTrust {
         recorded = recorded == null ? Map.of() : Map.copyOf(recorded);
@@ -32,10 +33,6 @@ public record GitTrust(Map<String, String> recorded, @Nullable String changed) {
         Map<String, String> both = new HashMap<>(recorded);
         both.putAll(more.recorded());
         return new GitTrust(both, changed);
-    }
-
-    public GitTrust withChanged(String changed) {
-        return new GitTrust(recorded, changed);
     }
 
     /** Each entry differing from the record, in name order, followed by how. */

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -13,6 +14,7 @@ import org.jspecify.annotations.Nullable;
 public record Outcome(Kind kind, String message, @Nullable String stamp, AgentReport stampMeans,
                       @Nullable Throwable cause) {
 
+    @RequiredArgsConstructor
     public enum Kind {
         /** The work was done here and now. */
         OK(false),
@@ -28,10 +30,6 @@ public record Outcome(Kind kind, String message, @Nullable String stamp, AgentRe
         GONE(false);
 
         private final boolean refuses;
-
-        Kind(boolean refuses) {
-            this.refuses = refuses;
-        }
 
         /** Whether the caller must be told this as a failure rather than as an answer. */
         public boolean refuses() {

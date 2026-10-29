@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.TaskStatus;
+import lombok.RequiredArgsConstructor;
 import java.util.Arrays;
 import java.util.List;
 
@@ -8,6 +9,7 @@ import java.util.List;
  * The human-readable step of a task's life: several {@link TaskStatus} values read as one word to a person. A
  * PROJECTION — never a second state machine, never persisted.
  */
+@RequiredArgsConstructor
 public enum Phase {
 
     /** The agent is writing code. */
@@ -23,10 +25,6 @@ public enum Phase {
     DONE("done");
 
     private final String label;
-
-    Phase(String label) {
-        this.label = label;
-    }
 
     public static List<Choice> choices() {
         return Arrays.stream(values()).map(phase -> new Choice(phase.name(), phase.label)).toList();

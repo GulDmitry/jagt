@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
@@ -18,6 +19,7 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
     }
 
     /** {@code reason} is the stop in five words or fewer; {@code next} is what a human reads after the evidence. */
+    @RequiredArgsConstructor
     public enum Trigger {
         STALLED("rounds bring nothing new", "Give the session what the rounds lacked; if nothing was missing, report a jagt defect", true),
         SHIPS("ships with no new note", "Check a new note or commit waits to ship; if one does, report a jagt defect", true),
@@ -37,12 +39,6 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
 
         Trigger(String reason, String next) {
             this(reason, next, false);
-        }
-
-        Trigger(String reason, String next, boolean countedOnRequest) {
-            this.reason = reason;
-            this.next = next;
-            this.countedOnRequest = countedOnRequest;
         }
 
         public String reason() {

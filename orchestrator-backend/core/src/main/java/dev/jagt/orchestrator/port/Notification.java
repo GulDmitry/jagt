@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.port;
 
+import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 /** Something a human must be told, carrying what KIND of thing it is so a channel can route on that. */
-public record Notification(Topic topic, @Nullable String taskId, @Nullable String alias, String title, String body) {
+public record Notification(Topic topic, @Nullable String taskId, @With @Nullable String alias, String title, String body) {
 
     /** What the notification is ABOUT. A channel takes or leaves a notification by this, not by its wording. */
     public enum Topic {
@@ -37,9 +38,5 @@ public record Notification(Topic topic, @Nullable String taskId, @Nullable Strin
 
     public static Notification usage(String title, String body) {
         return new Notification(Topic.USAGE, null, null, title, body);
-    }
-
-    public Notification withAlias(@Nullable String alias) {
-        return new Notification(topic, taskId, alias, title, body);
     }
 }

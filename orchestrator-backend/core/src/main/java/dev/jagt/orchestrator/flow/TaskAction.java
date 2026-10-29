@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.Set;
  * Something a human can do to one task, named once so every surface offers exactly the same set. {@code id} is the
  * wire name AND the CLI verb: one string, so a button and a typed command cannot drift apart.
  */
+@RequiredArgsConstructor
 public enum TaskAction {
 
     APPROVE_PLAN(85, Group.FLOW, "approve-plan", "Approve plan",
@@ -86,15 +89,6 @@ public enum TaskAction {
 
     TaskAction(int rank, Group group, String id, String label, String hint) {
         this(rank, group, id, label, hint, id + " <ticket>");
-    }
-
-    TaskAction(int rank, Group group, String id, String label, String hint, String usage) {
-        this.rank = rank;
-        this.group = group;
-        this.id = id;
-        this.label = label;
-        this.hint = hint;
-        this.usage = usage;
     }
 
     public Group group() {

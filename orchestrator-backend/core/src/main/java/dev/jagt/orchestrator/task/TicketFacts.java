@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import lombok.With;
+
 import java.util.List;
 
 /**
@@ -9,6 +11,7 @@ import java.util.List;
  * {@code assignee} are what an intake trigger fires on, read back off the item itself rather than trusted from
  * whatever listed it.
  */
+@With
 public record TicketFacts(boolean exists, String key, String title, String trackerProject, List<String> labels,
                           String url, String trackerStatus, String assignee) {
 
@@ -28,38 +31,6 @@ public record TicketFacts(boolean exists, String key, String title, String track
      */
     public boolean usable() {
         return exists && notBlank(key) && notBlank(title) && notBlank(url);
-    }
-
-    public TicketFacts withExists(boolean exists) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
-    }
-
-    public TicketFacts withKey(String key) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
-    }
-
-    public TicketFacts withTitle(String title) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
-    }
-
-    public TicketFacts withTrackerProject(String trackerProject) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
-    }
-
-    public TicketFacts withLabels(List<String> labels) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
-    }
-
-    public TicketFacts withUrl(String url) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
-    }
-
-    public TicketFacts withTrackerStatus(String trackerStatus) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
-    }
-
-    public TicketFacts withAssignee(String assignee) {
-        return new TicketFacts(exists, key, title, trackerProject, labels, url, trackerStatus, assignee);
     }
 
     private static boolean notBlank(String value) {

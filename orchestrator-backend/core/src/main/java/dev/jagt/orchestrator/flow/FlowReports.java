@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
@@ -21,12 +22,8 @@ import java.util.function.UnaryOperator;
  * report comes through here, so the machine has no entrance without a rule on it — a task cannot talk itself onto
  * a shared branch, out of one, or closed.
  */
+@RequiredArgsConstructor
 public class FlowReports {
-
-    public FlowReports(TaskStore tasks, Clock clock) {
-        this.tasks = tasks;
-        this.clock = clock;
-    }
 
     private final TaskStore tasks;
     private final Clock clock;

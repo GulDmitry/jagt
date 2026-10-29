@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,6 +14,7 @@ import java.util.List;
  *
  * <p>The briefing is not here — which file holds it is {@code AgentRuntime}'s answer, not the task's.
  */
+@RequiredArgsConstructor
 public enum Artifact {
 
     /** What the agent means to do, before it writes anything. */
@@ -32,10 +35,6 @@ public enum Artifact {
     REVIEW("master-review.md");
 
     private final String fileName;
-
-    Artifact(String fileName) {
-        this.fileName = fileName;
-    }
 
     public String fileName() {
         return fileName;

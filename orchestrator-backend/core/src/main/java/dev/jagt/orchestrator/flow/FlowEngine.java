@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
+import lombok.RequiredArgsConstructor;
 
 import java.time.Clock;
 import java.util.Optional;
@@ -13,14 +14,8 @@ import java.util.function.Supplier;
  * The ONE place a task's status is decided and written, whoever asked: no doer names a status, and a refusal is
  * answered with a sentence instead of a git error three layers down.
  */
+@RequiredArgsConstructor
 public class FlowEngine {
-
-    public FlowEngine(TaskStore tasks, Capabilities capabilities, AgentPresence agents, Clock clock) {
-        this.tasks = tasks;
-        this.capabilities = capabilities;
-        this.agents = agents;
-        this.clock = clock;
-    }
 
     private final TaskStore tasks;
     private final Capabilities capabilities;

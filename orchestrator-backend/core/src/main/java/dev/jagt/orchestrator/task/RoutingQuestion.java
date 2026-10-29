@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import lombok.With;
+
 import java.util.List;
 import java.util.Map;
 
@@ -8,6 +10,7 @@ import java.util.Map;
  * saying what that repository is; {@code precedents} is what was done with items like it before, and
  * {@code rules} what the install has written down — evidence to weigh, none of it the answer.
  */
+@With
 public record RoutingQuestion(TicketFacts item, Map<String, String> projects, List<String> precedents,
                               List<String> rules) {
 
@@ -19,22 +22,6 @@ public record RoutingQuestion(TicketFacts item, Map<String, String> projects, Li
 
     public static RoutingQuestion defaults() {
         return new RoutingQuestion(TicketFacts.defaults(), Map.of(), List.of(), List.of());
-    }
-
-    public RoutingQuestion withItem(TicketFacts item) {
-        return new RoutingQuestion(item, projects, precedents, rules);
-    }
-
-    public RoutingQuestion withProjects(Map<String, String> projects) {
-        return new RoutingQuestion(item, projects, precedents, rules);
-    }
-
-    public RoutingQuestion withPrecedents(List<String> precedents) {
-        return new RoutingQuestion(item, projects, precedents, rules);
-    }
-
-    public RoutingQuestion withRules(List<String> rules) {
-        return new RoutingQuestion(item, projects, precedents, rules);
     }
 
     public boolean answerable() {

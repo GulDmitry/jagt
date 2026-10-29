@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.Builder;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.function.UnaryOperator;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Builder(toBuilder = true, buildMethodName = "assemble")
 public record TaskState(
         List<TaskRepo> repos,
         TaskStatus status,
@@ -452,7 +454,7 @@ public record TaskState(
      * one as opened NOW — a request reaches here only as it is being opened. A {@code resume} adopting somebody
      * else's request is linked through the builder instead, and keeps its unknown age.
      */
-    private Builder relinked(@Nullable String project, String mrUrl, long now) {
+    private TaskStateBuilder relinked(@Nullable String project, String mrUrl, long now) {
         List<TaskRepo> repos = mapRepo(project, repo -> repo.withMrUrl(mrUrl));
         if (repos.equals(this.repos)) {
             return toBuilder().repos(repos);
@@ -620,252 +622,49 @@ public record TaskState(
         return toBuilder().usage(usageOrNone().plus(added)).build();
     }
 
-    public static Builder builder(String project, String worktreePath, TaskStatus status) {
-        return new Builder(List.of(TaskRepo.of(project, worktreePath)), status);
+    public static TaskStateBuilder builder(String project, String worktreePath, TaskStatus status) {
+        return builder(List.of(TaskRepo.of(project, worktreePath)), status);
     }
 
-    public static Builder builder(List<TaskRepo> repos, TaskStatus status) {
-        return new Builder(repos, status);
-    }
-
-    private Builder toBuilder() {
-        return new Builder(repos, status)
-                .lastActiveTimestamp(lastActiveTimestamp).message(message).report(report).alias(alias)
-                .title(title).ticketUrl(ticketUrl).baseBranch(baseBranch)
-                .mrCreatedAt(mrCreatedAt).requestOpenedAt(requestOpenedAt)
-                .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
-                .autoReview(autoReview).pipelineStatus(pipelineStatus).checksUnread(checksUnread)
-                .approved(approved)
-                .usage(usage).agentSpend(agentSpend).history(history).refusals(refusals).gitTrust(gitTrust).probes(probes)
-                .planGate(planGate).trail(trail).stop(stop).conflict(conflict).repoRequest(repoRequest).turn(turn).switches(switches)
-                .infraRetries(infraRetries);
+    public static TaskStateBuilder builder(List<TaskRepo> repos, TaskStatus status) {
+        return new TaskStateBuilder()
+                .repos(repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : repos).status(status);
     }
 
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
-    public static final class Builder {
-        private List<TaskRepo> repos;
-        private TaskStatus status;
-        private long lastActiveTimestamp;
-        private @Nullable String message;
+    @SuppressWarnings("NullAway.Init")
+    public static class TaskStateBuilder {
         private AgentReport report = AgentReport.PLAIN;
-        private @Nullable String alias;
-        private @Nullable String title;
-        private @Nullable String ticketUrl;
-        private @Nullable String baseBranch;
-        private long mrCreatedAt;
-        private long requestOpenedAt;
-        private long lastPolledAt;
-        private long silentSince;
-        private @Nullable String silentBecause;
-        private @Nullable Boolean autoReview;
-        private @Nullable String pipelineStatus;
         private List<ChecksUnread> checksUnread = List.of();
         private List<InfraRetry> infraRetries = List.of();
-        private @Nullable Boolean approved;
-        private @Nullable TokenUsage usage;
-        private @Nullable AgentSpend agentSpend;
-        /** Null means "a brand-new task". */
-        private @Nullable List<StatusChange> history;
         private Map<Guard, Integer> refusals = Map.of();
-        private @Nullable GitTrust gitTrust;
         private List<Probe> probes = List.of();
         private PlanGate planGate = PlanGate.OPEN;
-        private @Nullable RoundTrail trail;
-        private @Nullable TaskStop stop;
-        private @Nullable ConflictWatch conflict;
-        private @Nullable String repoRequest;
-        private @Nullable Turn turn;
         private Map<String, String> switches = Map.of();
+        /** Null means "a brand-new task". */
+        private @Nullable List<StatusChange> history;
 
-        private Builder(List<TaskRepo> repos, TaskStatus status) {
-            this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
-            this.status = status;
-        }
-
-        public Builder repos(List<TaskRepo> repos) {
-            this.repos = List.copyOf(repos);
-            return this;
-        }
-
-        public Builder status(TaskStatus status) {
-            this.status = status;
-            return this;
-        }
-
-        public Builder lastActiveTimestamp(long lastActiveTimestamp) {
-            this.lastActiveTimestamp = lastActiveTimestamp;
-            return this;
-        }
-
-        public Builder message(@Nullable String message) {
-            this.message = message;
-            return this;
-        }
-
-        public Builder report(AgentReport report) {
-            this.report = report;
-            return this;
-        }
-
-        public Builder alias(@Nullable String alias) {
-            this.alias = alias;
-            return this;
-        }
-
-        public Builder title(@Nullable String title) {
-            this.title = title;
-            return this;
-        }
-
-        public Builder mrUrl(@Nullable String mrUrl) {
+        public TaskStateBuilder mrUrl(@Nullable String mrUrl) {
             return firstRepo(repo -> repo.withMrUrl(mrUrl));
         }
 
-        public Builder deployCommit(@Nullable String deployCommit) {
+        public TaskStateBuilder deployCommit(@Nullable String deployCommit) {
             return firstRepo(repo -> repo.withDeployCommit(deployCommit));
         }
 
-        private Builder firstRepo(java.util.function.UnaryOperator<TaskRepo> change) {
+        private TaskStateBuilder firstRepo(UnaryOperator<TaskRepo> change) {
             List<TaskRepo> updated = new ArrayList<>(repos);
             updated.set(0, change.apply(updated.get(0)));
             this.repos = List.copyOf(updated);
             return this;
         }
 
-        public Builder ticketUrl(@Nullable String ticketUrl) {
-            this.ticketUrl = ticketUrl;
-            return this;
-        }
-
-        public Builder baseBranch(@Nullable String baseBranch) {
-            this.baseBranch = baseBranch;
-            return this;
-        }
-
-        public Builder mrCreatedAt(long mrCreatedAt) {
-            this.mrCreatedAt = mrCreatedAt;
-            return this;
-        }
-
-        public Builder requestOpenedAt(long requestOpenedAt) {
-            this.requestOpenedAt = requestOpenedAt;
-            return this;
-        }
-
-        public Builder lastPolledAt(long lastPolledAt) {
-            this.lastPolledAt = lastPolledAt;
-            return this;
-        }
-
-        public Builder silentBecause(@Nullable String silentBecause) {
-            this.silentBecause = silentBecause;
-            return this;
-        }
-
-        public Builder silentSince(long silentSince) {
-            this.silentSince = silentSince;
-            return this;
-        }
-
-        public Builder autoReview(@Nullable Boolean autoReview) {
-            this.autoReview = autoReview;
-            return this;
-        }
-
-        public Builder pipelineStatus(@Nullable String pipelineStatus) {
-            this.pipelineStatus = pipelineStatus;
-            return this;
-        }
-
-        public Builder checksUnread(List<ChecksUnread> checksUnread) {
-            this.checksUnread = checksUnread;
-            return this;
-        }
-
-        public Builder infraRetries(List<InfraRetry> infraRetries) {
-            this.infraRetries = infraRetries;
-            return this;
-        }
-
-        public Builder approved(@Nullable Boolean approved) {
-            this.approved = approved;
-            return this;
-        }
-
-        public Builder usage(@Nullable TokenUsage usage) {
-            this.usage = usage;
-            return this;
-        }
-
-        public Builder agentSpend(@Nullable AgentSpend agentSpend) {
-            this.agentSpend = agentSpend;
-            return this;
-        }
-
-        public Builder history(@Nullable List<StatusChange> history) {
-            this.history = history;
-            return this;
-        }
-
-        public Builder refusals(Map<Guard, Integer> refusals) {
-            this.refusals = refusals;
-            return this;
-        }
-
-        public Builder gitTrust(@Nullable GitTrust gitTrust) {
-            this.gitTrust = gitTrust;
-            return this;
-        }
-
-        public Builder probes(List<Probe> probes) {
-            this.probes = probes;
-            return this;
-        }
-
-        public Builder planGate(PlanGate planGate) {
-            this.planGate = planGate;
-            return this;
-        }
-
-        public Builder trail(@Nullable RoundTrail trail) {
-            this.trail = trail;
-            return this;
-        }
-
-        public Builder stop(@Nullable TaskStop stop) {
-            this.stop = stop;
-            return this;
-        }
-
-        public Builder conflict(@Nullable ConflictWatch conflict) {
-            this.conflict = conflict;
-            return this;
-        }
-
-        public Builder repoRequest(@Nullable String repoRequest) {
-            this.repoRequest = repoRequest;
-            return this;
-        }
-
-        public Builder turn(@Nullable Turn turn) {
-            this.turn = turn;
-            return this;
-        }
-
-        public Builder switches(Map<String, String> switches) {
-            this.switches = switches;
-            return this;
-        }
-
         /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
-            List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
-                    lastActiveTimestamp, null));
-            return new TaskState(repos, status, lastActiveTimestamp, message, report, alias, title, ticketUrl,
-                    baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
-                    autoReview, pipelineStatus, checksUnread, approved, usage, agentSpend, log, refusals, gitTrust,
-                    probes, planGate, trail, stop, conflict, repoRequest, turn, switches == null ? Map.of() : switches,
-                    infraRetries);
+            if (history == null) {
+                history = List.of(new StatusChange(status, lastActiveTimestamp, null));
+            }
+            return assemble();
         }
     }
 }
