@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class RoundRecordTest {
@@ -163,5 +164,28 @@ class RoundRecordTest {
         RoundRecord.Recorded answer = roundRecord.record("ABC-1", facts);
 
         assertThat(answer.red()).isEqualTo(infrastructure);
+    }
+
+    @Test
+    void writesOnlyTheChecksOfAReadThatListedThemWithoutJudgingOrStopping() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build()));
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        roundRecord.recordListed("ABC-1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false));
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        TaskState after = stamped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .pipelineStatus("failed").build());
+        assertThat(after.pipelineStatus()).isEqualTo("success");
+        assertThat(after.approved()).isTrue();
+        verifyNoInteractions(stops, causes);
+    }
+
+    @Test
+    void writesNothingForAReadThatListedNoChecks() {
+        roundRecord.recordListed("ABC-1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of(), "", false));
+
+        verifyNoInteractions(stateService, stops, causes);
     }
 }

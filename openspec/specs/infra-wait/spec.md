@@ -46,6 +46,11 @@ A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the tas
 - **THEN** the stop is voided and the log says `stop voided by read` once, with the task, the trigger and the pipeline
 - **AND** a deploy conflict resolved while it stood finishes on the next tick
 
+#### Scenario: The probe records what it read
+- **WHEN** a task stopped as `INFRA` is read green after the outage
+- **THEN** the task's checks and approval read that green, not the pre-outage word
+- **AND** the read writes nothing else: no relay, no status move, no message to the session
+
 #### Scenario: The host is still failing
 - **WHEN** the read of a task stopped as `INFRA` is red, or lists no checks at all
 - **THEN** the stop stands and the read is made again at the next poll

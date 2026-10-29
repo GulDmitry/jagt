@@ -39,6 +39,15 @@ public class RoundRecord {
             return new Recorded(stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.trailOrNone(), now)),
                     RedCauses.Verdict.CODE);
         }
+        recordListed(taskId, facts);
+        return new Recorded(Optional.empty(), causes.judge(taskId, facts, Pipeline.of(orUnknown(facts.pipelineStatus()))));
+    }
+
+    /** Writes what a read that listed the checks said and nothing else; a read that listed none writes nothing. */
+    public void recordListed(String taskId, ReviewFacts facts) {
+        if (gotNoListing(facts.pipelineStatus())) {
+            return;
+        }
         Optional<TaskState> before = stateService.task(taskId);
         String read = orUnknown(facts.pipelineStatus());
         boolean newChecks = !Objects.equals(before.map(TaskState::pipelineStatus).orElse(null), read)
@@ -50,7 +59,6 @@ public class RoundRecord {
             stateService.updateTask(taskId, task -> task.withChecksRead(read)
                     .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
         }
-        return new Recorded(Optional.empty(), causes.judge(taskId, facts, Pipeline.of(read)));
     }
 
     /**
