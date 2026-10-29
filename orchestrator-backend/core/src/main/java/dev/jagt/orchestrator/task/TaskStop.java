@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * Why jagt stopped a task for the human, and when; a human's lift clears it, or a new request replacing the one
- * it was counted on. {@code request} holds that request's URLs, blank-separated; null where none was counted on.
+ * it was counted on, or, where its trigger ends on {@code HOST_READ}, a read of the checks that shows the host well. {@code request} holds that request's URLs, blank-separated; null where none was counted on.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record TaskStop(Trigger trigger, long at, String evidence, @Nullable String request) {
@@ -21,24 +21,27 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
     /** {@code reason} is the stop in five words or fewer; {@code next} is what a human reads after the evidence. */
     @RequiredArgsConstructor
     public enum Trigger {
-        STALLED("rounds bring nothing new", "Give the session what the rounds lacked; if nothing was missing, report a jagt defect", true),
-        SHIPS("ships with no new note", "Check a new note or commit waits to ship; if one does, report a jagt defect", true),
-        MISS("no case for this step", "Set off by jagt or the Master: report a jagt defect; by a session: add a case if one should send it"),
-        ROUNDS("same round sent too often", "Answer the session's question, or give it what it lacked"),
-        PACE("too many unattended moves in an hour", "Read the last hour's moves: say what each one changed"),
-        CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines", true),
-        UNDELIVERED("a step never landed", "Check that the session's window is running"),
-        UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", true),
-        INFRA("checks failed on infrastructure", "Re-run the job or fix the runner, then lift", true),
-        WAIT("a dependency stayed down", "Bring up what the session named, then lift");
+        STALLED("rounds bring nothing new", "Give the session what the rounds lacked; if nothing was missing, report a jagt defect", Ends.LIFT, true),
+        SHIPS("ships with no new note", "Check a new note or commit waits to ship; if one does, report a jagt defect", Ends.LIFT, true),
+        MISS("no case for this step", "Set off by jagt or the Master: report a jagt defect; by a session: add a case if one should send it", Ends.LIFT, false),
+        ROUNDS("same round sent too often", "Answer the session's question, or give it what it lacked", Ends.LIFT, false),
+        PACE("too many unattended moves in an hour", "Read the last hour's moves: say what each one changed", Ends.LIFT, false),
+        CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines", Ends.HOST_READ, true),
+        UNDELIVERED("a step never landed", "Check that the session's window is running", Ends.LIFT, false),
+        UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", Ends.LIFT, true),
+        INFRA("checks failed on infrastructure", "Re-run the job or fix the runner, then lift", Ends.HOST_READ, true),
+        WAIT("a dependency stayed down", "Bring up what the session named, then lift", Ends.LIFT, false);
 
+        /** What ends a stop: a human's lift, or a read of the checks that shows the outside condition gone. */
+        public enum Ends { LIFT, HOST_READ }
 
         private final String reason;
         private final String next;
+        private final Ends ends;
         private final boolean countedOnRequest;
 
-        Trigger(String reason, String next) {
-            this(reason, next, false);
+        public Ends ends() {
+            return ends;
         }
 
         public String reason() {

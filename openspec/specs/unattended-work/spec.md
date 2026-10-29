@@ -133,9 +133,8 @@ for one. - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task 
 - **THEN** it runs at once; a job already running, or one nobody declared, is refused
 
 ### Requirement: A task has a ceiling of unattended moves an hour
-jagt SHALL count, per task, its unasked moves in the last hour since its last `lift`:
-history steps by the Master, auto-review, the tracker or a retry. A board press or a session's own report SHALL NOT count.
-At `loopBreaker.perHour` (default 20) the next Master press, conflict deploy,
+jagt SHALL count, per task, its unasked moves in the last hour since its last `lift`: history steps by the Master, auto-review, the tracker or a
+retry. A board press or a session's own report SHALL NOT count. At `loopBreaker.perHour` (default 20) the next Master press, conflict deploy,
 auto-review poll or round SHALL NOT be made. The task SHALL stop, its status kept, as `PACE`. A human press SHALL never be refused.
 
 #### Scenario: Too many moves in an hour
@@ -182,8 +181,9 @@ Every stop SHALL append a line `{at, task, alias, trigger, status, evidence}` to
 ### Requirement: A stopped task waits for your lift
 Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board SHALL ring it `jagt stopped`, its
 move line `lift the stop` followed by the stop's short reason. That line's hover SHALL carry the evidence, the trigger's advice and the stop's time
-in UTC. Only a human's `lift`, or a new request replacing the one the stop was counted on, SHALL clear it and count anew. Only SHIPS, STALLED,
-CHECKS, UNCHANGED_FAILURE and INFRA stops are counted on a request; the others SHALL stand.
+in UTC. Only a human's `lift`, or a new request replacing the one the stop was counted on, SHALL clear it and count anew. A stop an outside
+condition set (`CHECKS`, `INFRA`) SHALL also end on a read listing the task's checks not red ([infra-wait](../infra-wait/spec.md)).
+Only SHIPS, STALLED, CHECKS, UNCHANGED_FAILURE and INFRA stops are counted on a request; the others SHALL stand.
 
 #### Scenario: A stopped task says why
 - **WHEN** ABC-42 is stopped on SHIPS

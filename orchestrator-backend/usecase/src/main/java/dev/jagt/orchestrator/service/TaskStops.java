@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-/** The one writer of a task's stop: tripped by the loop breaker or a miss, announced once, cleared by a lift. */
+/** The one writer of a task's stop: tripped by the loop breaker or a miss, announced once, cleared by a lift or by the read its trigger names. */
 @Service
 @RequiredArgsConstructor
 public class TaskStops {
@@ -92,6 +92,21 @@ public class TaskStops {
 
     public void lift(String taskId) {
         stateService.updateTask(taskId, task -> task.lifted(clock.millis()));
+    }
+
+    /** The stop a read of the checks ended: one whose trigger ends on a read, and the read listed the checks, not red. */
+    public Optional<TaskStop> endOnRead(String taskId, Pipeline read) {
+        AtomicReference<@Nullable TaskStop> ended = new AtomicReference<>();
+        boolean disproves = read != Pipeline.UNKNOWN && read != Pipeline.RED;
+        stateService.updateTask(taskId, task -> {
+            TaskStop stop = task.stop();
+            if (!disproves || stop == null || stop.trigger().ends() != TaskStop.Trigger.Ends.HOST_READ) {
+                return task;
+            }
+            ended.set(stop);
+            return task.lifted(clock.millis());
+        });
+        return Optional.ofNullable(ended.get());
     }
 
     /** The stop standing once {@code check} read the task. */

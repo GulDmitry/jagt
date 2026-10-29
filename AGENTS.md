@@ -87,6 +87,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - **The board has no build step, no CDN and no external asset** ([`docs/rules/design.md`](docs/rules/design.md)).
 - **A capability the board cannot express is a bug**: per-task verbs from `Move.actions()`, global from `GlobalCommand` beans; no surface has a list.
 - **No GUI or keystroke automation, ever.** Keystrokes land in whatever is focused.
+- **A stop, status or flag names what ends it; one an outside condition set ends on the read that disproves it, and that read runs while it stands.**
 - **An ending says which one**: finished, stopped, failed with its cause, or gone; a seam hears every ending
   its source emits ([`seams`](docs/rules/seams.md#an-ending-says-which-one)).
 - No positional null-soup: value records get `defaults()` + `withX` withers or a builder.

@@ -1,0 +1,44 @@
+package dev.jagt.orchestrator.job;
+
+import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.service.ReviewSweepService;
+import dev.jagt.orchestrator.service.RoundReading;
+import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.task.ReviewFacts;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+class StopReadsTest {
+
+    private final RoundReading reading = mock(RoundReading.class);
+    private final TaskStops stops = mock(TaskStops.class);
+    private final StopReads reads = new StopReads(reading, stops);
+
+    @Test
+    void offersTheStopTheCheckVerdictOfARequestItCouldRead() {
+        when(reading.read("ABC-42")).thenReturn(new RoundReading.Round("http://mr/1", new ReviewFacts(
+                true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false), ""));
+
+        reads.probe("ABC-42");
+
+        verify(stops).endOnRead("ABC-42", Pipeline.GREEN);
+        verifyNoMoreInteractions(stops);
+    }
+
+    @Test
+    void keepsTheStopWhereTheRequestCouldNotBeRead() {
+        when(reading.read("ABC-42")).thenReturn(new RoundReading.Refused(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed")));
+
+        reads.probe("ABC-42");
+
+        verifyNoInteractions(stops);
+    }
+}
