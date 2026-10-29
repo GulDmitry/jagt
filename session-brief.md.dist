@@ -113,13 +113,16 @@ uncovered lines) is in what you changed.
 A red check is this task's to turn green, code that predates it included: an override, an
 exception or a human's action is no answer while a change here can pass it.
 A failure outside the code, not reproducing, or unreadable by any tool here (a runner, the network,
-a timeout, a flaky test): change nothing.
-Set status REVIEW_PENDING with outcome=question naming the job and why.
+a timeout, a flaky test): change nothing for the check.
+Answer the round's threads in full all the same, then:
+set status REVIEW_PENDING with outcome=question naming the job and why.
 </how_to_fix_checks>
 
 ## round-threads
 
 <how_to_judge>
+The checks' state never decides whether a thread is answered: red, green or running, every thread awaiting your
+answer gets its block in this round. jagt refuses the hand-back until review_replies.md is written.
 Your job this round is to get the code RIGHT, not to satisfy the reviewer. A comment is an
 argument from someone who read the diff, not the system: it can be mistaken about the
 architecture, and you have the code in front of you. Each block below is one THREAD, its

@@ -38,6 +38,11 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
                 .sorted().collect(Collectors.joining("\n"));
     }
 
+    /** The same round with its checks left unsaid. */
+    public ReviewFacts withoutChecks() {
+        return new ReviewFacts(exists, approved, "", "", threads, openedAt, awaitingReviewer, newestNotes);
+    }
+
     /** The threads whose newest note is by {@code account} moved to {@code awaitingReviewer}; blank moves none. */
     public ReviewFacts answeredBy(String account) {
         List<String> open = new ArrayList<>();

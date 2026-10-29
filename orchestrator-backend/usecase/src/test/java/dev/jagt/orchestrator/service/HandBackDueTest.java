@@ -2,6 +2,9 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Specs;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.RoundTrail;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -86,5 +89,34 @@ class HandBackDueTest {
 
         assertThat(due.owed("ABC-1", task)).contains("task_notes.md names the gap for 0 of the 1 lines this task added"
                 + " to the project's agent file: one `agent-file:` line each");
+    }
+
+    @Test
+    void owesABlockForTheThreadsOfARoundRelayedWhileTheChecksWereRedWhenNoRepliesWereWritten(@TempDir Path root)
+            throws Exception {
+        Files.writeString(root.resolve("task_notes.md"), "notes");
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING)
+                .trail(RoundTrail.none().withRound(new RoundTrail.Round(1_000, 2, "unit-tests", "a", "t1 note_1")))
+                .build();
+        WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
+        when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
+        HandBackDue due = new HandBackDue(worktreeChanges, mock(Specs.class), mock(AgentRuntime.class));
+
+        assertThat(due.owed("ABC-1", task)).hasValueSatisfying(owed -> assertThat(owed)
+                .contains("2 thread(s) were relayed", "review_replies.md"));
+    }
+
+    @Test
+    void owesNoBlockOnceAShipPostedTheRepliesAndRemovedTheFile(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("task_notes.md"), "notes");
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING)
+                .trail(RoundTrail.none().withRound(new RoundTrail.Round(1_000, 2, "unit-tests", "a", "t1 note_1")))
+                .history(List.of(new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER)))
+                .build();
+        WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
+        when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
+        HandBackDue due = new HandBackDue(worktreeChanges, mock(Specs.class), mock(AgentRuntime.class));
+
+        assertThat(due.owed("ABC-1", task)).isEmpty();
     }
 }

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.RoundTrail;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.ReviewFacts;
@@ -303,5 +304,23 @@ class TaskStopsTest {
 
         assertThat(Files.readAllLines(root.resolve("stops.jsonl"))).hasSize(1);
         assertThat(stops.stopped("ABC-42")).isFalse();
+    }
+
+    @Test
+    void relaysAThreadWithANewNoteWhileTheAgentsQuestionAboutTheChecksStands(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .report(AgentReport.QUESTION)
+                .trail(RoundTrail.none().withRound(new RoundTrail.Round(1, 1, "", "a", "t1 note_7"))).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+        ReviewFacts answered = new ReviewFacts(true, false, "success", "", List.of("t1\nmia: And this?"), 0,
+                List.of(), List.of("note_8"));
+
+        TaskStops.Relay relay = stops.round("ABC-42", answered, "brief", "");
+
+        assertThat(relay).isEqualTo(TaskStops.Relay.RELAY);
     }
 }

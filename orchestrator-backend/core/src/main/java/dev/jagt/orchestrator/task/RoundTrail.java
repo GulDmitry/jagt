@@ -49,6 +49,11 @@ public record RoundTrail(List<Round> rounds, long since) {
                 && rounds.getLast().failing().isBlank() && failing.isBlank();
     }
 
+    /** Known notes that the last round did not carry. */
+    public boolean newNotes(String notes) {
+        return !notes.isBlank() && (rounds.isEmpty() || !rounds.getLast().repeats(notes));
+    }
+
     public boolean relayed(String digest) {
         return !rounds.isEmpty() && rounds.getLast().digest().equals(digest);
     }

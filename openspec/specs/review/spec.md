@@ -26,13 +26,6 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 - **WHEN** a comment was already handled
 - **THEN** the agent says so; nothing highlighted, no ship advised
 
-### Requirement: No re-brief on held threads
-`TaskStops` and the session's open turn SHALL NOT re-brief a session on threads it was told to hold.
-
-#### Scenario: Held thread
-- **WHEN** a poll reads a held thread
-- **THEN** no re-brief
-
 ### Requirement: The outcome is a field
 `update_agent_status` SHALL take `outcome` (`question` | `no_changes` | `progress`) and `reviewRequestUrl`, the brief ending
 all three at REVIEW_PENDING. What a report means SHALL be the task's `task/AgentReport`, never a marker read out of its
@@ -63,6 +56,12 @@ NO_CHANGES SHALL highlight nothing.
 ### Requirement: The unit of a round is a thread
 `ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest one, and a thread whose
 newest note is its own waits on the reviewer. Threads SHALL be relayed while unresolved; a resolved one is never read again.
+The checks, red, green or running, SHALL never decide whether a thread is answered. After a round with threads, a hand-back
+to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
+
+#### Scenario: Red checks outside the code and a reviewer's answer
+- **WHEN** ABC-42's session hands back a question about the checks and writes no block for the thread
+- **THEN** refused, told how many threads await their block
 
 #### Scenario: GitHub review in the body
 - **WHEN** a GitHub review is written in the body, not a thread
@@ -181,7 +180,8 @@ A GitHub request with no review required SHALL count as approved once someone ap
 `TaskStops.round` SHALL keep a digest of the last round relayed into a task: the failing job and the pushed branch tip from git while the checks are
 red, and each open thread's link and newest note id. A round equal to it SHALL NOT be relayed again, whatever the brief's wording; where git cannot
 name the tip, or a job or note id is unknown, the brief is digested. Neither SHALL open threads with the last notes while the checks are red in
-neither. A `lift` SHALL forget both. While the last report asks the human, a sweep SHALL relay nothing, starting no session.
+neither. A `lift` SHALL forget both. Threads and checks are two tracks, each judged on its own. While the last report asks the
+human, a sweep SHALL hold the checks and every thread it carried; a thread with a new newest note is relayed alone.
 
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
@@ -195,6 +195,6 @@ neither. A `lift` SHALL forget both. While the last report asks the human, a swe
 - **WHEN** the same job fails on the same pushed tip
 - **THEN** the round is not sent again, whatever the brief's wording
 
-#### Scenario: Red checks over a question
-- **WHEN** ABC-42's session asked the human and the checks are still red
-- **THEN** the sweep relays nothing until the human answers
+#### Scenario: A new note over a question about the checks
+- **WHEN** ABC-42's session asked about a failing job and a reviewer then adds a note to a thread
+- **THEN** that thread is relayed without the checks, and the question stands

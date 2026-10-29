@@ -20,10 +20,12 @@ public class RoundRelay {
     private final CaseDoor door;
     private final SessionBrief sessionBrief;
 
-    public SweepResult relay(String taskId, String mrUrl, ReviewFacts r, String said, String tip) {
+    public SweepResult relay(String taskId, String mrUrl, ReviewFacts round, String said, String tip) {
+        ReviewFacts r = stops.asking(taskId) ? round.withoutChecks() : round;
+        String told = RoundRecord.orUnknown(r.pipelineStatus());
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
         TaskStatus checked = null;
-        for (String step : RoundBrief.steps(r, said)) {
+        for (String step : RoundBrief.steps(r, told)) {
             CaseDoor.Admission admission = door.opens(taskId, step);
             if (!admission.admitted()) {
                 return new SweepResult(SweepResult.Kind.REFUSED, read + ", checks " + said
@@ -31,12 +33,12 @@ public class RoundRelay {
             }
             checked = admission.status();
         }
-        String brief = RoundBrief.of(mrUrl, r, said, sessionBrief);
+        String brief = RoundBrief.of(mrUrl, r, told, sessionBrief);
         return switch (stops.round(taskId, r, brief, tip)) {
             case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);
             case ASKING -> asking(read, said);
-            case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, said), brief, checked)
+            case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, told), brief, checked)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)
                     : stops.stopped(taskId) ? stopped(read, said) : unchanged(read, said);
         };

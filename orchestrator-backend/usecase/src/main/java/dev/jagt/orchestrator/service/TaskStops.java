@@ -67,11 +67,16 @@ public class TaskStops {
     }
 
     private static Relay verdictOn(TaskState task, String digest, String notes, String failing) {
-        if (task.report().asks()) {
+        RoundTrail trail = task.trailOrNone();
+        if (task.report().asks() && !trail.newNotes(notes)) {
             return Relay.ASKING;
         }
-        RoundTrail trail = task.trailOrNone();
         return trail.relayed(digest) || trail.noNewNote(notes, failing) ? Relay.UNCHANGED : Relay.RELAY;
+    }
+
+    /** Whether the agent's own question stands, which holds the checks back and nothing of the threads. */
+    public boolean asking(String taskId) {
+        return stateService.task(taskId).filter(task -> task.report().asks()).isPresent();
     }
 
     public boolean mayShip(String taskId) {

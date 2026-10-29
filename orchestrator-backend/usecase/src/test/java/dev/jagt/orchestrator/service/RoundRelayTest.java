@@ -26,6 +26,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -125,6 +126,27 @@ class RoundRelayTest {
 
         assertThat(result.message()).contains("2 thread(s) relayed");
         verify(sessions).relayFresh(eq("ABC-42"), contains("review_replies.md"));
+    }
+
+    @Test
+    void relaysTheThreadsWithoutTheChecksWhileTheAgentsQuestionAboutThemStands(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        TaskStops stops = mock(TaskStops.class);
+        when(stops.round(anyString(), any(), anyString(), anyString())).thenReturn(TaskStops.Relay.RELAY);
+        when(stops.asking("ABC-42")).thenReturn(true);
+        StateService state = new StateService(new JsonMapper(), paths);
+
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+
+        new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, clock)), door, new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
+                new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
+                        0, List.of(), List.of()), "failed", "");
+
+        verify(sessions).relayFresh(eq("ABC-42"), argThat(brief -> brief.contains("review_replies.md") && !brief.contains("Checks:")));
     }
 
     @Test
