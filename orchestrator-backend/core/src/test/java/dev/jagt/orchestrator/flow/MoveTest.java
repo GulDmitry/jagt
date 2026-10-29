@@ -614,4 +614,15 @@ class MoveTest {
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEWED", "APPROVED"})
+    void offersTheCloseQuietlyOnceEveryRequestIsMerged(TaskStatus status) {
+        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false, true), RoundState.NONE, false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
+        assertThat(move.ask()).isEqualTo("you can close the task");
+        assertThat(move.primary()).isEqualTo(TaskAction.DONE);
+    }
 }

@@ -43,11 +43,13 @@ public final class AutoReviewCadence {
     /**
      * Whether the poller has any business with this task at all. AN OPEN REQUEST IS THE WHOLE CONDITION, never a
      * status: a reviewer writes on a request whatever the task is doing meanwhile. DONE is the one status that ends
-     * it — the worktree is gone, so there is nothing to relay a round into.
+     * it — the worktree is gone, so there is nothing to relay a round into. A request already merged has no round
+     * left to read.
      */
     public boolean polls(TaskState task) {
         // ANY repository's request, the same question the sweep and the projection ask.
-        return enabled && task.hasReviewRequest() && !FlowRules.closed(task.status());
+        return enabled && task.hasReviewRequest() && !task.requestsMerged()
+                && !FlowRules.closed(task.status());
     }
 
     /** What a human is owed about this task: is anything watching it, and when will it next look. */

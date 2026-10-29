@@ -157,6 +157,7 @@ Families:
 |----|--------------------|---------|-----------|
 | J1 | a long-lived branch's request listed commits its moved target already held; the session was forbidden to rebase → it rebases onto the target and lease-pushes, ordered by the `ship` step | seen 2026-10-28 | `SubAgentBriefingTest`, `SessionBriefTest`, `ToolGateTest` |
 | J2 | the host says a request merged by squash or fast-forward, git finds no merge commit → the review read's `merged` word records it, and `ship` is withheld | seen 2026-10-28: a GitLab request merged, the task stayed REVIEWED with `merged` unset | `RoundReadingTest` |
+| J3 | every request of a task is merged, the task still `REVIEWED` → its card reads `merged`, offers `done` quietly and is no longer polled | seen 2026-10-29: a squash-merged request left the card "awaiting approval" and polled | `MoveTest`, `TaskViewTest`, `AutoReviewCadenceTest` |
 
 ## K — the board
 | id | the case, one line | defects | pinned by |

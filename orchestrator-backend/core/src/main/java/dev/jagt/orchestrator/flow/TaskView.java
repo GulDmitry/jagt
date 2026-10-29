@@ -115,8 +115,7 @@ public record TaskView(
                         deployed && action == TaskAction.DEPLOY, action.onRow(), action.apart(), action.key()))
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
-                round.masterReading() ? "master review"
-                        : task.status().label(), move.phase(),
+                statusLabel(task, round), move.phase(),
                 move.owner(), move.attention(), asked(move, stop), move.hint(), actions,
                 confirmations(id, task, deployBranches), line.text(), line.kind(), webLink(task.ticketUrl()),
                 webLink(task.mrUrl()),
@@ -128,6 +127,13 @@ public record TaskView(
                         change.origin(), change.why())).toList(), deployed, draftedReplies, autoReview,
                 checks(task), checksSaid(task), task.pipelineUnread(),
                 task.hasReviewRequest() ? task.approved() : null, task.switches(), stop, waiting(task));
+    }
+
+    private static String statusLabel(TaskState task, RoundState round) {
+        if (round.masterReading()) {
+            return "master review";
+        }
+        return task.requestsMerged() && FlowRules.awaitsApproval(task.status()) ? "merged" : task.status().label();
     }
 
     private static @Nullable String waiting(TaskState task) {

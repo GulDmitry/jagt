@@ -39,6 +39,11 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                     FlowRules.allowed(status, facts), TaskAction.ADD_REPO,
                     "the session asked for another repository: add it, or answer in the agent's window (focus)");
         }
+        if (nothingLeftToLand(status, facts, round)) {
+            return new Move(phaseOf(status), Owner.YOU, Attention.OPTIONAL, "you can close the task",
+                    FlowRules.allowed(status, facts), TaskAction.DONE,
+                    "every request is merged: nothing is left to approve or deploy; done closes the task");
+        }
         boolean hasReviewRequest = facts.hasReviewRequest();
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());
@@ -48,6 +53,12 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                 FlowRules.allowed(status, facts),
                 primaryOf(status, hasReviewRequest, round, polled),
                 hint(status, hasReviewRequest, round, agentSilent, polled));
+    }
+
+    /** Merged requests leave the approval and the deploy nothing to act on, so only the close is left. */
+    private static boolean nothingLeftToLand(TaskStatus status, Facts facts, RoundState round) {
+        return facts.requestMerged() && FlowRules.awaitsApproval(status)
+                && !asking(status, round) && !masterReading(status, round);
     }
 
     private static Phase phaseOf(TaskStatus status) {

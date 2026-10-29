@@ -181,4 +181,14 @@ class AutoReviewCadenceTest {
     void summarisesWhetherAutoReviewIsOn(boolean enabled, String expected) {
         assertThat(new AutoReviewCadence(enabled, Duration.ofHours(24), 10, 60, 240).summary()).isEqualTo(expected);
     }
+
+    @Test
+    void stopsPollingATaskWhoseEveryRequestIsMerged() {
+        long shipped = 1_000_000_000_000L;
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(shipped).lastPolledAt(shipped).build()
+                .withMerged("proj", true);
+
+        assertThat(cadence.watch(task, shipped + 60_000).state()).isEqualTo(AutoReviewWatch.State.NONE);
+    }
 }

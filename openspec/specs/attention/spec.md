@@ -102,7 +102,7 @@ MUST stay silent unless `Move` says YOU. `DEPLOYED`'s owner is nobody, as `DONE`
 
 #### Scenario: An approval lands
 - **WHEN** `APPROVED`
-- **THEN** you are pinged
+- **THEN** you are pinged; once !571, its only request, is merged, the card reads `merged` and the badge `you can close the task`
 
 ### Requirement: Attention tiers
 `flow/Attention` SHALL name the tier, pinned per status in `MoveTest`. `REQUIRED` (a stopped or asking

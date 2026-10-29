@@ -328,4 +328,14 @@ class TaskViewTest {
 
         assertThat(view.waiting()).isNull();
     }
+
+    @Test
+    void namesAReviewedTaskMergedWhenEveryRequestOfItIs() {
+        TaskState merged = TaskState.builder("api", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/x/-/merge_requests/1")
+                .build().withMerged("api", true);
+
+        TaskView view = TaskView.of("ABC-42", merged, RoundState.NONE, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.statusLabel()).isEqualTo("merged");
+    }
 }

@@ -18,7 +18,7 @@ The one write to a code host is the re-run of a pipeline the host says died on i
 - **AND** a round that answered every comment and changed no code is not your move: the open threads are the reviewer's
 
 ### Requirement: An open request is what the poller watches
-`AutoReviewCadence.polls` SHALL watch an open request, never a status: a request exists and the task is not DONE. At `REVIEWED`, `APPROVED` or
+`AutoReviewCadence.polls` SHALL watch an open request, never a status: an unmerged one exists and the task is not DONE. At `REVIEWED`, `APPROVED` or
 `DEPLOYED` only a reviewer moves it on: it is read every `maxIntervalMinutes`, and past its window up to `waitingMaxIntervalMinutes` (240).
 
 #### Scenario: Comments after hand-back

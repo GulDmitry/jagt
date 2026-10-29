@@ -298,6 +298,11 @@ public final class FlowRules {
         return awaitingVerification(status) || readByTheMaster(status);
     }
 
+    /** Read and green, with only the approval or the deploy still to come. */
+    public static boolean awaitsApproval(TaskStatus status) {
+        return WAITING_FOR_A_DEPLOY.contains(status);
+    }
+
     /** A request green with every thread closed, which in act the Master deploys as the human would. */
     public static boolean deployedByTheMaster(TaskStatus status) {
         return WAITING_FOR_A_DEPLOY.contains(status);
