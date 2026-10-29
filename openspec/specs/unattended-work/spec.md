@@ -59,9 +59,8 @@ absolute stamp (`core/format.js`).
 - **THEN** the header says `auto-review on` or `off`
 
 ### Requirement: Unattended work is a declared kind
-Each unattended job SHALL be a `job/Job`: id, one line for the human, an interval or `null` for once at startup, `run()`. `job/Jobs` schedules each
-on the shared `TaskScheduler` once ready: never overlapping itself, the next run stamped from the start of the last, a throw booked against that
-job.
+Each unattended job SHALL be a `job/Job`: id, one line for the human, an interval or `null` for once at startup, `run()`. `job/Jobs` schedules each on
+the shared `TaskScheduler` once ready: never overlapping itself, the next run stamped from the start of the last, a throw booked against that job.
 
 #### Scenario: Anything else running
 - **WHEN** you ask whether anything else runs behind your back
@@ -179,11 +178,11 @@ Every stop SHALL append a line `{at, task, alias, trigger, status, evidence}` to
 - **THEN** nothing is relayed, reported, recorded or stopped, and the log says `verification outdated`; one on its own round is relayed as before
 
 ### Requirement: A stopped task waits for your lift
-Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board SHALL ring it `jagt stopped`, its
-move line `lift the stop` followed by the stop's short reason. That line's hover SHALL carry the evidence, the trigger's advice and the stop's time
-in UTC. Only a human's `lift`, or a new request replacing the one the stop was counted on, SHALL clear it and count anew. A stop an outside
-condition set (`CHECKS`, `INFRA`) SHALL also end on a read listing the task's checks not red ([infra-wait](../infra-wait/spec.md)).
-Only SHIPS, STALLED, CHECKS, UNCHANGED_FAILURE and INFRA stops are counted on a request; the others SHALL stand.
+Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). The board SHALL ring it `jagt stopped`, its move
+line `lift the stop` followed by the stop's short reason. That line's hover SHALL carry the evidence, the trigger's advice and the stop's time in UTC.
+A human's `lift` or `deploy` SHALL clear it, and a new request replacing the one the stop was counted on SHALL too. The count starts anew. A stop an
+outside condition set (`CHECKS`, `INFRA`) SHALL also end on a read listing the task's checks not red ([infra-wait](../infra-wait/spec.md)). Only
+SHIPS, STALLED, CHECKS, UNCHANGED_FAILURE and INFRA stops are counted on a request; the others SHALL stand.
 
 #### Scenario: A stopped task says why
 - **WHEN** ABC-42 is stopped on SHIPS
@@ -192,7 +191,8 @@ Only SHIPS, STALLED, CHECKS, UNCHANGED_FAILURE and INFRA stops are counted on a 
 
 #### Scenario: You press a verb on a stopped task
 - **WHEN** you press `ship` or `deploy` on a stopped task
-- **THEN** it runs, and the stop stands until you press `lift`
+- **THEN** it runs, and the stop stands until you press `lift`, but a `deploy` lifts it once `DEPLOYED`
+- **AND** a deploy any other origin presses is refused and lifts nothing
 
 #### Scenario: A new request replaces the one the stop was counted on
 - **WHEN** ABC-42 was stopped on !571 and opens !573

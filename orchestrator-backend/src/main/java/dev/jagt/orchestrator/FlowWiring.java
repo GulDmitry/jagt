@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.flow.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.capability.DeployLiftsStop;
 import dev.jagt.orchestrator.capability.StopGuard;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -61,6 +62,11 @@ public class FlowWiring {
     @Bean
     public CapabilityInterceptor deployStop(TaskStops stops) {
         return new StopGuard(TaskAction.DEPLOY, stops);
+    }
+
+    @Bean
+    public CapabilityInterceptor deployLiftsStop(TaskStops stops) {
+        return new DeployLiftsStop(stops);
     }
 
     @Bean
