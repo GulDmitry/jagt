@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -39,12 +41,16 @@ public class DeployPipelines {
         }
     }
 
+    /** How long after the push a host listing no pipeline for a commit still counts as one about to come. */
+    public static final Duration NO_PIPELINE_AFTER = Duration.ofMinutes(10);
+
     /** What a deploy handed back for its pipeline says it was handed back for. */
     public static final String RED_CAUSE = "red pipeline on the deploy commit";
 
     private final PipelineRetry pipelines;
     private final RedCauses causes;
     private final DeployFixWorktrees fixes;
+    private final Clock clock;
 
     /** Whether a task's line says it was handed back for a red deploy pipeline. */
     public static boolean marks(@Nullable String line) {
@@ -77,7 +83,7 @@ public class DeployPipelines {
         String label = project + " " + GitDeploy.shortSha(commit);
         String at = label + ": pipeline ";
         if (repo.remoteUrl() == null || repo.remoteUrl().isBlank()) {
-            return Reading.waiting(at + "unread, no remote recorded");
+            return withoutPipeline(taskId, label, "no remote recorded");
         }
         Answer<CommitPipeline> read = pipelines.onCommit(repo.remoteUrl(), commit);
         if (read.facts().isEmpty()) {
@@ -87,13 +93,25 @@ public class DeployPipelines {
             return Reading.waiting(at + "unread, " + read.failure());
         }
         CommitPipeline pipeline = read.facts().get();
+        if (!pipeline.hosted()) {
+            return withoutPipeline(taskId, label, "no code-host address");
+        }
         return switch (Pipeline.of(pipeline.status())) {
             case GREEN -> Reading.green();
             case RED -> red(taskId, task, label, project, at, pipeline.url());
             case RUNNING -> Reading.waiting(at + "running");
-            case NONE -> Reading.waiting(at + "not started");
+            case NONE -> clock.millis() - task.statusSince() >= NO_PIPELINE_AFTER.toMillis()
+                    ? withoutPipeline(taskId, label, "the host listed none after " + NO_PIPELINE_AFTER.toMinutes() + " min")
+                    : Reading.waiting(at + "not started");
             case UNKNOWN -> Reading.waiting(at + "state unknown");
         };
+    }
+
+    /** The one way a deploy settles with no pipeline behind it: none can come, so none is waited for. */
+    private Reading withoutPipeline(String taskId, String label, String why) {
+        log.atInfo().setMessage("deploy settled without a pipeline").addKeyValue("task", taskId)
+                .addKeyValue("commit", label).addKeyValue("cause", why).log();
+        return Reading.green();
     }
 
     private Reading red(String taskId, TaskState task, String label, String project, String at, String url) {

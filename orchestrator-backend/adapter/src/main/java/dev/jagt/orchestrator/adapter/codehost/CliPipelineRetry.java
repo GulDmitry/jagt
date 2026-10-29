@@ -68,7 +68,7 @@ public class CliPipelineRetry implements PipelineRetry {
             case GITHUB -> parsed(run(address, List.of("run", "list", "--commit", address.id(), "--json",
                     "status,conclusion,url", "--limit", "100", "-R", address.project())),
                     "gh", CliPipelineRetry::githubPipeline);
-        }).orElseGet(() -> Answer.failed(TokenUsage.NONE, "not the address of a repository: " + OneLine.clipped(remoteUrl)));
+        }).orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
     }
 
     private Answer<String> run(PipelineAddress address, List<String> arguments) {

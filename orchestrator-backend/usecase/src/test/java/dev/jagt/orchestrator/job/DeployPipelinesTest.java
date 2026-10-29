@@ -11,6 +11,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,11 +27,12 @@ class DeployPipelinesTest {
 
     private static final String REMOTE = "https://git.example.invalid/shop/web.git";
     private static final String SHA = "0123456789abcdef";
+    private static final Instant NOW = Instant.parse("2026-10-29T12:00:00Z");
 
     private final PipelineRetry pipelines = mock(PipelineRetry.class);
     private final RedCauses causes = mock(RedCauses.class);
     private final DeployFixWorktrees fixes = mock(DeployFixWorktrees.class);
-    private final DeployPipelines deploys = new DeployPipelines(pipelines, causes, fixes);
+    private final DeployPipelines deploys = new DeployPipelines(pipelines, causes, fixes, Clock.fixed(NOW, ZoneOffset.UTC));
     private final TaskState deployed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
             TaskStatus.DEPLOYED).build();
 
@@ -116,5 +120,62 @@ class DeployPipelinesTest {
         DeployPipelines.Reading reading = deploys.read("ABC-42", fixed);
 
         assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    }
+
+    @Test
+    void aDeployStaysOpenWhileTheHostListsNoPipelineWithinTheGraceAfterThePush() {
+        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
+                TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(9 * 60).toEpochMilli()).build();
+        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+                TokenUsage.NONE));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
+        assertThat(reading.said()).isEqualTo("shop 01234567: pipeline not started");
+    }
+
+    @Test
+    void aDeployStandsOnceTheHostStillListsNoPipelineAfterTheGrace() {
+        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
+                TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(10 * 60).toEpochMilli()).build();
+        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+                TokenUsage.NONE));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    }
+
+    @Test
+    void aDeployStandsWhereTheRepositoryHasNoCodeHostAddress() {
+        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(CommitPipeline.unhosted()),
+                TokenUsage.NONE));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    }
+
+    @Test
+    void aDeployStandsWhereNoRemoteWasRecordedForTheRepository() {
+        TaskState unrecorded = TaskState.builder(List.of(new TaskRepo("shop", "/wt", null, null, SHA)),
+                TaskStatus.DEPLOYED).build();
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", unrecorded);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    }
+
+    @Test
+    void aDeployStaysOpenWhileTheHostDoesNotAnswerAndStandsOnceItDoes() {
+        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1"),
+                new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE));
+
+        DeployPipelines.Reading unanswered = deploys.read("ABC-42", deployed);
+        DeployPipelines.Reading answered = deploys.read("ABC-42", deployed);
+
+        assertThat(unanswered.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
+        assertThat(answered.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
     }
 }

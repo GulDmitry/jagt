@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class CliPipelineRetryTest {
@@ -152,5 +153,13 @@ class CliPipelineRetryTest {
 
         assertThat(answer.facts()).isEmpty();
         assertThat(answer.failure()).isEqualTo("glab not logged in to git.example.invalid");
+    }
+
+    @Test
+    void aLocalPathRemoteHasNoHostToAsk() {
+        Answer<CommitPipeline> answer = retry.onCommit("/srv/git/shop.git", "0123abc");
+
+        assertThat(answer.facts().orElseThrow().hosted()).isFalse();
+        verifyNoInteractions(processes);
     }
 }
