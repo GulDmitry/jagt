@@ -361,10 +361,11 @@ public class ConfigService implements LoopBreaker.Current {
         @With
         public record AutoReviewConfig(@Nullable Boolean enabled, @Nullable Integer windowHours,
                                        @Nullable Integer minIntervalMinutes,
-                                       @Nullable Integer maxIntervalMinutes) {
+                                       @Nullable Integer maxIntervalMinutes,
+                                       @Nullable Integer waitingMaxIntervalMinutes) {
 
             public static AutoReviewConfig defaults() {
-                return new AutoReviewConfig(null, null, null, null);
+                return new AutoReviewConfig(null, null, null, null, null);
             }
 
             public boolean enabledOrDefault() {
@@ -385,6 +386,12 @@ public class ConfigService implements LoopBreaker.Current {
                     return Math.max(60, min);
                 }
                 return maxIntervalMinutes;
+            }
+
+            public int waitingMaxIntervalMinutesOrDefault() {
+                int max = maxIntervalMinutesOrDefault();
+                return waitingMaxIntervalMinutes == null || waitingMaxIntervalMinutes < max
+                        ? Math.max(240, max) : waitingMaxIntervalMinutes;
             }
         }
 

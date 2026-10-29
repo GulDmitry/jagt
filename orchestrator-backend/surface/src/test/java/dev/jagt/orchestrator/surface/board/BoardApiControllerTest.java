@@ -92,7 +92,7 @@ class BoardApiControllerTest {
     @Test
     void reportsTheProjectsAlongsideTheTasks() {
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
-                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60),
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240),
                 List.of("demo"), null, "off"));
 
         var board = api.tasks();
@@ -106,7 +106,7 @@ class BoardApiControllerTest {
         var outage = new dev.jagt.orchestrator.port.AssistantHealth.Outage("529 overloaded", 5_000L);
         when(health.outage()).thenReturn(java.util.Optional.of(outage));
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
-                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60), List.of(), null, "off"));
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240), List.of(), null, "off"));
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
                 new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC()),
                 health, Clock.systemUTC()));
@@ -138,7 +138,7 @@ class BoardApiControllerTest {
     @Test
     void saysWhetherTheUnattendedPollRunsAtAllEvenWithNoTasks() {
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
-                new AutoReviewCadence(true, Duration.ofHours(24), 10, 60),
+                new AutoReviewCadence(true, Duration.ofHours(24), 10, 60, 240),
                 List.of(), null, "off"));
 
         var board = api.tasks();
@@ -164,7 +164,7 @@ class BoardApiControllerTest {
         TaskView quiet = TaskView.of("ABC-2", TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),
                 false, null, Map.of());
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(drafted, quiet),
-                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60), List.of("demo"), null, "off"));
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240), List.of("demo"), null, "off"));
 
         var offers = board.tasks().offers();
 

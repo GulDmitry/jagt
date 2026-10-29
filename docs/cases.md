@@ -162,6 +162,7 @@ Families:
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | K1 | a task jagt stopped shows `lift the stop` → the line adds the stop's short reason and its hover the evidence, the advice and the time | seen 2026-10-28: the card said to read the hover, which held nothing | `TaskViewTest`, `BoardCardTest` |
+| K2 | a REVIEWED task waits on a human approval past the 24h poll window → it stays CI's with no attention asked and is polled again on a lengthening interval | seen 2026-10-29: ABC-42 turned amber `check for the approval` at 24h though only the reviewer could move it | `AutoReviewCadenceTest`, `ConfigServiceTest` |
 
 ## L — the tests themselves
 | id | the case, one line | defects | pinned by |

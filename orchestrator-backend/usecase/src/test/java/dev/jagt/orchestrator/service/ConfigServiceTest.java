@@ -253,6 +253,15 @@ class ConfigServiceTest {
     }
 
     @ParameterizedTest
+    @CsvSource(value = {"null,null,240", "null,300,300", "null,30,240", "null,100,100", "100,300,300"}, nullValues = "null")
+    void resolvesTheLongestWaitOnARequestOnlyAReviewerMovesNeverBelowTheLongestPoll(Integer max, Integer waiting, int expected) {
+        ConfigFile.AutoReviewConfig review = ConfigFile.AutoReviewConfig.defaults().withMaxIntervalMinutes(max)
+                .withWaitingMaxIntervalMinutes(waiting);
+
+        assertThat(review.waitingMaxIntervalMinutesOrDefault()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
     @CsvSource(value = {"null,null,60", "100,null,100", "10,30,30", "10,9,60", "10,10,10", "100,50,100"}, nullValues = "null")
     void resolvesTheLongestWaitBetweenTwoAutoReviewPollsNeverBelowTheShortest(Integer min, Integer max, int expected) {
         ConfigFile.AutoReviewConfig review = ConfigFile.AutoReviewConfig.defaults().withMinIntervalMinutes(min)

@@ -177,6 +177,7 @@ orchestrator:
     windowHours: 24         # stop polling a round this old
     minIntervalMinutes: 10
     maxIntervalMinutes: 60
+    waitingMaxIntervalMinutes: 240   # a request only a reviewer can move on is read past the window too, lengthening to this
 
   # ── Infrastructure failures ────────────────────────────────────────────────────────────────────────────────
   # A pipeline the host says died on infrastructure, not on the code, is re-run by jagt after each wait here; one

@@ -12,8 +12,9 @@ import java.time.Duration;
 
 /**
  * The whole auto-review policy. The interval escalates LINEARLY from {@code min} at the window start to {@code max}
- * at its end, and past the window polling stops; a request only a reviewer can move on waits {@code max} throughout,
- * since nothing jagt reads without a model says a reviewer wrote. The poller and every human surface ask the SAME
+ * at its end, and past the window polling stops; a request only a reviewer can move on waits {@code max} through the
+ * window and then lengthens to {@code waitingMax} over a second window, never stopping, since nothing jagt reads
+ * without a model says a reviewer wrote. The poller and every human surface ask the SAME
  * object, so a dashboard cannot advertise a poll the scheduler will not make.
  */
 @RequiredArgsConstructor
@@ -23,10 +24,12 @@ public final class AutoReviewCadence {
     private final Duration window;
     private final long minMinutes;
     private final long maxMinutes;
+    private final long waitingMaxMinutes;
 
     public static AutoReviewCadence from(AutoReviewConfig cfg) {
         return new AutoReviewCadence(cfg.enabledOrDefault(), Duration.ofHours(cfg.windowHoursOrDefault()),
-                cfg.minIntervalMinutesOrDefault(), cfg.maxIntervalMinutesOrDefault());
+                cfg.minIntervalMinutesOrDefault(), cfg.maxIntervalMinutesOrDefault(),
+                cfg.waitingMaxIntervalMinutesOrDefault());
     }
 
     public boolean enabled() {
@@ -65,12 +68,10 @@ public final class AutoReviewCadence {
         if (roundStart == 0) {
             return AutoReviewWatch.noRound();
         }
-        Duration interval = pollInterval(Duration.ofMillis(now - roundStart));
+        Duration elapsed = Duration.ofMillis(now - roundStart);
+        Duration interval = FlowRules.movedOnByAReviewerAlone(task.status()) ? waitingInterval(elapsed) : pollInterval(elapsed);
         if (interval == null) {
             return AutoReviewWatch.windowElapsed(windowHours());
-        }
-        if (FlowRules.movedOnByAReviewerAlone(task.status())) {
-            interval = Duration.ofMinutes(maxMinutes);
         }
         return AutoReviewWatch.watching(task.lastPolledAt() + interval.toMillis());
     }
@@ -78,6 +79,12 @@ public final class AutoReviewCadence {
     /** How the cadence reads to a human, in the one place both surfaces take the words from. */
     public String summary() {
         return enabled ? "auto-review on" : "auto-review off";
+    }
+
+    /** The wait for a request only a reviewer moves on: {@code max} in the window, then up to {@code waitingMax}. */
+    Duration waitingInterval(Duration elapsed) {
+        double past = Math.min(1.0, Math.max(0.0, (double) (elapsed.toMinutes() - window.toMinutes()) / window.toMinutes()));
+        return Duration.ofMinutes(Math.round(maxMinutes + (waitingMaxMinutes - maxMinutes) * past));
     }
 
     /** The wait before the next poll for a request open this long, or {@code null} once the window has
