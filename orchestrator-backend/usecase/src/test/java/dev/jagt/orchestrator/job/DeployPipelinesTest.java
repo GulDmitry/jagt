@@ -106,4 +106,15 @@ class DeployPipelinesTest {
         assertThat(reading.said()).isEqualTo("shop 01234567: pipeline red on infrastructure, "
                 + "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC");
     }
+
+    @Test
+    void aDeployIsReadOnTheFixPushedAfterItsMergeNotOnTheMerge() {
+        TaskState fixed = deployed.withDeployFix("shop", "f1x0123456789");
+        when(pipelines.onCommit(REMOTE, "f1x0123456789")).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("success", "")), TokenUsage.NONE));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", fixed);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    }
 }

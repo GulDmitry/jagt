@@ -46,7 +46,8 @@ are refused; `ship` still runs from DEPLOYED. The confirm's `project → branch`
 
 ### Requirement: Revert refuses rather than guess
 `revert` SHALL take out the last deploy's merge wherever a `deployCommit` is recorded, DEPLOYED and DEPLOY_CONFLICT
-always; it refuses with a by-hand recipe where that is absent, reverted or conflicts. It walks back the merged
+always; it refuses with a by-hand recipe where that is absent, reverted or conflicts. It takes out the fixes committed
+on top (`deployFixes`) first, newest first, in the same push. It walks back the merged
 repositories, each **forgetting** its commit, then discards a DEPLOY_CONFLICT's half-merge, sought only where
 `jagt.yml` still names the project; REVERTED once all that landed is out.
 

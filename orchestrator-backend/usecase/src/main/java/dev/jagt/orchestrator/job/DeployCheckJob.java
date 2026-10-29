@@ -98,7 +98,7 @@ public class DeployCheckJob implements Job {
     }
 
     private static String landed(TaskRepo repo, @Nullable ProjectConfig project) {
-        String commit = Objects.requireNonNull(repo.deployCommit());
+        String commit = Objects.requireNonNull(repo.deployTip());
         String sha = commit.length() > 8 ? commit.substring(0, 8) : commit;
         String branch = project == null || project.deployBranch() == null ? "its deploy branch"
                 : project.deployBranch();

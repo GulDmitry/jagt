@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static dev.jagt.orchestrator.service.DeployTargets.because;
+import static dev.jagt.orchestrator.service.DeployTargets.fixes;
 import static dev.jagt.orchestrator.service.DeployTargets.mergeCommit;
 import static dev.jagt.orchestrator.service.DeployTargets.names;
 
@@ -58,7 +59,7 @@ public class RevertService {
         for (Target target : landed.reversed()) {
             try {
                 lastRevertCommit = gitDeploy.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
-                        Objects.requireNonNull(mergeCommit(task, target)));
+                        Objects.requireNonNull(mergeCommit(task, target)), fixes(task, target));
             } catch (RuntimeException e) {
                 return stillLive(taskId, target, reverted, e);
             }

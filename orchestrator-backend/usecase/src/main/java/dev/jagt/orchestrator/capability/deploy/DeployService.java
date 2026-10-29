@@ -78,7 +78,9 @@ public class DeployService {
         try {
             String commit = gitDeploy.mergeIntoAndPush(target.path(), taskId, target.deployBranch());
             landing.merged.put(target.project(), commit);
-            stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), commit));
+            boolean fix = gitDeploy.isFix(target.path(), commit);
+            stateService.updateTask(taskId, t -> fix ? t.withDeployFix(target.project(), commit)
+                    : t.withDeployCommit(target.project(), commit));
         } catch (GitDeploy.NothingToDeployException e) {
             landing.nothingToDo.add(target.project());
             landing.idle = landing.idle == null ? e : landing.idle;

@@ -197,7 +197,7 @@ class TaskViewTest {
     @Test
     void offersTheRevertOnACardWhoseDeployBrokeOffAfterARepositoryLanded() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
-                TaskRepo.of("api", "/api-wt").withDeployCommit("abc1234"),
+                TaskRepo.of("api", "/api-wt").withMerge("abc1234"),
                 TaskRepo.of("web", "/web-wt")),
                 TaskStatus.APPROVED).alias("a1").build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));
@@ -208,7 +208,7 @@ class TaskViewTest {
     @Test
     void marksAMultiRepoTaskAsSoonAsONERepositoryHasLanded() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
-                TaskRepo.of("api", "/api-wt").withDeployCommit("abc1234"),
+                TaskRepo.of("api", "/api-wt").withMerge("abc1234"),
                 TaskRepo.of("web", "/web-wt")),
                 TaskStatus.DEPLOY_CONFLICT).alias("a1").build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));

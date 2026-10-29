@@ -95,6 +95,11 @@ public class DeployTargets {
         return commit == null || commit.isBlank() ? null : commit;
     }
 
+    /** The fixes committed on the deploy branch after the merge, newest first, as an undo takes them out. */
+    public static List<String> fixes(TaskState task, Target target) {
+        return task.repo(target.project()).map(repo -> repo.deployFixes().reversed()).orElse(List.of());
+    }
+
     public static String names(List<String> names) {
         return names.isEmpty() ? "none" : String.join(", ", names);
     }

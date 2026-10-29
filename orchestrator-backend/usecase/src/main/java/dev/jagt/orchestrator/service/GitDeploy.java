@@ -298,7 +298,7 @@ public class GitDeploy {
      * that conflicts is aborted and cleaned up, there being nothing useful for a human to finish there.
      */
     public String revertMergeAndPush(Path projectPath, String sourceBranch, String targetBranch,
-                                     String mergeCommit) {
+                                     String mergeCommit, List<String> fixesNewestFirst) {
         return git.locked(projectPath, () -> {
             Path revertWorktree = revertWorktreePath(projectPath, sourceBranch);
             String revertBranch = "jagt-revert-" + sourceBranch;
@@ -313,6 +313,7 @@ public class GitDeploy {
             try {
                 requireRevertable(revertWorktree, targetBranch, mergeCommit);
                 requireMergeCommit(revertWorktree, mergeCommit, targetBranch);
+                fixesNewestFirst.forEach(fix -> revertFix(revertWorktree, targetBranch, fix));
                 // -m 1: a merge has two parents, and reverting it means "undo what the SECOND parent brought
                 // in", i.e. keep the target branch's own line of history. Without it git refuses outright.
                 var revert = git.run(revertWorktree, List.of("git", "revert",
@@ -340,6 +341,24 @@ public class GitDeploy {
                 git.run(projectPath, List.of("git", "branch", "-D", revertBranch));
             }
         });
+    }
+
+    /** A fix goes first, newest first, so the merge below it reverts onto the tree it made. */
+    private void revertFix(Path revertWorktree, String targetBranch, String fix) {
+        requireRevertable(revertWorktree, targetBranch, fix);
+        var revert = git.run(revertWorktree, List.of("git", "revert", "--no-edit", fix));
+        if (revert.exitCode() != 0) {
+            git.run(revertWorktree, List.of("git", "revert", "--abort"));
+            throw new IllegalStateException("Cannot revert the fix " + shortSha(fix) + " on " + targetBranch
+                    + ": it conflicts with work done there since. Nothing was reverted; revert by hand: `git revert "
+                    + shortSha(fix) + "`. Details: " + (revert.stderr().isBlank() ? revert.stdout() : revert.stderr()));
+        }
+    }
+
+    /** Whether the commit pushed to the deploy branch is a fix on top of it rather than a deploy merge. */
+    public boolean isFix(Path projectPath, String commit) {
+        return git.run(projectPath, List.of("git", "rev-list", "--parents", "-n", "1", commit))
+                .expectSuccess("git rev-list --parents " + commit).stdout().trim().split("\\s+").length < 3;
     }
 
     /** Only a merge reverts as ONE unit; a non-merge would undo one commit of a task instead of the deploy. */

@@ -72,7 +72,7 @@ public class DeployPipelines {
     }
 
     private Reading read(String taskId, TaskState task, TaskRepo repo) {
-        String commit = Objects.requireNonNull(repo.deployCommit());
+        String commit = Objects.requireNonNull(repo.deployTip());
         String project = Objects.requireNonNull(repo.project());
         String label = project + " " + GitDeploy.shortSha(commit);
         String at = label + ": pipeline ";

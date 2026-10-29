@@ -438,7 +438,11 @@ public record TaskState(
 
     /** The merge commit a deploy created in THAT repo; the status move is a separate step. */
     public TaskState withDeployCommit(@Nullable String project, @Nullable String deployCommit) {
-        return toBuilder().repos(mapRepo(project, repo -> repo.withDeployCommit(deployCommit))).build();
+        return toBuilder().repos(mapRepo(project, repo -> repo.withMerge(deployCommit))).build();
+    }
+
+    public TaskState withDeployFix(@Nullable String project, String fix) {
+        return toBuilder().repos(mapRepo(project, repo -> repo.withDeployFix(fix))).build();
     }
 
     public TaskState withDeployCommit(String deployCommit) {
@@ -651,7 +655,7 @@ public record TaskState(
         }
 
         public TaskStateBuilder deployCommit(@Nullable String deployCommit) {
-            return firstRepo(repo -> repo.withDeployCommit(deployCommit));
+            return firstRepo(repo -> repo.withMerge(deployCommit));
         }
 
         private TaskStateBuilder firstRepo(UnaryOperator<TaskRepo> change) {

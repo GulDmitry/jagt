@@ -791,7 +791,7 @@ class GitDeployTest {
         String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
 
-        String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge);
+        String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of());
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-e", "origin/dev:feature.txt")).exitCode())
@@ -823,7 +823,7 @@ class GitDeployTest {
         GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
         String neverDeployed = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
 
-        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", neverDeployed))
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", neverDeployed, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("is not on dev");
 
@@ -851,9 +851,9 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
         GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
         String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
-        String firstRevert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge);
+        String firstRevert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of());
 
-        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge))
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("was already reverted");
 
@@ -891,7 +891,7 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
         String plainCommit = runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
 
-        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", plainCommit))
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", plainCommit, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("is not a merge");
 
@@ -930,7 +930,7 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
         String devTip = runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
 
-        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge))
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("conflicts with work done there since the deploy")
                 .hasMessageContaining("could not revert");
@@ -1060,7 +1060,7 @@ class GitDeployTest {
         Files.createDirectories(dir.resolve("ABC-1-revert"));
         Files.writeString(dir.resolve("ABC-1-revert").resolve("stale.txt"), "left by a run that died");
 
-        String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge);
+        String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of());
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(revert);
@@ -1092,7 +1092,7 @@ class GitDeployTest {
         Files.writeString(hook, "#!/bin/sh\nc=$(git commit-tree origin/dev^{tree} -p origin/dev -m other) && git push -q --no-verify origin \"$c:refs/heads/dev\"\n");
         Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
 
-        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge))
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Revert push to dev was rejected")
                 .satisfies(refused -> assertThat(refused.getMessage()).doesNotEndWith("Details: "));
@@ -1204,6 +1204,41 @@ class GitDeployTest {
                 .contains("the feature, fixed");
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", fix + "^1")).stdout().trim()).isEqualTo(merge);
         assertThat(deployWorktree).doesNotExist();
+    }
+
+    @Test
+    void revertTakesTheFixOutWithTheMergeItWasMadeOn(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        git.openFixWorktree(repo, "ABC-1", "dev");
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        Files.writeString(deployWorktree.resolve("feature.txt"), "the feature, fixed");
+        runner.run(deployWorktree, t, List.of("git", "add", "feature.txt"));
+        String fix = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of(fix));
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(git.isFix(repo, fix)).isTrue();
+        assertThat(git.isFix(repo, merge)).isFalse();
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-e", "origin/dev:feature.txt")).exitCode())
+                .isNotZero();
     }
 
     @ParameterizedTest

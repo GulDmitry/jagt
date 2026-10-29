@@ -25,6 +25,8 @@ Accepted 2026-10-29. Extends [0013](0013-a-deploy-conflict-is-the-sessions-in-ac
 - The session fixes the merge result there and stages it, as for a conflict; jagt commits and pushes it through the deploy path, then reads again.
 - In `judge` the card says NEEDS YOU, as for a conflict; nothing is pressed.
 - A pipeline that does not exist, is unknown or cannot be read keeps the deploy open: nothing says the code works.
+- `deployCommit` stays the merge `revert` takes out; later fixes are `deployFixes`, and `TaskRepo.deployTip` is what the pipeline is read on.
+- `revert` takes the fixes out newest first, then the merge, in one push: a plain commit added on top, no force-push, no guard weakened.
 - `RedCause.of` is the one place deciding what is red on the code; `DeployCheckJob.READ_EVERY` the one read interval.
 - A read of the review request no longer clears the retries of a task past its review (`RedCauses.judge`): the deploy owns them there.
 
@@ -38,4 +40,3 @@ Accepted 2026-10-29. Extends [0013](0013-a-deploy-conflict-is-the-sessions-in-ac
 ## Reopen when
 
 - A project without a pipeline on its deploy branch keeps its deploys open: a flag, not a guess, must say none exists.
-- A fix on top of the merge makes `revert` refuse often: record the merge commit beside the tip.
