@@ -29,4 +29,9 @@ public record InfraWaitProperties(List<Duration> backoff) {
     public Optional<Duration> before(int attempt) {
         return attempt >= 0 && attempt < backoff.size() ? Optional.of(backoff.get(attempt)) : Optional.empty();
     }
+
+    /** The wait a task stopped for a dependency that stayed down is asked again after: the last of the backoff. */
+    public Optional<Duration> last() {
+        return backoff.isEmpty() ? Optional.empty() : Optional.of(backoff.getLast());
+    }
 }

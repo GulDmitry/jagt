@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.task.TaskState;
@@ -100,5 +101,61 @@ class ReportEffectsTest {
         MessageContext judged = off.judged(MessageContext.NONE);
 
         assertThat(waits.reportViolations(judged)).hasSize(1);
+    }
+
+    @Test
+    void asksTheSessionAgainAtTheLastWaitOnceTheTaskStoppedAsWaiting(@TempDir Path dir) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(dir.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        TaskTurns turns = new TaskTurns(state, clock);
+        TaskStops realStops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
+        ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
+                InfraWaitProperties.defaults());
+        state.putTask("ABC-42", taskAnswering("wait-over", "3"));
+        effects.after(waits, "ABC-42");
+
+        Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
+        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), "wait-over"));
+    }
+
+    @Test
+    void keepsTheWaitStopAndTheNextWakeDueWhenTheSessionWaitsAgain(@TempDir Path dir) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(dir.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        TaskTurns turns = new TaskTurns(state, clock);
+        TaskStops realStops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
+        ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
+                InfraWaitProperties.defaults());
+        state.putTask("ABC-42", taskAnswering("wait-over", "3"));
+        realStops.stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
+        effects.after(waits, "ABC-42");
+
+        Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
+        assertThat(realStops.stopped("ABC-42")).isTrue();
+        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), "wait-over"));
+    }
+
+    @Test
+    void endsTheWaitStopWhenTheSessionReportsProgressWithoutAWait(@TempDir Path dir) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(dir.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        TaskTurns turns = new TaskTurns(state, clock);
+        TaskStops realStops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
+        ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
+                InfraWaitProperties.defaults());
+        state.putTask("ABC-42", taskAnswering("wait-over", "3"));
+        realStops.stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
+        effects.after(AgentStatusMessage.of("IN_PROGRESS", "db is back"), "ABC-42");
+
+        assertThat(realStops.stopped("ABC-42")).isFalse();
     }
 }

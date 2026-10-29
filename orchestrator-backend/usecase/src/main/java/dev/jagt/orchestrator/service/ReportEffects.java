@@ -5,16 +5,19 @@ import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
  * What a session's report sets going once it is applied: a wake after the next wait of {@code infraWait.backoff}
  * for a report of a wait, and a stop once the session has answered {@value #STEP} with a wait as many times as
- * there are waits. A reply no case takes closes its turn for the human.
+ * there are waits. That stop keeps asking at the last wait, until the session reports something but a wait.
+ * A reply no case takes closes its turn for the human.
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ReportEffects {
 
     static final String STEP = "wait-over";
@@ -38,6 +41,13 @@ public class ReportEffects {
     /** Called once the report is applied, so the turn it closed is the one a wake is armed for. */
     public void after(AgentStatusMessage said, String taskId) {
         if (!said.waits()) {
+            stops.endOnReport(taskId).ifPresent(stop -> log.atInfo().setMessage("stop voided by read")
+                    .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())
+                    .addKeyValue("read", "session report").log());
+            return;
+        }
+        if (stops.standing(taskId, TaskStop.Trigger.WAIT)) {
+            askAgain(taskId);
             return;
         }
         int waited = STEP.equals(turns.of(taskId).step()) ? count(turns.of(taskId).mark(WAITS)) : 0;
@@ -46,8 +56,13 @@ public class ReportEffects {
             turns.mark(taskId, WAITS, String.valueOf(waited + 1));
         }, () -> {
             turns.unmark(taskId, WAITS);
-            stops.stop(taskId, TaskStop.Trigger.WAIT, said.message() == null ? "a dependency stayed down" : said.message());
+            stops.stop(taskId, TaskStop.Trigger.WAIT, said.message() == null ? "a dependency stayed down" : said.message())
+                    .filter(stop -> stop.trigger() == TaskStop.Trigger.WAIT).ifPresent(stop -> askAgain(taskId));
         });
+    }
+
+    private void askAgain(String taskId) {
+        properties.last().ifPresent(wait -> wakes.armIn(taskId, wait, STEP));
     }
 
     private static int count(@Nullable String mark) {

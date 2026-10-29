@@ -76,7 +76,7 @@ A step that never landed (`UNDELIVERED`) SHALL end when `SessionAliveJob` finds 
 - **AND** a window still not running, or one that cannot be listed, leaves the stop standing
 
 #### Scenario: A stop for judgement
-- **WHEN** a task stopped as `PACE`, `STALLED`, `SHIPS`, `ROUNDS`, `MISS`, `UNCHANGED_FAILURE` or `WAIT` is read green
+- **WHEN** a task stopped as `PACE`, `STALLED`, `SHIPS`, `ROUNDS`, `MISS` or `UNCHANGED_FAILURE` is read green
 - **THEN** the stop stands until a human lifts it
 
 #### Scenario: A human acts while it waits
@@ -102,6 +102,8 @@ A due retry the ceiling refuses stops the task as `PACE`.
 A session whose dependency is down SHALL report IN_PROGRESS with `outcome=wait`, its message naming what is down and how to probe it.
 The turn SHALL stay the session's and nothing SHALL ask the human. After each wait of `infraWait.backoff` jagt SHALL say `wait-over`.
 Once the session answered `wait-over` with a wait as many times as there are waits, the task SHALL stop as `WAIT`.
+A task stopped as `WAIT` SHALL be told `wait-over` again after the last wait of `infraWait.backoff`, each time the session waits again.
+A report of the session that is no wait SHALL end the stop.
 `outcome=wait` SHALL be refused where `infraWait.backoff` is `[]`.
 
 #### Scenario: A session waits
@@ -112,6 +114,15 @@ Once the session answered `wait-over` with a wait as many times as there are wai
 #### Scenario: The dependency stays down
 - **WHEN** the session answered `wait-over` with a wait 3 times
 - **THEN** the task stops as `WAIT` with the session's last message as evidence
+
+#### Scenario: The wait stop keeps asking
+- **WHEN** a task stopped as `WAIT` reaches the last wait of `infraWait.backoff`
+- **THEN** jagt says `wait-over` once, though the task is stopped
+- **AND** where the session waits again, the next wake is due after the same wait
+
+#### Scenario: The session goes on
+- **WHEN** a task stopped as `WAIT` has its session report `IN_PROGRESS` with no wait
+- **THEN** the stop is voided and the log says `stop voided by read` once, with the task, the trigger and `read=session report`
 
 #### Scenario: Somebody else speaks first
 - **WHEN** you type to the session, or a relay or an answer opens a new turn, before the wait is over

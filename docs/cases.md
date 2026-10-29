@@ -109,6 +109,7 @@ Families:
 | E22 | a deployed, conflicted or reverted task's open request dies on infrastructure → no retry is armed or sent and no `INFRA` stop is set | seen 2026-10-29: found by the status × condition inventory | `RedCausesTest`, `InfraRetriesTest` |
 | E23 | a SHIPS or STALLED stop stands and a human deploys the task → the stop lifts once it is `DEPLOYED` and the deploy check reads the landed change; the Master's or jagt's deploy past a stop stays refused | seen 2026-10-29: found by the status × condition inventory | `DeployLiftsStopTest` |
 | E24 | an `UNDELIVERED` stop stands (a step never landed) and the session's window runs again → the stop ends, one INFO says `read=session alive`; a window still not running keeps it | seen 2026-10-29: found by the status × condition inventory | `SessionAliveJobTest` |
+| E25 | a `WAIT` stop stands (a dependency stayed down) → jagt says `wait-over` again at the last backoff, a wait keeps the stop and the next wake, any other report of the session ends it | seen 2026-10-29: found by the status × condition inventory | `ReportEffectsTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

@@ -110,6 +110,16 @@ public class TaskStops {
         return endWhen(taskId, TaskStop.Trigger.Ends.SESSION_ALIVE, true, "");
     }
 
+    /** The stop a session's report that is no wait ended: one whose trigger ends on it. */
+    public Optional<TaskStop> endOnReport(String taskId) {
+        return endWhen(taskId, TaskStop.Trigger.Ends.SESSION_REPORT, true, "");
+    }
+
+    /** Whether a stop of {@code trigger} stands on the task. */
+    public boolean standing(String taskId, TaskStop.Trigger trigger) {
+        return stateService.task(taskId).map(TaskState::stop).filter(stop -> stop.trigger() == trigger).isPresent();
+    }
+
     /**
      * The stop a refused read ended: one whose trigger ends on a read, and the refusal says the checks are no more
      * on a request the stop was counted on; {@code request} is blank where the refusal is about none.
