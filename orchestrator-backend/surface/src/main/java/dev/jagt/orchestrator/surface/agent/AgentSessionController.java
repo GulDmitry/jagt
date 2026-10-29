@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.SessionProbe;
-import dev.jagt.orchestrator.service.SessionWakes;
+import dev.jagt.orchestrator.service.UsageLimitWakes;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class AgentSessionController {
 
     private final StateService stateService;
     private final SessionReports reports;
-    private final SessionWakes wakes;
+    private final UsageLimitWakes wakes;
 
     /** The harness feeds this answer back into the session's context, so it is written for the model. */
     @PostMapping(value = "/{state}", produces = MediaType.TEXT_PLAIN_VALUE)

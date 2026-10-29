@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.config.UsageLimitsProperties;
-import dev.jagt.orchestrator.port.SubscriptionUsage;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,10 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 /** One pending wake per task, kept on the task's turn so it outlives a restart; taken off before it is returned. */
@@ -23,28 +19,15 @@ public class SessionWakes {
 
     private static final String WAKE = "wake-at";
 
-    private final UsageLimits limits;
-    private final UsageLimitsProperties properties;
     private final StateService stateService;
     private final TaskTurns turns;
     private final Clock clock;
 
-    /** Arms a wake at the reset of every window at its limit; none where no window is, or one carries no reset. */
-    public synchronized void arm(String taskId) {
-        if (!properties.wakes()) {
-            return;
-        }
-        Optional<Instant> at = limits.refresh(clock.instant()).map(UsageLimits.Reading::answer)
-                .filter(SubscriptionUsage.Read.class::isInstance).map(SubscriptionUsage.Read.class::cast)
-                .flatMap(read -> resetOfExhausted(read.snapshot().windows()));
-        if (at.isEmpty()) {
-            log.atInfo().setMessage("session wake not armed").addKeyValue("task", taskId)
-                    .addKeyValue("cause", "no window at its limit with a known reset").log();
-            return;
-        }
-        turns.mark(taskId, WAKE, String.valueOf(at.get().toEpochMilli()));
+    /** Arms the one wake of the task, replacing any pending. */
+    public synchronized void arm(String taskId, Instant at) {
+        turns.mark(taskId, WAKE, String.valueOf(at.toEpochMilli()));
         log.atInfo().setMessage("session wake armed").addKeyValue("task", taskId)
-                .addKeyValue("at", at.get()).log();
+                .addKeyValue("at", at).log();
     }
 
     public synchronized void cancel(String taskId) {
@@ -67,14 +50,5 @@ public class SessionWakes {
     private static long wakeAt(TaskState task) {
         String at = task.turnOrNone().mark(WAKE);
         return at == null ? Long.MAX_VALUE : Long.parseLong(at);
-    }
-
-    private static Optional<Instant> resetOfExhausted(List<SubscriptionUsage.Window> windows) {
-        List<SubscriptionUsage.Window> exhausted = windows.stream().filter(window -> window.percentUsed() >= 100)
-                .toList();
-        if (exhausted.isEmpty() || exhausted.stream().anyMatch(window -> window.resetsAt().isEmpty())) {
-            return Optional.empty();
-        }
-        return exhausted.stream().map(window -> window.resetsAt().get()).max(Comparator.naturalOrder());
     }
 }
