@@ -24,7 +24,12 @@ public class RoundReading {
     public sealed interface Read permits Refused, Round {
     }
 
-    public record Refused(SweepResult result) implements Read {
+    /** {@code request} is the address of the one request the refusal is about, blank where it is about none. */
+    public record Refused(SweepResult result, String request) implements Read {
+
+        public Refused(SweepResult result) {
+            this(result, "");
+        }
     }
 
     public record Round(String mrUrl, ReviewFacts facts, String tip) implements Read {
@@ -60,9 +65,9 @@ public class RoundReading {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
                         "error: read failed: " + repo.mrUrl() + " " + cause(answer.failure())));
             }
-            if (!read.get().exists()) {
+            if (!read.get().exists() || read.get().closed()) {
                 return new Refused(new SweepResult(SweepResult.Kind.GONE,
-                        "error: no such request: " + repo.mrUrl() + " (the host says so)"));
+                        "error: no such request: " + repo.mrUrl() + " (the host says so)"), Objects.requireNonNull(repo.mrUrl()));
             }
             if (read.get().merged()) {
                 mergedRequests.hostSaidMerged(taskId, Objects.requireNonNull(repo.project()));
@@ -84,7 +89,7 @@ public class RoundReading {
                 round.threads().stream().map(thread -> "[" + project + "] " + thread).toList(),
                 round.openedAt(),
                 round.awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList(),
-                round.newestNotes(), round.pipelineUrl(), round.merged());
+                round.newestNotes(), round.pipelineUrl(), round.merged(), round.closed());
     }
 
     /**
@@ -103,7 +108,7 @@ public class RoundReading {
                 longestOpen(rounds),
                 rounds.stream().flatMap(round -> round.awaitingReviewer().stream()).toList(),
                 rounds.stream().flatMap(round -> round.newestNotes().stream()).toList(),
-                worst.pipelineUrl(), rounds.stream().allMatch(ReviewFacts::merged));
+                worst.pipelineUrl(), rounds.stream().allMatch(ReviewFacts::merged), false);
     }
 
     /** The OLDEST request: how long the review has been hanging is the longest any of them has waited. */

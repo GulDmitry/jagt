@@ -47,7 +47,7 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
-                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of(), List.of("note_1", "note_2"), "", false);
+                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of(), List.of("note_1", "note_2"), "", false, false);
         stops.round("ABC-42", round, "brief 1", "");
         stops.round("ABC-42", round, "brief 2", "");
         stops.round("ABC-42", round, "brief 3", "");
@@ -95,7 +95,7 @@ class TaskStopsTest {
 
         stops.lift("ABC-42");
 
-        assertThat(stops.round("ABC-42", new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false), "same", ""))
+        assertThat(stops.round("ABC-42", new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false, false), "same", ""))
                 .isEqualTo(TaskStops.Relay.RELAY);
     }
 
@@ -173,7 +173,7 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false);
+        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false, false);
 
         TaskStops.Relay first = stops.round("ABC-42", round, "brief", "");
         TaskStops.Relay again = stops.round("ABC-42", round, "brief", "");
@@ -193,9 +193,9 @@ class TaskStopsTest {
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
 
         stops.round("ABC-42", new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed", List.of("x"), 0,
-                List.of(), List.of(), "", false), "red", "");
+                List.of(), List.of(), "", false, false), "red", "");
         stops.round("ABC-42", new ReviewFacts(true, false, "running", "unit-tests\nCartTest failed", List.of("x"), 0,
-                List.of(), List.of(), "", false), "running", "");
+                List.of(), List.of(), "", false, false), "running", "");
 
         assertThat(state.task("ABC-42").orElseThrow().trailOrNone().rounds()).extracting(RoundTrail.Round::failing)
                 .containsExactly("unit-tests", "");
@@ -210,9 +210,9 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts first = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough."), 0, List.of(), List.of("note_7"), "", false);
+                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough."), 0, List.of(), List.of("note_7"), "", false, false);
         ReviewFacts second = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough, conceded."), 0, List.of(), List.of("note_7"), "", false);
+                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough, conceded."), 0, List.of(), List.of("note_7"), "", false, false);
 
         stops.round("ABC-42", first, "brief with one copy", "");
         TaskStops.Relay again = stops.round("ABC-42", second, "brief with another copy", "");
@@ -230,9 +230,9 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts first = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?"), 0, List.of(), List.of("note_7"), "", false);
+                List.of("https://host/mr/1#note_1\nmia: Why?"), 0, List.of(), List.of("note_7"), "", false, false);
         ReviewFacts second = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?\nmia: And this?"), 0, List.of(), List.of("note_8"), "", false);
+                List.of("https://host/mr/1#note_1\nmia: Why?\nmia: And this?"), 0, List.of(), List.of("note_8"), "", false, false);
 
         stops.round("ABC-42", first, "brief one", "");
         TaskStops.Relay next = stops.round("ABC-42", second, "brief two", "");
@@ -249,9 +249,9 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts first = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed: expected 60",
-                List.of(), 0, List.of(), List.of(), "", false);
+                List.of(), 0, List.of(), List.of(), "", false, false);
         ReviewFacts second = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed: expected 60 but",
-                List.of(), 0, List.of(), List.of(), "", false);
+                List.of(), 0, List.of(), List.of(), "", false, false);
 
         stops.round("ABC-42", first, "brief worded one way", "api=a1b2c3");
         TaskStops.Relay again = stops.round("ABC-42", second, "brief worded another way", "api=a1b2c3");
@@ -268,7 +268,7 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
-                List.of(), 0, List.of(), List.of(), "", false);
+                List.of(), 0, List.of(), List.of(), "", false, false);
 
         stops.round("ABC-42", round, "same brief", "api=a1b2c3");
         TaskStops.Relay next = stops.round("ABC-42", round, "same brief", "api=d4e5f6");
@@ -320,7 +320,7 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         ReviewFacts answered = new ReviewFacts(true, false, "success", "", List.of("t1\nmia: And this?"), 0,
-                List.of(), List.of("note_8"), "", false);
+                List.of(), List.of("note_8"), "", false, false);
 
         TaskStops.Relay relay = stops.round("ABC-42", answered, "brief", "");
 
@@ -365,7 +365,7 @@ class TaskStopsTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"INFRA,GONE,false", "CHECKS,GONE,false", "INFRA,UNREADABLE,true", "CHECKS,NO_MR,true",
+    @CsvSource({"INFRA,GONE,false", "CHECKS,GONE,false", "INFRA,UNREADABLE,true", "CHECKS,NO_MR,false", "INFRA,NO_MR,false",
             "PACE,GONE,true"})
     void endsAStopOnARefusedReadOnlyWhereTheRequestIsGone(TaskStop.Trigger trigger,
                                                           ReviewSweepService.SweepResult.Kind refusal,
@@ -378,8 +378,38 @@ class TaskStopsTest {
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
         stops.stop("ABC-42", trigger, "host down");
 
-        stops.endOnRefusal("ABC-42", refusal);
+        stops.endOnRefusal("ABC-42", refusal, "");
 
         assertThat(stops.stopped("ABC-42")).isEqualTo(stands);
+    }
+
+    @Test
+    void endsAStopWhereTheRequestItWasCountedOnIsGone(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .stop(new TaskStop(TaskStop.Trigger.INFRA, 1, "host down").countedOn(List.of("http://mr/A"))).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/A");
+
+        assertThat(stops.stopped("ABC-42")).isFalse();
+    }
+
+    @Test
+    void keepsAStopCountedOnOneRequestWhereAnotherRequestOfTheTaskIsGone(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .stop(new TaskStop(TaskStop.Trigger.INFRA, 1, "host down").countedOn(List.of("http://mr/A"))).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/B");
+
+        assertThat(stops.stopped("ABC-42")).isTrue();
     }
 }

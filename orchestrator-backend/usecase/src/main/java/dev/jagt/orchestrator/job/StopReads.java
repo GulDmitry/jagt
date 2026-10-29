@@ -27,7 +27,7 @@ class StopReads {
                         .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())
                         .addKeyValue("pipeline", pipeline).log());
             }
-            case RoundReading.Refused refused -> stops.endOnRefusal(taskId, refused.result().kind())
+            case RoundReading.Refused refused -> stops.endOnRefusal(taskId, refused.result().kind(), refused.request())
                     .ifPresent(stop -> log.atInfo().setMessage("stop voided by read")
                             .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())
                             .addKeyValue("request", "gone").log());

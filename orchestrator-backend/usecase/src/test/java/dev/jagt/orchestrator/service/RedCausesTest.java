@@ -29,7 +29,7 @@ class RedCausesTest {
     private final InfraRetries retries = mock(InfraRetries.class);
     private final RedCauses causes = new RedCauses(pipelines, retries, InfraWaitProperties.defaults());
     private final ReviewFacts red = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(),
-            List.of(), "https://host.invalid/p/1", false);
+            List.of(), "https://host.invalid/p/1", false, false);
 
     @Test
     void waitsOutARunWhoseEveryFailedJobDiedOnInfrastructure() {
@@ -102,7 +102,7 @@ class RedCausesTest {
     @Test
     void handsARunToTheSessionWhenTheReadGaveNoPipelineAddress() {
         ReviewFacts unaddressed = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(),
-                List.of(), "", false);
+                List.of(), "", false, false);
 
         RedCauses.Verdict verdict = causes.judge("ABC-42", unaddressed, Pipeline.RED);
 

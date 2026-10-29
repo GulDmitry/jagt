@@ -128,6 +128,21 @@ class HeadlessClaudeCodeHostAssistantTest {
     }
 
     @Test
+    void readsTheHostsWordThatTheRequestWasClosedUnmerged() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"none\","
+                        + "\"closed\":true,\"merged\":false,\"openedAt\":\"\",\"threads\":[]}}", ""));
+        var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().closed()).isTrue();
+    }
+
+    @Test
     void keepsAnOverlongThreadsNewestNotesRatherThanItsOpeningComment() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,

@@ -28,7 +28,7 @@ class StopReadsTest {
     @Test
     void offersTheStopTheCheckVerdictOfARequestItCouldRead() {
         when(reading.read("ABC-42")).thenReturn(new RoundReading.Round("http://mr/1", new ReviewFacts(
-                true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false), ""));
+                true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false), ""));
 
         reads.probe("ABC-42");
 
@@ -49,7 +49,7 @@ class StopReadsTest {
 
     @Test
     void keepsWhatItReadOnTheTaskWhereTheReadEndsTheStop() {
-        ReviewFacts green = new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false);
+        ReviewFacts green = new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false);
         when(reading.read("ABC-42")).thenReturn(new RoundReading.Round("http://mr/1", green, ""));
 
         reads.probe("ABC-42");
@@ -60,10 +60,10 @@ class StopReadsTest {
     @Test
     void asksTheStopToEndWhereTheHostSaysTheRequestIsGone() {
         when(reading.read("ABC-42")).thenReturn(new RoundReading.Refused(new ReviewSweepService.SweepResult(
-                ReviewSweepService.SweepResult.Kind.GONE, "error: no such request")));
+                ReviewSweepService.SweepResult.Kind.GONE, "error: no such request"), "http://mr/1"));
 
         reads.probe("ABC-42");
 
-        verify(stops).endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE);
+        verify(stops).endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/1");
     }
 }

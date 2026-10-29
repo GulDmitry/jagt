@@ -29,7 +29,7 @@ public class TaskStops {
 
     /** The refusals of a read that show the checks a stop waited on are gone; any other refusal says nothing about them. */
     private static final Set<ReviewSweepService.SweepResult.Kind> DISPROVING_REFUSALS =
-            EnumSet.of(ReviewSweepService.SweepResult.Kind.GONE);
+            EnumSet.of(ReviewSweepService.SweepResult.Kind.GONE, ReviewSweepService.SweepResult.Kind.NO_MR);
 
     private final StateService stateService;
     private final LoopBreaker.Current breakers;
@@ -102,19 +102,23 @@ public class TaskStops {
 
     /** The stop a read of the checks ended: one whose trigger ends on a read, and the read listed the checks, not red. */
     public Optional<TaskStop> endOnRead(String taskId, Pipeline read) {
-        return endWhen(taskId, read != Pipeline.UNKNOWN && read != Pipeline.RED);
+        return endWhen(taskId, read != Pipeline.UNKNOWN && read != Pipeline.RED, "");
     }
 
-    /** The stop a refused read ended: one whose trigger ends on a read, and the refusal says the checks are no more. */
-    public Optional<TaskStop> endOnRefusal(String taskId, ReviewSweepService.SweepResult.Kind refusal) {
-        return endWhen(taskId, DISPROVING_REFUSALS.contains(refusal));
+    /**
+     * The stop a refused read ended: one whose trigger ends on a read, and the refusal says the checks are no more
+     * on a request the stop was counted on; {@code request} is blank where the refusal is about none.
+     */
+    public Optional<TaskStop> endOnRefusal(String taskId, ReviewSweepService.SweepResult.Kind refusal, String request) {
+        return endWhen(taskId, DISPROVING_REFUSALS.contains(refusal), request);
     }
 
-    private Optional<TaskStop> endWhen(String taskId, boolean disproves) {
+    private Optional<TaskStop> endWhen(String taskId, boolean disproves, String request) {
         AtomicReference<@Nullable TaskStop> ended = new AtomicReference<>();
         stateService.updateTask(taskId, task -> {
             TaskStop stop = task.stop();
-            if (!disproves || stop == null || stop.trigger().ends() != TaskStop.Trigger.Ends.HOST_READ) {
+            if (!disproves || stop == null || stop.trigger().ends() != TaskStop.Trigger.Ends.HOST_READ
+                    || !stop.countedOnOrNone(request)) {
                 return task;
             }
             ended.set(stop);

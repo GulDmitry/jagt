@@ -16,11 +16,12 @@ import java.util.stream.IntStream;
  * no such request — a read that failed carries no facts at all, and no caller may merge the two. {@code openedAt} is
  * the HOST's stamp, 0 when unknown; jagt's own is never substituted, being wrong by days for a request a task was
  * resumed on. {@code pipelineUrl} is the address of the newest pipeline, blank when there is none. {@code merged} is
- * the HOST's word that the request was merged, whatever way it was.
+ * the HOST's word that the request was merged, whatever way it was. {@code closed} is its word that the request was
+ * closed unmerged.
  */
 public record ReviewFacts(boolean exists, boolean approved, String pipelineStatus, String pipelineFailure,
                           List<String> threads, long openedAt, List<String> awaitingReviewer,
-                          List<String> newestNotes, String pipelineUrl, boolean merged) {
+                          List<String> newestNotes, String pipelineUrl, boolean merged, boolean closed) {
 
     public ReviewFacts {
         pipelineFailure = pipelineFailure == null ? "" : pipelineFailure;
@@ -42,7 +43,7 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
 
     /** The same round with its checks left unsaid. */
     public ReviewFacts withoutChecks() {
-        return new ReviewFacts(exists, approved, "", "", threads, openedAt, awaitingReviewer, newestNotes, "", merged);
+        return new ReviewFacts(exists, approved, "", "", threads, openedAt, awaitingReviewer, newestNotes, "", merged, closed);
     }
 
     /** The threads whose newest note is by {@code account} moved to {@code awaitingReviewer}; blank moves none. */
@@ -58,7 +59,7 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
                 openNotes.add(i < newestNotes.size() ? newestNotes.get(i) : "");
             }
         }
-        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered, openNotes, pipelineUrl, merged);
+        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered, openNotes, pipelineUrl, merged, closed);
     }
 
     private static boolean newestAuthorIs(String thread, String account) {

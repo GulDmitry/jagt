@@ -15,6 +15,7 @@ public final class ReviewRead {
             .required("pipelineFailure", "string", null)
             .required("pipelineUrl", "string", null)
             .required("merged", "boolean", null)
+            .required("closed", "boolean", null)
             .required("openedAt", "string", null)
             .requiredTexts("threads", null)
             .requiredTexts("newestNotes", null)

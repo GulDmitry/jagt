@@ -52,9 +52,14 @@ A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the tas
 - **AND** the read writes nothing else: no relay, no status move, no message to the session
 
 #### Scenario: The request is gone
-- **WHEN** a task stopped as `INFRA` or `CHECKS` and the host says the request the stop was counted on no longer exists
+- **WHEN** a task stopped as `INFRA` or `CHECKS` and the host says a request it was counted on no longer exists or was closed
 - **THEN** the stop is voided and the log says `stop voided by read` once, with `request=gone`
+- **AND** a request the stop was not counted on that is gone leaves the stop standing
 - **AND** a read refused because the host or CLI cannot answer leaves the stop standing
+
+#### Scenario: The request is unlinked
+- **WHEN** a task stopped as `INFRA` or `CHECKS` has no request linked any more
+- **THEN** the stop is voided as above
 
 #### Scenario: A task past its review
 - **WHEN** ABC-42 is `DEPLOYED`, `DEPLOY_CONFLICT` or `REVERTED` and its open request's pipeline dies on infrastructure

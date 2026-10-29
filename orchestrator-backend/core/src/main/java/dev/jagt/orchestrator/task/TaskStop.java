@@ -64,6 +64,11 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         return request != null && !requests.containsAll(Arrays.asList(request.split(" ")));
     }
 
+    /** True where this stop was counted on {@code requested}, or on no request, or {@code requested} is blank. */
+    public boolean countedOnOrNone(String requested) {
+        return request == null || requested.isBlank() || Arrays.asList(request.split(" ")).contains(requested);
+    }
+
     public String reading() {
         return evidence + ". " + trigger.next + ", then lift or close";
     }

@@ -83,7 +83,7 @@ class RoundReadingTest {
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
@@ -99,9 +99,9 @@ class RoundReadingTest {
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
-                true, false, "success", "", List.of(), 0, List.of("mia: Why?\nagent: Because."), List.of(), "", false)), TokenUsage.NONE));
+                true, false, "success", "", List.of(), 0, List.of("mia: Why?\nagent: Because."), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
@@ -116,9 +116,9 @@ class RoundReadingTest {
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/web"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
@@ -133,9 +133,9 @@ class RoundReadingTest {
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/web"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
@@ -150,9 +150,9 @@ class RoundReadingTest {
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false,
-                "success", "", List.of("http://mr/api#note_1\nbot: tighten this"), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                "success", "", List.of("http://mr/api#note_1\nbot: tighten this"), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false,
-                "success", "", List.of("http://mr/web#note_2\nbot: rename that"), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                "success", "", List.of("http://mr/web#note_2\nbot: rename that"), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
@@ -168,9 +168,9 @@ class RoundReadingTest {
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false,
-                "failed", "lint: unused import Widget", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                "failed", "lint: unused import Widget", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
@@ -185,9 +185,9 @@ class RoundReadingTest {
                         TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2")), TaskStatus.CI_POLLING)
                 .alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_100_000L, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_100_000L, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/2"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
@@ -202,9 +202,9 @@ class RoundReadingTest {
                         TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2")), TaskStatus.CI_POLLING)
                 .alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
         when(reviewReader.read("ABC-1", "http://mr/2"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
@@ -216,7 +216,7 @@ class RoundReadingTest {
     void readsTheOneRequestOfASingleRepositoryTaskAsItsRound() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
-        ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of("rename x"), 7, List.of(), List.of(), "", false);
+        ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of("rename x"), 7, List.of(), List.of(), "", false, false);
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(new Answer<>(Optional.of(facts), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
@@ -232,13 +232,28 @@ class RoundReadingTest {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
         when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(false, false, "", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(false, false, "", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");
 
         assertThat(read).isInstanceOfSatisfying(RoundReading.Refused.class, refused -> {
             assertThat(refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.GONE);
             assertThat(refused.result().message()).isEqualTo("error: no such request: http://mr/1 (the host says so)");
+        });
+    }
+
+    @Test
+    void callsARequestClosedOnTheHostGoneAndNamesIt() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "none", "", List.of(), 0, List.of(), List.of(), "", false, true)), TokenUsage.NONE));
+
+        var read = reading.read("ABC-1");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Refused.class, refused -> {
+            assertThat(refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.GONE);
+            assertThat(refused.request()).isEqualTo("http://mr/1");
         });
     }
 }
