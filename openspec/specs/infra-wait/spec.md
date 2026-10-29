@@ -30,8 +30,12 @@ task's status. `infraWait.backoff: []` SHALL turn this off.
 - **WHEN** 3 retries were sent since the last lift and the pipeline is red on infrastructure again
 - **THEN** the task lands `CI_FAILED` and stops as `INFRA`, the evidence naming the job, its reason and `3 retries`
 
-#### Scenario: The host cannot be asked
-- **WHEN** the CLI is missing, not logged in, or the host refuses to list the jobs or to re-run
+#### Scenario: The failed jobs cannot be read
+- **WHEN** the CLI is missing, not logged in, or the host refuses to list ABC-42's failed jobs
+- **THEN** the red is the code's and the round goes to the session as before, one warning naming the cause
+
+#### Scenario: The re-run is refused
+- **WHEN** the host or the CLI refuses to re-run jobs already read as infrastructure
 - **THEN** the task stops as `INFRA` at once, the evidence being the CLI's or the host's own words
 
 #### Scenario: A human acts while it waits

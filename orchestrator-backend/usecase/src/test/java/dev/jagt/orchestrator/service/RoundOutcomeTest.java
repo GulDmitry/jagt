@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,8 +57,8 @@ class RoundOutcomeTest {
         var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), ""), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
-        verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
+        verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.REVIEWED), any());
     }
 
     @Test
@@ -65,8 +66,8 @@ class RoundOutcomeTest {
         var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), ""), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
-        verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
+        verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.APPROVED), any());
     }
 
     @Test
@@ -74,7 +75,7 @@ class RoundOutcomeTest {
         var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of(), ""), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.REVIEWED), any());
     }
 
     @Test
@@ -83,14 +84,14 @@ class RoundOutcomeTest {
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("checks running");
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.REVIEWED), any());
     }
 
     @Test
     void stopsTheTaskOnTheBoardWhenItsChecksReadRed() {
         outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0, List.of(), List.of(), ""), "");
 
-        verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED);
+        verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
     }
 
     @Test
@@ -102,8 +103,8 @@ class RoundOutcomeTest {
         var result = outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.APPROVED), any());
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.REVIEWED), any());
     }
 
     @Test
@@ -117,7 +118,7 @@ class RoundOutcomeTest {
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("waiting on the reviewer");
         verifyNoInteractions(relay);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.REVIEWED), any());
     }
 
     @Test
@@ -132,7 +133,7 @@ class RoundOutcomeTest {
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("retry armed (runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC)");
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.CI_FAILED);
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.CI_FAILED), any());
         verifyNoInteractions(relay);
     }
 
@@ -148,21 +149,21 @@ class RoundOutcomeTest {
         outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         verify(relay).relay("ABC-1", "http://mr/1", threadsOnly, "failed", "");
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.CI_FAILED);
+        verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.CI_FAILED), any());
     }
 
     @Test
     void landsCiFailedAndStopsTheTaskOnceTheRetriesRanOut() {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(), List.of(),
                 "https://host.invalid/p/1");
+        TaskStop stop = new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
         when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.empty(),
-                new RedCauses.Verdict(RedCause.CODE, false, "", Optional.of(new TaskStop(TaskStop.Trigger.INFRA, 3_000,
-                        "unit-tests: runner_system_failure, 3 retries")))));
+                new RedCauses.Verdict(RedCause.CODE, false, "", Optional.of(stop))));
 
         var result = outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.STOPPED);
-        verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED);
+        verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED, Optional.of(stop));
         verifyNoInteractions(relay);
     }
 }

@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,8 +19,9 @@ import java.util.stream.Collectors;
 
 /**
  * Whose fault a red read is, asked of the host and never of a model: infrastructure is waited out by arming a
- * retry, anything else is the session's, and a pipeline that cannot be read stops the task.
+ * retry, anything else, a pipeline that cannot be read included, is the session's.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RedCauses {
@@ -44,7 +46,9 @@ public class RedCauses {
         }
         Answer<List<FailedJob>> failed = pipelines.failedJobs(facts.pipelineUrl());
         if (failed.facts().isEmpty()) {
-            return stopped(retries.refused(taskId, failed.failure()));
+            log.atWarn().setMessage("failed jobs unreadable").addKeyValue("task", taskId)
+                    .addKeyValue("cause", failed.failure()).log();
+            return Verdict.CODE;
         }
         if (RedCause.of(failed.facts().get()) == RedCause.CODE) {
             retries.clear(taskId, true);

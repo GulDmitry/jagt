@@ -60,16 +60,15 @@ class RedCausesTest {
     }
 
     @Test
-    void stopsTheTaskWithTheCliOwnWordsWhenTheFailedJobsCannotBeRead() {
+    void handsARunToTheSessionWhenItsFailedJobsCannotBeRead() {
         when(pipelines.failedJobs("https://host.invalid/p/1")).thenReturn(Answer.failed(TokenUsage.NONE,
                 "glab not logged in to host.invalid"));
-        TaskStop stop = new TaskStop(TaskStop.Trigger.INFRA, 1_000, "glab not logged in to host.invalid");
-        when(retries.refused("ABC-42", "glab not logged in to host.invalid")).thenReturn(Optional.of(stop));
 
         RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);
 
-        assertThat(verdict.stop()).contains(stop);
-        assertThat(verdict.retryLeft()).isFalse();
+        assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
+        assertThat(verdict.stop()).isEmpty();
+        verify(retries, never()).arm(any(), any(), any(), any());
     }
 
     @Test

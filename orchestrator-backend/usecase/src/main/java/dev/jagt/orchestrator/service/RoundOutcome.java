@@ -31,7 +31,7 @@ public class RoundOutcome {
         RedCauses.Verdict red = recorded.red();
         Optional<TaskStatus> read = FlowRules.readReview(!r.threads().isEmpty() || !r.awaitingReviewer().isEmpty(),
                 r.approved(), Pipeline.of(said), red.cause(), red.retryLeft());
-        read.ifPresent(status -> statusReports.markRead(taskId, status));
+        read.ifPresent(status -> statusReports.markRead(taskId, status, red.stop()));
         if (red.stop().isPresent()) {
             return stopped(taskId, said, red.stop().get());
         }

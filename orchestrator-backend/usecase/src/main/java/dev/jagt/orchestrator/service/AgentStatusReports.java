@@ -213,11 +213,12 @@ public class AgentStatusReports {
     }
 
     /** Puts what {@link FlowRules#readReview} concluded on the board; a red was tapped when the round read it. */
-    public void markRead(String taskId, TaskStatus read) {
+    public void markRead(String taskId, TaskStatus read, Optional<TaskStop> stopped) {
         String message = switch (read) {
             case REVIEWED -> "reviewed — checks green, no unresolved comments";
             case APPROVED -> "approved — checks green, request approved";
-            case CI_FAILED -> "checks failed — relayed to the session";
+            case CI_FAILED -> stopped.map(stop -> "checks failed — jagt stopped the task: " + stop.reading())
+                    .orElse("checks failed — relayed to the session");
             default -> throw new IllegalArgumentException(read + " is not what a review read concludes");
         };
         String id = stateService.canonicalTaskId(taskId);

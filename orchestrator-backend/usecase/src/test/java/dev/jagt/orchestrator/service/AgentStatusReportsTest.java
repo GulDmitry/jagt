@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.port.Notification;
@@ -184,7 +185,7 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
                 configService);
 
-        reports.markRead("ABC-1", TaskStatus.REVIEWED);
+        reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
         assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("deployed");
@@ -428,7 +429,7 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
                 configService);
 
-        reports.markRead("ABC-1", TaskStatus.APPROVED);
+        reports.markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
     }
@@ -444,7 +445,7 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
                 configService);
 
-        reports.markRead("ABC-1", TaskStatus.REVIEWED);
+        reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
     }
@@ -462,7 +463,7 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
                 configService);
 
-        reports.markRead("ABC-1", TaskStatus.REVIEWED);
+        reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
 
         TaskState after = state.task("ABC-1").orElseThrow();
         assertThat(after.message()).isEqualTo("squash or keep the commits?");
@@ -597,9 +598,43 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
                 configService);
 
-        reports.markRead("ABC-1", TaskStatus.CI_FAILED);
+        reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_FAILED);
+    }
+
+    @Test
+    void saysARedRoundWasRelayedToTheSessionWhenItWas(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
+                configService);
+
+        reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
+
+        assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("checks failed — relayed to the session");
+    }
+
+    @Test
+    void saysARedRoundStoppedTheTaskInsteadOfRelayingItWhenJagtStoppedIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
+                configService);
+        TaskStop stop = new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
+
+        reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.of(stop));
+
+        assertThat(state.task("ABC-1").orElseThrow().message()).doesNotContain("relayed")
+                .contains("unit-tests: runner_system_failure, 3 retries");
     }
 
     @Test

@@ -20,7 +20,8 @@ Accepted 2026-10-29. Supersedes in part [0011](0011-a-red-run-is-the-sessions-to
 - Infrastructure: `runner_system_failure`, `stuck_or_timeout_failure`, `api_failure`, `scheduler_failure`, `data_integrity_failure`;
   for a run `startup_failure`. Not `unknown_failure`; any other reason, a mix, or none is the code's.
 - Every infrastructure red keeps the task's status and tells the session nothing; open threads are still relayed, without the checks.
-- After the last wait, or when the CLI is missing, not logged in or refused, the task stops as `INFRA` with the CLI's own words.
+- After the last wait, or a refused re-run, the task stops as `INFRA` with the CLI's own words.
+- Failed jobs that cannot be listed leave the red the code's.
 - The re-run is `ActionOrigin.JAGT`, an unattended move that counts toward `loopBreaker.perHour`.
 
 ## Rejected
