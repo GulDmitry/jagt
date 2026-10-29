@@ -103,12 +103,13 @@ approves ONE commit: only the next relay replaces `task_context.md`; re-reading 
 its target): commit, push, open or update a request against its own target, every link in one `update_agent_status`
 (`reviewRequests`). jagt calls no host and writes no git; the task waits in SHIPPING.
 Nothing to ship or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened.
-A request is merged when, after a fetch, a merge commit of its target took the branch tip in (`mergedIntoTarget`).
+A request is merged when the host says so in a review read: git alone never sees a squash. Git finds a merge commit of the
+target that took the branch tip in (`mergedIntoTarget`, after a fetch).
 
 #### Scenario: Ship
 - **WHEN** `ship ABC-42`
 - **THEN** a commit, push and request per repository onto its base
-- **AND** with !571 merged, nothing is shipped and no SHIPPING step is recorded; a squash-merged or never-diverged branch reads as not merged
+- **AND** with !571 merged, nothing is shipped and no SHIPPING step is recorded; a squash counts by the host's word, a never-diverged branch not
 
 ### Requirement: A new base is reported by the session
 A session that rebased onto a new base on the human's or the Master's word SHALL report it with `retarget_task`;

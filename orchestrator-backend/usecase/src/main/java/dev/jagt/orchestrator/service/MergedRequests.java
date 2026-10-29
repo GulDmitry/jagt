@@ -30,13 +30,25 @@ public class MergedRequests {
         }
         for (TaskRepo repo : task.repos()) {
             if (repo.hasReviewRequest() && !repo.wasMerged() && mergedNow(taskId, task, repo)) {
-                String project = Objects.requireNonNull(repo.project());
-                stateService.updateTask(taskId, current -> current.withMerged(project, true));
-                log.atInfo().setMessage("request merged").addKeyValue("task", taskId)
-                        .addKeyValue("project", project).log();
+                markMerged(taskId, Objects.requireNonNull(repo.project()));
             }
         }
         return stateService.task(taskId).map(TaskState::requestsMerged).orElse(false);
+    }
+
+    /** The host said {@code project}'s request is merged, which git cannot see for a squash or a fast-forward. */
+    public void hostSaidMerged(String taskId, String project) {
+        boolean known = stateService.task(taskId).map(task -> task.repos().stream()
+                .anyMatch(repo -> project.equals(repo.project()) && repo.wasMerged())).orElse(true);
+        if (!known) {
+            markMerged(taskId, project);
+        }
+    }
+
+    private void markMerged(String taskId, String project) {
+        stateService.updateTask(taskId, current -> current.withMerged(project, true));
+        log.atInfo().setMessage("request merged").addKeyValue("task", taskId)
+                .addKeyValue("project", project).log();
     }
 
     /** The commit each request's branch last had pushed, one per repository; blank where the repository cannot name every one. */

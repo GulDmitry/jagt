@@ -33,7 +33,7 @@ class RoundOutcomeTest {
 
     @Test
     void recordsTheRoundItJudges() {
-        ReviewFacts facts = new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "");
+        ReviewFacts facts = new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "", false);
 
         outcome.settle("ABC-1", "http://mr/1", facts, "");
 
@@ -42,7 +42,7 @@ class RoundOutcomeTest {
 
     @Test
     void saysTheTaskStoppedWhenItsChecksCouldNotBeListedOnceTooOften() {
-        ReviewFacts facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), "");
+        ReviewFacts facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), "", false);
         when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.of(new TaskStop(
                 TaskStop.Trigger.CHECKS, 3_000, "3 reads running could not list the checks: list_pipelines: 403 Forbidden")),
                 RedCauses.Verdict.CODE));
@@ -54,7 +54,7 @@ class RoundOutcomeTest {
 
     @Test
     void advancesToApprovedOnceAHumanApprovedAndNoThreadIsLeftOpen() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), ""), "");
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
         verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
@@ -63,7 +63,7 @@ class RoundOutcomeTest {
 
     @Test
     void marksAGreenRoundReviewedWhileNobodyHasApprovedItYet() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), ""), "");
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
         verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -72,7 +72,7 @@ class RoundOutcomeTest {
 
     @Test
     void leavesAGreenThisSweepCouldNotReReadOutOfTheReviewedDecision() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of(), ""), "");
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of(), "", false), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         verify(statusReports, never()).markRead(eq("ABC-1"), eq(TaskStatus.REVIEWED), any());
@@ -80,7 +80,7 @@ class RoundOutcomeTest {
 
     @Test
     void holdsATaskBackWhileItsChecksAreStillRunning() {
-        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), ""), "");
+        var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "", false), "");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("checks running");
@@ -89,14 +89,14 @@ class RoundOutcomeTest {
 
     @Test
     void stopsTheTaskOnTheBoardWhenItsChecksReadRed() {
-        outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0, List.of(), List.of(), ""), "");
+        outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "failed", "", List.of(), 0, List.of(), List.of(), "", false), "");
 
         verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
     }
 
     @Test
     void neverAdvancesARoundWithThreadsLeftEvenWhenApproved() {
-        ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of("coderabbit (a.java:3): rename x"), 0, List.of(), List.of(), "");
+        ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of("coderabbit (a.java:3): rename x"), 0, List.of(), List.of(), "", false);
         when(relay.relay("ABC-1", "http://mr/1", facts, "success", "")).thenReturn(
                 new ReviewSweepService.SweepResult(ReviewSweepService.SweepResult.Kind.RELAYED, "relayed"));
 
@@ -110,7 +110,7 @@ class RoundOutcomeTest {
     @Test
     void waitsOnTheReviewerWhileTheAgentsDeclineIsTheNewestNoteReadTwice() {
         ReviewFacts facts = new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(
-                "http://mr/1#note_1\nmia: Should this cache expire?\nagent: No change: entries are immutable"), List.of(), "");
+                "http://mr/1#note_1\nmia: Should this cache expire?\nagent: No change: entries are immutable"), List.of(), "", false);
         outcome.settle("ABC-1", "http://mr/1", facts, "");
 
         var result = outcome.settle("ABC-1", "http://mr/1", facts, "");
@@ -124,7 +124,7 @@ class RoundOutcomeTest {
     @Test
     void aPipelineWhoseRunnerWasKilledIsRetriedRatherThanHandedToTheSession() {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(), List.of(),
-                "https://host.invalid/p/1");
+                "https://host.invalid/p/1", false);
         when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.empty(),
                 new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
                         Optional.empty())));
@@ -140,7 +140,7 @@ class RoundOutcomeTest {
     @Test
     void aPipelineFailedOnInfrastructureStaysOutForReviewWithoutAQuestion() {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of("mia: rename x"), 0, List.of(),
-                List.of("n1"), "https://host.invalid/p/1");
+                List.of("n1"), "https://host.invalid/p/1", false);
         ReviewFacts threadsOnly = facts.withoutChecks();
         when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.empty(),
                 new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
@@ -155,7 +155,7 @@ class RoundOutcomeTest {
     @Test
     void landsCiFailedAndStopsTheTaskOnceTheRetriesRanOut() {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(), List.of(),
-                "https://host.invalid/p/1");
+                "https://host.invalid/p/1", false);
         TaskStop stop = new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
         when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.empty(),
                 new RedCauses.Verdict(RedCause.CODE, false, "", Optional.of(stop))));

@@ -86,6 +86,8 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 answered. Empty string in every other case.
                 - pipelineUrl: the web address of the newest pipeline from step 2, exactly as the host gives it; \
                 empty string where there is none or you could not list them.
+                - merged: true only if the host says the request itself is MERGED, however it was merged (merge \
+                commit, squash or fast-forward); never for an open or closed one.
                 - openedAt: the request's OWN creation timestamp as the host reports it (ISO-8601; empty string if \
                 it does not say).
                 - threads: ONE entry per DISCUSSION THREAD still awaiting an answer, never one per note. One string \
@@ -125,7 +127,7 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
         return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
                 n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
                 threads, HostStamp.epochMillis(n.path("openedAt").asString("")), List.of(), newestNotes,
-                n.path("pipelineUrl").asString(""))
+                n.path("pipelineUrl").asString(""), n.path("merged").asBoolean(false))
                 .answeredBy(n.path("signedInAs").asString(""));
     }
 

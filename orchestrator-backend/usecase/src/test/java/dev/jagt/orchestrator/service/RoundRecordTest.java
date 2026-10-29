@@ -39,7 +39,7 @@ class RoundRecordTest {
     void stopsTheTaskWhenTheThirdReadRunningCouldNotListTheChecks() {
         ArgumentCaptor<Function<TaskState, Optional<TaskStop>>> tripped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), "", false));
 
         verify(stops).trip(eq("ABC-1"), tripped.capture());
         Optional<TaskStop> stop = tripped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
@@ -53,7 +53,7 @@ class RoundRecordTest {
     void keepsTheReadsOwnWordsForWhyItCouldNotListTheChecks() {
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), "", false));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
@@ -66,7 +66,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "unknown", "", List.of(), 0, List.of(), List.of(), "", false));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         TaskState after = stamped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -81,7 +81,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue()
@@ -94,7 +94,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "SUCCEEDED", "", List.of(), 0, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "SUCCEEDED", "", List.of(), 0, List.of(), List.of(), "", false));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue()
@@ -108,7 +108,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_000_000L, List.of(), List.of(), "", false));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue()
@@ -122,7 +122,7 @@ class RoundRecordTest {
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("running").approved(false)
                 .requestOpenedAt(1_700_000_000_000L).build()));
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 0, List.of(), List.of(), "", false));
 
         verify(stateService, never()).updateTask(eq("ABC-1"), any());
     }
@@ -134,7 +134,7 @@ class RoundRecordTest {
                 .requestOpenedAt(1_700_000_000_000L).build()));
         ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
 
-        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_500_000L, List.of(), List.of(), ""));
+        roundRecord.record("ABC-1", new ReviewFacts(true, false, "running", "", List.of(), 1_700_000_500_000L, List.of(), List.of(), "", false));
 
         verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
         assertThat(stamped.getValue()
@@ -148,7 +148,7 @@ class RoundRecordTest {
         when(stops.trip(eq("ABC-1"), any())).thenReturn(Optional.of(standing));
 
         RoundRecord.Recorded answer = roundRecord.record("ABC-1",
-                new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), ""));
+                new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), "", false));
 
         assertThat(answer.stop()).contains(standing);
     }
@@ -156,7 +156,7 @@ class RoundRecordTest {
     @Test
     void answersWhoseFaultAFailedRunIsWhereTheChecksWereRead() {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(), List.of(),
-                "https://host.invalid/p/1");
+                "https://host.invalid/p/1", false);
         RedCauses.Verdict infrastructure = new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "waiting", Optional.empty());
         when(causes.judge("ABC-1", facts, Pipeline.RED)).thenReturn(infrastructure);
 

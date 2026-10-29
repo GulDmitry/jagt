@@ -284,7 +284,7 @@ class MasterModeFlowTest {
         E2eWorkspace.git(worktree(), "push", "-u", "origin", TASK);
         agentReports("CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
         when(assistant.readReview(request()))
-                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "")),
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false)),
                         TokenUsage.NONE));
     }
 

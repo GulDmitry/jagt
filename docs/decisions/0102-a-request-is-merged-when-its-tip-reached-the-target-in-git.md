@@ -28,8 +28,9 @@ Accepted 2026-10-28. Adds to [0061](0061-jagt-stops-a-task-it-suspects-it-is-loo
 
 ## Known limits
 
-- A squash, a rebase or a fast-forward merge leaves no merge commit naming the tip: it stays counted as before.
+- A squash, a rebase or a fast-forward merge leaves no merge commit naming the tip: git alone never sees it.
+- The review read carries the host's own `merged` word, which records it too.
 
 ## Reopen when
 
-- A squash-merged request loops a stop: add the host API port and read the merge from the host.
+- The host's `merged` word proves wrong: a read said merged for an open request.

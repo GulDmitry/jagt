@@ -64,6 +64,9 @@ public class RoundReading {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
                         "error: no such request: " + repo.mrUrl() + " (the host says so)"));
             }
+            if (read.get().merged()) {
+                mergedRequests.hostSaidMerged(taskId, Objects.requireNonNull(repo.project()));
+            }
             rounds.add(reviewed.size() == 1 ? read.get() : named(Objects.requireNonNull(repo.project()), read.get()));
         }
         return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds),
@@ -81,7 +84,7 @@ public class RoundReading {
                 round.threads().stream().map(thread -> "[" + project + "] " + thread).toList(),
                 round.openedAt(),
                 round.awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList(),
-                round.newestNotes(), round.pipelineUrl());
+                round.newestNotes(), round.pipelineUrl(), round.merged());
     }
 
     /**
@@ -100,7 +103,7 @@ public class RoundReading {
                 longestOpen(rounds),
                 rounds.stream().flatMap(round -> round.awaitingReviewer().stream()).toList(),
                 rounds.stream().flatMap(round -> round.newestNotes().stream()).toList(),
-                worst.pipelineUrl());
+                worst.pipelineUrl(), rounds.stream().allMatch(ReviewFacts::merged));
     }
 
     /** The OLDEST request: how long the review has been hanging is the longest any of them has waited. */

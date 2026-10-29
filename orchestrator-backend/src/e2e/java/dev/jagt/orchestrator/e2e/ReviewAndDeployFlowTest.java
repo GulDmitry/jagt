@@ -167,7 +167,7 @@ class ReviewAndDeployFlowTest {
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " " + TITLE);
 
-        reads(new ReviewFacts(true, false, "success", "", List.of("bot (Widget.java:12): tighten this"), 0, List.of(), List.of(), ""));
+        reads(new ReviewFacts(true, false, "success", "", List.of("bot (Widget.java:12): tighten this"), 0, List.of(), List.of(), "", false));
         act("sweep");
         assertThat(Files.readString(worktree().resolve("task_context.md")))
                 .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
@@ -185,7 +185,7 @@ class ReviewAndDeployFlowTest {
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " address review comments");
 
-        reads(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), ""));
+        reads(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false));
         assertThat(act("sweep")).contains("approved, checks success");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
@@ -226,7 +226,7 @@ class ReviewAndDeployFlowTest {
         agentCommitsAndPushes(worktree(), TASK + " " + TITLE);
         agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
         agentReportsRequests(Map.of("proj", request(), "web", webRequest()));
-        reads(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), ""));
+        reads(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false));
         act("sweep");
         E2eWorkspace.commitOnDeployBranch(webRepo(), "widget.txt", "someone else's line\n");
 
@@ -298,7 +298,7 @@ class ReviewAndDeployFlowTest {
                 .containsExactly(TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
                         TaskStatus.CI_POLLING);
 
-        reads(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), ""));
+        reads(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false));
         act("sweep");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
@@ -389,7 +389,7 @@ class ReviewAndDeployFlowTest {
 
             String followUp = request().replace("/merge_requests/1", "/merge_requests/2");
             when(assistant.readReview(followUp)).thenReturn(new Answer<>(Optional.of(
-                    new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "")), TokenUsage.NONE));
+                    new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false)), TokenUsage.NONE));
             agentReports("IN_PROGRESS", "more work after the merge");
             Files.writeString(worktree().resolve("widget.txt"), "follow-up\n");
             agentCommitsAndPushes(worktree(), TASK + " follow-up");
