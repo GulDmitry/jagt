@@ -102,7 +102,12 @@ public class TaskStops {
 
     /** The stop a read of the checks ended: one whose trigger ends on a read, and the read listed the checks, not red. */
     public Optional<TaskStop> endOnRead(String taskId, Pipeline read) {
-        return endWhen(taskId, read != Pipeline.UNKNOWN && read != Pipeline.RED, "");
+        return endWhen(taskId, TaskStop.Trigger.Ends.HOST_READ, read != Pipeline.UNKNOWN && read != Pipeline.RED, "");
+    }
+
+    /** The stop that ended because the session's window runs again: one whose trigger ends on it. */
+    public Optional<TaskStop> endOnSessionAlive(String taskId) {
+        return endWhen(taskId, TaskStop.Trigger.Ends.SESSION_ALIVE, true, "");
     }
 
     /**
@@ -110,14 +115,14 @@ public class TaskStops {
      * on a request the stop was counted on; {@code request} is blank where the refusal is about none.
      */
     public Optional<TaskStop> endOnRefusal(String taskId, ReviewSweepService.SweepResult.Kind refusal, String request) {
-        return endWhen(taskId, DISPROVING_REFUSALS.contains(refusal), request);
+        return endWhen(taskId, TaskStop.Trigger.Ends.HOST_READ, DISPROVING_REFUSALS.contains(refusal), request);
     }
 
-    private Optional<TaskStop> endWhen(String taskId, boolean disproves, String request) {
+    private Optional<TaskStop> endWhen(String taskId, TaskStop.Trigger.Ends ends, boolean disproves, String request) {
         AtomicReference<@Nullable TaskStop> ended = new AtomicReference<>();
         stateService.updateTask(taskId, task -> {
             TaskStop stop = task.stop();
-            if (!disproves || stop == null || stop.trigger().ends() != TaskStop.Trigger.Ends.HOST_READ
+            if (!disproves || stop == null || stop.trigger().ends() != ends
                     || !stop.countedOnOrNone(request)) {
                 return task;
             }

@@ -13,8 +13,9 @@ Accepted 2026-10-29. Extends [0105](0105-infrastructure-failures-are-waited-out.
 
 ## Decision
 
-- Every `Trigger` names how it ends, `LIFT` or `HOST_READ`, through its one constructor: a new trigger cannot compile without choosing.
+- Every `Trigger` names how it ends, `LIFT`, `HOST_READ` or `SESSION_ALIVE`, through its one constructor: none compiles unchosen.
 - `CHECKS` and `INFRA` end on `HOST_READ`: the condition is outside jagt, a read can disprove it.
+- `UNDELIVERED` ends on `SESSION_ALIVE`: `SessionAliveJob` looks at the session's window every minute and ends the stop once it runs.
 - Every other trigger is a judgement and ends on `LIFT`.
 - The read is `StopReadJob`, every 5 minutes, whatever auto-review says; it runs while the stop stands.
 - It goes through `RoundReading`, the read a sweep makes.

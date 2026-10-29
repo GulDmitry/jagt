@@ -14,6 +14,7 @@ mix, or none SHALL be the code's, and the round goes to the session ([review](..
 task's status. `infraWait.backoff: []` SHALL turn this off.
 A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the task's checks not red.
 `StopReadJob` makes that read every 5 minutes while the stop stands, whatever auto-review says; it relays, ships and presses nothing.
+A step that never landed (`UNDELIVERED`) SHALL end when `SessionAliveJob` finds the session's window running again, which it looks for every minute.
 
 #### Scenario: Red on infrastructure is retried
 - **WHEN** ABC-42's pipeline went red because the runner died and nothing else
@@ -69,8 +70,13 @@ A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the tas
 - **WHEN** the read of a task stopped as `INFRA` is red, or lists no checks at all
 - **THEN** the stop stands and the read is made again at the next poll
 
+#### Scenario: The session comes back
+- **WHEN** a task stopped as `UNDELIVERED` and its session's window is running again
+- **THEN** the stop is voided and the log says `stop voided by read` once, with the task, the trigger and `read=session alive`
+- **AND** a window still not running, or one that cannot be listed, leaves the stop standing
+
 #### Scenario: A stop for judgement
-- **WHEN** a task stopped as `PACE`, `STALLED`, `SHIPS`, `ROUNDS`, `MISS`, `UNCHANGED_FAILURE`, `UNDELIVERED` or `WAIT` is read green
+- **WHEN** a task stopped as `PACE`, `STALLED`, `SHIPS`, `ROUNDS`, `MISS`, `UNCHANGED_FAILURE` or `WAIT` is read green
 - **THEN** the stop stands until a human lifts it
 
 #### Scenario: A human acts while it waits

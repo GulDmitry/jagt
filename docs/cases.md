@@ -10,9 +10,8 @@ Families:
 - E missing ending: a stop, crash, error or limit goes unseen, or two endings are merged.
 - F unbounded loop: a repeat, a store or a spend has no ceiling.
 - G prose routing: jagt decided by reading text.
-- H a guard refuses what it should allow, or allows what it should refuse. I a vendor CLI behaves otherwise.
-- J git, worktrees, several repositories. K the board. L the tests themselves. M anything else.
-  H–M are counted by trailer and get rows here as their defects recur.
+- H a guard refuses what it should allow, or allows what it should refuse. I a vendor CLI behaves otherwise. J git, worktrees,
+  several repositories. K the board. L the tests themselves. M anything else. H–M are counted by trailer and get rows here as their defects recur.
 
 "pinned by": the fix commits' subjects name almost no test, so it lists the test classes the fix commits touched; `none` = no test touched.
 
@@ -106,10 +105,10 @@ Families:
 | E17 | a resolved deploy conflict waits on a stopped task → nothing is pressed, one INFO says it waits on the lift, a press logs its result, and a landed deploy forgets the conflict record | seen 2026-10-28: `master finishes deploy` every 20 s, ten times, each press refused by the stop guard | `ConflictFinishTest`, `ConflictHandOffTest`, `TaskStateTest` |
 | E18 | a pipeline dies on infrastructure (a lost runner) → jagt re-runs it after each wait and the session hears nothing; after the last wait or a refused re-run the task stops as `INFRA`, never a question to a human | seen 2026-10-29: ABC-42 and ABC-43 went red on a runner and the session asked about the infrastructure | `RoundOutcomeTest`, `RedCausesTest`, `InfraRetryJobTest`, `InfraRetriesTest` |
 | E19 | a stop an outside condition set (`INFRA`, `CHECKS`) stands and a read lists the task's checks, not red → the stop is voided, one INFO says so, and a deploy conflict held by it finishes on the next tick; a red or unreadable read, or a stop for judgement, stands | seen 2026-10-29: an INFRA stop set while the host was down held a resolved deploy conflict two hours after the host came back | `TaskStopsTest`, `StopReadsTest`, `StopReadJobTest`, `ConflictFinishTest` |
-| E20 | a stop ends on a read that listed the checks → the task's checks and approval are the ones that read listed, not those of the sweep before the outage | seen 2026-10-29: found by the status × condition inventory | `StopReadsTest`, `RoundRecordTest` |
-| E21 | a stop that ends on a read stands and a request it was counted on is gone, closed unmerged, or no request is linked → the stop is voided with `request=gone`; another request of the task gone, or a read the host or CLI could not answer, keeps it | seen 2026-10-29: found by the status × condition inventory | `RoundReadingTest`, `TaskStopsTest`, `StopReadsTest`, `HeadlessClaudeCodeHostAssistantTest` |
+| E20 | a stop ends on a read that listed the checks → the task's checks and approval are the ones that read listed, not those of the sweep before the outage; a request the stop was counted on gone, closed unmerged or unlinked voids it with `request=gone`, while another request of the task gone, or a read the host or CLI could not answer, keeps it | seen 2026-10-29: found by the status × condition inventory | `StopReadsTest`, `RoundRecordTest`, `RoundReadingTest`, `TaskStopsTest`, `HeadlessClaudeCodeHostAssistantTest` |
 | E22 | a deployed, conflicted or reverted task's open request dies on infrastructure → no retry is armed or sent and no `INFRA` stop is set | seen 2026-10-29: found by the status × condition inventory | `RedCausesTest`, `InfraRetriesTest` |
 | E23 | a SHIPS or STALLED stop stands and a human deploys the task → the stop lifts once it is `DEPLOYED` and the deploy check reads the landed change; the Master's or jagt's deploy past a stop stays refused | seen 2026-10-29: found by the status × condition inventory | `DeployLiftsStopTest` |
+| E24 | an `UNDELIVERED` stop stands (a step never landed) and the session's window runs again → the stop ends, one INFO says `read=session alive`; a window still not running keeps it | seen 2026-10-29: found by the status × condition inventory | `SessionAliveJobTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

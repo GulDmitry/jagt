@@ -27,13 +27,16 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         ROUNDS("same round sent too often", "Answer the session's question, or give it what it lacked", Ends.LIFT, false),
         PACE("too many unattended moves in an hour", "Read the last hour's moves: say what each one changed", Ends.LIFT, false),
         CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines", Ends.HOST_READ, true),
-        UNDELIVERED("a step never landed", "Check that the session's window is running", Ends.LIFT, false),
+        UNDELIVERED("a step never landed", "Check that the session's window is running", Ends.SESSION_ALIVE, false),
         UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", Ends.LIFT, true),
         INFRA("checks failed on infrastructure", "Re-run the job or fix the runner, then lift", Ends.HOST_READ, true),
         WAIT("a dependency stayed down", "Bring up what the session named, then lift", Ends.LIFT, false);
 
-        /** What ends a stop: a human's lift, or a read of the checks that shows the outside condition gone. */
-        public enum Ends { LIFT, HOST_READ }
+        /**
+         * What ends a stop: a human's lift, a read of the checks that shows the outside condition gone, the
+         * session's window running again.
+         */
+        public enum Ends { LIFT, HOST_READ, SESSION_ALIVE }
 
         private final String reason;
         private final String next;
