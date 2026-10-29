@@ -7,7 +7,7 @@ A pipeline the host says failed with every failed job on infrastructure (`runner
 mix, or none SHALL be the code's, and the round goes to the session ([review](../review/spec.md)). A pipeline red for infrastructure keeps the
 task's status. `infraWait.backoff: []` SHALL turn this off.
 A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the task's checks not red.
-`StopReadJob` makes that read on the auto-review cadence while the stop stands; it relays, ships and presses nothing.
+`StopReadJob` makes that read every 5 minutes while the stop stands, whatever auto-review says; it relays, ships and presses nothing.
 
 #### Scenario: Red on infrastructure is retried
 - **WHEN** ABC-42's pipeline went red because the runner died and nothing else

@@ -16,7 +16,8 @@ Accepted 2026-10-29. Extends [0105](0105-infrastructure-failures-are-waited-out.
 - Every `Trigger` names how it ends, `LIFT` or `HOST_READ`, through its one constructor: a new trigger cannot compile without choosing.
 - `CHECKS` and `INFRA` end on `HOST_READ`: the condition is outside jagt, a read can disprove it.
 - Every other trigger is a judgement and ends on `LIFT`.
-- The read is `StopReadJob`, on the auto-review cadence, through `RoundReading`, the read a sweep makes; it runs while the stop stands.
+- The read is `StopReadJob`, every 5 minutes, whatever auto-review says; it runs while the stop stands.
+- It goes through `RoundReading`, the read a sweep makes.
 - A read that lists the checks and is not red voids the stop through `TaskStops`; red, unknown or unreadable keeps it.
 - The probe relays, ships and presses nothing: the next tick of whoever waited on the stop acts.
 
@@ -29,4 +30,3 @@ Accepted 2026-10-29. Extends [0105](0105-infrastructure-failures-are-waited-out.
 ## Reopen when
 
 - A voided stop returns within the hour on most tasks: a green read does not disprove the host failing.
-- Auto-review is off on an install where `INFRA` stops stand for hours: the read needs its own switch.
