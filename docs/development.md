@@ -47,8 +47,7 @@ pipeline and a green laptop mean the same thing.
 | `board` | `boardTest` |
 | `jar` | the runnable jar, uploaded as a pipeline artifact |
 
-Two things are GitHub-only: the unit suite and jar build on macOS, the platform jagt is developed on, and
-attaching the jar to a `v*` tag's release. Neither pipeline needs Docker or a privileged runner.
+One thing is GitHub-only: attaching the jar to a `v*` tag's release. Neither pipeline needs Docker or a privileged runner.
 
 **Not covered, and not pretended to be:** IntelliJ, the macOS AppleScript window raise, the real `claude` CLI,
 and the MCP servers its reads need.

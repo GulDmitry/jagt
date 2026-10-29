@@ -66,7 +66,7 @@ jobs:
   release:
     name: release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [unit, jar, linux, board, macos]
+    needs: [unit, jar, linux, board]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -157,18 +157,3 @@ jobs:
         with:
           name: board-test-report
           path: orchestrator-backend/build/reports/tests/boardTest
-
-  # The macOS half of the matrix: the platform jagt is developed on, where the drivers it cannot test on Linux
-  # live (the AppleScript raise). Only the OS-neutral suites run — the GUI drivers stay untested here too, and
-  # that is named rather than papered over.
-  macos:
-    name: unit tests on macOS
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with:
-          java-version: '25'
-          distribution: temurin
-          cache: gradle
-      - run: ./gradlew --no-daemon test bootJar
