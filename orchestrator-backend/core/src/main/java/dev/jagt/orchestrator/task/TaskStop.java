@@ -23,6 +23,7 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         SHIPS("ships with no new note", "Check a new note or commit waits to ship; if one does, report a jagt defect", true),
         MISS("no case for this step", "Set off by jagt or the Master: report a jagt defect; by a session: add a case if one should send it"),
         ROUNDS("same round sent too often", "Answer the session's question, or give it what it lacked"),
+        PACE("too many unattended moves in an hour", "Read the last hour's moves: say what each one changed"),
         CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines", true),
         UNDELIVERED("a step never landed", "Check that the session's window is running"),
         UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", true);

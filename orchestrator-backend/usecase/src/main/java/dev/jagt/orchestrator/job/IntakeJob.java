@@ -45,17 +45,13 @@ public class IntakeJob implements Job {
     @Override
     public void run() {
         TrackerConfig tracker = configService.load().tracker();
-        if (!tracker.modeOrOff().takes() || !tracker.missing().isEmpty() || configService.startsStopped()) {
+        if (!tracker.modeOrOff().takes() || !tracker.missing().isEmpty()) {
             return;
         }
         // Stamped as the tracker's so the record says who chose each repository, which is what a later
         // routing may learn from and what it must not.
         for (IntakeCandidates.Ready ready : candidates.waiting(starts.held()).orElse(List.of())) {
             if (!OriginContext.as(ActionOrigin.TRACKER, () -> starts.start(ready))) {
-                return;
-            }
-            configService.startTaken();
-            if (configService.startsStopped()) {
                 return;
             }
         }

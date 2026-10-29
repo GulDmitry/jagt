@@ -127,31 +127,27 @@ for one. - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task 
 - **WHEN** you run `run orphanscan`
 - **THEN** it runs at once; a job already running, or one nobody declared, is refused
 
-### Requirement: Unattended starts are counted per day
-jagt SHALL count the starts it makes unasked per local day, in memory, from zero on a restart: a Master move in `act` that starts work
-(`MasterPress`, `ConflictHandOff`), a tracker intake start (`IntakeJob`) or an auto-review sweep (`AutoReviewScheduler`). Closing a ticket, a Master
-judge read and a ticket prefetch SHALL NOT count.
+### Requirement: A task has a ceiling of unattended moves an hour
+jagt SHALL count, per task, its moves made unasked in the last hour since its last `lift`: history steps by the Master, auto-review or the tracker.
+A board press or a session's own report SHALL NOT count. At `loopBreaker.perHour` (default 20) the next Master press, conflict deploy,
+auto-review poll or round SHALL NOT be made. The task SHALL stop, its status kept, as `PACE`. A human press SHALL never be refused.
 
-#### Scenario: A ticket closed unasked
-- **WHEN** the tracker close ends a task
-- **THEN** the day's count stays as it was
-
-### Requirement: Unattended starts have a daily ceiling
-At `orchestrator.maxStartsPerDay` (default 50) jagt SHALL write the dated file `starts-stopped` beside `state.json`, separate from `act-stopped`.
-While it stands the Master SHALL only judge, and intake and auto-review SHALL start nothing; a human press SHALL never be refused. It SHALL lift on
-the next local day, or when you press the header's `act stopped`, which names its cause in the hover.
-
-#### Scenario: The ceiling is reached, and lifts
-- **WHEN** the 50th unattended start of a local day is taken
-- **THEN** the Master only judges, intake and auto-review start nothing, and `act stopped`'s hover names the 50
-- **AND** when the next local day begins, or you press `act stopped`, it is gone and starts count from zero
+#### Scenario: Too many moves in an hour
+- **WHEN** ABC-42 made 20 unattended moves in the last hour
+- **THEN** the next is not made and the card asks `lift the stop`
+- **AND** with some of the 20 over an hour old, or before the last lift, the next is made
 
 ### Requirement: jagt stops a task it suspects it is looping
 `TaskStops` SHALL stop a task, its status kept, on any trigger since the last `lift`: `loopBreaker.stalledRounds` (3) relayed rounds running that
 each brought no new note and left the same job failing; a Master ship past `loopBreaker.ships` (4) within `autoReview.windowHours` that answered a
-round bringing no new note; a failed verification or probe, a not-ready plan or round, repeats too, or a review round, sent back past
-`loopBreaker.rounds` (3) running in 24h. Every stop SHALL append a line `{at, task, alias, trigger, status, evidence}` to `stops.jsonl` beside
+round bringing no new note; a failed verification or probe, a not-ready plan or round, or a review round, sent back past
+`loopBreaker.rounds` (3) running in 24h. A round counts only while it answers the session report the one before answered.
+Every stop SHALL append a line `{at, task, alias, trigger, status, evidence}` to `stops.jsonl` beside
 `state.json` (rolled at 1 MB), which `lift` leaves.
+
+#### Scenario: Reworked plans are work
+- **WHEN** ABC-42's plan is returned a fourth time and each of the three before answered a different plan
+- **THEN** it is relayed and nothing stops
 
 #### Scenario: Rounds that resolve nothing
 - **WHEN** ABC-42 gets a fourth relayed round with the same newest notes and `unit-tests` failing, as the three before

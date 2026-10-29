@@ -184,9 +184,9 @@
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
 - **Activity report** — A report of what jagt did unasked is read back from its own log.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-reads-jagts-own-log)
-- **Brakes** — `act` stops after bad endings, a daily ceiling bounds unasked starts, a looping or case-less task waits for your lift.
+- **Brakes** — `act` stops after bad endings, an hourly ceiling bounds a task's unasked moves, a looping or case-less task waits for your lift.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
-  [spec](../openspec/specs/unattended-work/spec.md#requirement-unattended-starts-have-a-daily-ceiling)
+  [spec](../openspec/specs/unattended-work/spec.md#requirement-a-task-has-a-ceiling-of-unattended-moves-an-hour)
   [spec](../openspec/specs/unattended-work/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
   [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
 

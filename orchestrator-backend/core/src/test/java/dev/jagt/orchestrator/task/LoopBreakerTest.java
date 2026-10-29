@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.task;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.util.List;
@@ -9,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LoopBreakerTest {
 
-    private final LoopBreaker breaker = new LoopBreaker(3, 4, 3, Duration.ofHours(24));
+    private final LoopBreaker breaker = new LoopBreaker(3, 4, 3, 20, Duration.ofHours(24));
 
     @Test
     void stopsAfterThreeRoundsRunningThatBroughtNoNewNoteWithTheSameJobFailing() {
@@ -145,7 +147,7 @@ class LoopBreakerTest {
 
     @Test
     void sendsARoundAgainOnceTheHumanLiftedTheStopItsRunTripped() {
-        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("verify", "c", 3);
+        Turn turn = Turn.none().relayed("verify", "a", "", 1).relayed("verify", "b", "", 2).relayed("verify", "c", "", 3);
 
         var stop = breaker.beforeRound("verify", turn, RoundTrail.liftedAt(3), 4);
 
@@ -154,7 +156,7 @@ class LoopBreakerTest {
 
     @Test
     void countsNoRoundSentAtTheMomentOfTheLift() {
-        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("verify", "c", 3);
+        Turn turn = Turn.none().relayed("verify", "a", "", 1).relayed("verify", "b", "", 2).relayed("verify", "c", "", 3);
 
         var stop = breaker.beforeRound("verify", turn, RoundTrail.liftedAt(1), 4);
 
@@ -177,14 +179,14 @@ class LoopBreakerTest {
                 new RoundTrail.Round(1_000, 3, "", "b", "t1 note_2")), 0);
         List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER));
 
-        var stop = new LoopBreaker(3, 1, 3, Duration.ofHours(24)).beforeShip(watch, history, 2_000);
+        var stop = new LoopBreaker(3, 1, 3, 20, Duration.ofHours(24)).beforeShip(watch, history, 2_000);
 
         assertThat(stop).isEmpty();
     }
 
     @Test
     void forgetsRoundsOlderThanItsWindow() {
-        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("verify", "c", 3);
+        Turn turn = Turn.none().relayed("verify", "a", "", 1).relayed("verify", "b", "", 2).relayed("verify", "c", "", 3);
 
         var stop = breaker.beforeRound("verify", turn, RoundTrail.none(), Duration.ofHours(25).toMillis());
 
@@ -193,8 +195,8 @@ class LoopBreakerTest {
 
     @Test
     void countsOnlyTheRoundsOfTheStepRunningSinceAnotherStepWasRelayed() {
-        Turn turn = Turn.none().relayed("verify", "a", 1).relayed("verify", "b", 2).relayed("answered", "c", 3)
-                .relayed("verify", "d", 4);
+        Turn turn = Turn.none().relayed("verify", "a", "", 1).relayed("verify", "b", "", 2).relayed("answered", "c", "", 3)
+                .relayed("verify", "d", "", 4);
 
         var stop = breaker.beforeRound("verify", turn, RoundTrail.none(), 5);
 
@@ -203,11 +205,86 @@ class LoopBreakerTest {
 
     @Test
     void stopsTheRoundPastTheCeilingTheOwnerSet() {
-        Turn turn = Turn.none().relayed("round-not-ready", "a", 1).relayed("round-not-ready", "b", 2);
+        Turn turn = Turn.none().relayed("round-not-ready", "a", "", 1).relayed("round-not-ready", "b", "", 2);
 
-        var stop = new LoopBreaker(3, 4, 2, Duration.ofHours(24)).beforeRound("round-not-ready", turn, RoundTrail.none(), 3);
+        var stop = new LoopBreaker(3, 4, 2, 20, Duration.ofHours(24)).beforeRound("round-not-ready", turn, RoundTrail.none(), 3);
 
         assertThat(stop).hasValueSatisfying(it -> assertThat(it.evidence())
                 .isEqualTo("round-not-ready sent 2 rounds running in 24h; the next one was not"));
+    }
+
+    @Test
+    void sendsARoundAgainWhereEachOfTheRoundsRunningAnsweredAnotherReport() {
+        Turn turn = Turn.none().relayed("round-not-ready", "a", "plan 1", 1).relayed("round-not-ready", "b", "plan 2", 2)
+                .relayed("round-not-ready", "c", "plan 3", 3);
+
+        var stop = breaker.beforeRound("round-not-ready", turn, RoundTrail.none(), 4);
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
+    void stopsTheRoundWhereEachOfTheRoundsRunningAnsweredTheSameReport() {
+        Turn turn = Turn.none().relayed("round-not-ready", "a", "plan 1", 1).relayed("round-not-ready", "b", "plan 1", 2)
+                .relayed("round-not-ready", "c", "plan 1", 3);
+
+        var stop = breaker.beforeRound("round-not-ready", turn, RoundTrail.none(), 4);
+
+        assertThat(stop).hasValueSatisfying(it -> assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.ROUNDS));
+    }
+
+    @Test
+    void stopsTheMoveWhereTheTaskMadeTwentyUnattendedMovesInTheHour() {
+        List<StatusChange> history = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 3_000_000 + i, ActionOrigin.MASTER)).toList();
+
+        var stop = breaker.beforeMove(history, RoundTrail.none(), 3_100_000);
+
+        assertThat(stop).hasValueSatisfying(it -> {
+            assertThat(it.trigger()).isEqualTo(TaskStop.Trigger.PACE);
+            assertThat(it.evidence()).isEqualTo("20 unattended moves in 1h; the next one was not made");
+        });
+    }
+
+    @ParameterizedTest
+    @EnumSource(names = {"MASTER", "AUTO_REVIEW", "TRACKER"})
+    void countsTheMovesOfEveryUnattendedOrigin(ActionOrigin origin) {
+        List<StatusChange> history = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 3_000_000 + i, origin)).toList();
+
+        var stop = breaker.beforeMove(history, RoundTrail.none(), 3_100_000);
+
+        assertThat(stop).isPresent();
+    }
+
+    @ParameterizedTest
+    @EnumSource(names = {"BOARD", "PALETTE", "MCP"})
+    void countsNoMoveASessionOrTheHumanMade(ActionOrigin origin) {
+        List<StatusChange> history = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 3_000_000 + i, origin)).toList();
+
+        var stop = breaker.beforeMove(history, RoundTrail.none(), 3_100_000);
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
+    void allowsTheMoveWhereTheTwentyMovesStartedBeforeTheLastHour() {
+        List<StatusChange> history = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 3_000_000 + i, ActionOrigin.MASTER)).toList();
+
+        var stop = breaker.beforeMove(history, RoundTrail.none(), 6_700_000);
+
+        assertThat(stop).isEmpty();
+    }
+
+    @Test
+    void allowsTheMoveWhereSomeOfTheTwentyCameBeforeTheLift() {
+        List<StatusChange> history = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 3_000_000 + i, ActionOrigin.MASTER)).toList();
+
+        var stop = breaker.beforeMove(history, RoundTrail.liftedAt(3_000_010), 3_100_000);
+
+        assertThat(stop).isEmpty();
     }
 }

@@ -4,8 +4,9 @@
 
 ## Status
 
-Accepted 2026-10-19. Adds to [0043](0043-act-stops-itself-after-three-bad-endings.md); a bound of the kind
-[0045](0045-every-store-jagt-writes-has-a-ceiling.md) sets.
+Superseded by [0104](0104-loops-are-bounded-per-task.md). Accepted 2026-10-19.
+Added to [0043](0043-act-stops-itself-after-three-bad-endings.md);
+a bound of the kind [0045](0045-every-store-jagt-writes-has-a-ceiling.md) sets.
 
 ## Context
 

@@ -45,11 +45,6 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("act-stopped");
     }
 
-    /** Present until the local day it names ends: the day's unattended starts reached their ceiling. */
-    public Path startsStopped() {
-        return stateFile.resolveSibling("starts-stopped");
-    }
-
     private Path resolve(@Nullable String override, String defaultName) {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()

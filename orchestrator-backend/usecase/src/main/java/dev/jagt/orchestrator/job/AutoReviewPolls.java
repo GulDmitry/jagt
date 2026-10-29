@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ReviewSweepService;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -22,14 +23,16 @@ class AutoReviewPolls {
 
     private final ReviewSweepService reviewSweep;
     private final Notifications notifications;
+    private final TaskStops stops;
     private final Executor executor;
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
     private final Set<String> unreadableNotified = ConcurrentHashMap.newKeySet();
 
-    AutoReviewPolls(ReviewSweepService reviewSweep, Notifications notifications,
+    AutoReviewPolls(ReviewSweepService reviewSweep, Notifications notifications, TaskStops stops,
                     @Qualifier("autoReviewSweeps") Executor executor) {
         this.reviewSweep = reviewSweep;
         this.notifications = notifications;
+        this.stops = stops;
         this.executor = executor;
     }
 
@@ -39,7 +42,7 @@ class AutoReviewPolls {
      * unconditionally: losing it would exclude the task from auto-review for the JVM's life.
      */
     boolean start(String taskId, @Nullable String alias, long round, Runnable finished) {
-        if (!inFlight.add(taskId)) {
+        if (!stops.moveDue(taskId) || !inFlight.add(taskId)) {
             return false;
         }
         log.atInfo().setMessage("auto-review poll due").addKeyValue("task", taskId)

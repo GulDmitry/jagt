@@ -3,9 +3,9 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 class ConflictFinish {
 
     private final CommandService commands;
-    private final ConfigService config;
+    private final TaskStops stops;
     private final StateService stateService;
     private final Map<String, Long> heldBy = new ConcurrentHashMap<>();
 
@@ -36,6 +36,9 @@ class ConflictFinish {
             return;
         }
         heldBy.remove(taskId);
+        if (!stops.moveDue(taskId)) {
+            return;
+        }
         try {
             String result = OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, TaskAction.DEPLOY));
             log.atInfo().setMessage("master deploy pressed").addKeyValue("task", taskId)
@@ -45,7 +48,6 @@ class ConflictFinish {
                     .addKeyValue("cause", refusal.getMessage()).addKeyValue("effect", "the deploy waits").log();
             return;
         }
-        config.startTaken();
     }
 
     private void hold(String taskId, TaskStop stop) {

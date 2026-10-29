@@ -107,13 +107,6 @@ public class AutoReviewScheduler implements Job {
     }
 
     private void poll(String taskId, @Nullable String alias, long round) {
-        if (configService.startsStopped()) {
-            return;
-        }
-        boolean started = polls.start(taskId, alias, round,
-                () -> stateService.updateTask(taskId, t -> t.withLastPolledAt(clock.millis())));
-        if (started) {
-            configService.startTaken();
-        }
+        polls.start(taskId, alias, round, () -> stateService.updateTask(taskId, t -> t.withLastPolledAt(clock.millis())));
     }
 }

@@ -117,7 +117,7 @@ class CaseDoorTest {
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-                .turn(Turn.none().relayed("ship", "d1", 100)).build());
+                .turn(Turn.none().relayed("ship", "d1", "", 100)).build());
         CaseDoor door = doorOver(paths, state);
 
         boolean taken = OriginContext.as(ActionOrigin.MASTER,

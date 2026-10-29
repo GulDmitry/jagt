@@ -794,7 +794,7 @@ class AgentStatusReportsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .turn(Turn.none().relayed("round", "d1", 100)).build();
+                .turn(Turn.none().relayed("round", "d1", "", 100)).build();
         state.putTask("ABC-1", working);
         state.putTask("ABC-2", working);
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());

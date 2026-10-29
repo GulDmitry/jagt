@@ -107,7 +107,7 @@ Families:
 |----|--------------------|---------|-----------|
 | F1 | a ready round holds nothing new to ship → it is not shipped again, nor sent back for a repeated finding | 9be76dd5, c7232cc2, eaaf53b0, eab76b0c, 86220a6a | `MasterShipTest`, `WorktreeChangesTest`, `MasterDecisionsTest` |
 | F2 | a green verification reports through the session's own door → the task reaches its next status, not VERIFYING every 20 seconds | c63dc787 | `VerifyJobTest` |
-| F3 | the Master presses, ships or starts unasked → progress is told from repeats; silent endings and a day's starts stop it | c2a6ad09, df7a8281, e20808e3 | `LoopBreakerTest`, `MasterBrakeTest`, `DailyStartsTest` |
+| F3 | the Master presses, ships or starts unasked → progress is told from repeats; silent endings and a task's hour of unasked moves stop it | c2a6ad09, df7a8281, e20808e3 | `LoopBreakerTest`, `MasterBrakeTest`, `AutoReviewSchedulerTest` |
 | F4 | a store or log grows → a ceiling and something that packs or refuses past it | 3343f75e, f1b760c6, fbc2160f, 0e558ca8, 5c037ecc | `LogFileAppenderTest`, `FinishedTasksTest`, `TaskProvisioningTest` |
 | F5 | a headless call spends → every call carries a spend ceiling and fails naming it | 4aa63f4a | `HeadlessClaudeTest`, `AssistantPropertiesTest` |
 | F6 | an unfinished deploy, an unchanged status or a waiting close → read or asked at a bounded pace, not forever | 52c78b44, 70ba6aa6, 68e40274 | `TicketCloseJobTest`, `TaskProvisioningTest` |
@@ -119,8 +119,9 @@ Families:
 | F12 | a question or an unchanged tree sits at VERIFYING → no probe runs and nothing is relayed twice; an unchanged failing tree stops the task for the human | seen 2026-10-26: an unchanged tree's probe failure was relayed three times over a question; the Master's answer was dropped and the task stopped | `VerifyJobTest`, `FlowReportsTest` |
 | F13 | a new turn hands back the diff and kind the Master already judged → its verdict is reused, not reviewed again | seen 2026-10-26: 17 Master reviews asked over one unchanged diff, one per turn | `RoundQuotesTest`, `MasterReviewTest` |
 | F14 | a session that changes no code (a stage check) keeps asking → each Master answer lands in the same session; past three the answer changes the approach, the ninth stops for the human | seen 2026-10-27: 4 session restarts in 7 minutes, each losing what the session had tried | `MasterVerdictsTest`, `MasterAnswerJobTest` |
-| F15 | a round's note fingerprint is blank (note ids unknown) → it is never a repeat: no stalled run, no futile ship counted | seen 2026-10-27: three blank-fingerprint rounds stalled a task and a SHIPS stop read "ships without a new note in 24h: 4" | `LoopBreakerTest` |
+| F15 | a round's note fingerprint is blank (note ids unknown) → it is never a repeat: no stalled run, no futile ship counted | seen 2026-10-27: three blank-fingerprint rounds stalled a task and a SHIPS stop read "ships without a new note in 24h: 4" | `LoopBreakerTest`, `MasterVerdictsTest` |
 | F16 | a session stays silent across several stale windows → one alert at the silence's start; only a new silence alerts again | seen 2026-10-28: one 35-minute silence logged 7 alerts | `WatchdogServiceTest` |
+| F17 | a not-ready plan is returned after each rework → only rounds answering one unchanged report count toward `loopBreaker.rounds` | seen 2026-10-29: three reworked plans in 24h stopped a task as a loop | `LoopBreakerTest`, `MasterVerdictsTest` |
 
 ## G — prose routing
 | id | the case, one line | defects | pinned by |

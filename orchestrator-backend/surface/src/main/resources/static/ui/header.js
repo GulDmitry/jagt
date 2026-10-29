@@ -74,8 +74,6 @@ export function render(tasks, showing) {
   actChip.hidden = !stop;
   actChip.dataset.tip = {
     STRIKES: 'three tasks the Master moved ended badly in a row, so it only judges now; press to give it act back',
-    DAILY_CEILING: `${stop?.ceiling} unattended starts today, so it only judges and nothing starts unasked until tomorrow; press to lift it`,
-    UNREADABLE: 'the file starts-stopped cannot be read, so it only judges and nothing starts unasked; press to remove it',
   }[stop?.cause] || '';
   renderEmpty(tasks.length, showing);
   phaseBar.hidden = tasks.length === 0;

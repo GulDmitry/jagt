@@ -34,11 +34,19 @@ public class TaskStops {
         trip(taskId, task -> task, task -> Optional.of(new TaskStop(trigger, clock.millis(), evidence)));
     }
 
-    /** False where a round of {@code step} would run past its ceiling, which stops the task, or a stop stands. */
+    /** False where a round of {@code step}, a move too, would run past a ceiling, which stops the task, or a stop stands. */
     public boolean roundDue(String taskId, String step) {
         LoopBreaker breaker = breakers.current();
         return trip(taskId, task -> task,
-                task -> breaker.beforeRound(step, task.turnOrNone(), task.trailOrNone(), clock.millis())).isEmpty();
+                task -> breaker.beforeRound(step, task.turnOrNone(), task.trailOrNone(), clock.millis())
+                        .or(() -> breaker.beforeMove(task.history(), task.trailOrNone(), clock.millis()))).isEmpty();
+    }
+
+    /** False where one more unattended move would run past the hour's ceiling, which stops the task, or a stop stands. */
+    public boolean moveDue(String taskId) {
+        LoopBreaker breaker = breakers.current();
+        return trip(taskId, task -> task,
+                task -> breaker.beforeMove(task.history(), task.trailOrNone(), clock.millis())).isEmpty();
     }
 
     /** A round identical to the last one relayed, bringing no new note on green checks, or met by a standing question, is not news. */

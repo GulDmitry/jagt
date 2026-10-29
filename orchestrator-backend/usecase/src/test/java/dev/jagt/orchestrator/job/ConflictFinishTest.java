@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -27,30 +27,33 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ConflictFinishTest {
 
     private final CommandService commands = mock(CommandService.class);
-    private final ConfigService config = mock(ConfigService.class);
+    private final TaskStops stops = mock(TaskStops.class);
 
     @Test
     void pressesTheDeployTheHumanStarted(@TempDir Path root) {
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
+        when(stops.moveDue("ABC-42")).thenReturn(true);
 
-        new ConflictFinish(commands, config, state).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        new ConflictFinish(commands, stops, state).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         verify(commands).execute("ABC-42", TaskAction.DEPLOY);
     }
 
     @Test
-    void countsTheDeployItFinishedAsAnUnattendedStart(@TempDir Path root) {
+    void pressesNothingWhereTheTaskMadeTooManyUnattendedMovesInTheHour(@TempDir Path root) {
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
+        when(stops.moveDue("ABC-42")).thenReturn(false);
 
-        new ConflictFinish(commands, config, state).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        new ConflictFinish(commands, stops, state).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
 
-        verify(config).startTaken();
+        verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
     }
 
     @Test
@@ -62,7 +65,7 @@ class ConflictFinishTest {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
         ((Logger) LoggerFactory.getLogger(ConflictFinish.class)).addAppender(log);
-        ConflictFinish finish = new ConflictFinish(commands, config, state);
+        ConflictFinish finish = new ConflictFinish(commands, stops, state);
 
         finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
         finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
@@ -78,7 +81,8 @@ class ConflictFinishTest {
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT)
                 .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure")).build());
-        ConflictFinish finish = new ConflictFinish(commands, config, state);
+        when(stops.moveDue("ABC-42")).thenReturn(true);
+        ConflictFinish finish = new ConflictFinish(commands, stops, state);
         finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         state.updateTask("ABC-42", task -> task.lifted(9));

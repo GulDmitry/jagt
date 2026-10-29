@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.protocol.SwitchJudgements;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.RoundTrail;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -61,7 +62,7 @@ public class ConfigService implements LoopBreaker.Current {
                              @Nullable CodeReviewConfig codeReview, @Nullable AgentConfig agent,
                              @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
                              @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
-                             @Nullable Integer maxStartsPerDay, @Nullable LoopBreakerConfig loopBreaker,
+                             @Nullable LoopBreakerConfig loopBreaker,
                              @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
@@ -77,14 +78,18 @@ public class ConfigService implements LoopBreaker.Current {
             }
         }
 
-        /** Each round ceiling read as at most one below what a task keeps of its rounds. */
+        /** Each ceiling read as at most one below what a task keeps of its rounds, turns or moves. */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
         public record LoopBreakerConfig(@Nullable Integer stalledRounds, @Nullable Integer ships,
-                                        @Nullable Integer rounds) {
+                                        @Nullable Integer rounds, @Nullable Integer perHour) {
 
             public static LoopBreakerConfig defaults() {
-                return new LoopBreakerConfig(null, null, null);
+                return new LoopBreakerConfig(null, null, null, null);
+            }
+
+            public int perHourOrDefault() {
+                return perHour == null || perHour <= 0 ? 20 : Math.min(perHour, TaskState.MAX_HISTORY - 1);
             }
 
             public int roundsOrDefault() {
@@ -461,12 +466,7 @@ public class ConfigService implements LoopBreaker.Current {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null);
-        }
-
-        /** Unattended starts one local day may hold before the rest wait for tomorrow or for you. */
-        public int maxStartsPerDayOrDefault() {
-            return maxStartsPerDay == null || maxStartsPerDay <= 0 ? 50 : maxStartsPerDay;
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null);
         }
 
         public Duration conflictStallOrDefault() {
@@ -477,6 +477,7 @@ public class ConfigService implements LoopBreaker.Current {
         public LoopBreaker loopBreakerOrDefault() {
             LoopBreakerConfig config = loopBreaker == null ? LoopBreakerConfig.defaults() : loopBreaker;
             return new LoopBreaker(config.stalledRoundsOrDefault(), config.shipsOrDefault(), config.roundsOrDefault(),
+                    config.perHourOrDefault(),
                     Duration.ofHours(autoReview().windowHoursOrDefault()));
         }
 
@@ -561,15 +562,6 @@ public class ConfigService implements LoopBreaker.Current {
 
     public Optional<ActStop> actStop() {
         return actStops.standing();
-    }
-
-    public boolean startsStopped() {
-        return actStops.startsStopped();
-    }
-
-    /** One unattended start taken; reaching the day's ceiling writes the stop. */
-    public void startTaken() {
-        actStops.take(load().maxStartsPerDayOrDefault());
     }
 
     /** The names the human wrote under {@code orchestrator}, INCLUDING ones nothing binds — both readers drop those. */

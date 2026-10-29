@@ -22,7 +22,7 @@ public class ActCommand implements GlobalCommand {
 
     @Override
     public String hint() {
-        return "give the Master back the buttons it stopped pressing, and lift the day\u2019s ceiling on unattended starts";
+        return "give the Master back the buttons it stopped pressing";
     }
 
     @Override

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -52,7 +53,12 @@ public class TaskTurns {
 
     /** The write that opens the session's turn, for a caller that makes it part of a larger one. */
     public UnaryOperator<TaskState> opening(String step, String digest) {
-        return task -> task.withTurn(task.turnOrNone().relayed(step, digest, clock.millis()));
+        return task -> task.withTurn(task.turnOrNone().relayed(step, digest, answeredBy(task), clock.millis()));
+    }
+
+    private static String answeredBy(TaskState task) {
+        return Turn.digestOf(task.history().reversed().stream().filter(move -> move.origin() == ActionOrigin.MCP).findFirst()
+                .map(move -> move.status() + "\n" + (move.why() == null ? "" : move.why())).orElse(""));
     }
 
     /** {@code checked} is the status the door admitted the step at, not the one the task holds by now. */

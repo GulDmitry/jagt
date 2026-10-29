@@ -7,31 +7,19 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-/** The two stops that demote `act` to judge: three bad endings, and the day's ceiling on unattended starts. */
+/** The stop that demotes `act` to judge: three bad endings. */
 @Service
 @RequiredArgsConstructor
 public class ActStops {
 
     private final MasterBrake brake;
-    private final DailyStarts dailyStarts;
 
     public Optional<ActStop> standing() {
-        return dailyStarts.standing().or(() -> brake.stopped() ? Optional.of(new ActStop(Cause.STRIKES, 0)) : Optional.empty());
+        return brake.stopped() ? Optional.of(new ActStop(Cause.STRIKES)) : Optional.empty();
     }
 
-    /** Only the ceiling stops what starts unasked; three bad endings leave it be. */
-    public boolean startsStopped() {
-        return dailyStarts.standing().isPresent();
-    }
-
-    public void take(int ceiling) {
-        dailyStarts.take(ceiling);
-    }
-
-    /** True where either stood. */
+    /** True where it stood. */
     public boolean lift() {
-        boolean struck = brake.restore();
-        boolean capped = dailyStarts.lift();
-        return struck || capped;
+        return brake.restore();
     }
 }

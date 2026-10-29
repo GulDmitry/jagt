@@ -291,27 +291,6 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
-    void namesTheDailyCeilingOnTheActStoppedChipAndLiftsItOnAPress() throws Exception {
-        java.nio.file.Files.writeString(root.resolve("starts-stopped"), java.time.LocalDate.now() + " 50\n");
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("#act-stopped")).hasAttribute("data-tip", Pattern.compile("50 unattended starts"));
-
-        page.locator("#act-stopped").click();
-
-        assertThat(page.locator("#act-stopped")).isHidden();
-    }
-
-    @Test
-    void namesTheUnreadableStopFileOnTheActStoppedChip() throws Exception {
-        java.nio.file.Files.writeString(root.resolve("starts-stopped"), "garbage\n");
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-
-        assertThat(page.locator("#act-stopped")).hasAttribute("data-tip", Pattern.compile("starts-stopped cannot be read"));
-    }
-
-    @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void anOpenTipOnTheJobsChipFollowsItsCountdownThroughARepaint() {
         breakable.breakIt();

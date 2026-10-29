@@ -552,7 +552,7 @@ class TaskStateTest {
     @Test
     void holdsNoTurnUntilOneIsRecordedAndThenTheOneRecorded() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-        Turn relayed = Turn.none().relayed("round", "d1", 100);
+        Turn relayed = Turn.none().relayed("round", "d1", "", 100);
 
         assertThat(task.turnOrNone()).isEqualTo(Turn.none());
         assertThat(task.withTurn(relayed).turnOrNone()).isEqualTo(relayed);

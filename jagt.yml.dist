@@ -25,14 +25,13 @@ orchestrator:
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
   archive:
     maxMegabytes: 20       # `archive/` beside state.json, what `done` keeps; past it the oldest snapshots go first
-  maxStartsPerDay: 50      # unattended starts per local day (act moves, tracker intake, auto-review polls); past it they
-                           # wait for tomorrow or for you pressing `act stopped`. Counted in memory: a restart begins at zero
   loopBreaker:             # stops a task jagt suspects it is looping on, whoever asked; only your `lift` resumes it
     stalledRounds: 3       # rounds relayed running that brought no new note and left the same job failing (at most 19)
     ships: 4               # ships within autoReview.windowHours whose round brought no new note;
                            # the next one jagt would press unasked stops the task
     rounds: 3              # rounds of one step sent back running in 24h: a red verification or probe, a not-ready
-                           # plan or round, repeats included; the next one stops the task (at most 19)
+                           # plan or round, counted while it answers an unchanged report; the next one stops the task (at most 19)
+    perHour: 20            # unattended moves (Master, auto-review, tracker) of one task in an hour; the next one stops it (at most 49)
   conflictStallMinutes: 20 # in act, a deploy conflict its session was handed whose worktree has not changed this long:
                            # you get one banner, and the card says how many paths are unmerged, where, since when
   keepAwake: false         # true: macOS stays awake while the Master acts, auto-review polls or `take` runs

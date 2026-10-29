@@ -111,7 +111,7 @@ class ReplaySessionsTest {
                 {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
                 """);
         Recording recording = new Recording(file.toString());
-        Turn shipping = Turn.none().relayed("ship", "facts", 1);
+        Turn shipping = Turn.none().relayed("ship", "facts", "", 1);
         TaskStore tasks = mock(TaskStore.class);
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("p", "/work/ABC-1", TaskStatus.IN_PROGRESS).turn(shipping).build()));
@@ -156,7 +156,7 @@ class ReplaySessionsTest {
                 {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
                 """);
         Recording recording = new Recording(file.toString());
-        Turn verifying = Turn.none().relayed("verify", "facts", 1);
+        Turn verifying = Turn.none().relayed("verify", "facts", "", 1);
         TaskStore tasks = mock(TaskStore.class);
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("p", "/work/ABC-1", TaskStatus.IN_PROGRESS).turn(verifying).build()));

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -8,9 +10,10 @@ import java.util.stream.Collectors;
 /**
  * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that brought no new note
  * and left the same job failing, a ship asked past {@code ships} within {@code window} that answered a round
- * bringing no new note, or a round of one step past {@code rounds} sent running.
+ * bringing no new note, a round of one step past {@code rounds} sent running that answered one unchanged report, or
+ * more than {@code perHour} moves in an hour that nobody asked for.
  */
-public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration window) {
+public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour, Duration window) {
 
     /** The breaker as configured at the moment it is asked. */
     @FunctionalInterface
@@ -19,14 +22,27 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, Duration win
     }
 
     private static final Duration ROUND_WINDOW = Duration.ofHours(24);
+    private static final Duration MOVE_WINDOW = Duration.ofHours(1);
 
-    /** A round of {@code step} sent {@code rounds} times running within 24h since the lift is the last. */
+    /** A round of {@code step} sent {@code rounds} times running, each answering the one report, within 24h since the lift is the last. */
     public Optional<TaskStop> beforeRound(String step, Turn turn, RoundTrail trail, long now) {
         long from = Math.max(trail.since(), now - ROUND_WINDOW.toMillis());
         long running = turn.step().equals(step) ? turn.run().stream().filter(at -> at > from).count() : 0;
         return running < rounds ? Optional.empty()
                 : Optional.of(new TaskStop(TaskStop.Trigger.ROUNDS, now, step + " sent " + running
                         + " rounds running in " + ROUND_WINDOW.toHours() + "h; the next one was not"));
+    }
+
+    /** The {@code perHour}th move made unasked within the hour since the lift is the last. */
+    public Optional<TaskStop> beforeMove(List<StatusChange> history, RoundTrail trail, long now) {
+        long from = Math.max(trail.since(), now - MOVE_WINDOW.toMillis());
+        long moved = history.stream().filter(move -> move.at() > from && unattended(move.origin())).count();
+        return moved < perHour ? Optional.empty()
+                : Optional.of(new TaskStop(TaskStop.Trigger.PACE, now, moved + " unattended moves in 1h; the next one was not made"));
+    }
+
+    private static boolean unattended(@Nullable ActionOrigin origin) {
+        return origin == ActionOrigin.MASTER || origin == ActionOrigin.AUTO_REVIEW || origin == ActionOrigin.TRACKER;
     }
 
     public Optional<TaskStop> afterRound(RoundTrail trail, List<StatusChange> history, long now) {

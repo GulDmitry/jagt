@@ -81,7 +81,7 @@ class ConfigServiceTest {
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
         String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 
@@ -176,54 +176,19 @@ class ConfigServiceTest {
     }
 
     @Test
-    void readsActAsJudgeWhileTodaysDailyCeilingStands(@TempDir Path root) throws Exception {
+    void readsActAsJudgeWhileThreeBadEndingsStandInARow(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
-        Files.writeString(root.resolve("starts-stopped"), java.time.LocalDate.now() + " 50\n");
+        Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
         String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
 
         assertThat(mode).isEqualTo("judge");
-    }
-
-    @Test
-    void readsActAsActOnceTheDayOfTheDailyCeilingIsOver(@TempDir Path root) throws Exception {
-        Path configFile = root.resolve("jagt.yml");
-        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
-        Files.writeString(root.resolve("starts-stopped"), java.time.LocalDate.now().minusDays(1) + " 50\n");
-        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
-                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
-
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
-
-        String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
-
-        assertThat(mode).isEqualTo("act");
-    }
-
-    @Test
-    void stopsUnattendedStartsOnceTheDaysCeilingIsTaken(@TempDir Path root) throws Exception {
-        Path configFile = root.resolve("jagt.yml");
-        Files.writeString(configFile, "orchestrator:\n  maxStartsPerDay: 2\n");
-        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
-                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
-        ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops);
-
-        config.startTaken();
-        boolean stoppedAfterOne = config.startsStopped();
-        config.startTaken();
-
-        assertThat(stoppedAfterOne).isFalse();
-        assertThat(config.startsStopped()).isTrue();
-        assertThat(config.actStop()).contains(new ActStop(ActStop.Cause.DAILY_CEILING, 2));
     }
 
     @Test
@@ -233,12 +198,11 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
         ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops);
 
         assertThat(config.actStop()).isEmpty();
-        assertThat(config.startsStopped()).isFalse();
     }
 
     @Test
@@ -250,7 +214,7 @@ class ConfigServiceTest {
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         AgentRuntime runtime = mock(AgentRuntime.class);
         when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
         ConfigFile config = new ConfigService(paths, runtime, stops).load();
 
@@ -265,7 +229,7 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths), new DailyStarts(paths, Clock.systemDefaultZone()));
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
         ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops);
 
         assertThat(config.project("api").path()).isEqualTo("/srv/api");
@@ -318,9 +282,9 @@ class ConfigServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"null,50", "0,50", "1,1", "7,7"}, nullValues = "null")
-    void resolvesHowManyUnattendedStartsADayMayHold(Integer configured, int expected) {
-        assertThat(ConfigFile.defaults().withMaxStartsPerDay(configured).maxStartsPerDayOrDefault()).isEqualTo(expected);
+    @CsvSource(value = {"null,20", "0,20", "1,1", "7,7", "500,49"}, nullValues = "null")
+    void resolvesHowManyUnattendedMovesATaskMayMakeAnHour(Integer configured, int expected) {
+        assertThat(ConfigFile.LoopBreakerConfig.defaults().withPerHour(configured).perHourOrDefault()).isEqualTo(expected);
     }
 
     @ParameterizedTest

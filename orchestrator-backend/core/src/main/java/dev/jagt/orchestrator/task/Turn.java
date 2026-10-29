@@ -17,8 +17,9 @@ import java.util.Map;
 
 /**
  * Whose move a task waits on, since when, and the step that handed it over. {@code id} counts the turns, a relay or a
- * report starting the next; {@code marks} holds the last value each step carried, one entry per step, so it is
- * bounded; {@code run} when {@code step} was relayed, rounds running.
+ * report starting the next; {@code marks} holds the last value each step carried and what the session had last
+ * reported when it was relayed, one entry each per step, so it is bounded; {@code run} when {@code step} was relayed,
+ * rounds running that answered one unchanged report.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -27,6 +28,8 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
                    @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Long> run) {
 
     public static final int MAX_RUN = 20;
+
+    private static final String ANSWERS = ":answers";
 
     public enum Holder {
         SESSION,
@@ -73,8 +76,12 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
         return marks.get(step);
     }
 
-    public Turn relayed(String step, String digest, long now) {
-        return new Turn(Holder.SESSION, step, id + 1, digest, now, with(step, digest), ran(step, now));
+    /** {@code answered} fingerprints the session's last report; a round answering another one starts the run afresh. */
+    public Turn relayed(String step, String digest, String answered, long now) {
+        Map<String, String> grown = new HashMap<>(marks);
+        grown.put(step, digest);
+        grown.put(step + ANSWERS, answered);
+        return new Turn(Holder.SESSION, step, id + 1, digest, now, grown, ran(step, answered, now));
     }
 
     /** A report closes the turn it answers and starts the next holder's; the step it answered stays on record. */
@@ -92,8 +99,9 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
         return new Turn(holder, this.step, id, digest, since, kept, run);
     }
 
-    private List<Long> ran(String step, long now) {
-        List<Long> grown = new ArrayList<>(this.step.equals(step) ? run : List.of());
+    private List<Long> ran(String step, String answered, long now) {
+        boolean continues = this.step.equals(step) && answered.equals(marks.get(step + ANSWERS));
+        List<Long> grown = new ArrayList<>(continues ? run : List.of());
         grown.add(now);
         return grown.subList(Math.max(0, grown.size() - MAX_RUN), grown.size());
     }

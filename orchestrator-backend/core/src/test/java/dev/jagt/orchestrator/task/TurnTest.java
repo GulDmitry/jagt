@@ -12,7 +12,7 @@ class TurnTest {
 
     @Test
     void opensWhenTheSessionHoldsAStepItWasRelayed() {
-        Turn relayed = Turn.none().relayed("round", "d1", 100);
+        Turn relayed = Turn.none().relayed("round", "d1", "", 100);
 
         assertThat(relayed.open()).isTrue();
         assertThat(relayed.holder()).isEqualTo(Turn.Holder.SESSION);
@@ -30,14 +30,14 @@ class TurnTest {
 
     @Test
     void isNotOpenOnceTheSessionReportedAndEmptiedTheDigest() {
-        Turn reported = Turn.none().relayed("round", "d1", 100).closed(Turn.Holder.SESSION, 200);
+        Turn reported = Turn.none().relayed("round", "d1", "", 100).closed(Turn.Holder.SESSION, 200);
 
         assertThat(reported.open()).isFalse();
     }
 
     @Test
     void holdsOnlyTheSameStepWithTheSameFactsWhileOpen() {
-        Turn open = Turn.none().relayed("round", "d1", 100);
+        Turn open = Turn.none().relayed("round", "d1", "", 100);
 
         assertThat(open.holds("round", "d1")).isTrue();
         assertThat(open.holds("round", "d2")).isFalse();
@@ -47,7 +47,7 @@ class TurnTest {
 
     @Test
     void countsTheNextTurnAtEveryRelayAndEveryReport() {
-        Turn relayed = Turn.none().relayed("round", "d1", 100);
+        Turn relayed = Turn.none().relayed("round", "d1", "", 100);
         Turn closed = relayed.closed(Turn.Holder.MASTER, 200);
 
         assertThat(relayed.id()).isEqualTo(1);
@@ -71,7 +71,7 @@ class TurnTest {
 
     @Test
     void remembersTheLastValueEachStepCarriedAndAnswersAnUnknownStepWithNull() {
-        Turn relayed = Turn.none().relayed("round", "d1", 100).relayed("plan", "p1", 200);
+        Turn relayed = Turn.none().relayed("round", "d1", "", 100).relayed("plan", "p1", "", 200);
 
         assertThat(relayed.mark("round")).isEqualTo("d1");
         assertThat(relayed.mark("plan")).isEqualTo("p1");
@@ -83,7 +83,7 @@ class TurnTest {
 
     @Test
     void setsAndClearsAMarkWithoutMovingTheTurn() {
-        Turn open = Turn.none().relayed("round", "d1", 100);
+        Turn open = Turn.none().relayed("round", "d1", "", 100);
 
         Turn marked = open.withMark("ship", "s1");
         Turn cleared = marked.withoutMark("round");
@@ -98,8 +98,8 @@ class TurnTest {
 
     @Test
     void countsRelaysOfOneStepRunningAndStartsAgainOnAnotherStep() {
-        Turn twice = Turn.none().relayed("round", "d1", 100).relayed("round", "d2", 200);
-        Turn switched = twice.relayed("plan", "p1", 300);
+        Turn twice = Turn.none().relayed("round", "d1", "", 100).relayed("round", "d2", "", 200);
+        Turn switched = twice.relayed("plan", "p1", "", 300);
 
         assertThat(twice.run()).containsExactly(100L, 200L);
         assertThat(switched.run()).containsExactly(300L);
@@ -109,7 +109,7 @@ class TurnTest {
     void keepsOnlyTheLastTwentyRelaysOfAStepRunning() {
         Turn turn = Turn.none();
         for (long at = 1; at <= 21; at++) {
-            turn = turn.relayed("round", "d" + at, at);
+            turn = turn.relayed("round", "d" + at, "", at);
         }
 
         assertThat(turn.run()).containsExactlyElementsOf(LongStream.rangeClosed(2, 21).boxed().toList());

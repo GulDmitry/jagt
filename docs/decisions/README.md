@@ -64,7 +64,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0046 Preact, no build](0046-the-board-renders-preact-components-with-no-build.md)
 - [0047 The editor is a launcher](0047-the-editor-is-a-launcher.md)
 - [0048 Spend ceiling](0048-every-headless-call-has-a-spend-ceiling.md)
-- [0049 Daily start ceiling](0049-unattended-starts-have-a-daily-ceiling.md)
+- [0049 Daily start ceiling, superseded by 0104](0049-unattended-starts-have-a-daily-ceiling.md)
 - [0050 Wake on reset](0050-a-session-stopped-on-a-full-window-is-woken-once.md)
 - [0051 One constructor](0051-a-class-has-one-constructor-and-tests-use-it.md)
 - [0052 Typed endings](0052-an-ending-says-which-one.md)
@@ -119,3 +119,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0101 A strike is the Master's only after its own last move](0101-a-strike-is-the-masters-only-after-its-own-last-move.md)
 - [0102 A request is merged when its tip reached the target in git](0102-a-request-is-merged-when-its-tip-reached-the-target-in-git.md)
 - [0103 A round is the same by its facts, not its brief](0103-a-round-is-the-same-by-its-facts-not-its-brief.md)
+- [0104 Loops are bounded per task](0104-loops-are-bounded-per-task.md)

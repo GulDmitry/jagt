@@ -138,7 +138,7 @@ class McpProtocolServiceTest {
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build()
-                .withTurn(Turn.none().relayed("ship", "d1", 0)));
+                .withTurn(Turn.none().relayed("ship", "d1", "", 0)));
         McpTools noting = tools -> tools.tool("note", Audience.ANYONE, Effect.REPORTS, NoArguments.schema("notes"),
                 NoArguments.class, (said, caller) -> MessageContext.NONE, (said, caller) -> "noted");
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));

@@ -30,7 +30,7 @@ class FinishedArtifactsTest {
 
     @Test
     void keepsTheDocumentsAndTheRecordOfAFinishedTaskWhereAHumanCanStillReadThem(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxStartsPerDay: 50\n");
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
         Path worktree = root.resolve("ABC-42-proj");
         Files.createDirectories(worktree);
         Files.writeString(worktree.resolve("plan.md"), "the plan");
@@ -57,7 +57,7 @@ class FinishedArtifactsTest {
 
     @Test
     void keepsTheRecordOfATaskThatLeftNoDocumentBehind(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxStartsPerDay: 50\n");
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
         Path worktree = root.resolve("ABC-42-proj");
         Files.createDirectories(worktree);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -78,7 +78,7 @@ class FinishedArtifactsTest {
 
     @Test
     void keepsALineNamingADocumentPastTheSizeLimitInsteadOfTheDocument(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxStartsPerDay: 50\n");
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
         Path worktree = root.resolve("ABC-42-proj");
         Files.createDirectories(worktree);
         Files.write(worktree.resolve("plan.md"), new byte[10 * 1024 * 1024 + 1]);
@@ -124,7 +124,7 @@ class FinishedArtifactsTest {
 
     @Test
     void keepsEverySnapshotOfATaskDoneTwiceTheSameDay(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  maxStartsPerDay: 50\n");
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
         Path worktree = root.resolve("ABC-42-proj");
         Files.createDirectories(worktree);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
