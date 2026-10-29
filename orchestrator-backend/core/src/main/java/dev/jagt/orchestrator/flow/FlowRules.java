@@ -232,7 +232,7 @@ public final class FlowRules {
         if (!READ_FROM_THE_HOST.contains(read)) {
             throw new IllegalArgumentException(read + " is not what a read of the review round concludes");
         }
-        return WAITING_ON_THE_HOST.contains(from) ? read : from;
+        return READ_LANDS_FROM.contains(from) ? read : from;
     }
 
     /**
@@ -400,6 +400,9 @@ public final class FlowRules {
 
     private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
             TaskStatus.REVIEWED, TaskStatus.APPROVED);
+
+    private static final Set<TaskStatus> READ_LANDS_FROM = EnumSet.of(TaskStatus.CI_POLLING,
+            TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.CI_FAILED);
 
     /** Statuses the work has been handed over from, so a tracker reaching its own last stage may close it. */
     private static final Set<TaskStatus> HANDED_OVER = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,

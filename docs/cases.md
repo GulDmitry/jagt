@@ -54,6 +54,7 @@ Families:
 | B17 | the same job fails on the same pushed tip and the brief quoting it reads differently → the round is not relayed again; a round is digested by its facts, not its wording | seen 2026-10-28: one failure was relayed twice in two hours as a fresh session, three rounds in 24h stopped the task | `TaskStopsTest`, `WorktreeInspectionTest` |
 | B18 | a session asks a question and a sweep reads its request green → the card still asks and shows the question; only the session's next report or a human answer clears it | seen 2026-10-29: found by the status × condition inventory | `FlowReportsTest` |
 | B19 | a sweep reads a request green while its session works on the task (follow-up work, a hand-back, a plan) → the status stays the session's, only the checks and approval are recorded | seen 2026-10-29: found by the status × condition inventory | `FlowRulesTest` |
+| B20 | a `CI_FAILED` task's pipeline is re-run and a poll reads it green with nothing unresolved → it moves on as a `CI_POLLING` one does, no session needed | seen 2026-10-29: found by the status × condition inventory | `FlowRulesTest` |
 
 ## C — turn collision
 | id | the case, one line | defects | pinned by |

@@ -256,6 +256,12 @@ class FlowRulesTest {
     }
 
     @ParameterizedTest
+    @CsvSource({"REVIEWED", "APPROVED"})
+    void movesAFailedTaskOnWhenItsRerunPipelineReadsGreen(TaskStatus verdict) {
+        assertThat(FlowRules.readLands(TaskStatus.CI_FAILED, verdict)).isEqualTo(verdict);
+    }
+
+    @ParameterizedTest
     @CsvSource({"NEW, REVIEWED", "IN_PROGRESS, REVIEWED", "IN_PROGRESS, APPROVED", "VERIFYING, APPROVED",
             "SHIPPING, REVIEWED", "PLAN_PENDING, REVIEWED", "REVIEW_PENDING, APPROVED"})
     void leavesATaskItsSessionWorksInWhereItIsWhenItsRunReadsGreen(TaskStatus busy, TaskStatus verdict) {

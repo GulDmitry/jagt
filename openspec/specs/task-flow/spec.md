@@ -90,7 +90,7 @@ across a restart (`TaskState.conflict`, [0063](../../../docs/decisions/0063-a-st
 ### Requirement: Statuses a report cannot move
 A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT` until deployed: refusing errors every
 call of that session. Its card SHALL keep the status's line (`FlowRules.holdsItsLine`), the report's logged; a question alone reaches it, until the
-next report. A round read MUST move only a task waiting on the host (`FlowRules.waitsOnTheHost`) and leave every other status in place, its checks
+next report. A round read MUST move only a task waiting on the host or red (`FlowRules.readLands`). It leaves every other status in place, its checks
 alone updated: shipped work never goes back to approval, a session's work is never overwritten. It MUST leave a `QUESTION` or `PERMISSION` standing
 (`FlowRules.standsThroughARead`): only the session's next report or a human answers it.
 
@@ -100,6 +100,7 @@ alone updated: shipped work never goes back to approval, a session's work is nev
 - **AND** a poll reading `APPROVED` past `DEPLOYED` leaves the task there
 - **AND** a poll reading ABC-42 green leaves its `QUESTION` asking, the question on the card
 - **AND** a poll reading ABC-42 approved at `IN_PROGRESS` leaves it there, its checks and approval recorded
+- **AND** a poll reading a re-run `CI_FAILED` task green with nothing unresolved moves it on as a `CI_POLLING` one, no session needed
 
 ### Requirement: A follow-up request after a merged one
 A task needing more work after its request merged SHALL go back to `IN_PROGRESS`; its next ship's request replaces the merged one.
