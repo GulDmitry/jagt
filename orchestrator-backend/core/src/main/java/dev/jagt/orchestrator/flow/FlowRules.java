@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -216,6 +217,11 @@ public final class FlowRules {
         return WAITING_ON_THE_HOST.contains(status);
     }
 
+    /** Whether a read of the review round leaves this report standing: only the session or a human answers it. */
+    public static boolean standsThroughARead(AgentReport report) {
+        return STANDING_THROUGH_A_READ.contains(report);
+    }
+
     /** What a read of the review round can conclude, which only the host's round read may land. */
     public static Set<TaskStatus> reads() {
         return EnumSet.copyOf(READ_FROM_THE_HOST);
@@ -394,6 +400,9 @@ public final class FlowRules {
 
     private static final Set<TaskStatus> READ_FROM_THE_HOST = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
             TaskStatus.CI_FAILED);
+
+    private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
+            AgentReport.PERMISSION);
 
     private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
             TaskStatus.REVIEWED, TaskStatus.APPROVED);

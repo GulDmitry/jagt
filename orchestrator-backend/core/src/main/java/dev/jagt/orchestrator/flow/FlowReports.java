@@ -163,7 +163,12 @@ public class FlowReports {
         tasks.updateTask(taskId, task -> {
             TaskStatus now = FlowRules.readLands(task.status(), concluded);
             landed.set(new Landed(task.status(), now));
-            return now == task.status() ? task : task.withStatus(now, message, clock.millis());
+            if (now == task.status()) {
+                return task;
+            }
+            return FlowRules.standsThroughARead(task.report())
+                    ? task.withStatus(now, task.message(), clock.millis()).withReport(task.report())
+                    : task.withStatus(now, message, clock.millis());
         });
         return Optional.ofNullable(landed.get());
     }

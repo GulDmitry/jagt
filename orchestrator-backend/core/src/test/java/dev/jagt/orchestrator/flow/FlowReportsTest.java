@@ -267,4 +267,23 @@ class FlowReportsTest {
 
         assertThat(written.get()).isSameAs(before);
     }
+
+    @ParameterizedTest
+    @EnumSource(value = AgentReport.class, names = {"QUESTION", "PERMISSION"})
+    void keepsTheQuestionOfASessionWhenARoundReadConcludesGreen(AgentReport asked) {
+        AtomicReference<TaskState> written = new AtomicReference<>();
+        TaskState before = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .message("squash or keep the commits?").report(asked).build();
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            written.set(write.apply(before));
+            return true;
+        });
+
+        reports.read("ABC-1", TaskStatus.REVIEWED, "reviewed");
+
+        assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEWED);
+        assertThat(written.get().report()).isEqualTo(asked);
+        assertThat(written.get().message()).isEqualTo("squash or keep the commits?");
+    }
 }
