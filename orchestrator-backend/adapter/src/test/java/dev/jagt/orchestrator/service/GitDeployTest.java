@@ -1136,6 +1136,76 @@ class GitDeployTest {
         assertThat(resolved).isTrue();
     }
 
+    @Test
+    void cutsTheDeployBranchAsItStandsIntoAWorktreeWhoseFixIsNotResolvedUntilItIsStaged(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        git.openFixWorktree(repo, "ABC-1", "dev");
+
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        assertThat(deployWorktree.resolve("feature.txt")).hasContent("the feature");
+        assertThat(git.hasDeployWorktree(repo, "ABC-1")).isTrue();
+        assertThat(git.deployResolved(repo, "ABC-1", "dev")).isFalse();
+        Files.writeString(deployWorktree.resolve("feature.txt"), "the feature, fixed");
+        runner.run(deployWorktree, t, List.of("git", "add", "feature.txt"));
+        assertThat(git.deployResolved(repo, "ABC-1", "dev")).isTrue();
+    }
+
+    @Test
+    void deployingFinishesTheFixStagedOnTheDeployBranchInsteadOfMergingTheDeployAgain(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        git.openFixWorktree(repo, "ABC-1", "dev");
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        Files.writeString(deployWorktree.resolve("feature.txt"), "the feature, fixed");
+        runner.run(deployWorktree, t, List.of("git", "add", "feature.txt"));
+
+        String fix = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(fix).isNotEqualTo(merge);
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(fix);
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:feature.txt")).stdout())
+                .contains("the feature, fixed");
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", fix + "^1")).stdout().trim()).isEqualTo(merge);
+        assertThat(deployWorktree).doesNotExist();
+    }
+
     @ParameterizedTest
     @CsvSource(value = {"0123456789abcdef,01234567", "abc1234,abc1234", "NIL,null"}, nullValues = "NIL")
     void showsAShaAsItsFirstEightCharactersAndAMissingOneAsNull(String sha, String shown) {

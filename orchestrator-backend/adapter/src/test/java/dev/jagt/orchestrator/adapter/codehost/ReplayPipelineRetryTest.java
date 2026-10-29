@@ -27,7 +27,7 @@ class ReplayPipelineRetryTest {
     }
 
     @Test
-    void aReplayedRunReadsNoCommitFromAHost() {
-        assertThat(replay.onCommit("https://git.example.invalid/shop/web.git", "0123abc").facts()).isEmpty();
+    void aReplayedRunReadsEveryCommitAsGreenSoItsDeploysAreChecked() {
+        assertThat(replay.onCommit("/tmp/shop.git", "0123abc").facts().orElseThrow().status()).isEqualTo("success");
     }
 }

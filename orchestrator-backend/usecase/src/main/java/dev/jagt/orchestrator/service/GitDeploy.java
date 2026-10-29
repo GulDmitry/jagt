@@ -66,6 +66,26 @@ public class GitDeploy {
         });
     }
 
+    /**
+     * Cuts the deploy worktree from the deploy branch as it stands, where a fix of what already landed is made and
+     * finished by the next deploy; work waiting in a leftover one is kept.
+     */
+    public void openFixWorktree(Path projectPath, String sourceBranch, String targetBranch) {
+        git.locked(projectPath, () -> {
+            Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+            String deployBranch = deployBranch(sourceBranch);
+            git.run(projectPath, List.of("git", "fetch", "--prune")).expectSuccess("git fetch in " + projectPath);
+            if (Files.isDirectory(deployWorktree)
+                    && settleLeftover(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch)) {
+                return;
+            }
+            git.clearWorktreePath(projectPath, deployWorktree);
+            git.run(projectPath, List.of("git", "worktree", "add",
+                            "-B", deployBranch, deployWorktree.toString(), "origin/" + targetBranch))
+                    .expectSuccess("git worktree add (deploy fix) " + targetBranch);
+        });
+    }
+
     /** Whether human work waits in the leftover worktree; otherwise it is cleared, or refused when not this repository's. */
     private boolean settleLeftover(Path projectPath, Path deployWorktree, String deployBranch, String sourceBranch,
                                    String targetBranch) {
@@ -116,7 +136,13 @@ public class GitDeploy {
         if (!unmergedPaths(deployWorktree).isBlank()) {
             return partlyResolved(deployWorktree);
         }
-        return mergeInProgress(deployWorktree) || resolutionCommitted(deployWorktree, targetBranch);
+        return mergeInProgress(deployWorktree) || resolutionCommitted(deployWorktree, targetBranch)
+                || stagedFix(deployWorktree);
+    }
+
+    /** A change staged on the deploy branch as it stands, which no merge is in progress to own. */
+    private boolean stagedFix(Path deployWorktree) {
+        return git.run(deployWorktree, List.of("git", "diff", "--cached", "--quiet")).exitCode() != 0;
     }
 
     /**
@@ -127,7 +153,8 @@ public class GitDeploy {
         Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
         return hasDeployWorktree(projectPath, sourceBranch) && unmergedPaths(deployWorktree).isBlank()
                 && git.run(deployWorktree, List.of("git", "diff", "--quiet")).exitCode() == 0
-                && (mergeInProgress(deployWorktree) || resolutionCommitted(deployWorktree, targetBranch));
+                && (mergeInProgress(deployWorktree) || resolutionCommitted(deployWorktree, targetBranch)
+                || stagedFix(deployWorktree));
     }
 
     /** Where the resolution in this task's deploy worktree stands; any edit, staged or not, changes the digest. */
@@ -202,6 +229,9 @@ public class GitDeploy {
         if (mergeInProgress(deployWorktree)) {
             git.run(deployWorktree, List.of("git", "commit", "--no-edit"))
                     .expectSuccess("git commit (deploy resolution) " + deployWorktree);
+        } else if (stagedFix(deployWorktree)) {
+            git.run(deployWorktree, List.of("git", "commit", "-m", "Fix " + targetBranch + " after merging " + sourceBranch))
+                    .expectSuccess("git commit (deploy fix) " + deployWorktree);
         }
         return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
     }

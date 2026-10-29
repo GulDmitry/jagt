@@ -54,6 +54,11 @@ public class RedCauses {
         return pipelineUrl.isBlank() ? Verdict.CODE : judgeRed(taskId, pipelineUrl);
     }
 
+    /** The deploy's pipeline went green: no retry is owed for it. */
+    public void deployStands(String taskId) {
+        retries.clear(taskId, true);
+    }
+
     private Verdict judgeRed(String taskId, String pipelineUrl) {
         if (!properties.waits()) {
             return Verdict.CODE;

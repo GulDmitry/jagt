@@ -14,7 +14,6 @@ Families:
   several repositories. K the board. L the tests themselves. M anything else. H–M are counted by trailer and get rows here as their defects recur.
 
 "pinned by": the fix commits' subjects name almost no test, so it lists the test classes the fix commits touched; `none` = no test touched.
-
 ## A — text vs. text
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -110,6 +109,7 @@ Families:
 | E23 | a SHIPS or STALLED stop stands and a human deploys the task → the stop lifts once it is `DEPLOYED` and the deploy check reads the landed change; the Master's or jagt's deploy past a stop stays refused | seen 2026-10-29: found by the status × condition inventory | `DeployLiftsStopTest` |
 | E24 | an `UNDELIVERED` stop stands (a step never landed) and the session's window runs again → the stop ends, one INFO says `read=session alive`; a window still not running keeps it | seen 2026-10-29: found by the status × condition inventory | `SessionAliveJobTest` |
 | E25 | a `WAIT` stop stands (a dependency stayed down) → jagt says `wait-over` again at the last backoff, a wait keeps the stop and the next wake, any other report of the session ends it | seen 2026-10-29: found by the status × condition inventory | `ReportEffectsTest` |
+| E26 | a deploy's pipeline fails after the deploy landed → jagt reads it by the deploy commit and the session is asked only once green; red on the code hands the deploy worktree back as a conflict, its staged fix committed and pushed by the deploy; red on infrastructure is retried | seen 2026-10-29: a resolved conflict landed and its pipeline failed on an import unused only in the merge result; the session checked in a worktree without the merge and the human fixed it by hand | `DeployCheckJobTest`, `DeployPipelinesTest`, `ConflictHandOffTest`, `GitDeployTest`, `CliPipelineRetryTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

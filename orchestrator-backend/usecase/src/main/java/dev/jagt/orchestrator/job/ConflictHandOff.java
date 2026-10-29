@@ -27,9 +27,15 @@ class ConflictHandOff {
             AgentRuntime.Admission admission = sessions.admit(taskId, conflict.worktree());
             log.atInfo().setMessage("deploy conflict handed to session").addKeyValue("task", taskId)
                     .addKeyValue("worktree", conflict.worktree()).addKeyValue("admission", admission).log();
-            relay.write(taskId, "conflict", taskId + " did not deploy: merging it into the deploy branch conflicts in "
-                    + conflict.worktree() + ".");
+            relay.write(taskId, "conflict", told(taskId, conflict));
         }
         stall.watch(taskId, conflict);
+    }
+
+    private static String told(String taskId, DeployConflicts.WaitingConflict conflict) {
+        return conflict.red() == null
+                ? taskId + " did not deploy: merging it into the deploy branch conflicts in " + conflict.worktree() + "."
+                : taskId + " deployed, but its " + conflict.red() + ". Fix the merge result in " + conflict.worktree()
+                        + ", the deploy branch as it stands.";
     }
 }

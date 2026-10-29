@@ -90,6 +90,28 @@ class DeployCheckJobTest {
     }
 
     @Test
+    void handsADeployBackToItsSessionWhenItsPipelineIsRedOnTheCodeAndAsksNothing(@TempDir Path root) {
+        StateService state = state(root);
+        ConfigService config = mock(ConfigService.class);
+        StepRelay relay = mock(StepRelay.class);
+        DeployPipelines pipelines = mock(DeployPipelines.class);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
+                .withDeployCommit("proj", "0123456789abcdef"));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
+                "red pipeline on the deploy commit: proj 01234567", "proj", "https://git.example.invalid/p/7"));
+
+        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+
+        TaskState handed = state.task("ABC-42").orElseThrow();
+        assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(handed.message())
+                .isEqualTo("red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7");
+        verify(relay, never()).relay(anyString(), anyString(), anyString());
+    }
+
+    @Test
     void asksOncePerDeployThoughAnotherRelayFollowedAndJagtRestarted(@TempDir Path root) throws Exception {
         ConfigService config = mock(ConfigService.class);
         DeployPipelines pipelines = mock(DeployPipelines.class);

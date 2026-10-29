@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
-import dev.jagt.orchestrator.service.InfraRetries;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -16,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,8 +27,8 @@ class DeployPipelinesTest {
 
     private final PipelineRetry pipelines = mock(PipelineRetry.class);
     private final RedCauses causes = mock(RedCauses.class);
-    private final InfraRetries retries = mock(InfraRetries.class);
-    private final DeployPipelines deploys = new DeployPipelines(pipelines, causes, retries);
+    private final DeployFixWorktrees fixes = mock(DeployFixWorktrees.class);
+    private final DeployPipelines deploys = new DeployPipelines(pipelines, causes, fixes);
     private final TaskState deployed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
             TaskStatus.DEPLOYED).build();
 
@@ -40,7 +40,7 @@ class DeployPipelinesTest {
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
 
         assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
-        verify(retries).clear("ABC-42", true);
+        verify(causes).deployStands("ABC-42");
     }
 
     @Test
@@ -74,7 +74,22 @@ class DeployPipelinesTest {
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
 
         assertThat(reading).isEqualTo(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
-                "shop 01234567: pipeline red on the code", "shop", url));
+                "red pipeline on the deploy commit: shop 01234567", "shop", url));
+        verify(fixes).open(deployed, "ABC-42", "shop");
+    }
+
+    @Test
+    void aDeployStaysOpenWhenTheWorktreeOfItsFixCannotBeOpened() {
+        String url = "https://git.example.invalid/shop/web/-/pipelines/7";
+        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
+                TokenUsage.NONE));
+        when(causes.judgeDeploy("ABC-42", url)).thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
+        doThrow(new IllegalStateException("the path holds another checkout")).when(fixes).open(deployed, "ABC-42", "shop");
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
+        assertThat(reading.said()).isEqualTo("shop 01234567: pipeline red on the code, its deploy worktree not opened: the path holds another checkout");
     }
 
     @Test

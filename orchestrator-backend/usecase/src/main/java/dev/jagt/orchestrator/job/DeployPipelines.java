@@ -6,12 +6,12 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.service.InfraRetries;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -39,9 +39,17 @@ public class DeployPipelines {
         }
     }
 
+    /** What a deploy handed back for its pipeline says it was handed back for. */
+    public static final String RED_CAUSE = "red pipeline on the deploy commit";
+
     private final PipelineRetry pipelines;
     private final RedCauses causes;
-    private final InfraRetries retries;
+    private final DeployFixWorktrees fixes;
+
+    /** Whether a task's line says it was handed back for a red deploy pipeline. */
+    public static boolean marks(@Nullable String line) {
+        return line != null && line.startsWith(RED_CAUSE);
+    }
 
     /** The first red the code owns, else the first repository still open, else green. */
     public Reading read(String taskId, TaskState task) {
@@ -50,7 +58,7 @@ public class DeployPipelines {
             if (repo.deployCommit() == null || repo.deployCommit().isBlank()) {
                 continue;
             }
-            Reading one = read(taskId, repo);
+            Reading one = read(taskId, task, repo);
             if (one.kind() == Kind.RED) {
                 return one;
             }
@@ -59,14 +67,15 @@ public class DeployPipelines {
         if (open != null) {
             return open;
         }
-        retries.clear(taskId, true);
+        causes.deployStands(taskId);
         return Reading.green();
     }
 
-    private Reading read(String taskId, TaskRepo repo) {
+    private Reading read(String taskId, TaskState task, TaskRepo repo) {
         String commit = Objects.requireNonNull(repo.deployCommit());
         String project = Objects.requireNonNull(repo.project());
-        String at = project + " " + GitDeploy.shortSha(commit) + ": pipeline ";
+        String label = project + " " + GitDeploy.shortSha(commit);
+        String at = label + ": pipeline ";
         if (repo.remoteUrl() == null || repo.remoteUrl().isBlank()) {
             return Reading.waiting(at + "unread, no remote recorded");
         }
@@ -80,14 +89,14 @@ public class DeployPipelines {
         CommitPipeline pipeline = read.facts().get();
         return switch (Pipeline.of(pipeline.status())) {
             case GREEN -> Reading.green();
-            case RED -> red(taskId, project, at, pipeline.url());
+            case RED -> red(taskId, task, label, project, at, pipeline.url());
             case RUNNING -> Reading.waiting(at + "running");
             case NONE -> Reading.waiting(at + "not started");
             case UNKNOWN -> Reading.waiting(at + "state unknown");
         };
     }
 
-    private Reading red(String taskId, String project, String at, String url) {
+    private Reading red(String taskId, TaskState task, String label, String project, String at, String url) {
         RedCauses.Verdict verdict = causes.judgeDeploy(taskId, url);
         if (verdict.cause() == RedCause.INFRASTRUCTURE) {
             return Reading.waiting(at + "red on infrastructure, " + verdict.waiting());
@@ -95,6 +104,14 @@ public class DeployPipelines {
         if (verdict.stop().isPresent()) {
             return Reading.waiting(at + "red on infrastructure, " + verdict.stop().get().reading());
         }
-        return new Reading(Kind.RED, at + "red on the code", project, url);
+        try {
+            fixes.open(task, taskId, project);
+        } catch (RuntimeException e) {
+            log.atWarn().setMessage("deploy worktree not opened").addKeyValue("task", taskId)
+                    .addKeyValue("project", project).addKeyValue("cause", e.getMessage())
+                    .addKeyValue("effect", "the deploy stays open, tried again").log();
+            return Reading.waiting(at + "red on the code, its deploy worktree not opened: " + e.getMessage());
+        }
+        return new Reading(Kind.RED, RED_CAUSE + ": " + label, project, url);
     }
 }

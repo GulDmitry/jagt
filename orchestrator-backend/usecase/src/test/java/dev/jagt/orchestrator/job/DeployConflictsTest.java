@@ -44,6 +44,26 @@ class DeployConflictsTest {
 
         assertThat(conflicts).containsExactly(Map.entry("ABC-1",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-deploy"), true,
-                        new ConflictWatch.Progress(0, 2, "d"))));
+                        new ConflictWatch.Progress(0, 2, "d"), null)));
+    }
+
+    @Test
+    void namesTheRedPipelineAConflictWasHandedBackFor(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
+                .message("red pipeline on the deploy commit: web 01234567 https://git.example.invalid/p/7").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("web",
+                new ProjectConfig("/src/web", "origin/main", "dev", null))));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+        when(git.deployProgress(Path.of("/src/web"), "ABC-1")).thenReturn(new ConflictWatch.Progress(0, 0, "d"));
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
+
+        var conflicts = service.waiting();
+
+        assertThat(conflicts.get("ABC-1").red())
+                .isEqualTo("red pipeline on the deploy commit: web 01234567 https://git.example.invalid/p/7");
     }
 }

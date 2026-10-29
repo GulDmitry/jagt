@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
-/** A replayed run reaches no host: every failure reads as the code's and nothing is re-run. */
+/** A replayed run reaches no host: every failure reads as the code's, every commit as green, and nothing is re-run. */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "replay")
 public class ReplayPipelineRetry implements PipelineRetry {
@@ -28,6 +28,6 @@ public class ReplayPipelineRetry implements PipelineRetry {
 
     @Override
     public Answer<CommitPipeline> onCommit(String remoteUrl, String sha) {
-        return Answer.failed(TokenUsage.NONE, "a replayed run reaches no host");
+        return new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE);
     }
 }

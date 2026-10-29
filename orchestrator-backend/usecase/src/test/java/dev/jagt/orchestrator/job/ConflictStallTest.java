@@ -38,7 +38,7 @@ class ConflictStallTest {
                 .build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"),
-                false, new ConflictWatch.Progress(7, 0, "d"));
+                false, new ConflictWatch.Progress(7, 0, "d"), null);
         new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
                 .watch("ABC-42", conflict);
 
@@ -61,12 +61,12 @@ class ConflictStallTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         Path worktree = Path.of("/src/ABC-42-deploy");
         new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
-                .watch("ABC-42", new DeployConflicts.WaitingConflict(worktree, false, new ConflictWatch.Progress(7, 0, "a")));
+                .watch("ABC-42", new DeployConflicts.WaitingConflict(worktree, false, new ConflictWatch.Progress(7, 0, "a"), null));
         new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_141_000), ZoneOffset.UTC))
-                .watch("ABC-42", new DeployConflicts.WaitingConflict(worktree, false, new ConflictWatch.Progress(7, 0, "b")));
+                .watch("ABC-42", new DeployConflicts.WaitingConflict(worktree, false, new ConflictWatch.Progress(7, 0, "b"), null));
 
         new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_501_000), ZoneOffset.UTC))
-                .watch("ABC-42", new DeployConflicts.WaitingConflict(worktree, false, new ConflictWatch.Progress(7, 0, "b")));
+                .watch("ABC-42", new DeployConflicts.WaitingConflict(worktree, false, new ConflictWatch.Progress(7, 0, "b"), null));
 
         verify(notifications, never()).send(any());
     }
@@ -80,7 +80,7 @@ class ConflictStallTest {
                 .build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"),
-                false, new ConflictWatch.Progress(7, 0, "d"));
+                false, new ConflictWatch.Progress(7, 0, "d"), null);
         new ConflictStall(before, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
                 .watch("ABC-42", conflict);
         new ConflictStall(before, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
@@ -109,7 +109,7 @@ class ConflictStallTest {
         ConflictStall stall = new ConflictStall(state, notifications, config,
                 Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC));
         stall.watch("ABC-42", new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false,
-                new ConflictWatch.Progress(7, 0, "d")));
+                new ConflictWatch.Progress(7, 0, "d"), null));
         state.updateTask("ABC-42", task -> task.withStatus(TaskStatus.DEPLOY_CONFLICT, "conflict again", true, 900_000));
 
         boolean handed = stall.handed("ABC-42");

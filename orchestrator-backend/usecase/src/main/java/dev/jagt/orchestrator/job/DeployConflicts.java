@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.TaskState;
+import org.jspecify.annotations.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,16 +26,19 @@ public class DeployConflicts {
     public Map<String, WaitingConflict> waiting() {
         Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
         stateService.tasks().forEach((taskId, task) -> deployTargets.stopped(task, taskId)
-                .ifPresent(target -> waiting.put(taskId, conflict(taskId, target))));
+                .ifPresent(target -> waiting.put(taskId, conflict(taskId, task, target))));
         return waiting;
     }
 
-    private WaitingConflict conflict(String taskId, DeployTargets.Target target) {
+    private WaitingConflict conflict(String taskId, TaskState task, DeployTargets.Target target) {
         Path worktree = GitDeploy.deployWorktreePath(target.path(), taskId);
         return new WaitingConflict(worktree, gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()),
-                gitDeploy.deployProgress(target.path(), taskId));
+                gitDeploy.deployProgress(target.path(), taskId),
+                DeployPipelines.marks(task.message()) ? task.message() : null);
     }
 
-    public record WaitingConflict(Path worktree, boolean resolved, ConflictWatch.Progress progress) {
+    /** {@code red} is the line of a deploy handed back for its pipeline, null for a merge that conflicts. */
+    public record WaitingConflict(Path worktree, boolean resolved, ConflictWatch.Progress progress,
+                                  @Nullable String red) {
     }
 }
