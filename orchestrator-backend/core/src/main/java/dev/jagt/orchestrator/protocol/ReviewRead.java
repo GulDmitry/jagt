@@ -13,6 +13,7 @@ public final class ReviewRead {
             .required("approved", "boolean", null)
             .choiceRequired("pipelineStatus", List.of("success", "failed", "running", "none", "unknown"), null)
             .required("pipelineFailure", "string", null)
+            .required("pipelineUrl", "string", null)
             .required("openedAt", "string", null)
             .requiredTexts("threads", null)
             .requiredTexts("newestNotes", null)

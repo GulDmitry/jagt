@@ -177,6 +177,12 @@ orchestrator:
     minIntervalMinutes: 10
     maxIntervalMinutes: 60
 
+  # ── Infrastructure failures ────────────────────────────────────────────────────────────────────────────────
+  # A pipeline the host says died on infrastructure, not on the code, is re-run by jagt after each wait here; one
+  # still red after the last is handed to you, and the session never hears of it. [] turns this off.
+  infraWait:
+    backoff: [5m, 15m, 45m]
+
   # ── Subscription limits ────────────────────────────────────────────────────────────────────────────────────
   # Read through the agent CLI's own stored login, never kept; shown in `stats` and told as a banner, never a gate.
   usageLimits:

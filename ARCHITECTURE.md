@@ -138,6 +138,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
+| `PipelineRetry` | `adapter/codehost/CliPipelineRetry`, `ReplayPipelineRetry` — jagt's one code-host write |
 | `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer`, `ReplayRoundReviewer` (a stand recording played back) |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |

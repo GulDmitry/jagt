@@ -84,6 +84,8 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 never a word of your own about what you could not. No timestamps, run ids, URLs or durations: one \
                 failure read twice must read the same, or every poll relays a brief the agent has already \
                 answered. Empty string in every other case.
+                - pipelineUrl: the web address of the newest pipeline from step 2, exactly as the host gives it; \
+                empty string where there is none or you could not list them.
                 - openedAt: the request's OWN creation timestamp as the host reports it (ISO-8601; empty string if \
                 it does not say).
                 - threads: ONE entry per DISCUSSION THREAD still awaiting an answer, never one per note. One string \
