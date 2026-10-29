@@ -142,7 +142,7 @@ class MasterReviewTest {
 
     @Test
     void saysNothingWasWrittenForATaskWithNoWorktree() {
-        TaskState task = TaskState.builder("proj", "", TaskStatus.REVIEW_PENDING).alias("a1").build();
+        TaskState task = TaskState.builder("proj", "  ", TaskStatus.REVIEW_PENDING).alias("a1").build();
 
         assertThat(reviews.write("a1", task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n")).isFalse();
     }
