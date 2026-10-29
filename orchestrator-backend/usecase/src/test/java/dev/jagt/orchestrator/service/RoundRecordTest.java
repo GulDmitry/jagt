@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -29,8 +31,9 @@ class RoundRecordTest {
 
     private final StateService stateService = mock(StateService.class);
     private final TaskStops stops = mock(TaskStops.class);
+    private final RedCauses causes = mock(RedCauses.class);
     private final RoundRecord roundRecord = new RoundRecord(stateService, stops,
-            Clock.fixed(Instant.ofEpochMilli(3_000), ZoneOffset.UTC));
+            Clock.fixed(Instant.ofEpochMilli(3_000), ZoneOffset.UTC), causes);
 
     @Test
     void stopsTheTaskWhenTheThirdReadRunningCouldNotListTheChecks() {
@@ -144,9 +147,21 @@ class RoundRecordTest {
         TaskStop standing = new TaskStop(TaskStop.Trigger.CHECKS, 3_000, "3 reads running could not list the checks");
         when(stops.trip(eq("ABC-1"), any())).thenReturn(Optional.of(standing));
 
-        Optional<TaskStop> answer = roundRecord.record("ABC-1",
+        RoundRecord.Recorded answer = roundRecord.record("ABC-1",
                 new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), ""));
 
-        assertThat(answer).contains(standing);
+        assertThat(answer.stop()).contains(standing);
+    }
+
+    @Test
+    void answersWhoseFaultAFailedRunIsWhereTheChecksWereRead() {
+        ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(), List.of(),
+                "https://host.invalid/p/1");
+        RedCauses.Verdict infrastructure = new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "waiting", Optional.empty());
+        when(causes.judge("ABC-1", facts, Pipeline.RED)).thenReturn(infrastructure);
+
+        RoundRecord.Recorded answer = roundRecord.record("ABC-1", facts);
+
+        assertThat(answer.red()).isEqualTo(infrastructure);
     }
 }

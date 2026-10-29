@@ -231,12 +231,13 @@ public final class FlowRules {
     }
 
     /**
-     * What a read of the review round leads to: a red run stops it, a clean round is approved or reviewed, and
-     * anything else leaves the task where its session has it.
+     * What a read of the review round leads to: a red run stops it unless it died on infrastructure with a retry
+     * left, a clean round is approved or reviewed, and anything else leaves the task where its session has it.
      */
-    public static Optional<TaskStatus> readReview(boolean unresolved, boolean approved, Pipeline checks) {
+    public static Optional<TaskStatus> readReview(boolean unresolved, boolean approved, Pipeline checks,
+                                                  RedCause cause, boolean retryLeft) {
         if (checks == Pipeline.RED) {
-            return Optional.of(TaskStatus.CI_FAILED);
+            return cause == RedCause.INFRASTRUCTURE && retryLeft ? Optional.empty() : Optional.of(TaskStatus.CI_FAILED);
         }
         if (unresolved) {
             return Optional.empty();

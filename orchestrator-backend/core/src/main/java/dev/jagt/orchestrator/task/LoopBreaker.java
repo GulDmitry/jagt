@@ -42,7 +42,8 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour,
     }
 
     private static boolean unattended(@Nullable ActionOrigin origin) {
-        return origin == ActionOrigin.MASTER || origin == ActionOrigin.AUTO_REVIEW || origin == ActionOrigin.TRACKER;
+        return origin == ActionOrigin.MASTER || origin == ActionOrigin.AUTO_REVIEW || origin == ActionOrigin.TRACKER
+                || origin == ActionOrigin.JAGT;
     }
 
     public Optional<TaskStop> afterRound(RoundTrail trail, List<StatusChange> history, long now) {

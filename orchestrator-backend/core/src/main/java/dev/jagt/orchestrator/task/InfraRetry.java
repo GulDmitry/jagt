@@ -1,6 +1,9 @@
 package dev.jagt.orchestrator.task;
 
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -19,13 +22,30 @@ public record InfraRetry(long at, String pipelineUrl, String jobs, String reason
         return new InfraRetry(at, pipelineUrl, jobs, reason, false);
     }
 
+    /** The one retry still waiting for its time. */
+    public static Optional<InfraRetry> pending(List<InfraRetry> retries) {
+        return retries.stream().filter(retry -> !retry.sent()).findFirst();
+    }
+
+    /** What is waiting and when: the host's reason, the jobs, and which of {@code of} retries this is. */
+    public String reading(int attempt, int of) {
+        return reason + ": " + jobs + " · retry " + attempt + "/" + of + " at "
+                + DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC)
+                        .format(java.time.Instant.ofEpochMilli(at)) + " UTC";
+    }
+
     public InfraRetry sentAt(long now) {
         return new InfraRetry(now, pipelineUrl, jobs, reason, true);
     }
 
+    /** The retries sent after the last lift, oldest first. */
+    public static List<InfraRetry> sentSince(List<InfraRetry> retries, RoundTrail trail) {
+        return retries.stream().filter(retry -> retry.sent() && retry.at() > trail.since()).toList();
+    }
+
     /** The stop once {@code limit} retries were sent since the last lift and the checks are red again. */
     public static Optional<TaskStop> stop(List<InfraRetry> retries, RoundTrail trail, int limit, long now) {
-        List<InfraRetry> sinceLift = retries.stream().filter(retry -> retry.sent() && retry.at() > trail.since()).toList();
+        List<InfraRetry> sinceLift = sentSince(retries, trail);
         if (limit <= 0 || sinceLift.size() < limit) {
             return Optional.empty();
         }

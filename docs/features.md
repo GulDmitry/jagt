@@ -51,9 +51,8 @@
 
 ## Git · [spec](../openspec/specs/git/spec.md)
 
-- **Deploy and revert** — Only these two verbs write a shared branch; the base branch is never touched.
+- **Deploy and revert** — Only these two write a shared branch, never the base; a revert walks back a deploy or refuses with a recipe.
   [spec](../openspec/specs/git/spec.md#requirement-only-deploy-and-revert-write-shared-branches)
-- **Revert** — A revert walks back what a deploy merged, or refuses with a recipe to finish by hand.
   [spec](../openspec/specs/git/spec.md#requirement-revert-refuses-rather-than-guess)
 - **Ship** — Ship has the session commit, push and open or update its review request against the base it reported.
   [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)
@@ -64,25 +63,22 @@
 
 ## Git trust · [spec](../openspec/specs/git-trust/spec.md)
 
-- **Trust before credentials** — Git runs with your credentials only under config and hooks you have trusted.
+- **Trust before credentials** — Git runs with your credentials only under config and hooks you trusted; only you adopt a change.
   [spec](../openspec/specs/git-trust/spec.md#requirement-git-with-the-humans-credentials-waits-for-trust)
-- **Adopting a change** — Only you adopt a changed config or hook, in every Master mode.
   [spec](../openspec/specs/git-trust/spec.md#requirement-only-the-human-adopts-a-change)
 
 ## Guards · [spec](../openspec/specs/guards/spec.md)
 
-- **Refusals are counted** — Each guard refusal is counted on its task, so a gap reopens on a number.
-  [spec](../openspec/specs/guards/spec.md#requirement-a-refusal-is-counted-on-its-task)
-- **Writes stay inside the task** — A session's shell writes only inside its task's worktrees and the tool caches.
+- **Guards** — A session's shell writes only inside its task's worktrees and the tool caches; each refusal is counted on its task.
   [spec](../openspec/specs/guards/spec.md#requirement-a-session-writes-only-inside-its-task)
+  [spec](../openspec/specs/guards/spec.md#requirement-a-refusal-is-counted-on-its-task)
 
 ## Judgement resilience · [spec](../openspec/specs/judgement-resilience/spec.md)
 
 - **Majority of runs** — An eval case passes when most of its runs do; `-PevalRuns` and `-PevalPasses` set the quorum.
   [spec](../openspec/specs/judgement-resilience/spec.md#requirement-an-eval-case-passes-on-a-majority-of-runs)
-- **What jagt heard** — `masterEval` also asserts the read gate heard a call made in the round's worktree.
+- **What jagt heard** — `masterEval` asserts the read gate heard a call in the round's worktree; a pattern the Master stops on is one yes-or-no fact.
   [spec](../openspec/specs/judgement-resilience/spec.md#requirement-an-eval-asserts-what-jagt-heard-not-only-what-the-model-said)
-- **Yes-or-no patterns** — A pattern the Master stops on is one fact answered yes or no on the diff.
   [spec](../openspec/specs/judgement-resilience/spec.md#requirement-a-pattern-the-master-stops-on-is-one-yes-or-no-fact)
 
 ## Master · [spec](../openspec/specs/master/spec.md)
@@ -119,8 +115,9 @@
 - **Drafted replies** — Replies to reviewers are drafted into a file you read before anything is posted.
   [spec](../openspec/specs/review/spec.md#requirement-drafted-replies-are-a-file)
 - **Take over** — A new task can take over an open review request. [spec](../openspec/specs/review/spec.md#requirement-resume-takes-over-a-request)
-- **Red round** — A failing pipeline sends the task back to its session; three reads that cannot list the pipelines stop it, with their causes.
+- **Red round** — A failing pipeline goes back to its session unless the host says infrastructure, which jagt re-runs: `infraWait.backoff`, `[]` off.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)
+  [spec](../openspec/specs/infra-wait/spec.md#requirement-infrastructure-failures-are-waited-out)
   [spec](../openspec/specs/review/spec.md#requirement-pipeline-status-keeps-the-hosts-wording)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)

@@ -354,6 +354,11 @@ public record TaskState(
         return !checksUnread.isEmpty();
     }
 
+    /** Something was done to the task that leaves its status where it is: one step in its history, nothing else touched. */
+    public TaskState withMoveRecorded(long now) {
+        return toBuilder().history(appended(seededHistory(now), new StatusChange(status, now, null))).build();
+    }
+
     public TaskState withInfraRetries(List<InfraRetry> retries) {
         return toBuilder().infraRetries(retries).build();
     }

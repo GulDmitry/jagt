@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-05.
+Superseded in part by [0105](0105-infrastructure-failures-are-waited-out.md): jagt retries a red the host calls infrastructure.
 
 ## Context
 

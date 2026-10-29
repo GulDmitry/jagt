@@ -170,6 +170,7 @@ orchestrator:
     reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
 
   # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.
+  # The one exception is `infraWait`: jagt re-runs a pipeline the host says died on infrastructure.
   # One model call per poll — 24h on one request is $3–$7.
   autoReview:
     enabled: false

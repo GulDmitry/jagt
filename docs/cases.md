@@ -101,6 +101,7 @@ Families:
 | E15 | `resume <url>` cannot read the request → the refusal names what stopped the read on one line, clipped as the sweep line is, never "cause in the log" | seen 2026-10-28: the sweep named its failure, resume still said "cause in the log" | `TaskResumeTest` |
 | E16 | tmux cannot list a session's windows → no window is opened, closed or reported missing and the cause is logged; an absent session still lists none | seen 2026-10-28: a failed list read as no `master` window, a second one opened beside the first | `TmuxSessionHostTest` |
 | E17 | a resolved deploy conflict waits on a stopped task → nothing is pressed, one INFO says it waits on the lift, a press logs its result, and a landed deploy forgets the conflict record | seen 2026-10-28: `master finishes deploy` every 20 s, ten times, each press refused by the stop guard | `ConflictFinishTest`, `ConflictHandOffTest`, `TaskStateTest` |
+| E18 | a pipeline dies on infrastructure (a lost runner) → jagt re-runs it after each wait and the session hears nothing; after the last wait or a host that cannot be asked the task stops as `INFRA`, never a question to a human | seen 2026-10-29: ABC-42 and ABC-43 went red on a runner and the session asked about the infrastructure | `RoundOutcomeTest`, `RedCausesTest`, `InfraRetryJobTest`, `InfraRetriesTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

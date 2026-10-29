@@ -30,8 +30,9 @@ public class TaskStops {
     private final StopAnnouncements announcements;
     private final Clock clock;
 
-    public void stop(String taskId, TaskStop.Trigger trigger, String evidence) {
-        trip(taskId, task -> task, task -> Optional.of(new TaskStop(trigger, clock.millis(), evidence)));
+    /** The stop standing once this one was set: an earlier stop stands, and keeps its own words. */
+    public Optional<TaskStop> stop(String taskId, TaskStop.Trigger trigger, String evidence) {
+        return trip(taskId, task -> task, task -> Optional.of(new TaskStop(trigger, clock.millis(), evidence)));
     }
 
     /** False where a round of {@code step}, a move too, would run past a ceiling, which stops the task, or a stop stands. */

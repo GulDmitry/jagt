@@ -312,30 +312,42 @@ class FlowRulesTest {
     @ParameterizedTest
     @CsvSource({"true,false", "false,false", "true,true", "false,true"})
     void stopsATaskWhoseRoundReadsRedWhateverElseItSays(boolean unresolved, boolean approved) {
-        assertThat(FlowRules.readReview(unresolved, approved, Pipeline.RED)).contains(TaskStatus.CI_FAILED);
+        assertThat(FlowRules.readReview(unresolved, approved, Pipeline.RED, RedCause.CODE, false)).contains(TaskStatus.CI_FAILED);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true,false", "false,false", "true,true", "false,true"})
+    void keepsATaskWhereItIsWhileARedRunThatDiedOnInfrastructureHasARetryLeft(boolean unresolved, boolean approved) {
+        assertThat(FlowRules.readReview(unresolved, approved, Pipeline.RED, RedCause.INFRASTRUCTURE, true)).isEmpty();
+    }
+
+    @Test
+    void stopsATaskWhoseRedRunDiedOnInfrastructureOnceNoRetryIsLeft() {
+        assertThat(FlowRules.readReview(false, false, Pipeline.RED, RedCause.INFRASTRUCTURE, false))
+                .contains(TaskStatus.CI_FAILED);
     }
 
     @ParameterizedTest
     @CsvSource({"GREEN,false", "GREEN,true", "RUNNING,true", "NONE,false"})
     void leavesATaskWhereItIsWhileAThreadIsStillOpen(Pipeline checks, boolean approved) {
-        assertThat(FlowRules.readReview(true, approved, checks)).isEmpty();
+        assertThat(FlowRules.readReview(true, approved, checks, RedCause.CODE, false)).isEmpty();
     }
 
     @ParameterizedTest
     @CsvSource({"GREEN", "RUNNING", "UNKNOWN", "NONE"})
     void approvesARoundWithNothingOpenWhateverTheChecksSaidShortOfRed(Pipeline checks) {
-        assertThat(FlowRules.readReview(false, true, checks)).contains(TaskStatus.APPROVED);
+        assertThat(FlowRules.readReview(false, true, checks, RedCause.CODE, false)).contains(TaskStatus.APPROVED);
     }
 
     @Test
     void reviewsACleanGreenRoundNobodyApprovedYet() {
-        assertThat(FlowRules.readReview(false, false, Pipeline.GREEN)).contains(TaskStatus.REVIEWED);
+        assertThat(FlowRules.readReview(false, false, Pipeline.GREEN, RedCause.CODE, false)).contains(TaskStatus.REVIEWED);
     }
 
     @ParameterizedTest
     @CsvSource({"RUNNING", "UNKNOWN", "NONE"})
     void leavesACleanRoundWhoseChecksAreNotGreenWhereItIs(Pipeline checks) {
-        assertThat(FlowRules.readReview(false, false, checks)).isEmpty();
+        assertThat(FlowRules.readReview(false, false, checks, RedCause.CODE, false)).isEmpty();
     }
 
     @Test

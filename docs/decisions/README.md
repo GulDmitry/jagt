@@ -120,3 +120,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0102 A request is merged when its tip reached the target in git](0102-a-request-is-merged-when-its-tip-reached-the-target-in-git.md)
 - [0103 A round is the same by its facts, not its brief](0103-a-round-is-the-same-by-its-facts-not-its-brief.md)
 - [0104 Loops are bounded per task](0104-loops-are-bounded-per-task.md)
+- [0105 Infrastructure failures are waited out](0105-infrastructure-failures-are-waited-out.md)

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -21,17 +22,22 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RoundRecord {
 
+    /** {@code stop} is the one a round that could not read the checks tripped; {@code red} whose fault a red run is. */
+    public record Recorded(Optional<TaskStop> stop, RedCauses.Verdict red) {
+    }
+
     private final StateService stateService;
     private final TaskStops stops;
     private final Clock clock;
+    private final RedCauses causes;
 
-    /** The stop standing once a round that could not read the checks was recorded. */
-    public Optional<TaskStop> record(String taskId, ReviewFacts facts) {
+    public Recorded record(String taskId, ReviewFacts facts) {
         if (gotNoListing(facts.pipelineStatus())) {
             long now = clock.millis();
             stateService.updateTask(taskId, task -> task.withChecksUnread(new ChecksUnread(now, facts.pipelineFailure()))
                     .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
-            return stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.trailOrNone(), now));
+            return new Recorded(stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.trailOrNone(), now)),
+                    RedCauses.Verdict.CODE);
         }
         Optional<TaskState> before = stateService.task(taskId);
         String read = orUnknown(facts.pipelineStatus());
@@ -44,7 +50,7 @@ public class RoundRecord {
             stateService.updateTask(taskId, task -> task.withChecksRead(read)
                     .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
         }
-        return Optional.empty();
+        return new Recorded(Optional.empty(), causes.judge(taskId, facts, Pipeline.of(read)));
     }
 
     /**

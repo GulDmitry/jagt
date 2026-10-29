@@ -14,7 +14,9 @@ public enum ActionOrigin {
     /** The Master session acting where a human would have. */
     MASTER,
     /** A stage the tracker itself reports, which is nobody's judgement and so nobody's to hold. */
-    TRACKER;
+    TRACKER,
+    /** jagt's own deterministic move on the code host: the re-run of a pipeline that died on infrastructure. */
+    JAGT;
 
     public String label() {
         return name().toLowerCase(Locale.ROOT).replace('_', '-');

@@ -24,14 +24,17 @@ public class RoundOutcome {
         // THIS round's own read is what decides and what is relayed; the word the CARD carries is the last one
         // a round managed to read, and a green nobody looked at must not mark the task REVIEWED.
         String said = RoundRecord.orUnknown(r.pipelineStatus());
-        Optional<TaskStop> stopped = roundRecord.record(taskId, r);
-        if (stopped.isPresent()) {
-            return new SweepResult(SweepResult.Kind.STOPPED, "sweep " + taskId + ": checks " + said
-                    + " — jagt stopped this task: " + stopped.get().reading());
+        RoundRecord.Recorded recorded = roundRecord.record(taskId, r);
+        if (recorded.stop().isPresent()) {
+            return stopped(taskId, said, recorded.stop().get());
         }
+        RedCauses.Verdict red = recorded.red();
         Optional<TaskStatus> read = FlowRules.readReview(!r.threads().isEmpty() || !r.awaitingReviewer().isEmpty(),
-                r.approved(), Pipeline.of(said));
+                r.approved(), Pipeline.of(said), red.cause(), red.retryLeft());
         read.ifPresent(status -> statusReports.markRead(taskId, status));
+        if (red.stop().isPresent()) {
+            return stopped(taskId, said, red.stop().get());
+        }
         if (read.filter(FlowRules::approved).isPresent()) {
             return new SweepResult(SweepResult.Kind.APPROVED,
                     "sweep " + taskId + ": approved, checks " + said + " — `deploy` or `done`");
@@ -41,16 +44,26 @@ public class RoundOutcome {
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved — waiting for an approval; `deploy` without one");
         }
-        if (read.isEmpty() && r.threads().isEmpty() && !r.awaitingReviewer().isEmpty()) {
+        return open(taskId, mrUrl, red.retryLeft() ? r.withoutChecks() : r, said, tip, read.isEmpty(), red.waiting());
+    }
+
+    private SweepResult open(String taskId, String mrUrl, ReviewFacts r, String said, String tip, boolean held,
+                             String waiting) {
+        if (held && r.threads().isEmpty() && !r.awaitingReviewer().isEmpty()) {
             return new SweepResult(SweepResult.Kind.PENDING,
                     "sweep " + taskId + ": checks " + said + ", " + r.awaitingReviewer().size()
                             + " thread(s) answered by the agent — waiting on the reviewer");
         }
-        if (read.isEmpty() && r.threads().isEmpty()) {
-            return new SweepResult(SweepResult.Kind.PENDING,
-                    "sweep " + taskId + ": checks " + said
-                            + ", nothing unresolved yet, not approved — waiting");
+        if (held && r.threads().isEmpty()) {
+            return new SweepResult(SweepResult.Kind.PENDING, "sweep " + taskId + ": checks " + said
+                    + (waiting.isBlank() ? ", nothing unresolved yet, not approved — waiting"
+                    : " on infrastructure, nothing unresolved — retry armed (" + waiting + ")"));
         }
         return relay.relay(taskId, mrUrl, r, said, tip);
+    }
+
+    private static SweepResult stopped(String taskId, String said, TaskStop stop) {
+        return new SweepResult(SweepResult.Kind.STOPPED, "sweep " + taskId + ": checks " + said
+                + " — jagt stopped this task: " + stop.reading());
     }
 }

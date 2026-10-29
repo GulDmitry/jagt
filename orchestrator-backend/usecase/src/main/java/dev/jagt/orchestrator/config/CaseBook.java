@@ -63,7 +63,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
             return switch (origin) {
                 case BOARD, PALETTE -> HUMAN;
                 case MASTER -> MASTER;
-                case MCP, AUTO_REVIEW, TRACKER -> JAGT;
+                case MCP, AUTO_REVIEW, TRACKER, JAGT -> JAGT;
             };
         }
     }
