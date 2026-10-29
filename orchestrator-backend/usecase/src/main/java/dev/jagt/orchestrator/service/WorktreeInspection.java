@@ -74,16 +74,13 @@ public class WorktreeInspection {
     /**
      * Whether a merge commit of {@code origin/<target>}, fetched now, took this worktree's HEAD in as a parent: a
      * branch cut from the target and never committed to is inside it too, and a squash or fast-forward leaves no
-     * such parent. A fetch that fails answers NOT merged.
+     * such parent. A fetch that fails throws: the answer is unknown, not "not merged".
      */
     public boolean mergedIntoTarget(Path projectPath, Path worktree, String targetBranch) {
         return git.locked(projectPath, () -> {
             String target = "origin/" + targetBranch;
-            boolean fetched = git.run(worktree, List.of("git", "fetch", "origin",
-                    "+refs/heads/" + targetBranch + ":refs/remotes/" + target)).exitCode() == 0;
-            if (!fetched) {
-                return false;
-            }
+            git.run(worktree, List.of("git", "fetch", "origin", "+refs/heads/" + targetBranch + ":refs/remotes/" + target))
+                    .expectSuccess("git fetch " + target + " in " + worktree);
             String head = git.run(worktree, List.of("git", "rev-parse", "HEAD"))
                     .expectSuccess("git rev-parse in " + worktree).stdout().strip();
             return git.run(worktree, List.of("git", "rev-list", "--merges", "--parents", "--ancestry-path",

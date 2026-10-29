@@ -472,6 +472,10 @@ public record TaskState(
         return toBuilder().repos(mapRepo(project, repo -> repo.withMerged(merged))).build();
     }
 
+    public TaskState withMergedByHost(String project) {
+        return toBuilder().repos(mapRepo(project, TaskRepo::withMergedByHost)).build();
+    }
+
     public TaskState withRemoteUrl(String project, String remoteUrl) {
         return toBuilder().repos(mapRepo(project, repo -> repo.withRemoteUrl(remoteUrl))).build();
     }

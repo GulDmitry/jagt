@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class WorktreeInspectionTest {
 
@@ -438,5 +439,20 @@ class WorktreeInspectionTest {
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
+    }
+
+    @Test
+    void failsToReadMergedWhenTheTargetCannotBeFetched(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThatThrownBy(() -> git.mergedIntoTarget(repo, repo, "main")).isInstanceOf(IllegalStateException.class);
     }
 }

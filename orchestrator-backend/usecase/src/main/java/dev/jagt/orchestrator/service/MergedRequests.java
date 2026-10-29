@@ -22,33 +22,39 @@ public class MergedRequests {
     private final ConfigService configService;
     private final WorktreeInspection inspection;
 
-    /** Reads every request not yet found merged, records what git says, and answers whether none is left to ship. */
+    /**
+     * Reads every request the host has not said merged, records what git says, merged or not, and answers whether
+     * none is left to ship. A read git could not answer leaves the record as it is.
+     */
     public boolean refresh(String taskId) {
         TaskState task = stateService.task(taskId).orElse(null);
         if (task == null) {
             return false;
         }
         for (TaskRepo repo : task.repos()) {
-            if (repo.hasReviewRequest() && !repo.wasMerged() && mergedNow(taskId, task, repo)) {
-                markMerged(taskId, Objects.requireNonNull(repo.project()));
+            if (repo.hasReviewRequest() && !repo.wasHostMerged()) {
+                mergedNow(taskId, task, repo).filter(now -> now != repo.wasMerged())
+                        .ifPresent(now -> record(taskId, Objects.requireNonNull(repo.project()), now));
             }
         }
         return stateService.task(taskId).map(TaskState::requestsMerged).orElse(false);
     }
 
-    /** The host said {@code project}'s request is merged, which git cannot see for a squash or a fast-forward. */
+    /** The host said {@code project}'s request is merged, which git cannot see for a squash or a fast-forward; its word outlasts git's. */
     public void hostSaidMerged(String taskId, String project) {
         boolean known = stateService.task(taskId).map(task -> task.repos().stream()
-                .anyMatch(repo -> project.equals(repo.project()) && repo.wasMerged())).orElse(true);
+                .anyMatch(repo -> project.equals(repo.project()) && repo.wasHostMerged())).orElse(true);
         if (!known) {
-            markMerged(taskId, project);
+            stateService.updateTask(taskId, current -> current.withMergedByHost(project));
+            log.atInfo().setMessage("request merged").addKeyValue("task", taskId)
+                    .addKeyValue("project", project).addKeyValue("by", "host").log();
         }
     }
 
-    private void markMerged(String taskId, String project) {
-        stateService.updateTask(taskId, current -> current.withMerged(project, true));
-        log.atInfo().setMessage("request merged").addKeyValue("task", taskId)
-                .addKeyValue("project", project).log();
+    private void record(String taskId, String project, boolean merged) {
+        stateService.updateTask(taskId, current -> current.withMerged(project, merged));
+        log.atInfo().setMessage(merged ? "request merged" : "request no longer merged")
+                .addKeyValue("task", taskId).addKeyValue("project", project).addKeyValue("by", "git").log();
     }
 
     /** The commit each request's branch last had pushed, one per repository; blank where the repository cannot name every one. */
@@ -78,17 +84,17 @@ public class MergedRequests {
         return Path.of(configService.project(project).path()).toAbsolutePath().normalize();
     }
 
-    private boolean mergedNow(String taskId, TaskState task, TaskRepo repo) {
+    private Optional<Boolean> mergedNow(String taskId, TaskState task, TaskRepo repo) {
         String project = Objects.requireNonNull(repo.project());
         try {
-            return inspection.mergedIntoTarget(
+            return Optional.of(inspection.mergedIntoTarget(
                     projectPath(project),
                     Path.of(Objects.requireNonNull(repo.worktreePath())),
-                    WorktreeChanges.targetBranch(task, configService.project(project).baseBranch()));
+                    WorktreeChanges.targetBranch(task, configService.project(project).baseBranch())));
         } catch (RuntimeException e) {
             log.atWarn().setMessage("merged read failed").addKeyValue("task", taskId)
                     .addKeyValue("project", project).addKeyValue("cause", e.toString()).log();
-            return false;
+            return Optional.empty();
         }
     }
 }
