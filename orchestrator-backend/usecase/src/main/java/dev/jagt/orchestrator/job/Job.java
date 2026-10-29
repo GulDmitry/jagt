@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
@@ -17,14 +18,11 @@ public interface Job {
     @Nullable Duration every();
 
     /** Whom a job works for. */
+    @RequiredArgsConstructor
     enum Serves {
         TASKS("your tasks"), MASTER("the master"), TRACKER("the tracker"), HOUSEKEEPING("housekeeping");
 
         private final String label;
-
-        Serves(String label) {
-            this.label = label;
-        }
 
         public String label() {
             return label;

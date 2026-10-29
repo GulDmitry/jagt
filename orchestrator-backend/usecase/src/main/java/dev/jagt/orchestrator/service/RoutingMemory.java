@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class RoutingMemory {
 
     /** Kept whole in every routing prompt, so the ceiling is what a prompt can carry without drowning the item. */
@@ -41,11 +43,6 @@ public class RoutingMemory {
 
     private final OrchestratorPaths paths;
     private final Clock clock;
-
-    public RoutingMemory(OrchestratorPaths paths, Clock clock) {
-        this.paths = paths;
-        this.clock = clock;
-    }
 
     /** What a rule has placed, and how often. */
     private record Rule(String project, int uses) {

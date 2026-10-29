@@ -1,17 +1,15 @@
 package dev.jagt.orchestrator.command;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class HelpCommand implements GlobalCommand {
 
     /** Deferred: the reference lists every command, and this is one of them — injected directly it would be a cycle. */
     private final ObjectProvider<GlobalCommands> commands;
-
-    public HelpCommand(ObjectProvider<GlobalCommands> commands) {
-        this.commands = commands;
-    }
 
     @Override
     public String id() {

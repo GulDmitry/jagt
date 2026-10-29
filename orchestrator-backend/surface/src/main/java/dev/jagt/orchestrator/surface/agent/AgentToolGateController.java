@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -24,6 +25,7 @@ import java.util.Set;
 /** A gate that failed closed would make a stopped backend look like a rule, so anything not refused answers nothing. */
 @RestController
 @Slf4j
+@RequiredArgsConstructor
 public class AgentToolGateController {
 
     /** Only a shell command can push; every other tool is answered with nothing, but a write while a plan waits. */
@@ -46,10 +48,6 @@ public class AgentToolGateController {
     }
 
     private final StateService stateService;
-
-    public AgentToolGateController(StateService stateService) {
-        this.stateService = stateService;
-    }
 
     /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)

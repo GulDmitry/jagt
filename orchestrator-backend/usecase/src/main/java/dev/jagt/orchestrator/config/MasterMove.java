@@ -1,11 +1,14 @@
 package dev.jagt.orchestrator.config;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Every move the Master makes: a verb it presses, or a step of the session's brief it relays. */
+@RequiredArgsConstructor
 public enum MasterMove {
     SHIP("ship", false),
     /** Posting the drafted replies on a ship the Master pressed. */
@@ -22,11 +25,6 @@ public enum MasterMove {
 
     private final String id;
     private final boolean relayed;
-
-    MasterMove(String id, boolean relayed) {
-        this.id = id;
-        this.relayed = relayed;
-    }
 
     public String id() {
         return id;

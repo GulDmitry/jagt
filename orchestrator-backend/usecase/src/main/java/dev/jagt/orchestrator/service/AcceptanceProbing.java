@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.Probe;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.Optional;
 /** Runs a task's probes in its worktree, under the guard and the git hooks its session's own lines get. */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AcceptanceProbing {
 
     private static final Duration LIMIT = Duration.ofMinutes(5);
@@ -24,12 +26,8 @@ public class AcceptanceProbing {
     private static final int CHARACTERS = 2_000;
 
     private final Processes processes;
+    @Value("${server.port:8290}")
     private final int boardPort;
-
-    public AcceptanceProbing(Processes processes, @Value("${server.port:8290}") int boardPort) {
-        this.processes = processes;
-        this.boardPort = boardPort;
-    }
 
     public List<Probe> probed(String taskBranch, Path worktree, List<Probe> probes) {
         return probes.stream().map(probe -> probe(taskBranch, worktree, probe)).toList();

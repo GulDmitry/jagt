@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.surface.mcp;
 
 import dev.jagt.orchestrator.flow.Refusal;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Locale;
 
 /** What a failed call tells the agent to do next, read off what the handler threw. */
+@RequiredArgsConstructor
 public enum ToolFailure {
 
     /** The call itself is wrong: correct it and send it again. */
@@ -15,10 +17,6 @@ public enum ToolFailure {
     TRANSIENT(true);
 
     private final boolean retryable;
-
-    ToolFailure(boolean retryable) {
-        this.retryable = retryable;
-    }
 
     public boolean retryable() {
         return retryable;

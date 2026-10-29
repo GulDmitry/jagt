@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
@@ -15,16 +16,12 @@ import java.util.List;
  * checked always.
  */
 @Component
+@RequiredArgsConstructor
 public class StartupValidation {
 
     private final List<StartupCheck> checks;
+    @Value("${orchestrator.startup-checks:true}")
     private final boolean machineChecked;
-
-    public StartupValidation(List<StartupCheck> checks,
-                             @Value("${orchestrator.startup-checks:true}") boolean machineChecked) {
-        this.checks = checks;
-        this.machineChecked = machineChecked;
-    }
 
     @EventListener(ApplicationStartedEvent.class)
     public void refuseToRunWithoutWhatItNeeds() {

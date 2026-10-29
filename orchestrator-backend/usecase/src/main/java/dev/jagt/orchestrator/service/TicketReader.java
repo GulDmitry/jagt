@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.protocol.RetryPolicy;
 import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -19,19 +20,13 @@ import java.util.Optional;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class TicketReader {
 
     private final TrackerAssistant assistant;
     private final McpHealth mcp;
     private final UsageTracker usage;
     private final RetryPolicy policy;
-
-    public TicketReader(TrackerAssistant assistant, McpHealth mcp, UsageTracker usage, RetryPolicy policy) {
-        this.assistant = assistant;
-        this.mcp = mcp;
-        this.usage = usage;
-        this.policy = policy;
-    }
 
     /** An exhausted policy answers with no usable facts: the caller's job is then to reach a human, never to guess. */
     public Answer<TicketFacts> read(String ticketRef) {

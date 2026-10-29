@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import static dev.jagt.orchestrator.adapter.macos.OsaScript.string;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "orchestrator.terminal", havingValue = "ghostty")
+@RequiredArgsConstructor
 public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
 
     /** The window/tab needs a moment to open and attach; don't open a second one meanwhile. */
@@ -35,13 +37,6 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
     private final Host host;
     private final Clock clock;
     private final ConcurrentHashMap<String, Long> openedAt = new ConcurrentHashMap<>();
-
-    public GhosttyTerminalDriver(OrchestratorProperties properties, OsaScript osaScript, Host host, Clock clock) {
-        this.properties = properties;
-        this.osaScript = osaScript;
-        this.host = host;
-        this.clock = clock;
-    }
 
     @Override
     public List<Problem> problems() {

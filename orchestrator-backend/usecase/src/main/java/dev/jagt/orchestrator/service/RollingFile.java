@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import lombok.RequiredArgsConstructor;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -8,15 +10,12 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 /** Past {@link #MAX_BYTES} the file rolls into one {@code .1}, replacing the last. */
+@RequiredArgsConstructor
 public final class RollingFile {
 
     static final long MAX_BYTES = 1024L * 1024;
 
     private final Path file;
-
-    public RollingFile(Path file) {
-        this.file = file;
-    }
 
     public Path path() {
         return file;

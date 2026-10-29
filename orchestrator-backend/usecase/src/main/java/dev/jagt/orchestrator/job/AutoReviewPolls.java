@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,22 +21,16 @@ import java.util.function.Predicate;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class AutoReviewPolls {
 
     private final ReviewSweepService reviewSweep;
     private final Notifications notifications;
     private final TaskStops stops;
+    @Qualifier("autoReviewSweeps")
     private final Executor executor;
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
     private final Set<String> unreadableNotified = ConcurrentHashMap.newKeySet();
-
-    AutoReviewPolls(ReviewSweepService reviewSweep, Notifications notifications, TaskStops stops,
-                    @Qualifier("autoReviewSweeps") Executor executor) {
-        this.reviewSweep = reviewSweep;
-        this.notifications = notifications;
-        this.stops = stops;
-        this.executor = executor;
-    }
 
     /**
      * Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a task's sweeps

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TicketFacts;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -15,17 +16,12 @@ import java.util.Set;
  * The one place a task is started. It owns the decisions launching needs and nothing about how the request arrived.
  */
 @Service
+@RequiredArgsConstructor
 public class TaskLauncher {
 
     private final ConfigService configService;
     private final TaskLaunches launches;
     private final TaskResume resumes;
-
-    public TaskLauncher(ConfigService configService, TaskLaunches launches, TaskResume resumes) {
-        this.configService = configService;
-        this.launches = launches;
-        this.resumes = resumes;
-    }
 
     /**
      * Spins up a task for {@code ref}, an issue key or a URL to it in any tracker, or for the words a line

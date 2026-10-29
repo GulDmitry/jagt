@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.OneLine;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 
 /** What jagt did with nobody watching, read from the log it already writes. Only entries naming a task are kept. */
 @Service
+@RequiredArgsConstructor
 public class ActivityReport {
 
     /** ECS's own envelope, not what jagt did. */
@@ -34,13 +36,9 @@ public class ActivityReport {
     private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
             .withZone(ZoneOffset.UTC);
 
+    @Value("${logging.file.name:}")
     private final String logFile;
     private final JsonMapper json;
-
-    public ActivityReport(@Value("${logging.file.name:}") String logFile, JsonMapper json) {
-        this.logFile = logFile;
-        this.json = json;
-    }
 
     public String render() {
         if (logFile == null || logFile.isBlank()) {

@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link AutoReviewCadence#polls}.
  */
 @Service
+@RequiredArgsConstructor
 public class AutoReviewScheduler implements Job {
     @Override
     public String id() {
@@ -54,15 +56,6 @@ public class AutoReviewScheduler implements Job {
     private final Notifications notifications;
     private final Clock clock;
     private final Set<String> windowElapsedNotified = ConcurrentHashMap.newKeySet();
-
-    public AutoReviewScheduler(StateService stateService, ConfigService configService, AutoReviewPolls polls,
-                               Notifications notifications, Clock clock) {
-        this.stateService = stateService;
-        this.configService = configService;
-        this.polls = polls;
-        this.notifications = notifications;
-        this.clock = clock;
-    }
 
     @Override
     public void run() {

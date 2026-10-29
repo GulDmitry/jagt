@@ -1,11 +1,14 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.Optional;
 
 /**
  * List price per million tokens, by model family. https://claude.com/pricing#api — a model no row names prices
  * nothing rather than something wrong.
  */
+@RequiredArgsConstructor
 enum ClaudePrices {
 
     FABLE_5_1("fable-5-1", 10, 0.25, 50),
@@ -24,13 +27,6 @@ enum ClaudePrices {
     private final double input;
     private final double cacheRead;
     private final double output;
-
-    ClaudePrices(String family, double input, double cacheRead, double output) {
-        this.family = family;
-        this.input = input;
-        this.cacheRead = cacheRead;
-        this.output = output;
-    }
 
     /** Declaration order decides: the more specific family comes before the one its name contains. */
     static Optional<ClaudePrices> of(String model) {

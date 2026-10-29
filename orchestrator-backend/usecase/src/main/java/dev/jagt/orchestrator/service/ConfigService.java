@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -48,13 +49,8 @@ import java.util.stream.Collectors;
  * omitted: {@link ConfigFile}'s accessors coalesce a missing one to its all-default instance.
  */
 @Service
+@RequiredArgsConstructor
 public class ConfigService implements LoopBreaker.Current {
-
-    public ConfigService(OrchestratorPaths paths, AgentRuntime agentRuntime, ActStops actStops) {
-        this.paths = paths;
-        this.agentRuntime = agentRuntime;
-        this.actStops = actStops;
-    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With

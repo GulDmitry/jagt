@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.ui;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -8,13 +9,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Order(Integer.MAX_VALUE)
+@RequiredArgsConstructor
 public class BoardBanner implements ApplicationRunner {
 
+    @Value("${server.port:8290}")
     private final String port;
-
-    public BoardBanner(@Value("${server.port:8290}") String port) {
-        this.port = port;
-    }
 
     @Override
     public void run(ApplicationArguments args) {

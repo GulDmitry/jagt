@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,21 +12,15 @@ import java.nio.file.Path;
  * from what the vendor hands the hook.
  */
 @Component
+@RequiredArgsConstructor
 public class HookEndpoint {
 
     static final int PROMPT_GATE_SECONDS = 10;
 
+    @Value("${orchestrator.hook-url:http://127.0.0.1:${server.port:8290}/api/agent/session}")
     private final String url;
+    @Value("${orchestrator.gate-url:http://127.0.0.1:${server.port:8290}/api/agent}")
     private final String gateUrl;
-
-    public HookEndpoint(
-            @Value("${orchestrator.hook-url:http://127.0.0.1:${server.port:8290}/api/agent/session}")
-            String url,
-            @Value("${orchestrator.gate-url:http://127.0.0.1:${server.port:8290}/api/agent}")
-            String gateUrl) {
-        this.url = url;
-        this.gateUrl = gateUrl;
-    }
 
     /** Same shape, another address; the answer is a verdict, and refusing it when jagt is unreachable would make
      *  a stopped backend look like a rule. */

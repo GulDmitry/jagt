@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.GitRemote;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
@@ -30,6 +31,7 @@ import java.util.regex.Pattern;
  * and a file that no longer reads afterwards is put back.
  */
 @Service
+@RequiredArgsConstructor
 public class ProjectSetup {
 
     private static final Duration GIT = Duration.ofSeconds(10);
@@ -56,12 +58,6 @@ public class ProjectSetup {
     private final OrchestratorPaths paths;
     private final Processes processes;
     private final JsonMapper json = new JsonMapper();
-
-    public ProjectSetup(ConfigService configService, OrchestratorPaths paths, Processes processes) {
-        this.configService = configService;
-        this.paths = paths;
-        this.processes = processes;
-    }
 
     /** What the path is, and what its entry would most likely say. Writes nothing. */
     public Reading read(String rawPath) {

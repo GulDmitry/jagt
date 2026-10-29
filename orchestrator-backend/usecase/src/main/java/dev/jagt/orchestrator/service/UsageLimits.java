@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.SubscriptionUsage;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,7 @@ import java.util.Optional;
 
 /** The last answer the subscription gave; empty until a read ran, and always empty for a CLI with no reader. */
 @Component
+@RequiredArgsConstructor
 public class UsageLimits {
 
     public record Reading(SubscriptionUsage.Answer answer, Instant at) {
@@ -18,10 +20,6 @@ public class UsageLimits {
 
     private final Optional<SubscriptionUsage> source;
     private volatile @Nullable Reading last;
-
-    public UsageLimits(Optional<SubscriptionUsage> source) {
-        this.source = source;
-    }
 
     public Optional<Reading> refresh(Instant now) {
         source.ifPresent(usage -> last = new Reading(usage.read(), now));

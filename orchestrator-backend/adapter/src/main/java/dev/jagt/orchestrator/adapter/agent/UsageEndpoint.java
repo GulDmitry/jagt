@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** One GET of a vendor's usage endpoint; a 429 holds every later call back for as long as it asked. */
 @Component
+@RequiredArgsConstructor
 public class UsageEndpoint {
 
     sealed interface Reply {
@@ -33,11 +35,6 @@ public class UsageEndpoint {
     private final HttpClient http;
     private final Clock clock;
     private final Map<URI, Instant> coolingUntil = new ConcurrentHashMap<>();
-
-    public UsageEndpoint(HttpClient http, Clock clock) {
-        this.http = http;
-        this.clock = clock;
-    }
 
     Reply get(URI uri, Map<String, String> headers) {
         Instant until = coolingUntil.get(uri);

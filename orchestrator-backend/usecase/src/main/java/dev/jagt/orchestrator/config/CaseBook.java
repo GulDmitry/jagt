@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
 
     /** What a case names; a move takes no reply, as the session's case of its step holds that. */
+    @RequiredArgsConstructor
     public enum Shape {
         STEPS("step", "which no brief section holds", "no case sends the brief step '%s' — add one, or it never reaches a session"),
         MOVES("move", "which is no verb the Master presses", "no case names the Master's move '%s' — add one, or the Master never makes it");
@@ -36,12 +38,6 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         private final String key;
         private final String unknown;
         private final String unnamed;
-
-        Shape(String key, String unknown, String unnamed) {
-            this.key = key;
-            this.unknown = unknown;
-            this.unnamed = unnamed;
-        }
     }
 
     public enum By {

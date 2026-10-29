@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.protocol.ReviewRead;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -22,19 +23,13 @@ import java.util.function.Predicate;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class ReviewReader {
 
     private final CodeHostAssistant assistant;
     private final McpHealth mcp;
     private final UsageTracker usage;
     private final RetryPolicy policy;
-
-    public ReviewReader(CodeHostAssistant assistant, McpHealth mcp, UsageTracker usage, RetryPolicy policy) {
-        this.assistant = assistant;
-        this.mcp = mcp;
-        this.usage = usage;
-        this.policy = policy;
-    }
 
     /** The review round for {@code reviewRequestUrl}; any paid read is charged to {@code taskId}. */
     public Answer<ReviewFacts> read(String taskId, String reviewRequestUrl) {

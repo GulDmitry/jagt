@@ -1,11 +1,15 @@
 package dev.jagt.orchestrator.adapter.replay;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
 /** One task's recorded turns in the order they opened, each with the moves that answered it. */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TurnScript {
 
     static final String LAUNCH = "launch";
@@ -22,10 +26,6 @@ public final class TurnScript {
     }
 
     private final Deque<Group> groups;
-
-    private TurnScript(Deque<Group> groups) {
-        this.groups = groups;
-    }
 
     /** Moves before the task's first opened turn answer its launch. */
     public static TurnScript of(String task, List<RecordingLine> recording) {
