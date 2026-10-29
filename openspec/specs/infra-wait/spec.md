@@ -56,6 +56,10 @@ A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the tas
 - **THEN** the stop is voided and the log says `stop voided by read` once, with `request=gone`
 - **AND** a read refused because the host or CLI cannot answer leaves the stop standing
 
+#### Scenario: A task past its review
+- **WHEN** ABC-42 is `DEPLOYED`, `DEPLOY_CONFLICT` or `REVERTED` and its open request's pipeline dies on infrastructure
+- **THEN** no retry is armed or sent and no `INFRA` stop is set
+
 #### Scenario: The host is still failing
 - **WHEN** the read of a task stopped as `INFRA` is red, or lists no checks at all
 - **THEN** the stop stands and the read is made again at the next poll

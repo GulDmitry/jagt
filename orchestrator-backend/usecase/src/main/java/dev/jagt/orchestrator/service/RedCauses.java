@@ -41,7 +41,7 @@ public class RedCauses {
             retries.clear(taskId, checks == Pipeline.GREEN);
             return Verdict.CODE;
         }
-        if (!properties.waits() || facts.pipelineUrl().isBlank()) {
+        if (!properties.waits() || facts.pipelineUrl().isBlank() || !retries.applies(taskId)) {
             return Verdict.CODE;
         }
         Answer<List<FailedJob>> failed = pipelines.failedJobs(facts.pipelineUrl());

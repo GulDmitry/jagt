@@ -22,6 +22,7 @@ Accepted 2026-10-29. Supersedes in part [0011](0011-a-red-run-is-the-sessions-to
 - Every infrastructure red keeps the task's status and tells the session nothing; open threads are still relayed, without the checks.
 - After the last wait, or a refused re-run, the task stops as `INFRA` with the CLI's own words.
 - Failed jobs that cannot be listed leave the red the code's.
+- The retry and the stop apply only where the task waits on its checks (`FlowRules.waitsOnTheHost`); past the review a red run is nobody's wait.
 - The re-run is `ActionOrigin.JAGT`, an unattended move that counts toward `loopBreaker.perHour`.
 
 ## Rejected

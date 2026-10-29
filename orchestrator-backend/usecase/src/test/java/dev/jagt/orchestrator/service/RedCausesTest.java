@@ -33,6 +33,7 @@ class RedCausesTest {
 
     @Test
     void waitsOutARunWhoseEveryFailedJobDiedOnInfrastructure() {
+        when(retries.applies("ABC-42")).thenReturn(true);
         when(pipelines.failedJobs("https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "unit-tests", "runner_system_failure"))), TokenUsage.NONE));
         when(retries.arm("ABC-42", "https://host.invalid/p/1", "unit-tests", "runner_system_failure"))
@@ -48,6 +49,7 @@ class RedCausesTest {
 
     @Test
     void handsARunToTheSessionWhenOneFailedJobFailedItsScript() {
+        when(retries.applies("ABC-42")).thenReturn(true);
         when(pipelines.failedJobs("https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "build", "runner_system_failure"), new FailedJob("2", "unit-tests", "script_failure"))),
                 TokenUsage.NONE));
@@ -73,6 +75,7 @@ class RedCausesTest {
 
     @Test
     void stopsTheTaskOnceEveryWaitWasSpent() {
+        when(retries.applies("ABC-42")).thenReturn(true);
         when(pipelines.failedJobs("https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "unit-tests", "runner_system_failure"))), TokenUsage.NONE));
         when(retries.arm("ABC-42", "https://host.invalid/p/1", "unit-tests", "runner_system_failure"))
@@ -119,5 +122,18 @@ class RedCausesTest {
         causes.judge("ABC-42", red, Pipeline.RUNNING);
 
         verify(retries).clear("ABC-42", false);
+    }
+
+    @Test
+    void armsNoRetryAndSetsNoStopWhereTheTaskDoesNotWaitOnItsChecks() {
+        when(retries.applies("ABC-42")).thenReturn(false);
+
+        RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);
+
+        assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
+        assertThat(verdict.stop()).isEmpty();
+        verifyNoInteractions(pipelines);
+        verify(retries, never()).arm(any(), any(), any(), any());
+        verify(retries, never()).exhausted(any());
     }
 }

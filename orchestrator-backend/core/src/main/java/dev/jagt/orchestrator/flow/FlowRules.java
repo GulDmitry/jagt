@@ -211,6 +211,11 @@ public final class FlowRules {
         return HELD_AGAINST_A_REPORT.contains(status);
     }
 
+    /** Whether the task's next step waits on the host's checks, so a red or green read can move it. */
+    public static boolean waitsOnTheHost(TaskStatus status) {
+        return WAITING_ON_THE_HOST.contains(status);
+    }
+
     /** What a read of the review round can conclude, which only the host's round read may land. */
     public static Set<TaskStatus> reads() {
         return EnumSet.copyOf(READ_FROM_THE_HOST);

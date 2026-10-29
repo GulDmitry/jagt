@@ -138,4 +138,27 @@ class InfraRetriesTest {
         assertThat(retries.stillWaiting("ABC-43")).isFalse();
         assertThat(retries.stillWaiting("ABC-44")).isFalse();
     }
+
+    @Test
+    void doesNotApplyWhereTheTaskIsPastItsReview(@TempDir Path dir) {
+        StateService state = state(dir);
+        InfraRetries retries = retries(state);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        state.putTask("ABC-43", TaskState.builder("proj", "/wt2", TaskStatus.DEPLOYED).build());
+        state.putTask("ABC-44", TaskState.builder("proj", "/wt3", TaskStatus.DEPLOY_CONFLICT).build());
+        state.putTask("ABC-45", TaskState.builder("proj", "/wt4", TaskStatus.REVERTED).build());
+
+        assertThat(retries.applies("ABC-42")).isTrue();
+        assertThat(retries.applies("ABC-43")).isFalse();
+        assertThat(retries.applies("ABC-44")).isFalse();
+        assertThat(retries.applies("ABC-45")).isFalse();
+    }
+
+    @Test
+    void sendsNoDueRetryOfADeployedTaskWhoseRequestIsRed(@TempDir Path dir) {
+        StateService state = state(dir);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).pipelineStatus("failed").build());
+
+        assertThat(retries(state).stillWaiting("ABC-42")).isFalse();
+    }
 }

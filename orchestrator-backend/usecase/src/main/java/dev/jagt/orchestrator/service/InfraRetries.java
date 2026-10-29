@@ -75,9 +75,14 @@ public class InfraRetries {
         return due;
     }
 
-    /** The task is open, not stopped, and its checks still read red: a human may have acted since the retry was armed. */
+    /** Whether the task's next step waits on the checks: elsewhere a pipeline dying on infrastructure is nobody's wait. */
+    public boolean applies(String taskId) {
+        return stateService.task(taskId).filter(task -> FlowRules.waitsOnTheHost(task.status())).isPresent();
+    }
+
+    /** The task waits on its checks, is not stopped, and they still read red: a human may have acted since the retry was armed. */
     public boolean stillWaiting(String taskId) {
-        return stateService.task(taskId).filter(task -> !FlowRules.closed(task.status()) && !task.stopped())
+        return stateService.task(taskId).filter(task -> FlowRules.waitsOnTheHost(task.status()) && !task.stopped())
                 .filter(task -> Pipeline.of(task.pipelineStatus()) == Pipeline.RED).isPresent();
     }
 
