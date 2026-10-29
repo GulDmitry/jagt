@@ -135,7 +135,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         return switch (round.report()) {
             case NO_CHANGES -> !hasReviewRequest ? "open the review request"
                     : round.draftedReplies() ? "post the drafted replies" : "read the review";
-            case QUESTION, PERMISSION, PLAIN -> "review and ship";
+            case QUESTION, PERMISSION, PLAIN, WAIT -> "review and ship";
         };
     }
 
@@ -225,7 +225,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
             case NO_CHANGES -> draftedReplies || !hasReviewRequest ? TaskAction.SHIP
                     : polled ? null : TaskAction.SWEEP;
             // A question never reaches here: it is answered above, from whatever status it was asked.
-            case QUESTION, PERMISSION, PLAIN -> TaskAction.SHIP;
+            case QUESTION, PERMISSION, PLAIN, WAIT -> TaskAction.SHIP;
         };
     }
 
@@ -281,7 +281,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
     private static String reviewPendingHint(boolean hasReviewRequest, RoundState round, boolean polled) {
         return switch (round.report()) {
             case NO_CHANGES -> noChangesHint(hasReviewRequest, round.draftedReplies(), polled);
-            case QUESTION, PERMISSION, PLAIN -> "read the diff (ide), then ship";
+            case QUESTION, PERMISSION, PLAIN, WAIT -> "read the diff (ide), then ship";
         };
     }
 

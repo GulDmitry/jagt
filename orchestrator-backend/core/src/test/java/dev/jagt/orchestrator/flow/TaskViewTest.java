@@ -301,4 +301,23 @@ class TaskViewTest {
         assertThat(view.pipeline()).isEqualTo(Pipeline.RED);
         assertThat(view.pipelineSaid()).isEqualTo("failed");
     }
+
+    @Test
+    void namesWhatTheSessionWaitsOnAndWhenJagtNextSaysSo() {
+        TaskState waiting = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).message("db down: ping db.internal")
+                .report(AgentReport.WAIT).build();
+        waiting = waiting.withTurn(waiting.turnOrNone().withMark(Wake.MARK, new Wake(0, 36_000_000, "wait-over").mark()));
+
+        TaskView view = TaskView.of("ABC-1", waiting, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.waiting()).isEqualTo("db down: ping db.internal\nnext try 10:00 UTC");
+    }
+
+    @Test
+    void saysNothingOfAWaitForASessionThatDoesNotWait() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(), false,
+                AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.waiting()).isNull();
+    }
 }

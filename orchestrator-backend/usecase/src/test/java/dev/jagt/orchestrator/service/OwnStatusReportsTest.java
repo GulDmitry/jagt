@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.InfraWaitProperties;
+import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.MasterCases;
@@ -37,6 +39,17 @@ import static org.mockito.Mockito.when;
 
 class OwnStatusReportsTest {
 
+    private static ReportEffects effects(StateService state) {
+        TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()))),
+                Clock.systemUTC());
+        return new ReportEffects(new SessionWakes(state, turns, Clock.systemUTC()), turns, stops,
+                InfraWaitProperties.defaults());
+    }
+
+
     @Test
     void refusesASessionsHandBackWhatTheWorktreeSaysIsOwed(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -48,7 +61,7 @@ class OwnStatusReportsTest {
         when(due.invalid(any())).thenReturn(Optional.empty());
         when(due.owed(any(), any())).thenReturn(Optional.of("write task_notes.md before handing the round back"));
         OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class),
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-1"))
@@ -66,7 +79,7 @@ class OwnStatusReportsTest {
         HandBackDue due = mock(HandBackDue.class);
         when(due.invalid(any())).thenReturn(Optional.of("task_notes.md names the model 'gpt'"));
         OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, mock(CaseDoor.class),
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-1"))
@@ -88,7 +101,7 @@ class OwnStatusReportsTest {
         CaseDoor door = mock(CaseDoor.class);
         when(door.takes("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.PLAIN)).thenReturn(true);
         OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door,
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
 
         reports.report(working, "ABC-1");
 
@@ -107,7 +120,7 @@ class OwnStatusReportsTest {
         CaseDoor door = mock(CaseDoor.class);
         when(door.takes("ABC-1", TaskStatus.PLAN_PENDING, AgentReport.PLAIN)).thenReturn(true);
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports, door,
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
 
         String answer = reports.report(plan, "ABC-1");
 
@@ -130,7 +143,7 @@ class OwnStatusReportsTest {
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
 
         reports.report(broke, "ABC-42");
 
@@ -153,7 +166,7 @@ class OwnStatusReportsTest {
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
                 .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
@@ -176,7 +189,7 @@ class OwnStatusReportsTest {
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
@@ -201,7 +214,7 @@ class OwnStatusReportsTest {
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC()));
+                effects(state));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 

@@ -50,6 +50,7 @@ const ChecksDot = ({task}) => {
 // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
 const StatusChip = ({task, stalled, now}) => {
   let tip = stalled ? stalled.line : '';
+  if (task.waiting) tip = tip ? `${tip}\n\n${task.waiting}` : task.waiting;
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   const live = task.deployed && !(task.actions || []).some((action) => action.again);
   if (live) tip = tip ? `${tip}\n\nits work is on a shared branch` : 'its work is on a shared branch';

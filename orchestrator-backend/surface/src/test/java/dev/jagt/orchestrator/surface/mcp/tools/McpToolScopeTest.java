@@ -127,8 +127,8 @@ class McpToolScopeTest {
     @Test
     void letsAnAgentReportOnItsOwnTaskWithoutNamingIt() {
         AgentStatusReports statusReports = mock(AgentStatusReports.class);
-        when(statusReports.sessionContextFor(any())).thenReturn(MessageContext.NONE);
         OwnStatusReports ownReports = mock(OwnStatusReports.class);
+        when(ownReports.contextFor(any())).thenReturn(MessageContext.NONE);
         Registered registered = new Registered();
         new StatusTools(statusReports, ownReports, new CallerScope(mock(StateService.class))).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");

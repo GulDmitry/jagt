@@ -36,7 +36,7 @@ public class UsageLimitWakes {
                     .addKeyValue("cause", "no window at its limit with a known reset").log();
             return;
         }
-        wakes.arm(taskId, at.get());
+        wakes.arm(taskId, at.get(), "wake");
     }
 
     public void cancel(String taskId) {

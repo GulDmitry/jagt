@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,7 +97,7 @@ public class WatchdogService implements Job {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         Optional<SessionProbe.Silence> silence;
         try {
-            silence = watches(task.status()) ? probe.of(taskId, task, staleMs, now) : Optional.empty();
+            silence = watches(task.status()) && task.report() != AgentReport.WAIT ? probe.of(taskId, task, staleMs, now) : Optional.empty();
         } catch (SessionHost.WindowsUnreadable unknown) {
             return;
         }

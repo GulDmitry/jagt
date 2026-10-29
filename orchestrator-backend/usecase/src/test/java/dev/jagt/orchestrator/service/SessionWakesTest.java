@@ -53,7 +53,7 @@ class SessionWakesTest {
                 .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
-        List<String> due = sessionWakes(file, RESET.minusSeconds(1)).takeDue(taskId -> false);
+        List<SessionWakes.Due> due = sessionWakes(file, RESET.minusSeconds(1)).takeDue(taskId -> false);
 
         assertThat(due).isEmpty();
     }
@@ -67,10 +67,10 @@ class SessionWakesTest {
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
         SessionWakes later = sessionWakes(file, RESET);
 
-        List<String> first = later.takeDue(taskId -> false);
-        List<String> second = later.takeDue(taskId -> false);
+        List<SessionWakes.Due> first = later.takeDue(taskId -> false);
+        List<SessionWakes.Due> second = later.takeDue(taskId -> false);
 
-        assertThat(first).containsExactly("ABC-42");
+        assertThat(first).containsExactly(new SessionWakes.Due("ABC-42", "wake"));
         assertThat(second).isEmpty();
     }
 
@@ -83,12 +83,12 @@ class SessionWakesTest {
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
         SessionWakes later = sessionWakes(file, RESET);
 
-        List<String> whileTyping = later.takeDue(taskId -> true);
-        List<String> afterSending = later.takeDue(taskId -> false);
-        List<String> again = later.takeDue(taskId -> false);
+        List<SessionWakes.Due> whileTyping = later.takeDue(taskId -> true);
+        List<SessionWakes.Due> afterSending = later.takeDue(taskId -> false);
+        List<SessionWakes.Due> again = later.takeDue(taskId -> false);
 
         assertThat(whileTyping).isEmpty();
-        assertThat(afterSending).containsExactly("ABC-42");
+        assertThat(afterSending).containsExactly(new SessionWakes.Due("ABC-42", "wake"));
         assertThat(again).isEmpty();
     }
 
@@ -101,7 +101,7 @@ class SessionWakesTest {
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
         sessionWakes(file, RESET).takeDue(taskId -> false);
 
-        List<String> afterRestart = sessionWakes(file, RESET.plusSeconds(60)).takeDue(taskId -> false);
+        List<SessionWakes.Due> afterRestart = sessionWakes(file, RESET.plusSeconds(60)).takeDue(taskId -> false);
 
         assertThat(afterRestart).isEmpty();
     }
@@ -114,9 +114,9 @@ class SessionWakesTest {
                 .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
-        List<String> afterRestart = sessionWakes(file, RESET).takeDue(taskId -> false);
+        List<SessionWakes.Due> afterRestart = sessionWakes(file, RESET).takeDue(taskId -> false);
 
-        assertThat(afterRestart).containsExactly("ABC-42");
+        assertThat(afterRestart).containsExactly(new SessionWakes.Due("ABC-42", "wake"));
     }
 
     @Test
@@ -127,7 +127,7 @@ class SessionWakesTest {
                 .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(99, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
-        List<String> due = sessionWakes(file, RESET).takeDue(taskId -> false);
+        List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
 
         assertThat(due).isEmpty();
     }
@@ -140,7 +140,7 @@ class SessionWakesTest {
                 .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.empty()), true, file, STOPPED).arm("ABC-42");
 
-        List<String> due = sessionWakes(file, RESET).takeDue(taskId -> false);
+        List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
 
         assertThat(due).isEmpty();
     }
@@ -153,7 +153,7 @@ class SessionWakesTest {
                 .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         wakes(reading(100, Optional.of(RESET)), false, file, STOPPED).arm("ABC-42");
 
-        List<String> due = sessionWakes(file, RESET).takeDue(taskId -> false);
+        List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
 
         assertThat(due).isEmpty();
     }
@@ -183,8 +183,35 @@ class SessionWakesTest {
                 new SubscriptionUsage.Window("week", 100, Optional.of(RESET.plusSeconds(86400)))), Optional.empty()));
         wakes(new UsageLimits(Optional.of(usage)), true, file, STOPPED).arm("ABC-42");
 
-        List<String> atFirstReset = sessionWakes(file, RESET).takeDue(taskId -> false);
+        List<SessionWakes.Due> atFirstReset = sessionWakes(file, RESET).takeDue(taskId -> false);
 
         assertThat(atFirstReset).isEmpty();
+    }
+
+    @Test
+    void dropsAWakeOnceAnotherTurnOpenedAfterItWasArmed(@TempDir Path dir) {
+        Path file = dir.resolve("state.json");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
+        new TaskTurns(state, at(STOPPED)).opened("ABC-42", "context", "a1b2", TaskStatus.IN_PROGRESS);
+
+        List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
+
+        assertThat(due).isEmpty();
+    }
+
+    @Test
+    void wakesWithTheStepItWasArmedFor(@TempDir Path dir) {
+        Path file = dir.resolve("state.json");
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())))
+                .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        sessionWakes(file, STOPPED).arm("ABC-42", RESET, "wait-over");
+
+        List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
+
+        assertThat(due).containsExactly(new SessionWakes.Due("ABC-42", "wait-over"));
     }
 }

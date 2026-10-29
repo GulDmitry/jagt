@@ -23,7 +23,7 @@ class SessionWakeJobTest {
 
     @Test
     void saysTheResumeLineToEachSessionDue() {
-        when(wakes.takeDue(any())).thenReturn(List.of("ABC-42", "ABC-43"));
+        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", "wake"), new SessionWakes.Due("ABC-43", "wake")));
 
         new SessionWakeJob(wakes, sessions, relay).run();
 
@@ -35,7 +35,7 @@ class SessionWakeJobTest {
     void holdsBackASessionWhoseWindowHoldsAnUnsentDraft() {
         when(sessions.composing("ABC-42")).thenReturn(true);
         when(wakes.takeDue(any())).thenAnswer(call -> ((Predicate<String>) call.getArgument(0)).test("ABC-42")
-                ? List.of() : List.of("ABC-42"));
+                ? List.of() : List.of(new SessionWakes.Due("ABC-42", "wake")));
 
         new SessionWakeJob(wakes, sessions, relay).run();
 
@@ -44,11 +44,20 @@ class SessionWakeJobTest {
 
     @Test
     void keepsWakingTheOthersWhenOneSessionIsGone() {
-        when(wakes.takeDue(any())).thenReturn(List.of("ABC-42", "ABC-43"));
+        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", "wake"), new SessionWakes.Due("ABC-43", "wake")));
         doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", "wake", "The usage limit has reset.");
 
         new SessionWakeJob(wakes, sessions, relay).run();
 
         verify(relay).say("ABC-43", "wake", "The usage limit has reset.");
+    }
+
+    @Test
+    void tellsASessionWhoseWaitIsOverToProbeWhatItNamed() {
+        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", "wait-over")));
+
+        new SessionWakeJob(wakes, sessions, relay).run();
+
+        verify(relay).say("ABC-42", "wait-over", "The wait you asked for is over.");
     }
 }

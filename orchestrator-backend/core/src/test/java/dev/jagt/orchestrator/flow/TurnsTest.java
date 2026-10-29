@@ -117,4 +117,12 @@ class TurnsTest {
 
         assertThat(holder).isEqualTo(expected);
     }
+
+    @ParameterizedTest
+    @CsvSource({"off", "judge", "act"})
+    void aSessionWaitingOnADependencyKeepsItsTurnWhateverTheMasterDoes(String profile) {
+        Holder holder = Turns.next(TaskStatus.IN_PROGRESS, AgentReport.WAIT, false, PROFILES.get(profile));
+
+        assertThat(holder).isEqualTo(Holder.SESSION);
+    }
 }

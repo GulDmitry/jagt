@@ -119,6 +119,8 @@
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)
   [spec](../openspec/specs/infra-wait/spec.md#requirement-infrastructure-failures-are-waited-out)
   [spec](../openspec/specs/review/spec.md#requirement-pipeline-status-keeps-the-hosts-wording)
+- **Session waits** — A session whose dependency is down reports `wait`; jagt says when to probe again and stops the task after the last wait.
+  [spec](../openspec/specs/infra-wait/spec.md#requirement-a-session-waits-out-a-dependency-that-is-down)
 
 ## Runtime · [spec](../openspec/specs/runtime/spec.md)
 

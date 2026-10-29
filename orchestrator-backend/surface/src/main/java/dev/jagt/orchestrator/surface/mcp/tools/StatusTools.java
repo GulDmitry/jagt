@@ -32,7 +32,7 @@ public class StatusTools implements McpTools {
     public void declare(McpToolRegistry tools) {
         tools.tool("update_agent_status", Audience.ANYONE, Effect.REPORTS, AgentStatusMessage.SCHEMA, AgentStatusMessage.class,
                 (said, caller) -> caller == null ? statusReports.contextFor(taskOf(said, caller))
-                        : statusReports.sessionContextFor(taskOf(said, caller)),
+                        : ownReports.contextFor(taskOf(said, caller)),
                 (said, caller) -> caller == null
                         ? statusReports.report(said, taskOf(said, caller))
                         : ownReports.report(said, taskOf(said, caller)));

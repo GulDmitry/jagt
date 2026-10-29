@@ -31,7 +31,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
 
     /** The wire spelling of what a report means; absent is progress. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "permission", "no_changes",
-            "no_plan");
+            "no_plan", "wait");
 
     private static final Pattern URL = Pattern.compile("https?://\\S+");
 
@@ -55,7 +55,9 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                             + " you pushed back on every one), `progress` = anything else. Checked where it can"
                             + " be: report no_changes over an edited worktree and it is recorded as a round with"
                             + " a diff, `no_plan` = autoplan only: with status IN_PROGRESS, the task meets none of"
-                            + " its criteria, so no plan comes first (the message is the reason).")
+                            + " its criteria, so no plan comes first (the message is the reason),"
+                            + " `wait` = with status IN_PROGRESS: a dependency you need is down and nothing here can"
+                            + " bring it up (the message names it and how to probe it).")
             .text("reviewRequestUrl", "The review request this report is about. Required with CI_POLLING (jagt"
                     + " links it, and the board is where the human follows it).")
             .pairs("reviewRequests", "One request URL per project key, for a task spanning several repositories:"
@@ -143,6 +145,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         if (noPlan() && parsedStatus() != TaskStatus.IN_PROGRESS) {
             found.add(new Violation("status", "IN_PROGRESS with no_plan"));
         }
+        waitViolations(context).forEach(found::add);
         if (!reviewRequests.isEmpty() && reviewRequestUrl != null) {
             found.add(new Violation("reviewRequests", "given instead of reviewRequestUrl, never beside it"));
         }
@@ -156,6 +159,23 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                 "project '" + key + "' is not on this task; its projects are " + projectsOnTask)));
         needsProjectViolation(context).ifPresent(found::add);
         return List.copyOf(found);
+    }
+
+    private List<Violation> waitViolations(MessageContext context) {
+        if (!waits()) {
+            return List.of();
+        }
+        List<Violation> found = new ArrayList<>();
+        if (context.waitsRefused()) {
+            found.add(new Violation("outcome", "not wait: jagt waits for nothing here"));
+        }
+        if (parsedStatus() != TaskStatus.IN_PROGRESS) {
+            found.add(new Violation("status", "IN_PROGRESS with wait"));
+        }
+        if (message == null) {
+            found.add(new Violation("message", "required with wait: what is down and how to probe it"));
+        }
+        return found;
     }
 
     private Optional<Violation> needsProjectViolation(MessageContext context) {
@@ -189,6 +209,11 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
                 SwitchJudgements.normalised(switches)));
     }
 
+    /** Whether the report says the session waits on a dependency that is down. */
+    public boolean waits() {
+        return outcome != null && "wait".equals(normalised(outcome));
+    }
+
     private boolean noPlan() {
         return outcome != null && "no_plan".equals(normalised(outcome));
     }
@@ -201,6 +226,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             case "question" -> AgentReport.QUESTION;
             case "permission" -> AgentReport.PERMISSION;
             case "no_changes" -> AgentReport.NO_CHANGES;
+            case "wait" -> AgentReport.WAIT;
             default -> AgentReport.PLAIN;
         };
     }

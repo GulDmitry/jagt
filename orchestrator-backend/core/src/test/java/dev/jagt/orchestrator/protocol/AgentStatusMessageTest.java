@@ -304,4 +304,36 @@ class AgentStatusMessageTest {
         assertThat(said.accepted(MessageContext.NONE).orElseThrow().switches())
                 .containsExactly(Map.entry("visualize", "no — config-only change"));
     }
+
+    @Test
+    void acceptsAWaitFromAWorkingSessionNamingWhatIsDown() {
+        var said = new AgentStatusMessage("IN_PROGRESS", "db down: ping db.internal", "wait", null, Map.of());
+
+        assertThat(said.reportViolations(MessageContext.NONE)).isEmpty();
+        assertThat(said.accepted(MessageContext.NONE).orElseThrow().claimed()).isEqualTo(AgentReport.WAIT);
+    }
+
+    @Test
+    void refusesAWaitThatNamesNothing() {
+        var said = new AgentStatusMessage("IN_PROGRESS", null, "wait", null, Map.of());
+
+        assertThat(said.reportViolations(MessageContext.NONE)).singleElement()
+                .satisfies(violation -> assertThat(violation.field()).isEqualTo("message"));
+    }
+
+    @Test
+    void refusesAWaitFromAnyStatusButInProgress() {
+        var said = new AgentStatusMessage("REVIEW_PENDING", "db down: ping db.internal", "wait", null, Map.of());
+
+        assertThat(said.reportViolations(MessageContext.NONE)).singleElement()
+                .satisfies(violation -> assertThat(violation.field()).isEqualTo("status"));
+    }
+
+    @Test
+    void refusesAWaitWhereNothingWaits() {
+        var said = new AgentStatusMessage("IN_PROGRESS", "db down: ping db.internal", "wait", null, Map.of());
+
+        assertThat(said.reportViolations(MessageContext.NONE.refusingWaits())).singleElement()
+                .satisfies(violation -> assertThat(violation.field()).isEqualTo("outcome"));
+    }
 }

@@ -3,7 +3,10 @@ package dev.jagt.orchestrator.flow;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.InfraRetry;
+import dev.jagt.orchestrator.task.UtcTime;
+import dev.jagt.orchestrator.task.Wake;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -63,7 +66,9 @@ public record TaskView(
         // What the session judged on each switch that was on: name to "yes — why" or "no — why".
         Map<String, String> switches,
         // Why jagt stopped it; null while it is not stopped.
-        @Nullable Stop stop
+        @Nullable Stop stop,
+        // What the session waits on and when jagt next says so; null while it does not wait.
+        @Nullable String waiting
 ) {
 
     /** {@code reason} is the stop in a few words, {@code evidence} what it saw, {@code next} what a human reads after. */
@@ -122,7 +127,15 @@ public record TaskView(
                 task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
                         change.origin(), change.why())).toList(), deployed, draftedReplies, autoReview,
                 checks(task), checksSaid(task), task.pipelineUnread(),
-                task.hasReviewRequest() ? task.approved() : null, task.switches(), stop);
+                task.hasReviewRequest() ? task.approved() : null, task.switches(), stop, waiting(task));
+    }
+
+    private static @Nullable String waiting(TaskState task) {
+        if (task.report() != AgentReport.WAIT) {
+            return null;
+        }
+        String next = Wake.parse(task.turnOrNone().mark(Wake.MARK)).map(wake -> "\nnext try " + UtcTime.clock(wake.at())).orElse("");
+        return (task.message() == null ? "waiting" : task.message()) + next;
     }
 
     private static Optional<InfraRetry> awaitingRetry(TaskState task) {

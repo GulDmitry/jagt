@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
+import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Reported;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.task.TaskState;
@@ -22,7 +23,7 @@ public class OwnStatusReports {
     private final HandBackDue due;
     private final AgentStatusReports statusReports;
     private final CaseDoor door;
-    private final TaskTurns turns;
+    private final ReportEffects effects;
 
     public String report(AgentStatusMessage said, String taskId) {
         Optional<Reported> accepted = said.accepted(statusReports.contextFor(taskId));
@@ -37,10 +38,17 @@ public class OwnStatusReports {
         });
         accepted.filter(reply -> !door.takes(taskId, reply.status(), reply.claimed())).ifPresent(reply -> {
             // Closed, so the session's next report is not refused for the same step again.
-            turns.refused(taskId);
+            effects.refused(taskId);
             throw Refusal.byState("jagt refuses this report: no case takes it as a reply to the step you were sent,"
                     + " so it was not applied and the task is stopped for the human. End your turn.");
         });
-        return statusReports.report(said, taskId);
+        String answer = statusReports.report(said, taskId);
+        effects.after(said, taskId);
+        return answer;
+    }
+
+    /** The rules a session's report is judged by. */
+    public MessageContext contextFor(String taskId) {
+        return effects.judged(statusReports.sessionContextFor(taskId));
     }
 }

@@ -27,7 +27,8 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         CHECKS("checks cannot be read", "Check that the code host's MCP can list the pipelines", true),
         UNDELIVERED("a step never landed", "Check that the session's window is running"),
         UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", true),
-        INFRA("checks failed on infrastructure", "Re-run the job or fix the runner, then lift", true);
+        INFRA("checks failed on infrastructure", "Re-run the job or fix the runner, then lift", true),
+        WAIT("a dependency stayed down", "Bring up what the session named, then lift");
 
 
         private final String reason;

@@ -54,7 +54,7 @@ public final class DashboardLine {
                 case NO_CHANGES -> new Line(Kind.NOTE, "ANSWERED: "
                         + orDefault(message, "nothing to change")
                         + " — the open threads are the reviewer's to close");
-                case QUESTION, PERMISSION, PLAIN -> requestProblem(task, usableRequestLink);
+                case QUESTION, PERMISSION, PLAIN, WAIT -> requestProblem(task, usableRequestLink);
             };
             case NEW, IN_PROGRESS, SHIPPING -> silence(task);
             case PLAN_PENDING, VERIFYING, DONE -> Line.NONE;

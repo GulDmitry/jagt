@@ -89,6 +89,20 @@ class WatchdogServiceTest {
         verify(probe, never()).of(anyString(), any(), anyLong(), anyLong());
     }
 
+    @Test
+    void asksForNoVerdictAboutASessionThatToldJagtItWaitsOnADependency(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("db down").report(AgentReport.WAIT).build());
+        SessionProbe probe = mock(SessionProbe.class);
+
+        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).run();
+
+        verify(probe, never()).of(anyString(), any(), anyLong(), anyLong());
+    }
+
     @ParameterizedTest
     @EnumSource(value = SessionProbe.State.class, names = {"WAITING", "IDLE"})
     void sendsNoSecondBannerForAnAgentThatHadAlreadyAsked(SessionProbe.State reported, @TempDir Path root) {

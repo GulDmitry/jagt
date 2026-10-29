@@ -5,16 +5,19 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.SessionWakes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Map;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "orchestrator.usage-limits.wake-on-reset", havingValue = "true")
 public class SessionWakeJob implements Job {
+
+    private static final Map<String, String> LINES = Map.of(
+            "wake", "The usage limit has reset.",
+            "wait-over", "The wait you asked for is over.");
 
     private final SessionWakes wakes;
     private final AgentSessions sessions;
@@ -27,7 +30,7 @@ public class SessionWakeJob implements Job {
 
     @Override
     public String describe() {
-        return "say one line to a session that stopped on a usage limit, once the limit resets";
+        return "say one line to a session that waits, once its limit resets or its wait is over";
     }
 
     @Override
@@ -42,11 +45,11 @@ public class SessionWakeJob implements Job {
 
     @Override
     public void run() {
-        for (String taskId : wakes.takeDue(sessions::composing)) {
+        for (SessionWakes.Due due : wakes.takeDue(sessions::composing)) {
             try {
-                relay.say(taskId, "wake", "The usage limit has reset.");
+                relay.say(due.taskId(), due.step(), LINES.getOrDefault(due.step(), ""));
             } catch (RuntimeException e) {
-                log.atWarn().setMessage("session wake not sent").addKeyValue("task", taskId)
+                log.atWarn().setMessage("session wake not sent").addKeyValue("task", due.taskId())
                         .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "the session stays stopped").log();
             }
         }

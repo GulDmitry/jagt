@@ -9,6 +9,8 @@ public enum AgentReport {
     PERMISSION,
     /** A round that changed no code: every comment was already handled or was answered with a push-back. */
     NO_CHANGES,
+    /** The session works but a dependency it needs is down; the message names it and how to probe it. */
+    WAIT,
     PLAIN;
 
     public boolean asks() {

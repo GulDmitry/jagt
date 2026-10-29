@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator.task;
 
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -30,8 +27,7 @@ public record InfraRetry(long at, String pipelineUrl, String jobs, String reason
     /** What is waiting and when: the host's reason, the jobs, and which retry this is. */
     public String reading() {
         return reason + ": " + jobs + " · retry " + attempt + "/" + of + " at "
-                + DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC)
-                        .format(java.time.Instant.ofEpochMilli(at)) + " UTC";
+                + UtcTime.clock(at);
     }
 
     public InfraRetry sentAt(long now) {

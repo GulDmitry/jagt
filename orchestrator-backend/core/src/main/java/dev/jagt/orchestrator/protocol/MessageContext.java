@@ -7,18 +7,23 @@ import java.util.List;
  * where nothing reads state, and whoever can answer supplies the answer.
  */
 public record MessageContext(List<String> projectsOnTask, boolean planRequired, List<String> configuredProjects,
-                             List<String> switchesOwed) {
+                             List<String> switchesOwed, boolean waitsRefused) {
 
     /** Nothing is known about the task yet, so the rules that need it say nothing. */
     public static final MessageContext NONE = new MessageContext(List.of(), false, List.of());
 
     public MessageContext(List<String> projectsOnTask, boolean planRequired, List<String> configuredProjects) {
-        this(projectsOnTask, planRequired, configuredProjects, List.of());
+        this(projectsOnTask, planRequired, configuredProjects, List.of(), false);
+    }
+
+    /** Nothing here waits, so a report asking for a wait is refused. */
+    public MessageContext refusingWaits() {
+        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOwed, true);
     }
 
     /** The switches the message must still be judged on: those that are on, for a task whose first report this is. */
     public MessageContext withSwitchesOwed(List<String> switchesOwed) {
-        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOwed);
+        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOwed, waitsRefused);
     }
 
     public MessageContext {
