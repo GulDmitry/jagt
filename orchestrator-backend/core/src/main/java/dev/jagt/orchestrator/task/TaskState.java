@@ -26,7 +26,7 @@ import java.util.function.UnaryOperator;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Builder(toBuilder = true, buildMethodName = "assemble")
+@Builder(toBuilder = true)
 public record TaskState(
         List<TaskRepo> repos,
         TaskStatus status,
@@ -85,7 +85,7 @@ public record TaskState(
 
     public TaskState {
         repos = repos == null ? List.of() : List.copyOf(repos);
-        history = history == null ? List.of() : List.copyOf(history);
+        history = history == null ? List.of(new StatusChange(status, lastActiveTimestamp, null)) : List.copyOf(history);
         refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
         probes = probes == null ? List.of() : List.copyOf(probes);
         checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
@@ -641,8 +641,6 @@ public record TaskState(
         private List<Probe> probes = List.of();
         private PlanGate planGate = PlanGate.OPEN;
         private Map<String, String> switches = Map.of();
-        /** Null means "a brand-new task". */
-        private @Nullable List<StatusChange> history;
 
         public TaskStateBuilder mrUrl(@Nullable String mrUrl) {
             return firstRepo(repo -> repo.withMrUrl(mrUrl));
@@ -657,14 +655,6 @@ public record TaskState(
             updated.set(0, change.apply(updated.get(0)));
             this.repos = List.copyOf(updated);
             return this;
-        }
-
-        /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
-        public TaskState build() {
-            if (history == null) {
-                history = List.of(new StatusChange(status, lastActiveTimestamp, null));
-            }
-            return assemble();
         }
     }
 }
