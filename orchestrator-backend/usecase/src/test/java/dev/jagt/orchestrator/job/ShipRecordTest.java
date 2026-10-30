@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ShipRecordTest {
@@ -28,12 +29,12 @@ class ShipRecordTest {
     }
 
     @Test
-    void aTreeGitCouldNotReadIsRecordedBlank() {
+    void aTreeGitCouldNotReadLeavesNoMark() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
         when(changes.state(task)).thenReturn(Optional.empty());
 
         new ShipRecord(turns, changes).pressedOn("ABC-1", task);
 
-        verify(turns).mark("ABC-1", TaskTurns.PRESSED_SHIP, "");
+        verifyNoInteractions(turns);
     }
 }
