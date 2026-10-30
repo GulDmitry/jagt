@@ -131,6 +131,7 @@ public class ProcessRunner implements Processes {
             if (workingDir != null) {
                 builder.directory(workingDir.toFile());
             }
+            builder.environment().put("GIT_OPTIONAL_LOCKS", "0");
             builder.environment().putAll(env);
             // /dev/null so no subprocess steals the console's stdin, and a CLI waiting on it gets instant EOF.
             builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));

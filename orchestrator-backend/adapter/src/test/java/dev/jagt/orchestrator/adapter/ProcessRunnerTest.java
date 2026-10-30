@@ -31,6 +31,16 @@ import static org.awaitility.Awaitility.await;
 class ProcessRunnerTest {
 
     @Test
+    void takesNoOptionalGitLockSoAReadNeverBlocksAnAgentsCommit() {
+        ProcessRunner runner = new ProcessRunner();
+
+        String optionalLocks = runner.run(null, Duration.ofSeconds(5),
+                List.of("sh", "-c", "printf %s \"$GIT_OPTIONAL_LOCKS\"")).stdout();
+
+        assertThat(optionalLocks).isEqualTo("0");
+    }
+
+    @Test
     void launchesTheAppOutsideTheProcessGroupTheTerminalSendsCtrlCTo() {
         ProcessRunner runner = new ProcessRunner();
         Process launched = runner.runDetached(null, List.of("sleep", "5"));

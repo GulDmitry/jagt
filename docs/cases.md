@@ -26,7 +26,6 @@ Families:
 | A10 | a session is compacted or reopened in plan mode → its brief keeps task, branch and last report; the plan gate stands | 51a2ba67, 6c34876f, afe42f20 | `SessionReportsTest`, `AgentSessionControllerTest`, `AgentSessionsTest` |
 | A11 | a task session briefs sub-agents → lightest model, self-contained brief, result alone, the ship's message as the ship specifies | 70bce952, b0c6e815, deb035ec | `SubAgentBriefingTest` |
 | A12 | a plan or hand-back comes with a question → it is read and answered, with its facts in the prompt; a hand-back at VERIFYING says whose move | c0e97b9f, e4f5a366, b3922313 | `MasterAnswerJobTest`, `MasterReviewJobTest`, `AgentStatusReportsTest`, `RoundBriefTest` |
-
 ## B — state overwritten / dedup key in the wrong place
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -165,6 +164,7 @@ Families:
 | J2 | the host says a request merged by squash or fast-forward, git finds no merge commit → the review read's `merged` word records it, and `ship` is withheld | seen 2026-10-28: a GitLab request merged, the task stayed REVIEWED with `merged` unset | `RoundReadingTest` |
 | J3 | every request of a task is merged, the task still `REVIEWED` → its card reads `merged`, offers `done` quietly and is no longer polled | seen 2026-10-29: a squash-merged request left the card "awaiting approval" and polled | `MoveTest`, `TaskViewTest`, `AutoReviewCadenceTest` |
 | J4 | a deploy waits on a recorded conflict whose deploy worktree was deleted → the press is refused naming it, not merged again from the first repository | 2d530917 | `DeployServiceTest` |
+| J5 | jagt reads a task worktree with status or diff while its session commits → the read takes no optional git lock, so the commit never meets `index.lock` | seen 2026-10-30: e2e `git commit` failed on a worktree `index.lock` twice in the full suite, 0 of 17 isolated runs | `ProcessRunnerTest` |
 
 ## K — the board
 | id | the case, one line | defects | pinned by |
