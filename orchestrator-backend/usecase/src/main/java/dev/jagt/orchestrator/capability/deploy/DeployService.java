@@ -53,9 +53,10 @@ public class DeployService {
         TaskState task = requireTask(taskId);
         List<Target> targets = deployTargets.all(task);
         targets.forEach(DeployTargets::requireDeployable);
-        requireTheFixStaged(task, taskId);
+        Optional<Target> waiting = waitingAt(task, taskId);
+        requireTheFixStaged(task, taskId, waiting);
         Landing landing = new Landing();
-        int from = resumeFrom(task, taskId, targets);
+        int from = resumeFrom(targets, waiting);
         if (from == 0) {
             DeployStep opened = new DeployStep.Opened(targets.stream()
                     .map(target -> Deployment.Target.of(target.project(), target.deployBranch())).toList());
@@ -78,8 +79,8 @@ public class DeployService {
     }
 
     /** A deploy handed back for its pipeline finishes with the session's fix, not with a merge of the task again. */
-    private void requireTheFixStaged(TaskState task, String taskId) {
-        deployTargets.stopped(task, taskId)
+    private void requireTheFixStaged(TaskState task, String taskId, Optional<Target> waiting) {
+        waiting
                 .filter(target -> DeployRedLine.marks(task.message())
                         && !gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))
                 .ifPresent(target -> {
@@ -87,6 +88,17 @@ public class DeployService {
                             + GitDeploy.deployWorktreePath(target.path(), taskId) + ": it is not staged in full yet."
                             + " Stage it, then deploy again.");
                 });
+    }
+
+    /** A recorded conflict whose worktree is gone cannot be resumed, and merging from the first repository again would land twice. */
+    private Optional<Target> waitingAt(TaskState task, String taskId) {
+        Optional<Target> waiting = deployTargets.stopped(task, taskId);
+        waiting.filter(target -> !gitDeploy.hasDeployWorktree(target.path(), taskId)).ifPresent(target -> {
+            throw Refusal.byState("deploy " + taskId + " waits on a conflict in " + target.project()
+                    + " but its deploy worktree " + GitDeploy.deployWorktreePath(target.path(), taskId)
+                    + " is gone. `revert " + taskId + "` clears it.");
+        });
+        return waiting;
     }
 
     private static final class Landing {
@@ -144,8 +156,8 @@ public class DeployService {
      * Where a repeated deploy picks the sequence up. Only a task HANDED BACK from a conflict has one; a worktree
      * left over from any other round is not a resume point, and jumping to it would skip the ones before it.
      */
-    private int resumeFrom(TaskState task, String taskId, List<Target> targets) {
-        return targets.size() == 1 ? 0 : deployTargets.stopped(task, taskId).map(targets::indexOf).orElse(0);
+    private int resumeFrom(List<Target> targets, Optional<Target> waiting) {
+        return targets.size() == 1 ? 0 : waiting.map(targets::indexOf).orElse(0);
     }
 
     /**

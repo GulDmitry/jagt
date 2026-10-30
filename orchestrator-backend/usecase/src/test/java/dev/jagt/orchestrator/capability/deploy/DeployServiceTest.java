@@ -6,7 +6,9 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Outcome;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -323,6 +325,32 @@ class DeployServiceTest {
         verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/api")), anyString(), anyString());
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
         assertThat(outcome.message()).contains("web into dev (f00dfeed)", "already on the deploy branch: api (cafebabe)");
+    }
+
+    @Test
+    void refusesAPressWhenTheRecordedConflictsDeployWorktreeIsGoneInsteadOfMergingTheFirstRepositoryAgain(
+            @TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState pressed = TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
+        TaskState opened = TaskReducer.deployStepped(pressed, new DeployStep.Opened(List.of(
+                Deployment.Target.of("api", "dev"), Deployment.Target.of("web", "dev"))), 1L);
+        TaskState pushed = TaskReducer.deployStepped(opened, new DeployStep.Pushed("api", 2L), 2L);
+        state.putTask("ABC-1", TaskReducer.deployStepped(pushed, new DeployStep.Conflicted("web"), 3L));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/repo/api", "origin/main", "dev", null),
+                "web", new ProjectConfig("/repo/web", "origin/main", "dev", null))));
+        GitDeploy git = mock(GitDeploy.class);
+        DeployService deploys = new DeployService(state, new DeployTargets(config, git), git, Clock.systemUTC());
+
+        assertThatThrownBy(() -> deploys.deploy("a1")).isInstanceOf(Refusal.class)
+                .hasMessageContaining("/repo/ABC-1-deploy");
+
+        verify(git, never()).mergeIntoAndPush(any(), anyString(), anyString());
     }
 
     @Test

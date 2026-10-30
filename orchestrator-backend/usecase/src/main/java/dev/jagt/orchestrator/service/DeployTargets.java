@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -58,15 +59,22 @@ public class DeployTargets {
     }
 
     /**
-     * Where a deploy handed back from a conflict waits: the repository holding its deploy worktree. Not the first
-     * without a recorded merge, since merges outlive the round that made them; a project gone from the
-     * configuration holds nothing to probe.
+     * Where a deploy handed back from a conflict waits: the target its record flags conflicted. A task the record
+     * does not flag (a deploy begun before it was written, or handed back for its pipeline) is read as before,
+     * from the repository holding its deploy worktree, not the first without a recorded merge, since merges outlive
+     * the round that made them. A project gone from the configuration holds nothing to wait in.
      */
     public Optional<Target> stopped(TaskState task, String taskId) {
         if (!FlowRules.conflictedInTheDeployWorktree(task.status())) {
             return Optional.empty();
         }
         Map<String, ProjectConfig> projects = configService.load().projects();
+        Optional<String> recorded = Optional.ofNullable(task.deployment())
+                .flatMap(Deployment::conflictedTarget).map(Deployment.Target::project);
+        if (recorded.isPresent()) {
+            return recorded.filter(projects::containsKey)
+                    .map(project -> new Target(project, Objects.requireNonNull(projects.get(project))));
+        }
         return task.repos().stream()
                 .filter(repo -> projects.containsKey(repo.project()))
                 .map(repo -> new Target(Objects.requireNonNull(repo.project()),

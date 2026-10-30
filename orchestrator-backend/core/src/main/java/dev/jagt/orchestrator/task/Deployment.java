@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /** One press of deploy: its repositories in landing order, and {@code at}, the index of the first one not yet pushed. */
@@ -42,6 +43,11 @@ public record Deployment(long pressedAt, List<Target> targets, int at) {
             }
         }
         return withTargets(changed);
+    }
+
+    /** The target the press stopped at for a conflict; none while no target is flagged conflicted. */
+    public Optional<Target> conflictedTarget() {
+        return at < targets.size() && targets.get(at).conflicted() ? Optional.of(targets.get(at)) : Optional.empty();
     }
 
     /** -1 where {@code project} is none of the targets. */

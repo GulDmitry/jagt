@@ -27,6 +27,7 @@ public class DeployConflicts {
     public Map<String, WaitingConflict> waiting() {
         Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
         stateService.tasks().forEach((taskId, task) -> deployTargets.stopped(task, taskId)
+                .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
                 .ifPresent(target -> waiting.put(taskId, conflict(taskId, task, target))));
         return waiting;
     }

@@ -2,9 +2,8 @@ package dev.jagt.orchestrator.capability.ide;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 class IdeProject {
 
-    private final ConfigService configService;
+    private final DeployTargets deployTargets;
     private final GitDeploy gitDeploy;
     private final EditorDriver editorDriver;
 
@@ -44,19 +43,13 @@ class IdeProject {
 
     /** Empty when no repository holds the conflict, the task's own worktrees being what to open then. */
     private Optional<String> openConflict(String taskId, TaskState task) {
-        // A task spanning repositories conflicts in exactly one of them, not necessarily the one the session
-        // runs in, nor the first whose derived path exists, since siblings share it.
-        var projects = configService.load().projects();
-        for (TaskRepo repo : task.repos()) {
-            ProjectConfig conflicted = projects.get(repo.project());
-            if (conflicted == null || !gitDeploy.hasDeployWorktree(Path.of(conflicted.path()), taskId)) {
-                continue;
-            }
-            Path deployWorktree = GitDeploy.deployWorktreePath(Path.of(conflicted.path()), taskId);
-            editorDriver.open(deployWorktree);
-            return Optional.of("Opened the deploy worktree " + deployWorktree + " — resolve there (`git add`),"
-                    + " then `deploy " + taskId + "` again.");
-        }
-        return Optional.empty();
+        return deployTargets.stopped(task, taskId)
+                .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
+                .map(target -> {
+                    Path deployWorktree = GitDeploy.deployWorktreePath(target.path(), taskId);
+                    editorDriver.open(deployWorktree);
+                    return "Opened the deploy worktree " + deployWorktree + " — resolve there (`git add`),"
+                            + " then `deploy " + taskId + "` again.";
+                });
     }
 }
