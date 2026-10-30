@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -42,7 +43,7 @@ public class LaunchExits implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(TaskStatus.NEW);
+        return Watch.defaults().withStatuses(TaskStatus.NEW).withStops(StopKind.values());
     }
 
     @Override

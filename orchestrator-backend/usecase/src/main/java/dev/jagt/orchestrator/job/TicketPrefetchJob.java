@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TicketTexts;
@@ -41,7 +42,7 @@ public class TicketPrefetchJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(TaskStatus.IN_PROGRESS);
+        return Watch.defaults().withStatuses(TaskStatus.IN_PROGRESS).withStops(StopKind.values());
     }
 
     @Override

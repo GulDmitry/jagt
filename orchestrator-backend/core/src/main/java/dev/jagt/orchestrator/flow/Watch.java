@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/** The chart states a task must be in, one set per region; a region not named admits every state. */
+/** The chart states a task must be in, one set per region; a region not named admits every state, the stop region none but NONE. */
 public record Watch(Set<TaskStatus> statuses, Set<StopKind> stops, Set<AgentReport> reports, Set<TurnKind> turns,
                     Set<PlanGate> plans) {
 
@@ -24,7 +24,7 @@ public record Watch(Set<TaskStatus> statuses, Set<StopKind> stops, Set<AgentRepo
     }
 
     public static Watch defaults() {
-        return new Watch(EnumSet.allOf(TaskStatus.class), EnumSet.allOf(StopKind.class),
+        return new Watch(EnumSet.allOf(TaskStatus.class), EnumSet.of(StopKind.NONE),
                 EnumSet.allOf(AgentReport.class), EnumSet.allOf(TurnKind.class), EnumSet.allOf(PlanGate.class));
     }
 

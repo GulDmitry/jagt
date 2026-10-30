@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.task.TaskState;
@@ -38,7 +39,7 @@ public class MergedReadJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(status -> !FlowRules.closed(status));
+        return Watch.defaults().withStatuses(status -> !FlowRules.closed(status)).withStops(StopKind.values());
     }
 
     @Override

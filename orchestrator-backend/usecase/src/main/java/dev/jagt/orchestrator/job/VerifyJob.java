@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
@@ -63,7 +62,7 @@ public class VerifyJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(FlowRules::awaitingVerification).withStops(StopKind.NONE)
+        return Watch.defaults().withStatuses(FlowRules::awaitingVerification)
                 .withReports(report -> !report.asks());
     }
 

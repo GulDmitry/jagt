@@ -13,11 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class WatchTest {
 
     @Test
-    void admitsAnyTaskWhereNoRegionIsNamed() {
-        TaskState stopped = TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
-                .stop(new TaskStop(TaskStop.Trigger.CHECKS, 1, "unreadable")).build();
+    void admitsAnyUnstoppedTaskWhereNoRegionIsNamed() {
+        TaskState unstopped = TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED).build();
 
-        assertThat(Watch.defaults().admits(stopped)).isTrue();
+        assertThat(Watch.defaults().admits(unstopped)).isTrue();
     }
 
     @ParameterizedTest
@@ -38,11 +37,11 @@ class WatchTest {
     }
 
     @Test
-    void refusesAStoppedTaskWhereOnlyNoStopIsNamed() {
+    void refusesAStoppedTaskWhereNoStopIsNamed() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .stop(new TaskStop(TaskStop.Trigger.PACE, 1, "evidence")).build();
 
-        assertThat(Watch.defaults().withStops(StopKind.NONE).admits(task)).isFalse();
+        assertThat(Watch.defaults().admits(task)).isFalse();
     }
 
     @ParameterizedTest

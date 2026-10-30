@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -54,6 +55,22 @@ class NudgeResubmitJobTest {
         }
 
         verify(sessions, times(NudgeResubmitJob.CEILING)).resubmitUnsentNudge("ABC-42");
+    }
+
+    @Test
+    void pressesNothingWhileTheTaskStandsStopped(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(TaskStop.Trigger.PACE, 1, "evidence", null)).build());
+        turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
+        AgentSessions sessions = mock(AgentSessions.class);
+        when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
+
+        new NudgeResubmitJob(sessions, turns).runOn(state.tasks());
+
+        verify(sessions, never()).resubmitUnsentNudge("ABC-42");
     }
 
     @Test
