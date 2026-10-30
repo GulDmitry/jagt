@@ -74,3 +74,4 @@ DETERMINISM.md
 
 # Pass/fail per eval case across runs, written by promptEval and masterEval
 orchestrator-backend/eval-stats.jsonl*
+.jqwik-database
