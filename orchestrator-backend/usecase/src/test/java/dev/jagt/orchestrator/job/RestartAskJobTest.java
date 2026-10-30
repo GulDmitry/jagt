@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -44,7 +45,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(sessions, relay).runOn(state.tasks());
 
-        verify(relay).say("ABC-42", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
+        verify(relay).say("ABC-42", Step.RESTARTED, "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
     }
 
     @Test
@@ -55,7 +56,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(sessions, relay).runOn(state.tasks());
 
-        verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
@@ -67,7 +68,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(sessions, relay).runOn(state.tasks());
 
-        verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
@@ -80,7 +81,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(sessions, relay).runOn(state.tasks());
 
-        verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
@@ -92,11 +93,11 @@ class RestartAskJobTest {
         turns.opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
         turns.opened("ABC-43", "start", "digest", TaskStatus.IN_PROGRESS);
         when(sessions.agentLive(anyString())).thenReturn(true);
-        doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
+        doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", Step.RESTARTED, "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
 
         new RestartAskJob(sessions, relay).runOn(state.tasks());
 
-        verify(relay).say("ABC-43", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-43").orElseThrow()));
+        verify(relay).say("ABC-43", Step.RESTARTED, "jagt was restarted.", Standing.of(state.task("ABC-43").orElseThrow()));
     }
 
     @Test

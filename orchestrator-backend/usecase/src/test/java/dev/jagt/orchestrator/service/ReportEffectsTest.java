@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -58,7 +59,7 @@ class ReportEffectsTest {
         effects(state, InfraWaitProperties.defaults()).after(waits, "ABC-42");
 
         Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
-        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(300).toEpochMilli(), "wait-over"));
+        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(300).toEpochMilli(), Step.WAIT_OVER));
     }
 
     @Test
@@ -118,7 +119,7 @@ class ReportEffectsTest {
         effects.after(waits, "ABC-42");
 
         Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
-        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), "wait-over"));
+        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), Step.WAIT_OVER));
     }
 
     @Test
@@ -138,7 +139,7 @@ class ReportEffectsTest {
 
         Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
         assertThat(realStops.stopped("ABC-42")).isTrue();
-        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), "wait-over"));
+        assertThat(Wake.parse(turn.mark(Wake.MARK))).contains(new Wake(4, NOW.plusSeconds(2700).toEpochMilli(), Step.WAIT_OVER));
     }
 
     @Test

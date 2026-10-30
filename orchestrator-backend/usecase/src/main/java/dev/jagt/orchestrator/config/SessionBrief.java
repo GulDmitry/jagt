@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.config;
 
 import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.task.Step;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,30 +16,30 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SessionBrief {
 
-    private static final String COPY = "session-brief.md";
+    public static final String FILE = "session-brief.md";
 
     private final OrchestratorPaths paths;
 
-    public Optional<String> section(String step) {
-        return HumanCopy.read(paths.root(), COPY).stream()
-                .flatMap(file -> Sections.of(file.text()).stream().filter(section -> section.id().equals(step))
+    public Optional<String> section(Step step) {
+        return HumanCopy.read(paths.root(), FILE).stream()
+                .flatMap(file -> Sections.of(file.text()).stream().filter(section -> section.id().equals(step.id()))
                         .findFirst().stream())
                 .map(Sections.Section::body)
                 .findFirst();
     }
 
     /** For a command line or a window that takes one line; empty where the brief has no such step. */
-    public String line(String step) {
+    public String line(Step step) {
         return section(step).map(text -> text.replaceAll("\\s*\\n\\s*", " ")).orElse("");
     }
 
     public List<Problem> unreadable() {
-        return HumanCopy.unreadable(paths.root(), COPY);
+        return HumanCopy.unreadable(paths.root(), FILE);
     }
 
     /** Every step either file holds a section for. */
     public Set<String> steps() {
-        return HumanCopy.read(paths.root(), COPY).stream()
+        return HumanCopy.read(paths.root(), FILE).stream()
                 .flatMap(file -> Sections.of(file.text()).stream())
                 .map(Sections.Section::id)
                 .collect(Collectors.toCollection(TreeSet::new));

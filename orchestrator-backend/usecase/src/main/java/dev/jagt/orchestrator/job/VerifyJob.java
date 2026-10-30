@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.Verification;
 import dev.jagt.orchestrator.task.Probe;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
@@ -80,13 +81,13 @@ public class VerifyJob implements TaskJob {
         }
         Optional<String> failure = verification.failure(task);
         if (failure.isPresent()) {
-            if (stillThisRound(taskId, task, "verify")) {
-                returned(taskId, task, key, "verify", failure.get(), "verification failed; relayed");
+            if (stillThisRound(taskId, task, Step.VERIFY)) {
+                returned(taskId, task, key, Step.VERIFY, failure.get(), "verification failed; relayed");
             }
             return;
         }
         List<Probe> probed = verification.probed(taskId, task);
-        if (!stillThisRound(taskId, task, "probes")) {
+        if (!stillThisRound(taskId, task, Step.PROBES)) {
             return;
         }
         if (!probed.isEmpty()) {
@@ -97,16 +98,16 @@ public class VerifyJob implements TaskJob {
             statusReports.verified(true, "verified", taskId);
             return;
         }
-        returned(taskId, task, key, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
+        returned(taskId, task, key, Step.PROBES, failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
                 "acceptance probe failed; relayed");
     }
 
-    private boolean stillThisRound(String taskId, TaskState taken, String step) {
+    private boolean stillThisRound(String taskId, TaskState taken, Step step) {
         Optional<TaskState> now = stateService.task(taskId);
         boolean same = now.filter(task -> task.status() == taken.status() && task.statusSince() == taken.statusSince())
                 .isPresent();
         if (!same) {
-            log.atInfo().setMessage("verification outdated").addKeyValue("task", taskId).addKeyValue("step", step)
+            log.atInfo().setMessage("verification outdated").addKeyValue("task", taskId).addKeyValue("step", step.id())
                     .addKeyValue("status", now.map(task -> task.status().name()).orElse("gone")).log();
         }
         return same;
@@ -119,7 +120,7 @@ public class VerifyJob implements TaskJob {
     }
 
     /** A round stopped at its ceiling stays at VERIFYING, verified anew once the human lifts the stop. */
-    private void returned(String taskId, TaskState read, Optional<String> key, String step, String facts, String said) {
+    private void returned(String taskId, TaskState read, Optional<String> key, Step step, String facts, String said) {
         boolean told;
         try {
             told = relay.relayRound(taskId, step, facts, Standing.of(read));

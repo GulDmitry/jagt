@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.task.Step;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
@@ -28,6 +29,10 @@ public enum MasterMove {
 
     public String id() {
         return id;
+    }
+
+    public Step step() {
+        return Step.of(id);
     }
 
     /** The verbs, held to {@code master-cases.md}; a step relayed is held to its session case alone. */

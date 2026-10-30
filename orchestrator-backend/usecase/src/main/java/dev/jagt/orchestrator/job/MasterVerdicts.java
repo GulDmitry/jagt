@@ -77,7 +77,7 @@ public class MasterVerdicts {
                 .map(said -> repeated.contains(said.identity()) ? said.line() + REPEAT : said.line()).toList();
         MasterMove returning = plan ? MasterMove.PLAN_NOT_READY : MasterMove.ROUND_NOT_READY;
         StepRelay.Claim claim = claiming(taskId, task, AgentReport.PLAIN, "reviewer: not ready; relayed");
-        if (!relay.relayRound(taskId, returning.id(), String.join("\n", findings), claim)) {
+        if (!relay.relayRound(taskId, returning.step(), String.join("\n", findings), claim)) {
             return false;
         }
         decisions.returned(task, verdict.round(), verdict.findings());
@@ -114,7 +114,7 @@ public class MasterVerdicts {
             return task;
         }
         AtomicReference<TaskState> after = new AtomicReference<>(task);
-        relay.relay(taskId, MasterMove.PLAN_ANSWERED.id(), PLAN_ANSWERED + verdict.advice().stream()
+        relay.relay(taskId, MasterMove.PLAN_ANSWERED.step(), PLAN_ANSWERED + verdict.advice().stream()
                         .map(MasterReview.Said::line).collect(Collectors.joining("\n")),
                 new StepRelay.Claim(task, () -> reports.standing(taskId, task),
                         opens -> reports.claimWhileStanding(taskId, task, live -> {
@@ -132,7 +132,7 @@ public class MasterVerdicts {
      */
     private boolean ask(String taskId, TaskState task, String question) {
         StepRelay.Claim claim = claiming(taskId, task, AgentReport.QUESTION, REVIEWER + question);
-        if (!relay.relay(taskId, MasterMove.ASKED_HUMAN.id(), "The reviewer asked the human: " + question, claim)) {
+        if (!relay.relay(taskId, MasterMove.ASKED_HUMAN.step(), "The reviewer asked the human: " + question, claim)) {
             return false;
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
@@ -154,8 +154,8 @@ public class MasterVerdicts {
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
         StepRelay.Claim claim = claiming(taskId, task, AgentReport.PLAIN, "master answered the question");
         boolean told = FlowRules.awaitsItsInstruction(task.status())
-                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.id(), answer, false, claim)
-                : relay.relay(taskId, MasterMove.ANSWERED.id(), answer, claim);
+                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.step(), answer, false, claim)
+                : relay.relay(taskId, MasterMove.ANSWERED.step(), answer, claim);
         if (!told) {
             return false;
         }

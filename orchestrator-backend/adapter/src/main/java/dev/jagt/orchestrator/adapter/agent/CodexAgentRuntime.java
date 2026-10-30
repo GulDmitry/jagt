@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.task.Step;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -59,7 +60,7 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
 
     @Override
     public String launchCommand(Path worktree, boolean planMode) {
-        return launchCommand(worktree, planMode, "", brief.line("start"));
+        return launchCommand(worktree, planMode, "", brief.line(Step.START));
     }
 
     @Override

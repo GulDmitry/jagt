@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -27,7 +28,7 @@ class ConflictHandOff {
             AgentRuntime.Admission admission = sessions.admit(taskId, conflict.worktree());
             log.atInfo().setMessage("deploy conflict handed to session").addKeyValue("task", taskId)
                     .addKeyValue("worktree", conflict.worktree()).addKeyValue("admission", admission).log();
-            relay.write(taskId, "conflict", told(taskId, conflict), relay.standing(taskId));
+            relay.write(taskId, Step.CONFLICT, told(taskId, conflict), relay.standing(taskId));
         }
         stall.watch(taskId, conflict);
     }

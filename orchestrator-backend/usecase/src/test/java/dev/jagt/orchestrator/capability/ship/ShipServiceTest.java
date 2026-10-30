@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -76,14 +77,14 @@ class ShipServiceTest {
 
     @Test
     void handsTheShipToTheAgentAndWaitsForTheRequestItOpens() {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING)
                 .title("Widget layout is off").build());
 
         Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
-        verify(relay).write(eq("ABC-42"), eq("ship"), contains("Push branch ABC-42."), any(Standing.class));
+        verify(relay).write(eq("ABC-42"), eq(Step.SHIP), contains("Push branch ABC-42."), any(Standing.class));
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
         assertThat(outcome.message()).contains("relayed to the agent", "SHIPPING");
         assertThat(outcome.stamp()).isEqualTo("shipping");
@@ -98,7 +99,7 @@ class ShipServiceTest {
         new ShipService(stateService, configService, relay, changes, door).ship("ABC-7");
 
         ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-        verify(relay).write(eq("ABC-7"), eq("ship"), instruction.capture(), any(Standing.class));
+        verify(relay).write(eq("ABC-7"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
         assertThat(instruction.getValue()).contains("merges into feature/parent");
     }
 
@@ -112,7 +113,7 @@ class ShipServiceTest {
         new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-        verify(relay).write(eq("ABC-42"), eq("ship"), instruction.capture(), any(Standing.class));
+        verify(relay).write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
         assertThat(instruction.getValue())
                 .contains("demo: /wt, merges into main")
                 .contains("web: /wt-web, merges into master")
@@ -121,7 +122,7 @@ class ShipServiceTest {
 
     @Test
     void leavesOutTheRepositoryHoldingNothingSoNoEmptyRequestIsOpened() {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("Widget layout is off")
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
@@ -131,7 +132,7 @@ class ShipServiceTest {
         Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
-        verify(relay).write(eq("ABC-42"), eq("ship"), instruction.capture(), any(Standing.class));
+        verify(relay).write(eq("ABC-42"), eq(Step.SHIP), instruction.capture(), any(Standing.class));
         assertThat(instruction.getValue()).contains("demo: /wt").doesNotContain("web: /wt-web");
         assertThat(outcome.message()).contains("nothing to ship in web");
     }
@@ -156,12 +157,12 @@ class ShipServiceTest {
 
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.NOTHING);
         assertThat(outcome.message()).contains("nothing to ship");
-        verify(relay, never()).write(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).write(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
     void shipsARepositoryAlreadyInReviewEvenWhenItHoldsNothingNew() {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t")
                 .repos(List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git",
@@ -171,7 +172,7 @@ class ShipServiceTest {
         Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
 
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
-        verify(relay).write(eq("ABC-42"), eq("ship"), contains("its request is already open"), any(Standing.class));
+        verify(relay).write(eq("ABC-42"), eq(Step.SHIP), contains("its request is already open"), any(Standing.class));
     }
 
     @Test
@@ -183,12 +184,12 @@ class ShipServiceTest {
         doAnswer(call -> {
             reentrant.set(shipService.ship("ABC-42"));
             return null;
-        }).when(relay).write(eq("ABC-42"), eq("ship"), anyString(), any(Standing.class));
+        }).when(relay).write(eq("ABC-42"), eq(Step.SHIP), anyString(), any(Standing.class));
 
         shipService.ship("ABC-42");
 
         assertThat(reentrant.get().message()).contains("already running");
-        verify(relay).write(eq("ABC-42"), eq("ship"), anyString(), any(Standing.class));
+        verify(relay).write(eq("ABC-42"), eq(Step.SHIP), anyString(), any(Standing.class));
     }
 
     @Test
@@ -251,7 +252,7 @@ class ShipServiceTest {
 
     @Test
     void speaksOfOneRequestWhereOnlyOneRepositoryCarriesWork() {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());
 
@@ -262,7 +263,7 @@ class ShipServiceTest {
 
     @Test
     void speaksOfRequestsWhereSeveralRepositoriesCarryWork() {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t")
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
@@ -275,7 +276,7 @@ class ShipServiceTest {
 
     @Test
     void saysTheRepliesAreTheHumansToPostWherePostingWasTurnedOff() {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
@@ -297,7 +298,7 @@ class ShipServiceTest {
 
     @Test
     void forbidsTheRepliesOfAMasterShipWhereNoMasterCaseAllowsTheReply() {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
@@ -307,12 +308,12 @@ class ShipServiceTest {
         OriginContext.as(ActionOrigin.MASTER,
                 () -> new ShipService(stateService, configService, relay, changes, door).ship("ABC-42"));
 
-        verify(relay).write(eq("ABC-42"), eq("ship"), contains("this ship is the Master session's"), any(Standing.class));
+        verify(relay).write(eq("ABC-42"), eq(Step.SHIP), contains("this ship is the Master session's"), any(Standing.class));
     }
 
     @Test
     void leavesTheRepliesOfAMasterShipToTheSessionWhereAMasterCaseAllowsThem() throws Exception {
-        when(relay.write(anyString(), anyString(), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
         Files.writeString(root.resolve("master-cases.md"),
                 "## reply\n\nmove: reply\nat: REVIEW_PENDING\nby: master\nThe Master lets the session reply.\n");
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
@@ -324,6 +325,6 @@ class ShipServiceTest {
         OriginContext.as(ActionOrigin.MASTER,
                 () -> new ShipService(stateService, configService, relay, changes, door).ship("ABC-42"));
 
-        verify(relay).write(eq("ABC-42"), eq("ship"), contains("post each drafted reply"), any(Standing.class));
+        verify(relay).write(eq("ABC-42"), eq(Step.SHIP), contains("post each drafted reply"), any(Standing.class));
     }
 }

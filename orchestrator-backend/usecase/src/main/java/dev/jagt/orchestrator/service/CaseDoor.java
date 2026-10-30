@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
@@ -38,13 +39,13 @@ public class CaseDoor {
     }
 
     /** A task jagt does not hold is left to the relay, which refuses it by name. */
-    public Admission opens(String taskId, String step) {
+    public Admission opens(String taskId, Step step) {
         String id = stateService.canonicalTaskId(taskId);
         Optional<TaskStatus> status = stateService.task(id).map(TaskState::status);
         if (status.isEmpty()) {
             return new Admission(true, null);
         }
-        boolean admitted = cases.book().sends(step, status.get(), CaseBook.By.of(OriginContext.current()))
+        boolean admitted = cases.book().sends(step.id(), status.get(), CaseBook.By.of(OriginContext.current()))
                 || refused(id, step, status.get());
         return new Admission(admitted, status.get());
     }
@@ -77,16 +78,16 @@ public class CaseDoor {
         return CaseBook.By.of(OriginContext.current()) == CaseBook.By.MASTER;
     }
 
-    private boolean refused(String id, String step, TaskStatus status) {
+    private boolean refused(String id, Step step, TaskStatus status) {
         CaseBook.By by = CaseBook.By.of(OriginContext.current());
-        misses.record(id, step, status, by);
-        log.atWarn().setMessage("step refused").addKeyValue("task", id).addKeyValue("step", step)
+        misses.record(id, step.id(), status, by);
+        log.atWarn().setMessage("step refused").addKeyValue("task", id).addKeyValue("step", step.id())
                 .addKeyValue("status", status).addKeyValue("by", by.id())
                 .addKeyValue("cause", "no case sends it at this status")
                 .addKeyValue("effect", "nothing relayed, the task stopped")
                 .addKeyValue("fix", SessionCases.FILE)
                 .log();
-        stops.stop(id, TaskStop.Trigger.MISS, "no case sends " + step + " at " + status + ", set off by " + by.id());
+        stops.stop(id, TaskStop.Trigger.MISS, "no case sends " + step.id() + " at " + status + ", set off by " + by.id());
         return false;
     }
 

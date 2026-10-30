@@ -16,6 +16,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +41,9 @@ class BoardWriteOnTomcatTest {
     private int port;
 
     @DynamicPropertySource
-    static void keepConfigAndStateInTheTempRoot(DynamicPropertyRegistry registry) {
+    static void keepConfigAndStateInTheTempRoot(DynamicPropertyRegistry registry) throws IOException {
+        Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.copy(Path.of("../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         registry.add("orchestrator.root", () -> root.toString());
         registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());

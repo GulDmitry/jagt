@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -27,7 +28,7 @@ public class PlanApproval {
     public boolean approve(String taskId, String reader, StepRelay.@Nullable Claim claim) {
         String id = stateService.canonicalTaskId(taskId);
         if (claim != null) {
-            relay.requireStanding(id, "plan", claim);
+            relay.requireStanding(id, Step.PLAN, claim);
         }
         if (!door.presses(id, MasterMove.APPROVE_PLAN.id())) {
             return false;
@@ -36,8 +37,8 @@ public class PlanApproval {
         if (claim == null) {
             stateService.updateTask(id, TaskReducer::planApproved);
         }
-        boolean told = claim == null ? relay.relay(id, "plan", reader + ": the plan holds.", read)
-                : relay.relay(id, "plan", reader + ": the plan holds.", opened(claim));
+        boolean told = claim == null ? relay.relay(id, Step.PLAN, reader + ": the plan holds.", read)
+                : relay.relay(id, Step.PLAN, reader + ": the plan holds.", opened(claim));
         if (claim != null && !told) {
             stateService.updateTask(id, TaskReducer::planApproved);
         }

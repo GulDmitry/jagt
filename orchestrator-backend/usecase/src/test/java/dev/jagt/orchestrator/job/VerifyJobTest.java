@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -57,7 +58,7 @@ class VerifyJobTest {
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(statusReports).verified(true, "verified", "ABC-1");
-        verify(relay, never()).relayRound(eq("ABC-1"), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relayRound(eq("ABC-1"), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
@@ -72,7 +73,7 @@ class VerifyJobTest {
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay).relayRound(eq("ABC-1"), eq("verify"), contains("BUILD FAILED"), any(Standing.class));
+        verify(relay).relayRound(eq("ABC-1"), eq(Step.VERIFY), contains("BUILD FAILED"), any(Standing.class));
         verify(statusReports).verified(false, "verification failed; relayed", "ABC-1");
         verify(statusReports, never()).verified(eq(true), any(), any());
     }
@@ -90,7 +91,7 @@ class VerifyJobTest {
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(verification, never()).failure(any());
-        verify(relay, never()).relayRound(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
@@ -101,7 +102,7 @@ class VerifyJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
         when(verification.key(any())).thenReturn(Optional.of("tree-1"));
         when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
-        when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class))).thenReturn(true);
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
@@ -111,7 +112,7 @@ class VerifyJobTest {
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(verification, times(1)).failure(any());
-        verify(relay, times(1)).relayRound(eq("ABC-1"), eq("verify"), anyString(), any(Standing.class));
+        verify(relay, times(1)).relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
         verify(statusReports, never()).verified(eq(true), any(), any());
         assertThat(state.task("ABC-1").orElseThrow().stop().trigger()).isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
     }
@@ -124,7 +125,7 @@ class VerifyJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
         when(verification.key(any())).thenReturn(Optional.of("tree-1"), Optional.of("tree-2"));
         when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
-        when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString(), any(Standing.class))).thenReturn(true);
+        when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class))).thenReturn(true);
         new VerifyJob(state, verification, statusReports, relay,
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
@@ -134,7 +135,7 @@ class VerifyJobTest {
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(verification, times(2)).failure(any());
-        verify(relay, times(2)).relayRound(eq("ABC-1"), eq("verify"), anyString(), any(Standing.class));
+        verify(relay, times(2)).relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
     }
 
     @Test
@@ -166,7 +167,7 @@ class VerifyJobTest {
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay).relayRound(eq("ABC-1"), eq("probes"), eq("artifact docs/guide.md — FAILED\nno such file"), any(Standing.class));
+        verify(relay).relayRound(eq("ABC-1"), eq(Step.PROBES), eq("artifact docs/guide.md — FAILED\nno such file"), any(Standing.class));
         verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().probes()).containsExactly(passed, failed);
     }
@@ -178,7 +179,7 @@ class VerifyJobTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
         when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
-        when(relay.relayRound(eq("ABC-1"), eq("verify"), anyString(), any(Standing.class))).thenAnswer(stopsTheTask -> {
+        when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class))).thenAnswer(stopsTheTask -> {
             state.updateTask("ABC-1", task -> task.withStop(new TaskStop(TaskStop.Trigger.ROUNDS, 5,
                     "verify sent 3 rounds running")));
             return false;
@@ -208,7 +209,7 @@ class VerifyJobTest {
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay, never()).relayRound(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
         verify(statusReports, never()).verified(anyBoolean(), any(), any());
         assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
         assertThat(state.task("ABC-42").orElseThrow().probes()).isEmpty();
@@ -229,7 +230,7 @@ class VerifyJobTest {
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay, never()).relayRound(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
         verify(statusReports, never()).verified(anyBoolean(), any(), any());
         assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
     }
@@ -248,7 +249,7 @@ class VerifyJobTest {
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay).relayRound("ABC-42", "probes", "artifact docs/guide.md — FAILED\nno such file", Standing.of(state.task("ABC-42").orElseThrow()));
+        verify(relay).relayRound("ABC-42", Step.PROBES, "artifact docs/guide.md — FAILED\nno such file", Standing.of(state.task("ABC-42").orElseThrow()));
         verify(statusReports).verified(false, "acceptance probe failed; relayed", "ABC-42");
     }
 }

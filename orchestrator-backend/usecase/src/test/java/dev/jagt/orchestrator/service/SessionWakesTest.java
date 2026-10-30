@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
@@ -71,7 +72,7 @@ class SessionWakesTest {
         List<SessionWakes.Due> first = later.takeDue(taskId -> false);
         List<SessionWakes.Due> second = later.takeDue(taskId -> false);
 
-        assertThat(first).containsExactly(new SessionWakes.Due("ABC-42", "wake", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+        assertThat(first).containsExactly(new SessionWakes.Due("ABC-42", Step.WAKE, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
         assertThat(second).isEmpty();
     }
 
@@ -89,7 +90,7 @@ class SessionWakesTest {
         List<SessionWakes.Due> again = later.takeDue(taskId -> false);
 
         assertThat(whileTyping).isEmpty();
-        assertThat(afterSending).containsExactly(new SessionWakes.Due("ABC-42", "wake", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+        assertThat(afterSending).containsExactly(new SessionWakes.Due("ABC-42", Step.WAKE, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
         assertThat(again).isEmpty();
     }
 
@@ -117,7 +118,7 @@ class SessionWakesTest {
 
         List<SessionWakes.Due> afterRestart = sessionWakes(file, RESET).takeDue(taskId -> false);
 
-        assertThat(afterRestart).containsExactly(new SessionWakes.Due("ABC-42", "wake", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+        assertThat(afterRestart).containsExactly(new SessionWakes.Due("ABC-42", Step.WAKE, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
     }
 
     @Test
@@ -209,10 +210,10 @@ class SessionWakesTest {
         new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(dir.toString()).withStateFile(file.toString())))
                 .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        sessionWakes(file, STOPPED).arm("ABC-42", RESET, "wait-over");
+        sessionWakes(file, STOPPED).arm("ABC-42", RESET, Step.WAIT_OVER);
 
         List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
 
-        assertThat(due).containsExactly(new SessionWakes.Due("ABC-42", "wait-over", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
+        assertThat(due).containsExactly(new SessionWakes.Due("ABC-42", Step.WAIT_OVER, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
     }
 }

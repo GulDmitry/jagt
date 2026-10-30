@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -68,7 +69,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"), any(Standing.class));
+        verify(relay).relay(eq("ABC-42"), eq(Step.DEPLOY), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
 
     @Test
@@ -86,7 +87,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
         assertThat(state.task("ABC-42").orElseThrow().message())
                 .isEqualTo("deployed to dev — waiting on its pipeline: proj 01234567: pipeline running");
     }
@@ -110,7 +111,7 @@ class DeployCheckJobTest {
         assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         assertThat(handed.message())
                 .isEqualTo("red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7");
-        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
@@ -133,7 +134,7 @@ class DeployCheckJobTest {
                 new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(before, Clock.systemUTC()));
         new DeployCheckJob(config, relay, pipelines, new FlowReports(before, Clock.systemUTC())).runOn(before.tasks());
-        relay.relay("ABC-42", "answered", "The Master answered your question, standing in for the human:\nyes", relay.standing("ABC-42"));
+        relay.relay("ABC-42", Step.ANSWERED, "The Master answered your question, standing in for the human:\nyes", relay.standing("ABC-42"));
         StateService restarted = new StateService(new JsonMapper(), paths);
 
         new DeployCheckJob(config, new StepRelay(new SessionBrief(paths), sessions,
@@ -155,7 +156,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());
     }
 
@@ -174,7 +175,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"), any(Standing.class));
+        verify(relay).relay(eq("ABC-42"), eq(Step.DEPLOY), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
 
     @Test
@@ -189,7 +190,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 
     @Test
@@ -207,7 +208,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
+        verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());
     }
 }

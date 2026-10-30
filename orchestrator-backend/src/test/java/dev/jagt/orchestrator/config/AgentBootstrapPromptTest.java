@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.task.Step;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,7 +16,7 @@ class AgentBootstrapPromptTest {
         Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
 
         String bootstrap = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()))).line("start");
+                .withRoot(root.toString()))).line(Step.START);
 
         assertThat(bootstrap).isNotBlank().doesNotContainIgnoringCase("commit");
     }

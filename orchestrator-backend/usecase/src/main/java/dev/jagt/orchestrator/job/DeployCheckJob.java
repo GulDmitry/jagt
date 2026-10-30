@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -34,7 +35,7 @@ public class DeployCheckJob implements TaskJob {
     private final StepRelay relay;
     private final DeployPipelines pipelines;
     private final FlowReports reports;
-    private static final String STEP = "deploy";
+    private static final Step STEP = Step.DEPLOY;
     private static final Duration READ_EVERY = Duration.ofMinutes(1);
 
     @Override
@@ -64,7 +65,7 @@ public class DeployCheckJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP, Turn.digestOf(landed)))
+        landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP.id(), Turn.digestOf(landed)))
                 .ifPresent(landed -> settle(taskId, task, landed));
     }
 

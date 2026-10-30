@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -43,6 +44,6 @@ public class MasterBriefs {
     }
 
     public String author() {
-        return sessionBrief.section("context").orElse("");
+        return sessionBrief.section(Step.CONTEXT).orElse("");
     }
 }

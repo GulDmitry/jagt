@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -50,63 +51,50 @@ public class StepRelay {
         return turns.standing(taskId).orElse(Standing.ABSENT);
     }
 
-    public boolean relay(String taskId, String step, String facts, Standing read) {
-        requireStanding(taskId, step, read);
+    public boolean relay(String taskId, Step step, String facts, Standing read) {
+        requireStanding(taskId, step.id(), read);
         return opened(taskId, step, facts, false, null, told -> sessions.writeTaskContext(taskId, told));
     }
 
-    public boolean relay(String taskId, String step, String facts, Claim claim) {
+    public boolean relay(String taskId, Step step, String facts, Claim claim) {
         return opened(taskId, step, facts, false, claim, told -> sessions.writeTaskContext(taskId, told));
     }
 
     /** A round sent back to work, false too where the rounds of this step running reached their ceiling. */
-    public boolean relayRound(String taskId, String step, String facts, Standing read) {
-        requireStanding(taskId, step, read);
+    public boolean relayRound(String taskId, Step step, String facts, Standing read) {
+        requireStanding(taskId, step.id(), read);
         return opened(taskId, step, facts, true, null, told -> sessions.writeTaskContext(taskId, told));
     }
 
-    public boolean relayRound(String taskId, String step, String facts, Claim claim) {
+    public boolean relayRound(String taskId, Step step, String facts, Claim claim) {
         return opened(taskId, step, facts, true, claim, told -> sessions.writeTaskContext(taskId, told));
     }
 
     /** Written whatever the session already holds, as a hand-off that must land again. */
-    public boolean write(String taskId, String step, String facts, Standing read) {
-        requireStanding(taskId, step, read);
-        CaseDoor.Admission admission = door.opens(taskId, step);
-        if (!admission.admitted()) {
-            return false;
-        }
-        recorded(taskId, step, Turn.digestOf(facts), admission.status(),
-                () -> sessions.writeTaskContext(taskId, told(step, facts)));
-        return true;
+    public boolean write(String taskId, Step step, String facts, Standing read) {
+        return sent(taskId, step, facts, read, told -> sessions.writeTaskContext(taskId, told));
     }
 
     /** Below an instruction still pending, which stands. */
-    public boolean relayUnder(String taskId, String step, String facts, boolean fresh, Standing read) {
-        requireStanding(taskId, step, read);
+    public boolean relayUnder(String taskId, Step step, String facts, boolean fresh, Standing read) {
+        requireStanding(taskId, step.id(), read);
         return opened(taskId, step, facts, false, null, told -> sessions.relayUnder(taskId, told, fresh));
     }
 
-    public boolean relayUnder(String taskId, String step, String facts, boolean fresh, Claim claim) {
+    public boolean relayUnder(String taskId, Step step, String facts, boolean fresh, Claim claim) {
         return opened(taskId, step, facts, false, claim, told -> sessions.relayUnder(taskId, told, fresh));
     }
 
     /** Typed into the session's window, which takes one line. */
-    public boolean say(String taskId, String step, String facts, Standing read) {
-        requireStanding(taskId, step, read);
-        CaseDoor.Admission admission = door.opens(taskId, step);
-        if (!admission.admitted()) {
-            return false;
-        }
-        recorded(taskId, step, Turn.digestOf(facts), admission.status(),
-                () -> sessions.say(taskId, told(step, facts).replaceAll("\\s*\\n\\s*", " ")));
-        return true;
+    public boolean say(String taskId, Step step, String facts, Standing read) {
+        return sent(taskId, step, facts, read,
+                told -> sessions.say(taskId, told.replaceAll("\\s*\\n\\s*", " ")));
     }
 
     /** A round of text already holding its steps' sections, sent afresh; every step has passed the door at {@code checked}. */
-    public boolean relayComposed(String taskId, List<String> steps, String text, @Nullable TaskStatus checked,
+    public boolean relayComposed(String taskId, List<Step> steps, String text, @Nullable TaskStatus checked,
                                  Standing read) {
-        String step = String.join("+", steps);
+        String step = Step.joined(steps);
         requireStanding(taskId, step, read);
         String digest = Turn.digestOf(text);
         if (turns.of(taskId).holds(step, digest) || !door.roundDue(taskId, step)) {
@@ -116,7 +104,17 @@ public class StepRelay {
         return true;
     }
 
-    private boolean opened(String taskId, String step, String facts, boolean round, @Nullable Claim claim,
+    private boolean sent(String taskId, Step step, String facts, Standing read, Consumer<String> send) {
+        requireStanding(taskId, step.id(), read);
+        CaseDoor.Admission admission = door.opens(taskId, step);
+        if (!admission.admitted()) {
+            return false;
+        }
+        recorded(taskId, step.id(), Turn.digestOf(facts), admission.status(), () -> send.accept(told(step, facts)));
+        return true;
+    }
+
+    private boolean opened(String taskId, Step step, String facts, boolean round, @Nullable Claim claim,
                            Consumer<String> send) {
         if (claim != null) {
             requireStanding(taskId, step, claim);
@@ -126,31 +124,31 @@ public class StepRelay {
             return false;
         }
         String digest = Turn.digestOf(facts);
-        if (turns.of(taskId).holds(step, digest) || round && !door.roundDue(taskId, step)) {
+        if (turns.of(taskId).holds(step.id(), digest) || round && !door.roundDue(taskId, step.id())) {
             return false;
         }
         if (claim == null) {
-            recorded(taskId, step, digest, admission.status(), () -> send.accept(told(step, facts)));
+            recorded(taskId, step.id(), digest, admission.status(), () -> send.accept(told(step, facts)));
             return true;
         }
         AtomicReference<Turn> opened = new AtomicReference<>();
-        UnaryOperator<TaskState> opening = turns.opening(step, digest);
+        UnaryOperator<TaskState> opening = turns.opening(step.id(), digest);
         FlowReports.Claimed claimed = claim.write().apply(task -> {
             TaskState written = opening.apply(task);
             opened.set(written.turnOrNone());
             return written;
         });
         if (claimed == FlowReports.Claimed.MOVED_ON) {
-            throw dropped(taskId, step, claim);
+            throw dropped(taskId, step.id(), claim);
         }
         if (claimed == FlowReports.Claimed.GONE) {
             return false;
         }
-        turns.announced(taskId, step, admission.status());
+        turns.announced(taskId, step.id(), admission.status());
         try {
             send.accept(told(step, facts));
         } catch (RuntimeException failure) {
-            undone(taskId, step, claim, opened.get(), failure);
+            undone(taskId, step.id(), claim, opened.get(), failure);
             throw failure;
         }
         return true;
@@ -189,9 +187,9 @@ public class StepRelay {
     }
 
     /** Throws where the task moved on since the claim's read, before any door records a miss against it. */
-    public void requireStanding(String taskId, String step, Claim claim) {
+    public void requireStanding(String taskId, Step step, Claim claim) {
         if (!claim.standing().getAsBoolean()) {
-            throw dropped(taskId, step, claim);
+            throw dropped(taskId, step.id(), claim);
         }
     }
 
@@ -216,7 +214,7 @@ public class StepRelay {
         return new TaskMovedOn(taskId);
     }
 
-    private String told(String step, String facts) {
+    private String told(Step step, String facts) {
         return brief.section(step).filter(ask -> !ask.isBlank()).map(ask -> facts + "\n\n" + ask).orElse(facts);
     }
 }

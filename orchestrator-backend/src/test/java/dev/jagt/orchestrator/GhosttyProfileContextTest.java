@@ -13,6 +13,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +39,9 @@ class GhosttyProfileContextTest {
     private TerminalDriver terminalDriver;
 
     @DynamicPropertySource
-    static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
+    static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) throws IOException {
+        Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.copy(Path.of("../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         registry.add("orchestrator.root", () -> root.toString());
         registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());

@@ -157,6 +157,10 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status) && c.by() == by);
     }
 
+    public boolean names(String step) {
+        return cases.stream().anyMatch(c -> c.step().equals(step));
+    }
+
     /** The steps of {@code steps} no case set off {@code by} names. */
     public Set<String> unnamed(Set<String> steps, By by) {
         return steps.stream().filter(step -> cases.stream().noneMatch(c -> c.step().equals(step) && c.by() == by))

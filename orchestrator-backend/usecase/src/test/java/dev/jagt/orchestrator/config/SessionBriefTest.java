@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.task.Step;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -16,7 +17,7 @@ class SessionBriefTest {
         Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(brief.section("deploy")).contains("check it in a browser");
+        assertThat(brief.section(Step.DEPLOY)).contains("check it in a browser");
     }
 
     @Test
@@ -24,7 +25,7 @@ class SessionBriefTest {
         Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        String ship = brief.section("ship").orElseThrow();
+        String ship = brief.section(Step.SHIP).orElseThrow();
 
         assertThat(ship).contains("`git fetch`", "`git rebase`", "`--force-with-lease`");
         assertThat(ship.indexOf("`git rebase`")).isLessThan(ship.indexOf("Push the branch named above"));
@@ -37,7 +38,7 @@ class SessionBriefTest {
         Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(brief.section("deploy")).contains("check the pipeline");
+        assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
     }
 
     @Test
@@ -45,7 +46,7 @@ class SessionBriefTest {
         Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(brief.section("deploy")).contains("check the pipeline");
+        assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
     }
 
     @Test
@@ -54,15 +55,15 @@ class SessionBriefTest {
         Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(brief.section("deploy")).contains("");
+        assertThat(brief.section(Step.DEPLOY)).contains("");
     }
 
     @Test
     void keepsAHeadingThatNamesNoStepInsideItsStep(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## replies\n\nshape:\n## <thread link>\nFIXED\n\n## verify\n\nrun it\n");
+        Files.writeString(root.resolve("session-brief.md"), "## ship\n\nshape:\n## <thread link>\nFIXED\n\n## verify\n\nrun it\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(brief.section("replies")).contains("shape:\n## <thread link>\nFIXED");
+        assertThat(brief.section(Step.SHIP)).contains("shape:\n## <thread link>\nFIXED");
     }
 
     @Test
@@ -70,7 +71,7 @@ class SessionBriefTest {
         Files.writeString(root.resolve("session-brief.md"), "## start\n\nRead the notes,\n  then work.\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(brief.line("start")).isEqualTo("Read the notes, then work.");
+        assertThat(brief.line(Step.START)).isEqualTo("Read the notes, then work.");
     }
 
     @Test
@@ -78,7 +79,7 @@ class SessionBriefTest {
         Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(brief.line("start"))
+        assertThat(brief.line(Step.START))
                 .contains("One carried from a previous session keeps the status the board shows")
                 .contains("answer a question and end your turn without a report")
                 .contains("report IN_PROGRESS when a change begins");

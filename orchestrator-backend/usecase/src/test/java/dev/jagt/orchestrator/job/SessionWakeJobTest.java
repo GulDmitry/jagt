@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -24,41 +25,41 @@ class SessionWakeJobTest {
 
     @Test
     void saysTheResumeLineToEachSessionDue() {
-        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", "wake", Standing.ABSENT), new SessionWakes.Due("ABC-43", "wake", Standing.ABSENT)));
+        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", Step.WAKE, Standing.ABSENT), new SessionWakes.Due("ABC-43", Step.WAKE, Standing.ABSENT)));
 
         new SessionWakeJob(wakes, sessions, relay).run();
 
-        verify(relay).say("ABC-42", "wake", "The usage limit has reset.", Standing.ABSENT);
-        verify(relay).say("ABC-43", "wake", "The usage limit has reset.", Standing.ABSENT);
+        verify(relay).say("ABC-42", Step.WAKE, "The usage limit has reset.", Standing.ABSENT);
+        verify(relay).say("ABC-43", Step.WAKE, "The usage limit has reset.", Standing.ABSENT);
     }
 
     @Test
     void holdsBackASessionWhoseWindowHoldsAnUnsentDraft() {
         when(sessions.composing("ABC-42")).thenReturn(true);
         when(wakes.takeDue(any())).thenAnswer(call -> ((Predicate<String>) call.getArgument(0)).test("ABC-42")
-                ? List.of() : List.of(new SessionWakes.Due("ABC-42", "wake", Standing.ABSENT)));
+                ? List.of() : List.of(new SessionWakes.Due("ABC-42", Step.WAKE, Standing.ABSENT)));
 
         new SessionWakeJob(wakes, sessions, relay).run();
 
-        verify(relay, never()).say("ABC-42", "wake", "The usage limit has reset.", Standing.ABSENT);
+        verify(relay, never()).say("ABC-42", Step.WAKE, "The usage limit has reset.", Standing.ABSENT);
     }
 
     @Test
     void keepsWakingTheOthersWhenOneSessionIsGone() {
-        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", "wake", Standing.ABSENT), new SessionWakes.Due("ABC-43", "wake", Standing.ABSENT)));
-        doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", "wake", "The usage limit has reset.", Standing.ABSENT);
+        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", Step.WAKE, Standing.ABSENT), new SessionWakes.Due("ABC-43", Step.WAKE, Standing.ABSENT)));
+        doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", Step.WAKE, "The usage limit has reset.", Standing.ABSENT);
 
         new SessionWakeJob(wakes, sessions, relay).run();
 
-        verify(relay).say("ABC-43", "wake", "The usage limit has reset.", Standing.ABSENT);
+        verify(relay).say("ABC-43", Step.WAKE, "The usage limit has reset.", Standing.ABSENT);
     }
 
     @Test
     void tellsASessionWhoseWaitIsOverToProbeWhatItNamed() {
-        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", "wait-over", Standing.ABSENT)));
+        when(wakes.takeDue(any())).thenReturn(List.of(new SessionWakes.Due("ABC-42", Step.WAIT_OVER, Standing.ABSENT)));
 
         new SessionWakeJob(wakes, sessions, relay).run();
 
-        verify(relay).say("ABC-42", "wait-over", "The wait you asked for is over.", Standing.ABSENT);
+        verify(relay).say("ABC-42", Step.WAIT_OVER, "The wait you asked for is over.", Standing.ABSENT);
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.*;
 
 import org.junit.jupiter.api.Test;
@@ -314,7 +315,7 @@ class TaskViewTest {
     void namesWhatTheSessionWaitsOnAndWhenJagtNextSaysSo() {
         TaskState waiting = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).message("db down: ping db.internal")
                 .report(AgentReport.WAIT).build();
-        waiting = waiting.withTurn(waiting.turnOrNone().withMark(Wake.MARK, new Wake(0, 36_000_000, "wait-over").mark()));
+        waiting = waiting.withTurn(waiting.turnOrNone().withMark(Wake.MARK, new Wake(0, 36_000_000, Step.WAIT_OVER).mark()));
 
         TaskView view = TaskView.of("ABC-1", waiting, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 

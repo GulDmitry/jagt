@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
@@ -925,7 +926,7 @@ class MasterVerdictsTest {
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
-        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "asked-human",
+        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", Step.ASKED_HUMAN,
                 "The reviewer asked the human: Add v3 beside v2, or replace it?", Standing.of(task)));
 
         boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
@@ -972,7 +973,7 @@ class MasterVerdictsTest {
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
-        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "answered",
+        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", Step.ANSWERED,
                 "The Master answered your question, standing in for the human:\nkeep v2 beside v3", Standing.of(task)));
 
         boolean moved = verdicts.answered("ABC-1", state.task("ABC-1").orElseThrow(), "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));

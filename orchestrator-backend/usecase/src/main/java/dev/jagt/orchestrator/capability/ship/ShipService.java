@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.Standing;
@@ -67,7 +68,7 @@ public class ShipService {
         }
         List<String> idle = targets.stream().filter(target -> !carrying.contains(target))
                 .map(Target::project).toList();
-        if (!relay.write(taskId, "ship", shipFacts(title, taskId, carrying, repliesStep(taskId, config)),
+        if (!relay.write(taskId, Step.SHIP, shipFacts(title, taskId, carrying, repliesStep(taskId, config)),
                 Standing.of(task))) {
             return Outcome.nothing("ship " + taskId + ": no case sends ship at " + task.status()
                     + ", so the session was not told; see misses.jsonl");

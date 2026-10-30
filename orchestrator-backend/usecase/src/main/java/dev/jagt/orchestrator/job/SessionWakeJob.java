@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.SessionWakes;
+import dev.jagt.orchestrator.task.Step;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SessionWakeJob implements Job {
 
-    private static final Map<String, String> LINES = Map.of(
-            "wake", "The usage limit has reset.",
-            "wait-over", "The wait you asked for is over.");
+    private static final Map<Step, String> LINES = Map.of(
+            Step.WAKE, "The usage limit has reset.",
+            Step.WAIT_OVER, "The wait you asked for is over.");
 
     private final SessionWakes wakes;
     private final AgentSessions sessions;

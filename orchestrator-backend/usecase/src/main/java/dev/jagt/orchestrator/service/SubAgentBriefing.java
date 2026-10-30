@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.Artifact;
@@ -31,7 +32,7 @@ public class SubAgentBriefing {
                         .withVisualize(visualize).withDiagnose(diagnose).switchesOn());
         return TASK.formatted(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
                         repo.remoteUrl(), repo.worktreePath(), alsoYours(repo, repos) + deployWorktrees(taskId, repos))
-                + brief.section("context").filter(context -> !context.isBlank()).map(context -> context + "\n\n")
+                + brief.section(Step.CONTEXT).filter(context -> !context.isBlank()).map(context -> context + "\n\n")
                         .orElse("")
                 + HARD_SAFETY.formatted(taskId, baseBranches(repos), deployBranches(repos))
                 + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");

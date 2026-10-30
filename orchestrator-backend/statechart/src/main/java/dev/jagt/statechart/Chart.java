@@ -57,7 +57,7 @@ public final class Chart<E, X, F> {
         return new Configuration(states);
     }
 
-    public Step<F> step(Configuration start, X facts, E event) {
+    public ChartStep<F> step(Configuration start, X facts, E event) {
         Configuration config = start;
         List<F> effects = new ArrayList<>();
         List<String> moves = new ArrayList<>();
@@ -80,7 +80,7 @@ public final class Chart<E, X, F> {
                 config = config.with(t.region(), t.to());
             }
         }
-        return new Step<>(config, List.copyOf(effects));
+        return new ChartStep<>(config, List.copyOf(effects));
     }
 
     public String render() {

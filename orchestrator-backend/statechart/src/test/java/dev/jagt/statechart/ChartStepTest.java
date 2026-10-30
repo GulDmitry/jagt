@@ -16,7 +16,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class StepTest {
+class ChartStepTest {
 
     @Test
     void aRegionMovesOnItsEventAndEmitsTheEffect() {
@@ -25,7 +25,7 @@ class StepTest {
                 .on(Lamp.POWER, Power.OFF, Press.class).emit("lit").to(Power.ON)
                 .build();
 
-        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+        ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
 
         assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
         assertThat(step.effects()).containsExactly("lit");
@@ -43,7 +43,7 @@ class StepTest {
 
         Configuration start = chart.configuration(Map.of("power", "OFF", "mode", "BRIGHT"));
 
-        Step<String> step = chart.step(start, new Facts(Mode.DIM), new Press());
+        ChartStep<String> step = chart.step(start, new Facts(Mode.DIM), new Press());
 
         assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
     }
@@ -58,7 +58,7 @@ class StepTest {
                 .on(Lamp.MODE, Mode.DIM, Tick.class).to(Mode.BRIGHT)
                 .build();
 
-        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+        ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
 
         assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
     }
@@ -87,7 +87,7 @@ class StepTest {
                 .on(Lamp.MODE, Mode.DIM, Press.class).emit("bright").to(Mode.BRIGHT)
                 .build();
 
-        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+        ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
 
         assertThat(step.effects()).containsExactly("left off", "left dim", "on", "bright");
     }
@@ -101,7 +101,7 @@ class StepTest {
                 .on(Lamp.POWER, Power.OFF, Tick.class).to(Power.ON)
                 .build();
 
-        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+        ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
 
         assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
         assertThat(step.effects()).containsExactly("pressed");
@@ -116,7 +116,7 @@ class StepTest {
                 .on(Lamp.POWER, Power.OFF, Tick.class).to(Power.ON)
                 .build();
 
-        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+        ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
 
         assertThat(step.effects()).containsExactly("left off", "pressed");
     }
@@ -146,7 +146,7 @@ class StepTest {
                 .on(Lamp.STAGE, Stage.MID, Hit.class).emit("hit").to(Stage.HIGH)
                 .build();
 
-        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+        ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
 
         assertThat(step.configuration().get(Lamp.STAGE)).isEqualTo(Stage.HIGH);
         assertThat(step.effects()).containsExactly("on", "tick", "hit");
@@ -175,7 +175,7 @@ class StepTest {
                 .build();
         Configuration start = chart.initial();
 
-        Step<String> step = chart.step(start, new Facts(Mode.DIM), new Hit());
+        ChartStep<String> step = chart.step(start, new Facts(Mode.DIM), new Hit());
 
         assertThat(step.configuration()).isEqualTo(start);
         assertThat(step.effects()).isEmpty();
@@ -190,8 +190,8 @@ class StepTest {
                 .to(Power.ON)
                 .build();
 
-        Step<String> bright = chart.step(chart.initial(), new Facts(Mode.BRIGHT), new Hit());
-        Step<String> dim = chart.step(chart.initial(), new Facts(Mode.DIM), new Hit());
+        ChartStep<String> bright = chart.step(chart.initial(), new Facts(Mode.BRIGHT), new Hit());
+        ChartStep<String> dim = chart.step(chart.initial(), new Facts(Mode.DIM), new Hit());
 
         assertThat(chart.initial().toPlain()).containsOnlyKeys("power");
         assertThat(bright.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);

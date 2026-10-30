@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -39,7 +40,7 @@ class RepoAttachment {
     private String told(String taskId, NewRepo added, Standing read) {
         String where = added.project() + " is at " + added.worktreePath();
         try {
-            relay.relayUnder(taskId, "repo", "jagt added the repository you asked for: " + where + ", on branch " + taskId
+            relay.relayUnder(taskId, Step.REPO, "jagt added the repository you asked for: " + where + ", on branch " + taskId
                     + ", cut from " + added.baseBranch() + ".", false, read);
             return "add-repo " + taskId + ": " + where + "; the session was told";
         } catch (RuntimeException unheard) {

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.flow.TurnKind;
@@ -62,7 +63,7 @@ public class RestartAskJob implements TaskJob {
             return;
         }
         try {
-            relay.say(taskId, "restarted", FACTS, read);
+            relay.say(taskId, Step.RESTARTED, FACTS, read);
         } catch (RuntimeException e) {
             log.atWarn().setMessage("restart ask not sent").addKeyValue("task", taskId)
                     .addKeyValue("cause", e.toString()).addKeyValue("effect", "the session was not asked").log();

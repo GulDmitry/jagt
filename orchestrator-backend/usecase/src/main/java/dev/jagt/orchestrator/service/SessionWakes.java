@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Wake;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ import java.util.function.Predicate;
 public class SessionWakes {
 
     /** A step due to be said to the session of {@code taskId}. */
-    public record Due(String taskId, String step, Standing read) {
+    public record Due(String taskId, Step step, Standing read) {
     }
 
     private final StateService stateService;
@@ -34,14 +35,14 @@ public class SessionWakes {
     private final Clock clock;
 
     /** Arms the one wake of the task, replacing any pending, for the turn standing now. */
-    public synchronized void arm(String taskId, Instant at, String step) {
+    public synchronized void arm(String taskId, Instant at, Step step) {
         long turn = stateService.task(taskId).map(task -> task.turnOrNone().id()).orElse(0L);
         turns.mark(taskId, Wake.MARK, new Wake(turn, at.toEpochMilli(), step).mark());
         log.atInfo().setMessage("session wake armed").addKeyValue("task", taskId)
-                .addKeyValue("step", step).addKeyValue("at", at).log();
+                .addKeyValue("step", step.id()).addKeyValue("at", at).log();
     }
 
-    public void armIn(String taskId, Duration after, String step) {
+    public void armIn(String taskId, Duration after, Step step) {
         arm(taskId, clock.instant().plus(after), step);
     }
 

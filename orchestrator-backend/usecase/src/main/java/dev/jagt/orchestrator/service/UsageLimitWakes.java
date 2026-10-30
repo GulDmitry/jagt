@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ public class UsageLimitWakes {
                     .addKeyValue("cause", "no window at its limit with a known reset").log();
             return;
         }
-        wakes.arm(taskId, at.get(), "wake");
+        wakes.arm(taskId, at.get(), Step.WAKE);
     }
 
     public void cancel(String taskId) {

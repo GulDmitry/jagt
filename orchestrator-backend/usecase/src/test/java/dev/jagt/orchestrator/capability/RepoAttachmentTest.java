@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -63,7 +64,7 @@ class RepoAttachmentTest {
 
         String said = attachment.attach("ABC-7");
 
-        verify(relay).relayUnder(eq("ABC-7"), eq("repo"), contains("/wt/ABC-7-registry"), eq(false), any(Standing.class));
+        verify(relay).relayUnder(eq("ABC-7"), eq(Step.REPO), contains("/wt/ABC-7-registry"), eq(false), any(Standing.class));
         assertThat(said).contains("the session was told");
     }
 

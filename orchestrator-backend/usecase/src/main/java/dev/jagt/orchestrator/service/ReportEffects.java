@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * What a session's report sets going once it is applied: a wake after the next wait of {@code infraWait.backoff}
- * for a report of a wait, and a stop once the session has answered {@value #STEP} with a wait as many times as
+ * for a report of a wait, and a stop once the session has answered {@code wait-over} with a wait as many times as
  * there are waits. That stop keeps asking at the last wait, until the session reports something but a wait.
  * A reply no case takes closes its turn for the human.
  */
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ReportEffects {
 
-    static final String STEP = "wait-over";
+    static final Step STEP = Step.WAIT_OVER;
     static final String WAITS = "waits";
 
     private final SessionWakes wakes;
@@ -50,7 +51,7 @@ public class ReportEffects {
             askAgain(taskId);
             return;
         }
-        int waited = STEP.equals(turns.of(taskId).step()) ? count(turns.of(taskId).mark(WAITS)) : 0;
+        int waited = STEP.id().equals(turns.of(taskId).step()) ? count(turns.of(taskId).mark(WAITS)) : 0;
         properties.before(waited).ifPresentOrElse(wait -> {
             wakes.armIn(taskId, wait, STEP);
             turns.mark(taskId, WAITS, String.valueOf(waited + 1));

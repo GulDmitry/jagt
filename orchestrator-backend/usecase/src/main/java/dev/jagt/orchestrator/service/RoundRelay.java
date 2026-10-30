@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class RoundRelay {
         String told = RoundRecord.orUnknown(r.pipelineStatus());
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
         TaskStatus checked = null;
-        for (String step : RoundBrief.steps(r, told)) {
+        for (Step step : RoundBrief.steps(r, told)) {
             CaseDoor.Admission admission = door.opens(taskId, step);
             if (!admission.admitted()) {
                 return new SweepResult(SweepResult.Kind.REFUSED, read + ", checks " + said

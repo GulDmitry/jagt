@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 
 import dev.jagt.orchestrator.task.Ansi;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.config.SessionBrief;
@@ -67,7 +68,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public String launchCommand(Path worktree, boolean planMode, String model) {
-        return launchCommand(worktree, planMode, model, brief.line("start"));
+        return launchCommand(worktree, planMode, model, brief.line(Step.START));
     }
 
     @Override
@@ -80,7 +81,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     /** `--continue` takes the newest conversation this worktree holds, and simply starts one where it holds none. */
     @Override
     public String reviveCommand(Path worktree) {
-        return COMPACT_ENV + claude.command() + pinnedServers(worktree) + " --continue " + shellQuote(brief.line("revive"));
+        return COMPACT_ENV + claude.command() + pinnedServers(worktree) + " --continue " + shellQuote(brief.line(Step.REVIVE));
     }
 
     /**
@@ -146,8 +147,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
         Set<String> cut = new HashSet<>(typedByJagt);
-        cut.add(brief.line("start"));
-        cut.add(brief.line("revive"));
+        cut.add(brief.line(Step.START));
+        cut.add(brief.line(Step.REVIVE));
         return ClaudeTranscripts.humanSaid(ClaudeTranscripts.projectsDir(), worktree, cut);
     }
 

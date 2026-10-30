@@ -2,9 +2,11 @@ package dev.jagt.orchestrator.stand;
 
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.Step;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +36,8 @@ public final class ContextRelays {
     }
 
     private List<String> steps(String text) {
-        return brief.steps().stream().filter(step -> brief.section(step).filter(body -> !body.isBlank())
-                .filter(text::contains).isPresent()).toList();
+        return Arrays.stream(Step.values()).filter(step -> brief.section(step).filter(body -> !body.isBlank())
+                .filter(text::contains).isPresent()).map(Step::id).toList();
     }
 
     private static String read(Path context) {
