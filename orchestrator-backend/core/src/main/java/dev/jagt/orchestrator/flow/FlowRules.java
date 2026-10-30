@@ -154,6 +154,11 @@ public final class FlowRules {
 
 
 
+    /** Whether a plan can still come first for a task in {@code status}: it has written nothing from the code yet. */
+    public static boolean planMayComeFirst(TaskStatus status) {
+        return BEFORE_THE_CODE.contains(status);
+    }
+
     /** Whether a task may be moved to {@code status} by its own agent rather than by jagt. */
     public static boolean reportable(TaskStatus status) {
         return AGENT_REPORTABLE.contains(status);
@@ -173,7 +178,7 @@ public final class FlowRules {
         if (!reportable(to)) {
             return Optional.of(to + " is jagt's to set, not a task's to report");
         }
-        if (to == TaskStatus.PLAN_PENDING && !BEFORE_THE_CODE.contains(from)) {
+        if (to == TaskStatus.PLAN_PENDING && !planMayComeFirst(from)) {
             return Optional.of(to + " cannot be reported by a task that is already " + from
                     + " — a plan is what comes before the code, not after it"
                     + (from == TaskStatus.VERIFYING

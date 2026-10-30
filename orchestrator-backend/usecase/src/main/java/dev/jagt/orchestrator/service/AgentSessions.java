@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.Ansi;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.SessionHost;
 
@@ -84,6 +85,10 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         boolean plan = planMode(mode);
+        if (plan && !FlowRules.planMayComeFirst(task.status())) {
+            throw Refusal.byState("Task " + taskId + " is " + task.status()
+                    + ", so it cannot open in plan mode: a plan is what comes before the code, not after it");
+        }
         stateService.updateTask(taskId, was -> was.withPlanGate(PlanGate.of(plan, was.planGate())));
         String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), plan);
         return "New " + agentRuntime.displayName() + " session started for " + taskId + " in tab '"

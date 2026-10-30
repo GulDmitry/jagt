@@ -342,6 +342,19 @@ class AgentSessionsTest {
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
     }
 
+    @ParameterizedTest
+    @CsvSource({"VERIFYING", "REVIEW_PENDING", "DEPLOYED"})
+    void refusesPlanModeWhereNoPlanCanComeFirstAndLeavesTheGateAndTheTabAlone(TaskStatus status) {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), status).build());
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThatThrownBy(() -> sessions.openTaskTab("ABC-1", "plan"))
+                .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
+
+        assertThat(state.task("ABC-1").orElseThrow().planGate()).isNotEqualTo(PlanGate.REQUIRED);
+        verifyNoInteractions(tmux);
+    }
+
     @Test
     void confirmsALineWasSaidToTheRunningAgent() {
         state.putTask("ABC-1", TaskState.builder("demo", root.toString(), TaskStatus.REVIEW_PENDING).build());

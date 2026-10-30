@@ -1,5 +1,4 @@
 # Cases
-
 One row per use case a defect broke; a fixed defect adds or updates its row in the same commit, and names its family
 in a `Defect-family:` trailer. Seeded 2026-10-23 from the session ↔ Master families' fix commits since 2026-08-01.
 Families:
@@ -148,6 +147,7 @@ Families:
 | H3 | a reader asks who it is signed in as or which tools the host has, to reach a failed job's log → `whoami` and `discover*` pass beside `get*`, every write verb stays refused; an unreadable round names its cause | seen 2026-10-28: `whoami` and `discover_tools` refused, the sweep said "cause in the log" | `ReadOnlyToolsTest`, `RoundReadingTest` |
 | H4 | the Master ships a task whose request git finds merged → `ship` is withheld and a press records no step, so no ship after the merge counts toward the loop stop | seen 2026-10-28: a fourth ship after the request merged tripped a SHIPS stop on a request that no longer existed | `MergedGuardTest`, `MoveTest`, `WorktreeInspectionTest` |
 | H5 | a round carries red checks outside the code and a thread with the reviewer's new answer → the hand-back is refused until `review_replies.md` is written since the relay, and a standing question holds back only the checks | seen 2026-10-29: the session took the checks' "change nothing" route and left the thread unanswered; later sweeps read the round as unchanged | `HandBackDueTest`, `TaskStopsTest`, `RoundRelayTest` |
+| H6 | a task past the code is reopened in plan mode → the open is refused as a state refusal, the gate and the tab stay; a plan comes only before the code | seen 2026-10-30: `open_task_tab` mode=plan on a VERIFYING task closed its gate and refused every source write, with the only exit unreachable | `AgentSessionsTest` |
 
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |

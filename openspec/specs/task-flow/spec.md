@@ -113,8 +113,6 @@ A task needing more work after its request merged SHALL go back to `IN_PROGRESS`
 ### Requirement: Nothing below flow decides a status
 A capability SHALL report `OK` / `RELAYED` / `CONFLICT` / `PARTIAL` / `GONE` plus the sentence and the stamp, so work serves several statuses. Its
 sentence MAY name the status; nothing parses it. `withStatus` MUST appear only in `flow/` and its implementing record.
-
-### Requirement: PARTIAL refuses
 `PARTIAL` SHALL be the one refusing outcome, stamped on the task first and thrown second: half a change is recorded.
 
 #### Scenario: Half a change lands
@@ -175,6 +173,8 @@ write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused
 #### Scenario: A task reopened in plan mode
 - **WHEN** a task whose gate is open is reopened with `mode=plan`
 - **THEN** its gate is closed until `approve-plan`, and the answer says the plan is approved on the board
+- **WHEN** a task at `VERIFYING`, `REVIEW_PENDING` or later is reopened with `mode=plan`
+- **THEN** it is refused as a state refusal naming the status; nothing opens and its gate stays as it was
 
 ### Requirement: An existing branch is never lost
 Nothing SHALL be freed or moved until `recreate` or `resume` is picked for a branch that exists.
