@@ -68,7 +68,8 @@ class RingsTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"core, usecase adapter surface .", "usecase, adapter surface ."})
+    @CsvSource({"statechart, core usecase adapter surface .", "core, usecase adapter surface .",
+            "usecase, adapter surface ."})
     void aModuleNamesNoTypeOfTheModulesAroundItEvenInAComment(String inner, String outer) {
         Set<String> outerTypes = Stream.of(outer.split(" "))
                 .flatMap(module -> javaFilesUnder(Path.of(module, "src/main/java")))
@@ -77,6 +78,14 @@ class RingsTest {
         assertThat(javaFilesUnder(Path.of(inner, "src/main/java"))
                 .filter(path -> Pattern.compile("\\b[A-Z]\\w+").matcher(read(path)).results()
                         .map(MatchResult::group).anyMatch(outerTypes::contains))
+                .map(Path::getFileName)).isEmpty();
+    }
+
+    @Test
+    void theStatechartImportsNothingButTheJdk() {
+        assertThat(javaFilesUnder(Path.of("statechart", "src/main/java"))
+                .filter(path -> Pattern.compile("^import (?:static )?(?!java\\.|dev\\.jagt\\.statechart\\.)",
+                        Pattern.MULTILINE).matcher(read(path)).find())
                 .map(Path::getFileName)).isEmpty();
     }
 

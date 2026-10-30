@@ -153,7 +153,7 @@ class TextBudgetTest {
     }
 
     private static Stream<Path> mainSources() {
-        return Stream.of("core", "usecase", "adapter", "surface", ".")
+        return Stream.of("statechart", "core", "usecase", "adapter", "surface", ".")
                 .map(module -> Path.of(module, "src/main/java"))
                 .flatMap(TextBudgetTest::javaFilesUnder);
     }

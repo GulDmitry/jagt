@@ -258,11 +258,12 @@ key that fixes it. The composition half, and what of it exists:
 
 ## The build
 
-Five Gradle modules under `orchestrator-backend/`, one per ring, so the dependency rule is the compiler's: an import
+Six Gradle modules under `orchestrator-backend/`, one per ring and the engine, so the dependency rule is the compiler's: an import
 that points outward does not compile. Two folders inside one module it cannot separate — hence `RingsTest`.
 
 | module | holds | sees |
 |--------|-------|------|
+| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step | the JDK only, no jagt type |
 | `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |

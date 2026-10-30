@@ -27,7 +27,7 @@ class CognitiveComplexityTest {
         PMDConfiguration configuration = new PMDConfiguration();
         configuration.setDefaultLanguageVersion(LanguageRegistry.PMD.getLanguageVersionById("java", "25"));
         configuration.setIgnoreIncrementalAnalysis(true);
-        Stream.of("core", "usecase", "adapter", "surface", ".")
+        Stream.of("statechart", "core", "usecase", "adapter", "surface", ".")
                 .map(module -> Path.of(module, "src/main/java")).forEach(configuration::addInputPath);
 
         try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {

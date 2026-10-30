@@ -25,7 +25,7 @@ class DuplicationTest {
         CPDConfiguration configuration = new CPDConfiguration();
         configuration.setOnlyRecognizeLanguage(LanguageRegistry.CPD.getLanguageById("java"));
         configuration.setMinimumTileSize(MINIMUM_TOKENS);
-        Stream.of("core", "usecase", "adapter", "surface", ".")
+        Stream.of("statechart", "core", "usecase", "adapter", "surface", ".")
                 .map(module -> Path.of(module, "src/main/java")).forEach(configuration::addInputPath);
         List<String> duplicates = new ArrayList<>();
 

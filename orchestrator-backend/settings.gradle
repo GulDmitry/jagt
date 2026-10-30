@@ -3,6 +3,7 @@ rootProject.name = 'orchestrator-backend'
 // One module per ring, so the dependency rule is the compiler's: `:core` sees nothing of jagt's, `:usecase` sees
 // only the centre, `:adapter` and `:surface` see the centre and the use cases, and only the root sees every
 // adapter — which is what makes it the assembly.
+include 'statechart'
 include 'core'
 include 'usecase'
 include 'adapter'
