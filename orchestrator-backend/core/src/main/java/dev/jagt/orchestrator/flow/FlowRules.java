@@ -21,8 +21,7 @@ public final class FlowRules {
     private static final Set<TaskAction> ALWAYS = EnumSet.of(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF,
             TaskAction.RESPAWN, TaskAction.DONE);
 
-    private record Rule(Set<TaskStatus> from, BiPredicate<TaskStatus, Facts> when,
-                        Map<Outcome.Kind, TaskStatus> next, Map<Outcome.Kind, Set<TaskStatus>> keeps) {
+    private record Rule(Set<TaskStatus> from, BiPredicate<TaskStatus, Facts> when) {
 
         boolean allows(TaskStatus status, Facts facts) {
             return from.contains(status) && when.test(status, facts);
@@ -35,31 +34,23 @@ public final class FlowRules {
         // `ship` IS the human's approval, so a task an agent has not reported on passes too; a SHIPPING task
         // whose agent has DIED passes as recovery, while a live one means the push is already in flight.
         rule(TaskAction.SHIP)
-                .from(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING, TaskStatus.REVIEW_PENDING,
-                        TaskStatus.SHIPPING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.REVIEWED,
-                        TaskStatus.DEPLOYED, TaskStatus.REVERTED)
+                .fromChart()
                 .when((status, facts) -> !facts.gitStateChanged() && !facts.requestMerged() && switch (status) {
                     case IN_PROGRESS, VERIFYING, REVIEW_PENDING -> true;
                     case SHIPPING -> !facts.agentLive().getAsBoolean();
                     default -> facts.hasReviewRequest();
                 })
-                .on(Outcome.Kind.OK, TaskStatus.CI_POLLING)
-                .on(Outcome.Kind.RELAYED, TaskStatus.SHIPPING)
                 .add();
 
         // The plan holds: the session is told to start on it, which is the one way out of a plan.
         rule(TaskAction.APPROVE_PLAN)
-                .from(TaskStatus.PLAN_PENDING)
-                .on(Outcome.Kind.RELAYED, TaskStatus.IN_PROGRESS)
+                .fromChart()
                 .add();
 
         // The session stopped to ask for another repository; the task goes back to work unless a human owns its status.
         rule(TaskAction.ADD_REPO)
                 .fromAny()
                 .when((status, facts) -> status != TaskStatus.DONE && facts.repoRequested())
-                .on(Outcome.Kind.RELAYED, TaskStatus.IN_PROGRESS)
-                .keeps(Outcome.Kind.RELAYED, TaskStatus.PLAN_PENDING, TaskStatus.DEPLOYED,
-                        TaskStatus.DEPLOY_CONFLICT, TaskStatus.REVERTED)
                 .add();
 
         // Reading a review round decides nothing by itself: what it found is REPORTED.
@@ -71,14 +62,10 @@ public final class FlowRules {
         // What a reviewer SAID is not a gate: deploy merges the task BRANCH, and git's only precondition is
         // commits on it. Excluded are the statuses where it could only race or refuse.
         rule(TaskAction.DEPLOY)
-                .from(TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED,
-                        TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOYED,
-                        TaskStatus.DEPLOY_CONFLICT)
+                .fromChart()
                 // A stalled deploy is finished by deploying again, whatever the request says.
                 .when((status, facts) -> !facts.gitStateChanged()
                         && (status == TaskStatus.DEPLOY_CONFLICT || facts.hasReviewRequest()))
-                .on(Outcome.Kind.OK, TaskStatus.DEPLOYED)
-                .on(Outcome.Kind.CONFLICT, TaskStatus.DEPLOY_CONFLICT)
                 .add();
 
         // A deploy that stopped part way, or one the task has moved on from, may have left a repository live.
@@ -86,11 +73,6 @@ public final class FlowRules {
                 .fromAny()
                 .when((status, facts) -> !facts.gitStateChanged() && (status == TaskStatus.DEPLOYED
                         || status == TaskStatus.DEPLOY_CONFLICT || facts.liveDeploy()))
-                .on(Outcome.Kind.OK, TaskStatus.REVERTED)
-                // Only some of it came out, so what is left is still live.
-                .on(Outcome.Kind.PARTIAL, TaskStatus.DEPLOYED)
-                // Its half-merge still waits in the deploy worktree, which nothing resumes from DEPLOYED.
-                .keeps(Outcome.Kind.PARTIAL, TaskStatus.DEPLOY_CONFLICT)
                 .add();
 
         // Git that runs with the human's credentials waits until the human trusts what it would obey.
@@ -109,14 +91,6 @@ public final class FlowRules {
         }
     }
 
-    /**
-     * Statuses an AGENT may put its own task into. Everything else is jagt's to set — a task cannot talk itself
-     * onto a shared branch, out of one, closed, or past its own review.
-     */
-    private static final Set<TaskStatus> AGENT_REPORTABLE = EnumSet.of(TaskStatus.PLAN_PENDING,
-            TaskStatus.IN_PROGRESS,
-            TaskStatus.SHIPPING, TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED, TaskStatus.CI_POLLING);
-
     private FlowRules() {
     }
 
@@ -134,11 +108,7 @@ public final class FlowRules {
 
     /** The status this outcome leads a task in {@code from} to, or empty to leave the task where it is. */
     public static Optional<TaskStatus> next(TaskStatus from, TaskAction action, Outcome.Kind outcome) {
-        Rule rule = RULES.get(action);
-        if (rule == null || rule.keeps().getOrDefault(outcome, Set.of()).contains(from)) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(rule.next().get(outcome));
+        return outcome == Outcome.Kind.GONE ? Optional.empty() : TaskChart.land(from, new TaskMove.Ran(action, outcome));
     }
 
     /** Whether the table says anything at all about this action — a verb it does not mention can never run. */
@@ -148,20 +118,19 @@ public final class FlowRules {
 
     /** Every status any action can lead to. */
     public static Set<TaskStatus> targets() {
-        return RULES.values().stream().flatMap(rule -> rule.next().values().stream())
-                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return TaskChart.ranTargets();
     }
 
 
 
     /** Whether a plan can still come first for a task in {@code status}: it has written nothing from the code yet. */
     public static boolean planMayComeFirst(TaskStatus status) {
-        return BEFORE_THE_CODE.contains(status);
+        return TaskChart.land(status, new TaskMove.Reported(TaskStatus.PLAN_PENDING, false)).isPresent();
     }
 
     /** Whether a task may be moved to {@code status} by its own agent rather than by jagt. */
     public static boolean reportable(TaskStatus status) {
-        return AGENT_REPORTABLE.contains(status);
+        return TaskChart.reportable(status);
     }
 
     /** The same question with the status the task is IN. */
@@ -178,17 +147,17 @@ public final class FlowRules {
         if (!reportable(to)) {
             return Optional.of(to + " is jagt's to set, not a task's to report");
         }
-        if (to == TaskStatus.PLAN_PENDING && !planMayComeFirst(from)) {
+        if (TaskChart.land(from, new TaskMove.Reported(to, false)).isPresent()) {
+            return Optional.empty();
+        }
+        if (to == TaskStatus.PLAN_PENDING) {
             return Optional.of(to + " cannot be reported by a task that is already " + from
                     + " — a plan is what comes before the code, not after it"
                     + (from == TaskStatus.VERIFYING
                             ? "; report IN_PROGRESS first, then PLAN_PENDING with the new probes" : ""));
         }
-        if (to == TaskStatus.CI_POLLING && !BEFORE_THE_VERDICT.contains(from)) {
-            return Optional.of(to + " cannot be reported by a task that is already " + from
-                    + " — that would take it backwards and start polling finished work");
-        }
-        return Optional.empty();
+        return Optional.of(to + " cannot be reported by a task that is already " + from
+                + " — that would take it backwards and start polling finished work");
     }
 
     /**
@@ -206,15 +175,12 @@ public final class FlowRules {
      * jagt has run the project's own command, so a human never opens a red tree.
      */
     public static TaskStatus reported(TaskStatus from, TaskStatus to, boolean verificationOwed) {
-        if (HELD_AGAINST_A_REPORT.contains(from)) {
-            return from;
-        }
-        return verificationOwed && to == TaskStatus.REVIEW_PENDING ? TaskStatus.VERIFYING : to;
+        return TaskChart.land(from, new TaskMove.Reported(to, verificationOwed)).orElse(to);
     }
 
     /** Whether a report leaves the task's line alone, a question aside: the status's own fact is the human's. */
     public static boolean holdsItsLine(TaskStatus status) {
-        return HELD_AGAINST_A_REPORT.contains(status);
+        return TaskChart.holds(status);
     }
 
     /** Whether the task's next step waits on the host's checks, so a red or green read can move it. */
@@ -229,15 +195,15 @@ public final class FlowRules {
 
     /** What a read of the review round can conclude, which only the host's round read may land. */
     public static Set<TaskStatus> reads() {
-        return EnumSet.copyOf(READ_FROM_THE_HOST);
+        return TaskChart.reads();
     }
 
     /** Where a round read lands: only a task waiting on the host moves, a session on its status keeps it. */
     public static TaskStatus readLands(TaskStatus from, TaskStatus read) {
-        if (!READ_FROM_THE_HOST.contains(read)) {
+        if (!TaskChart.reads().contains(read)) {
             throw new IllegalArgumentException(read + " is not what a read of the review round concludes");
         }
-        return READ_LANDS_FROM.contains(from) ? read : from;
+        return TaskChart.land(from, new TaskMove.Read(read)).orElse(from);
     }
 
     /**
@@ -260,7 +226,7 @@ public final class FlowRules {
 
     /** A verified hand-back reaches the human; a failed one goes back to its session. */
     public static TaskStatus verified(boolean passed) {
-        return passed ? TaskStatus.REVIEW_PENDING : TaskStatus.IN_PROGRESS;
+        return TaskChart.land(TaskStatus.VERIFYING, new TaskMove.Verified(passed)).orElseThrow();
     }
 
     /** A session handed findings, an answer or a go is at work again. */
@@ -343,7 +309,7 @@ public final class FlowRules {
 
     /** Where a read of the pipeline on a deploy commit lands: only a task live on the deploy branch moves, and only on a red the code owns. */
     public static TaskStatus deployReadLands(TaskStatus from, boolean redOnTheCode) {
-        return from == TaskStatus.DEPLOYED && redOnTheCode ? TaskStatus.DEPLOY_CONFLICT : from;
+        return TaskChart.land(from, new TaskMove.DeployRead(redOnTheCode)).orElse(from);
     }
 
     /** A plan waiting to be read, rather than a round of code. */
@@ -396,14 +362,8 @@ public final class FlowRules {
 
     private static final Set<TaskStatus> WAITING_FOR_A_DEPLOY = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
 
-    private static final Set<TaskStatus> HELD_AGAINST_A_REPORT = EnumSet.of(TaskStatus.REVERTED,
-            TaskStatus.DEPLOY_CONFLICT);
-
     private static final Set<TaskStatus> AWAITING_ITS_INSTRUCTION = EnumSet.of(TaskStatus.SHIPPING,
             TaskStatus.DEPLOY_CONFLICT);
-
-    private static final Set<TaskStatus> READ_FROM_THE_HOST = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
-            TaskStatus.CI_FAILED);
 
     private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
             AgentReport.PERMISSION);
@@ -411,20 +371,9 @@ public final class FlowRules {
     private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
             TaskStatus.REVIEWED, TaskStatus.APPROVED);
 
-    private static final Set<TaskStatus> READ_LANDS_FROM = EnumSet.of(TaskStatus.CI_POLLING,
-            TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.CI_FAILED);
-
     /** Statuses the work has been handed over from, so a tracker reaching its own last stage may close it. */
     private static final Set<TaskStatus> HANDED_OVER = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
             TaskStatus.DEPLOYED);
-
-    /** Statuses a task has written nothing from yet, so a plan is still the next thing it hands over. */
-    private static final Set<TaskStatus> BEFORE_THE_CODE = EnumSet.of(TaskStatus.NEW, TaskStatus.PLAN_PENDING,
-            TaskStatus.IN_PROGRESS);
-
-    /** Statuses a task can still be waiting on its checks from. */
-    private static final Set<TaskStatus> BEFORE_THE_VERDICT = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,
-            TaskStatus.SHIPPING, TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED);
 
     private static Builder rule(TaskAction action) {
         return new Builder(action);
@@ -435,15 +384,13 @@ public final class FlowRules {
         private final TaskAction action;
         private Set<TaskStatus> from = EnumSet.allOf(TaskStatus.class);
         private BiPredicate<TaskStatus, Facts> when = (status, facts) -> true;
-        private final Map<Outcome.Kind, TaskStatus> next = new EnumMap<>(Outcome.Kind.class);
-        private final Map<Outcome.Kind, Set<TaskStatus>> keeps = new EnumMap<>(Outcome.Kind.class);
 
         private Builder(TaskAction action) {
             this.action = action;
         }
 
-        private Builder from(TaskStatus... statuses) {
-            this.from = EnumSet.copyOf(List.of(statuses));
+        private Builder fromChart() {
+            this.from = TaskChart.leavesBy(action);
             return this;
         }
 
@@ -456,18 +403,8 @@ public final class FlowRules {
             return this;
         }
 
-        private Builder on(Outcome.Kind outcome, TaskStatus status) {
-            next.put(outcome, status);
-            return this;
-        }
-
-        private Builder keeps(Outcome.Kind outcome, TaskStatus... statuses) {
-            keeps.put(outcome, EnumSet.copyOf(List.of(statuses)));
-            return this;
-        }
-
         private void add() {
-            RULES.put(action, new Rule(from, when, Map.copyOf(next), Map.copyOf(keeps)));
+            RULES.put(action, new Rule(from, when));
         }
     }
 }
