@@ -917,6 +917,18 @@ class AgentSessionsTest {
     }
 
     @Test
+    void startsTheSessionRecordOverWhenAFreshSessionIsStarted() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build().withSession(
+                Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null)).withMovedAt(5_000)));
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.relayUnderCold("ABC-1", "and handle empty files");
+
+        assertThat(state.task("ABC-1").orElseThrow().session()).isEqualTo(Session.defaults());
+    }
+
+    @Test
     void refusesAPressedFocusWithTheCauseWhereTheSessionsWindowsCannotBeListed() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");

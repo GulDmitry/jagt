@@ -12,6 +12,7 @@ SHALL be written under the brief in `task_context.md` and start a fresh session 
 Only then SHALL it be blocked, with one line saying where it went. Idle counts from `Session.idleSince`, the later
 of the session's halt and last sign, never while its turn is open or where it has signed nothing.
 The record is persisted, so a restart of jagt never reads a cold session as warm.
+Starting a fresh session starts the record over, so nothing the old session signed speaks for the new one.
 
 #### Scenario: An idle session gets a prompt
 - **WHEN** a prompt comes after the cache lifetime
@@ -24,6 +25,8 @@ The record is persisted, so a restart of jagt never reads a cold session as warm
 #### Scenario: The fresh session's first prompt is never relayed again
 - **WHEN** a prompt arrives while its session's turn is open, as a fresh session's first one does
 - **THEN** it reaches the model
+- **WHEN** a prompt arrives before the fresh session's first hook
+- **THEN** it passes, the old session's idle stamp being gone
 
 #### Scenario: jagt cannot relay
 - **WHEN** the relay or the fresh start fails, or jagt is down

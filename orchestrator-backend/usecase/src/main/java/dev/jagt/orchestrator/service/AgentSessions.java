@@ -403,6 +403,7 @@ public class AgentSessions {
     private void startFresh(String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
         log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias()).addKeyValue("cause", cause).log();
+        stateService.updateTask(taskId, TaskReducer::sessionStartedOver);
         openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
     }
 

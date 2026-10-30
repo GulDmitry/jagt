@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
@@ -110,6 +111,11 @@ public final class TaskReducer {
     /** {@code task} with the sign its session made recorded; a sign the phase has no edge for is dropped. */
     public static TaskState signed(TaskState task, SessionSign sign, long now) {
         return step(task, new TaskMove.Signed(sign), now);
+    }
+
+    /** {@code task} whose session starts over: nothing the old one signed speaks for the new one. */
+    public static TaskState sessionStartedOver(TaskState task) {
+        return task.withSession(Session.defaults());
     }
 
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
