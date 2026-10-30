@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-22. Adds to [0013](0013-a-deploy-conflict-is-the-sessions-in-act.md).
+Superseded in part by [0112](0112-a-deploy-is-a-saga-record-advanced-by-one-runner.md): the hand-off lives on the deployment's conflicted target.
 
 ## Context
 
