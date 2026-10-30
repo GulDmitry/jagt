@@ -4,8 +4,7 @@ in a `Defect-family:` trailer. Seeded 2026-10-23 from the session ↔ Master fam
 Families:
 - A text vs. text: a jagt text contradicts another, or asks what the machine refuses at that step.
 - B state overwritten: a record or dedup key is overwritten, lost on restart or kept in the wrong place.
-- C turn collision: two parties (human, Master, session, reviewer) act on one turn.
-- D model overreach: a model decided what the machine should decide.
+- C turn collision: two parties (human, Master, session, reviewer) act on one turn. D model overreach: a model decided what the machine should.
 - E missing ending: a stop, crash, error or limit goes unseen, or two endings are merged.
 - F unbounded loop: a repeat, a store or a spend has no ceiling.
 - G prose routing: jagt decided by reading text.
@@ -164,7 +163,8 @@ Families:
 |----|--------------------|---------|-----------|
 | J1 | a long-lived branch's request listed commits its moved target already held; the session was forbidden to rebase → it rebases onto the target and lease-pushes, ordered by the `ship` step | seen 2026-10-28 | `SubAgentBriefingTest`, `SessionBriefTest`, `ToolGateTest` |
 | J2 | the host says a request merged by squash or fast-forward, git finds no merge commit → the review read's `merged` word records it, and `ship` is withheld | seen 2026-10-28: a GitLab request merged, the task stayed REVIEWED with `merged` unset | `RoundReadingTest` |
-| J3 | every request of a task is merged, the task still `REVIEWED` → its card reads `merged`, offers `done` quietly and is no longer polled; a deploy waits on a recorded conflict whose worktree was deleted → the press is refused naming it, not merged again from the first repository | seen 2026-10-29: a squash-merged request left the card "awaiting approval" and polled | `MoveTest`, `TaskViewTest`, `AutoReviewCadenceTest`, `DeployServiceTest` |
+| J3 | every request of a task is merged, the task still `REVIEWED` → its card reads `merged`, offers `done` quietly and is no longer polled | seen 2026-10-29: a squash-merged request left the card "awaiting approval" and polled | `MoveTest`, `TaskViewTest`, `AutoReviewCadenceTest` |
+| J4 | a deploy waits on a recorded conflict whose deploy worktree was deleted → the press is refused naming it, not merged again from the first repository | 2d530917 | `DeployServiceTest` |
 
 ## K — the board
 | id | the case, one line | defects | pinned by |
