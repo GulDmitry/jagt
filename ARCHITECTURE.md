@@ -94,7 +94,8 @@ answer. Every type in `flow/`, one question each:
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
 | `TaskView` | what the board renders, built by `service/TaskViews` |
 
-- The lifecycle's legal moves are `flow/TaskChart`, drawn in [`docs/task-chart.md`](docs/task-chart.md).
+- The lifecycle's legal moves are `flow/TaskChart`, drawn in [`docs/task-chart.md`](docs/task-chart.md);
+  the stop's way out, in [`docs/task-stop-chart.md`](docs/task-stop-chart.md).
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
   (`service/TaskProvisioning`).
 - **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the

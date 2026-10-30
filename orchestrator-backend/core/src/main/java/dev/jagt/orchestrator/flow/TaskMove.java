@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
 
 /** What can happen to a task's status, named by the door it came through. */
 sealed interface TaskMove {
@@ -18,5 +19,14 @@ sealed interface TaskMove {
     }
 
     record Verified(boolean passed) implements TaskMove {
+    }
+
+    record StopSet(TaskStop stop) implements TaskMove {
+    }
+
+    record Lifted() implements TaskMove {
+    }
+
+    record StopEnded(TaskStop.Trigger.Ends ends) implements TaskMove {
     }
 }

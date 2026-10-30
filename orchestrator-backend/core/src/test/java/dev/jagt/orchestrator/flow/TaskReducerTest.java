@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,6 +20,36 @@ class TaskReducerTest {
                 "deployed", true, 2_000);
 
         assertThat(deployed.conflict()).isNull();
+    }
+
+    @Test
+    void endsAHostReadStopOnAReadThatDisprovesIt() {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
+                .stop(new TaskStop(TaskStop.Trigger.INFRA, 1_000, "runner died")).build();
+
+        TaskState ended = TaskReducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
+
+        assertThat(ended.stop()).isNull();
+    }
+
+    @Test
+    void keepsALiftStopOnAReadThatDisprovesAHostReadStop() {
+        TaskStop stop = new TaskStop(TaskStop.Trigger.STALLED, 1_000, "rounds bring nothing new");
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).stop(stop).build();
+
+        TaskState kept = TaskReducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
+
+        assertThat(kept.stop()).isEqualTo(stop);
+    }
+
+    @Test
+    void keepsTheStopThatStandsWhenAnotherOneIsSet() {
+        TaskStop standing = new TaskStop(TaskStop.Trigger.INFRA, 1_000, "runner died");
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.DEPLOYED).stop(standing).build();
+
+        TaskState kept = TaskReducer.stop(stopped, new TaskStop(TaskStop.Trigger.PACE, 2_000, "too fast"), 2_000);
+
+        assertThat(kept.stop()).isEqualTo(standing);
     }
 
     @Test

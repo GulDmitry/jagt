@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.statechart.Chart;
 import dev.jagt.statechart.ChartBuilder;
 import dev.jagt.statechart.EdgeBuilder;
@@ -15,10 +16,12 @@ import java.util.function.Predicate;
 
 import static dev.jagt.orchestrator.task.TaskStatus.*;
 
-/** The lifecycle region: one edge per status move, and the only place that says where a move leads. */
+/** The lifecycle region, one edge per status move, and the stop region, one way out per way a stop ends. */
 final class TaskChart {
 
     private static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
+
+    private static final RegionId<StopKind> STOP = new RegionId<>("stop", StopKind.class);
 
     private static final Object NO_FACTS = new Object();
 
@@ -53,14 +56,15 @@ final class TaskChart {
         return CHART;
     }
 
-    /** What {@code move} does to a task at {@code from}, in order; empty where the chart has no edge for it. */
-    static List<TaskEffect> effects(TaskStatus from, TaskMove move) {
-        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name())), NO_FACTS, move).effects();
+    /** What {@code move} does to a task at {@code from} under {@code stop}, in order; empty where no edge takes it. */
+    static List<TaskEffect> effects(TaskStatus from, StopKind stop, TaskMove move) {
+        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name())),
+                NO_FACTS, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
-        return effects(from, move).stream().filter(TaskEffect.Lands.class::isInstance)
+        return effects(from, StopKind.NONE, move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -106,6 +110,7 @@ final class TaskChart {
         ChartBuilder<TaskMove, Object, TaskEffect> chart = Chart.builder();
         chart.region(LIFECYCLE, NEW, Set.of(DONE));
         chart.onExit(LIFECYCLE, DEPLOY_CONFLICT, new TaskEffect.ClearsConflict());
+        stops(chart);
         ran(chart);
         reports(chart);
         reads(chart);
@@ -113,6 +118,22 @@ final class TaskChart {
         edge(chart, VERIFYING, "verified", new TaskMove.Verified(true)::equals, REVIEW_PENDING);
         edge(chart, VERIFYING, "verification failed", new TaskMove.Verified(false)::equals, IN_PROGRESS);
         return chart.build();
+    }
+
+    private static void stops(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
+        chart.region(STOP, StopKind.NONE);
+        chart.onMatching(STOP, StopKind.NONE, "lift", new TaskMove.Lifted()::equals)
+                .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
+        for (TaskStop.Trigger.Ends ends : TaskStop.Trigger.Ends.values()) {
+            StopKind kind = StopKind.of(ends);
+            chart.onMatching(STOP, StopKind.NONE, "stop ending on " + ends,
+                            move -> move instanceof TaskMove.StopSet set && set.stop().trigger().ends() == ends)
+                    .emitFor(move -> new TaskEffect.Stops(((TaskMove.StopSet) move).stop())).to(kind);
+            chart.onMatching(STOP, kind, "lift", new TaskMove.Lifted()::equals)
+                    .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
+            chart.onMatching(STOP, kind, ends + " ends it", new TaskMove.StopEnded(ends)::equals)
+                    .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
+        }
     }
 
     private static void ran(ChartBuilder<TaskMove, Object, TaskEffect> chart) {

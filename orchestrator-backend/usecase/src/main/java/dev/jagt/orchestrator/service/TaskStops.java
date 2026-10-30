@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoundTrail;
@@ -20,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-/** The one writer of a task's stop: tripped by the loop breaker or a miss, announced once, cleared by a lift or by the read its trigger names. */
+/** The usecase door to a task's stop: tripped by the loop breaker or a miss, announced once, cleared by a lift or by the read its trigger names. */
 @Service
 @RequiredArgsConstructor
 public class TaskStops {
@@ -97,7 +98,7 @@ public class TaskStops {
     }
 
     public void lift(String taskId) {
-        stateService.updateTask(taskId, task -> task.lifted(clock.millis()));
+        stateService.updateTask(taskId, task -> TaskReducer.lift(task, clock.millis()));
     }
 
     /** The stop a read of the checks ended: one whose trigger ends on a read, and the read listed the checks, not red. */
@@ -131,13 +132,11 @@ public class TaskStops {
     private Optional<TaskStop> endWhen(String taskId, TaskStop.Trigger.Ends ends, boolean disproves, String request) {
         AtomicReference<@Nullable TaskStop> ended = new AtomicReference<>();
         stateService.updateTask(taskId, task -> {
-            TaskStop stop = task.stop();
-            if (!disproves || stop == null || stop.trigger().ends() != ends
-                    || !stop.countedOnOrNone(request)) {
-                return task;
+            TaskState after = disproves ? TaskReducer.ended(task, ends, request, clock.millis()) : task;
+            if (task.stopped() && !after.stopped()) {
+                ended.set(task.stop());
             }
-            ended.set(stop);
-            return task.lifted(clock.millis());
+            return after;
         });
         return Optional.ofNullable(ended.get());
     }
@@ -163,7 +162,7 @@ public class TaskStops {
             stop.ifPresent(tripped::set);
             stop.ifPresent(s -> stoppedTask.set(recorded));
             stop.ifPresent(standing::set);
-            return stop.map(s -> recorded.withStop(s.countedOn(recorded.requests()))).orElse(recorded);
+            return stop.map(s -> TaskReducer.stop(recorded, s, clock.millis())).orElse(recorded);
         });
         Optional.ofNullable(tripped.get())
                 .ifPresent(stop -> announcements.announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));

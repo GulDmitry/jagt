@@ -14,13 +14,16 @@ class TaskChartTest {
     @Test
     void startsAtNewOnAChartTheEngineValidatedAsReachableAndLeavable() {
         assertThat(TaskChart.chart().initial().toPlain()).containsExactly(
-                entry("lifecycle", "NEW"));
+                entry("lifecycle", "NEW"), entry("stop", "NONE"));
     }
 
     @Test
     void rendersTheDiagramTheDocsPageShows() throws IOException {
-        String page = Files.readString(Path.of("../../docs/task-chart.md"));
+        String[] regions = TaskChart.chart().render().split("    --\n");
 
-        assertThat(page).isEqualTo("# The task lifecycle chart\n\n```mermaid\n" + TaskChart.chart().render() + "```\n");
+        assertThat(Files.readString(Path.of("../../docs/task-chart.md")))
+                .isEqualTo("# The task lifecycle chart\n\n```mermaid\n" + regions[0] + "```\n");
+        assertThat(Files.readString(Path.of("../../docs/task-stop-chart.md")))
+                .isEqualTo("# The task stop chart\n\n```mermaid\nstateDiagram-v2\n" + regions[1] + "```\n");
     }
 }
