@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public final class EdgeBuilder<E, F, S extends Enum<S>> {
+public final class EdgeBuilder<E, X, F, S extends Enum<S>> {
 
-    private final ChartBuilder<E, F> chart;
+    private final ChartBuilder<E, X, F> chart;
     private final String region;
     private final S from;
     private final String label;
@@ -16,7 +16,7 @@ public final class EdgeBuilder<E, F, S extends Enum<S>> {
     private final List<Function<E, F>> effects = new ArrayList<>();
     private final List<E> raises = new ArrayList<>();
 
-    EdgeBuilder(ChartBuilder<E, F> chart, String region, S from, String label, Predicate<E> matches) {
+    EdgeBuilder(ChartBuilder<E, X, F> chart, String region, S from, String label, Predicate<E> matches) {
         this.chart = chart;
         this.region = region;
         this.from = from;
@@ -24,27 +24,27 @@ public final class EdgeBuilder<E, F, S extends Enum<S>> {
         this.matches = matches;
     }
 
-    public EdgeBuilder<E, F, S> when(Condition<E> allowed) {
+    public EdgeBuilder<E, X, F, S> when(Condition<E> allowed) {
         guard = allowed;
         return this;
     }
 
-    public EdgeBuilder<E, F, S> emit(F effect) {
+    public EdgeBuilder<E, X, F, S> emit(F effect) {
         effects.add(event -> effect);
         return this;
     }
 
-    public EdgeBuilder<E, F, S> emitFor(Function<E, F> effect) {
+    public EdgeBuilder<E, X, F, S> emitFor(Function<E, F> effect) {
         effects.add(effect);
         return this;
     }
 
-    public EdgeBuilder<E, F, S> raise(E event) {
+    public EdgeBuilder<E, X, F, S> raise(E event) {
         raises.add(event);
         return this;
     }
 
-    public ChartBuilder<E, F> to(S target) {
+    public ChartBuilder<E, X, F> to(S target) {
         chart.add(new Edge<>(region, from, target, label, matches, guard, List.copyOf(effects),
                 List.copyOf(raises)));
         return chart;

@@ -1,6 +1,7 @@
 package dev.jagt.statechart;
 
 import dev.jagt.statechart.Lamp.Event;
+import dev.jagt.statechart.Lamp.Facts;
 import dev.jagt.statechart.Lamp.Mode;
 import dev.jagt.statechart.Lamp.Power;
 import dev.jagt.statechart.Lamp.Press;
@@ -18,7 +19,7 @@ class ChartTest {
 
     @Test
     void aStateNothingReachesIsReported() {
-        ChartBuilder<Event, String> builder = Chart.<Event, String>builder()
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
                 .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.MID, Stage.HIGH))
                 .on(Lamp.STAGE, Stage.LOW, Press.class).to(Stage.MID);
 
@@ -28,7 +29,7 @@ class ChartTest {
 
     @Test
     void aNonFinalStateWithNoEdgeOutIsReported() {
-        ChartBuilder<Event, String> builder = Chart.<Event, String>builder()
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
                 .region(Lamp.POWER, Power.OFF)
                 .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON);
 
@@ -38,7 +39,7 @@ class ChartTest {
 
     @Test
     void aRegionDeclaredTwiceIsReported() {
-        ChartBuilder<Event, String> builder = Chart.<Event, String>builder()
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
                 .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
                 .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
                 .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON);
@@ -49,8 +50,8 @@ class ChartTest {
 
     @Test
     void aEdgeOnADerivedRegionIsReported() {
-        ChartBuilder<Event, String> builder = Chart.<Event, String>builder()
-                .derived(Lamp.LEVEL, event -> Mode.DIM)
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
+                .derived(Lamp.LEVEL, Facts::level)
                 .on(Lamp.LEVEL, Mode.DIM, Press.class).to(Mode.BRIGHT);
 
         assertThatThrownBy(builder::build).isInstanceOfSatisfying(ChartInvalid.class,
@@ -59,7 +60,7 @@ class ChartTest {
 
     @Test
     void everyProblemIsReportedAtOnce() {
-        ChartBuilder<Event, String> builder = Chart.<Event, String>builder()
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
                 .region(Lamp.STAGE, Stage.LOW, Set.of())
                 .on(Lamp.STAGE, Stage.LOW, Press.class).to(Stage.MID);
 
@@ -70,13 +71,13 @@ class ChartTest {
 
     @Test
     void aConfigurationRoundTripsThroughItsPlainData() {
-        Chart<Event, String> chart = Chart.<Event, String>builder()
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
                 .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
                 .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
                 .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
                 .on(Lamp.MODE, Mode.DIM, Tick.class).to(Mode.BRIGHT)
                 .build();
-        Configuration moved = chart.step(chart.initial(), new Tick()).configuration();
+        Configuration moved = chart.step(chart.initial(), new Facts(Mode.DIM), new Tick()).configuration();
 
         Configuration restored = chart.configuration(moved.toPlain());
 
@@ -86,7 +87,7 @@ class ChartTest {
 
     @Test
     void aConfigurationNamingAnUnknownStateIsRejected() {
-        Chart<Event, String> chart = Chart.<Event, String>builder()
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
                 .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
                 .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
                 .build();
@@ -97,7 +98,7 @@ class ChartTest {
 
     @Test
     void aConfigurationNamingAnUnknownRegionIsRejected() {
-        Chart<Event, String> chart = Chart.<Event, String>builder()
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
                 .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
                 .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
                 .build();
@@ -108,10 +109,10 @@ class ChartTest {
 
     @Test
     void theRenderingIsAStableMermaidDiagramOfEveryRegion() {
-        Chart<Event, String> chart = Chart.<Event, String>builder()
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
                 .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
                 .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
-                .derived(Lamp.LEVEL, event -> Mode.DIM)
+                .derived(Lamp.LEVEL, Facts::level)
                 .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
                 .on(Lamp.MODE, Mode.DIM, Tick.class).to(Mode.BRIGHT)
                 .build();

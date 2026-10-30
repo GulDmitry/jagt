@@ -8,7 +8,7 @@ final class Mermaid {
     private Mermaid() {
     }
 
-    static <E, F> String render(List<Stored<F>> stored, List<Derived<E>> derived, List<Edge<E, F>> transitions) {
+    static <E, X, F> String render(List<Stored<F>> stored, List<Derived<X>> derived, List<Edge<E, F>> transitions) {
         List<String> lines = new ArrayList<>(List.of("stateDiagram-v2"));
         for (int index = 0; index < stored.size(); index++) {
             if (index > 0) {

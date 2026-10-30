@@ -12,7 +12,7 @@ final class Validation {
     private Validation() {
     }
 
-    static <E, F> List<String> problems(List<String> names, List<Stored<F>> stored, List<Derived<E>> derived,
+    static <E, X, F> List<String> problems(List<String> names, List<Stored<F>> stored, List<Derived<X>> derived,
                                         List<Edge<E, F>> transitions) {
         List<String> problems = new ArrayList<>();
         names.stream().distinct().filter(name -> Collections.frequency(names, name) > 1)
@@ -26,7 +26,7 @@ final class Validation {
         return problems;
     }
 
-    private static <E, F> List<String> problemsOf(Stored<F> region, List<Edge<E, F>> transitions) {
+    private static <E, X, F> List<String> problemsOf(Stored<F> region, List<Edge<E, F>> transitions) {
         List<Edge<E, F>> own = transitions.stream().filter(t -> t.region().equals(region.name())).toList();
         Set<Enum<?>> reached = reachable(region.initial(), own);
         return region.states().stream().flatMap(state -> Stream.of(

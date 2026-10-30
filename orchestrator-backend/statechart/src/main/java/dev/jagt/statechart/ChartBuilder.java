@@ -9,13 +9,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public final class ChartBuilder<E, F> {
+public final class ChartBuilder<E, X, F> {
 
     private record Pending(String name, Class<? extends Enum<?>> type, Enum<?> initial, Set<Enum<?>> finals) {
     }
 
     private final List<Pending> regions = new ArrayList<>();
-    private final List<Derived<E>> derived = new ArrayList<>();
+    private final List<Derived<X>> derived = new ArrayList<>();
     private final Map<String, Map<Enum<?>, List<F>>> exits = new HashMap<>();
     private final List<Edge<E, F>> transitions = new ArrayList<>();
     private int ceiling = Chart.DEFAULT_CEILING;
@@ -23,41 +23,41 @@ public final class ChartBuilder<E, F> {
     ChartBuilder() {
     }
 
-    public <S extends Enum<S>> ChartBuilder<E, F> region(RegionId<S> id, S initial) {
+    public <S extends Enum<S>> ChartBuilder<E, X, F> region(RegionId<S> id, S initial) {
         return region(id, initial, Set.of());
     }
 
-    public <S extends Enum<S>> ChartBuilder<E, F> region(RegionId<S> id, S initial, Set<S> finals) {
+    public <S extends Enum<S>> ChartBuilder<E, X, F> region(RegionId<S> id, S initial, Set<S> finals) {
         regions.add(new Pending(id.name(), id.states(), initial, new LinkedHashSet<Enum<?>>(finals)));
         return this;
     }
 
-    public <S extends Enum<S>> ChartBuilder<E, F> derived(RegionId<S> id, Function<E, S> compute) {
+    public <S extends Enum<S>> ChartBuilder<E, X, F> derived(RegionId<S> id, Function<X, S> compute) {
         derived.add(new Derived<>(id.name(), compute));
         return this;
     }
 
-    public <S extends Enum<S>> ChartBuilder<E, F> onExit(RegionId<S> id, S state, F effect) {
+    public <S extends Enum<S>> ChartBuilder<E, X, F> onExit(RegionId<S> id, S state, F effect) {
         exits.computeIfAbsent(id.name(), name -> new HashMap<>()).computeIfAbsent(state, key -> new ArrayList<>())
                 .add(effect);
         return this;
     }
 
-    public <S extends Enum<S>> EdgeBuilder<E, F, S> on(RegionId<S> id, S from, Class<? extends E> type) {
+    public <S extends Enum<S>> EdgeBuilder<E, X, F, S> on(RegionId<S> id, S from, Class<? extends E> type) {
         return new EdgeBuilder<>(this, id.name(), from, type.getSimpleName(), type::isInstance);
     }
 
-    public <S extends Enum<S>> EdgeBuilder<E, F, S> onMatching(RegionId<S> id, S from, String label,
+    public <S extends Enum<S>> EdgeBuilder<E, X, F, S> onMatching(RegionId<S> id, S from, String label,
                                                                     Predicate<E> matches) {
         return new EdgeBuilder<>(this, id.name(), from, label, matches);
     }
 
-    public ChartBuilder<E, F> raiseCeiling(int events) {
+    public ChartBuilder<E, X, F> raiseCeiling(int events) {
         ceiling = events;
         return this;
     }
 
-    public Chart<E, F> build() {
+    public Chart<E, X, F> build() {
         List<Stored<F>> stored = regions.stream().map(region -> new Stored<>(region.name(), region.type(),
                 region.initial(), region.finals(),
                 Map.<Enum<?>, List<F>>copyOf(exits.getOrDefault(region.name(), Map.of())))).toList();

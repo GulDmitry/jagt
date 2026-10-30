@@ -11,25 +11,26 @@ import java.util.Optional;
 /**
  * Regions run in parallel and a step is pure. Within a microstep every region picks its first enabled transition
  * against the configuration from before it, exits are emitted before transition effects, and raised events run
- * to completion in raise order. A transition to its own state still exits it.
+ * to completion in raise order. A transition to its own state still exits it. A derived region is read from the
+ * facts the caller passes, the same for every raised event of the step.
  */
-public final class Chart<E, F> {
+public final class Chart<E, X, F> {
 
     static final int DEFAULT_CEILING = 100;
 
     private final List<Stored<F>> stored;
-    private final List<Derived<E>> derived;
+    private final List<Derived<X>> derived;
     private final List<Edge<E, F>> transitions;
     private final int ceiling;
 
-    Chart(List<Stored<F>> stored, List<Derived<E>> derived, List<Edge<E, F>> transitions, int ceiling) {
+    Chart(List<Stored<F>> stored, List<Derived<X>> derived, List<Edge<E, F>> transitions, int ceiling) {
         this.stored = stored;
         this.derived = derived;
         this.transitions = transitions;
         this.ceiling = ceiling;
     }
 
-    public static <E, F> ChartBuilder<E, F> builder() {
+    public static <E, X, F> ChartBuilder<E, X, F> builder() {
         return new ChartBuilder<>();
     }
 
@@ -56,7 +57,7 @@ public final class Chart<E, F> {
         return new Configuration(states);
     }
 
-    public Step<F> step(Configuration start, E event) {
+    public Step<F> step(Configuration start, X facts, E event) {
         Configuration config = start;
         List<F> effects = new ArrayList<>();
         List<String> moves = new ArrayList<>();
@@ -64,7 +65,7 @@ public final class Chart<E, F> {
         int raised = 0;
         while (!queue.isEmpty()) {
             E current = queue.poll();
-            List<Edge<E, F>> taken = enabled(config, current);
+            List<Edge<E, F>> taken = enabled(config, facts, current);
             taken.forEach(t -> effects.addAll(exitEffects(t)));
             for (Edge<E, F> t : taken) {
                 effects.addAll(t.effectsFor(current));
@@ -86,10 +87,10 @@ public final class Chart<E, F> {
         return Mermaid.render(stored, derived, transitions);
     }
 
-    private List<Edge<E, F>> enabled(Configuration config, E event) {
+    private List<Edge<E, F>> enabled(Configuration config, X facts, E event) {
         List<Edge<E, F>> taken = new ArrayList<>();
         for (Stored<F> region : stored) {
-            Others others = new Others(region.name(), name -> stateOf(config, event, name));
+            Others others = new Others(region.name(), name -> stateOf(config, facts, name));
             Enum<?> state = config.find(region.name()).orElseThrow();
             transitions.stream().filter(t -> t.region().equals(region.name()) && t.takes(state, event, others))
                     .findFirst().ifPresent(taken::add);
@@ -97,9 +98,9 @@ public final class Chart<E, F> {
         return taken;
     }
 
-    private Enum<?> stateOf(Configuration config, E event, String region) {
+    private Enum<?> stateOf(Configuration config, X facts, String region) {
         return config.find(region).or(() -> derived.stream().filter(d -> d.name().equals(region)).findFirst()
-                        .map(d -> d.compute().apply(event)))
+                        .map(d -> d.compute().apply(facts)))
                 .orElseThrow(() -> new IllegalArgumentException("no region " + region));
     }
 

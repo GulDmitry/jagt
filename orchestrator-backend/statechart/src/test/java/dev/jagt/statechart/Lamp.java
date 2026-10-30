@@ -8,6 +8,9 @@ final class Lamp {
 
     enum Stage { LOW, MID, HIGH }
 
+    record Facts(Mode level) {
+    }
+
     interface Event {
     }
 
