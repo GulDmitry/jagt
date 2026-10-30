@@ -354,6 +354,20 @@ class TaskReducerTest {
     }
 
     @Test
+    void aSessionStartedOverIsNotQuietFromTheOldTranscriptBeforeItsFirstHook() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState fresh = TaskReducer.sessionStartedOver(task);
+
+        TaskState first = TaskReducer.signed(fresh, new SessionSign.Read(Session.Window.State.RUNNING, 0, 1_000, 0, 5_000, null), 9_000);
+        TaskState second = TaskReducer.signed(first, new SessionSign.Read(Session.Window.State.RUNNING, 0, 1_000, 0, 5_000, null), 12_000);
+        TaskState third = TaskReducer.signed(second, new SessionSign.Read(Session.Window.State.RUNNING, 0, 1_000, 0, 5_000, null), 14_000);
+
+        assertThat(first.session().quietSince()).isZero();
+        assertThat(second.session().quietSince()).isZero();
+        assertThat(third.session().quietSince()).isEqualTo(9_000);
+    }
+
+    @Test
     void staysIdleWhenAReadFindsTheTurnEndWithinTheLimit() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);

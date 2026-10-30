@@ -115,7 +115,7 @@ public final class TaskReducer {
 
     /** {@code task} whose session starts over: nothing the old one signed speaks for the new one. */
     public static TaskState sessionStartedOver(TaskState task) {
-        return task.withSession(Session.defaults());
+        return task.withSession(Session.startedOver());
     }
 
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {

@@ -13,6 +13,7 @@ Only then SHALL it be blocked, with one line saying where it went. Idle counts f
 of the session's halt and last sign, never while its turn is open or where it has signed nothing.
 The record is persisted, so a restart of jagt never reads a cold session as warm.
 Starting a fresh session starts the record over, so nothing the old session signed speaks for the new one.
+The first read after the start stamps its start.
 
 #### Scenario: An idle session gets a prompt
 - **WHEN** a prompt comes after the cache lifetime
@@ -27,6 +28,8 @@ Starting a fresh session starts the record over, so nothing the old session sign
 - **THEN** it reaches the model
 - **WHEN** a prompt arrives before the fresh session's first hook
 - **THEN** it passes, the old session's idle stamp being gone
+- **WHEN** no hook has landed within the stale limit of the first read after the start, however old the previous transcript
+- **THEN** the fresh session is not QUIET, and no stopped banner is raised for it
 
 #### Scenario: jagt cannot relay
 - **WHEN** the relay or the fresh start fails, or jagt is down

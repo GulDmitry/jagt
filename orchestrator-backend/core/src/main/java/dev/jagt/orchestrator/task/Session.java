@@ -16,6 +16,17 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
         return new Session(0, 0, 0, null, 0, null, null, false);
     }
 
+    /** The record of a session just started: no read has seen it, and its start is stamped by the first one. */
+    public static Session startedOver() {
+        return defaults().withWindow(new Window(Window.State.UNREAD, 0, 0));
+    }
+
+    /** A session started over and not yet read takes {@code now} as its start; any other is as it was. */
+    public Session readAt(long now) {
+        boolean awaiting = window != null && window.state() == Window.State.UNREAD && window.at() == 0;
+        return awaiting ? withMovedAt(now).withWindow(null) : this;
+    }
+
     /** The record a file holds, a silence an older file stamped on the task standing as the quiet it was. */
     public static Session migrated(@Nullable Session stored, @Nullable Long legacySilentSince) {
         Session session = stored == null ? defaults() : stored;

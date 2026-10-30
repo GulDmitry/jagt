@@ -95,7 +95,8 @@ public sealed interface SessionSign {
         }
 
         @Override
-        public Session applyTo(Session session, long now) {
+        public Session applyTo(Session held, long now) {
+            Session session = held.readAt(now);
             Session.Halt halt = session.halt();
             long later = Math.max(session.movedAt(), Math.max(logAt, activeAt));
             if (halt != null && halt.at() < later) {
