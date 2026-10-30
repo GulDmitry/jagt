@@ -125,3 +125,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0107 One Lombok set for the whole tree, core included](0107-one-lombok-set-core-included.md)
 - [0108 A stop ends on the read that disproves it](0108-a-stop-ends-on-the-read-that-disproves-it.md)
 - [0109 A deploy's outcome is the pipeline jagt reads on its commit](0109-a-deploys-outcome-is-the-pipeline-jagt-reads-on-its-commit.md)
+- [0110 The task statechart runs on an engine of our own](0110-the-task-statechart-runs-on-an-engine-of-our-own.md)
