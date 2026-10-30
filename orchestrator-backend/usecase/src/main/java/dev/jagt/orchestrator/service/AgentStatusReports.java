@@ -197,12 +197,12 @@ public class AgentStatusReports {
                 : requestsByProject.entrySet().stream().allMatch(request ->
                         next.reviewRequestOf(request.getKey()).filter(request.getValue()::equals).isPresent()));
         boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
+        long now = next.lastActiveTimestamp();
         if (!requestsByProject.isEmpty()) {
-            return newRound ? next.withReviewRound(requestsByProject, next.lastActiveTimestamp())
-                    : next.withMrUrls(requestsByProject, next.lastActiveTimestamp());
+            return TaskReducer.relinked(newRound ? next.withReviewRound(requestsByProject, now)
+                    : next.withMrUrls(requestsByProject, now), now);
         }
-        return newRound ? next.withReviewRound(url, next.lastActiveTimestamp())
-                : next.withMrUrl(url, next.lastActiveTimestamp());
+        return TaskReducer.relinked(newRound ? next.withReviewRound(url, now) : next.withMrUrl(url, now), now);
     }
 
     /** Read as the plan is put up, not after: what VERIFYING runs is what was ratified. */

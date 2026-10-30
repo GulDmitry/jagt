@@ -521,6 +521,22 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void liftsAStopCountedOnTheRequestTheSessionReportsAnotherOneInPlaceOf(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
+                .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1_000, "4 ships", "http://mr/1")).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
+                configService);
+
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
+    }
+
+    @Test
     void dropsThePreviousRoundsChecksVerdictWhenARoundGoesBackOutForReview(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

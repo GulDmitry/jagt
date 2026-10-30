@@ -2,10 +2,13 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.task.RoundTrail;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.List;
 
@@ -150,5 +153,52 @@ class TaskReducerTest {
 
         assertThat(held.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         assertThat(held.deployment().conflictedTarget()).isEqualTo(conflicted.deployment().conflictedTarget());
+    }
+
+    @Test
+    void liftsAStopCountedOnARequestWhenAnotherRequestReplacesIt() {
+        TaskState shipped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571"))
+                .withTrail(RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a", "")));
+
+        TaskState reopened = TaskReducer.relinked(shipped.withMrUrl("https://host/mr/573", 3_000), 3_000);
+
+        assertThat(reopened.stopped()).isFalse();
+        assertThat(reopened.trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
+    }
+
+    @Test
+    void keepsAStopWhenTheSameRequestIsWrittenAgain() {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571"));
+
+        TaskState again = TaskReducer.relinked(stopped.withMrUrl("https://host/mr/571", 3_000), 3_000);
+
+        assertThat(again.stop()).isEqualTo(stopped.stop());
+    }
+
+    @Test
+    void keepsAStopCountedOnNoRequestWhenARequestReplacesTheOneOpen() {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running"));
+
+        TaskState reopened = TaskReducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
+
+        assertThat(reopened.stop()).isEqualTo(stopped.stop());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStop.Trigger.class, names = {"CHECKS", "UNCHANGED_FAILURE"})
+    void liftsAPipelineStopWhenARequestReplacesTheOneItWasCountedOn(TaskStop.Trigger trigger) {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withMrUrl("https://host/mr/571", 1_000)
+                .withStop(new TaskStop(trigger, 2, "evidence").countedOn(List.of("https://host/mr/571")));
+
+        TaskState reopened = TaskReducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
+
+        assertThat(reopened.stopped()).isFalse();
     }
 }

@@ -159,6 +159,8 @@ final class TaskChart {
                     .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
             chart.onMatching(STOP, kind, ends + " ends it", new TaskMove.StopEnded(ends)::equals)
                     .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
+            chart.onMatching(STOP, kind, "a new request voids it", new TaskMove.RequestReplaced()::equals)
+                    .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
         }
     }
 

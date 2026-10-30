@@ -232,10 +232,6 @@ public record TaskState(
     /** Every repository's request URL, in order of the URLs. */
     @JsonIgnore
     public List<String> requests() {
-        return requestsOf(repos);
-    }
-
-    private static List<String> requestsOf(List<TaskRepo> repos) {
         return repos.stream().map(TaskRepo::mrUrl).filter(url -> url != null && !url.isBlank()).sorted().toList();
     }
 
@@ -483,8 +479,7 @@ public record TaskState(
         if (repos.equals(this.repos)) {
             return toBuilder().repos(repos);
         }
-        TaskState base = stop != null && stop.voidedBy(requestsOf(repos)) ? lifted(now) : this;
-        return base.toBuilder().repos(repos).requestOpenedAt(now)
+        return toBuilder().repos(repos).requestOpenedAt(now)
                 .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null).checksTip(null);
     }
 

@@ -50,6 +50,13 @@ public final class TaskReducer {
                 : step(task, new TaskMove.StopEnded(ends), now);
     }
 
+    /** {@code task} just linked to its requests, with a stop counted on a request it no longer carries cleared. */
+    public static TaskState relinked(TaskState task, long now) {
+        TaskStop standing = task.stop();
+        return standing == null || !standing.voidedBy(task.requests()) ? task
+                : step(task, new TaskMove.RequestReplaced(), now);
+    }
+
     /** {@code task} asked to open in plan mode; where it is not plan mode, or the code is written, the gate stays. */
     public static TaskState planAsked(TaskState task, boolean planMode) {
         return step(task, new TaskMove.PlanAsked(planMode), 0);

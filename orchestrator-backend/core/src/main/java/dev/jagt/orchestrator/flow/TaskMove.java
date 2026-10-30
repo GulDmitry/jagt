@@ -32,6 +32,10 @@ sealed interface TaskMove {
     record StopEnded(TaskStop.Trigger.Ends ends) implements TaskMove {
     }
 
+    /** A request written that leaves out one the stop was counted on. */
+    record RequestReplaced() implements TaskMove {
+    }
+
     record PlanAsked(boolean planMode) implements TaskMove {
     }
 
