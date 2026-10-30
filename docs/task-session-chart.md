@@ -14,6 +14,7 @@ stateDiagram-v2
         session_NONE --> session_WORKING : work started
         session_NONE --> session_NONE : asked
         session_NONE --> session_WORKING : called
+        session_NONE --> session_WORKING : tool used
         session_NONE --> session_NONE : reported
         session_NONE --> session_NONE : log named
         session_NONE --> session_QUIET : read
@@ -26,6 +27,7 @@ stateDiagram-v2
         session_WORKING --> session_WORKING : work started
         session_WORKING --> session_WORKING : asked
         session_WORKING --> session_WORKING : called
+        session_WORKING --> session_WORKING : tool used
         session_WORKING --> session_WORKING : reported
         session_WORKING --> session_WORKING : log named
         session_WORKING --> session_QUIET : read
@@ -38,6 +40,7 @@ stateDiagram-v2
         session_IDLE --> session_WORKING : work started
         session_IDLE --> session_IDLE : asked
         session_IDLE --> session_WORKING : called
+        session_IDLE --> session_WORKING : tool used
         session_IDLE --> session_IDLE : reported
         session_IDLE --> session_IDLE : log named
         session_IDLE --> session_QUIET : read
@@ -50,6 +53,7 @@ stateDiagram-v2
         session_QUIET --> session_WORKING : work started
         session_QUIET --> session_QUIET : asked
         session_QUIET --> session_WORKING : called
+        session_QUIET --> session_WORKING : tool used
         session_QUIET --> session_QUIET : reported
         session_QUIET --> session_QUIET : log named
         session_QUIET --> session_QUIET : read
@@ -62,6 +66,7 @@ stateDiagram-v2
         session_FAILED --> session_WORKING : work started
         session_FAILED --> session_FAILED : asked
         session_FAILED --> session_WORKING : called
+        session_FAILED --> session_WORKING : tool used
         session_FAILED --> session_FAILED : reported
         session_FAILED --> session_FAILED : log named
         session_FAILED --> session_FAILED : read
@@ -73,6 +78,7 @@ stateDiagram-v2
         session_GONE --> session_WORKING : work started
         session_GONE --> session_GONE : asked
         session_GONE --> session_WORKING : called
+        session_GONE --> session_WORKING : tool used
         session_GONE --> session_GONE : reported
         session_GONE --> session_GONE : log named
         session_GONE --> session_GONE : read

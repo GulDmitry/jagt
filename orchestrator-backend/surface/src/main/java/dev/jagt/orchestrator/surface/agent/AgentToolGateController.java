@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.service.KeepAlive;
 import dev.jagt.orchestrator.service.PlanFirst;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Guard;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Clock;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -48,6 +51,7 @@ public class AgentToolGateController {
     }
 
     private final StateService stateService;
+    private final Clock clock;
 
     /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -57,6 +61,8 @@ public class AgentToolGateController {
         if (call == null || call.toolName() == null) {
             return ResponseEntity.noContent().build();
         }
+        stateService.findByWorktree(cwd)
+                .ifPresent(task -> KeepAlive.beat(stateService, task, new SessionSign.ToolUsed(), clock.millis()));
         if (WRITE_TOOLS.contains(call.toolName().toLowerCase(Locale.ROOT))) {
             return planFirst(cwd, call);
         }

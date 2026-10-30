@@ -39,7 +39,7 @@ newer behind it past the threshold: the same flip, a NEEDS YOU line, overruled a
 #### Scenario: Silent stop
 - **WHEN** a session stops unannounced
 - **THEN** NEEDS YOU, Focus highlighted; logged and notified once per silence, a restart included, a new one alerting again
-- **WHEN** a stopped session's worktree calls MCP, or a read finds a gone session's window running its agent
+- **WHEN** a stopped session's worktree calls MCP or runs a tool (throttled, no report), or a read finds a gone window running its agent
 - **THEN** the card reads working and the banner is not repeated; the next read decides again
 - **WHEN** a session ends with a reason declared as `continuing-end` (cleared, resumed)
 - **THEN** it is recorded as `IDLE`, not as gone; no banner is sent

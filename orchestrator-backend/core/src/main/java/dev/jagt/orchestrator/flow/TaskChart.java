@@ -274,6 +274,7 @@ final class TaskChart {
                     .raise(new TaskMove.Stamped(AgentReport.PERMISSION))
                     .stay();
             signed(chart, from, "called", SessionPhase.WORKING, SessionSign.Called.class);
+            signed(chart, from, "tool used", SessionPhase.WORKING, SessionSign.ToolUsed.class);
             signed(chart, from, "reported", from, SessionSign.Reported.class);
             signed(chart, from, "log named", from, SessionSign.LogNamed.class);
             read(chart, from, "read", turnsEnd.contains(from) ? SessionPhase.QUIET : from, false);

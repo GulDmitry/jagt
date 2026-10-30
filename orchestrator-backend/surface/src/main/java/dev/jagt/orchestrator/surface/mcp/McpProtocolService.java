@@ -2,12 +2,12 @@ package dev.jagt.orchestrator.surface.mcp;
 
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
+import dev.jagt.orchestrator.service.KeepAlive;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
@@ -29,7 +29,6 @@ import java.util.function.BiFunction;
 public class McpProtocolService implements McpToolRegistry {
 
     private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
-    private static final long KEEP_ALIVE_THROTTLE_MS = 15_000;
     /** Answered on a 401, so a client minting its header anew asks again. */
     public static final int UNKNOWN_CALLER = -32001;
 
@@ -107,10 +106,7 @@ public class McpProtocolService implements McpToolRegistry {
         var caller = stateService.findByWorktree(callerCwd);
         long now = clock.millis();
         caller.ifPresent(entry -> {
-            if (now - entry.getValue().lastActiveTimestamp() > KEEP_ALIVE_THROTTLE_MS) {
-                stateService.updateTask(entry.getKey(),
-                        task -> TaskReducer.signed(task.touched(now), new SessionSign.Called(), now));
-            }
+            KeepAlive.beat(stateService, entry, new SessionSign.Called(), now);
         });
         return caller.map(Map.Entry::getKey).orElse(null);
     }

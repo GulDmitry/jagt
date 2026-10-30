@@ -333,6 +333,50 @@ class TaskReducerTest {
     }
 
     @Test
+    void aSessionThatOnlyRunsToolsIsNotQuietPastTheLimit() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState working = TaskReducer.signed(task, new SessionSign.WorkStarted(), 1_000);
+        TaskState tooled = TaskReducer.signed(working, new SessionSign.ToolUsed(), 8_000);
+
+        TaskState read = TaskReducer.signed(tooled, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 9_000);
+
+        assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.WORKING);
+        assertThat(read.session().quietSince()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {500, 1_000})
+    void keepsAHaltWhenAToolUseIsNoNewerThanIt(long usedAt) {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState used = TaskReducer.signed(failed, new SessionSign.ToolUsed(), usedAt);
+
+        assertThat(SessionPhase.of(used.session())).isEqualTo(SessionPhase.FAILED);
+    }
+
+    @Test
+    void dropsAHaltWhenAToolUseComesAfterIt() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState used = TaskReducer.signed(failed, new SessionSign.ToolUsed(), 2_000);
+
+        assertThat(SessionPhase.of(used.session())).isEqualTo(SessionPhase.WORKING);
+    }
+
+    @Test
+    void aToolUseIsNoReportOfTheTurn() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState working = TaskReducer.signed(task, new SessionSign.WorkStarted(), 1_000);
+
+        TaskState used = TaskReducer.signed(working, new SessionSign.ToolUsed(), 2_000);
+
+        assertThat(used.session().reportedAt()).isZero();
+        assertThat(used.session().workStartedAt()).isEqualTo(1_000);
+    }
+
+    @Test
     void dropsAHaltWhenWorkStartsInTheSameMillisecond() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);

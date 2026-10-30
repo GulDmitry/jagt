@@ -25,6 +25,13 @@ public sealed interface SessionSign {
         }
     }
 
+    record ToolUsed() implements SessionSign {
+        @Override
+        public Session applyTo(Session session, long now) {
+            return older(session, now, true) ? session : alive(session, now);
+        }
+    }
+
     record LogNamed(String log) implements SessionSign {
         @Override
         public Session applyTo(Session session, long now) {
