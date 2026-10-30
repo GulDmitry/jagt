@@ -26,6 +26,14 @@ public enum SessionPhase {
         return session.movedAt() > 0 ? WORKING : NONE;
     }
 
+    /** Since when the session has not been working, or 0 while its turn is open or it has signed nothing. */
+    public static long idleSince(Session session) {
+        return switch (of(session)) {
+            case NONE, WORKING -> 0;
+            default -> session.idleSince();
+        };
+    }
+
     /** Since when an agent that should be working has stopped, or 0 where it has not, or where its status idles by design. */
     public static long silentSince(TaskState task) {
         if (!FlowRules.watched(task.status()) || task.report() == AgentReport.WAIT) {

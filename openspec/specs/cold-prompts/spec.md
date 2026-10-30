@@ -9,8 +9,9 @@ jagt sends it to a fresh session and keeps that session's notes current.
 ### Requirement: A cold prompt starts fresh
 A session may stand idle for `orchestrator.agent.cacheLifetime` (default `1h`, `0` never). A prompt typed after that
 SHALL be written under the brief in `task_context.md` and start a fresh session (`AgentSessions.relayUnderCold`).
-Only then SHALL it be blocked, with one line saying where it went. Idle counts from the turn's end in the log of the
-session the prompt was typed into. A restart of jagt or a lost hook never reads a cold session as warm.
+Only then SHALL it be blocked, with one line saying where it went. Idle counts from `Session.idleSince`, the later
+of the session's halt and last sign, never while its turn is open or where it has signed nothing.
+The record is persisted, so a restart of jagt never reads a cold session as warm.
 
 #### Scenario: An idle session gets a prompt
 - **WHEN** a prompt comes after the cache lifetime
@@ -21,7 +22,7 @@ session the prompt was typed into. A restart of jagt or a lost hook never reads 
 - **THEN** a prompt still goes to a fresh session
 
 #### Scenario: The fresh session's first prompt is never relayed again
-- **WHEN** a prompt arrives from a session whose own log holds no turn end
+- **WHEN** a prompt arrives while its session's turn is open, as a fresh session's first one does
 - **THEN** it reaches the model
 
 #### Scenario: jagt cannot relay

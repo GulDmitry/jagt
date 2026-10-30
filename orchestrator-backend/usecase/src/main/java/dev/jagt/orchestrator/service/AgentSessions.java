@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.Ansi;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.SessionHost;
 
@@ -240,8 +241,7 @@ public class AgentSessions {
         // A file on disk doesn't wake a running agent session — nudge it directly.
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
-        Duration cacheLifetime = config.agent().cacheLifetimeOrDefault();
-        if (freshBecause != null || agentRuntime.pastContinuing(Path.of(task.worktreePath()), cacheLifetime)) {
+        if (freshBecause != null || cold(task, config)) {
             startFresh(taskId, task, config, freshBecause != null ? freshBecause
                     : "conversation idle past its cache lifetime");
             return "Instructions written to task_context.md; a fresh session was started to read them with"
@@ -312,6 +312,12 @@ public class AgentSessions {
         }
     }
 
+    private boolean cold(TaskState task, ConfigService.ConfigFile config) {
+        long idleSince = SessionPhase.idleSince(task.session());
+        return idleSince > 0
+                && agentRuntime.pastCacheLifetime(idleSince, config.agent().cacheLifetimeOrDefault());
+    }
+
     /** A line typed over a draft is glued to it and sent as the human's, so the nudge waits for an empty prompt. */
     private void nudgeOnceSent(String session, String taskId, @Nullable String alias) {
         if (!draftWaits.add(taskId)) {
@@ -326,8 +332,7 @@ public class AgentSessions {
                 }
                 stateService.task(taskId).ifPresent(task -> {
                     ConfigService.ConfigFile config = configService.load();
-                    if (agentRuntime.pastContinuing(Path.of(task.worktreePath()),
-                            config.agent().cacheLifetimeOrDefault())) {
+                    if (cold(task, config)) {
                         startFresh(taskId, task, config, "conversation idle past its cache lifetime");
                     } else if (running(session, taskId) && sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
                         undelivered(session, taskId, NUDGE);

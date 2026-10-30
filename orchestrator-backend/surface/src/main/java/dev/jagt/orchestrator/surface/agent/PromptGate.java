@@ -2,7 +2,8 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ColdPrompts;
-import dev.jagt.orchestrator.service.ColdSessions;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
-import java.util.Optional;
 
 /**
  * A prompt typed into a session whose cache has expired is the same instruction as one jagt relays, so it goes to a
@@ -28,13 +27,13 @@ public class PromptGate {
     private static final String REASON = "This session sat idle past its cache lifetime: your message went to a fresh"
             + " session, which carries the notes and the end of this conversation.";
 
-    private final ColdSessions cold;
     private final ColdPrompts coldPrompts;
     private final AgentRuntime runtime;
+    private final ConfigService configService;
 
-    public String answer(String taskId, @Nullable TaskState task, String prompt, Optional<Path> sessionLog) {
+    public String answer(String taskId, @Nullable TaskState task, String prompt) {
         if (task == null || prompt.isBlank() || prompt.startsWith(SLASH_COMMAND) || prompt.contains(PASTED_IMAGE)
-                || !cold.isCold(sessionLog)) {
+                || !cold(task)) {
             return "";
         }
         try {
@@ -46,5 +45,11 @@ public class PromptGate {
         }
         log.atInfo().setMessage("cold prompt sent to a fresh session").addKeyValue("task", taskId).log();
         return runtime.blockedPrompt(REASON);
+    }
+
+    private boolean cold(TaskState task) {
+        long idleSince = SessionPhase.idleSince(task.session());
+        return idleSince > 0
+                && runtime.pastCacheLifetime(idleSince, configService.load().agent().cacheLifetimeOrDefault());
     }
 }

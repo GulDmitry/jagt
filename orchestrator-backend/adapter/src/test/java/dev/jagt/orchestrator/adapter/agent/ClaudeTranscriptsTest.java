@@ -6,7 +6,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -189,84 +188,5 @@ class ClaudeTranscriptsTest {
     @Test
     void tailsNothingWhereTheSessionKeepsNoLog(@TempDir Path root) {
         assertThat(ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000)).isEmpty();
-    }
-
-    @Test
-    void answersTheTimeOfTheStopHookSummaryEndingTheLastAssistantEntry(@TempDir Path root) throws Exception {
-        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
-        Files.writeString(logs.resolve("s.jsonl"), """
-                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T13:00:00.000Z"}
-                {"type":"assistant","timestamp":"2026-10-27T13:16:30.000Z"}
-                {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T13:16:31.000Z"}
-                """);
-
-        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
-
-        assertThat(endedAt).hasValue(Instant.parse("2026-10-27T13:16:31Z").toEpochMilli());
-    }
-
-    @Test
-    void keepsTheTurnEndWhenAPromptAndACompactionFollowIt(@TempDir Path root) throws Exception {
-        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
-        Files.writeString(logs.resolve("s.jsonl"), """
-                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T13:00:00.000Z"}
-                {"type":"assistant","timestamp":"2026-10-27T13:16:30.000Z"}
-                {"type":"system","subtype":"turn_duration","timestamp":"2026-10-27T13:16:31.000Z"}
-                {"type":"system","subtype":"compact_boundary","timestamp":"2026-10-27T14:10:00.000Z"}
-                {"type":"user","timestamp":"2026-10-27T14:10:01.000Z"}
-                {"type":"user","timestamp":"2026-10-27T18:06:12.000Z"}
-                """);
-
-        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
-
-        assertThat(endedAt).hasValue(Instant.parse("2026-10-27T13:16:31Z").toEpochMilli());
-    }
-
-    @Test
-    void answersNoTurnEndWhileAnAssistantEntryFollowsTheLastOne(@TempDir Path root) throws Exception {
-        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
-        Files.writeString(logs.resolve("s.jsonl"), """
-                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T13:00:00.000Z"}
-                {"type":"assistant","timestamp":"2026-10-27T13:16:30.000Z"}
-                {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T13:16:31.000Z"}
-                {"type":"assistant","timestamp":"2026-10-27T18:06:20.000Z"}
-                """);
-
-        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
-
-        assertThat(endedAt).isEmpty();
-    }
-
-    @Test
-    void readsTheTurnEndFromTheNamedLogNotANewerOneBesideIt(@TempDir Path root) throws Exception {
-        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
-        Files.setLastModifiedTime(Files.writeString(logs.resolve("s.jsonl"), """
-                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T13:00:00.000Z"}
-                {"type":"assistant","timestamp":"2026-10-27T13:16:30.000Z"}
-                {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T13:16:31.000Z"}
-                """), FileTime.fromMillis(1_700_000_000_000L));
-        Files.setLastModifiedTime(Files.writeString(logs.resolve("newer.jsonl"), """
-                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T17:00:00.000Z"}
-                {"type":"assistant","timestamp":"2026-10-27T17:00:05.000Z"}
-                {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T17:00:06.000Z"}
-                """), FileTime.fromMillis(1_700_000_600_000L));
-
-        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("s.jsonl"));
-
-        assertThat(endedAt).hasValue(Instant.parse("2026-10-27T13:16:31Z").toEpochMilli());
-    }
-
-    @Test
-    void answersNoTurnEndForASessionWhoseLogDoesNotExistYet(@TempDir Path root) throws Exception {
-        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
-        Files.writeString(logs.resolve("old.jsonl"), """
-                {"type":"user","entrypoint":"cli","timestamp":"2026-10-27T13:00:00.000Z"}
-                {"type":"assistant","timestamp":"2026-10-27T13:16:30.000Z"}
-                {"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T13:16:31.000Z"}
-                """);
-
-        var endedAt = ClaudeTranscripts.turnEndedAt(logs.resolve("fresh.jsonl"));
-
-        assertThat(endedAt).isEmpty();
     }
 }

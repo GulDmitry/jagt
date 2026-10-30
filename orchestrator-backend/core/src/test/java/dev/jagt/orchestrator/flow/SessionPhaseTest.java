@@ -42,4 +42,22 @@ class SessionPhaseTest {
         assertThat(SessionPhase.silentSince(task)).isEqualTo(3_000);
         assertThat(SessionPhase.silentBecause(task)).isNull();
     }
+
+    @Test
+    void isIdleSinceTheLaterOfItsHaltAndItsLastMove() {
+        Session session = Session.defaults().withMovedAt(7_000)
+                .withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null));
+
+        assertThat(SessionPhase.idleSince(session)).isEqualTo(7_000);
+    }
+
+    @Test
+    void isNotIdleWhileItsTurnIsOpen() {
+        assertThat(SessionPhase.idleSince(Session.defaults().withMovedAt(7_000))).isZero();
+    }
+
+    @Test
+    void isNotIdleWhenItHasSignedNothing() {
+        assertThat(SessionPhase.idleSince(Session.defaults())).isZero();
+    }
 }

@@ -44,15 +44,6 @@ public interface AgentRuntime {
         return launchCommand(worktree, false);
     }
 
-    /**
-     * Whether the worktree's conversation is past its worth continuing: the CLI rereads the whole history
-     * uncached once it has been idle for {@code cacheLifetime}, so new work goes to a fresh session reading the
-     * task's files. False where a conversation is always continued, and for a zero lifetime.
-     */
-    default boolean pastContinuing(Path worktree, Duration cacheLifetime) {
-        return lastSessionActivity(worktree).stream().anyMatch(at -> pastCacheLifetime(at, cacheLifetime));
-    }
-
     /** Whether a conversation last active at {@code lastActiveMillis} has lost its cache; false where none expires. */
     default boolean pastCacheLifetime(long lastActiveMillis, Duration cacheLifetime) {
         return false;
@@ -150,11 +141,6 @@ public interface AgentRuntime {
     /** Worktree-relative paths of this agent's own files, in git exclude syntax: a directory ends with {@code /}. */
     default List<String> statusExclusions() {
         return List.of();
-    }
-
-    /** When the session keeping {@code sessionLog} ended its last turn; EMPTY while a turn is open, where the log does not exist yet or none is kept. */
-    default OptionalLong turnEndedAt(Path sessionLog) {
-        return OptionalLong.empty();
     }
 
     /** Epoch millis of the last entry in the session's own record; 0 while it holds none, EMPTY where there is none. */
