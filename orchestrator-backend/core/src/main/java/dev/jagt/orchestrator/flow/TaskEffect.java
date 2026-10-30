@@ -35,4 +35,7 @@ sealed interface TaskEffect {
 
     record RestoresTurn(Turn before) implements TaskEffect {
     }
+
+    record Deploys(DeployStep step) implements TaskEffect {
+    }
 }

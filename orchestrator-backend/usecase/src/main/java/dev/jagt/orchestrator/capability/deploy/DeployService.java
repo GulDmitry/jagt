@@ -1,6 +1,10 @@
 package dev.jagt.orchestrator.capability.deploy;
 
+import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.task.Deployment;
+import java.time.Clock;
 import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
@@ -37,6 +41,7 @@ public class DeployService {
     private final StateService stateService;
     private final DeployTargets deployTargets;
     private final GitDeploy gitDeploy;
+    private final Clock clock;
 
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
@@ -51,6 +56,11 @@ public class DeployService {
         requireTheFixStaged(task, taskId);
         Landing landing = new Landing();
         int from = resumeFrom(task, taskId, targets);
+        if (from == 0) {
+            DeployStep opened = new DeployStep.Opened(targets.stream()
+                    .map(target -> Deployment.Target.of(target.project(), target.deployBranch())).toList());
+            stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t, opened, clock.millis()));
+        }
         for (int i = from; i < targets.size(); i++) {
             Optional<Outcome> stopped = land(taskId, targets, i, landing);
             if (stopped.isPresent()) {
@@ -93,8 +103,11 @@ public class DeployService {
             String commit = gitDeploy.mergeIntoAndPush(target.path(), taskId, target.deployBranch());
             landing.merged.put(target.project(), commit);
             boolean fix = gitDeploy.isFix(target.path(), commit);
-            stateService.updateTask(taskId, t -> fix ? t.withDeployFix(target.project(), commit)
-                    : t.withDeployCommit(target.project(), commit));
+            long now = clock.millis();
+            stateService.updateTask(taskId, t -> TaskReducer.deployStepped(TaskReducer.deployStepped(
+                    fix ? t.withDeployFix(target.project(), commit) : t.withDeployCommit(target.project(), commit),
+                    fix ? new DeployStep.Fixed(target.project(), commit) : new DeployStep.Merged(target.project(), commit),
+                    now), new DeployStep.Pushed(target.project(), now), now));
         } catch (GitDeploy.NothingToDeployException e) {
             landing.nothingToDo.add(target.project());
             landing.idle = landing.idle == null ? e : landing.idle;
@@ -142,6 +155,8 @@ public class DeployService {
     private Outcome handBackConflict(String taskId, List<Target> targets, int at,
                                     GitDeploy.MergeConflictException e) {
         Target conflicted = targets.get(at);
+        stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t,
+                new DeployStep.Conflicted(conflicted.project()), clock.millis()));
         String half = targets.size() > 1 ? halfState(targets, at) : "";
         String note = half.isEmpty() ? "" : " — " + half;
         String what = targets.size() > 1

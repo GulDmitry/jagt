@@ -63,4 +63,7 @@ sealed interface TaskMove {
     /** A relay that failed to send, put back to the turn it found. */
     record TurnRestored(Turn before) implements TaskMove {
     }
+
+    record DeployStepped(DeployStep step) implements TaskMove {
+    }
 }

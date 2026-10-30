@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
@@ -8,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
-/** The one place a task's status, stop, plan gate, report and turn are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report, turn and deployment are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -94,9 +95,14 @@ public final class TaskReducer {
         return step(task, new TaskMove.TurnRestored(before), 0);
     }
 
+    /** {@code task} with {@code step} recorded on its deployment; a step the phase has no edge for is dropped. */
+    public static TaskState deployStepped(TaskState task, DeployStep step, long now) {
+        return step(task, new TaskMove.DeployStepped(step), now);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
         return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
-                TurnKind.of(task.turnOrNone()), move);
+                TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), move);
     }
 
     private static TaskState step(TaskState task, TaskMove move, long now) {
@@ -120,6 +126,8 @@ public final class TaskReducer {
                     .relayed(opens.step(), opens.digest(), opens.answered(), now));
             case TaskEffect.ClosesTurn closes -> task.withTurn(task.turnOrNone().closed(now));
             case TaskEffect.RestoresTurn restores -> task.withTurn(restores.before());
+            case TaskEffect.Deploys deploys -> task.withDeployment(deploys.step()
+                    .applyTo(task.deployment() == null ? Deployment.defaults() : task.deployment(), now));
         };
     }
 }

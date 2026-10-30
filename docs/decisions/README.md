@@ -127,3 +127,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0109 A deploy's outcome is the pipeline jagt reads on its commit](0109-a-deploys-outcome-is-the-pipeline-jagt-reads-on-its-commit.md)
 - [0110 The task statechart runs on an engine of our own](0110-the-task-statechart-runs-on-an-engine-of-our-own.md)
 - [0111 A relay acts only where the task still stands](0111-a-relay-acts-only-where-the-task-still-stands.md)
+- [0112 A deploy is a saga record, advanced by one runner](0112-a-deploy-is-a-saga-record-advanced-by-one-runner.md)

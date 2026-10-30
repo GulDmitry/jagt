@@ -1,11 +1,14 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,6 +24,21 @@ class TaskReducerTest {
                 "deployed", true, 2_000);
 
         assertThat(deployed.conflict()).isNull();
+    }
+
+    @Test
+    void recordsWhereADeployOverTwoReposStoodWhenTheSecondConflicts() {
+        TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))), 1_000);
+        TaskState merged = TaskReducer.deployStepped(opened, new DeployStep.Merged("a", "cafe"), 1_100);
+        TaskState pushed = TaskReducer.deployStepped(merged, new DeployStep.Pushed("a", 1_200), 1_200);
+
+        TaskState conflicted = TaskReducer.deployStepped(pushed, new DeployStep.Conflicted("b"), 1_300);
+
+        assertThat(conflicted.deployment().at()).isEqualTo(1);
+        assertThat(conflicted.deployment().targets().get(0).merge()).isEqualTo("cafe");
+        assertThat(conflicted.deployment().targets().get(1).conflicted()).isTrue();
     }
 
     @Test

@@ -81,7 +81,9 @@ public record TaskState(
         // The pushed commit the stored checks and approval were read on; null = a read that named none.
         @Nullable String checksTip,
         // The newest pushed commit a read saw. Null = none yet, and the stored reads stand as they are.
-        @Nullable String headTip
+        @Nullable String headTip,
+        // Absent in a file written before the deployment was recorded.
+        @Nullable Deployment deployment
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -146,7 +148,8 @@ public record TaskState(
             @JsonProperty("switches") @Nullable Map<String, String> switches,
             @JsonProperty("infraRetries") @Nullable List<InfraRetry> infraRetries,
             @JsonProperty("checksTip") @Nullable String checksTip,
-            @JsonProperty("headTip") @Nullable String headTip) {
+            @JsonProperty("headTip") @Nullable String headTip,
+            @JsonProperty("deployment") @Nullable Deployment deployment) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -159,7 +162,7 @@ public record TaskState(
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
                 Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn, switches == null ? Map.of() : switches,
-                infraRetries == null ? List.of() : infraRetries, checksTip, headTip);
+                infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment);
     }
 
     record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
@@ -670,6 +673,10 @@ public record TaskState(
     @JsonIgnore
     public Turn turnOrNone() {
         return turn == null ? Turn.none() : turn;
+    }
+
+    public TaskState withDeployment(Deployment deployment) {
+        return toBuilder().deployment(deployment).build();
     }
 
     public TaskState withPlanGate(PlanGate planGate) {

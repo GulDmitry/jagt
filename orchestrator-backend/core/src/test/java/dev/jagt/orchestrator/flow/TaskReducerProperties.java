@@ -77,7 +77,7 @@ class TaskReducerProperties {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
             Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
-                    TurnKind.of(task.turnOrNone()), move))
+                    TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), move))
                     .filter(List::isEmpty).ifPresent(none -> {
                         assertThat(next.status()).isEqualTo(task.status());
                         assertThat(next.conflict()).isEqualTo(task.conflict());

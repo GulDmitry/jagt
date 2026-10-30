@@ -32,6 +32,8 @@ final class TaskChart {
 
     private static final RegionId<TurnKind> TURN = new RegionId<>("turn", TurnKind.class);
 
+    private static final RegionId<DeployPhase> DEPLOY = new RegionId<>("deploy", DeployPhase.class);
+
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
 
     private static final Object NO_FACTS = new Object();
@@ -72,14 +74,16 @@ final class TaskChart {
 
     /** What {@code move} does to a task at {@code from} under {@code stop}, {@code plan}, {@code report} and {@code turn}, in order; empty where no edge takes it. */
     static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, AgentReport report,
-                                TurnKind turn, TaskMove move) {
+                                TurnKind turn, DeployPhase deploy, TaskMove move) {
         return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name(),
-                PLAN.name(), plan.name(), REPORT.name(), report.name(), TURN.name(), turn.name())), NO_FACTS, move).effects();
+                PLAN.name(), plan.name(), REPORT.name(), report.name(), TURN.name(), turn.name(),
+                DEPLOY.name(), deploy.name())), NO_FACTS, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
-        return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, TurnKind.CLOSED, move).stream().filter(TaskEffect.Lands.class::isInstance)
+        return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, TurnKind.CLOSED,
+                DeployPhase.NONE, move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -133,6 +137,7 @@ final class TaskChart {
         plans(chart);
         says(chart);
         turns(chart);
+        deploys(chart);
         ran(chart);
         reports(chart);
         reads(chart);
@@ -206,6 +211,30 @@ final class TaskChart {
                         .emitFor(move -> new TaskEffect.RestoresTurn(((TaskMove.TurnRestored) move).before()))
                         .to(restored);
             }
+        }
+    }
+
+    private static void deploys(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
+        chart.region(DEPLOY, DeployPhase.NONE);
+        for (DeployPhase from : DeployPhase.values()) {
+            deployed(chart, from, "opened", DeployPhase.LANDING, step -> step instanceof DeployStep.Opened);
+        }
+        for (DeployPhase from : EnumSet.of(DeployPhase.LANDING, DeployPhase.HANDED)) {
+            deployed(chart, from, "landed", DeployPhase.LANDING, step -> step instanceof DeployStep.Merged
+                    || step instanceof DeployStep.Fixed || step instanceof DeployStep.Pushed);
+            deployed(chart, from, "conflicted", DeployPhase.HANDED, step -> step instanceof DeployStep.Conflicted);
+        }
+    }
+
+    private static void deployed(ChartBuilder<TaskMove, Object, TaskEffect> chart, DeployPhase from, String label,
+                                 DeployPhase to, Predicate<DeployStep> matches) {
+        EdgeBuilder<TaskMove, Object, TaskEffect, DeployPhase> edge = chart.onMatching(DEPLOY, from, label,
+                        move -> move instanceof TaskMove.DeployStepped stepped && matches.test(stepped.step()))
+                .emitFor(move -> new TaskEffect.Deploys(((TaskMove.DeployStepped) move).step()));
+        if (from == to) {
+            edge.stay();
+        } else {
+            edge.to(to);
         }
     }
 
