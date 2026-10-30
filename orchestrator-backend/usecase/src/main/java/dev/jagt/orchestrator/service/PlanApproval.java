@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
@@ -34,12 +34,12 @@ public class PlanApproval {
         }
         Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
         if (claim == null) {
-            stateService.updateTask(id, task -> task.withPlanGate(PlanGate.OPEN));
+            stateService.updateTask(id, TaskReducer::planApproved);
         }
         boolean told = claim == null ? relay.relay(id, "plan", reader + ": the plan holds.", read)
                 : relay.relay(id, "plan", reader + ": the plan holds.", opened(claim));
         if (claim != null && !told) {
-            stateService.updateTask(id, task -> task.withPlanGate(PlanGate.OPEN));
+            stateService.updateTask(id, TaskReducer::planApproved);
         }
         log.atInfo().setMessage("plan approved").addKeyValue("task", id).addKeyValue("reader", reader).log();
         return told;
@@ -47,6 +47,6 @@ public class PlanApproval {
 
     private static StepRelay.Claim opened(StepRelay.Claim claim) {
         return new StepRelay.Claim(claim.read(), claim.standing(),
-                opens -> claim.write().apply(task -> opens.apply(task).withPlanGate(PlanGate.OPEN)), claim.undo());
+                opens -> claim.write().apply(task -> TaskReducer.planApproved(opens.apply(task))), claim.undo());
     }
 }

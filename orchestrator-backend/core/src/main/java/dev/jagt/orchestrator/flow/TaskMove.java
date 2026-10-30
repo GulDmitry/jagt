@@ -29,4 +29,16 @@ sealed interface TaskMove {
 
     record StopEnded(TaskStop.Trigger.Ends ends) implements TaskMove {
     }
+
+    record PlanAsked(boolean planMode) implements TaskMove {
+    }
+
+    record PlanApproved() implements TaskMove {
+    }
+
+    record NoPlanDeclared() implements TaskMove {
+    }
+
+    record Autoplanned() implements TaskMove {
+    }
 }

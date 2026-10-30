@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.statechart.Chart;
@@ -16,12 +17,14 @@ import java.util.function.Predicate;
 
 import static dev.jagt.orchestrator.task.TaskStatus.*;
 
-/** The lifecycle region, one edge per status move, and the stop region, one way out per way a stop ends. */
+/** The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan region. */
 final class TaskChart {
 
     private static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
 
     private static final RegionId<StopKind> STOP = new RegionId<>("stop", StopKind.class);
+
+    private static final RegionId<PlanGate> PLAN = new RegionId<>("plan", PlanGate.class);
 
     private static final Object NO_FACTS = new Object();
 
@@ -56,15 +59,15 @@ final class TaskChart {
         return CHART;
     }
 
-    /** What {@code move} does to a task at {@code from} under {@code stop}, in order; empty where no edge takes it. */
-    static List<TaskEffect> effects(TaskStatus from, StopKind stop, TaskMove move) {
-        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name())),
-                NO_FACTS, move).effects();
+    /** What {@code move} does to a task at {@code from} under {@code stop} and {@code plan}, in order; empty where no edge takes it. */
+    static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, TaskMove move) {
+        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name(),
+                PLAN.name(), plan.name())), NO_FACTS, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
-        return effects(from, StopKind.NONE, move).stream().filter(TaskEffect.Lands.class::isInstance)
+        return effects(from, StopKind.NONE, PlanGate.OPEN, move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -111,6 +114,7 @@ final class TaskChart {
         chart.region(LIFECYCLE, NEW, Set.of(DONE));
         chart.onExit(LIFECYCLE, DEPLOY_CONFLICT, new TaskEffect.ClearsConflict());
         stops(chart);
+        plans(chart);
         ran(chart);
         reports(chart);
         reads(chart);
@@ -134,6 +138,29 @@ final class TaskChart {
             chart.onMatching(STOP, kind, ends + " ends it", new TaskMove.StopEnded(ends)::equals)
                     .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
         }
+    }
+
+    private static void plans(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
+        chart.region(PLAN, PlanGate.OPEN);
+        chart.onMatching(PLAN, PlanGate.OPEN, "autoplan", new TaskMove.Autoplanned()::equals)
+                .emit(new TaskEffect.GatesPlan(PlanGate.CLOSED)).to(PlanGate.CLOSED);
+        for (PlanGate from : EnumSet.of(PlanGate.OPEN, PlanGate.CLOSED)) {
+            chart.onMatching(PLAN, from, "plan mode", move -> move instanceof TaskMove.PlanAsked asked
+                            && asked.planMode())
+                    .when((others, move) -> planMayComeFirst(others.get(LIFECYCLE)))
+                    .emit(new TaskEffect.GatesPlan(PlanGate.REQUIRED)).to(PlanGate.REQUIRED);
+        }
+        chart.onMatching(PLAN, PlanGate.CLOSED, "no plan declared", new TaskMove.NoPlanDeclared()::equals)
+                .emit(new TaskEffect.GatesPlan(PlanGate.OPEN)).to(PlanGate.OPEN);
+        for (PlanGate from : EnumSet.of(PlanGate.CLOSED, PlanGate.REQUIRED)) {
+            chart.onMatching(PLAN, from, "plan approved", new TaskMove.PlanApproved()::equals)
+                    .emit(new TaskEffect.GatesPlan(PlanGate.OPEN)).to(PlanGate.OPEN);
+        }
+    }
+
+    /** Whether a plan can still come first for a task in {@code status}: it has written nothing from the code yet. */
+    static boolean planMayComeFirst(TaskStatus status) {
+        return land(status, new TaskMove.Reported(PLAN_PENDING, false)).isPresent();
     }
 
     private static void ran(ChartBuilder<TaskMove, Object, TaskEffect> chart) {

@@ -125,7 +125,7 @@ public final class FlowRules {
 
     /** Whether a plan can still come first for a task in {@code status}: it has written nothing from the code yet. */
     public static boolean planMayComeFirst(TaskStatus status) {
-        return TaskChart.land(status, new TaskMove.Reported(TaskStatus.PLAN_PENDING, false)).isPresent();
+        return TaskChart.planMayComeFirst(status);
     }
 
     /** Whether a task may be moved to {@code status} by its own agent rather than by jagt. */

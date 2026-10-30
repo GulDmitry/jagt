@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +41,7 @@ public class TaskProvisioning {
             repos = worktrees.cut(request, config, strategy);
             alias = nextAlias(taskId);
             try {
-                stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
+                TaskState born = TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
                                 TaskStatus.NEW)
                         .lastActiveTimestamp(clock.millis()).alias(alias)
                         .title(request.title())
@@ -51,8 +51,9 @@ public class TaskProvisioning {
                         .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
                         .autoReview(config.autoReview().enabledOrDefault())
                         .gitTrust(worktrees.trust(repos))
-                        .planGate(gateOf(plan, config))
-                        .build());
+                        .build();
+                stateService.putTask(taskId, TaskReducer.planAsked(autoplan(config) ? TaskReducer.autoplanned(born) : born,
+                        plan));
             } catch (RuntimeException e) {
                 worktrees.uncut(request, repos, strategy);
                 throw e;
@@ -74,9 +75,8 @@ public class TaskProvisioning {
                 + (plan ? " Plan mode: read plan.md, then approve-plan " + alias + "." : "");
     }
 
-    private static PlanGate gateOf(boolean planMode, ConfigService.ConfigFile config) {
-        boolean autoplan = config.agent().autoplanOrDefault().enabledOrDefault();
-        return PlanGate.of(planMode, autoplan ? PlanGate.CLOSED : PlanGate.OPEN);
+    private static boolean autoplan(ConfigService.ConfigFile config) {
+        return config.agent().autoplanOrDefault().enabledOrDefault();
     }
 
     private static String alsoIn(List<NewRepo> repos) {

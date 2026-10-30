@@ -10,10 +10,6 @@ public enum PlanGate {
     /** Asked for in plan mode: only the human's approval opens it. */
     REQUIRED;
 
-    public static PlanGate of(boolean planMode, PlanGate otherwise) {
-        return planMode ? REQUIRED : otherwise;
-    }
-
     public boolean keptForTheHuman() {
         return this == REQUIRED;
     }

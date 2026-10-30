@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -50,6 +51,34 @@ class TaskReducerTest {
         TaskState kept = TaskReducer.stop(stopped, new TaskStop(TaskStop.Trigger.PACE, 2_000, "too fast"), 2_000);
 
         assertThat(kept.stop()).isEqualTo(standing);
+    }
+
+    @Test
+    void requiresThePlanWhenATaskOpensInPlanModeBeforeTheCode() {
+        TaskState planned = TaskReducer.planAsked(TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING).build(), true);
+
+        assertThat(planned.planGate()).isEqualTo(PlanGate.REQUIRED);
+    }
+
+    @Test
+    void opensTheGateWhenTheHumanApprovesARequiredPlan() {
+        TaskState required = TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING).planGate(PlanGate.REQUIRED).build();
+
+        assertThat(TaskReducer.planApproved(required).planGate()).isEqualTo(PlanGate.OPEN);
+    }
+
+    @Test
+    void keepsThePlanGateWhenATaskOpensInPlanModePastTheCode() {
+        TaskState past = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).planGate(PlanGate.CLOSED).build();
+
+        assertThat(TaskReducer.planAsked(past, true).planGate()).isEqualTo(PlanGate.CLOSED);
+    }
+
+    @Test
+    void keepsARequiredPlanGateWhenTheSessionDeclaresNoPlan() {
+        TaskState required = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).planGate(PlanGate.REQUIRED).build();
+
+        assertThat(TaskReducer.noPlanDeclared(required).planGate()).isEqualTo(PlanGate.REQUIRED);
     }
 
     @Test

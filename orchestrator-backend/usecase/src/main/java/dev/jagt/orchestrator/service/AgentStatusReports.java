@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -115,7 +116,7 @@ public class AgentStatusReports {
                         .judged(said.switches()), closesTurn), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (said.noPlan()) {
-            stateService.updateTask(taskId, task -> task.withPlanGate(PlanGate.OPEN));
+            stateService.updateTask(taskId, TaskReducer::noPlanDeclared);
         }
         TaskStatus previous = written.previous();
         TaskStatus landed = written.now();

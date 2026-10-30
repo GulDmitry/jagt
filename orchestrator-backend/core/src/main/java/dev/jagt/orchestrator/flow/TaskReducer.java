@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
-/** The one place a task's status and stop are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop and plan gate are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -14,7 +14,7 @@ public final class TaskReducer {
 
     /** {@code move} applied to {@code task}; where the chart has no edge for it the status stays. */
     static TaskState reduce(TaskState task, TaskMove move, @Nullable String message, boolean event, long now) {
-        List<TaskEffect> effects = TaskChart.effects(task.status(), StopKind.of(task.stop()), move);
+        List<TaskEffect> effects = effectsOf(task, move);
         if (effects.isEmpty()) {
             return stayed(task, message, event, now);
         }
@@ -32,24 +32,48 @@ public final class TaskReducer {
 
     /** {@code task} stopped by {@code stop}; where a stop already stands, it stands alone. */
     public static TaskState stop(TaskState task, TaskStop stop, long now) {
-        return stopStep(task, new TaskMove.StopSet(stop), now);
+        return step(task, new TaskMove.StopSet(stop), now);
     }
 
     /** {@code task} with its stop lifted by a human. */
     public static TaskState lift(TaskState task, long now) {
-        return stopStep(task, new TaskMove.Lifted(), now);
+        return step(task, new TaskMove.Lifted(), now);
     }
 
     /** {@code task} with the stop that ends on {@code ends} cleared, where it was counted on {@code request} or none. */
     public static TaskState ended(TaskState task, TaskStop.Trigger.Ends ends, String request, long now) {
         TaskStop standing = task.stop();
         return standing == null || !standing.countedOnOrNone(request) ? task
-                : stopStep(task, new TaskMove.StopEnded(ends), now);
+                : step(task, new TaskMove.StopEnded(ends), now);
     }
 
-    private static TaskState stopStep(TaskState task, TaskMove move, long now) {
+    /** {@code task} asked to open in plan mode; where it is not plan mode, or the code is written, the gate stays. */
+    public static TaskState planAsked(TaskState task, boolean planMode) {
+        return step(task, new TaskMove.PlanAsked(planMode), 0);
+    }
+
+    /** {@code task} with the plan the human approved, its gate open. */
+    public static TaskState planApproved(TaskState task) {
+        return step(task, new TaskMove.PlanApproved(), 0);
+    }
+
+    /** {@code task} whose session declared it needs no plan; a gate the human asked for stays. */
+    public static TaskState noPlanDeclared(TaskState task) {
+        return step(task, new TaskMove.NoPlanDeclared(), 0);
+    }
+
+    /** {@code task} born under autoplan: its gate shut until a plan is approved or declared needless. */
+    public static TaskState autoplanned(TaskState task) {
+        return step(task, new TaskMove.Autoplanned(), 0);
+    }
+
+    private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
+        return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), move);
+    }
+
+    private static TaskState step(TaskState task, TaskMove move, long now) {
         TaskState moved = task;
-        for (TaskEffect effect : TaskChart.effects(task.status(), StopKind.of(task.stop()), move)) {
+        for (TaskEffect effect : effectsOf(task, move)) {
             moved = apply(moved, effect, null, false, now);
         }
         return moved;
@@ -62,6 +86,7 @@ public final class TaskReducer {
             case TaskEffect.ClearsConflict cleared -> task.withoutConflict();
             case TaskEffect.Stops stops -> task.withStop(stops.stop().countedOn(task.requests()));
             case TaskEffect.ClearsStop cleared -> task.lifted(now);
+            case TaskEffect.GatesPlan gates -> task.withPlanGate(gates.gate());
         };
     }
 }

@@ -434,7 +434,8 @@ public record TaskState(
 
     /** The status, line and conflict {@code read} had, written back as one move. */
     public TaskState restoredFrom(TaskState read, long now) {
-        return withStatus(read.status, read.message, now).toBuilder().conflict(read.conflict).build();
+        return withStatus(read.status, read.message, now).toBuilder().conflict(read.conflict)
+                .planGate(read.planGate).build();
     }
 
     public TaskState withoutConflict() {
