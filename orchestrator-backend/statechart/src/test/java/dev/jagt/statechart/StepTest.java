@@ -93,6 +93,35 @@ class StepTest {
     }
 
     @Test
+    void aStayEdgeEmitsItsEffectAndNoExitEffect() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+                .onExit(Lamp.POWER, Power.OFF, "left off")
+                .on(Lamp.POWER, Power.OFF, Press.class).emit("pressed").stay()
+                .on(Lamp.POWER, Power.OFF, Tick.class).to(Power.ON)
+                .build();
+
+        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+
+        assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
+        assertThat(step.effects()).containsExactly("pressed");
+    }
+
+    @Test
+    void anExternalSelfEdgeStillExitsItsState() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+                .onExit(Lamp.POWER, Power.OFF, "left off")
+                .on(Lamp.POWER, Power.OFF, Press.class).emit("pressed").to(Power.OFF)
+                .on(Lamp.POWER, Power.OFF, Tick.class).to(Power.ON)
+                .build();
+
+        Step<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+
+        assertThat(step.effects()).containsExactly("left off", "pressed");
+    }
+
+    @Test
     void parallelRegionsTakeTheSameEventAgainstTheConfigurationFromBeforeTheStep() {
         Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
                 .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))

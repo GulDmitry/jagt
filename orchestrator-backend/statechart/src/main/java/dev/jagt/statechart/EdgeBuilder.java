@@ -46,7 +46,14 @@ public final class EdgeBuilder<E, X, F, S extends Enum<S>> {
 
     public ChartBuilder<E, X, F> to(S target) {
         chart.add(new Edge<>(region, from, target, label, matches, guard, List.copyOf(effects),
-                List.copyOf(raises)));
+                List.copyOf(raises), false));
+        return chart;
+    }
+
+    /** An internal transition: the edge's effects and raises run, the state is neither exited nor entered. */
+    public ChartBuilder<E, X, F> stay() {
+        chart.add(new Edge<>(region, from, from, label, matches, guard, List.copyOf(effects),
+                List.copyOf(raises), true));
         return chart;
     }
 }

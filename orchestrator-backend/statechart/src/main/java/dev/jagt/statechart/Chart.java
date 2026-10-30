@@ -11,7 +11,7 @@ import java.util.Optional;
 /**
  * Regions run in parallel and a step is pure. Within a microstep every region picks its first enabled transition
  * against the configuration from before it, exits are emitted before transition effects, and raised events run
- * to completion in raise order. A transition to its own state still exits it. A derived region is read from the
+ * to completion in raise order. A transition to its own state still exits it; an internal one ({@code stay}) does not. A derived region is read from the
  * facts the caller passes, the same for every raised event of the step.
  */
 public final class Chart<E, X, F> {
@@ -66,7 +66,7 @@ public final class Chart<E, X, F> {
         while (!queue.isEmpty()) {
             E current = queue.poll();
             List<Edge<E, F>> taken = enabled(config, facts, current);
-            taken.forEach(t -> effects.addAll(exitEffects(t)));
+            taken.stream().filter(t -> !t.internal()).forEach(t -> effects.addAll(exitEffects(t)));
             for (Edge<E, F> t : taken) {
                 effects.addAll(t.effectsFor(current));
                 queue.addAll(t.raises());
