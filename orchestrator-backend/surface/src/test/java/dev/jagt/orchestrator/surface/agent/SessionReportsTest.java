@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,13 +24,14 @@ class SessionReportsTest {
     private final TurnEnds turnEnds = mock(TurnEnds.class);
 
     @Test
-    void callsASessionBlockedWhenItsNotificationNamesWhatThisCliSaysWhileBlocked() {
+    void signsAnAskWhenItsNotificationNamesWhatThisCliSaysWhileBlocked() {
         when(runtime.blockingNotification()).thenReturn("needs your permission");
 
         new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.WAITING, null, null, new SessionSign.TurnEnded(null));
+        verify(signs).asked("ABC-1", new SessionSign.Asked("Claude needs your permission to use Bash",
+                SessionSign.Asked.Channel.HOOK));
     }
 
     @Test
@@ -39,6 +42,7 @@ class SessionReportsTest {
                 SessionReports.Report.defaults().withSaid("Claude is waiting for your input"));
 
         verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null, new SessionSign.TurnEnded(null));
+        verify(signs, never()).asked(any(), any());
     }
 
     @Test

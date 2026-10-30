@@ -87,12 +87,6 @@ public class WatchdogService implements Job {
         check(taskId);
     }
 
-    /** A session sitting at a prompt that fires no hook, told by what it shows. */
-    public void waiting(String taskId, String cause) {
-        probe.report(taskId, SessionProbe.State.WAITING, cause, clock.millis());
-        check(taskId);
-    }
-
     private void verdict(String taskId, TaskState task, long now) {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         Optional<SessionProbe.Silence> silence;
@@ -107,9 +101,7 @@ public class WatchdogService implements Job {
             return;
         }
         // The wait FOLLOWING an agent's own question was announced when it asked.
-        boolean announcedWhenItAsked = silence.get().atAPrompt()
-                && task.report().asks();
-        if (announcedWhenItAsked || task.turnOrNone().marked(ALERTED, String.valueOf(silence.get().since()))) {
+        if (stillAsking(task, silence.get()) || task.turnOrNone().marked(ALERTED, String.valueOf(silence.get().since()))) {
             return;
         }
         String said = body(silence.get());
@@ -121,6 +113,10 @@ public class WatchdogService implements Job {
                 .addKeyValue("silent", (now - silence.get().since()) / 60_000)
                 .log();
         notifications.send(Notification.watchdog(taskId, "agent stopped", said));
+    }
+
+    private static boolean stillAsking(TaskState task, SessionProbe.Silence silence) {
+        return task.report().asks() && (silence.reported() == null || silence.reported() == SessionProbe.State.IDLE);
     }
 
     private void forgetAlert(String taskId, TaskState task) {

@@ -23,10 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessionProbe {
 
     /**
-     * What a session's harness says about it. {@code WAITING}, {@code GONE} and {@code FAILED} are verdicts on
-     * their own; {@code IDLE} is not — a turn ending says only that a turn ended.
+     * What a session's harness says about it. {@code GONE} and {@code FAILED} are verdicts on their own;
+     * {@code IDLE} is not — a turn ending says only that a turn ended.
      */
-    public enum State { WAITING, GONE, FAILED, IDLE, WORKING }
+    public enum State { GONE, FAILED, IDLE, WORKING }
 
     /** Since when nothing has moved, what a harness said about it, and why — null where none of them did. */
     public record Silence(long since, @Nullable State reported, @Nullable String cause) {
@@ -42,15 +42,7 @@ public class SessionProbe {
             if (reported == State.IDLE) {
                 return "its turn ended and nothing has moved since";
             }
-            if (reported == State.WAITING) {
-                return cause == null ? "waiting for input" : cause;
-            }
             return null;
-        }
-
-        /** Whether a harness put the session AT a prompt, as opposed to reporting it gone or saying nothing. */
-        public boolean atAPrompt() {
-            return reported == State.WAITING || reported == State.IDLE;
         }
     }
 

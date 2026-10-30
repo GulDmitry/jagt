@@ -64,8 +64,10 @@ public class SessionReports {
 
     /** The brief for a session that has just been compacted, or empty for every other report. */
     public String record(String taskId, SessionProbe.State state, Report report) {
-        signs.record(taskId, continued(blocked(state, report.said()), report.endedBy()), null, report.sessionLog(),
-                signOf(state, report));
+        signs.record(taskId, continued(state, report.endedBy()), null, report.sessionLog(), signOf(state, report));
+        if (blocked(state, report.said())) {
+            signs.asked(taskId, new SessionSign.Asked(report.said(), SessionSign.Asked.Channel.HOOK));
+        }
         return brief(taskId, report.startedBy(), report.task());
     }
 
@@ -83,19 +85,14 @@ public class SessionReports {
         return turnEnds.answer(taskId, report.task(), sentOn, pausedOnBackgroundWork);
     }
 
-    /**
-     * One event, two waits: a session refused a permission cannot go on, one merely quiet may be part-way through
-     * something long. The CLI's own wording separates them, and an unrecognised one stays the quieter.
-     */
-    private SessionProbe.State blocked(SessionProbe.State state, @Nullable String said) {
-        // Asked only where an answer could change anything: every start and every turn end says nothing.
+    /** A session refused a permission cannot go on; one merely quiet may be part-way through something long. */
+    private boolean blocked(SessionProbe.State state, @Nullable String said) {
         if (state != SessionProbe.State.IDLE || said == null) {
-            return state;
+            return false;
         }
         String blocking = runtime.blockingNotification();
         return blocking != null && !blocking.isBlank()
-                && said.toLowerCase(java.util.Locale.ROOT).contains(blocking.toLowerCase(java.util.Locale.ROOT))
-                ? SessionProbe.State.WAITING : state;
+                && said.toLowerCase(java.util.Locale.ROOT).contains(blocking.toLowerCase(java.util.Locale.ROOT));
     }
 
     private SessionProbe.State continued(SessionProbe.State state, @Nullable String endedBy) {

@@ -14,7 +14,7 @@ public sealed interface SessionSign {
     record WorkStarted() implements SessionSign {
         @Override
         public Session applyTo(Session session, long now) {
-            return older(session, now, false) ? session : alive(session, now).withWorkStartedAt(now);
+            return older(session, now, false) ? session : alive(session, now).withWorkStartedAt(now).withStampedAsk(false);
         }
     }
 
@@ -29,6 +29,17 @@ public sealed interface SessionSign {
         @Override
         public Session applyTo(Session session, long now) {
             return session.withReportedAt(now);
+        }
+    }
+
+    /** The session cannot go on until a human answers, as its harness or its window shows rather than as it said. */
+    record Asked(@Nullable String cause, Channel channel) implements SessionSign {
+
+        public enum Channel { HOOK, SCREEN }
+
+        @Override
+        public Session applyTo(Session session, long now) {
+            return session.withStampedAsk(true);
         }
     }
 

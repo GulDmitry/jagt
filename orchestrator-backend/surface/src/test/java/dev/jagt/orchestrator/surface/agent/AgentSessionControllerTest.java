@@ -38,10 +38,10 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, reports, wakes).report("waiting", "/wt/ABC-1-proj",
+        new AgentSessionController(state, reports, wakes).report("idle", "/wt/ABC-1-proj",
                 new SessionHookReport("/logs/session.jsonl", "compact", null));
 
-        verify(reports).record("ABC-1", SessionProbe.State.WAITING,
+        verify(reports).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSessionLog(Path.of("/logs/session.jsonl"))
                         .withStartedBy("compact").withTask(task));
     }

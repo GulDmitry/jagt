@@ -19,6 +19,11 @@ public class SessionSigns {
     private final WatchdogService watchdog;
     private final AgentSpendReader agentSpend;
 
+    public void asked(String taskId, SessionSign.Asked sign) {
+        ledger.sign(taskId, sign);
+        watchdog.check(taskId);
+    }
+
     /** {@code sessionLog} is the file the session appends to, or null where none was named. */
     public void record(String taskId, SessionProbe.State state, @Nullable String cause, @Nullable Path sessionLog,
                        SessionSign sign) {

@@ -25,32 +25,6 @@ import static org.mockito.Mockito.when;
 class SessionProbeTest {
 
     @Test
-    void raisesAHarnessReportEvenWhileTheTerminalIsStillPrinting() {
-        SessionHost sessions = mock(SessionHost.class);
-        when(sessions.lastWindowActivityMillis(any(), anyString())).thenReturn(10_000_000L);
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(9_990_000L).build();
-        SessionProbe probe = new SessionProbe(mock(ConfigService.class), sessions, mock(AgentRuntime.class));
-
-        probe.report("ABC-1", SessionProbe.State.WAITING, null, 10_000_000);
-
-        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
-                .map(SessionProbe.Silence::detail).contains("waiting for input");
-    }
-
-    @Test
-    void saysWhatASessionWaitsOnWhereItsWindowNamedIt() {
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.NEW).lastActiveTimestamp(9_990_000L).build();
-        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
-                mock(AgentRuntime.class));
-
-        probe.report("ABC-1", SessionProbe.State.WAITING, "waiting on the trust dialog", 10_000_000);
-
-        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
-                .map(SessionProbe.Silence::detail).contains("waiting on the trust dialog");
-    }
-
-    @Test
     void staysQuietForATurnThatJustEndedBecauseTheSessionMayComeStraightBack() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();
@@ -191,12 +165,12 @@ class SessionProbeTest {
     }
 
     @Test
-    void dropsAWaitingReportTheMomentTheSessionReportsItIsWorkingAgain() {
+    void dropsAFailureReportTheMomentTheSessionReportsItIsWorkingAgain() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
                 mock(AgentRuntime.class));
-        probe.report("ABC-1", SessionProbe.State.WAITING, null, 9_500_000);
+        probe.report("ABC-1", SessionProbe.State.FAILED, null, 9_500_000);
 
         probe.report("ABC-1", SessionProbe.State.WORKING, null, 10_000_000);
 
@@ -211,7 +185,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class), runtime);
 
-        probe.report("ABC-1", SessionProbe.State.WAITING, null, 9_500_000);
+        probe.report("ABC-1", SessionProbe.State.FAILED, null, 9_500_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
@@ -264,7 +238,7 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_990_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
                 mock(AgentRuntime.class));
-        probe.report("ABC-1", SessionProbe.State.WAITING, null, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.FAILED, null, 10_000_000);
 
         probe.keepOnly(List.of("ABC-2"));
 
@@ -289,10 +263,10 @@ class SessionProbeTest {
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class), runtime);
 
-        probe.report("ABC-1", SessionProbe.State.WAITING, null, 10_000_000);
+        probe.report("ABC-1", SessionProbe.State.FAILED, null, 10_000_000);
 
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
-                .map(SessionProbe.Silence::detail).contains("waiting for input");
+                .map(SessionProbe.Silence::detail).contains("its turn failed");
     }
 
     @Test

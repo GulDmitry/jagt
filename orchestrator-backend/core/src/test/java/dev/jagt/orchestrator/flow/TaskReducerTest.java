@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.RoundTrail;
@@ -201,6 +202,36 @@ class TaskReducerTest {
         TaskState reopened = TaskReducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
         assertThat(reopened.stopped()).isFalse();
+    }
+
+    @Test
+    void clearsAPermissionTheSignStampedWhenWorkStartsAgain() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState asked = TaskReducer.signed(task, new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK), 1_000);
+
+        TaskState started = TaskReducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
+
+        assertThat(asked.report()).isEqualTo(AgentReport.PERMISSION);
+        assertThat(started.report()).isEqualTo(AgentReport.PLAIN);
+    }
+
+    @Test
+    void keepsAPermissionTheSessionSaidItselfWhenWorkStartsAgain() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).report(AgentReport.PERMISSION).build();
+        TaskState asked = TaskReducer.signed(task, new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK), 1_000);
+
+        TaskState started = TaskReducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
+
+        assertThat(started.report()).isEqualTo(AgentReport.PERMISSION);
+    }
+
+    @Test
+    void leavesAQuestionTheSessionSaidWhenAPromptIsReported() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).report(AgentReport.QUESTION).build();
+
+        TaskState asked = TaskReducer.signed(task, new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.SCREEN), 1_000);
+
+        assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
     }
 
     @Test

@@ -27,4 +27,10 @@ public class SessionLedger {
         probe.report(taskId, state, cause, now);
         stateService.updateTask(taskId, task -> TaskReducer.signed(task, sign, now));
     }
+
+    /** Only the sign on the task, for what the probe's verdict has no word for. */
+    public void sign(String taskId, SessionSign sign) {
+        long now = clock.millis();
+        stateService.updateTask(taskId, task -> TaskReducer.signed(task, sign, now));
+    }
 }

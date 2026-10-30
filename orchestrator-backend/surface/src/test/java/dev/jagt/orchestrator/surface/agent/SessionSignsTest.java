@@ -29,8 +29,18 @@ class SessionSignsTest {
     }
 
     @Test
+    void signsAnAskOnTheTaskAndHasItJudgedAtOnce() {
+        SessionSign.Asked sign = new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK);
+
+        new SessionSigns(ledger, watchdog, agentSpend).asked("ABC-1", sign);
+
+        verify(ledger).sign("ABC-1", sign);
+        verify(watchdog).check("ABC-1");
+    }
+
+    @Test
     void countsWhatTheSessionSpentInTheLogFileItNamed() {
-        new SessionSigns(ledger, watchdog, agentSpend).record("ABC-1", SessionProbe.State.WAITING, null,
+        new SessionSigns(ledger, watchdog, agentSpend).record("ABC-1", SessionProbe.State.IDLE, null,
                 Path.of("/logs/session.jsonl"), new SessionSign.TurnEnded("/logs/session.jsonl"));
 
         verify(agentSpend, timeout(2_000)).charge("ABC-1", Path.of("/logs/session.jsonl"));

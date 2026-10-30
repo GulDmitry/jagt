@@ -31,7 +31,7 @@ or not. The move must have stood five seconds; a card already yours when jagt st
 
 ### Requirement: Silence is stamped by the watchdog
 `WatchdogService` SHALL stamp silence from `service/SessionProbe` (`TaskState.silentSince`, `TaskState.silentBecause`):
-token limit, crash, a launch exit, unanswered prompt, an API error ending a turn, or `SessionProbe.State.IDLE` at the shared
+token limit, crash, a launch exit, an API error ending a turn, or `SessionProbe.State.IDLE` at the shared
 threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overruled at `NEW`.
 
 #### Scenario: Silent stop
@@ -39,14 +39,14 @@ threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overrul
 - **THEN** NEEDS YOU, Focus highlighted; logged and notified once per silence, a restart included, a new one alerting again
 
 #### Scenario: A permission prompt
-- **WHEN** a session sits at one
-- **THEN** it is reported within seconds; a plain turn end is silent until nothing moved for a while
+- **WHEN** a session sits at one and its report is plain
+- **THEN** within seconds NEEDS INPUT, answer the session, no stopped banner; a plain turn end is silent until nothing moved for a while
+- **WHEN** work starts again
+- **THEN** a permission the prompt raised clears; one the session said stays
 
-#### Scenario: A turn ends unreported
+#### Scenario: A turn ends unreported, or a question answered in the terminal
 - **WHEN** Claude ends its turn without reporting
 - **THEN** it is sent back once to report first, then stamped silent
-
-#### Scenario: A question answered in the terminal
 - **WHEN** a session asked, the human answered in its terminal, and the turn that answer began ends without a report
 - **THEN** it is sent back once to report first, so NEEDS INPUT does not outlive its answer
 
@@ -54,7 +54,7 @@ threshold with nothing newer behind it: the same flip, a NEEDS YOU line, overrul
 - **WHEN** it exits at `NEW` before reporting, printing `Error: Invalid MCP configuration`
 - **THEN** NEEDS YOU within seconds: the session ended, and its last lines; unread, the card points at the launch
 - **WHEN** its window at `NEW` shows a phrase the runtime declares for its trust dialog (`trust-dialog`)
-- **THEN** NEEDS YOU within seconds: waiting on the trust dialog; jagt reads the window and sends it no key
+- **THEN** NEEDS INPUT within seconds, answer the session; jagt reads the window and sends it no key
 
 #### Scenario: A turn ends on an API error
 - **WHEN** the CLI ends a turn on an API error and names `overloaded`

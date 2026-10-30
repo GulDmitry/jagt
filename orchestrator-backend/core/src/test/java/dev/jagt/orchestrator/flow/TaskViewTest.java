@@ -33,6 +33,19 @@ class TaskViewTest {
         assertThat(view.owner()).isEqualTo(expected);
     }
 
+    @Test
+    void asksYouToAnswerTheSessionWhenItsHookReportedABlockingPromptWhileItsReportIsPlain() {
+        TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState asked = TaskReducer.signed(working, new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK), 1_000)
+                .withSilentSince(500, "its turn ended and nothing has moved since");
+
+        TaskView view = TaskView.of("ABC-1", asked, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.owner()).isEqualTo(Owner.YOU);
+        assertThat(view.ask()).isEqualTo("answer the session");
+        assertThat(view.detail()).doesNotContain("agent stopped");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "javascript:fetch('/api/tasks/a1/actions/deploy',{method:'POST'})",

@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.SessionLedger;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ public class LaunchExits implements TaskJob {
 
     private final AgentSessions sessions;
     private final WatchdogService watchdog;
+    private final SessionLedger ledger;
 
     @Override
     public String id() {
@@ -45,6 +48,9 @@ public class LaunchExits implements TaskJob {
     @Override
     public void run(String taskId, TaskState task) {
         sessions.exitTail(taskId).ifPresentOrElse(printed -> watchdog.ended(taskId, printed),
-                () -> sessions.unansweredPrompt(taskId).ifPresent(cause -> watchdog.waiting(taskId, cause)));
+                () -> sessions.unansweredPrompt(taskId).filter(cause -> !task.report().asks()).ifPresent(cause -> {
+                    ledger.sign(taskId, new SessionSign.Asked(cause, SessionSign.Asked.Channel.SCREEN));
+                    watchdog.check(taskId);
+                }));
     }
 }

@@ -62,12 +62,12 @@ class WatchdogServiceTest {
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.WAITING, null)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)));
 
         new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
         verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.WATCHDOG
-                && "ABC-1".equals(sent.taskId()) && "waiting for input".equals(sent.body())));
+                && "ABC-1".equals(sent.taskId()) && "the session ended".equals(sent.body())));
     }
 
     @Test
@@ -103,9 +103,8 @@ class WatchdogServiceTest {
         verify(probe, never()).of(anyString(), any(), anyLong(), anyLong());
     }
 
-    @ParameterizedTest
-    @EnumSource(value = SessionProbe.State.class, names = {"WAITING", "IDLE"})
-    void sendsNoSecondBannerForAnAgentThatHadAlreadyAsked(SessionProbe.State reported, @TempDir Path root) {
+    @Test
+    void sendsNoSecondBannerForAnAgentThatHadAlreadyAsked(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
@@ -114,7 +113,24 @@ class WatchdogServiceTest {
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, reported, null)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.IDLE, null)));
+
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void sendsNoBannerForAnAgentWhosePromptTheScreenRaisedAndNoHookEverFollowed(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .report(AgentReport.PERMISSION).build());
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, null, null)));
 
         new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
@@ -383,19 +399,6 @@ class WatchdogServiceTest {
     }
 
     @Test
-    void stopsASessionAtAPromptNoHookReportsAsWaitingWithTheCauseItsWindowShowed(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        SessionProbe probe = mock(SessionProbe.class);
-
-        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
-                .waiting("ABC-1", "waiting on the trust dialog");
-
-        verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WAITING), eq("waiting on the trust dialog"), anyLong());
-    }
-
-    @Test
     void stampsTheSilenceAtOnceWhenASessionEndedRatherThanAtTheNextTick(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
@@ -407,22 +410,6 @@ class WatchdogServiceTest {
 
         new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
                 .ended("ABC-1", "Error: usage limit");
-
-        assertThat(state.task("ABC-1").orElseThrow().agentIsSilent()).isTrue();
-    }
-
-    @Test
-    void stampsTheSilenceAtOnceWhenASessionWaitsAtAPromptNoHookReports(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        SessionProbe probe = mock(SessionProbe.class);
-        when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(4_000, SessionProbe.State.WAITING, "the trust dialog")));
-
-        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
-                .waiting("ABC-1", "the trust dialog");
 
         assertThat(state.task("ABC-1").orElseThrow().agentIsSilent()).isTrue();
     }
