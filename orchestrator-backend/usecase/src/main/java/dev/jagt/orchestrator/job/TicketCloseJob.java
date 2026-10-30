@@ -40,6 +40,7 @@ public class TicketCloseJob implements Job {
     private final TrackerClose close;
     private final CommandService commands;
     private final Clock clock;
+    /** A restart forgets the waits, so every handed-over task is asked again, five a poll: reads, nothing else. */
     private final Map<String, Deferred> deferred = new ConcurrentHashMap<>();
 
     /**

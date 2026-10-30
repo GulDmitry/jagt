@@ -34,6 +34,7 @@ public class YourMoveJob implements Job {
     private final Notifications notifications;
     private final HandBack handBack;
     private final Clock clock;
+    /** A task first seen after a restart counts as told, so a restart pings nobody. */
     private final Map<String, Standing> seen = new ConcurrentHashMap<>();
 
     static final Duration SETTLE = Duration.ofSeconds(5);

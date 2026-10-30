@@ -27,6 +27,7 @@ class ConflictFinish {
     private final CommandService commands;
     private final TaskStops stops;
     private final StateService stateService;
+    /** Dedups a log line only: a restart says it once more. */
     private final Map<String, Long> heldBy = new ConcurrentHashMap<>();
 
     void deploy(String taskId, Path worktree) {
