@@ -46,7 +46,7 @@ class ReportEffectsTest {
 
     private static TaskState taskAnswering(String step, String waited) {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
-        Turn turn = new Turn(Turn.Holder.SESSION, step, 4, "", 0, waited == null ? Map.of() : Map.of("waits", waited), List.of());
+        Turn turn = new Turn(step, 4, "", 0, waited == null ? Map.of() : Map.of("waits", waited), List.of());
         return task.withTurn(turn);
     }
 

@@ -74,7 +74,7 @@ class MasterReviewTest {
                 .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
         MasterReview reviews = new MasterReview(state);
         TaskState handedBackAgain = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a1").build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .alias("a1").build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("a1", handedBackAgain);
         reviews.write("a1", handedBackAgain, new MasterReview.Review(3, "", "", "", List.of()), "");
 
@@ -87,7 +87,7 @@ class MasterReviewTest {
                 .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
         MasterReview reviews = new MasterReview(state);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("a1", task);
         reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
 
@@ -99,14 +99,14 @@ class MasterReviewTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
         MasterReview reviews = new MasterReview(state);
-        Turn handedBack = new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of());
+        Turn handedBack = new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of());
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
                 .build().withTurn(handedBack);
         state.putTask("a1", task);
         reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
 
-        TaskState handedBackAgain = state.task("a1").orElseThrow().withTurn(handedBack.closed(Turn.Holder.SESSION, 6_000)
-                .closed(Turn.Holder.MASTER, 7_000));
+        TaskState handedBackAgain = state.task("a1").orElseThrow().withTurn(handedBack.closed(6_000)
+                .closed(7_000));
 
         assertThat(reviews.readsTheRoundInFront(handedBackAgain)).isFalse();
     }
@@ -117,7 +117,7 @@ class MasterReviewTest {
                 .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
         MasterReview reviews = new MasterReview(state);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("a1", task);
         reviews.write("a1", task, new MasterReview.Review(3, "abc123", "", "", List.of()), "");
 
@@ -201,7 +201,7 @@ class MasterReviewTest {
                 .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
         MasterReview reviews = new MasterReview(state);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .build().withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("a1", task);
         reviews.write("a1", task, new MasterReview.Review(4, "", "", "", List.of()), "");
         Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), "{\"round\":5,\"reads\":[]}");

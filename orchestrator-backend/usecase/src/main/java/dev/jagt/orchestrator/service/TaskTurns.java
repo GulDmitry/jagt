@@ -71,13 +71,12 @@ public class TaskTurns {
 
     /** A reply refused stops its task first, and a stopped task's turn is the human's whatever the Master's profile. */
     public void refused(String taskId) {
-        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> closed(task, Turns.Profile.OFF));
+        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> closed(task));
     }
 
     /** The turn the task's last report answered, passed to whoever holds it now. */
-    public static TaskState closed(TaskState task, Turns.Profile profile) {
-        Turn.Holder holder = Turns.next(task.status(), task.report(), task.stopped(), profile);
-        return task.withTurn(task.turnOrNone().closed(holder, task.lastActiveTimestamp()));
+    public static TaskState closed(TaskState task) {
+        return task.withTurn(task.turnOrNone().closed(task.lastActiveTimestamp()));
     }
 
     public void mark(String taskId, String step, String value) {

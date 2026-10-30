@@ -103,7 +103,7 @@ public class FlowReports {
             undone.set(true);
             long now = clock.millis();
             return task.withStatus(read.status(), read.message(), now).withReport(read.report())
-                    .withPlanGate(read.planGate()).withTurn(claimed.closed(Turn.Holder.HUMAN, now));
+                    .withPlanGate(read.planGate()).withTurn(claimed.closed(now));
         });
         return undone.get();
     }

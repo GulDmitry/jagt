@@ -178,7 +178,7 @@ public class AgentStatusReports {
         if (!closesTurn) {
             return next;
         }
-        return TaskTurns.closed(next, configService.load().master().profile());
+        return TaskTurns.closed(next);
     }
 
     private static TaskState linked(TaskStatus was, TaskState next, @Nullable String url,

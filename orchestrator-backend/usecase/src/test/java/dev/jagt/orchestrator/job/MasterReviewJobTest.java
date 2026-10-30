@@ -100,7 +100,7 @@ class MasterReviewJobTest {
     void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain(@TempDir Path root) {
         StateService state = stateIn(root);
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
-                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
         new MasterReview(state).write("ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         back = state.task("ABC-1").orElseThrow();
@@ -117,7 +117,7 @@ class MasterReviewJobTest {
     void keepsTheTickGoingWhenAVerdictFindsTheTaskMovedOn(@TempDir Path root) {
         StateService state = stateIn(root);
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
-                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
         new MasterReview(state).write("ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         back = state.task("ABC-1").orElseThrow();
@@ -133,7 +133,7 @@ class MasterReviewJobTest {
     void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack(@TempDir Path root) {
         StateService state = stateIn(root);
         TaskState back = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build()
-                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         state.putTask("ABC-1", back);
         new MasterReview(state).write("ABC-1", back, new MasterReview.Review(3, "", "", "", List.of(new MasterReview.Read("qa", new Judgement("", "ready", List.of(), "", List.of(), "")))), "");
         back = state.task("ABC-1").orElseThrow();

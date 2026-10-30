@@ -15,22 +15,14 @@ class TurnTest {
         Turn relayed = Turn.none().relayed("round", "d1", "", 100);
 
         assertThat(relayed.open()).isTrue();
-        assertThat(relayed.holder()).isEqualTo(Turn.Holder.SESSION);
         assertThat(relayed.step()).isEqualTo("round");
         assertThat(relayed.digest()).isEqualTo("d1");
         assertThat(relayed.since()).isEqualTo(100);
     }
 
     @Test
-    void isNotOpenWhenTheHumanHoldsTheTurnEvenWithADigest() {
-        Turn human = new Turn(Turn.Holder.HUMAN, "round", 3, "d1", 100, Map.of(), List.of());
-
-        assertThat(human.open()).isFalse();
-    }
-
-    @Test
     void isNotOpenOnceTheSessionReportedAndEmptiedTheDigest() {
-        Turn reported = Turn.none().relayed("round", "d1", "", 100).closed(Turn.Holder.SESSION, 200);
+        Turn reported = Turn.none().relayed("round", "d1", "", 100).closed(200);
 
         assertThat(reported.open()).isFalse();
     }
@@ -42,31 +34,29 @@ class TurnTest {
         assertThat(open.holds("round", "d1")).isTrue();
         assertThat(open.holds("round", "d2")).isFalse();
         assertThat(open.holds("plan", "d1")).isFalse();
-        assertThat(open.closed(Turn.Holder.MASTER, 200).holds("round", "d1")).isFalse();
+        assertThat(open.closed(200).holds("round", "d1")).isFalse();
     }
 
     @Test
     void countsTheNextTurnAtEveryRelayAndEveryReport() {
         Turn relayed = Turn.none().relayed("round", "d1", "", 100);
-        Turn closed = relayed.closed(Turn.Holder.MASTER, 200);
+        Turn closed = relayed.closed(200);
 
         assertThat(relayed.id()).isEqualTo(1);
         assertThat(closed.id()).isEqualTo(2);
-        assertThat(closed.holder()).isEqualTo(Turn.Holder.MASTER);
         assertThat(closed.digest()).isEmpty();
         assertThat(closed.since()).isEqualTo(200);
         assertThat(closed.step()).isEqualTo("round");
     }
 
     @Test
-    void isTheSameTurnOnlyWhileHolderIdAndSinceAllMatch() {
-        Turn turn = new Turn(Turn.Holder.SESSION, "round", 4, "d1", 100, Map.of(), List.of());
+    void isTheSameTurnOnlyWhileIdAndSinceBothMatch() {
+        Turn turn = new Turn("round", 4, "d1", 100, Map.of(), List.of());
 
-        assertThat(turn.sameTurnAs(new Turn(Turn.Holder.SESSION, "plan", 4, "d9", 100, Map.of("a", "b"), List.of())))
+        assertThat(turn.sameTurnAs(new Turn("plan", 4, "d9", 100, Map.of("a", "b"), List.of())))
                 .isTrue();
-        assertThat(turn.sameTurnAs(new Turn(Turn.Holder.HUMAN, "round", 4, "d1", 100, Map.of(), List.of()))).isFalse();
-        assertThat(turn.sameTurnAs(new Turn(Turn.Holder.SESSION, "round", 5, "d1", 100, Map.of(), List.of()))).isFalse();
-        assertThat(turn.sameTurnAs(new Turn(Turn.Holder.SESSION, "round", 4, "d1", 101, Map.of(), List.of()))).isFalse();
+        assertThat(turn.sameTurnAs(new Turn("round", 5, "d1", 100, Map.of(), List.of()))).isFalse();
+        assertThat(turn.sameTurnAs(new Turn("round", 4, "d1", 101, Map.of(), List.of()))).isFalse();
     }
 
     @Test
@@ -116,8 +106,8 @@ class TurnTest {
     }
 
     @Test
-    void readsAMissingHolderStepDigestMarksAndRunAsNothing() {
-        Turn bare = new Turn(null, null, 0, null, 0, null, null);
+    void readsAMissingStepDigestMarksAndRunAsNothing() {
+        Turn bare = new Turn(null, 0, null, 0, null, null);
 
         assertThat(bare).isEqualTo(Turn.none());
     }

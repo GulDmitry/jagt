@@ -14,7 +14,6 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -218,8 +217,6 @@ class OwnStatusReportsTest {
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
-        assertThat(state.task("ABC-42").orElseThrow())
-                .extracting(task -> task.stop().trigger(), task -> task.turnOrNone().holder())
-                .containsExactly(TaskStop.Trigger.MISS, Turn.Holder.HUMAN);
+        assertThat(state.task("ABC-42").orElseThrow().stop().trigger()).isEqualTo(TaskStop.Trigger.MISS);
     }
 }

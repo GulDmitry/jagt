@@ -844,7 +844,7 @@ class MasterPanelTest {
         MasterBriefs briefs = mock(MasterBriefs.class);
         RoundQuotes quotes = mock(RoundQuotes.class);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()
-                .withTurn(new Turn(Turn.Holder.MASTER, "round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+                .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
         when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));

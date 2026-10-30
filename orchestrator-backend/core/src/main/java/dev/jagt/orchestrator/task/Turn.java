@@ -23,7 +23,7 @@ import java.util.Map;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record Turn(Holder holder, String step, long id, String digest, long since,
+public record Turn(String step, long id, String digest, long since,
                    @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> marks,
                    @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Long> run) {
 
@@ -41,7 +41,6 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
     }
 
     public Turn {
-        holder = holder == null ? Holder.NOBODY : holder;
         step = step == null ? "" : step;
         digest = digest == null ? "" : digest;
         marks = marks == null ? Map.of() : Map.copyOf(marks);
@@ -49,13 +48,13 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
     }
 
     public static Turn none() {
-        return new Turn(Holder.NOBODY, "", 0, "", 0, Map.of(), List.of());
+        return new Turn("", 0, "", 0, Map.of(), List.of());
     }
 
     /** From a relay until the session's next report, which empties the digest. */
     @JsonIgnore
     public boolean open() {
-        return holder == Holder.SESSION && !digest.isEmpty();
+        return !digest.isEmpty();
     }
 
     /** The same step with the same facts, while the session still holds the turn it opened. */
@@ -65,7 +64,7 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
 
     /** No relay opened and no report closed a turn between the two; marks aside. */
     public boolean sameTurnAs(Turn other) {
-        return holder == other.holder && id == other.id && since == other.since;
+        return id == other.id && since == other.since;
     }
 
     public boolean marked(String step, String value) {
@@ -81,22 +80,22 @@ public record Turn(Holder holder, String step, long id, String digest, long sinc
         Map<String, String> grown = new HashMap<>(marks);
         grown.put(step, digest);
         grown.put(step + ANSWERS, answered);
-        return new Turn(Holder.SESSION, step, id + 1, digest, now, grown, ran(step, answered, now));
+        return new Turn(step, id + 1, digest, now, grown, ran(step, answered, now));
     }
 
     /** A report closes the turn it answers and starts the next holder's; the step it answered stays on record. */
-    public Turn closed(Holder next, long now) {
-        return new Turn(next, step, id + 1, "", now, marks, run);
+    public Turn closed(long now) {
+        return new Turn(step, id + 1, "", now, marks, run);
     }
 
     public Turn withMark(String step, String value) {
-        return new Turn(holder, this.step, id, digest, since, with(step, value), run);
+        return new Turn(this.step, id, digest, since, with(step, value), run);
     }
 
     public Turn withoutMark(String step) {
         Map<String, String> kept = new HashMap<>(marks);
         kept.remove(step);
-        return new Turn(holder, this.step, id, digest, since, kept, run);
+        return new Turn(this.step, id, digest, since, kept, run);
     }
 
     private List<Long> ran(String step, String answered, long now) {

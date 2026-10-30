@@ -102,7 +102,7 @@ class MasterVerdictsTest {
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", read);
         state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
-                .withTurn(new Turn(Turn.Holder.SESSION, "ship", 6, "d", 6_000, Map.of(), List.of())));
+                .withTurn(new Turn("ship", 6, "d", 6_000, Map.of(), List.of())));
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
@@ -129,7 +129,7 @@ class MasterVerdictsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", read);
-        state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(Turn.Holder.SESSION, 2_000)));
+        state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(2_000)));
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
@@ -168,7 +168,6 @@ class MasterVerdictsTest {
 
         assertThat(state.task("ABC-1").orElseThrow())
                 .returns(TaskStatus.REVIEW_PENDING, TaskState::status)
-                .returns(Turn.Holder.HUMAN, live -> live.turnOrNone().holder())
                 .returns(TaskStop.Trigger.UNDELIVERED, live -> live.stop().trigger());
     }
 
@@ -189,7 +188,7 @@ class MasterVerdictsTest {
                 new PlanApproval(state, relay, door));
         when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenAnswer(told -> {
             state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 7_000)
-                    .withTurn(new Turn(Turn.Holder.SESSION, "ship", 9, "d", 7_000, Map.of(), List.of())));
+                    .withTurn(new Turn("ship", 9, "d", 7_000, Map.of(), List.of())));
             throw new IllegalStateException("no window");
         });
 
@@ -213,7 +212,7 @@ class MasterVerdictsTest {
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", read);
         state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
-                .withTurn(new Turn(Turn.Holder.SESSION, "ship", 6, "d", 6_000, Map.of(), List.of())));
+                .withTurn(new Turn("ship", 6, "d", 6_000, Map.of(), List.of())));
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
@@ -239,7 +238,7 @@ class MasterVerdictsTest {
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", read);
         state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.IN_PROGRESS, null, 6_000)
-                .withTurn(new Turn(Turn.Holder.SESSION, "plan", 6, "d", 6_000, Map.of(), List.of())));
+                .withTurn(new Turn("plan", 6, "d", 6_000, Map.of(), List.of())));
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
