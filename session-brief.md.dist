@@ -33,7 +33,8 @@ The review of your round came back NOT READY. Each line above is a review commen
 it wrong, change nothing for it and write in task_notes.md `disputed: <the comment> — <evidence>`. A `show:`
 comment asks for evidence: answer it the same way. Evidence is a ticket line, a file:line, or a command and what
 it printed: the reviewer checks evidence and cannot read your reasons. A line ending [repeat] came back from an
-earlier round. Ask (rule 1) only for a decision nobody gave you. Leave the fix uncommitted and report
+earlier round. The parentheses closing a comment name its pattern, a class of defect: fix every instance your diff
+holds, not only the one cited. Ask (rule 1) only for a decision nobody gave you. Leave the fix uncommitted and report
 REVIEW_PENDING again.
 
 ## plan-not-ready

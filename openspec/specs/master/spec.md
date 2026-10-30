@@ -69,8 +69,7 @@ answer a question. It SHALL press `add-repo` for a repository a session asked fo
 
 ### Requirement: The human keeps what mine and humanPaths name
 `master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`
-a task's ship and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the
-Master's `done` is refused.
+a task's ship and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: A ship, a reply or a path kept for you
 - **WHEN** a round is `ready` and `mine: [ship]`, or the Master ships and `mine: [reply]`
@@ -141,6 +140,7 @@ until the round ceiling stops it; a finding is the same by file, anchor and kind
 - **THEN** the fix is read anew; one with an earlier round's file, anchor and kind goes back `[repeat]`, reworded or not
 - **AND** a round of only repeats is a round like any, toward the ceiling that stops the task for you, never a question
 - **AND** a verdict `ready` beside findings counts as not ready
+- **AND** the session fixes every instance its diff holds of a finding's pattern, not only the one cited
 
 #### Scenario: The acceptance check skipped
 - **WHEN** a round skipped it
