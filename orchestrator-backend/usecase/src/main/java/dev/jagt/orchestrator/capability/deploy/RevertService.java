@@ -4,24 +4,17 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.service.DeployTargets;
-import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static dev.jagt.orchestrator.service.DeployTargets.because;
-import static dev.jagt.orchestrator.service.DeployTargets.fixes;
-import static dev.jagt.orchestrator.service.DeployTargets.mergeCommit;
-import static dev.jagt.orchestrator.service.DeployTargets.names;
 
 /** The undo of a deploy, the other write to a shared branch; it works from the deploy's other end. */
 @Service
@@ -30,7 +23,7 @@ public class RevertService {
 
     private final StateService stateService;
     private final DeployTargets deployTargets;
-    private final GitDeploy gitDeploy;
+    private final RevertRunner runner;
 
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
@@ -39,70 +32,21 @@ public class RevertService {
 
     /**
      * Undoes one deploy: reverts the merge commits it created on the deploy branches and pushes them. The task
-     * branch keeps all its commits. Repositories are undone in reverse order and each success forgets its merge
-     * commit, so a revert that fails part way can be repeated and touches only what is still live.
+     * branch keeps all its commits.
      */
     public Outcome revert(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         List<Target> landed = deployTargets.landed(task);
-        Optional<Target> waiting = deployTargets.stopped(task, taskId);
+        Optional<Target> waiting = deployTargets.stopped(task);
         if (landed.isEmpty()) {
             if (waiting.isPresent()) {
-                return discarded(taskId, waiting.get());
+                return runner.discard(taskId, waiting.get());
             }
             throw unrecordedDeploy(taskId, task);
         }
         landed.forEach(DeployTargets::requireDeployable);
-        List<String> reverted = new ArrayList<>();
-        @Nullable String lastRevertCommit = null;
-        for (Target target : landed.reversed()) {
-            try {
-                lastRevertCommit = gitDeploy.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
-                        Objects.requireNonNull(mergeCommit(task, target)), fixes(task, target));
-            } catch (RuntimeException e) {
-                return stillLive(taskId, target, reverted, e);
-            }
-            stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), null));
-            reverted.add(target.project() + " on " + target.deployBranch() + " ("
-                    + GitDeploy.shortSha(lastRevertCommit) + ")");
-        }
-        // Only once all is out: a refused revert keeps the human's resolution.
-        if (waiting.isPresent()) {
-            gitDeploy.discardDeploy(waiting.get().path(), taskId);
-        }
-        return allReverted(taskId, task.repos().size() == 1, landed, reverted, lastRevertCommit);
-    }
-
-    private Outcome discarded(String taskId, Target at) {
-        gitDeploy.discardDeploy(at.path(), taskId);
-        String what = "discarded the conflicted merge into " + at.deployBranch() + ", nothing had landed";
-        return Outcome.ok("revert " + taskId + ": " + what + "; REVERTED — fix and ship again, or `done`.", what);
-    }
-
-    private Outcome allReverted(String taskId, boolean singleRepo, List<Target> landed, List<String> reverted,
-                               @Nullable String revertCommit) {
-        String tail = "; REVERTED — fix and ship again, or `done`.";
-        if (singleRepo) {
-            String on = "on " + landed.getFirst().deployBranch() + " (" + GitDeploy.shortSha(revertCommit) + ")";
-            return Outcome.ok("Reverted " + taskId + " " + on + tail, "reverted " + on);
-        }
-        return Outcome.ok("revert " + taskId + ": reverted " + names(reverted) + tail,
-                "reverted " + names(reverted));
-    }
-
-    /**
-     * A revert that stopped part way. What came out is forgotten, so repeating undoes only the rest, but the task
-     * is not REVERTED because something of it still is. Stamped as well as thrown: a console line is no record.
-     */
-    private Outcome stillLive(String taskId, Target at, List<String> reverted, RuntimeException cause) {
-        if (reverted.isEmpty()) {
-            throw cause;
-        }
-        String half = "reverted " + names(reverted) + ", " + at.project() + " still live on "
-                + at.deployBranch();
-        return Outcome.partial("revert " + taskId + ": " + half + " — repeat `revert " + taskId
-                + "` once this is dealt with." + because(cause), half, cause);
+        return runner.advance(taskId, task, landed, waiting);
     }
 
     /** Guessing the merge commit would risk reverting the WRONG merge on a shared branch. */

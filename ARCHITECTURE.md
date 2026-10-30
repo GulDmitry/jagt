@@ -124,7 +124,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `ship` | the change folded into the specs, commits, a pushed branch, a request per repository | the branch, `reviewRequests` |
 | a round | what the agent means to answer, before anything is posted | `review_replies.md` |
 | any report | the sentence, its stamp, whose move it is | `state.json` |
-| `deploy` | the merge commit `revert` walks back | the deploy branch, and `deployCommit` on the task |
+| `deploy` | the merge commit `revert` walks back | the deploy branch, and the task's `deployment` |
 | `done` | the documents and `finished.json`, copied out before the worktree goes | `archive/<yyMMdd-HHmmss>-<taskId>/`, beside `state.json` |
 
 - **Only the middle is in git**: branch, commits and request outlive the task; the documents are copied out

@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.surface.board.PaletteContext;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.Deployment;
+import java.util.List;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +82,7 @@ class CommandMappingEvalTest {
             stateService.putTask("ABC-15", TaskState.builder("shop", workspace.resolve("ABC-15").toString(),
                             TaskStatus.DEPLOYED)
                     .alias("a3").title("Checkout times out on a slow network")
-                    .mrUrl("https://example.invalid/shop/merge_requests/3").deployCommit("c0ffee1").build());
+                    .mrUrl("https://example.invalid/shop/merge_requests/3").deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("c0ffee1")), 1, null)).build());
         }
     }
 

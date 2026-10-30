@@ -8,6 +8,7 @@ import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.surface.board.TaskEventStream;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -159,7 +160,7 @@ class BoardConnectionTest extends BoardPageContext {
     @Test
     void aRepaintLeavesKeyboardFocusOnTheChipOfTheCardItRebuilt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).deployCommit("abc1234").build());
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -174,9 +175,9 @@ class BoardConnectionTest extends BoardPageContext {
     @Test
     void aRepaintKeepsTheTipOfAChipWhoseCardDidNotChange() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).deployCommit("abc1234").build());
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
         state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).deployCommit("abc1234").build());
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));

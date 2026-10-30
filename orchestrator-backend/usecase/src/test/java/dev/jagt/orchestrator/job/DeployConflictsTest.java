@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.Conflict;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -27,11 +28,12 @@ import static org.mockito.Mockito.when;
 class DeployConflictsTest {
 
     @Test
-    void findsAConflictInTheRepositoryWhoseDeployWorktreeHoldsIt(@TempDir Path root) {
+    void findsAConflictInTheRepositoryItsRecordNames(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
-                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).build());
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).deployment(new Deployment(1, List.of(
+                Deployment.Target.of("api", "dev"), Deployment.Target.of("web", "dev").withConflict(Conflict.of(Deployment.Cause.MERGE, 1))), 1, null)).build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig("/repo/api", "origin/main", "dev", null), "web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
         GitDeploy git = mock(GitDeploy.class);
@@ -52,7 +54,9 @@ class DeployConflictsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
-                .message("red pipeline on the deploy commit: web 01234567 https://git.example.invalid/p/7").build());
+                .message("red pipeline on the deploy commit: web 01234567 https://git.example.invalid/p/7")
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("web", "dev")
+                        .withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))), 0, null)).build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("web",
                 new ProjectConfig("/src/web", "origin/main", "dev", null))));

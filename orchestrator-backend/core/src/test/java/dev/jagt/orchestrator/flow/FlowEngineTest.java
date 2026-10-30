@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.TaskStore;
@@ -126,7 +127,8 @@ class FlowEngineTest {
     void revertsWhatADeployThatBrokeOffLeftLiveWhileTheStatusStayedPut() {
         when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-                .mrUrl("http://host/1").deployCommit("cafebabe1234").build()));
+                .mrUrl("http://host/1")
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("cafebabe1234")), 1, null)).build()));
         FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(
                 new FixedCapability(TaskAction.REVERT, Outcome.ok("reverted ABC-1"))), List.of()), sessions, Clock.systemUTC());
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();

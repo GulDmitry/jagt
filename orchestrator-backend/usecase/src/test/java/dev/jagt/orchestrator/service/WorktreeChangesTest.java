@@ -170,7 +170,7 @@ class WorktreeChangesTest {
     void shipsNothingNewWhereARequestIsOpenAndTheBranchIsPushedUnchanged() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
         when(inspection.aheadOfTarget(Path.of("/repo"), Path.of("/wt"), "main")).thenReturn(true);
-        TaskState task = TaskState.builder(List.of(new TaskRepo("demo", "/wt", null, "https://host/demo/-/merge_requests/1", null)),
+        TaskState task = TaskState.builder(List.of(new TaskRepo("demo", "/wt", null, "https://host/demo/-/merge_requests/1")),
                 TaskStatus.REVIEW_PENDING).build();
 
         assertThat(new WorktreeChanges(configService, inspection).anythingNewToShip(task)).isFalse();

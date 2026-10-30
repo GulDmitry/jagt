@@ -102,8 +102,8 @@ class HandBackTest {
         Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n");
         HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
-                .repos(List.of(new TaskRepo("api", worktree.toString(), null, null, null),
-                        new TaskRepo("web", worktree.toString(), null, null, null))).build();
+                .repos(List.of(new TaskRepo("api", worktree.toString(), null, null),
+                        new TaskRepo("web", worktree.toString(), null, null))).build();
 
         PlanProbes.Read read = handBack.planProbes(task);
 

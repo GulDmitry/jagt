@@ -81,8 +81,8 @@ class TaskViewTest {
     @Test
     void carriesEveryRepositoryWithItsOwnRequestSoNoSurfaceHasToGuessWhichDiffIsWhich() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
-                new TaskRepo("api", "/api-wt", "git@host:g/api.git", "https://host/api/-/merge_requests/1", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
+                new TaskRepo("api", "/api-wt", "git@host:g/api.git", "https://host/api/-/merge_requests/1"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2")),
                 TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));
 
@@ -158,7 +158,7 @@ class TaskViewTest {
     void offersASweepAsSoonAsANYRepositoryHasARequestOpen() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
                 TaskRepo.of("api", "/api-wt").withRemoteUrl("git@host:g/api.git"),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2")),
                 TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));
 
@@ -170,7 +170,7 @@ class TaskViewTest {
     @Test
     void marksATaskWhoseWorkIsOnASharedBranchAfterTheDeployStatusHasMovedOn() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1")
-                .deployCommit("abc1234").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("abc1234")), 1, null)).build(), false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
         assertThat(view.deployed()).isTrue();
     }
@@ -178,7 +178,8 @@ class TaskViewTest {
     @Test
     void takesTheMarkOffOnceTheRevertHasForgottenTheMergeCommit() {
         TaskState reverted = TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1")
-                .deployCommit("abc1234").build().withDeployCommit("proj", null);
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("abc1234")
+                        .withReverted("def5678")), 1, null)).build();
 
         TaskView view = TaskView.of("ABC-1", reverted, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
@@ -188,7 +189,8 @@ class TaskViewTest {
     @Test
     void marksTheDeployVerbAsARepeatWhileItsLastRunIsStillLive() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
-                .mrUrl("https://host/mr/1").deployCommit("abc1234").build(),
+                .mrUrl("https://host/mr/1")
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("abc1234")), 1, null)).build(),
                 false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
         assertThat(view.actions()).filteredOn(action -> action.id().equals("deploy"))
@@ -198,9 +200,11 @@ class TaskViewTest {
     @Test
     void offersTheRevertOnACardWhoseDeployBrokeOffAfterARepositoryLanded() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
-                TaskRepo.of("api", "/api-wt").withMerge("abc1234"),
+                TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")),
-                TaskStatus.APPROVED).alias("a1").build(), false, AutoReviewWatch.none(),
+                TaskStatus.APPROVED).alias("a1").deployment(new Deployment(1, List.of(
+                Deployment.Target.of("api", "dev").withMerge("abc1234"), Deployment.Target.of("web", "dev")), 1, null))
+                .build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));
 
         assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("revert");
@@ -209,9 +213,11 @@ class TaskViewTest {
     @Test
     void marksAMultiRepoTaskAsSoonAsONERepositoryHasLanded() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
-                TaskRepo.of("api", "/api-wt").withMerge("abc1234"),
+                TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")),
-                TaskStatus.DEPLOY_CONFLICT).alias("a1").build(), false, AutoReviewWatch.none(),
+                TaskStatus.DEPLOY_CONFLICT).alias("a1").deployment(new Deployment(1, List.of(
+                Deployment.Target.of("api", "dev").withMerge("abc1234"), Deployment.Target.of("web", "dev")), 1, null))
+                .build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));
 
         assertThat(view.deployed()).isTrue();

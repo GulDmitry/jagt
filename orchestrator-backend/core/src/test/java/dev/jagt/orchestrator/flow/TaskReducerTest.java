@@ -43,6 +43,43 @@ class TaskReducerTest {
     }
 
     @Test
+    void keepsWhatAnEarlierPressLeftLiveWhenTheNextPressOpens() {
+        TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
+        TaskState first = TaskReducer.deployStepped(TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))), 1_000),
+                new DeployStep.Merged("a", "cafe"), 1_100);
+
+        TaskState second = TaskReducer.deployStepped(first, new DeployStep.Opened(List.of(
+                Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))), 2_000);
+
+        assertThat(second.deployment().targets()).extracting(Deployment.Target::merge).containsExactly("cafe", null);
+    }
+
+    @Test
+    void forgetsTheMergeOfARepositoryOnceItsRevertCommitIsRecorded() {
+        TaskState task = TaskState.builder("a", "/wt", TaskStatus.DEPLOYED).build();
+        TaskState deployed = TaskReducer.deployStepped(TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("a", "dev"))), 1_000), new DeployStep.Merged("a", "cafe"), 1_100);
+
+        TaskState reverted = TaskReducer.deployStepped(deployed, new DeployStep.Reverted("a", "beef"), 1_200);
+
+        assertThat(reverted.deployment().live()).isFalse();
+        assertThat(reverted.deployment().targets().getFirst().revertCommit()).isEqualTo("beef");
+    }
+
+    @Test
+    void marksTheRepositoryWhoseDeployWorktreePathAnotherHeldAsBlocked() {
+        TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))), 1_000);
+
+        TaskState blocked = TaskReducer.deployStepped(opened, new DeployStep.Blocked("b"), 1_100);
+
+        assertThat(blocked.deployment().targets()).extracting(Deployment.Target::isBlocked)
+                .containsExactly(false, true);
+    }
+
+    @Test
     void endsAHostReadStopOnAReadThatDisprovesIt() {
         TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
                 .stop(new TaskStop(TaskStop.Trigger.INFRA, 1_000, "runner died")).build();

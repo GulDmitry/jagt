@@ -166,7 +166,7 @@ class ShipServiceTest {
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t")
                 .repos(List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git",
-                        "https://code.example/demo/-/merge_requests/1", null))).build());
+                        "https://code.example/demo/-/merge_requests/1"))).build());
         when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
         Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");

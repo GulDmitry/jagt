@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.Turn;
@@ -16,6 +16,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -84,10 +85,8 @@ public class DeployCheckJob implements TaskJob {
         }
     }
 
-    /** From the record; a deploy begun before it is read from the turn's mark, as before. */
     private static boolean asked(TaskState task, String digest) {
-        return task.deployment() == null ? task.turnOrNone().marked(STEP.id(), digest)
-                : digest.equals(task.deployment().askedDigest());
+        return task.deployment() != null && digest.equals(task.deployment().askedDigest());
     }
 
     private String deployBranches(TaskState task) {
@@ -99,18 +98,18 @@ public class DeployCheckJob implements TaskJob {
 
     private Optional<String> landed(String taskId, TaskState task) {
         Map<String, ProjectConfig> projects = configService.load().projects();
-        String landed = task.repos().stream()
-                .filter(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank())
-                .map(repo -> landed(repo, projects.get(repo.project())))
+        String landed = (task.deployment() == null ? List.<Deployment.Target>of() : task.deployment().targets())
+                .stream().filter(Deployment.Target::landed)
+                .map(target -> landed(target, projects.get(target.project())))
                 .collect(Collectors.joining("\n"));
         return landed.isEmpty() ? Optional.empty() : Optional.of(taskId + " is deployed:\n" + landed);
     }
 
-    private static String landed(TaskRepo repo, @Nullable ProjectConfig project) {
-        String commit = Objects.requireNonNull(repo.deployTip());
+    private static String landed(Deployment.Target target, @Nullable ProjectConfig project) {
+        String commit = Objects.requireNonNull(target.tip());
         String sha = commit.length() > 8 ? commit.substring(0, 8) : commit;
         String branch = project == null || project.deployBranch() == null ? "its deploy branch"
                 : project.deployBranch();
-        return "- " + repo.project() + ": " + sha + " on " + branch;
+        return "- " + target.project() + ": " + sha + " on " + branch;
     }
 }

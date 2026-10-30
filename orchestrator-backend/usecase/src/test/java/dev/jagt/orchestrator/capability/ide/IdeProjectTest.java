@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
+import dev.jagt.orchestrator.task.Conflict;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -35,7 +37,9 @@ class IdeProjectTest {
         TaskState task = TaskState.builder(List.of(
                         TaskRepo.of("api", root.resolve("one/ABC-1-api").toString()),
                         TaskRepo.of("web", root.resolve("two/ABC-1-web").toString())),
-                TaskStatus.DEPLOY_CONFLICT).build();
+                TaskStatus.DEPLOY_CONFLICT).deployment(new Deployment(1, List.of(
+                        Deployment.Target.of("api", "dev"), Deployment.Target.of("web", "dev").withConflict(Conflict.of(Deployment.Cause.MERGE, 1))), 1, null))
+                .build();
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig(api.toString(), "origin/main", "dev", List.of()),
                 "web", new ProjectConfig(web.toString(), "origin/main", "dev", List.of()))));
@@ -52,7 +56,8 @@ class IdeProjectTest {
     void saysItIsTheDeployWorktreeItOpenedForAConflict(@TempDir Path root) throws Exception {
         Path repo = Files.createDirectories(root.resolve("repo"));
         TaskState task = TaskState.builder("proj", root.resolve("ABC-1-demo").toString(),
-                TaskStatus.DEPLOY_CONFLICT).build();
+                TaskStatus.DEPLOY_CONFLICT).deployment(new Deployment(1, List.of(
+                        Deployment.Target.of("proj", "dev").withConflict(Conflict.of(Deployment.Cause.MERGE, 1))), 0, null)).build();
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
         when(deploys.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);

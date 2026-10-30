@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -53,11 +54,8 @@ public class DeployPipelines {
     /** The first red the code owns, else the first repository still open, else green. */
     public Reading read(String taskId, TaskState task) {
         Reading open = null;
-        for (TaskRepo repo : task.repos()) {
-            if (repo.deployCommit() == null || repo.deployCommit().isBlank()) {
-                continue;
-            }
-            Reading one = read(taskId, task, repo);
+        for (Deployment.Target landed : landedTargets(task)) {
+            Reading one = read(taskId, task, landed);
             if (one.kind() == Kind.RED) {
                 return one;
             }
@@ -70,15 +68,21 @@ public class DeployPipelines {
         return Reading.green();
     }
 
-    private Reading read(String taskId, TaskState task, TaskRepo repo) {
-        String commit = Objects.requireNonNull(repo.deployTip());
-        String project = Objects.requireNonNull(repo.project());
+    private static List<Deployment.Target> landedTargets(TaskState task) {
+        return task.deployment() == null ? List.of()
+                : task.deployment().targets().stream().filter(Deployment.Target::landed).toList();
+    }
+
+    private Reading read(String taskId, TaskState task, Deployment.Target landed) {
+        String commit = Objects.requireNonNull(landed.tip());
+        String project = landed.project();
+        String remoteUrl = task.repo(project).map(TaskRepo::remoteUrl).orElse(null);
         String label = project + " " + GitDeploy.shortSha(commit);
         String at = label + ": pipeline ";
-        if (repo.remoteUrl() == null || repo.remoteUrl().isBlank()) {
+        if (remoteUrl == null || remoteUrl.isBlank()) {
             return withoutPipeline(taskId, label, "no remote recorded");
         }
-        Answer<CommitPipeline> read = pipelines.onCommit(repo.remoteUrl(), commit);
+        Answer<CommitPipeline> read = pipelines.onCommit(remoteUrl, commit);
         if (read.facts().isEmpty()) {
             log.atWarn().setMessage("deploy pipeline unreadable").addKeyValue("project", project)
                     .addKeyValue("commit", GitDeploy.shortSha(commit)).addKeyValue("cause", read.failure())
@@ -93,22 +97,11 @@ public class DeployPipelines {
             case GREEN -> Reading.green();
             case RED -> red(taskId, task, label, project, at, pipeline.url());
             case RUNNING -> Reading.waiting(at + "running");
-            case NONE -> clock.millis() - pushedAt(task, project) >= NO_PIPELINE_AFTER.toMillis()
+            case NONE -> clock.millis() - landed.pushedAt() >= NO_PIPELINE_AFTER.toMillis()
                     ? withoutPipeline(taskId, label, "the host listed none after " + NO_PIPELINE_AFTER.toMinutes() + " min")
                     : Reading.waiting(at + "not started");
             case UNKNOWN -> Reading.waiting(at + "state unknown");
         };
-    }
-
-    /** When the commit was pushed, from the record; a deploy begun before the record counts from its status. */
-    private static long pushedAt(TaskState task, String project) {
-        Deployment deployment = task.deployment();
-        if (deployment == null || deployment.indexOf(project) < 0) {
-            return task.statusSince();
-        }
-        int index = deployment.indexOf(project);
-        return deployment.targets().get(index).pushedAt() > 0
-                ? deployment.targets().get(index).pushedAt() : task.statusSince();
     }
 
     /** The one way a deploy settles with no pipeline behind it: none can come, so none is waited for. */

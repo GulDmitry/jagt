@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
@@ -61,7 +62,7 @@ class DeployCheckJobTest {
         DeployPipelines pipelines = mock(DeployPipelines.class);
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
-                .withDeployCommit("proj", "0123456789abcdef"));
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
@@ -79,7 +80,7 @@ class DeployCheckJobTest {
         DeployPipelines pipelines = mock(DeployPipelines.class);
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
-                .withDeployCommit("proj", "0123456789abcdef"));
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(
@@ -99,7 +100,7 @@ class DeployCheckJobTest {
         StepRelay relay = mock(StepRelay.class);
         DeployPipelines pipelines = mock(DeployPipelines.class);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
-                .withDeployCommit("proj", "0123456789abcdef"));
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
@@ -123,7 +124,7 @@ class DeployCheckJobTest {
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         Path worktree = Files.createDirectories(root.resolve("ABC-42"));
         new StateService(new JsonMapper(), paths).putTask("ABC-42", TaskState.builder("proj", worktree.toString(),
-                TaskStatus.DEPLOYED).build().withDeployCommit("proj", "0123456789abcdef"));
+                TaskStatus.DEPLOYED).build().withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
@@ -152,7 +153,7 @@ class DeployCheckJobTest {
         DeployPipelines pipelines = mock(DeployPipelines.class);
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
-                .withDeployCommit("proj", "0123456789abcdef"));
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
@@ -167,7 +168,7 @@ class DeployCheckJobTest {
         DeployPipelines pipelines = mock(DeployPipelines.class);
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
-                .withDeployCommit("proj", "01234567"));
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("01234567")), 1, null)));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
@@ -199,10 +200,10 @@ class DeployCheckJobTest {
         StepRelay relay = mock(StepRelay.class);
         DeployPipelines pipelines = mock(DeployPipelines.class);
         StateService state = state(root);
-        TaskState deployed = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
-                .withDeployCommit("proj", "0123456789abcdef");
         String asked = "ABC-42 is deployed:\n- proj: 01234567 on dev";
-        state.putTask("ABC-42", deployed.withTurn(Turn.none().withMark("deploy", Turn.digestOf(asked))));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
+                        1, Turn.digestOf(asked))));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 

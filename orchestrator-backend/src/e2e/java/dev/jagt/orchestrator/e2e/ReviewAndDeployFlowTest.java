@@ -190,7 +190,7 @@ class ReviewAndDeployFlowTest {
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
         assertThat(act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
-        assertThat(task().deployCommit()).isNotBlank();
+        assertThat(task().deployment().targets().getFirst().merge()).isNotBlank();
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", "dev"))
                 .contains("Merge branch '" + TASK + "' into dev");
 

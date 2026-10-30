@@ -2,13 +2,11 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.task.DeployRedLine;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -44,9 +42,9 @@ public class DeployTargets {
      */
     public List<Target> landed(TaskState task) {
         List<Target> landed = new ArrayList<>();
-        for (TaskRepo repo : task.repos()) {
-            if (repo.deployCommit() != null && !repo.deployCommit().isBlank()) {
-                landed.add(new Target(Objects.requireNonNull(repo.project()), configService.project(Objects.requireNonNull(repo.project()))));
+        for (Deployment.Target recorded : Optional.ofNullable(task.deployment()).map(Deployment::targets).orElse(List.of())) {
+            if (recorded.landed()) {
+                landed.add(new Target(recorded.project(), configService.project(recorded.project())));
             }
         }
         return landed;
@@ -60,38 +58,25 @@ public class DeployTargets {
     }
 
     /**
-     * Where a deploy handed back from a conflict waits: the target its record flags conflicted. A task the record
-     * does not flag (a deploy begun before it was written, or handed back for its pipeline) is read as before,
-     * from the repository holding its deploy worktree, not the first without a recorded merge, since merges outlive
-     * the round that made them. A project gone from the configuration holds nothing to wait in.
+     * Where a deploy handed back from a conflict waits: the target its record flags conflicted. A project gone from
+     * the configuration holds nothing to wait in.
      */
-    public Optional<Target> stopped(TaskState task, String taskId) {
+    public Optional<Target> stopped(TaskState task) {
         if (!FlowRules.conflictedInTheDeployWorktree(task.status())) {
             return Optional.empty();
         }
         Map<String, ProjectConfig> projects = configService.load().projects();
-        Optional<String> recorded = Optional.ofNullable(task.deployment())
-                .flatMap(Deployment::conflictedTarget).map(Deployment.Target::project);
-        if (recorded.isPresent()) {
-            return recorded.filter(projects::containsKey)
-                    .map(project -> new Target(project, Objects.requireNonNull(projects.get(project))));
-        }
-        return task.repos().stream()
-                .filter(repo -> projects.containsKey(repo.project()))
-                .map(repo -> new Target(Objects.requireNonNull(repo.project()),
-                        Objects.requireNonNull(projects.get(repo.project()))))
-                .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
-                .findFirst();
+        return Optional.ofNullable(task.deployment())
+                .flatMap(Deployment::conflictedTarget).map(Deployment.Target::project)
+                .filter(projects::containsKey)
+                .map(project -> new Target(project, Objects.requireNonNull(projects.get(project))));
     }
 
-    /**
-     * Whether the deploy waits for its pipeline: its record says so, and a deploy begun before the record is read
-     * from the line it was handed back with.
-     */
+    /** Whether the deploy waits for its pipeline, as its record says. */
     public static boolean handedBackForItsPipeline(TaskState task) {
         return Optional.ofNullable(task.deployment()).flatMap(Deployment::conflictedTarget)
                 .map(target -> Objects.requireNonNull(target.conflict()).cause() == Deployment.Cause.RED_PIPELINE)
-                .orElseGet(() -> DeployRedLine.marks(task.message()));
+                .orElse(false);
     }
 
     /** The deploy branch must NEVER be the base branch tasks are cut from. */
@@ -107,16 +92,6 @@ public class DeployTargets {
                     + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
                     + " at a downstream branch (e.g. dev).");
         }
-    }
-
-    public static @Nullable String mergeCommit(TaskState task, Target target) {
-        String commit = task.repo(target.project()).map(TaskRepo::deployCommit).orElse(null);
-        return commit == null || commit.isBlank() ? null : commit;
-    }
-
-    /** The fixes committed on the deploy branch after the merge, newest first, as an undo takes them out. */
-    public static List<String> fixes(TaskState task, Target target) {
-        return task.repo(target.project()).map(repo -> repo.deployFixes().reversed()).orElse(List.of());
     }
 
     public static String names(List<String> names) {

@@ -13,14 +13,17 @@ public sealed interface DeployStep {
     record Opened(List<Deployment.Target> targets) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {
-            return Deployment.defaults().withPressedAt(now).withTargets(targets);
+            return Deployment.defaults().withPressedAt(now).withTargets(targets.stream()
+                    .map(target -> deployment.targets().stream()
+                            .filter(earlier -> earlier.project().equals(target.project())).findFirst()
+                            .map(target::carrying).orElse(target)).toList());
         }
     }
 
     record Merged(String project, String sha) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {
-            return deployment.withTarget(project, target -> target.withMerge(sha).withConflict(null));
+            return deployment.withTarget(project, target -> target.merged(sha).withConflict(null));
         }
     }
 
@@ -46,6 +49,27 @@ public sealed interface DeployStep {
             int index = deployment.indexOf(project);
             return index < 0 ? deployment : deployment.withTarget(project, target -> target.withPushedAt(at))
                     .withAt(Math.max(deployment.at(), index + 1));
+        }
+    }
+
+    record Blocked(String project) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withTarget(project, Deployment.Target::withBlocked);
+        }
+    }
+
+    record Reverted(String project, String sha) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withTarget(project, target -> target.withReverted(sha));
+        }
+    }
+
+    record Discarded(String project) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withTarget(project, target -> target.withConflict(null));
         }
     }
 

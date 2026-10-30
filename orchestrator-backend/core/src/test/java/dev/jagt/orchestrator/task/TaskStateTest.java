@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 class TaskStateTest {
 
@@ -177,7 +178,7 @@ class TaskStateTest {
         assertThat(task.worktreePath()).isEqualTo("/wt/ABC-1-demo");
         assertThat(task.remoteUrl()).isEqualTo("git@host:g/p.git");
         assertThat(task.mrUrl()).isEqualTo("https://host/mr/9");
-        assertThat(task.deployCommit()).isEqualTo("cafebabe1234");
+        assertThat(task.deployment().targets().getFirst().merge()).isEqualTo("cafebabe1234");
         assertThat(task.status()).isEqualTo(TaskStatus.CI_POLLING);
         assertThat(task.alias()).isEqualTo("a1");
     }
@@ -208,17 +209,6 @@ class TaskStateTest {
         assertThat(shipped.repo("php").orElseThrow().mrUrl()).isEqualTo("https://host/php/mr/1");
         assertThat(shipped.repo("java").orElseThrow().mrUrl()).isEqualTo("https://host/java/mr/2");
         assertThat(shipped.hasReviewRequest()).isTrue();
-    }
-
-    @Test
-    void keepsAMergeCommitOnTheRepositoryItLandedIn() {
-        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
-                TaskStatus.DEPLOYED).build();
-
-        TaskState deployed = task.withDeployCommit("java", "f00d1234");
-
-        assertThat(deployed.repo("java").orElseThrow().deployCommit()).isEqualTo("f00d1234");
-        assertThat(deployed.repo("php").orElseThrow().deployCommit()).isNull();
     }
 
     @Test
@@ -429,17 +419,15 @@ class TaskStateTest {
     }
 
     @Test
-    void keepsTheLastPollTheRemoteUrlAndTheDeployCommitItWasGiven() {
+    void keepsTheLastPollAndTheRemoteUrlItWasGiven() {
         TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
                 TaskStatus.DEPLOYED).build();
 
-        TaskState noted = task.withLastPolledAt(42).withRemoteUrl("java", "git@host:g/java.git")
-                .withDeployCommit("cafe1234");
+        TaskState noted = task.withLastPolledAt(42).withRemoteUrl("java", "git@host:g/java.git");
 
         assertThat(noted.lastPolledAt()).isEqualTo(42);
         assertThat(noted.repo("java").orElseThrow().remoteUrl()).isEqualTo("git@host:g/java.git");
         assertThat(noted.repo("php").orElseThrow().remoteUrl()).isNull();
-        assertThat(noted.deployCommit()).isEqualTo("cafe1234");
     }
 
     @Test
@@ -744,6 +732,46 @@ class TaskStateTest {
                  "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
 
         assertThat(legacy.currentConflict()).hasValueSatisfying(conflict -> assertThat(conflict.handed()).isFalse());
+    }
+
+    @Test
+    void readsTheMergeAndFixesOfARepositoryIntoTheTargetOfItsProject() {
+        TaskState old = new JsonMapper().readValue("""
+                {"repos":[{"project":"php","worktreePath":"/wt/php","deployCommit":"cafe1","deployFixes":["f1x1","f1x2"]},
+                          {"project":"java","worktreePath":"/wt/java","deployCommit":"beef2"}],
+                 "status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
+
+        assertThat(old.deployment().targets()).extracting(Deployment.Target::project, Deployment.Target::merge,
+                Deployment.Target::fixes).containsExactly(
+                tuple("php", "cafe1", List.of("f1x1", "f1x2")),
+                tuple("java", "beef2", List.of()));
+        assertThat(old.deployment().live()).isTrue();
+    }
+
+    @Test
+    void placesAnOldConflictOnTheTargetWhoseDeployWorktreeItStoodIn() {
+        TaskState old = new JsonMapper().readValue("""
+                {"repos":[{"project":"php","worktreePath":"/one/ABC-1-php"},
+                          {"project":"java","worktreePath":"/two/ABC-1-java"}],
+                 "status":"DEPLOY_CONFLICT","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+                 "conflict":{"conflictSince":3,"worktree":"/two/ABC-1-deploy",
+                             "progress":{"unmerged":1,"staged":0,"digest":"d"},"movedAt":4}}""", TaskState.class);
+
+        assertThat(old.deployment().conflictedTarget()).hasValueSatisfying(target -> {
+            assertThat(target.project()).isEqualTo("java");
+            assertThat(target.conflict().since()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void placesAnOldConflictOnThePrimaryProjectWhenNoDeployWorktreeMatches() {
+        TaskState old = new JsonMapper().readValue("""
+                {"repos":[{"project":"php","worktreePath":"/one/ABC-1-php"},
+                          {"project":"java","worktreePath":"/two/ABC-1-java"}],
+                 "status":"DEPLOY_CONFLICT","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+                 "conflict":{"conflictSince":3,"worktree":"/else/ABC-1-deploy","movedAt":4}}""", TaskState.class);
+
+        assertThat(old.deployment().conflictedTarget().orElseThrow().project()).isEqualTo("php");
     }
 
     @Test

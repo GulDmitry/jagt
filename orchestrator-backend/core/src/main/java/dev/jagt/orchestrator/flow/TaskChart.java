@@ -220,9 +220,14 @@ final class TaskChart {
         }
         for (DeployPhase from : EnumSet.of(DeployPhase.LANDING, DeployPhase.HANDED)) {
             deployed(chart, from, "landed", DeployPhase.LANDING, step -> step instanceof DeployStep.Merged
-                    || step instanceof DeployStep.Fixed || step instanceof DeployStep.Pushed);
+                    || step instanceof DeployStep.Fixed || step instanceof DeployStep.Pushed
+                    || step instanceof DeployStep.Blocked);
             deployed(chart, from, "conflicted", DeployPhase.HANDED, step -> step instanceof DeployStep.Conflicted);
         }
+        for (DeployPhase from : DeployPhase.values()) {
+            deployed(chart, from, "reverted", DeployPhase.REVERTING, step -> step instanceof DeployStep.Reverted);
+        }
+        deployed(chart, DeployPhase.HANDED, "discarded", DeployPhase.LANDING, step -> step instanceof DeployStep.Discarded);
         deployed(chart, DeployPhase.HANDED, "watched", DeployPhase.HANDED, step -> step instanceof DeployStep.Seen
                 || step instanceof DeployStep.Told || step instanceof DeployStep.Held);
         chart.onMatching(DEPLOY, DeployPhase.HANDED, "conflict left", move -> !(move instanceof TaskMove.DeployStepped))

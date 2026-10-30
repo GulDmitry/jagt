@@ -34,8 +34,8 @@ class DeployPipelinesTest {
     private final RedCauses causes = mock(RedCauses.class);
     private final DeployFixWorktrees fixes = mock(DeployFixWorktrees.class);
     private final DeployPipelines deploys = new DeployPipelines(pipelines, causes, fixes, Clock.fixed(NOW, ZoneOffset.UTC));
-    private final TaskState deployed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
-            TaskStatus.DEPLOYED).build();
+    private final TaskState deployed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
+            TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)), 1, null)).build();
 
     @Test
     void aDeployStandsOnceThePipelineOnItsCommitIsGreen() {
@@ -114,7 +114,7 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployIsReadOnTheFixPushedAfterItsMergeNotOnTheMerge() {
-        TaskState fixed = deployed.withDeployFix("shop", "f1x0123456789");
+        TaskState fixed = deployed.withDeployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA).withFix("f1x0123456789")), 1, null));
         when(pipelines.onCommit(REMOTE, "f1x0123456789")).thenReturn(new Answer<>(Optional.of(
                 new CommitPipeline("success", "")), TokenUsage.NONE));
 
@@ -125,8 +125,9 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStaysOpenWhileTheHostListsNoPipelineWithinTheGraceAfterThePush() {
-        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
-                TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(9 * 60).toEpochMilli()).build();
+        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
+                TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
+                .withPushedAt(NOW.minusSeconds(9 * 60).toEpochMilli())), 1, null)).build();
         when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
 
@@ -138,8 +139,9 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStandsOnceTheHostStillListsNoPipelineAfterTheGrace() {
-        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
-                TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(10 * 60).toEpochMilli()).build();
+        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
+                TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
+                .withPushedAt(NOW.minusSeconds(10 * 60).toEpochMilli())), 1, null)).build();
         when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
 
@@ -151,8 +153,8 @@ class DeployPipelinesTest {
     @Test
     void aDeployStandsWhenTheHostListsNoPipelineTenMinutesAfterThePushWhateverTheStatusSince() {
         Deployment recorded = Deployment.defaults().withTargets(List.of(
-                Deployment.Target.of("shop", "dev").withPushedAt(NOW.minusSeconds(11 * 60).toEpochMilli())));
-        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
+                Deployment.Target.of("shop", "dev").withMerge(SHA).withPushedAt(NOW.minusSeconds(11 * 60).toEpochMilli())));
+        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
                 TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(60).toEpochMilli()).deployment(recorded).build();
         when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
@@ -174,8 +176,8 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStandsWhereNoRemoteWasRecordedForTheRepository() {
-        TaskState unrecorded = TaskState.builder(List.of(new TaskRepo("shop", "/wt", null, null, SHA)),
-                TaskStatus.DEPLOYED).build();
+        TaskState unrecorded = TaskState.builder(List.of(new TaskRepo("shop", "/wt", null, null)),
+                TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)), 1, null)).build();
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", unrecorded);
 

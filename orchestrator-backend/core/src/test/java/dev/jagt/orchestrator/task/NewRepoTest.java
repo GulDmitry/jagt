@@ -21,6 +21,5 @@ class NewRepoTest {
         assertThat(registered.worktreePath()).isEqualTo("/wt/api");
         assertThat(registered.remoteUrl()).isEqualTo("git@host:g/api.git");
         assertThat(registered.mrUrl()).isNull();
-        assertThat(registered.deployCommit()).isNull();
     }
 }

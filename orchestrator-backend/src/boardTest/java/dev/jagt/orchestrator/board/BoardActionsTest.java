@@ -96,7 +96,7 @@ class BoardActionsTest extends BoardPageContext {
         state.putTask("ABC-1", TaskState.builder(List.of(
                         dev.jagt.orchestrator.task.TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString()),
                         new dev.jagt.orchestrator.task.TaskRepo("beta", root.resolve("ABC-1-beta").toString(),
-                                null, "https://host.example/mr/8", null)),
+                                null, "https://host.example/mr/8")),
                 TaskStatus.REVIEW_PENDING).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
         CompletableFuture<String> asked = new CompletableFuture<>();
 

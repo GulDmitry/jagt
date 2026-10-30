@@ -101,7 +101,7 @@ public record TaskState(
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
     @JsonCreator
     static TaskState fromJson(
-            @JsonProperty("repos") @Nullable List<TaskRepo> repos,
+            @JsonProperty("repos") @Nullable List<LegacyDeployment.Repo> repos,
             @JsonProperty("project") @Nullable String project,
             @JsonProperty("worktreePath") @Nullable String worktreePath,
             @JsonProperty("remoteUrl") @Nullable String remoteUrl,
@@ -142,7 +142,7 @@ public record TaskState(
             // Written before the stop left the trail: read once, rewritten as the two above.
             @JsonProperty("loop") @Nullable Loop loop,
             // Written before the conflict moved onto the deployment: read once, rewritten there.
-            @JsonProperty("conflict") @Nullable Conflict legacyConflict,
+            @JsonProperty("conflict") LegacyDeployment.@Nullable Watch legacyConflict,
             @JsonProperty("repoRequest") @Nullable String repoRequest,
             @JsonProperty("turn") @Nullable Turn turn,
             @JsonProperty("switches") @Nullable Map<String, String> switches,
@@ -150,10 +150,10 @@ public record TaskState(
             @JsonProperty("checksTip") @Nullable String checksTip,
             @JsonProperty("headTip") @Nullable String headTip,
             @JsonProperty("deployment") @Nullable Deployment deployment) {
-        List<TaskRepo> resolved = repos != null && !repos.isEmpty()
-                ? repos
-                : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
-        return new TaskState(resolved, status, lastActiveTimestamp,
+        List<LegacyDeployment.Repo> stored = LegacyDeployment.stored(repos,
+                new LegacyDeployment.Repo(project, worktreePath, remoteUrl, mrUrl, deployCommit, null, null, null));
+        TaskState read = new TaskState(stored.stream().map(LegacyDeployment.Repo::repo).toList(), status,
+                lastActiveTimestamp,
                 report == null ? ReportMarkerMigration.lineOf(message) : message,
                 report == null ? ReportMarkerMigration.reportOf(message) : report, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
@@ -162,32 +162,9 @@ public record TaskState(
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
                 Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, turn, switches == null ? Map.of() : switches,
-                infraRetries == null ? List.of() : infraRetries, checksTip, headTip,
-                withLegacyConflict(deployment, legacyConflict, status, message, lastActiveTimestamp, resolved));
-    }
-
-    private static @Nullable Deployment withLegacyConflict(@Nullable Deployment deployment,
-                                                           @Nullable Conflict legacy, TaskStatus status,
-                                                           @Nullable String message, long lastActive,
-                                                           List<TaskRepo> repos) {
-        Optional<Deployment.Target> recorded = Optional.ofNullable(deployment).flatMap(Deployment::conflictedTarget);
-        if (status != TaskStatus.DEPLOY_CONFLICT || recorded.isPresent() && legacy == null) {
-            return deployment;
-        }
-        Deployment.Cause cause = recorded.map(target -> Objects.requireNonNull(target.conflict()).cause())
-                .orElse(DeployRedLine.marks(message) ? Deployment.Cause.RED_PIPELINE : Deployment.Cause.MERGE);
-        Conflict carried = legacy == null ? Conflict.of(cause, lastActive)
-                : new Conflict(cause, legacy.since(), legacy.progress(), legacy.movedAt(), legacy.told(), null);
-        if (recorded.isPresent()) {
-            return Objects.requireNonNull(deployment).withConflict(standing -> carried);
-        }
-        if (deployment != null && deployment.at() < deployment.targets().size()) {
-            return deployment.withTarget(deployment.targets().get(deployment.at()).project(),
-                    target -> target.withConflict(carried));
-        }
-        String project = repos.getFirst().project();
-        return Deployment.defaults().withPressedAt(carried.since())
-                .withTargets(List.of(Deployment.Target.of(project == null ? "" : project, "").withConflict(carried)));
+                infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment);
+        Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
+        return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
     }
 
     record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
@@ -236,11 +213,6 @@ public record TaskState(
     }
 
     @JsonIgnore
-    public @Nullable String deployCommit() {
-        return primary().deployCommit();
-    }
-
-    @JsonIgnore
     public List<String> projects() {
         return repos.stream().map(TaskRepo::project).filter(p -> p != null && !p.isBlank()).toList();
     }
@@ -277,12 +249,6 @@ public record TaskState(
     @JsonIgnore
     public boolean requestsMerged() {
         return repos.stream().allMatch(repo -> repo.hasReviewRequest() && repo.wasMerged());
-    }
-
-    /** A recorded merge is one no revert has taken out yet. */
-    @JsonIgnore
-    public boolean hasLiveDeploy() {
-        return repos.stream().anyMatch(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank());
     }
 
     /** A status move — the ONE place history grows. A new line says nothing about the report. */
@@ -503,19 +469,6 @@ public record TaskState(
         return toBuilder().report(report).build();
     }
 
-    /** The merge commit a deploy created in THAT repo; the status move is a separate step. */
-    public TaskState withDeployCommit(@Nullable String project, @Nullable String deployCommit) {
-        return toBuilder().repos(mapRepo(project, repo -> repo.withMerge(deployCommit))).build();
-    }
-
-    public TaskState withDeployFix(@Nullable String project, String fix) {
-        return toBuilder().repos(mapRepo(project, repo -> repo.withDeployFix(fix))).build();
-    }
-
-    public TaskState withDeployCommit(String deployCommit) {
-        return withDeployCommit(primary().project(), deployCommit);
-    }
-
     public TaskState withMrUrl(@Nullable String project, String mrUrl, long now) {
         return relinked(project, mrUrl, now).build();
     }
@@ -727,10 +680,6 @@ public record TaskState(
 
         public TaskStateBuilder mrUrl(@Nullable String mrUrl) {
             return firstRepo(repo -> repo.withMrUrl(mrUrl));
-        }
-
-        public TaskStateBuilder deployCommit(@Nullable String deployCommit) {
-            return firstRepo(repo -> repo.withMerge(deployCommit));
         }
 
         private TaskStateBuilder firstRepo(UnaryOperator<TaskRepo> change) {

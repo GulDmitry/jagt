@@ -15,8 +15,13 @@ public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplie
                     boolean gitStateChanged, boolean stopped, boolean repoRequested,
                     boolean requestMerged) {
 
+    /** A recorded merge is one no revert has taken out yet. */
+    public static boolean deployLive(TaskState task) {
+        return task.deployment() != null && task.deployment().live();
+    }
+
     public static Facts projected(TaskState task) {
-        return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> false, task.gitStateChanged(),
+        return new Facts(task.hasReviewRequest(), deployLive(task), () -> false, task.gitStateChanged(),
                 task.stopped(), task.asksForARepository(), task.requestsMerged());
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -79,10 +80,17 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
         return -1;
     }
 
+    /** A recorded merge is one no revert has taken out yet. */
+    public boolean live() {
+        return targets.stream().anyMatch(Target::landed);
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Target(String project, String deployBranch, @Nullable String merge, List<String> fixes,
-                         long pushedAt, @JsonProperty("conflicted") @Nullable Conflict conflict) {
+                         long pushedAt, @JsonProperty("conflicted") @Nullable Conflict conflict,
+                         @Nullable String revertCommit,
+                         @Nullable Boolean blocked) {
 
         public Target {
             fixes = fixes == null ? List.of() : List.copyOf(fixes);
@@ -90,21 +98,30 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
 
         /** The branch is the one configured when the press was made. */
         public static Target of(String project, String deployBranch) {
-            return new Target(project, deployBranch, null, List.of(), 0, null);
+            return new Target(project, deployBranch, null, List.of(), 0, null, null, null);
         }
 
         public Target withMerge(String merge) {
-            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict);
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked);
         }
 
+        /** A new merge: what a revert takes out, with no fix on top of it yet. */
+        public Target merged(String merge) {
+            return new Target(project, deployBranch, merge, List.of(), pushedAt, conflict, null, null);
+        }
+
+        /** A fix committed on the deploy branch after the merge; a target that recorded no merge takes it as the merge. */
         public Target withFix(String fix) {
+            if (!landed()) {
+                return merged(fix);
+            }
             List<String> all = new ArrayList<>(fixes);
             all.add(fix);
-            return new Target(project, deployBranch, merge, all, pushedAt, conflict);
+            return new Target(project, deployBranch, merge, all, pushedAt, conflict, null, null);
         }
 
         public Target withPushedAt(long pushedAt) {
-            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict);
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked);
         }
 
         public boolean conflicted() {
@@ -112,7 +129,36 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
         }
 
         public Target withConflict(@Nullable Conflict conflict) {
-            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict);
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked);
+        }
+
+        public Target withBlocked() {
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, Boolean.TRUE);
+        }
+
+        /** Taken out of the deploy branch by the revert commit {@code sha}. */
+        public Target withReverted(String sha) {
+            return new Target(project, deployBranch, null, List.of(), pushedAt, conflict, sha, null);
+        }
+
+        /** Carries what an earlier press of the task left live in this repository into a new press. */
+        public Target carrying(Target earlier) {
+            return earlier.landed() ? new Target(project, deployBranch, earlier.merge, earlier.fixes, 0, null, null, null)
+                    : this;
+        }
+
+        @JsonIgnore
+        public boolean isBlocked() {
+            return Boolean.TRUE.equals(blocked);
+        }
+
+        public boolean landed() {
+            return merge != null && !merge.isBlank();
+        }
+
+        /** The commit last pushed to the deploy branch for this task, which its pipeline runs on. */
+        public @Nullable String tip() {
+            return fixes.isEmpty() ? merge : fixes.getLast();
         }
     }
 }

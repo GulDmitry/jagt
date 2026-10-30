@@ -43,7 +43,7 @@ class IdeProject {
 
     /** Empty when no repository holds the conflict, the task's own worktrees being what to open then. */
     private Optional<String> openConflict(String taskId, TaskState task) {
-        return deployTargets.stopped(task, taskId)
+        return deployTargets.stopped(task)
                 .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
                 .map(target -> {
                     Path deployWorktree = GitDeploy.deployWorktreePath(target.path(), taskId);

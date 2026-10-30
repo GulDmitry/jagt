@@ -1,32 +1,17 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.flow.DeployStep;
+import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.task.Deployment;
-import java.time.Clock;
-import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.service.DeployTargets;
+import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-
-import static dev.jagt.orchestrator.service.DeployTargets.because;
-import static dev.jagt.orchestrator.service.DeployTargets.mergeCommit;
-import static dev.jagt.orchestrator.service.DeployTargets.names;
 
 /**
  * One of the only two operations that write a SHARED branch; it does not check that the caller is the human, that
@@ -40,7 +25,7 @@ public class DeployService {
     private final StateService stateService;
     private final DeployTargets deployTargets;
     private final GitDeploy gitDeploy;
-    private final Clock clock;
+    private final DeployRunner runner;
 
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
@@ -54,27 +39,10 @@ public class DeployService {
         targets.forEach(DeployTargets::requireDeployable);
         Optional<Target> waiting = waitingAt(task, taskId);
         requireTheFixStaged(task, taskId, waiting);
-        Landing landing = new Landing();
-        int from = resumeFrom(targets, waiting);
-        if (from == 0) {
-            DeployStep opened = new DeployStep.Opened(targets.stream()
-                    .map(target -> Deployment.Target.of(target.project(), target.deployBranch())).toList());
-            stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t, opened, clock.millis()));
+        if (resumeFrom(targets, waiting) == 0) {
+            runner.open(taskId, targets);
         }
-        for (int i = from; i < targets.size(); i++) {
-            Optional<Outcome> stopped = land(taskId, targets, i, landing);
-            if (stopped.isPresent()) {
-                return stopped.get();
-            }
-        }
-        if (!landing.blocked.isEmpty()) {
-            return notFinished(taskId, landing.merged, landing.blocked, Objects.requireNonNull(landing.obstacle));
-        }
-        // Nothing landed and nothing resumed past means there was nothing to deploy at all.
-        if (landing.merged.isEmpty() && landing.idle != null && from == 0) {
-            throw landing.idle;
-        }
-        return deployed(taskId, targets, from, landing.merged, landing.nothingToDo);
+        return runner.advance(taskId);
     }
 
     /** A deploy handed back for its pipeline finishes with the session's fix, not with a merge of the task again. */
@@ -91,7 +59,7 @@ public class DeployService {
 
     /** A recorded conflict whose worktree is gone cannot be resumed, and merging from the first repository again would land twice. */
     private Optional<Target> waitingAt(TaskState task, String taskId) {
-        Optional<Target> waiting = deployTargets.stopped(task, taskId);
+        Optional<Target> waiting = deployTargets.stopped(task);
         waiting.filter(target -> !gitDeploy.hasDeployWorktree(target.path(), taskId)).ifPresent(target -> {
             throw Refusal.byState("deploy " + taskId + " waits on a conflict in " + target.project()
                     + " but its deploy worktree " + GitDeploy.deployWorktreePath(target.path(), taskId)
@@ -100,130 +68,11 @@ public class DeployService {
         return waiting;
     }
 
-    private static final class Landing {
-        final Map<String, String> merged = new LinkedHashMap<>();
-        final List<String> nothingToDo = new ArrayList<>();
-        final List<String> blocked = new ArrayList<>();
-        GitDeploy.@Nullable NothingToDeployException idle;
-        GitDeploy.@Nullable ForeignDeployWorktreeException obstacle;
-    }
-
-    private Optional<Outcome> land(String taskId, List<Target> targets, int at, Landing landing) {
-        Target target = targets.get(at);
-        try {
-            String commit = gitDeploy.mergeIntoAndPush(target.path(), taskId, target.deployBranch());
-            landing.merged.put(target.project(), commit);
-            boolean fix = gitDeploy.isFix(target.path(), commit);
-            long now = clock.millis();
-            stateService.updateTask(taskId, t -> TaskReducer.deployStepped(TaskReducer.deployStepped(
-                    fix ? t.withDeployFix(target.project(), commit) : t.withDeployCommit(target.project(), commit),
-                    fix ? new DeployStep.Fixed(target.project(), commit) : new DeployStep.Merged(target.project(), commit),
-                    now), new DeployStep.Pushed(target.project(), now), now));
-        } catch (GitDeploy.NothingToDeployException e) {
-            landing.nothingToDo.add(target.project());
-            landing.idle = landing.idle == null ? e : landing.idle;
-        } catch (GitDeploy.ForeignDeployWorktreeException e) {
-            // The sibling holding the shared path is in this very list, so coming back beats refusing.
-            landing.blocked.add(target.project());
-            landing.obstacle = landing.obstacle == null ? e : landing.obstacle;
-        } catch (GitDeploy.MergeConflictException e) {
-            return Optional.of(handBackConflict(taskId, targets, at, e));
-        } catch (RuntimeException e) {
-            return Optional.of(stoppedPartWay(taskId, targets, at, e));
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * At least one repository never started, so the task is NOT deployed. A repeat is advised only where something
-     * DID land: the holder of the shared path is then a sibling that has just released it. With nothing landed
-     * nothing was released either, so the obstacle itself is what the human is told.
-     */
-    private Outcome notFinished(String taskId, Map<String, String> merged, List<String> blocked,
-                                GitDeploy.ForeignDeployWorktreeException obstacle) {
-        List<String> landed = List.copyOf(merged.keySet());
-        String next = landed.isEmpty()
-                ? " never started: " + obstacle.getMessage()
-                : " could not start while the shared deploy worktree path held another repository's checkout."
-                        + " Run `deploy " + taskId + "` again.";
-        return Outcome.partial("deploy " + taskId + ": merged " + names(landed) + ", but " + names(blocked) + next,
-                "deploy stopped part way — live on the deploy branch: " + names(landed)
-                        + ". NOT deployed: " + names(blocked) + ".", null);
-    }
-
     /**
      * Where a repeated deploy picks the sequence up. Only a task HANDED BACK from a conflict has one; a worktree
      * left over from any other round is not a resume point, and jumping to it would skip the ones before it.
      */
     private int resumeFrom(List<Target> targets, Optional<Target> waiting) {
         return targets.size() == 1 ? 0 : waiting.map(targets::indexOf).orElse(0);
-    }
-
-    /**
-     * Resolve on the DEPLOY side, never in the task branch: the request targets the base branch, so merging the
-     * deploy branch into the task branch would balloon its diff with everything the deploy branch carries.
-     */
-    private Outcome handBackConflict(String taskId, List<Target> targets, int at,
-                                    GitDeploy.MergeConflictException e) {
-        Target conflicted = targets.get(at);
-        stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t,
-                new DeployStep.Conflicted(conflicted.project(), Deployment.Cause.MERGE), clock.millis()));
-        String half = targets.size() > 1 ? halfState(targets, at) : "";
-        String note = half.isEmpty() ? "" : " — " + half;
-        String what = targets.size() > 1
-                ? "CONFLICT merging " + conflicted.project() + " into " + conflicted.deployBranch() + ". " + half
-                : "CONFLICT into " + conflicted.deployBranch() + ", nothing pushed.";
-        return Outcome.conflict("deploy " + taskId + ": " + what + " Resolve in " + e.deployWorktree()
-                + " (`git add`), then `deploy " + taskId + "` again.",
-                "resolve conflict in " + e.deployWorktree() + note);
-    }
-
-    /**
-     * Both sides of a part-way deploy, named. Read from WHERE the sequence stopped rather than from the recorded
-     * merge commits: those outlive the round that made them, so after a second ship every repository reads as live.
-     */
-    private String halfState(List<Target> targets, int stoppedAt) {
-        List<String> live = targets.subList(0, stoppedAt).stream().map(Target::project).toList();
-        List<String> pending = targets.subList(stoppedAt, targets.size()).stream().map(Target::project).toList();
-        return "Live on the deploy branch: " + names(live) + ". NOT deployed: " + names(pending) + ".";
-    }
-
-    private Outcome deployed(String taskId, List<Target> targets, int from, Map<String, String> merged,
-                            List<String> nothingToDo) {
-        TaskState task = requireTask(taskId);
-        String stamp = "deployed to " + names(deployBranches(targets));
-        if (targets.size() == 1) {
-            Target only = targets.getFirst();
-            return Outcome.ok("Merged " + taskId + " into " + only.deployBranch() + " ("
-                    + GitDeploy.shortSha(merged.get(only.project())) + "); DEPLOYED", stamp);
-        }
-        List<String> landed = targets.stream().filter(target -> merged.containsKey(target.project()))
-                .map(target -> target.project() + " into " + target.deployBranch()
-                        + " (" + GitDeploy.shortSha(merged.get(target.project())) + ")").toList();
-        // A resumed sequence merged only its tail; the whole picture is what the human is owed.
-        List<String> earlier = targets.subList(0, from).stream()
-                .map(target -> target.project() + " (" + GitDeploy.shortSha(mergeCommit(task, target)) + ")").toList();
-        String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);
-        String idle = nothingToDo.isEmpty() ? "" : ", nothing to deploy in " + names(nothingToDo);
-        return Outcome.ok("deploy " + taskId + ": merged " + names(landed) + already + idle + "; DEPLOYED",
-                stamp);
-    }
-
-    /**
-     * A deploy that broke off for a reason no resolution is waiting on. The status is left alone, there being
-     * nothing to resolve in a worktree; the message is stamped anyway, a console line being no record.
-     */
-    private Outcome stoppedPartWay(String taskId, List<Target> targets, int at, RuntimeException cause) {
-        if (targets.size() == 1 || at == 0) {
-            throw cause;
-        }
-        String half = halfState(targets, at);
-        return Outcome.partial("deploy " + taskId + " stopped part way. " + half + because(cause),
-                "deploy stopped part way — " + half, cause);
-    }
-
-    private static List<String> deployBranches(List<Target> targets) {
-        Set<String> branches = new LinkedHashSet<>(targets.stream().map(Target::deployBranch).toList());
-        return List.copyOf(branches);
     }
 }

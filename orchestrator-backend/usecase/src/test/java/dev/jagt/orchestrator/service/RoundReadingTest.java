@@ -37,8 +37,8 @@ class RoundReadingTest {
     @Test
     void doesNotCallARoundCleanWhileOneRepositoryHasNoRequestAtAll() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", null, null)),
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
 
         var read = reading.read("ABC-1");
@@ -79,8 +79,8 @@ class RoundReadingTest {
     @Test
     void failsTheWholeSweepWhenOneRepositoriesRequestCannotBeRead() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
                 .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
@@ -95,8 +95,8 @@ class RoundReadingTest {
     @Test
     void keepsAThreadWaitingOnTheReviewerInOneOfSeveralRepositories() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
                 .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
@@ -112,8 +112,8 @@ class RoundReadingTest {
     @Test
     void holdsATaskBackWhileOneOfItsRepositoriesIsStillBuilding() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
                 .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
@@ -129,8 +129,8 @@ class RoundReadingTest {
     @Test
     void isApprovedOnlyWhenEveryRepositoryIs() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
                 .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
@@ -146,8 +146,8 @@ class RoundReadingTest {
     @Test
     void namesTheRepositoryEachThreadCameFrom() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false,
                 "success", "", List.of("http://mr/api#note_1\nbot: tighten this"), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
@@ -164,8 +164,8 @@ class RoundReadingTest {
     @Test
     void quotesTheLogOfTheRepositoryThatFailedRatherThanOfTheGreenOne() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
                 TaskStatus.CI_POLLING).alias("a1").build()));
         when(reviewReader.read("ABC-1", "http://mr/api"))
                 .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));

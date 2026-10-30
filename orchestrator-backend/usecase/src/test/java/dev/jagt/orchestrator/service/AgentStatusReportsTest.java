@@ -211,8 +211,8 @@ class AgentStatusReportsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
-                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", null, null),
-                        new TaskRepo("web", "/wt-web", "git@host:web.git", null, null))).build());
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", null),
+                        new TaskRepo("web", "/wt-web", "git@host:web.git", null))).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
@@ -249,8 +249,8 @@ class AgentStatusReportsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
-                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", "https://host/proj/mr/9", null),
-                        new TaskRepo("web", "/wt-web", "git@host:web.git", null, null)))
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", "https://host/proj/mr/9"),
+                        new TaskRepo("web", "/wt-web", "git@host:web.git", null)))
                 .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
@@ -733,8 +733,8 @@ class AgentStatusReportsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
-                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", "https://host/proj/mr/9", null),
-                        new TaskRepo("web", "/wt-web", "git@host:web.git", "https://host/web/mr/3", null)))
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", "https://host/proj/mr/9"),
+                        new TaskRepo("web", "/wt-web", "git@host:web.git", "https://host/web/mr/3")))
                 .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),

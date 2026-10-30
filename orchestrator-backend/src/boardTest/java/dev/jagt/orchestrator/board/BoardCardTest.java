@@ -7,6 +7,7 @@ import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -105,10 +106,10 @@ class BoardCardTest extends BoardPageContext {
         state.putTask("ABC-1", TaskState.builder(List.of(
                         new TaskRepo("alpha",
                                 root.resolve("ABC-1-alpha").toString(), null,
-                                "https://host.example/alpha/mr/7", null),
+                                "https://host.example/alpha/mr/7"),
                         new TaskRepo("beta",
                                 root.resolve("ABC-1-beta").toString(), null,
-                                "https://host.example/beta/mr/3", null)),
+                                "https://host.example/beta/mr/3")),
                 TaskStatus.CI_POLLING).alias("a1")
                 .requestOpenedAt(System.currentTimeMillis() - java.time.Duration.ofHours(8).toMillis())
                 .lastActiveTimestamp(System.currentTimeMillis()).build());
@@ -532,7 +533,7 @@ class BoardCardTest extends BoardPageContext {
     void aLiveStatusOpensItsHoverFromTheKeyboard() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis())
-                .deployCommit("abc1234").build());
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
         Page page = session.newPage();
 
         page.navigate("http://localhost:" + port + "/");
@@ -758,7 +759,7 @@ class BoardCardTest extends BoardPageContext {
     void theDeployVerbIsColouredWhileItsLastRunIsStillLive() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.DEPLOYED).alias("a1").lastActiveTimestamp(System.currentTimeMillis())
-                .mrUrl("https://host.example/mr/7").deployCommit("abc1234").build());
+                .mrUrl("https://host.example/mr/7").deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
 
         Page page = session.newPage();
 
@@ -774,7 +775,7 @@ class BoardCardTest extends BoardPageContext {
     void theDeployVerbKeepsItsFillAndTakesTheMarkAsARingWhileItIsTheHighlightedMove() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.APPROVED).alias("a1").lastActiveTimestamp(System.currentTimeMillis())
-                .mrUrl("https://host.example/mr/7").deployCommit("abc1234").build());
+                .mrUrl("https://host.example/mr/7").deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
 
         Page page = session.newPage();
 
@@ -789,7 +790,7 @@ class BoardCardTest extends BoardPageContext {
     void theStateSaysTheWorkIsLiveWhereNoVerbOnTheCardIsTheDeploy() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis())
-                .deployCommit("abc1234").build());
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
 
         Page page = session.newPage();
 
