@@ -62,6 +62,7 @@ interactions.jsonl.1
 .master-eval.lock
 # Present while the Master's act is stopped, written beside state.json
 act-stopped
+act-strikes
 # The Master's MCP token, drawn by jagt at each start
 /.jagt/
 

@@ -272,6 +272,28 @@ class MasterBrakeTest {
     }
 
     @Test
+    void keepsTheCountAcrossARestart(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        new MasterBrake(state, paths).observe(Map.of(
+                "ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.REVERTED).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD))).build(),
+                "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.REVERTED).history(List.of(
+                        new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                        new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD))).build()));
+        MasterBrake restarted = new MasterBrake(state, paths);
+        restarted.follow();
+
+        restarted.observe(Map.of("ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.REVERTED).history(List.of(
+                new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD))).build()));
+
+        assertThat(root.resolve("act-stopped")).exists();
+    }
+
+    @Test
     void saysActWasNotStoppedWhereThereWasNothingToRestore(@TempDir Path root) {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));

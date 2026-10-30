@@ -45,6 +45,11 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("act-stopped");
     }
 
+    /** The tasks counted toward stopping `act`, one per line, present while the count is above zero. */
+    public Path actStrikes() {
+        return stateFile.resolveSibling("act-strikes");
+    }
+
     private Path resolve(@Nullable String override, String defaultName) {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()

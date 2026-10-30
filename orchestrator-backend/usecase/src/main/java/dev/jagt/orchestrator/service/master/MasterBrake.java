@@ -49,6 +49,7 @@ public class MasterBrake {
     @PostConstruct
     void follow() {
         stateService.tasks().forEach((id, task) -> seen.put(id, Seen.of(task)));
+        strikes.addAll(kept());
         stateService.onChange(written -> observe(written.tasks()));
     }
 
@@ -71,6 +72,7 @@ public class MasterBrake {
     /** True where it was stopped. */
     public synchronized boolean restore() {
         strikes.clear();
+        keep();
         try {
             boolean was = Files.deleteIfExists(paths.actStopped());
             log.atInfo().setMessage("master act restored").addKeyValue("wasStopped", was).log();
@@ -110,9 +112,11 @@ public class MasterBrake {
     private void count(Ending ending) {
         if (!ending.bad()) {
             strikes.clear();
+            keep();
             return;
         }
         strikes.add(ending.task());
+        keep();
         log.atInfo().setMessage("master strike").addKeyValue("task", ending.task())
                 .addKeyValue("why", ending.why()).addKeyValue("strikes", strikes.size()).log();
         if (strikes.size() >= STRIKES) {
@@ -131,5 +135,29 @@ public class MasterBrake {
                     .addKeyValue("cause", e.toString()).addKeyValue("effect", "act keeps pressing").log();
         }
         strikes.clear();
+        keep();
+    }
+
+    private List<String> kept() {
+        try {
+            return Files.isRegularFile(paths.actStrikes()) ? Files.readAllLines(paths.actStrikes()) : List.of();
+        } catch (IOException e) {
+            log.atWarn().setMessage("master strikes unread").addKeyValue("file", paths.actStrikes())
+                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "the count starts again").log();
+            return List.of();
+        }
+    }
+
+    private void keep() {
+        try {
+            if (strikes.isEmpty()) {
+                Files.deleteIfExists(paths.actStrikes());
+            } else {
+                Files.writeString(paths.actStrikes(), String.join("\n", strikes) + "\n");
+            }
+        } catch (IOException e) {
+            log.atWarn().setMessage("master strikes not kept").addKeyValue("file", paths.actStrikes())
+                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "a restart forgets the count").log();
+        }
     }
 }
