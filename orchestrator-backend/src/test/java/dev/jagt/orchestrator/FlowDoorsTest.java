@@ -79,6 +79,21 @@ class FlowDoorsTest {
     }
 
     @Test
+    void aSessionSignIsStampedOnlyByTheSessionRecordItself() {
+        noClasses().that().resideOutsideOfPackage("dev.jagt.orchestrator.flow..")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.Session")
+                .should().callMethodWhere(target(name("withHalt")))
+                .orShould().callMethodWhere(target(name("withQuietSince")))
+                .orShould().callMethodWhere(target(name("withMovedAt")))
+                .orShould().callMethodWhere(target(name("withWorkStartedAt")))
+                .orShould().callMethodWhere(target(name("withReportedAt")))
+                .orShould().callMethodWhere(target(name("withStampedAsk")))
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("dev.jagt.orchestrator"));
+    }
+
+    @Test
     void aStatusIsRestoredOnlyByTheClaimUndo() {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.FlowReports")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")

@@ -289,6 +289,18 @@ class TaskReducerTest {
     }
 
     @Test
+    void keepsTheLogFileASessionNamedWithoutMovingItsPhase() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+
+        TaskState named = TaskReducer.signed(idle, new SessionSign.LogNamed("/logs/s.jsonl"), 2_000);
+
+        assertThat(named.session().log()).isEqualTo("/logs/s.jsonl");
+        assertThat(named.session().idleSince()).isEqualTo(1_000);
+        assertThat(SessionPhase.of(named.session())).isEqualTo(SessionPhase.IDLE);
+    }
+
+    @Test
     void isIdleWhenATurnEndsWhileWorking() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState working = TaskReducer.signed(task, new SessionSign.WorkStarted(), 1_000);

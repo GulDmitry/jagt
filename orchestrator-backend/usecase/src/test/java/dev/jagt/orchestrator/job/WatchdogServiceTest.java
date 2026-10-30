@@ -37,7 +37,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -311,19 +310,6 @@ class WatchdogServiceTest {
         new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
         verify(notifications, times(1)).send(any());
-    }
-
-    @Test
-    void forgetsTheSessionsOfTasksThatNoLongerExist(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-        SessionProbe probe = mock(SessionProbe.class);
-
-        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC()).run();
-
-        verify(probe).keepOnly(Set.of("ABC-1"));
     }
 
     @Test

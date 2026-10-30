@@ -73,7 +73,6 @@ public class WatchdogService implements Job {
     public void run() {
         long now = clock.millis();
         Map<String, TaskState> tasks = stateService.tasks();
-        probe.keepOnly(tasks.keySet());
         tasks.forEach((taskId, task) -> verdict(taskId, task, now));
     }
 

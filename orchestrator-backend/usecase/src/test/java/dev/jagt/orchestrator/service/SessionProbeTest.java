@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -29,41 +28,27 @@ import static org.mockito.Mockito.when;
 class SessionProbeTest {
 
     @Test
-    void readsTheLogFileASessionNamedForItself(@TempDir Path root) throws Exception {
+    void readsTheLogFileTheSessionRecordNames(@TempDir Path root) throws Exception {
         Path log = Files.writeString(root.resolve("session.jsonl"), "{}");
         Files.setLastModifiedTime(log, FileTime.fromMillis(9_990_000L));
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(9_000_000L).build();
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(9_000_000L).build()
+                .withSession(Session.defaults().withLog(log.toString()));
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), running(), mock(AgentRuntime.class));
-
-        probe.logAt("ABC-1", log);
 
         assertThat(probe.read("ABC-1", task, 300_000, 10_000_000).logAt()).isEqualTo(9_990_000L);
     }
 
     @Test
-    void doesNotLetTheFileASessionOnceNamedOutrankAFresherOne(@TempDir Path root) throws Exception {
+    void doesNotLetTheFileTheRecordNamesOutrankAFresherOne(@TempDir Path root) throws Exception {
         Path stale = Files.writeString(root.resolve("earlier.jsonl"), "{}");
         Files.setLastModifiedTime(stale, FileTime.fromMillis(9_000_000L));
         AgentRuntime runtime = mock(AgentRuntime.class);
         when(runtime.lastSessionActivity(any())).thenReturn(OptionalLong.of(9_990_000L));
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(9_000_000L).build();
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(9_000_000L).build()
+                .withSession(Session.defaults().withLog(stale.toString()));
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), running(), runtime);
-        probe.logAt("ABC-1", stale);
 
         assertThat(probe.read("ABC-1", task, 300_000, 10_000_000).logAt()).isEqualTo(9_990_000L);
-    }
-
-    @Test
-    void forgetsTheFileANamedByATaskThatIsNoLongerThere(@TempDir Path root) throws Exception {
-        Path log = Files.writeString(root.resolve("session.jsonl"), "{}");
-        Files.setLastModifiedTime(log, FileTime.fromMillis(9_990_000L));
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(9_900_000L).build();
-        SessionProbe probe = new SessionProbe(mock(ConfigService.class), running(), mock(AgentRuntime.class));
-        probe.logAt("ABC-1", log);
-
-        probe.keepOnly(List.of("ABC-2"));
-
-        assertThat(probe.read("ABC-1", task, 300_000, 10_000_000).logAt()).isZero();
     }
 
     private static AgentSessions running() {

@@ -25,6 +25,13 @@ public sealed interface SessionSign {
         }
     }
 
+    record LogNamed(String log) implements SessionSign {
+        @Override
+        public Session applyTo(Session session, long now) {
+            return session.withLog(log);
+        }
+    }
+
     record Reported() implements SessionSign {
         @Override
         public Session applyTo(Session session, long now) {

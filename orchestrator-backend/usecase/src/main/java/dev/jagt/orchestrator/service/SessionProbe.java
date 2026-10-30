@@ -12,13 +12,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * What can be read of a task's session without a hook, none of it costing a token. The file a session names is kept
- * in memory: losing it on a restart costs promptness and nothing else.
+ * What can be read of a task's session without a hook, none of it costing a token.
  */
 @Component
 @RequiredArgsConstructor
@@ -30,7 +26,6 @@ public class SessionProbe {
     private final ConfigService configService;
     private final AgentSessions sessions;
     private final AgentRuntime runtime;
-    private final Map<String, Path> reportedLog = new ConcurrentHashMap<>();
 
     /** Read per run, so a changed interval applies without a restart. */
     public Duration every() {
@@ -49,22 +44,12 @@ public class SessionProbe {
         }
     }
 
-    /** Task ids are ticket keys and get reused, so what was remembered about a closed one must not be found. */
-    public void keepOnly(Collection<String> taskIds) {
-        reportedLog.keySet().retainAll(taskIds);
-    }
-
-    /** A session that names the file it appends to takes the guessing out of finding it. */
-    public void logAt(String taskId, Path log) {
-        reportedLog.put(taskId, log);
-    }
-
     /**
      * The window's process is read on every look, as nothing else tells a dead one; what it printed costs a second
      * spawn and is asked only once the free signs read stale.
      */
     public SessionSign.Read read(String taskId, TaskState task, long staleMs, long now) {
-        long log = ownLog(taskId, task);
+        long log = ownLog(task);
         SessionHost.WindowState process = sessions.windowState(taskId);
         if (process != SessionHost.WindowState.AGENT_RUNNING) {
             return new SessionSign.Read(gone(process), 0, log, task.lastActiveTimestamp(), staleMs, exitTail(taskId));
@@ -95,12 +80,12 @@ public class SessionProbe {
      * The LATER of what a session named and what the runtime finds. Preferring the named file would freeze the sign
      * the moment a session is cleared or resumed, the work having moved to a new file.
      */
-    private long ownLog(String taskId, TaskState task) {
-        Path reported = reportedLog.get(taskId);
+    private long ownLog(TaskState task) {
+        String named = task.session().log();
         String worktree = task.worktreePath();
         long derived = worktree == null || worktree.isBlank()
                 ? 0
                 : runtime.lastSessionActivity(Path.of(worktree)).orElse(0);
-        return Math.max(derived, reported == null ? 0 : FileStamps.modified(reported));
+        return Math.max(derived, named == null ? 0 : FileStamps.modified(Path.of(named)));
     }
 }

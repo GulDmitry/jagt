@@ -275,6 +275,7 @@ final class TaskChart {
                     .stay();
             signed(chart, from, "called", SessionPhase.WORKING, SessionSign.Called.class);
             signed(chart, from, "reported", from, SessionSign.Reported.class);
+            signed(chart, from, "log named", from, SessionSign.LogNamed.class);
             read(chart, from, "read", turnsEnd.contains(from) ? SessionPhase.QUIET : from, false);
             read(chart, from, "read found no process", SessionPhase.GONE, true);
             signed(chart, from, "ended", SessionPhase.GONE, SessionSign.Ended.class);

@@ -18,14 +18,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RequiredArgsConstructor
 public class SessionLedger {
 
-    private final SessionProbe probe;
     private final StateService stateService;
     private final Notifications notifications;
     private final Clock clock;
 
     public void record(String taskId, @Nullable Path sessionLog, SessionSign sign) {
         if (sessionLog != null) {
-            probe.logAt(taskId, sessionLog);
+            sign(taskId, new SessionSign.LogNamed(sessionLog.toString()));
         }
         sign(taskId, sign);
     }
