@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
@@ -111,9 +112,9 @@ public class AgentStatusReports {
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
         FlowReports.Landed written = flow.report(taskId, newStatus, means, shortMessage,
-                (was, next) -> closed(planned(was, linked(was, next, url, requestsByProject))
+                (was, next) -> closed(signed(planned(was, linked(was, next, url, requestsByProject))
                         .withRepoRequest(said.needsProject())
-                        .judged(said.switches()), closesTurn), verificationOwed)
+                        .judged(said.switches())), closesTurn), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (url != null && FlowRules.outForReview(written.now())) {
             stateService.task(taskId).map(handBack::pushedTips)
@@ -177,6 +178,10 @@ public class AgentStatusReports {
                 : "; the Master reads this round next; end your turn";
         return "Task " + taskId + " -> " + landed + said
                 + (FlowRules.headedForTheMaster(landed) && handBack.masterReads() ? next : "");
+    }
+
+    private static TaskState signed(TaskState next) {
+        return TaskReducer.signed(next, new SessionSign.Reported(), next.lastActiveTimestamp());
     }
 
     private TaskState closed(TaskState next, boolean closesTurn) {

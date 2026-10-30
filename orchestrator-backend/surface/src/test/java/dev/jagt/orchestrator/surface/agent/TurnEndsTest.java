@@ -3,9 +3,9 @@ package dev.jagt.orchestrator.surface.agent;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
-import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.TurnTree;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -30,32 +30,39 @@ class TurnEndsTest {
 
     private static final long NOW = 10_000_000_000L;
 
-    private final SessionProbe probe = mock(SessionProbe.class);
     private final AgentRuntime runtime = mock(AgentRuntime.class);
     private final ConfigService config = mock(ConfigService.class);
     private final TurnTree turnTree = new TurnTree(null, null);
     private final NotesDue notes =new NotesDue(Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC));
 
     @Test
-    void sendsOnATurnThatEndsWithTheAgentsMoveUnreported() {
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+    void sendsOnATurnThatEndsWithOnlyAReadCallSinceItBegan() {
         when(runtime.refusedTurnEnd(contains("update_agent_status"))).thenReturn("{\"decision\": \"block\"}");
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .lastActiveTimestamp(1_000L).build();
+                .lastActiveTimestamp(3_000L).session(Session.defaults().withWorkStartedAt(2_000L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
 
     @Test
+    void letsATurnEndWhoseStartIsUnknown() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
+
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+
+        assertThat(answered).isEmpty();
+    }
+
+    @Test
     void sendsOnATurnThatEndsOnAQuestionTheHumanAnsweredToStartIt() {
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         when(runtime.refusedTurnEnd(contains("update_agent_status"))).thenReturn("{\"decision\": \"block\"}");
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .message("keep v2?").report(AgentReport.QUESTION).lastActiveTimestamp(1_000L).build();
+                .message("keep v2?").report(AgentReport.QUESTION).session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(0L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
@@ -63,40 +70,37 @@ class TurnEndsTest {
     @ParameterizedTest
     @ValueSource(longs = {2_000L, 3_000L})
     void letsATurnEndThatReportedSinceItBegan(long reportedAt) {
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .lastActiveTimestamp(reportedAt).build();
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(reportedAt)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEmpty();
     }
 
     @Test
     void tellsTheHumanARoundHandedBackIsWithTheMaster() {
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(runtime.toldTheHuman("→ with the Master for review · its verdict arrives here"))
                 .thenReturn("{\"systemMessage\": \"with the Master\"}");
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
-                .lastActiveTimestamp(3_000L).build();
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"systemMessage\": \"with the Master\"}");
     }
 
     @Test
     void saysNothingAtAHandedBackRoundNoMasterReads() {
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
-                .lastActiveTimestamp(3_000L).build();
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEmpty();
     }
@@ -104,26 +108,24 @@ class TurnEndsTest {
     @ParameterizedTest
     @CsvSource({"true, false", "false, true"})
     void letsATurnEndThatWasAlreadySentOnOrWaitsOnBackgroundWork(boolean sentOn, boolean paused) {
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
-                .lastActiveTimestamp(1_000L).build();
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(0L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, sentOn, paused);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, sentOn, paused);
 
         assertThat(answered).isEmpty();
     }
 
     @Test
     void tellsTheHumanARoundBeingVerifiedIsVerifiedBeforeTheMasterReadsIt() {
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(runtime.toldTheHuman("→ verification runs first · the Master reads the round once it passes"))
                 .thenReturn("{\"systemMessage\": \"verification first\"}");
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1")
-                .lastActiveTimestamp(3_000L).build();
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"systemMessage\": \"verification first\"}");
     }
@@ -132,13 +134,12 @@ class TurnEndsTest {
     void sendsOnATurnEndOnceWhenTheNotesHaveFallenBehindTheWork(@TempDir Path worktree) throws Exception {
         Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_notes.md"), "old"),
                 FileTime.fromMillis(NOW - 3_600_000L));
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(runtime.refusedTurnEnd(contains("rewrite task_notes.md"))).thenReturn("{\"decision\": \"block\"}");
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).alias("a1")
-                .lastActiveTimestamp(3_000L).build();
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
@@ -147,11 +148,10 @@ class TurnEndsTest {
     void neverAsksForTheNotesAgainOnATurnEndTheFirstRefusalSentOn(@TempDir Path worktree) throws Exception {
         Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_notes.md"), "old"),
                 FileTime.fromMillis(NOW - 3_600_000L));
-        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).alias("a1")
-                .lastActiveTimestamp(3_000L).build();
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L)).build();
 
-        String answered = new TurnEnds(probe, runtime, config, notes, turnTree).answer("ABC-1", task, true, false);
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, true, false);
 
         assertThat(answered).isEmpty();
     }

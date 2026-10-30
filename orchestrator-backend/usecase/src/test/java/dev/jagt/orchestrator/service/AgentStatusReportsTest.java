@@ -73,6 +73,21 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void recordsOnTheSessionThatTheTurnReportedWhenAReportLands(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
+                configService);
+
+        reports.report(TaskStatus.IN_PROGRESS, "going on", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().session().reportedAt()).isPositive();
+    }
+
+    @Test
     void handsAGreenVerificationToReviewRatherThanVerifyingItAgain(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

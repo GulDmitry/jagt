@@ -6,8 +6,8 @@ import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NotesDue;
-import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.TurnTree;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TurnEnds {
 
-    private final SessionProbe probe;
     private final AgentRuntime runtime;
     private final ConfigService configService;
     private final NotesDue notes;
@@ -30,8 +29,8 @@ public class TurnEnds {
         if (sentOn || pausedOnBackgroundWork || task == null) {
             return withTheMaster(task);
         }
-        long turnStarted = probe.turnStartedAt(taskId);
-        boolean unreported = turnStarted != 0 && task.lastActiveTimestamp() < turnStarted;
+        Session session = task.session();
+        boolean unreported = session.workStartedAt() != 0 && session.reportedAt() < session.workStartedAt();
         if (unreported && !Move.endsUnreported(task.status()) && Move.endsOnTheTree(task.status())
                 && turnTree.changedUnreported(taskId, task)) {
             return runtime.refusedTurnEnd("Your turn is ending with " + taskId + " at " + task.status()

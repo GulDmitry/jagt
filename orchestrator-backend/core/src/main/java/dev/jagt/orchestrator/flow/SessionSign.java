@@ -25,6 +25,13 @@ public sealed interface SessionSign {
         }
     }
 
+    record Reported() implements SessionSign {
+        @Override
+        public Session applyTo(Session session, long now) {
+            return session.withReportedAt(now);
+        }
+    }
+
     record TurnEnded(@Nullable String log) implements SessionSign {
         @Override
         public Session applyTo(Session session, long now) {

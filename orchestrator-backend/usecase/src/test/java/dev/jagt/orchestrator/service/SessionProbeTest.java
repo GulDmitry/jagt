@@ -341,16 +341,6 @@ class SessionProbeTest {
     }
 
     @Test
-    void saysWhenTheCurrentTurnBeganAsTheLastTimeTheSessionReportedItselfMoving() {
-        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
-                mock(AgentRuntime.class));
-
-        probe.report("ABC-1", SessionProbe.State.WORKING, null, 4_200L);
-
-        assertThat(probe.turnStartedAt("ABC-1")).isEqualTo(4_200L);
-    }
-
-    @Test
     void asksTheWindowOnceTheLastSignIsExactlyAThresholdOld() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());

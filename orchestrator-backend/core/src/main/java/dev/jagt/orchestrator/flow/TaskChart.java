@@ -258,6 +258,7 @@ final class TaskChart {
         for (SessionPhase from : SessionPhase.values()) {
             signed(chart, from, "work started", SessionPhase.WORKING, SessionSign.WorkStarted.class);
             signed(chart, from, "called", SessionPhase.WORKING, SessionSign.Called.class);
+            signed(chart, from, "reported", from, SessionSign.Reported.class);
             signed(chart, from, "ended", SessionPhase.GONE, SessionSign.Ended.class);
             signed(chart, from, "restarted", SessionPhase.IDLE, SessionSign.Restarted.class);
             if (turnsEnd.contains(from)) {

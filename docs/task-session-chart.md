@@ -12,35 +12,41 @@ stateDiagram-v2
         [*] --> session_NONE
         session_NONE --> session_WORKING : work started
         session_NONE --> session_WORKING : called
+        session_NONE --> session_NONE : reported
         session_NONE --> session_GONE : ended
         session_NONE --> session_IDLE : restarted
         session_NONE --> session_IDLE : turn ended
         session_NONE --> session_FAILED : turn failed
         session_WORKING --> session_WORKING : work started
         session_WORKING --> session_WORKING : called
+        session_WORKING --> session_WORKING : reported
         session_WORKING --> session_GONE : ended
         session_WORKING --> session_IDLE : restarted
         session_WORKING --> session_IDLE : turn ended
         session_WORKING --> session_FAILED : turn failed
         session_IDLE --> session_WORKING : work started
         session_IDLE --> session_WORKING : called
+        session_IDLE --> session_IDLE : reported
         session_IDLE --> session_GONE : ended
         session_IDLE --> session_IDLE : restarted
         session_IDLE --> session_IDLE : turn ended
         session_IDLE --> session_FAILED : turn failed
         session_QUIET --> session_WORKING : work started
         session_QUIET --> session_WORKING : called
+        session_QUIET --> session_QUIET : reported
         session_QUIET --> session_GONE : ended
         session_QUIET --> session_IDLE : restarted
         session_QUIET --> session_IDLE : turn ended
         session_QUIET --> session_FAILED : turn failed
         session_FAILED --> session_WORKING : work started
         session_FAILED --> session_WORKING : called
+        session_FAILED --> session_FAILED : reported
         session_FAILED --> session_GONE : ended
         session_FAILED --> session_IDLE : restarted
         session_FAILED --> session_FAILED : turn failed
         session_GONE --> session_WORKING : work started
         session_GONE --> session_WORKING : called
+        session_GONE --> session_GONE : reported
         session_GONE --> session_GONE : ended
         session_GONE --> session_IDLE : restarted
         session_WORKING --> session_QUIET : went quiet
