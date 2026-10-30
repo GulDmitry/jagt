@@ -86,7 +86,7 @@ A step that never landed (`UNDELIVERED`) SHALL end when `SessionAliveJob` finds 
 - **AND** a due one is dropped where the task is closed, stopped or no longer red
 
 ### Requirement: A deploy stands on the pipeline jagt reads on its commit
-A deploy SHALL stand only once the host's pipeline on each repository's `deployCommit` is green.
+A deploy SHALL stand only once the host's pipeline on each target's recorded tip, its last fix else its merge, is green.
 `DeployCheckJob` reads it every minute through the host's own CLI, not a model, until the deploy is asked about
 ([0109](../../../docs/decisions/0109-a-deploys-outcome-is-the-pipeline-jagt-reads-on-its-commit.md)).
 A pipeline running, not started, unknown or unreadable keeps the deploy open, and the task's line says `waiting on its pipeline`.

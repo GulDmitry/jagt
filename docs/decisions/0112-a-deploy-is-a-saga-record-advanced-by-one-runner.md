@@ -6,6 +6,7 @@
 
 Accepted 2026-10-30. Extends [0013](0013-a-deploy-conflict-is-the-sessions-in-act.md), [0063](0063-a-stalled-deploy-conflict-is-the-humans.md),
 [0109](0109-a-deploys-outcome-is-the-pipeline-jagt-reads-on-its-commit.md) and [0110](0110-the-task-statechart-runs-on-an-engine-of-our-own.md).
+Superseded in part by [0113](0113-the-deployment-record-is-the-only-deploy-store.md): the migration is complete.
 
 ## Context
 

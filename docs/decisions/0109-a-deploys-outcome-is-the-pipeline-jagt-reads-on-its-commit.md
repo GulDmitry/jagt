@@ -5,6 +5,8 @@
 ## Status
 
 Accepted 2026-10-29. Extends [0013](0013-a-deploy-conflict-is-the-sessions-in-act.md) and [0105](0105-infrastructure-failures-are-waited-out.md).
+Superseded in part by [0113](0113-the-deployment-record-is-the-only-deploy-store.md):
+`deployCommit`, `deployFixes` and `deployTip` are the deployment record's.
 
 ## Context
 
