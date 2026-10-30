@@ -30,13 +30,14 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         UNDELIVERED("a step never landed", "Check that the session's window is running", Ends.SESSION_ALIVE, false),
         UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", Ends.LIFT, true),
         INFRA("checks failed on infrastructure", "Re-run the job or fix the runner, then lift", Ends.HOST_READ, true),
-        WAIT("a dependency stayed down", "Bring up what the session named, then lift", Ends.SESSION_REPORT, false);
+        WAIT("a dependency stayed down", "Bring up what the session named, then lift", Ends.SESSION_REPORT, false),
+        DEPLOY_UNREAD("deploy pipeline cannot be read", "Check that the code host's CLI can list the deploy commit's pipelines", Ends.DEPLOY_READ, false);
 
         /**
          * What ends a stop: a human's lift, a read of the checks that shows the outside condition gone, the
-         * session's window running again, or a report of the session that is no wait.
+         * session's window running again, a report of the session that is no wait, or a read of the deploy's pipeline.
          */
-        public enum Ends { LIFT, HOST_READ, SESSION_ALIVE, SESSION_REPORT }
+        public enum Ends { LIFT, HOST_READ, SESSION_ALIVE, SESSION_REPORT, DEPLOY_READ }
 
         private final String reason;
         private final String next;

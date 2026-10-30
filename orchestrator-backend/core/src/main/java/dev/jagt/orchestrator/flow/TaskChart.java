@@ -239,6 +239,7 @@ final class TaskChart {
         deployed(chart, DeployPhase.LANDING, "asked", DeployPhase.CHECK_ASKED, step -> step instanceof DeployStep.Asked);
         for (DeployPhase at : EnumSet.of(DeployPhase.LANDING, DeployPhase.CHECK_ASKED)) {
             deployed(chart, at, "settled bare", at, step -> step instanceof DeployStep.Bare);
+            deployed(chart, at, "read", at, step -> step instanceof DeployStep.ReadOn);
         }
     }
 

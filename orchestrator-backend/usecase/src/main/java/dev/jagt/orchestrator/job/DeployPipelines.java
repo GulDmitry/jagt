@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -30,7 +31,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class DeployPipelines {
 
-    public enum Kind { GREEN, WAITING, RED }
+    public enum Kind { GREEN, WAITING, UNREAD, RED }
 
     /**
      * {@code said} names the repository, the commit and what the pipeline did; {@code url} is the pipeline's, blank
@@ -61,14 +62,14 @@ public class DeployPipelines {
 
     /** The first red the code owns, else the first repository still open, else green. */
     public Reading read(String taskId, TaskState task) {
-        Reading open = null;
+        @Nullable Reading open = null;
         List<String> bare = new ArrayList<>();
         for (Deployment.Target landed : landedTargets(task)) {
             Reading one = read(taskId, task, landed);
             if (one.kind() == Kind.RED) {
                 return one;
             }
-            open = open == null && one.kind() == Kind.WAITING ? one : open;
+            open = stillOpen(open, one);
             bare.addAll(one.bare());
         }
         if (open != null) {
@@ -76,6 +77,14 @@ public class DeployPipelines {
         }
         causes.deployStands(taskId);
         return new Reading(Kind.GREEN, "", "", "", List.copyOf(bare));
+    }
+
+    /** The first repository still open, a read that could not list its pipeline before one merely waiting. */
+    private static @Nullable Reading stillOpen(@Nullable Reading open, Reading one) {
+        if (one.kind() == Kind.GREEN) {
+            return open;
+        }
+        return open == null || open.kind() == Kind.WAITING && one.kind() == Kind.UNREAD ? one : open;
     }
 
     private static List<Deployment.Target> landedTargets(TaskState task) {
@@ -97,7 +106,7 @@ public class DeployPipelines {
             log.atWarn().setMessage("deploy pipeline unreadable").addKeyValue("project", project)
                     .addKeyValue("commit", GitDeploy.shortSha(commit)).addKeyValue("cause", read.failure())
                     .addKeyValue("effect", "the deploy stays open").log();
-            return Reading.waiting(at + "unread, " + read.failure());
+            return new Reading(Kind.UNREAD, at + "unread, " + read.failure(), project, "", List.of());
         }
         CommitPipeline pipeline = read.facts().get();
         if (!pipeline.hosted()) {

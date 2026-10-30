@@ -8,6 +8,7 @@ stateDiagram-v2
         state "HOST_READ" as stop_HOST_READ
         state "SESSION_ALIVE" as stop_SESSION_ALIVE
         state "SESSION_REPORT" as stop_SESSION_REPORT
+        state "DEPLOY_READ" as stop_DEPLOY_READ
         [*] --> stop_NONE
         stop_NONE --> stop_NONE : lift
         stop_NONE --> stop_LIFT : stop ending on LIFT
@@ -26,5 +27,9 @@ stateDiagram-v2
         stop_SESSION_REPORT --> stop_NONE : lift
         stop_SESSION_REPORT --> stop_NONE : SESSION_REPORT ends it
         stop_SESSION_REPORT --> stop_NONE : a new request voids it
+        stop_NONE --> stop_DEPLOY_READ : stop ending on DEPLOY_READ
+        stop_DEPLOY_READ --> stop_NONE : lift
+        stop_DEPLOY_READ --> stop_NONE : DEPLOY_READ ends it
+        stop_DEPLOY_READ --> stop_NONE : a new request voids it
     }
 ```

@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 /** The stop region's states: none, or the way the standing stop ends. */
 public enum StopKind {
-    NONE, LIFT, HOST_READ, SESSION_ALIVE, SESSION_REPORT;
+    NONE, LIFT, HOST_READ, SESSION_ALIVE, SESSION_REPORT, DEPLOY_READ;
 
     public static StopKind of(@Nullable TaskStop stop) {
         return stop == null ? NONE : of(stop.trigger().ends());

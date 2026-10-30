@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -68,7 +69,10 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay).relay(eq("ABC-42"), eq(Step.DEPLOY), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
@@ -89,12 +93,62 @@ class DeployCheckJobTest {
                 new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of("proj")),
                 new DeployPipelines.Reading(DeployPipelines.Kind.RED, "red pipeline on the deploy commit: proj 01234567",
                         "proj", "https://git.example.invalid/p/7", List.of()));
-        DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()));
+        DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC()));
         job.runOn(state.tasks());
 
         job.runOn(state.tasks());
 
         assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    }
+
+    @Test
+    void stopsTheTaskOnTheThirdReadRunningThatCannotListItsDeployPipeline(@TempDir Path root) {
+        ConfigService config = mock(ConfigService.class);
+        StepRelay relay = mock(StepRelay.class);
+        DeployPipelines pipelines = mock(DeployPipelines.class);
+        StateService state = state(root);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.UNREAD,
+                "proj 01234567: pipeline unread, glab not logged in", "proj", "", List.of()));
+        DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC()));
+        job.runOn(state.tasks());
+        job.runOn(state.tasks());
+
+        job.runOn(state.tasks());
+
+        assertThat(state.task("ABC-42").orElseThrow().stop().trigger()).isEqualTo(TaskStop.Trigger.DEPLOY_UNREAD);
+    }
+
+    @Test
+    void endsTheUnreadDeployStopOnTheFirstReadThatListsThePipeline(@TempDir Path root) {
+        ConfigService config = mock(ConfigService.class);
+        StepRelay relay = mock(StepRelay.class);
+        DeployPipelines pipelines = mock(DeployPipelines.class);
+        StateService state = state(root);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+                .stop(new TaskStop(TaskStop.Trigger.DEPLOY_UNREAD, 1_000, "3 reads running could not list it")).build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")
+                        .withUnread(true)), 1, null)));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(
+                DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", "", List.of()));
+
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
+
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
     }
 
     @Test
@@ -110,7 +164,10 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(
                 DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", "", List.of()));
 
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
         assertThat(state.task("ABC-42").orElseThrow().message())
@@ -130,7 +187,10 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
                 "red pipeline on the deploy commit: proj 01234567", "proj", "https://git.example.invalid/p/7", List.of()));
 
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
 
         TaskState handed = state.task("ABC-42").orElseThrow();
         assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
@@ -158,14 +218,20 @@ class DeployCheckJobTest {
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(before, Clock.systemUTC()));
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(before, Clock.systemUTC())).runOn(before.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(before, Clock.systemUTC()),
+                new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC())).runOn(before.tasks());
         relay.relay("ABC-42", Step.ANSWERED, "The Master answered your question, standing in for the human:\nyes", relay.standing("ABC-42"));
         StateService restarted = new StateService(new JsonMapper(), paths);
 
         new DeployCheckJob(config, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), restarted, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), restarted, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
-                new TaskTurns(restarted, Clock.systemUTC())), pipelines, new FlowReports(restarted, Clock.systemUTC())).runOn(restarted.tasks());
+                new TaskTurns(restarted, Clock.systemUTC())), pipelines, new FlowReports(restarted, Clock.systemUTC()),
+                new TaskStops(restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), restarted, Runnable::run), new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC())).runOn(restarted.tasks());
 
         verify(sessions, times(1)).writeTaskContext(eq("ABC-42"), contains("ABC-42 is deployed"));
     }
@@ -179,7 +245,10 @@ class DeployCheckJobTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
                 .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
 
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());
@@ -198,7 +267,10 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay).relay(eq("ABC-42"), eq(Step.DEPLOY), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
@@ -213,7 +285,10 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
@@ -231,7 +306,10 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 
-        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());

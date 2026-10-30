@@ -206,6 +206,13 @@ public class FlowReports {
         tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Bare(bare), clock.millis()));
     }
 
+    /** Counts a read that could not list {@code unread}'s pipeline, null where it listed every one; the reads running, at most. */
+    public int deployReadOn(String taskId, @Nullable String unread) {
+        tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.ReadOn(unread), clock.millis()));
+        return tasks.task(taskId).map(TaskState::deployment).map(deployment -> deployment.targets().stream()
+                .mapToInt(Deployment.Target::unreadReads).max().orElse(0)).orElse(0);
+    }
+
     public void deployAsked(String taskId, String digest) {
         tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Asked(digest), clock.millis()));
     }

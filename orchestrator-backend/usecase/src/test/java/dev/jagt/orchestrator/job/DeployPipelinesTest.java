@@ -65,7 +65,7 @@ class DeployPipelinesTest {
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
 
-        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.UNREAD);
         assertThat(reading.said()).isEqualTo("shop 01234567: pipeline unread, glab not logged in to git.example.invalid");
     }
 
@@ -205,7 +205,7 @@ class DeployPipelinesTest {
         DeployPipelines.Reading unanswered = deploys.read("ABC-42", deployed);
         DeployPipelines.Reading answered = deploys.read("ABC-42", deployed);
 
-        assertThat(unanswered.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
+        assertThat(unanswered.kind()).isEqualTo(DeployPipelines.Kind.UNREAD);
         assertThat(answered.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
     }
 }

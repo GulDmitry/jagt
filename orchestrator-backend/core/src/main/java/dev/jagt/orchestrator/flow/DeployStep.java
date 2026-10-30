@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -86,6 +87,15 @@ public sealed interface DeployStep {
         public Deployment applyTo(Deployment deployment, long now) {
             return deployment.withTargets(deployment.targets().stream()
                     .map(target -> target.withBare(projects.contains(target.project()))).toList());
+        }
+    }
+
+    /** A read of the deploy's pipelines that could not list the one on {@code unread}'s tip, null where it listed every one. */
+    record ReadOn(@Nullable String unread) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withTargets(deployment.targets().stream()
+                    .map(target -> target.withUnread(target.project().equals(unread))).toList());
         }
     }
 

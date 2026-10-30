@@ -106,6 +106,11 @@ public class TaskStops {
         return endWhen(taskId, TaskStop.Trigger.Ends.HOST_READ, read != Pipeline.UNKNOWN && read != Pipeline.RED, "");
     }
 
+    /** The stop a read listing every deploy pipeline ended: one whose trigger ends on it. */
+    public Optional<TaskStop> endOnDeployRead(String taskId) {
+        return endWhen(taskId, TaskStop.Trigger.Ends.DEPLOY_READ, true, "");
+    }
+
     /** The stop that ended because the session's window runs again: one whose trigger ends on it. */
     public Optional<TaskStop> endOnSessionAlive(String taskId) {
         return endWhen(taskId, TaskStop.Trigger.Ends.SESSION_ALIVE, true, "");

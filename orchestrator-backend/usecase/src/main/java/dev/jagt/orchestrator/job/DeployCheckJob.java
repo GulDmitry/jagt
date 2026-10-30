@@ -6,12 +6,16 @@ import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +33,7 @@ import java.util.stream.Collectors;
  * the deploy waits on. A check that fails is the session's IN_PROGRESS, and the round goes round again: reviewed,
  * deployed, checked.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DeployCheckJob implements TaskJob {
@@ -37,6 +42,7 @@ public class DeployCheckJob implements TaskJob {
     private final StepRelay relay;
     private final DeployPipelines pipelines;
     private final FlowReports reports;
+    private final TaskStops stops;
     private static final Step STEP = Step.DEPLOY;
     private static final Duration READ_EVERY = Duration.ofMinutes(1);
 
@@ -62,11 +68,16 @@ public class DeployCheckJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(FlowRules::checkedWhereItLanded).withStops(StopKind.NONE);
+        return Watch.defaults().withStatuses(FlowRules::checkedWhereItLanded)
+                .withStops(StopKind.NONE, StopKind.DEPLOY_READ);
     }
 
     @Override
     public void run(String taskId, TaskState task) {
+        if (task.stopped()) {
+            readStopped(taskId, task);
+            return;
+        }
         landed(taskId, task).ifPresent(landed -> {
             if (!asked(task, Turn.digestOf(landed))) {
                 settle(taskId, task, landed);
@@ -76,13 +87,42 @@ public class DeployCheckJob implements TaskJob {
         });
     }
 
+    /** The read that ends a stop set because the deploy's pipelines could not be read, run while it stands. */
+    private void readStopped(String taskId, TaskState task) {
+        DeployPipelines.Reading reading = pipelines.read(taskId, task);
+        if (counted(taskId, task, reading) == 0) {
+            stops.endOnDeployRead(taskId).ifPresent(stop -> log.atInfo().setMessage("stop voided by read")
+                    .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger()).log());
+        }
+    }
+
+    /** The reads running that could not list a pipeline; at the ceiling the task stops for the human. */
+    private int counted(String taskId, TaskState task, DeployPipelines.Reading reading) {
+        boolean unread = reading.kind() == DeployPipelines.Kind.UNREAD;
+        if (!unread && unreadOf(task) == 0) {
+            return 0;
+        }
+        int running = reports.deployReadOn(taskId, unread ? reading.project() : null);
+        if (running >= ChecksUnread.CEILING && !task.stopped()) {
+            stops.stop(taskId, TaskStop.Trigger.DEPLOY_UNREAD,
+                    running + " reads running could not list the deploy pipeline: " + reading.said());
+        }
+        return running;
+    }
+
+    private static int unreadOf(TaskState task) {
+        return task.deployment() == null ? 0 : task.deployment().targets().stream()
+                .mapToInt(Deployment.Target::unreadReads).max().orElse(0);
+    }
+
     /** A pipeline the host lists after the deploy settled bare is read still: red hands it back, green is the end. */
     private void readLate(String taskId, TaskState task) {
         DeployPipelines.Reading reading = pipelines.read(taskId, task);
+        counted(taskId, task, reading);
         switch (reading.kind()) {
             case RED -> reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
             case GREEN -> markBare(taskId, task, reading.bare());
-            case WAITING -> {
+            case WAITING, UNREAD -> {
             }
         }
     }
@@ -100,6 +140,7 @@ public class DeployCheckJob implements TaskJob {
 
     private void settle(String taskId, TaskState task, String landed) {
         DeployPipelines.Reading reading = pipelines.read(taskId, task);
+        counted(taskId, task, reading);
         String stamp = "deployed to " + deployBranches(task);
         switch (reading.kind()) {
             case GREEN -> {
@@ -109,7 +150,7 @@ public class DeployCheckJob implements TaskJob {
                     reports.deployAsked(taskId, Turn.digestOf(landed));
                 }
             }
-            case WAITING -> reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
+            case WAITING, UNREAD -> reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
             case RED -> reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
         }
     }
