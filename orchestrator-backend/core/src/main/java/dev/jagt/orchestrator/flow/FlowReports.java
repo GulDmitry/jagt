@@ -102,7 +102,7 @@ public class FlowReports {
             }
             undone.set(true);
             long now = clock.millis();
-            return task.withStatus(read.status(), read.message(), now).withReport(read.report())
+            return task.restoredFrom(read, now).withReport(read.report())
                     .withPlanGate(read.planGate()).withTurn(claimed.closed(now));
         });
         return undone.get();
@@ -133,11 +133,11 @@ public class FlowReports {
                 refused.set(why.get());
                 return task.refused(Guard.STATUS_REPORT);
             }
-            TaskStatus now = FlowRules.reported(task.status(), status, !means.asks() && verificationOwed.test(task));
-            landed.set(new Landed(task.status(), now));
+            TaskMove.Reported move = new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));
+            landed.set(new Landed(task.status(), FlowRules.reported(task.status(), status, move.verificationOwed())));
             TaskState said = FlowRules.holdsItsLine(task.status()) && !means.asks()
-                    ? held(task, now, clock.millis())
-                    : task.withStatus(now, message, clock.millis()).withReport(means);
+                    ? held(task, move, clock.millis())
+                    : TaskReducer.reduce(task, move, message, false, clock.millis()).withReport(means);
             return alsoRecord.apply(task.status(), said);
         });
         Optional<String> why = Optional.ofNullable(refused.get())
@@ -149,9 +149,9 @@ public class FlowReports {
     }
 
     /** A question still reaches the card; once one is behind, the line falls back to the status's own. */
-    private static TaskState held(TaskState task, TaskStatus now, long at) {
-        return task.report().asks() ? task.withStatus(now, null, at)
-                : task.withStatus(now, task.message(), at).withReport(task.report());
+    private static TaskState held(TaskState task, TaskMove.Reported move, long at) {
+        return task.report().asks() ? TaskReducer.reduce(task, move, null, false, at)
+                : TaskReducer.reduce(task, move, task.message(), false, at).withReport(task.report());
     }
 
     /**
@@ -167,8 +167,9 @@ public class FlowReports {
                 return task;
             }
             return FlowRules.standsThroughARead(task.report())
-                    ? task.withStatus(now, task.message(), clock.millis()).withReport(task.report())
-                    : task.withStatus(now, message, clock.millis());
+                    ? TaskReducer.reduce(task, new TaskMove.Read(concluded), task.message(), false, clock.millis())
+                            .withReport(task.report())
+                    : TaskReducer.reduce(task, new TaskMove.Read(concluded), message, false, clock.millis());
         });
         return Optional.ofNullable(landed.get());
     }
@@ -189,7 +190,8 @@ public class FlowReports {
                 return task;
             }
             written.set(true);
-            TaskState said = task.withStatus(now, message, now != task.status(), clock.millis());
+            TaskState said = TaskReducer.reduce(task, new TaskMove.DeployRead(redOnTheCode), message, now != task.status(),
+                    clock.millis());
             return now == task.status() ? said.withReport(task.report()) : said;
         });
         return written.get();

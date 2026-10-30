@@ -665,17 +665,6 @@ class TaskStateTest {
     }
 
     @Test
-    void forgetsTheDeployConflictOnceTheDeployLands() {
-        TaskState conflicted = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT)
-                .conflict(ConflictWatch.handed(1_000, "/wt-deploy", new ConflictWatch.Progress(7, 252, "d"), 1_000))
-                .build();
-
-        TaskState deployed = conflicted.withStatus(TaskStatus.DEPLOYED, "deployed", true, 2_000);
-
-        assertThat(deployed.conflict()).isNull();
-    }
-
-    @Test
     void keepsAStopWhereAHumansDeployLands() {
         TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT)
                 .stop(new TaskStop(TaskStop.Trigger.MISS, 5, "no case")).build();

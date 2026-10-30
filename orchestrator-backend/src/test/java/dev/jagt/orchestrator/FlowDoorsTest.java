@@ -11,11 +11,19 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 class FlowDoorsTest {
 
     @Test
-    void aStatusIsWrittenOnlyThroughTheTwoDoors() {
-        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.FlowEngine")
-                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.FlowReports")
+    void aStatusIsWrittenOnlyByTheReducer() {
+        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withStatus")))
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("dev.jagt.orchestrator"));
+    }
+
+    @Test
+    void aStatusIsRestoredOnlyByTheClaimUndo() {
+        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.FlowReports")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
+                .should().callMethodWhere(target(name("restoredFrom")))
                 .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                         .importPackages("dev.jagt.orchestrator"));
     }

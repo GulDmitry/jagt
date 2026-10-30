@@ -3,9 +3,11 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.statechart.Chart;
 import dev.jagt.statechart.ChartBuilder;
+import dev.jagt.statechart.EdgeBuilder;
 import dev.jagt.statechart.RegionId;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -42,19 +44,24 @@ final class TaskChart {
 
     private static final Set<TaskStatus> READ_FROM = EnumSet.of(CI_POLLING, REVIEWED, APPROVED, CI_FAILED);
 
-    private static final Chart<TaskMove, Object, TaskStatus> CHART = build();
+    private static final Chart<TaskMove, Object, TaskEffect> CHART = build();
 
     private TaskChart() {
     }
 
-    static Chart<TaskMove, Object, TaskStatus> chart() {
+    static Chart<TaskMove, Object, TaskEffect> chart() {
         return CHART;
+    }
+
+    /** What {@code move} does to a task at {@code from}, in order; empty where the chart has no edge for it. */
+    static List<TaskEffect> effects(TaskStatus from, TaskMove move) {
+        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name())), NO_FACTS, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
-        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name())), NO_FACTS, move).effects()
-                .stream().findFirst();
+        return effects(from, move).stream().filter(TaskEffect.Lands.class::isInstance)
+                .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
     /** The statuses an action leads out of, whatever its outcome. */
@@ -95,9 +102,10 @@ final class TaskChart {
         return EnumSet.copyOf(READ);
     }
 
-    private static Chart<TaskMove, Object, TaskStatus> build() {
-        ChartBuilder<TaskMove, Object, TaskStatus> chart = Chart.builder();
+    private static Chart<TaskMove, Object, TaskEffect> build() {
+        ChartBuilder<TaskMove, Object, TaskEffect> chart = Chart.builder();
         chart.region(LIFECYCLE, NEW, Set.of(DONE));
+        chart.onExit(LIFECYCLE, DEPLOY_CONFLICT, new TaskEffect.ClearsConflict());
         ran(chart);
         reports(chart);
         reads(chart);
@@ -107,7 +115,7 @@ final class TaskChart {
         return chart.build();
     }
 
-    private static void ran(ChartBuilder<TaskMove, Object, TaskStatus> chart) {
+    private static void ran(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
         ran(chart, TaskAction.SHIP, Outcome.Kind.OK, CI_POLLING, SHIP_FROM);
         ran(chart, TaskAction.SHIP, Outcome.Kind.RELAYED, SHIPPING, SHIP_FROM);
         ran(chart, TaskAction.APPROVE_PLAN, Outcome.Kind.RELAYED, IN_PROGRESS, EnumSet.of(PLAN_PENDING));
@@ -121,13 +129,13 @@ final class TaskChart {
         ran(chart, TaskAction.DONE, Outcome.Kind.GONE, DONE, OPEN);
     }
 
-    private static void ran(ChartBuilder<TaskMove, Object, TaskStatus> chart, TaskAction action,
+    private static void ran(ChartBuilder<TaskMove, Object, TaskEffect> chart, TaskAction action,
                             Outcome.Kind outcome, TaskStatus to, Set<TaskStatus> from) {
         from.forEach(status -> edge(chart, status, action.id() + " " + outcome,
                 new TaskMove.Ran(action, outcome)::equals, to));
     }
 
-    private static void reports(ChartBuilder<TaskMove, Object, TaskStatus> chart) {
+    private static void reports(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
         for (TaskStatus to : REPORTED) {
             for (TaskStatus from : OPEN) {
                 if (mayReport(from, to)) {
@@ -142,7 +150,7 @@ final class TaskChart {
                 && (to != CI_POLLING || BEFORE_THE_VERDICT.contains(from));
     }
 
-    private static void report(ChartBuilder<TaskMove, Object, TaskStatus> chart, TaskStatus from, TaskStatus to) {
+    private static void report(ChartBuilder<TaskMove, Object, TaskEffect> chart, TaskStatus from, TaskStatus to) {
         if (HELD.contains(from)) {
             reported(chart, from, to, from, false);
             return;
@@ -153,14 +161,14 @@ final class TaskChart {
         reported(chart, from, to, to, false);
     }
 
-    private static void reported(ChartBuilder<TaskMove, Object, TaskStatus> chart, TaskStatus from, TaskStatus to,
+    private static void reported(ChartBuilder<TaskMove, Object, TaskEffect> chart, TaskStatus from, TaskStatus to,
                                  TaskStatus lands, boolean owedOnly) {
         edge(chart, from, "report " + to + (owedOnly ? " owing verification" : ""),
                 move -> move instanceof TaskMove.Reported report && report.status() == to
                         && (!owedOnly || report.verificationOwed()), lands);
     }
 
-    private static void reads(ChartBuilder<TaskMove, Object, TaskStatus> chart) {
+    private static void reads(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
         for (TaskStatus concluded : READ) {
             for (TaskStatus from : READ_FROM) {
                 edge(chart, from, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
@@ -168,8 +176,14 @@ final class TaskChart {
         }
     }
 
-    private static void edge(ChartBuilder<TaskMove, Object, TaskStatus> chart, TaskStatus from, String label,
+    private static void edge(ChartBuilder<TaskMove, Object, TaskEffect> chart, TaskStatus from, String label,
                              Predicate<TaskMove> matches, TaskStatus to) {
-        chart.onMatching(LIFECYCLE, from, label, matches).emit(to).to(to);
+        EdgeBuilder<TaskMove, Object, TaskEffect, TaskStatus> edge = chart.onMatching(LIFECYCLE, from, label, matches)
+                .emit(new TaskEffect.Lands(to));
+        if (from == to) {
+            edge.stay();
+        } else {
+            edge.to(to);
+        }
     }
 }

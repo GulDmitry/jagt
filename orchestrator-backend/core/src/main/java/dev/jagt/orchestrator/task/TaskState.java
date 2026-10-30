@@ -266,7 +266,6 @@ public record TaskState(
         return toBuilder().status(status).lastActiveTimestamp(now).message(message).report(AgentReport.PLAIN)
                 .silentSince(0)
                 .silentBecause(null)
-                .conflict(status == TaskStatus.DEPLOY_CONFLICT ? conflict : null)
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
     }
@@ -429,7 +428,17 @@ public record TaskState(
     }
 
     public TaskState touched(long now) {
-        return withStatus(status, message, now).withReport(report);
+        return toBuilder().lastActiveTimestamp(now).silentSince(0).silentBecause(null).history(seededHistory(now))
+                .build();
+    }
+
+    /** The status, line and conflict {@code read} had, written back as one move. */
+    public TaskState restoredFrom(TaskState read, long now) {
+        return withStatus(read.status, read.message, now).toBuilder().conflict(read.conflict).build();
+    }
+
+    public TaskState withoutConflict() {
+        return toBuilder().conflict(null).build();
     }
 
     public TaskState withReport(AgentReport report) {

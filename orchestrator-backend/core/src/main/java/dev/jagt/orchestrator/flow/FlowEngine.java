@@ -52,11 +52,15 @@ public class FlowEngine {
     private String apply(String taskId, TaskStatus was, TaskAction action, Outcome outcome) {
         Optional<TaskStatus> next = FlowRules.next(was, action, outcome.kind());
         if (next.isPresent() || outcome.stamp() != null) {
-            TaskStatus moved = next.orElse(was);
+            TaskMove move = new TaskMove.Ran(action, outcome.kind());
             // Recorded even when the status is unchanged: a second round onto the same request happened.
-            tasks.updateTask(taskId, task -> outcome.stamp() == null
-                    ? task.withStatus(moved, task.message(), true, clock.millis()).withReport(task.report())
-                    : task.withStatus(moved, outcome.stamp(), true, clock.millis()).withReport(outcome.stampMeans()));
+            tasks.updateTask(taskId, task -> {
+                String line = outcome.stamp() == null ? task.message() : outcome.stamp();
+                long at = clock.millis();
+                TaskState written = next.isPresent() ? TaskReducer.reduce(task, move, line, true, at)
+                        : TaskReducer.stayed(task, line, true, at);
+                return written.withReport(outcome.stamp() == null ? task.report() : outcome.stampMeans());
+            });
         }
         if (outcome.kind().refuses()) {
             throw new IllegalStateException(outcome.message(), outcome.cause());
