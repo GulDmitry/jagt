@@ -21,7 +21,7 @@ class ConflictHandOff {
 
     void handle(String taskId, DeployConflicts.WaitingConflict conflict) {
         if (conflict.resolved()) {
-            finish.deploy(taskId, conflict.worktree());
+            finish.press(taskId, conflict.worktree());
             return;
         }
         if (!stall.handed(taskId)) {
@@ -34,6 +34,9 @@ class ConflictHandOff {
     }
 
     private static String told(String taskId, DeployConflicts.WaitingConflict conflict) {
+        if (conflict.revert()) {
+            return taskId + " did not revert: reverting it on the deploy branch conflicts in " + conflict.worktree() + ".";
+        }
         return conflict.red() == null
                 ? taskId + " did not deploy: merging it into the deploy branch conflicts in " + conflict.worktree() + "."
                 : taskId + " deployed, but its " + conflict.red() + ". Fix the merge result in " + conflict.worktree()

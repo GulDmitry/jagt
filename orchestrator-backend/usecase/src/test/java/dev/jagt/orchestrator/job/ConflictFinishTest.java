@@ -44,7 +44,7 @@ class ConflictFinishTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
         when(stops.moveDue("ABC-42")).thenReturn(true);
 
-        new ConflictFinish(commands, stops, state, Clock.systemUTC()).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        new ConflictFinish(commands, stops, state, Clock.systemUTC()).press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         verify(commands).execute("ABC-42", TaskAction.DEPLOY);
     }
@@ -55,7 +55,7 @@ class ConflictFinishTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
         when(stops.moveDue("ABC-42")).thenReturn(false);
 
-        new ConflictFinish(commands, stops, state, Clock.systemUTC()).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        new ConflictFinish(commands, stops, state, Clock.systemUTC()).press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
     }
@@ -75,9 +75,9 @@ class ConflictFinishTest {
         ((Logger) LoggerFactory.getLogger(ConflictFinish.class)).addAppender(log);
         ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
 
-        finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
-        finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
-        finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
+        finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
+        finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
         assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage)
@@ -98,8 +98,8 @@ class ConflictFinishTest {
         log.start();
         ((Logger) LoggerFactory.getLogger(ConflictFinish.class)).addAppender(log);
 
-        new ConflictFinish(commands, stops, state, Clock.systemUTC()).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
-        new ConflictFinish(commands, stops, state, Clock.systemUTC()).deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        new ConflictFinish(commands, stops, state, Clock.systemUTC()).press("ABC-42", Path.of("/src/ABC-42-deploy"));
+        new ConflictFinish(commands, stops, state, Clock.systemUTC()).press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage)
                 .containsExactly("conflict resolved held by stop");
@@ -112,10 +112,10 @@ class ConflictFinishTest {
                 .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure")).build());
         when(stops.moveDue("ABC-42")).thenReturn(true);
         ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
-        finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         state.updateTask("ABC-42", task -> task.lifted(9));
-        finish.deploy("ABC-42", Path.of("/src/ABC-42-deploy"));
+        finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
         verify(commands, times(1)).execute("ABC-42", TaskAction.DEPLOY);
     }
@@ -123,5 +123,21 @@ class ConflictFinishTest {
     private static StateService state(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    }
+
+    @Test
+    void pressesTheRevertTheHumanStartedWhereTheConflictIsARevertsAndNotTheDeploy(@TempDir Path root) {
+        StateService state = state(root);
+        TaskState conflicted = TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(conflicted, new DeployStep.Opened(List.of(
+                Deployment.Target.of("proj", "dev"))), 1);
+        state.putTask("ABC-42", TaskReducer.deployStepped(opened, new DeployStep.Conflicted("proj",
+                Deployment.Cause.REVERT), 1));
+        when(stops.moveDue("ABC-42")).thenReturn(true);
+
+        new ConflictFinish(commands, stops, state, Clock.systemUTC()).press("ABC-42", Path.of("/src/ABC-42-revert"));
+
+        verify(commands).execute("ABC-42", TaskAction.REVERT);
+        verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
     }
 }

@@ -15,9 +15,12 @@ stateDiagram-v2
         deploy_REVERTING --> deploy_LANDING : opened
         deploy_CHECK_ASKED --> deploy_LANDING : opened
         deploy_LANDING --> deploy_LANDING : landed
-        deploy_LANDING --> deploy_HANDED : conflicted
         deploy_HANDED --> deploy_LANDING : landed
+        deploy_NONE --> deploy_HANDED : conflicted
+        deploy_LANDING --> deploy_HANDED : conflicted
         deploy_HANDED --> deploy_HANDED : conflicted
+        deploy_REVERTING --> deploy_HANDED : conflicted
+        deploy_CHECK_ASKED --> deploy_HANDED : conflicted
         deploy_NONE --> deploy_REVERTING : reverted
         deploy_LANDING --> deploy_REVERTING : reverted
         deploy_HANDED --> deploy_REVERTING : reverted

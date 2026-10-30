@@ -53,7 +53,7 @@
 
 - **Deploy and revert** — Only these two write a shared branch, never the base; a revert walks back a deploy or refuses with a recipe.
   [spec](../openspec/specs/git/spec.md#requirement-only-deploy-and-revert-write-shared-branches)
-  [spec](../openspec/specs/git/spec.md#requirement-revert-refuses-rather-than-guess)
+  [spec](../openspec/specs/revert/spec.md#requirement-revert-refuses-rather-than-guess)
 - **Ship** — Ship has the session commit, push and open or update its review request against the base it reported.
   [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)
 - **Push guard** — A session cannot push off its task's branch, force, delete or skip hooks.

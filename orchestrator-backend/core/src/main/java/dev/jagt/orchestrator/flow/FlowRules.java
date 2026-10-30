@@ -65,6 +65,7 @@ public final class FlowRules {
                 .fromChart()
                 // A stalled deploy is finished by deploying again, whatever the request says.
                 .when((status, facts) -> !facts.gitStateChanged()
+                        && !facts.revertConflict()
                         && (status == TaskStatus.DEPLOY_CONFLICT || facts.hasReviewRequest()))
                 .add();
 

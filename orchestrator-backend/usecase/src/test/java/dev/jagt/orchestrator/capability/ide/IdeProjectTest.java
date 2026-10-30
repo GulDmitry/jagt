@@ -100,4 +100,21 @@ class IdeProjectTest {
         verify(editor).open(Path.of("/api-wt"));
         verify(editor).open(Path.of("/web-wt"));
     }
+
+    @Test
+    void opensTheRevertWorktreeWhereTheConflictIsARevertsAndSaysToRevertAgain(@TempDir Path root) throws Exception {
+        Path repo = Files.createDirectories(root.resolve("repo"));
+        TaskState task = TaskState.builder("proj", root.resolve("ABC-1-demo").toString(),
+                TaskStatus.DEPLOY_CONFLICT).deployment(new Deployment(1, List.of(
+                        Deployment.Target.of("proj", "dev").withMerge("cafebabe1234")
+                                .withConflict(Conflict.of(Deployment.Cause.REVERT, 1))), 0, null)).build();
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+        when(deploys.hasRevertWorktree(repo, "ABC-1")).thenReturn(true);
+
+        String out = new IdeProject(new DeployTargets(config, deploys), deploys, editor).open("ABC-1", task);
+
+        verify(editor).open(GitDeploy.revertWorktreePath(repo, "ABC-1"));
+        assertThat(out).contains("revert worktree", "`revert ABC-1` again");
+    }
 }

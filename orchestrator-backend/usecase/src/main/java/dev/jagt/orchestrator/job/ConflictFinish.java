@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.DeployStep;
+import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -19,7 +20,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
 
-/** A resolution staged in full finishes the deploy the human pressed, as the Master, unless jagt stopped the task. */
+/** A resolution staged in full finishes the deploy or revert the human pressed, as the Master, unless jagt stopped the task. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -30,7 +31,7 @@ class ConflictFinish {
     private final StateService stateService;
     private final Clock clock;
 
-    void deploy(String taskId, Path worktree) {
+    void press(String taskId, Path worktree) {
         Optional<TaskStop> stop = stateService.task(taskId).map(TaskState::stop);
         if (stop.isPresent()) {
             hold(taskId, stop.get());
@@ -39,14 +40,17 @@ class ConflictFinish {
         if (!stops.moveDue(taskId)) {
             return;
         }
+        TaskAction action = stateService.task(taskId).filter(Facts::revertConflicted).isPresent()
+                ? TaskAction.REVERT : TaskAction.DEPLOY;
         try {
-            String result = OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, TaskAction.DEPLOY));
-            log.atInfo().setMessage("master deploy pressed").addKeyValue("task", taskId)
-                    .addKeyValue("worktree", worktree).addKeyValue("result", result).log();
+            String result = OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, action));
+            log.atInfo().setMessage("master conflict finish pressed").addKeyValue("task", taskId)
+                    .addKeyValue("action", action.id()).addKeyValue("worktree", worktree)
+                    .addKeyValue("result", result).log();
         } catch (Refusal refusal) {
-            log.atWarn().setMessage("master deploy refused").addKeyValue("task", taskId)
-                    .addKeyValue("cause", refusal.getMessage()).addKeyValue("effect", "the deploy waits").log();
-            return;
+            log.atWarn().setMessage("master conflict finish refused").addKeyValue("task", taskId)
+                    .addKeyValue("action", action.id()).addKeyValue("cause", refusal.getMessage())
+                    .addKeyValue("effect", "the conflict waits").log();
         }
     }
 

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -31,6 +32,7 @@ public class RevertRunner {
 
     private final StateService stateService;
     private final GitDeploy gitDeploy;
+    private final Clock clock;
 
     public Outcome advance(String taskId, TaskState task, List<Target> landed, Optional<Target> waiting) {
         List<String> reverted = new ArrayList<>();
@@ -40,6 +42,8 @@ public class RevertRunner {
             try {
                 lastRevertCommit = gitDeploy.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
                         Objects.requireNonNull(recorded.merge()), recorded.fixes().reversed());
+            } catch (GitDeploy.RevertConflictException e) {
+                return handBackConflict(taskId, target, reverted, e);
             } catch (RuntimeException e) {
                 return stillLive(taskId, target, reverted, e);
             }
@@ -79,6 +83,18 @@ public class RevertRunner {
         }
         return Outcome.ok("revert " + taskId + ": reverted " + names(reverted) + tail,
                 "reverted " + names(reverted));
+    }
+
+    /** The conflict stays in the revert worktree: what the session resolves there, the next revert finishes. */
+    private Outcome handBackConflict(String taskId, Target at, List<String> reverted,
+                                     GitDeploy.RevertConflictException e) {
+        stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t,
+                new DeployStep.Conflicted(at.project(), Deployment.Cause.REVERT), clock.millis()));
+        String done = reverted.isEmpty() ? "" : " Already reverted: " + names(reverted) + ".";
+        return Outcome.conflict("revert " + taskId + ": CONFLICT reverting " + at.project() + " on "
+                + at.deployBranch() + ", nothing pushed for it." + done + " Resolve in " + e.revertWorktree()
+                + " (`git add`), then `revert " + taskId + "` again.",
+                "resolve revert conflict in " + e.revertWorktree());
     }
 
     /**

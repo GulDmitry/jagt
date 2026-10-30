@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ide;
 
+import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.service.DeployTargets;
@@ -14,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** A task opened as projects that run, or as the deploy worktree holding its conflict. */
+/** A task opened as projects that run, or as the deploy or revert worktree holding its conflict. */
 @Component
 @RequiredArgsConstructor
 class IdeProject {
@@ -43,13 +44,17 @@ class IdeProject {
 
     /** Empty when no repository holds the conflict, the task's own worktrees being what to open then. */
     private Optional<String> openConflict(String taskId, TaskState task) {
+        boolean reverting = Facts.revertConflicted(task);
         return deployTargets.stopped(task)
-                .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
+                .filter(target -> reverting ? gitDeploy.hasRevertWorktree(target.path(), taskId)
+                        : gitDeploy.hasDeployWorktree(target.path(), taskId))
                 .map(target -> {
-                    Path deployWorktree = GitDeploy.deployWorktreePath(target.path(), taskId);
-                    editorDriver.open(deployWorktree);
-                    return "Opened the deploy worktree " + deployWorktree + " — resolve there (`git add`),"
-                            + " then `deploy " + taskId + "` again.";
+                    Path worktree = reverting ? GitDeploy.revertWorktreePath(target.path(), taskId)
+                            : GitDeploy.deployWorktreePath(target.path(), taskId);
+                    editorDriver.open(worktree);
+                    return "Opened the " + (reverting ? "revert" : "deploy") + " worktree " + worktree
+                            + " — resolve there (`git add`), then `" + (reverting ? "revert " : "deploy ") + taskId
+                            + "` again.";
                 });
     }
 }

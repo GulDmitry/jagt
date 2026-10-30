@@ -79,7 +79,7 @@ class SessionBriefContractTest {
                 new TaskTurns(state, Clock.systemUTC())),
                 mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
-                        new Conflict.Progress(7, 0, "d"), null));
+                        new Conflict.Progress(7, 0, "d"), null, false));
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
         verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());

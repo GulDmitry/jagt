@@ -47,7 +47,9 @@ public final class DashboardLine {
         return switch (task.status()) {
             case CI_FAILED -> problem(orDefault(message, "checks failed"));
             case DEPLOY_CONFLICT -> new Line(Kind.YOURS,
-                    "NEEDS YOU: " + orDefault(message, "deploy conflict; resolve it in the deploy worktree"));
+                    "NEEDS YOU: " + orDefault(message, Facts.revertConflicted(task)
+                            ? "revert conflict; resolve it in the revert worktree"
+                            : "deploy conflict; resolve it in the deploy worktree"));
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED -> requestProblem(task, usableRequestLink);
             case REVIEW_PENDING -> switch (report) {
                 // The one round that leaves no highlighted button, so this line has to say whose move it is.

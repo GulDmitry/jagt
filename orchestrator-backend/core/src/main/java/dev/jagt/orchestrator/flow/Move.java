@@ -51,8 +51,13 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
         return new Move(phaseOf(status), owner, attention,
                 ask(status, hasReviewRequest, round, agentSilent, attention),
                 FlowRules.allowed(status, facts),
-                primaryOf(status, hasReviewRequest, round, polled),
-                hint(status, hasReviewRequest, round, agentSilent, polled));
+                revertLeads(status, facts, primaryOf(status, hasReviewRequest, round, polled)),
+                hint(status, hasReviewRequest, round, agentSilent, polled, facts.revertConflict()));
+    }
+
+    private static @Nullable TaskAction revertLeads(TaskStatus status, Facts facts, @Nullable TaskAction primary) {
+        return status == TaskStatus.DEPLOY_CONFLICT && facts.revertConflict() && primary == TaskAction.DEPLOY
+                ? TaskAction.REVERT : primary;
     }
 
     /** Merged requests leave the approval and the deploy nothing to act on, so only the close is left. */
@@ -260,7 +265,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
 
     /** One line of prose, for a hint line or a button tooltip. */
     private static String hint(TaskStatus status, boolean hasReviewRequest, RoundState round,
-                               boolean agentSilent, boolean polled) {
+                               boolean agentSilent, boolean polled, boolean revertConflict) {
         if (masterReading(status, round)) {
             return "the Master is reading this round; no action required";
         }
@@ -281,7 +286,9 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                     : "no review request to read the failure from; focus the agent";
             case REVIEWED -> reviewedHint(hasReviewRequest, polled);
             case APPROVED -> "approved: deploy or done";
-            case DEPLOY_CONFLICT -> "resolve the conflict in the deploy worktree (ide), git add, then deploy";
+            case DEPLOY_CONFLICT -> revertConflict
+                    ? "resolve the conflict in the revert worktree (ide), git add, then revert"
+                    : "resolve the conflict in the deploy worktree (ide), git add, then deploy";
             case DEPLOYED -> "done closes the task; ship again to deploy further changes";
             case REVERTED -> hasReviewRequest ? "the deploy was reverted: ship a fix, or done to close"
                     : "the deploy was reverted and no request is open; focus the agent";

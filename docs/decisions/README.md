@@ -129,3 +129,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0111 A relay acts only where the task still stands](0111-a-relay-acts-only-where-the-task-still-stands.md)
 - [0112 A deploy is a saga record, advanced by one runner](0112-a-deploy-is-a-saga-record-advanced-by-one-runner.md)
 - [0113 The deployment record is the only deploy store](0113-the-deployment-record-is-the-only-deploy-store.md)
+- [0114 A revert conflict goes to the session](0114-a-revert-conflict-goes-to-the-session.md)

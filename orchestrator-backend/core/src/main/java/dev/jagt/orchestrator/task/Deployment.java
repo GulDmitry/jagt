@@ -67,8 +67,8 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
                 target.withConflict(change.apply(Objects.requireNonNull(target.conflict()))));
     }
 
-    /** What a conflicted target waits on: a merge that conflicts, or the pipeline of the commit it pushed. */
-    public enum Cause { MERGE, RED_PIPELINE }
+    /** What a conflicted target waits on: a merge that conflicts, the pipeline of the commit it pushed, or a revert that conflicts. */
+    public enum Cause { MERGE, RED_PIPELINE, REVERT }
 
     /** -1 where {@code project} is none of the targets. */
     public int indexOf(String project) {

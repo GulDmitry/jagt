@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.service.DeployTargets;
 
 import dev.jagt.orchestrator.service.GitDeploy;
@@ -26,20 +27,33 @@ public class DeployConflicts {
     public Map<String, WaitingConflict> waiting() {
         Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
         stateService.tasks().forEach((taskId, task) -> deployTargets.stopped(task)
-                .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
+                .filter(target -> holds(task, taskId, target))
                 .ifPresent(target -> waiting.put(taskId, conflict(taskId, task, target))));
         return waiting;
     }
 
+    private boolean holds(TaskState task, String taskId, DeployTargets.Target target) {
+        return Facts.revertConflicted(task) ? gitDeploy.hasRevertWorktree(target.path(), taskId)
+                : gitDeploy.hasDeployWorktree(target.path(), taskId);
+    }
+
     private WaitingConflict conflict(String taskId, TaskState task, DeployTargets.Target target) {
+        if (Facts.revertConflicted(task)) {
+            return new WaitingConflict(GitDeploy.revertWorktreePath(target.path(), taskId),
+                    gitDeploy.revertResolved(target.path(), taskId), gitDeploy.revertProgress(target.path(), taskId),
+                    null, true);
+        }
         Path worktree = GitDeploy.deployWorktreePath(target.path(), taskId);
         return new WaitingConflict(worktree, gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()),
                 gitDeploy.deployProgress(target.path(), taskId),
-                DeployTargets.handedBackForItsPipeline(task) ? task.message() : null);
+                DeployTargets.handedBackForItsPipeline(task) ? task.message() : null, false);
     }
 
-    /** {@code red} is the line of a deploy handed back for its pipeline, null for a merge that conflicts. */
+    /**
+     * {@code red} is the line of a deploy handed back for its pipeline, null for a merge that conflicts;
+     * {@code revert} is a revert's conflict, whose worktree is the revert's.
+     */
     public record WaitingConflict(Path worktree, boolean resolved, Conflict.Progress progress,
-                                  @Nullable String red) {
+                                  @Nullable String red, boolean revert) {
     }
 }

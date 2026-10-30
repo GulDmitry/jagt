@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.capability.deploy;
 
+import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.service.DeployTargets;
@@ -24,6 +26,7 @@ public class RevertService {
     private final StateService stateService;
     private final DeployTargets deployTargets;
     private final RevertRunner runner;
+    private final GitDeploy gitDeploy;
 
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
@@ -46,7 +49,20 @@ public class RevertService {
             throw unrecordedDeploy(taskId, task);
         }
         landed.forEach(DeployTargets::requireDeployable);
+        if (waiting.isPresent() && Facts.revertConflicted(task)) {
+            requireResolved(taskId, waiting.get());
+        }
         return runner.advance(taskId, task, landed, waiting);
+    }
+
+    /** A revert conflict is finished from a resolution, never over the paths still unmerged. */
+    private void requireResolved(String taskId, Target at) {
+        String unmerged = gitDeploy.revertUnmerged(at.path(), taskId);
+        if (!unmerged.isBlank()) {
+            throw Refusal.byState("revert " + taskId + " waits on the conflict in "
+                    + GitDeploy.revertWorktreePath(at.path(), taskId) + ": still unmerged: "
+                    + unmerged.replace('\n', ' ') + ". Resolve and `git add` them, then revert again.");
+        }
     }
 
     /** Guessing the merge commit would risk reverting the WRONG merge on a shared branch. */

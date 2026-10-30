@@ -73,8 +73,8 @@ again: reviewed, deployed, checked. It SHALL ask only once the pipeline on each 
 - **THEN** the task is `IN_PROGRESS`
 
 ### Requirement: In act a deploy conflict is the session's
-`DeployConflictJob` SHALL hand the session the deploy worktree once per deploy press, its own in its brief and its CLI (`AgentRuntime.admit`);
-staged in full it MUST finish the press ([0013](../../../docs/decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
+`DeployConflictJob` SHALL hand the session the conflict's worktree once per press, its own in its brief and its CLI (`AgentRuntime.admit`);
+staged in full it MUST finish the press, `deploy` or `revert` ([0013](../../../docs/decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
 
 #### Scenario: A conflict where the Master acts
 - **WHEN** the session stages its resolution in full

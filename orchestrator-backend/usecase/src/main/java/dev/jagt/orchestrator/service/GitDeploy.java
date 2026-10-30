@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -159,11 +160,14 @@ public class GitDeploy {
 
     /** Where the resolution in this task's deploy worktree stands; any edit, staged or not, changes the digest. */
     public Conflict.Progress deployProgress(Path projectPath, String sourceBranch) {
-        Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
-        String status = git.run(deployWorktree, List.of("git", "status", "--porcelain"))
-                .expectSuccess("git status in " + deployWorktree).stdout();
-        String diff = git.run(deployWorktree, List.of("git", "diff"))
-                .expectSuccess("git diff in " + deployWorktree).stdout();
+        return progress(deployWorktreePath(projectPath, sourceBranch));
+    }
+
+    private Conflict.Progress progress(Path worktree) {
+        String status = git.run(worktree, List.of("git", "status", "--porcelain"))
+                .expectSuccess("git status in " + worktree).stdout();
+        String diff = git.run(worktree, List.of("git", "diff"))
+                .expectSuccess("git diff in " + worktree).stdout();
         List<String> paths = status.lines().filter(line -> line.length() > 2).toList();
         int unmerged = (int) paths.stream().filter(GitDeploy::unmerged).count();
         int staged = (int) paths.stream().filter(line -> !unmerged(line) && "MADRC".indexOf(line.charAt(0)) >= 0)
@@ -294,8 +298,9 @@ public class GitDeploy {
     /**
      * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes, returning the revert
      * commit. Only ever ADDS a commit — no rewrite, no force-push — and leaves the task branch alone. Refuses
-     * rather than guess when the commit is not on the branch, is not a merge, or was already reverted; a revert
-     * that conflicts is aborted and cleaned up, there being nothing useful for a human to finish there.
+     * rather than guess when the commit is not on the branch, is not a merge, or was already reverted. A revert
+     * that conflicts LEAVES its worktree with the markers; the next call continues a resolution waiting there,
+     * reverts what is still to revert and pushes.
      */
     public String revertMergeAndPush(Path projectPath, String sourceBranch, String targetBranch,
                                      String mergeCommit, List<String> fixesNewestFirst) {
@@ -304,55 +309,136 @@ public class GitDeploy {
             String revertBranch = "jagt-revert-" + sourceBranch;
             git.run(projectPath, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            if (Files.exists(revertWorktree)) {
-                git.clearWorktreePath(projectPath, revertWorktree);
+            boolean resuming = Files.isDirectory(revertWorktree)
+                    && revertWaiting(projectPath, revertWorktree, sourceBranch, targetBranch);
+            if (!resuming) {
+                cutRevertWorktree(projectPath, revertWorktree, revertBranch, targetBranch);
             }
-            git.run(projectPath, List.of("git", "worktree", "add",
-                            "-B", revertBranch, revertWorktree.toString(), "origin/" + targetBranch))
-                    .expectSuccess("git worktree add (revert) " + targetBranch);
             try {
-                requireRevertable(revertWorktree, targetBranch, mergeCommit);
-                requireMergeCommit(revertWorktree, mergeCommit, targetBranch);
-                fixesNewestFirst.forEach(fix -> revertFix(revertWorktree, targetBranch, fix));
-                // -m 1: a merge has two parents, and reverting it means "undo what the SECOND parent brought
-                // in", i.e. keep the target branch's own line of history. Without it git refuses outright.
-                var revert = git.run(revertWorktree, List.of("git", "revert",
-                        "-m", "1", "--no-edit", mergeCommit));
-                if (revert.exitCode() != 0) {
-                    git.run(revertWorktree, List.of("git", "revert", "--abort"));
-                    String details = revert.stderr().isBlank() ? revert.stdout() : revert.stderr();
-                    throw new IllegalStateException("Cannot revert " + shortSha(mergeCommit) + " on "
-                            + targetBranch + ": the revert conflicts with work done there since the deploy."
-                            + " Decide what should survive and revert by hand: `git revert -m 1 "
-                            + shortSha(mergeCommit) + "`. Details: " + details);
+                String commit = revertAndPush(revertWorktree, targetBranch, mergeCommit, fixesNewestFirst, resuming);
+                removeRevertWorktree(projectPath, revertWorktree, revertBranch);
+                return commit;
+            } catch (RevertConflictException kept) {
+                throw kept;
+            } catch (RuntimeException failed) {
+                if (!resuming) {
+                    removeRevertWorktree(projectPath, revertWorktree, revertBranch);
                 }
-                var push = git.run(revertWorktree,
-                        List.of("git", "push", "origin", "HEAD:" + targetBranch));
-                if (push.exitCode() != 0) {
-                    String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
-                    throw new IllegalStateException("Revert push to " + targetBranch + " was rejected — it"
-                            + " moved while the revert was being made. Try revert again. Details: " + details);
-                }
-                return git.run(revertWorktree, List.of("git", "rev-parse", "HEAD"))
-                        .expectSuccess("git rev-parse HEAD in " + revertWorktree).stdout().trim();
-            } finally {
-                git.run(projectPath,
-                        List.of("git", "worktree", "remove", "--force", revertWorktree.toString()));
-                git.run(projectPath, List.of("git", "branch", "-D", revertBranch));
+                throw failed;
             }
         });
     }
 
-    /** A fix goes first, newest first, so the merge below it reverts onto the tree it made. */
-    private void revertFix(Path revertWorktree, String targetBranch, String fix) {
-        requireRevertable(revertWorktree, targetBranch, fix);
-        var revert = git.run(revertWorktree, List.of("git", "revert", "--no-edit", fix));
-        if (revert.exitCode() != 0) {
-            git.run(revertWorktree, List.of("git", "revert", "--abort"));
-            throw new IllegalStateException("Cannot revert the fix " + shortSha(fix) + " on " + targetBranch
-                    + ": it conflicts with work done there since. Nothing was reverted; revert by hand: `git revert "
-                    + shortSha(fix) + "`. Details: " + (revert.stderr().isBlank() ? revert.stdout() : revert.stderr()));
+    private void cutRevertWorktree(Path projectPath, Path revertWorktree, String revertBranch, String targetBranch) {
+        if (Files.exists(revertWorktree)) {
+            git.clearWorktreePath(projectPath, revertWorktree);
         }
+        git.run(projectPath, List.of("git", "worktree", "add",
+                        "-B", revertBranch, revertWorktree.toString(), "origin/" + targetBranch))
+                .expectSuccess("git worktree add (revert) " + targetBranch);
+    }
+
+    private String revertAndPush(Path revertWorktree, String targetBranch, String mergeCommit,
+                                 List<String> fixesNewestFirst, boolean resuming) {
+        if (resuming) {
+            continuePendingRevert(revertWorktree, targetBranch, mergeCommit);
+        } else {
+            requireRevertable(revertWorktree, targetBranch, mergeCommit);
+            requireMergeCommit(revertWorktree, mergeCommit, targetBranch);
+        }
+        fixesNewestFirst.forEach(fix -> revertOnce(revertWorktree, targetBranch, fix, resuming, List.of()));
+        revertOnce(revertWorktree, targetBranch, mergeCommit, resuming, List.of("-m", "1"));
+        var push = git.run(revertWorktree, List.of("git", "push", "origin", "HEAD:" + targetBranch));
+        if (push.exitCode() != 0) {
+            String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
+            throw new IllegalStateException("Revert push to " + targetBranch + " was rejected — it moved while the"
+                    + " revert was being made. " + (resuming ? "In " + revertWorktree + " run `git merge origin/"
+                    + targetBranch + "`, then revert again" : "Try revert again") + ". Details: " + details);
+        }
+        return git.run(revertWorktree, List.of("git", "rev-parse", "HEAD"))
+                .expectSuccess("git rev-parse HEAD in " + revertWorktree).stdout().trim();
+    }
+
+    /**
+     * A fix goes first, newest first, so the merge below it reverts onto the tree it made. {@code -m 1} on a merge
+     * keeps the target's own line: reverting it means undoing what the SECOND parent brought in.
+     */
+    private void revertOnce(Path revertWorktree, String targetBranch, String commit, boolean resuming,
+                            List<String> mainline) {
+        if (resuming && !revertOf(revertWorktree, commit).isBlank()) {
+            return;
+        }
+        requireRevertable(revertWorktree, targetBranch, commit);
+        List<String> command = new ArrayList<>(List.of("git", "revert"));
+        command.addAll(mainline);
+        command.addAll(List.of("--no-edit", commit));
+        var revert = git.run(revertWorktree, command);
+        if (revert.exitCode() != 0) {
+            throw revertFailure(revertWorktree, targetBranch, commit,
+                    revert.stderr().isBlank() ? revert.stdout() : revert.stderr());
+        }
+    }
+
+    /** Only UNMERGED PATHS mean a conflict; any other refusal is aborted, with nothing left to resolve. */
+    private RuntimeException revertFailure(Path revertWorktree, String targetBranch, String commit, String details) {
+        if (!unmergedPaths(revertWorktree).isBlank()) {
+            return new RevertConflictException(commit, targetBranch, details, revertWorktree);
+        }
+        git.run(revertWorktree, List.of("git", "revert", "--abort"));
+        return new IllegalStateException("Could not revert " + shortSha(commit) + " on " + targetBranch
+                + " — nothing was pushed and no conflict is waiting for you; git said: " + details);
+    }
+
+    private void continuePendingRevert(Path revertWorktree, String targetBranch, String mergeCommit) {
+        String unmerged = unmergedPaths(revertWorktree);
+        if (!unmerged.isBlank()) {
+            throw new RevertConflictException(mergeCommit, targetBranch,
+                    "still unresolved (git add them):\n" + unmerged, revertWorktree);
+        }
+        if (revertInProgress(revertWorktree)) {
+            git.run(revertWorktree, List.of("git", "-c", "core.editor=true", "revert", "--continue"))
+                    .expectSuccess("git revert --continue in " + revertWorktree);
+        }
+    }
+
+    private boolean revertInProgress(Path revertWorktree) {
+        return git.run(revertWorktree, List.of("git", "rev-parse", "-q", "--verify", "REVERT_HEAD")).exitCode() == 0;
+    }
+
+    /** A worktree this repository cut that holds a revert: one begun and conflicted, or begun and committed. */
+    private boolean revertWaiting(Path projectPath, Path revertWorktree, String sourceBranch, String targetBranch) {
+        return hasRevertWorktree(projectPath, sourceBranch)
+                && (revertInProgress(revertWorktree) || !"0".equals(git.run(revertWorktree,
+                        List.of("git", "rev-list", "--count", "origin/" + targetBranch + "..HEAD"))
+                .expectSuccess("git rev-list count HEAD in " + revertWorktree).stdout().trim()));
+    }
+
+    public boolean hasRevertWorktree(Path projectPath, String sourceBranch) {
+        return git.worktreeOwner(revertWorktreePath(projectPath, sourceBranch))
+                .filter(owner -> GitCommands.sameDirectory(owner, projectPath))
+                .isPresent();
+    }
+
+    /** Whether the conflict left in this task's revert worktree is resolved in full: nothing unmerged or edited past what was staged. */
+    public boolean revertResolved(Path projectPath, String sourceBranch) {
+        Path revertWorktree = revertWorktreePath(projectPath, sourceBranch);
+        return hasRevertWorktree(projectPath, sourceBranch) && unmergedPaths(revertWorktree).isBlank()
+                && git.run(revertWorktree, List.of("git", "diff", "--quiet")).exitCode() == 0;
+    }
+
+    /** The paths still unmerged in this task's revert worktree, one per line; blank when none, or when it is gone. */
+    public String revertUnmerged(Path projectPath, String sourceBranch) {
+        return hasRevertWorktree(projectPath, sourceBranch)
+                ? unmergedPaths(revertWorktreePath(projectPath, sourceBranch)) : "";
+    }
+
+    public Conflict.Progress revertProgress(Path projectPath, String sourceBranch) {
+        return progress(revertWorktreePath(projectPath, sourceBranch));
+    }
+
+    private void removeRevertWorktree(Path projectPath, Path revertWorktree, String revertBranch) {
+        git.run(projectPath, List.of("git", "worktree", "remove", "--force", revertWorktree.toString()));
+        git.run(projectPath, List.of("git", "branch", "-D", revertBranch));
     }
 
     /** Whether the commit pushed to the deploy branch is a fix on top of it rather than a deploy merge. */
@@ -380,14 +466,18 @@ public class GitDeploy {
             throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " is not on " + targetBranch
                     + " — it was never deployed there, or that history was rewritten. Nothing was reverted.");
         }
-        // git's own revert message is the marker, so a revert made by hand counts too.
-        String existing = git.run(revertWorktree, List.of("git", "log",
-                        "--fixed-strings", "--grep=This reverts commit " + mergeCommit, "--format=%H", "-1"))
-                .expectSuccess("git log (revert search) in " + revertWorktree).stdout().trim();
+        String existing = revertOf(revertWorktree, mergeCommit);
         if (!existing.isBlank()) {
             throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " was already reverted on "
                     + targetBranch + " by " + shortSha(existing) + ". Nothing to do.");
         }
+    }
+
+    /** git's own revert message is the marker, so a revert made by hand counts too; blank when none. */
+    private String revertOf(Path revertWorktree, String commit) {
+        return git.run(revertWorktree, List.of("git", "log",
+                        "--fixed-strings", "--grep=This reverts commit " + commit, "--format=%H", "-1"))
+                .expectSuccess("git log (revert search) in " + revertWorktree).stdout().trim();
     }
 
     public static String shortSha(@Nullable String sha) {
@@ -480,6 +570,25 @@ public class GitDeploy {
 
         NothingToDeployException(String message) {
             super(message);
+        }
+    }
+
+    /**
+     * A revert hit conflicts, or one left in its worktree is not resolved yet. The checkout is LEFT at
+     * {@link #revertWorktree} for the human to resolve and revert again.
+     */
+    public static class RevertConflictException extends IllegalStateException {
+        private final transient Path revertWorktree;
+
+        public RevertConflictException(String commit, String targetBranch, String details, Path revertWorktree) {
+            super("Revert CONFLICT reverting " + shortSha(commit) + " on " + targetBranch + " — nothing was pushed."
+                    + " Resolve it in the revert worktree " + revertWorktree + ": fix the conflicts, `git add`"
+                    + " them, then revert again to finish. Details: " + details);
+            this.revertWorktree = revertWorktree;
+        }
+
+        public Path revertWorktree() {
+            return revertWorktree;
         }
     }
 

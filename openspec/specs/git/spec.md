@@ -44,25 +44,6 @@ are refused; `ship` still runs from DEPLOYED. The confirm's `project → branch`
 - **WHEN** a task is REVERTED: `focus`, then `ship` or `done`
 - **THEN** no `deploy`: re-merging it brings nothing
 
-### Requirement: Revert refuses rather than guess
-`revert` SHALL take out the last deploy's merge wherever the deployment record holds a merge, DEPLOYED and DEPLOY_CONFLICT
-always; it refuses with a by-hand recipe where that is absent, reverted or conflicts. It takes out the fixes committed
-on top (the target's recorded fixes) first, newest first, in the same push. It walks back the merged
-repositories, each **forgetting** its commit, then discards a DEPLOY_CONFLICT's half-merge, sought only where
-`jagt.yml` still names the project; REVERTED once all that landed is out.
-
-#### Scenario: Deployed twice
-- **WHEN** `revert <task>` after several deploys
-- **THEN** only the last; earlier ones by hand: `git log --merges --grep ABC-42`, `git revert -m 1 <sha>`
-
-#### Scenario: Revert from a conflict with nothing landed
-- **WHEN** `revert` from DEPLOY_CONFLICT, no commit recorded
-- **THEN** the half-merge is discarded; REVERTED
-
-#### Scenario: Part-way revert
-- **WHEN** `revert` stops part way
-- **THEN** **stamped on the task**: DEPLOYED, or from DEPLOY_CONFLICT still DEPLOY_CONFLICT, its half-merge waiting
-
 ### Requirement: Deploy stops at the first conflict
 `deploy` SHALL check every repository deployable before the **first** push, land them in the task's order, and stop at
 the first conflict: DEPLOY_CONFLICT, naming both sides from there.

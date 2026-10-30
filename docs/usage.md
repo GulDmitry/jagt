@@ -129,7 +129,7 @@ worktree — resolve, `git add`, `deploy` again. Your task branch and request ar
 
 **`revert`** reverts the merge commit `deploy` created and pushes it — it only *adds* a commit, so your branch
 survives and the normal follow-up is fix and `ship` again. It refuses, writing nothing, when the commit is
-already reverted, is not on the branch, or the revert conflicts.
+already reverted or is not on the branch. A revert that conflicts keeps its worktree: resolve, `git add`, `revert` again.
 
 **Multi-repo tasks.** One task, one agent session, a worktree per repository (the session runs in the first one
 named). `ship` opens a request per repository; `sweep` reports them as one round, as far along as the least

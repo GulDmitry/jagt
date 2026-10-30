@@ -73,6 +73,13 @@ stateDiagram-v2
         lifecycle_DEPLOY_CONFLICT --> lifecycle_REVERTED : revert OK
         lifecycle_DEPLOYED --> lifecycle_REVERTED : revert OK
         lifecycle_REVERTED --> lifecycle_REVERTED : revert OK
+        lifecycle_REVIEW_PENDING --> lifecycle_DEPLOY_CONFLICT : revert CONFLICT
+        lifecycle_CI_POLLING --> lifecycle_DEPLOY_CONFLICT : revert CONFLICT
+        lifecycle_CI_FAILED --> lifecycle_DEPLOY_CONFLICT : revert CONFLICT
+        lifecycle_REVIEWED --> lifecycle_DEPLOY_CONFLICT : revert CONFLICT
+        lifecycle_APPROVED --> lifecycle_DEPLOY_CONFLICT : revert CONFLICT
+        lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOY_CONFLICT : revert CONFLICT
+        lifecycle_DEPLOYED --> lifecycle_DEPLOY_CONFLICT : revert CONFLICT
         lifecycle_NEW --> lifecycle_DEPLOYED : revert PARTIAL
         lifecycle_PLAN_PENDING --> lifecycle_DEPLOYED : revert PARTIAL
         lifecycle_IN_PROGRESS --> lifecycle_DEPLOYED : revert PARTIAL

@@ -900,7 +900,8 @@ class GitDeployTest {
     }
 
     @Test
-    void abortsAndPushesNothingWhenTheRevertConflictsWithLaterWorkOnDev(@TempDir Path dir) throws Exception {
+    void keepsTheRevertWorktreeWithItsUnmergedPathsAndPushesNothingWhenTheRevertConflictsWithLaterWorkOnDev(
+            @TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);
         Path origin = dir.resolve("o.git");
@@ -929,15 +930,157 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
         runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
         String devTip = runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
+        Path revertWorktree = dir.resolve("ABC-1-revert");
 
         assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("conflicts with work done there since the deploy")
-                .hasMessageContaining("could not revert");
+                .isInstanceOf(GitDeploy.RevertConflictException.class);
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(devTip);
-        assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+        assertThat(Files.readString(revertWorktree.resolve("feature.txt"))).isEqualTo("someone edited the deployed feature");
+        assertThat(git.hasRevertWorktree(repo, "ABC-1")).isTrue();
+        assertThat(git.revertUnmerged(repo, "ABC-1")).isEqualTo("feature.txt");
+    }
+
+    @Test
+    void continuesTheRevertAndPushesOnceTheConflictIsResolved(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("feature.txt"), "someone edited the deployed feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "dev change"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        String devTip = runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
+        Path revertWorktree = dir.resolve("ABC-1-revert");
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
+                .isInstanceOf(GitDeploy.RevertConflictException.class);
+        Files.writeString(revertWorktree.resolve("feature.txt"), "resolved by the session");
+        runner.run(revertWorktree, t, List.of("git", "add", "feature.txt"));
+        assertThat(git.revertResolved(repo, "ABC-1")).isTrue();
+
+        String revert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of());
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(revert);
+        assertThat(runner.run(repo, t, List.of("git", "show", "origin/dev:feature.txt")).stdout())
+                .isEqualTo("resolved by the session");
+        assertThat(runner.run(repo, t, List.of("git", "log", "-1", "--format=%B", "origin/dev")).stdout())
+                .contains("This reverts commit " + merge);
+        assertThat(revertWorktree).doesNotExist();
+    }
+
+    @Test
+    void refusesToFinishTheRevertWhilePathsAreStillUnmergedAndKeepsTheWorktree(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("feature.txt"), "someone edited the deployed feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "dev change"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        String devTip = runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
+        Path revertWorktree = dir.resolve("ABC-1-revert");
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
+                .isInstanceOf(GitDeploy.RevertConflictException.class);
+
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
+                .isInstanceOf(GitDeploy.RevertConflictException.class)
+                .hasMessageContaining("feature.txt");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim()).isEqualTo(devTip);
+        assertThat(Files.readString(revertWorktree.resolve("feature.txt"))).isEqualTo("someone edited the deployed feature");
+    }
+
+    @Test
+    void revertsTheMergeTooafterAFixRevertThatConflictedWasResolved(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("feature.txt"), "the feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "feature"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        git.openFixWorktree(repo, "ABC-1", "dev");
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        Files.writeString(deployWorktree.resolve("feature.txt"), "the feature, fixed");
+        runner.run(deployWorktree, t, List.of("git", "add", "feature.txt"));
+        String fix = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("feature.txt"), "someone edited the fixed feature");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "dev change"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        Path revertWorktree = dir.resolve("ABC-1-revert");
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of(fix)))
+                .isInstanceOf(GitDeploy.RevertConflictException.class);
+        Files.writeString(revertWorktree.resolve("feature.txt"), "the feature");
+        runner.run(revertWorktree, t, List.of("git", "add", "feature.txt"));
+
+        git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of(fix));
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        String history = runner.run(repo, t, List.of("git", "log", "--format=%B", "origin/dev")).stdout();
+        assertThat(history).contains("This reverts commit " + fix).contains("This reverts commit " + merge);
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-e", "origin/dev:feature.txt")).exitCode())
+                .isNotZero();
+        assertThat(revertWorktree).doesNotExist();
     }
 
     @Test

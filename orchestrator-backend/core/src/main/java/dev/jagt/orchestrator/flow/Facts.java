@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 
 import java.util.function.BooleanSupplier;
@@ -13,15 +14,20 @@ import java.util.function.BooleanSupplier;
  */
 public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive,
                     boolean gitStateChanged, boolean stopped, boolean repoRequested,
-                    boolean requestMerged) {
+                    boolean requestMerged, boolean revertConflict) {
 
     /** A recorded merge is one no revert has taken out yet. */
     public static boolean deployLive(TaskState task) {
         return task.deployment() != null && task.deployment().live();
     }
 
+    /** Whether the conflict the task stands in is a revert's. */
+    public static boolean revertConflicted(TaskState task) {
+        return task.currentConflict().filter(conflict -> conflict.cause() == Deployment.Cause.REVERT).isPresent();
+    }
+
     public static Facts projected(TaskState task) {
         return new Facts(task.hasReviewRequest(), deployLive(task), () -> false, task.gitStateChanged(),
-                task.stopped(), task.asksForARepository(), task.requestsMerged());
+                task.stopped(), task.asksForARepository(), task.requestsMerged(), revertConflicted(task));
     }
 }

@@ -46,7 +46,7 @@ class DeployConflictsTest {
 
         assertThat(conflicts).containsExactly(Map.entry("ABC-1",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-deploy"), true,
-                        new Conflict.Progress(0, 2, "d"), null)));
+                        new Conflict.Progress(0, 2, "d"), null, false)));
     }
 
     @Test
@@ -69,5 +69,28 @@ class DeployConflictsTest {
 
         assertThat(conflicts.get("ABC-1").red())
                 .isEqualTo("red pipeline on the deploy commit: web 01234567 https://git.example.invalid/p/7");
+    }
+
+    @Test
+    void findsARevertConflictFromItsRecordAndTheRevertWorktree(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("web", "dev").withMerge("cafebabe1234")
+                        .withConflict(Conflict.of(Deployment.Cause.REVERT, 1))), 0, null)).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("web",
+                new ProjectConfig("/src/web", "origin/main", "dev", null))));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.hasRevertWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+        when(git.revertResolved(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+        when(git.revertProgress(Path.of("/src/web"), "ABC-1")).thenReturn(new Conflict.Progress(0, 1, "r"));
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
+
+        var conflicts = service.waiting();
+
+        assertThat(conflicts).containsExactly(Map.entry("ABC-1",
+                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-revert"), true,
+                        new Conflict.Progress(0, 1, "r"), null, true)));
     }
 }

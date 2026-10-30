@@ -23,7 +23,7 @@ resort.
 |---------|-----|
 | `deploy` says `MERGE CONFLICT` | nothing was pushed; `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, `deploy` again |
 | `revert` has no record of the merge commit | the deploy predates jagt recording them: by hand, below |
-| `revert` says the revert conflicts | jagt aborts and pushes nothing; revert by hand and decide |
+| `revert` says the revert conflicts | nothing is pushed; resolve in the `<task>-revert` worktree, `git add`, then `revert` again |
 
 A conflicting deploy leaves the task in `DEPLOY_CONFLICT`, with your task branch and its review request
 untouched. On a shared branch jagt will not guess which merge to revert:

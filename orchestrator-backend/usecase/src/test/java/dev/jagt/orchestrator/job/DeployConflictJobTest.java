@@ -23,7 +23,7 @@ class DeployConflictJobTest {
     @Test
     void handsEachWaitingConflictOnWhereTheMasterActs() {
         DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false,
-                new Conflict.Progress(7, 0, "d"), null);
+                new Conflict.Progress(7, 0, "d"), null, false);
         when(config.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
         when(conflicts.waiting()).thenReturn(Map.of("ABC-42", conflict));
 

@@ -224,6 +224,8 @@ final class TaskChart {
             deployed(chart, from, "landed", DeployPhase.LANDING, step -> step instanceof DeployStep.Merged
                     || step instanceof DeployStep.Fixed || step instanceof DeployStep.Pushed
                     || step instanceof DeployStep.Blocked);
+        }
+        for (DeployPhase from : DeployPhase.values()) {
             deployed(chart, from, "conflicted", DeployPhase.HANDED, step -> step instanceof DeployStep.Conflicted);
         }
         for (DeployPhase from : DeployPhase.values()) {
@@ -313,6 +315,7 @@ final class TaskChart {
         ran(chart, TaskAction.DEPLOY, Outcome.Kind.OK, DEPLOYED, DEPLOY_FROM);
         ran(chart, TaskAction.DEPLOY, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, DEPLOY_FROM);
         ran(chart, TaskAction.REVERT, Outcome.Kind.OK, REVERTED, OPEN);
+        ran(chart, TaskAction.REVERT, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, DEPLOY_FROM);
         ran(chart, TaskAction.REVERT, Outcome.Kind.PARTIAL, DEPLOYED, EnumSet.complementOf(
                 EnumSet.of(DEPLOY_CONFLICT, DONE)));
         ran(chart, TaskAction.DONE, Outcome.Kind.GONE, DONE, OPEN);

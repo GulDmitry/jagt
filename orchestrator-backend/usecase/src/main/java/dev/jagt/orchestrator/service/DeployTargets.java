@@ -72,11 +72,15 @@ public class DeployTargets {
                 .map(project -> new Target(project, Objects.requireNonNull(projects.get(project))));
     }
 
+    /** What the task's deployment waits on, as its record says; none while it stands in no conflict. */
+    public static Optional<Deployment.Cause> conflictCause(TaskState task) {
+        return Optional.ofNullable(task.deployment()).flatMap(Deployment::conflictedTarget)
+                .map(target -> Objects.requireNonNull(target.conflict()).cause());
+    }
+
     /** Whether the deploy waits for its pipeline, as its record says. */
     public static boolean handedBackForItsPipeline(TaskState task) {
-        return Optional.ofNullable(task.deployment()).flatMap(Deployment::conflictedTarget)
-                .map(target -> Objects.requireNonNull(target.conflict()).cause() == Deployment.Cause.RED_PIPELINE)
-                .orElse(false);
+        return conflictCause(task).filter(cause -> cause == Deployment.Cause.RED_PIPELINE).isPresent();
     }
 
     /** The deploy branch must NEVER be the base branch tasks are cut from. */
