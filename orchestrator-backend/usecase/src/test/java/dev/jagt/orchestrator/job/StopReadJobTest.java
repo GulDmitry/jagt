@@ -26,7 +26,7 @@ class StopReadJobTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("http://mr/1")
                 .autoReview(false).stop(new TaskStop(TaskStop.Trigger.INFRA, 5, "host down")).build());
 
-        new StopReadJob(state, reads).run();
+        new StopReadJob(reads).runOn(state.tasks());
 
         verify(reads).probe("ABC-42");
     }
@@ -37,7 +37,7 @@ class StopReadJobTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
                 .stop(new TaskStop(TaskStop.Trigger.INFRA, 5, "host down")).build());
 
-        new StopReadJob(state, reads).run();
+        new StopReadJob(reads).runOn(state.tasks());
 
         verify(reads).probe("ABC-42");
     }
@@ -48,7 +48,7 @@ class StopReadJobTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("http://mr/1")
                 .stop(new TaskStop(TaskStop.Trigger.PACE, 5, "too many moves")).build());
 
-        new StopReadJob(state, reads).run();
+        new StopReadJob(reads).runOn(state.tasks());
 
         verify(reads, never()).probe("ABC-42");
     }

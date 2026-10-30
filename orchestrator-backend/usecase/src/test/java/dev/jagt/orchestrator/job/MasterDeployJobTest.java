@@ -39,7 +39,7 @@ class MasterDeployJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-        new MasterDeployJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
     }
@@ -51,7 +51,7 @@ class MasterDeployJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build()));
 
-        new MasterDeployJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
     }
@@ -63,7 +63,7 @@ class MasterDeployJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-        new MasterDeployJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(press, never()).press(anyString(), any(), any());
     }
@@ -75,7 +75,7 @@ class MasterDeployJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING).build()));
 
-        new MasterDeployJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(press, never()).press(anyString(), any(), any());
     }
@@ -89,10 +89,10 @@ class MasterDeployJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         StateService before = new StateService(new JsonMapper(), paths);
-        new MasterDeployJob(before, config, press, new TaskTurns(before, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(before, Clock.systemUTC())).runOn(before.tasks());
         StateService restarted = new StateService(new JsonMapper(), paths);
 
-        new MasterDeployJob(restarted, config, press, new TaskTurns(restarted, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(restarted, Clock.systemUTC())).runOn(restarted.tasks());
 
         verify(press, times(1)).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
     }
@@ -104,7 +104,7 @@ class MasterDeployJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-        new MasterDeployJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(press, never()).press(anyString(), any(), any());
     }
@@ -116,7 +116,7 @@ class MasterDeployJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("demo", "/wt", TaskStatus.DEPLOYED).build()));
 
-        new MasterDeployJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+        new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(press, never()).press(anyString(), any(), any());
     }

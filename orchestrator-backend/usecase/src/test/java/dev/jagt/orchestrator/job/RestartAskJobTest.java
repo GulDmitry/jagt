@@ -42,7 +42,7 @@ class RestartAskJobTest {
         new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "round-not-ready", "digest", TaskStatus.REVIEW_PENDING);
         when(sessions.agentLive("ABC-42")).thenReturn(true);
 
-        new RestartAskJob(state, sessions, relay).run();
+        new RestartAskJob(sessions, relay).runOn(state.tasks());
 
         verify(relay).say("ABC-42", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
     }
@@ -53,7 +53,7 @@ class RestartAskJobTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
         when(sessions.agentLive("ABC-42")).thenReturn(true);
 
-        new RestartAskJob(state, sessions, relay).run();
+        new RestartAskJob(sessions, relay).runOn(state.tasks());
 
         verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
     }
@@ -65,7 +65,7 @@ class RestartAskJobTest {
         new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
         when(sessions.agentLive("ABC-42")).thenReturn(false);
 
-        new RestartAskJob(state, sessions, relay).run();
+        new RestartAskJob(sessions, relay).runOn(state.tasks());
 
         verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
     }
@@ -78,7 +78,7 @@ class RestartAskJobTest {
         when(sessions.agentLive("ABC-42")).thenReturn(true);
         when(sessions.composing("ABC-42")).thenReturn(true);
 
-        new RestartAskJob(state, sessions, relay).run();
+        new RestartAskJob(sessions, relay).runOn(state.tasks());
 
         verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
     }
@@ -94,13 +94,13 @@ class RestartAskJobTest {
         when(sessions.agentLive(anyString())).thenReturn(true);
         doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
 
-        new RestartAskJob(state, sessions, relay).run();
+        new RestartAskJob(sessions, relay).runOn(state.tasks());
 
         verify(relay).say("ABC-43", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-43").orElseThrow()));
     }
 
     @Test
     void runsOnceAfterTheStartAndNotOnAnInterval(@TempDir Path root) {
-        assertThat(new RestartAskJob(state(root), sessions, relay).every()).isNull();
+        assertThat(new RestartAskJob(sessions, relay).every()).isNull();
     }
 }

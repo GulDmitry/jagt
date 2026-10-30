@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskMovedOn;
@@ -28,7 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class VerifyJob implements Job {
+public class VerifyJob implements TaskJob {
 
     private static final String FAILED = "verify:failed";
 
@@ -59,11 +61,14 @@ public class VerifyJob implements Job {
     }
 
     @Override
-    public void run() {
-        stateService.tasks().entrySet().stream()
-                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()) && !entry.getValue().stopped()
-                        && !entry.getValue().report().asks())
-                .forEach(entry -> verify(entry.getKey(), entry.getValue()));
+    public Watch watch() {
+        return Watch.defaults().withStatuses(FlowRules::awaitingVerification).withStops(StopKind.NONE)
+                .withReports(report -> !report.asks());
+    }
+
+    @Override
+    public void run(String taskId, TaskState task) {
+        verify(taskId, task);
     }
 
     private void verify(String taskId, TaskState task) {

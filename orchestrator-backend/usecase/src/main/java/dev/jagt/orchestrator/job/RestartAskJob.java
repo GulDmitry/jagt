@@ -2,8 +2,10 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.flow.TurnKind;
+import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -15,11 +17,10 @@ import java.time.Duration;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RestartAskJob implements Job {
+public class RestartAskJob implements TaskJob {
 
     static final String FACTS = "jagt was restarted.";
 
-    private final StateService stateService;
     private final AgentSessions sessions;
     private final StepRelay relay;
 
@@ -44,12 +45,13 @@ public class RestartAskJob implements Job {
     }
 
     @Override
-    public void run() {
-        stateService.tasks().forEach((taskId, task) -> {
-            if (task.turnOrNone().open()) {
-                ask(taskId, Standing.of(task));
-            }
-        });
+    public Watch watch() {
+        return Watch.defaults().withTurns(TurnKind.OPEN);
+    }
+
+    @Override
+    public void run(String taskId, TaskState task) {
+        ask(taskId, Standing.of(task));
     }
 
     private void ask(String taskId, Standing read) {

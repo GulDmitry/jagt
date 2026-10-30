@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +12,8 @@ import java.time.Duration;
 /** An agent exiting, or stopped at a prompt, before its harness loads reports nothing; only its window shows it. */
 @Service
 @RequiredArgsConstructor
-public class LaunchExits implements Job {
+public class LaunchExits implements TaskJob {
 
-    private final StateService stateService;
     private final AgentSessions sessions;
     private final WatchdogService watchdog;
 
@@ -38,12 +38,13 @@ public class LaunchExits implements Job {
     }
 
     @Override
-    public void run() {
-        stateService.tasks().forEach((taskId, task) -> {
-            if (FlowRules.launching(task.status())) {
-                sessions.exitTail(taskId).ifPresentOrElse(printed -> watchdog.ended(taskId, printed),
-                        () -> sessions.unansweredPrompt(taskId).ifPresent(cause -> watchdog.waiting(taskId, cause)));
-            }
-        });
+    public Watch watch() {
+        return Watch.defaults().withStatuses(TaskStatus.NEW);
+    }
+
+    @Override
+    public void run(String taskId, TaskState task) {
+        sessions.exitTail(taskId).ifPresentOrElse(printed -> watchdog.ended(taskId, printed),
+                () -> sessions.unansweredPrompt(taskId).ifPresent(cause -> watchdog.waiting(taskId, cause)));
     }
 }

@@ -251,7 +251,7 @@ key that fixes it. The composition half, and what of it exists:
 | 1 | every flow rule names a registered capability | run time only, and as an `IllegalStateException` — a 500, not a sentence |
 | 2 | every status something can put a task into | built (`startup/FlowCheck`) |
 | 3 | every (status × capability × outcome) decided | planned — needs a capability to declare its outcomes |
-| 4 | a job's declared capability and watched statuses exist | planned — `Job` declares neither yet |
+| 4 | a job's declared capability and watched statuses exist | partly — a `TaskJob` declares its `Watch` and `Jobs` hands it only those tasks (`JobsTest`); capability still planned |
 | 5 | a required port capability present in the selected adapter | weak form: a configured type resolves to a bean, and the platform it was picked for is the one jagt runs on (`adapter/PlatformCheck`) |
 | 6 | one owner per id | built for all three registries |
 

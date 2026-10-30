@@ -1,24 +1,47 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.SimpleTriggerContext;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.util.ClassUtils;
 
+import tools.jackson.databind.json.JsonMapper;
+
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.withSettings;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -35,7 +58,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("master-feed");
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
 
         verify(scheduler, never()).schedule(any(Runnable.class), any(Trigger.class));
     }
@@ -45,7 +68,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("master-feed");
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
 
         jobs.start();
@@ -61,7 +84,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC));
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), mock(StateService.class));
         ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(any(Runnable.class), trigger.capture());
@@ -77,7 +100,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(any(Runnable.class), trigger.capture());
@@ -94,7 +117,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1)).thenThrow(new IllegalStateException("config unreadable"));
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(any(Runnable.class), trigger.capture());
@@ -110,7 +133,7 @@ class JobsTest {
         when(job.id()).thenReturn("scan-orphans");
         when(job.every()).thenReturn(null);
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(any(Runnable.class), trigger.capture());
@@ -130,7 +153,7 @@ class JobsTest {
         Job healthy = mock(Job.class);
         when(healthy.id()).thenReturn("poll-reviews");
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(failing, healthy), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(failing, healthy), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler, times(2)).schedule(work.capture(), any(Trigger.class));
@@ -149,7 +172,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.serves()).thenReturn(serves);
-        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
 
         assertThat(jobs.statuses(1_000)).singleElement().extracting(Jobs.Status::serves).isEqualTo(label);
     }
@@ -161,7 +184,7 @@ class JobsTest {
         Job second = mock(Job.class);
         when(second.id()).thenReturn("poll-reviews");
 
-        assertThatThrownBy(() -> new Jobs(List.of(first, second), mock(TaskScheduler.class), Clock.systemUTC()))
+        assertThatThrownBy(() -> new Jobs(List.of(first, second), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Two jobs declare the id 'poll-reviews'");
     }
@@ -171,7 +194,7 @@ class JobsTest {
         Job nameless = mock(Job.class);
         when(nameless.id()).thenReturn(" ");
 
-        assertThatThrownBy(() -> new Jobs(List.of(nameless), mock(TaskScheduler.class), Clock.systemUTC()))
+        assertThatThrownBy(() -> new Jobs(List.of(nameless), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("declares no id");
     }
@@ -182,7 +205,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         when(job.describe()).thenReturn("reads open review requests");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
-        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
 
         assertThat(jobs.statuses(1_000))
                 .extracting(Jobs.Status::id, Jobs.Status::describe, Jobs.Status::every,
@@ -201,7 +224,7 @@ class JobsTest {
         when(later.id()).thenReturn("clean-recents");
         when(later.every()).thenReturn(Duration.ofHours(1));
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(soon, later), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(soon, later), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler, times(2)).schedule(any(Runnable.class), trigger.capture());
@@ -219,7 +242,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         doThrow(new IllegalStateException("host unreachable")).when(job).run();
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(work.capture(), any(Trigger.class));
@@ -235,7 +258,7 @@ class JobsTest {
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenThrow(new IllegalStateException("config unreadable"));
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(any(Runnable.class), trigger.capture());
@@ -256,21 +279,23 @@ class JobsTest {
         Job healthy = mock(Job.class);
         when(healthy.id()).thenReturn("clean-recents");
         when(healthy.every()).thenReturn(Duration.ofHours(1));
-        Jobs jobs = new Jobs(List.of(mute, healthy), mock(TaskScheduler.class), Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(mute, healthy), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
 
         assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::every)
                 .containsExactly(tuple("poll-reviews", null), tuple("clean-recents", Duration.ofHours(1)));
     }
 
     @Test
-    void runsAJobAskedForNowAtOnceInsteadOfAtItsInterval() {
+    void runsAJobAskedForNowAtOnceInsteadOfAtItsInterval(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(10));
         TaskScheduler scheduler = mock(TaskScheduler.class);
         ScheduledFuture<?> waiting = mock(ScheduledFuture.class);
         doReturn(waiting).when(scheduler).schedule(any(Runnable.class), any(Trigger.class));
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC));
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC), state);
         jobs.start();
 
         jobs.runNow("poll-reviews");
@@ -286,7 +311,7 @@ class JobsTest {
     void refusesToRunNowAJobNobodyDeclared() {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
-        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
 
         assertThatThrownBy(() -> jobs.runNow("archive-logs"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -299,7 +324,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(work.capture(), any(Trigger.class));
@@ -321,7 +346,7 @@ class JobsTest {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC());
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
         ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
         jobs.start();
         verify(scheduler).schedule(work.capture(), any(Trigger.class));
@@ -333,5 +358,59 @@ class JobsTest {
         work.getValue().run();
 
         verify(job, times(1)).run();
+    }
+
+    @ParameterizedTest
+    @MethodSource("taskJobs")
+    void neverHandsATaskJobATaskInAStatusItsWatchLeavesOut(Class<? extends TaskJob> type) {
+        TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
+        Map<String, TaskState> tasks = new LinkedHashMap<>();
+        for (TaskStatus status : TaskStatus.values()) {
+            tasks.put("ABC-" + status.ordinal(), TaskState.builder("proj", "/wt", status).build());
+        }
+
+        List<TaskState> reached = reachedBy(job, tasks);
+
+        assertThat(reached).allMatch(task -> job.watch().statuses().contains(task.status()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("taskJobsByStop")
+    void handsAStoppedTaskOnlyToATaskJobWhoseWatchNamesItsStopKind(Class<? extends TaskJob> type,
+                                                                    TaskStop.Trigger trigger) {
+        TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
+        Map<String, TaskState> tasks = Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(trigger, 1, "evidence")).build());
+
+        List<TaskState> reached = reachedBy(job, tasks);
+
+        assertThat(reached).allMatch(task -> job.watch().stops().contains(StopKind.of(task.stop())));
+    }
+
+    private static List<TaskState> reachedBy(TaskJob job, Map<String, TaskState> tasks) {
+        doNothing().when(job).run(any(String.class), any(TaskState.class));
+        StateService state = mock(StateService.class);
+        when(state.tasks()).thenReturn(tasks);
+        TaskScheduler scheduler = mock(TaskScheduler.class);
+        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), state);
+        jobs.start();
+        verify(scheduler).schedule(work.capture(), any(Trigger.class));
+        work.getValue().run();
+        ArgumentCaptor<TaskState> reached = ArgumentCaptor.captor();
+        verify(job, atLeast(0)).run(any(String.class), reached.capture());
+        return reached.getAllValues();
+    }
+
+    static Stream<Class<?>> taskJobs() {
+        ClassPathScanningCandidateComponentProvider scan = new ClassPathScanningCandidateComponentProvider(false);
+        scan.addIncludeFilter(new AssignableTypeFilter(TaskJob.class));
+        return scan.findCandidateComponents("dev.jagt.orchestrator.job").stream()
+                .map(found -> ClassUtils.resolveClassName(found.getBeanClassName(), null));
+    }
+
+    static Stream<Arguments> taskJobsByStop() {
+        return taskJobs().flatMap(type -> Stream.of(TaskStop.Trigger.CHECKS, TaskStop.Trigger.UNDELIVERED,
+                TaskStop.Trigger.WAIT, TaskStop.Trigger.PACE).map(trigger -> Arguments.of(type, trigger)));
     }
 }

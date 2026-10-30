@@ -42,7 +42,7 @@ class SessionAliveJobTest {
         stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
         when(agents.agentLive("ABC-42")).thenReturn(true);
 
-        new SessionAliveJob(state, agents, stops).run();
+        new SessionAliveJob(agents, stops).runOn(state.tasks());
 
         assertThat(stops.stopped("ABC-42")).isFalse();
     }
@@ -59,7 +59,7 @@ class SessionAliveJobTest {
         stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
         when(agents.agentLive("ABC-42")).thenReturn(false);
 
-        new SessionAliveJob(state, agents, stops).run();
+        new SessionAliveJob(agents, stops).runOn(state.tasks());
 
         assertThat(stops.stopped("ABC-42")).isTrue();
     }

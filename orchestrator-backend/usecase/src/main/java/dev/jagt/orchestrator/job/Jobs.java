@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.service.StateService;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -50,11 +51,13 @@ public class Jobs {
     private final Map<String, Run> runs = new LinkedHashMap<>();
     private final TaskScheduler scheduler;
     private final Clock clock;
+    private final StateService stateService;
     private volatile boolean ready;
 
-    public Jobs(List<Job> declared, TaskScheduler scheduler, Clock clock) {
+    public Jobs(List<Job> declared, TaskScheduler scheduler, Clock clock, StateService stateService) {
         this.scheduler = scheduler;
         this.clock = clock;
+        this.stateService = stateService;
         for (Job job : declared) {
             if (job.id() == null || job.id().isBlank()) {
                 throw new IllegalStateException(job.getClass().getSimpleName() + " declares no id");
@@ -156,7 +159,7 @@ public class Jobs {
         }
         run.startedAt = clock.millis();
         try {
-            job.run();
+            runOnce(job);
             run.lastError = null;
         } catch (SessionHost.WindowsUnreadable unknown) {
             // Already logged where it was read: this round decides nothing and the next one asks again.
@@ -164,6 +167,14 @@ public class Jobs {
             fail(job.id(), run, t);
         } finally {
             run.running.set(false);
+        }
+    }
+
+    private void runOnce(Job job) {
+        if (job instanceof TaskJob taskJob) {
+            taskJob.runOn(stateService.tasks());
+        } else {
+            job.run();
         }
     }
 

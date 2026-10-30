@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,9 +13,8 @@ import java.time.Duration;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class StopReadJob implements Job {
+public class StopReadJob implements TaskJob {
 
-    private final StateService stateService;
     private final StopReads reads;
 
     @Override
@@ -39,17 +38,13 @@ public class StopReadJob implements Job {
     }
 
     @Override
-    public void run() {
-        stateService.tasks().forEach((taskId, task) -> {
-            if (endsOnRead(task)) {
-                probe(taskId);
-            }
-        });
+    public Watch watch() {
+        return Watch.defaults().withStops(StopKind.HOST_READ);
     }
 
-    private static boolean endsOnRead(TaskState task) {
-        TaskStop stop = task.stop();
-        return stop != null && stop.trigger().ends() == TaskStop.Trigger.Ends.HOST_READ;
+    @Override
+    public void run(String taskId, TaskState task) {
+        probe(taskId);
     }
 
     private void probe(String taskId) {

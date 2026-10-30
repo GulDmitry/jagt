@@ -66,7 +66,7 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
-        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
@@ -84,7 +84,7 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(
                 DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", ""));
 
-        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
         assertThat(state.task("ABC-42").orElseThrow().message())
@@ -104,7 +104,7 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
                 "red pipeline on the deploy commit: proj 01234567", "proj", "https://git.example.invalid/p/7"));
 
-        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
         TaskState handed = state.task("ABC-42").orElseThrow();
         assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
@@ -132,14 +132,14 @@ class DeployCheckJobTest {
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(before, Clock.systemUTC()));
-        new DeployCheckJob(before, config, relay, pipelines, new FlowReports(before, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(before, Clock.systemUTC())).runOn(before.tasks());
         relay.relay("ABC-42", "answered", "The Master answered your question, standing in for the human:\nyes", relay.standing("ABC-42"));
         StateService restarted = new StateService(new JsonMapper(), paths);
 
-        new DeployCheckJob(restarted, config, new StepRelay(new SessionBrief(paths), sessions,
+        new DeployCheckJob(config, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), restarted, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                         new TaskStops(restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), restarted, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
-                new TaskTurns(restarted, Clock.systemUTC())), pipelines, new FlowReports(restarted, Clock.systemUTC())).run();
+                new TaskTurns(restarted, Clock.systemUTC())), pipelines, new FlowReports(restarted, Clock.systemUTC())).runOn(restarted.tasks());
 
         verify(sessions, times(1)).writeTaskContext(eq("ABC-42"), contains("ABC-42 is deployed"));
     }
@@ -153,7 +153,7 @@ class DeployCheckJobTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
                 .withDeployCommit("proj", "0123456789abcdef"));
 
-        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());
@@ -172,7 +172,7 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
-        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
@@ -187,7 +187,7 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 
-        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
     }
@@ -205,7 +205,7 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 
-        new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());

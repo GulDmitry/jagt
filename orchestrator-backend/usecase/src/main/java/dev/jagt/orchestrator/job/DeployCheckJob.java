@@ -2,8 +2,9 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -27,9 +28,8 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class DeployCheckJob implements Job {
+public class DeployCheckJob implements TaskJob {
 
-    private final StateService stateService;
     private final ConfigService configService;
     private final StepRelay relay;
     private final DeployPipelines pipelines;
@@ -58,14 +58,14 @@ public class DeployCheckJob implements Job {
     }
 
     @Override
-    public void run() {
-        stateService.tasks().forEach((taskId, task) -> {
-            if (!FlowRules.checkedWhereItLanded(task.status()) || task.stopped()) {
-                return;
-            }
-            landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP, Turn.digestOf(landed)))
-                    .ifPresent(landed -> settle(taskId, task, landed));
-        });
+    public Watch watch() {
+        return Watch.defaults().withStatuses(FlowRules::checkedWhereItLanded).withStops(StopKind.NONE);
+    }
+
+    @Override
+    public void run(String taskId, TaskState task) {
+        landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP, Turn.digestOf(landed)))
+                .ifPresent(landed -> settle(taskId, task, landed));
     }
 
     private void settle(String taskId, TaskState task, String landed) {

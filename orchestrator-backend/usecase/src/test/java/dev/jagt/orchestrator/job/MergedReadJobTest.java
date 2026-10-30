@@ -34,7 +34,7 @@ class MergedReadJobTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
         when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
 
-        new MergedReadJob(state, new MergedRequests(state, config, inspection)).run();
+        new MergedReadJob(new MergedRequests(state, config, inspection)).runOn(state.tasks());
 
         assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isFalse();
     }

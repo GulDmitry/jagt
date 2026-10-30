@@ -41,7 +41,7 @@ class TicketPrefetchJobTest {
     private final TicketTexts tickets = new TicketTexts(assistant, new UsageTracker(state, new UsageLedger(new JsonMapper(),
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())), Clock.systemDefaultZone())));
-    private final TicketPrefetchJob job = new TicketPrefetchJob(state, config, tickets);
+    private final TicketPrefetchJob job = new TicketPrefetchJob(config, tickets);
 
     @Test
     void holdsAWorkingTasksTicketForItsNextReview() {
@@ -52,7 +52,7 @@ class TicketPrefetchJobTest {
         when(assistant.readTicketText("https://tracker.example/ABC-42"))
                 .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
 
-        job.run();
+        job.runOn(state.tasks());
 
         assertThat(tickets.of("ABC-42")).contains("Summary: accept v3 calls");
     }
@@ -65,8 +65,8 @@ class TicketPrefetchJobTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(assistant.readTicketText("https://tracker.example/ABC-42")).thenReturn(Answer.unavailable());
 
-        job.run();
-        job.run();
+        job.runOn(state.tasks());
+        job.runOn(state.tasks());
 
         verify(assistant, times(1)).readTicketText("https://tracker.example/ABC-42");
     }
@@ -78,7 +78,7 @@ class TicketPrefetchJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
-        job.run();
+        job.runOn(state.tasks());
 
         verify(assistant, never()).readTicketText("https://tracker.example/ABC-42");
     }

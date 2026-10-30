@@ -33,7 +33,7 @@ class NudgeResubmitJobTest {
         AgentSessions sessions = mock(AgentSessions.class);
         when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
 
-        new NudgeResubmitJob(state, sessions, turns).run();
+        new NudgeResubmitJob(sessions, turns).runOn(state.tasks());
 
         assertThat(turns.of("ABC-42").mark(NudgeResubmitJob.MARK)).isEqualTo("1:1");
     }
@@ -47,10 +47,10 @@ class NudgeResubmitJobTest {
         turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
         AgentSessions sessions = mock(AgentSessions.class);
         when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
-        NudgeResubmitJob job = new NudgeResubmitJob(state, sessions, turns);
+        NudgeResubmitJob job = new NudgeResubmitJob(sessions, turns);
 
         for (int tick = 0; tick < 8; tick++) {
-            job.run();
+            job.runOn(state.tasks());
         }
 
         verify(sessions, times(NudgeResubmitJob.CEILING)).resubmitUnsentNudge("ABC-42");
@@ -63,7 +63,7 @@ class NudgeResubmitJobTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         AgentSessions sessions = mock(AgentSessions.class);
 
-        new NudgeResubmitJob(state, sessions, new TaskTurns(state, Clock.systemUTC())).run();
+        new NudgeResubmitJob(sessions, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(sessions, never()).resubmitUnsentNudge("ABC-42");
     }

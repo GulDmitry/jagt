@@ -29,7 +29,7 @@ class LaunchExitsTest {
         when(sessions.exitTail("ABC-42")).thenReturn(Optional.of("Error: Invalid MCP configuration: bad"));
         WatchdogService watchdog = mock(WatchdogService.class);
 
-        new LaunchExits(state, sessions, watchdog).run();
+        new LaunchExits(sessions, watchdog).runOn(state.tasks());
 
         verify(watchdog).ended("ABC-42", "Error: Invalid MCP configuration: bad");
     }
@@ -44,7 +44,7 @@ class LaunchExitsTest {
         when(sessions.unansweredPrompt("ABC-42")).thenReturn(Optional.of("waiting on the trust dialog"));
         WatchdogService watchdog = mock(WatchdogService.class);
 
-        new LaunchExits(state, sessions, watchdog).run();
+        new LaunchExits(sessions, watchdog).runOn(state.tasks());
 
         verify(watchdog).waiting("ABC-42", "waiting on the trust dialog");
     }
@@ -56,7 +56,7 @@ class LaunchExitsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         AgentSessions sessions = mock(AgentSessions.class);
 
-        new LaunchExits(state, sessions, mock(WatchdogService.class)).run();
+        new LaunchExits(sessions, mock(WatchdogService.class)).runOn(state.tasks());
 
         verifyNoInteractions(sessions);
     }

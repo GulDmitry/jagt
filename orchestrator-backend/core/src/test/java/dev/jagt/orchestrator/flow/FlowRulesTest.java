@@ -25,12 +25,6 @@ class FlowRulesTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"NEW,true", "IN_PROGRESS,false"})
-    void isLaunchingOnlyWhileStartedAndNotYetReported(TaskStatus status, boolean launching) {
-        assertThat(FlowRules.launching(status)).isEqualTo(launching);
-    }
-
-    @ParameterizedTest
     @CsvSource({"SHIPPING,true", "DEPLOY_CONFLICT,true", "IN_PROGRESS,false"})
     void awaitsAnInstructionOnlyWhereJagtRelayedOne(TaskStatus status, boolean awaits) {
         assertThat(FlowRules.awaitsItsInstruction(status)).isEqualTo(awaits);
@@ -373,12 +367,6 @@ class FlowRulesTest {
     void putsASessionHandedWorkBackAtWorkAndAResumedRequestOnItsChecks() {
         assertThat(FlowRules.relayed()).isEqualTo(TaskStatus.IN_PROGRESS);
         assertThat(FlowRules.resumedOnARequest()).isEqualTo(TaskStatus.CI_POLLING);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"IN_PROGRESS,true", "NEW,false", "VERIFYING,false"})
-    void saysASessionIsAtWorkOnlyInProgress(TaskStatus status, boolean atWork) {
-        assertThat(FlowRules.atWork(status)).isEqualTo(atWork);
     }
 
     @ParameterizedTest

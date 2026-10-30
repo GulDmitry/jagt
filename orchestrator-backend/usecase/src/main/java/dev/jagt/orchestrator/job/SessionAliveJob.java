@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.AgentPresence;
-import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,9 +15,8 @@ import java.time.Duration;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class SessionAliveJob implements Job {
+public class SessionAliveJob implements TaskJob {
 
-    private final StateService stateService;
     private final AgentPresence agents;
     private final TaskStops stops;
 
@@ -42,17 +41,13 @@ public class SessionAliveJob implements Job {
     }
 
     @Override
-    public void run() {
-        stateService.tasks().forEach((taskId, task) -> {
-            if (endsOnSession(task)) {
-                look(taskId);
-            }
-        });
+    public Watch watch() {
+        return Watch.defaults().withStops(StopKind.SESSION_ALIVE);
     }
 
-    private static boolean endsOnSession(TaskState task) {
-        TaskStop stop = task.stop();
-        return stop != null && stop.trigger().ends() == TaskStop.Trigger.Ends.SESSION_ALIVE;
+    @Override
+    public void run(String taskId, TaskState task) {
+        look(taskId);
     }
 
     private void look(String taskId) {
