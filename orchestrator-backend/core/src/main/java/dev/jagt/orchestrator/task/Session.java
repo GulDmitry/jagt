@@ -16,6 +16,14 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
         return new Session(0, 0, 0, null, 0, null, null, false);
     }
 
+    /** The record a file holds, a silence an older file stamped on the task standing as the quiet it was. */
+    public static Session migrated(@Nullable Session stored, @Nullable Long legacySilentSince) {
+        Session session = stored == null ? defaults() : stored;
+        boolean unmarked = session.halt() == null && session.quietSince() == 0;
+        return unmarked && legacySilentSince != null && legacySilentSince > 0
+                ? session.withQuietSince(legacySilentSince) : session;
+    }
+
     /** How a session stopped, when, and why in the words a human reads. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)

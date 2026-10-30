@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -472,7 +473,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).alias("a1")
                 .mrUrl("http://mr/1").message("squash or keep the commits?").report(AgentReport.QUESTION)
-                .lastActiveTimestamp(1_700_000_000_000L).silentSince(1_700_000_000_000L).build());
+                .lastActiveTimestamp(1_700_000_000_000L).session(Session.defaults().withQuietSince(1_700_000_000_000L)).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
@@ -483,7 +484,7 @@ class AgentStatusReportsTest {
         TaskState after = state.task("ABC-1").orElseThrow();
         assertThat(after.message()).isEqualTo("squash or keep the commits?");
         assertThat(after.lastActiveTimestamp()).isEqualTo(1_700_000_000_000L);
-        assertThat(after.silentSince()).isEqualTo(1_700_000_000_000L);
+        assertThat(after.session().quietSince()).isEqualTo(1_700_000_000_000L);
     }
 
     @Test

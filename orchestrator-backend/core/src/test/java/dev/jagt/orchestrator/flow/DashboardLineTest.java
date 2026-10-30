@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.junit.jupiter.api.Test;
@@ -109,16 +110,16 @@ class DashboardLineTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "SHIPPING"})
     void shoutsThatAnAgentTheWatchdogFoundSilentIsNowTheHumansProblem(TaskStatus status) {
-        TaskState task = TaskState.builder("p", "/wt", status).message("step 2").silentSince(1_000)
-                .silentBecause("waiting for input").build();
+        TaskState task = TaskState.builder("p", "/wt", status).message("step 2")
+                .session(Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.GONE, 1_000, "waiting for input"))).build();
 
         assertThat(DashboardLine.forTask(task, null).text())
-                .isEqualTo("NEEDS YOU: agent stopped: waiting for input");
+                .isEqualTo("NEEDS YOU: agent stopped: the session ended: waiting for input");
     }
 
     @Test
     void saysWhatToLookAtWhenNothingWasEverReported() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).silentSince(1_000).build();
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).session(Session.defaults().withQuietSince(1_000)).build();
 
         assertThat(DashboardLine.forTask(task, null).text())
                 .isEqualTo("NEEDS YOU: agent stopped: the agent never reported — check that the CLI started");
@@ -126,16 +127,16 @@ class DashboardLineTest {
 
     @Test
     void quotesWhatTheSessionReportedEvenBeforeItsFirstStatus() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).silentSince(1_000)
-                .silentBecause("waiting for input").build();
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW)
+                .session(Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.GONE, 1_000, "waiting for input"))).build();
 
         assertThat(DashboardLine.forTask(task, null).text())
-                .isEqualTo("NEEDS YOU: agent stopped: waiting for input");
+                .isEqualTo("NEEDS YOU: agent stopped: the session ended: waiting for input");
     }
 
     @Test
     void fallsBackToAGeneralSentenceWhereNoReasonWasRecorded() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS).silentSince(1_000).build();
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS).session(Session.defaults().withQuietSince(1_000)).build();
 
         assertThat(DashboardLine.forTask(task, null).text())
                 .isEqualTo("NEEDS YOU: agent stopped: nothing has moved in its session");
@@ -144,7 +145,7 @@ class DashboardLineTest {
     @Test
     void quotesTheQuestionRatherThanTheSilenceWhenTheAgentAskedBeforeItWentQuiet() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
-                .message("FE or BE decision").report(AgentReport.QUESTION).silentSince(1_000).build();
+                .message("FE or BE decision").report(AgentReport.QUESTION).session(Session.defaults().withQuietSince(1_000)).build();
 
         assertThat(DashboardLine.forTask(task, null).text()).isEqualTo("NEEDS INPUT: FE or BE decision");
     }

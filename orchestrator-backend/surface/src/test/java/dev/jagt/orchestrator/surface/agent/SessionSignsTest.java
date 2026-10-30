@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.surface.agent;
 import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.job.WatchdogService;
 import dev.jagt.orchestrator.service.SessionLedger;
-import dev.jagt.orchestrator.service.SessionProbe;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -22,9 +21,9 @@ class SessionSignsTest {
     void hasTheTaskJudgedAtOnceRatherThanOnTheNextSweep() {
         SessionSign sign = new SessionSign.WorkStarted();
 
-        new SessionSigns(ledger, watchdog, agentSpend).record("ABC-1", SessionProbe.State.WORKING, null, null, sign);
+        new SessionSigns(ledger, watchdog, agentSpend).record("ABC-1", null, sign);
 
-        verify(ledger).record("ABC-1", SessionProbe.State.WORKING, null, null, sign);
+        verify(ledger).record("ABC-1", null, sign);
         verify(watchdog).check("ABC-1");
     }
 
@@ -40,8 +39,7 @@ class SessionSignsTest {
 
     @Test
     void countsWhatTheSessionSpentInTheLogFileItNamed() {
-        new SessionSigns(ledger, watchdog, agentSpend).record("ABC-1", SessionProbe.State.IDLE, null,
-                Path.of("/logs/session.jsonl"), new SessionSign.TurnEnded("/logs/session.jsonl"));
+        new SessionSigns(ledger, watchdog, agentSpend).record("ABC-1", Path.of("/logs/session.jsonl"), new SessionSign.TurnEnded("/logs/session.jsonl"));
 
         verify(agentSpend, timeout(2_000)).charge("ABC-1", Path.of("/logs/session.jsonl"));
     }

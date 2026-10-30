@@ -16,7 +16,7 @@
 - **Questions come first** — A session that needs an answer says so before anything else, and the move becomes yours.
   [spec](../openspec/specs/attention/spec.md#requirement-a-question-is-reported-first)
 - **Silence is noticed** — A stalled, crashed or waiting session is flagged on the board without you looking.
-  [spec](../openspec/specs/attention/spec.md#requirement-silence-is-stamped-by-the-watchdog)
+  [spec](../openspec/specs/attention/spec.md#requirement-silence-is-read-by-the-watchdog-and-recorded-by-the-reducer)
 - **Attention tiers** — What needs you is ranked, counted in the header and filterable by whose move it is.
   [spec](../openspec/specs/attention/spec.md#requirement-attention-tiers)
 - **Badge names the act** — Each badge says which action waits for you, with a sentence in its tooltip.

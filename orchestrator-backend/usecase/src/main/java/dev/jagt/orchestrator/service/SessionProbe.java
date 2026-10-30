@@ -2,58 +2,32 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Every sign of what a task's session is doing, and the one verdict from them. None costs a token. Reports are kept
- * in memory: losing them on a restart costs promptness and nothing else.
+ * What can be read of a task's session without a hook, none of it costing a token. The file a session names is kept
+ * in memory: losing it on a restart costs promptness and nothing else.
  */
 @Component
 @RequiredArgsConstructor
 public class SessionProbe {
 
-    /**
-     * What a session's harness says about it. {@code GONE} and {@code FAILED} are verdicts on their own;
-     * {@code IDLE} is not — a turn ending says only that a turn ended.
-     */
+    /** What a session's harness says about it; a turn ending says only that a turn ended. */
     public enum State { GONE, FAILED, IDLE, WORKING }
-
-    /** Since when nothing has moved, what a harness said about it, and why — null where none of them did. */
-    public record Silence(long since, @Nullable State reported, @Nullable String cause) {
-
-        /** The words a human is owed, or null where nothing was said and the sentence is the surface's own. */
-        public @Nullable String detail() {
-            if (reported == State.GONE) {
-                return cause == null ? "the session ended" : "the session ended: " + cause;
-            }
-            if (reported == State.FAILED) {
-                return cause == null ? "its turn failed" : "its turn failed: " + cause;
-            }
-            if (reported == State.IDLE) {
-                return "its turn ended and nothing has moved since";
-            }
-            return null;
-        }
-    }
-
-    private record Halt(long at, State state, @Nullable String cause) {
-    }
 
     private final ConfigService configService;
     private final SessionHost sessions;
     private final AgentRuntime runtime;
-    private final Map<String, Halt> halted = new ConcurrentHashMap<>();
-    private final Map<String, Long> movingSince = new ConcurrentHashMap<>();
     private final Map<String, Path> reportedLog = new ConcurrentHashMap<>();
 
     /** Read per run, so a changed interval applies without a restart. */
@@ -75,27 +49,7 @@ public class SessionProbe {
 
     /** Task ids are ticket keys and get reused, so what was remembered about a closed one must not be found. */
     public void keepOnly(Collection<String> taskIds) {
-        halted.keySet().retainAll(taskIds);
-        movingSince.keySet().retainAll(taskIds);
         reportedLog.keySet().retainAll(taskIds);
-    }
-
-    /**
-     * A session reporting itself alive DROPS what was said before rather than outranking it by time: two hooks of
-     * one event are stamped on arrival and can share a millisecond or arrive out of order.
-     */
-    public void report(String taskId, State state, @Nullable String cause, long at) {
-        if (state == State.WORKING) {
-            movingSince.put(taskId, at);
-            halted.remove(taskId);
-            return;
-        }
-        Halt held = halted.get(taskId);
-        if (state == State.IDLE && held != null && (held.state() == State.FAILED || held.state() == State.GONE)) {
-            // Only a prompt starts another turn, so an idle notice after a failure or an end is no news.
-            return;
-        }
-        halted.put(taskId, new Halt(at, state, cause));
     }
 
     /** A session that names the file it appends to takes the guessing out of finding it. */
@@ -103,36 +57,18 @@ public class SessionProbe {
         reportedLog.put(taskId, log);
     }
 
-    /** A report needs no threshold, being what happened rather than an absence; anything newer supersedes it. */
-    public Optional<Silence> of(String taskId, TaskState task, long staleMs, long now) {
-        long ownLog = ownLog(taskId, task);
-        long lastSign = Math.max(Math.max(task.lastActiveTimestamp(), ownLog),
-                movingSince.getOrDefault(taskId, 0L));
-        Halt halt = halted.get(taskId);
-        if (halt != null && halt.at() >= lastSign) {
-            if (halt.state() != State.IDLE) {
-                return Optional.of(new Silence(halt.at(), halt.state(), halt.cause()));
-            }
-            // A turn that ENDED is a sign like any other, not a verdict: only nothing happening AFTER it means
-            // anything, which is the threshold below.
-            lastSign = halt.at();
-        } else if (halt != null) {
-            // A tie KEEPS it: a turn is appended to the log immediately before the hook reporting it fires, and
-            // both are stamped in whichever millisecond they land in. Dropped only if it is still the one read.
-            halted.remove(taskId, halt);
-            halt = null;
-        }
-        long printed = windowActivity(taskId, lastSign, staleMs, now);
-        if (printed > lastSign) {
-            // Output AFTER the turn ended is a later sign, so the report no longer describes this wait.
-            lastSign = printed;
-            halted.remove(taskId, halt);
-            halt = null;
-        }
-        return now - lastSign < staleMs
-                ? Optional.empty()
-                : Optional.of(new Silence(lastSign, halt == null ? null : halt.state(),
-                        halt == null ? null : halt.cause()));
+    /** The windows are asked only once the free signs have run out and already read stale: that is a process spawn. */
+    public SessionSign.Read read(String taskId, TaskState task, long staleMs, long now) {
+        long log = ownLog(taskId, task);
+        Session session = task.session();
+        Session.Halt halt = session.halt();
+        long lastSign = Math.max(Math.max(task.lastActiveTimestamp(), log),
+                Math.max(session.movedAt(), halt == null ? 0 : halt.at()));
+        boolean verdictStands = halt != null && halt.kind() != Session.Halt.Kind.IDLE;
+        long printed = verdictStands || now - lastSign < staleMs ? 0 : sessions.lastWindowActivityMillis(
+                sessions.sessionName(config().viewer().session()), taskId);
+        return new SessionSign.Read(printed > 0 ? Session.Window.State.RUNNING : Session.Window.State.UNREAD, printed,
+                log, task.lastActiveTimestamp(), staleMs);
     }
 
     /**
@@ -146,17 +82,5 @@ public class SessionProbe {
                 ? 0
                 : runtime.lastSessionActivity(Path.of(worktree)).orElse(0);
         return Math.max(derived, reported == null ? 0 : FileStamps.modified(reported));
-    }
-
-    /**
-     * A process spawn, so it is asked only once the free signs have run out and already read stale. It stays a sign
-     * even at a prompt: a log gets its entry when a tool call is ISSUED and nothing while it runs, so an
-     * eight-minute build would otherwise read as death.
-     */
-    private long windowActivity(String taskId, long lastSign, long staleMs, long now) {
-        return now - lastSign < staleMs
-                ? 0
-                : sessions.lastWindowActivityMillis(
-                        sessions.sessionName(config().viewer().session()), taskId);
     }
 }

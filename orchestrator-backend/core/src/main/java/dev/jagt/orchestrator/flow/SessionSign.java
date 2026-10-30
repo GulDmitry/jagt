@@ -28,7 +28,7 @@ public sealed interface SessionSign {
     record Reported() implements SessionSign {
         @Override
         public Session applyTo(Session session, long now) {
-            return session.withReportedAt(now);
+            return session.withReportedAt(now).withStampedAsk(false);
         }
     }
 
@@ -73,12 +73,37 @@ public sealed interface SessionSign {
         }
     }
 
-    /** Nothing has moved for longer than the caller allows; the silence counts from the last sign. */
-    record WentQuiet() implements SessionSign {
+    /**
+     * What a look at the session found, with the signs that need no hook: the window's last print, the file the
+     * session appends to, and the task's own last activity. The window is {@code UNREAD} where it was not asked.
+     * A halt older than a later sign is dropped, except that output alone never undoes a failure or an end.
+     */
+    record Read(Session.Window.State window, long printedAt, long logAt, long activeAt, long staleAfter)
+            implements SessionSign {
         @Override
         public Session applyTo(Session session, long now) {
             Session.Halt halt = session.halt();
-            return session.withQuietSince(Math.max(1, halt == null ? session.movedAt() : halt.at()));
+            long later = Math.max(session.movedAt(), Math.max(logAt, activeAt));
+            if (halt != null && halt.at() < later) {
+                halt = null;
+            }
+            long last = Math.max(later, halt == null ? 0 : halt.at());
+            if ((halt == null || halt.kind() == Session.Halt.Kind.IDLE) && printedAt > last) {
+                halt = null;
+                last = printedAt;
+            }
+            boolean stale = halt == null || halt.kind() == Session.Halt.Kind.IDLE;
+            long quiet = stale && last > 0 && now - last >= staleAfter ? last : 0;
+            return session.withHalt(halt).withQuietSince(quiet).withWindow(windowAfter(session, now));
+        }
+
+        private Session.@Nullable Window windowAfter(Session session, long now) {
+            Session.Window held = session.window();
+            if (window == Session.Window.State.UNREAD) {
+                return held;
+            }
+            return held != null && held.state() == window && held.printedAt() == printedAt ? held
+                    : new Session.Window(window, now, printedAt);
         }
     }
 

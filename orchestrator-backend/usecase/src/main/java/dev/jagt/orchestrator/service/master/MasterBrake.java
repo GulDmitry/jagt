@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -38,7 +39,7 @@ public class MasterBrake {
     private record Seen(long step, long silence) {
 
         static Seen of(TaskState task) {
-            return new Seen(task.history().isEmpty() ? 0 : task.history().getLast().at(), task.silentSince());
+            return new Seen(task.history().isEmpty() ? 0 : task.history().getLast().at(), SessionPhase.silentSince(task));
         }
     }
 
@@ -87,7 +88,7 @@ public class MasterBrake {
     }
 
     private static boolean silenceFollowsTheMaster(TaskState task) {
-        return task.history().stream().filter(step -> step.at() <= task.silentSince())
+        return task.history().stream().filter(step -> step.at() <= SessionPhase.silentSince(task))
                 .reduce((first, second) -> second).map(StatusChange::origin).orElse(null) == ActionOrigin.MASTER;
     }
 
@@ -103,8 +104,8 @@ public class MasterBrake {
                 default -> { }
             }
         }
-        if (task.agentIsSilent() && task.silentSince() != was.silence() && silenceFollowsTheMaster(task)) {
-            endings.add(new Ending(id, task.silentSince(), true, "silent: " + task.silentBecause()));
+        if (SessionPhase.silent(task) && SessionPhase.silentSince(task) != was.silence() && silenceFollowsTheMaster(task)) {
+            endings.add(new Ending(id, SessionPhase.silentSince(task), true, "silent: " + SessionPhase.silentBecause(task)));
         }
         return endings;
     }

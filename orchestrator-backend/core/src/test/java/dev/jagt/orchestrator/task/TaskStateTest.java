@@ -71,7 +71,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null, null);
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -124,7 +124,7 @@ class TaskStateTest {
     @Test
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
-                1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
+                1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, null, null, List.of(), null,
                 null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
@@ -141,14 +141,6 @@ class TaskStateTest {
         TaskState reported = red.withStatus(TaskStatus.CI_FAILED, "build broken", 2_000);
 
         assertThat(reported.pipelineStatus()).isEqualTo("failed");
-    }
-
-    @Test
-    void dropsTheSilenceStampAsSoonAsTheAgentReportsAnything() {
-        TaskState silent = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
-                .withSilentSince(1_000, "waiting for input");
-
-        assertThat(silent.touched(2_000).agentIsSilent()).isFalse();
     }
 
     @Test
@@ -339,18 +331,6 @@ class TaskStateTest {
                 .refused(Guard.GIT_STATE);
 
         assertThat(refused.refusals()).containsEntry(Guard.STATUS_REPORT, 2).containsEntry(Guard.GIT_STATE, 1);
-    }
-
-    @Test
-    void clearsTheSilenceReasonWhenTheSilenceStampIsZero() {
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
-
-        TaskState silent = task.withSilentSince(5, "no report");
-        TaskState spoke = silent.withSilentSince(0, "no report");
-
-        assertThat(silent.silentBecause()).isEqualTo("no report");
-        assertThat(spoke.silentBecause()).isNull();
-        assertThat(spoke.agentIsSilent()).isFalse();
     }
 
     @Test
@@ -757,5 +737,26 @@ class TaskStateTest {
                  "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
 
         assertThat(old.session()).isEqualTo(Session.defaults());
+    }
+
+    @Test
+    void readsASilenceAnOlderFileStampedOnTheTaskAsTheSessionsQuiet() {
+        TaskState old = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"IN_PROGRESS","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0,"silentSince":4000,"silentBecause":"its turn failed"}""",
+                TaskState.class);
+
+        assertThat(old.session().quietSince()).isEqualTo(4_000);
+    }
+
+    @Test
+    void endsAStoppedSessionWhenTheTaskMovesOnToAStatusOfItsOwn() {
+        TaskState stopped = TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build().withSession(
+                Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.GONE, 4_000, "boom")).withQuietSince(3_000));
+
+        TaskState moved = stopped.withStatus(TaskStatus.REVIEW_PENDING, "shipped", 5_000);
+
+        assertThat(moved.session().halt()).isNull();
+        assertThat(moved.session().quietSince()).isZero();
     }
 }

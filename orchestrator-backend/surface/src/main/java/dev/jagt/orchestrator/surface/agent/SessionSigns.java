@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.surface.agent;
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.job.WatchdogService;
-import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.SessionLedger;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,9 +24,8 @@ public class SessionSigns {
     }
 
     /** {@code sessionLog} is the file the session appends to, or null where none was named. */
-    public void record(String taskId, SessionProbe.State state, @Nullable String cause, @Nullable Path sessionLog,
-                       SessionSign sign) {
-        ledger.record(taskId, state, cause, sessionLog, sign);
+    public void record(String taskId, @Nullable Path sessionLog, SessionSign sign) {
+        ledger.record(taskId, sessionLog, sign);
         watchdog.check(taskId);
         // Off this thread: a read of the log, or the state lock a sweep holds, must not delay the answer.
         if (sessionLog != null) {

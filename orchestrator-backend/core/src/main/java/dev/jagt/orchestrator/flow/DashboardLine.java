@@ -80,10 +80,10 @@ public final class DashboardLine {
      * misleads. A session that DID report is quoted whatever its status.
      */
     private static Line silence(TaskState task) {
-        if (!task.agentIsSilent()) {
+        if (!SessionPhase.silent(task)) {
             return Line.NONE;
         }
-        String because = task.silentBecause();
+        String because = SessionPhase.silentBecause(task);
         if (because == null || because.isBlank()) {
             because = task.status() == TaskStatus.NEW
                     ? "the agent never reported — check that the CLI started"

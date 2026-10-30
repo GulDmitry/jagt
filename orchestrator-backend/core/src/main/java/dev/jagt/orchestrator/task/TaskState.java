@@ -43,10 +43,6 @@ public record TaskState(
         // When the HOST says the request was opened; 0 until a read said so (a model read cannot).
         long requestOpenedAt,
         long lastPolledAt,
-        // When the watchdog last saw a sign of life from an agent it found silent; 0 = not silent.
-        long silentSince,
-        // Why it is silent, in the words a human reads. Null while it is not.
-        @Nullable String silentBecause,
         @Nullable Boolean autoReview,
         // The host's own wording for the checks, unparsed. Null = never read.
         @Nullable String pipelineStatus,
@@ -121,10 +117,8 @@ public record TaskState(
             @JsonProperty("mrCreatedAt") long mrCreatedAt,
             @JsonProperty("requestOpenedAt") @Nullable Long requestOpenedAt,
             @JsonProperty("lastPolledAt") long lastPolledAt,
-            // Boxed: a file written before this field existed omits it, and Jackson refuses an absent value
-            // onto a primitive.
-            @JsonProperty("silentSince") @Nullable Long silentSince,
-            @JsonProperty("silentBecause") @Nullable String silentBecause,
+            // Written before the session record held it: read once, rewritten as the session's quiet.
+            @JsonProperty("silentSince") @Nullable Long legacySilentSince,
             @JsonProperty("autoReview") @Nullable Boolean autoReview,
             @JsonProperty("pipelineStatus") @Nullable String pipelineStatus,
             // A file written before the reads were kept holds only whether the newest one failed.
@@ -160,13 +154,13 @@ public record TaskState(
                 report == null ? ReportMarkerMigration.lineOf(message) : message,
                 report == null ? ReportMarkerMigration.reportOf(message) : report, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
-                silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
+                autoReview, pipelineStatus,
                 unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
                 Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, turn, switches == null ? Map.of() : switches,
                 infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment,
-                session == null ? Session.defaults() : session);
+                Session.migrated(session, legacySilentSince));
         Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
         return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
     }
@@ -264,8 +258,7 @@ public record TaskState(
         List<StatusChange> known = seededHistory(now);
         boolean record = event || status != this.status;
         return toBuilder().status(status).lastActiveTimestamp(now).message(message)
-                .silentSince(0)
-                .silentBecause(null)
+                .session(session.withHalt(null).withQuietSince(0))
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
     }
@@ -317,19 +310,6 @@ public record TaskState(
         }
         long since = lastActiveTimestamp > 0 ? lastActiveTimestamp : now;
         return List.of(new StatusChange(status, since, null));
-    }
-
-    /**
-     * What the watchdog found. Its own wither because silence is not activity: stamping it must not bump
-     * {@code lastActiveTimestamp}. Any report clears it, since an agent that speaks is alive.
-     */
-    public TaskState withSilentSince(long silentSince, @Nullable String because) {
-        return toBuilder().silentSince(silentSince).silentBecause(silentSince > 0 ? because : null).build();
-    }
-
-    @JsonIgnore
-    public boolean agentIsSilent() {
-        return silentSince > 0;
     }
 
     /** The host's own answer; a read that does not know it (0) must not erase one that did. */
@@ -455,7 +435,7 @@ public record TaskState(
     }
 
     public TaskState touched(long now) {
-        return toBuilder().lastActiveTimestamp(now).silentSince(0).silentBecause(null).history(seededHistory(now))
+        return toBuilder().lastActiveTimestamp(now).history(seededHistory(now))
                 .build();
     }
 

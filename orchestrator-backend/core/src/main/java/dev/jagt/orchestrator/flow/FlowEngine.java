@@ -31,7 +31,7 @@ public class FlowEngine {
                     + taskId + " (it is " + task.status() + " — "
                     + Move.forTask(task.status(), Facts.projected(task),
                             dev.jagt.orchestrator.flow.RoundState.of(task.report(), false),
-                            task.agentIsSilent()).hint() + ")");
+                            SessionPhase.silent(task)).hint() + ")");
         }
         TaskCapability capability = capabilities.of(action).orElseThrow(() ->
                 new IllegalStateException("No capability declared for `" + action.id() + "`"));

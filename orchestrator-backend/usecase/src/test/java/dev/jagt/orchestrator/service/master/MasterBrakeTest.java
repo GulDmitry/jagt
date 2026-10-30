@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -35,7 +36,7 @@ class MasterBrakeTest {
                         new StatusChange(TaskStatus.DEPLOY_CONFLICT, 21, ActionOrigin.MASTER))).build(),
                 "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.IN_PROGRESS, 12, ActionOrigin.MASTER)))
-                        .silentSince(22).silentBecause("crash").build()));
+                        .session(Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.GONE, 22, "crash"))).build()));
 
         assertThat(root.resolve("act-stopped")).exists();
     }
@@ -50,15 +51,15 @@ class MasterBrakeTest {
                 "ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.IN_PROGRESS, 20, ActionOrigin.MCP)))
-                        .silentSince(30).silentBecause("idle").build(),
+                        .session(Session.defaults().withQuietSince(30)).build(),
                 "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.IN_PROGRESS, 21, ActionOrigin.MCP)))
-                        .silentSince(31).silentBecause("idle").build(),
+                        .session(Session.defaults().withQuietSince(31)).build(),
                 "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.IN_PROGRESS, 22, ActionOrigin.MCP)))
-                        .silentSince(32).silentBecause("idle").build()));
+                        .session(Session.defaults().withQuietSince(32)).build()));
 
         assertThat(root.resolve("act-stopped")).doesNotExist();
     }
@@ -72,13 +73,13 @@ class MasterBrakeTest {
         brake.observe(Map.of(
                 "ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.IN_PROGRESS, 10, ActionOrigin.MASTER)))
-                        .silentSince(30).silentBecause("idle").build(),
+                        .session(Session.defaults().withQuietSince(30)).build(),
                 "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.IN_PROGRESS, 11, ActionOrigin.MASTER)))
-                        .silentSince(31).silentBecause("idle").build(),
+                        .session(Session.defaults().withQuietSince(31)).build(),
                 "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.IN_PROGRESS, 12, ActionOrigin.MASTER)))
-                        .silentSince(32).silentBecause("idle").build()));
+                        .session(Session.defaults().withQuietSince(32)).build()));
 
         assertThat(root.resolve("act-stopped")).exists();
     }
@@ -93,15 +94,15 @@ class MasterBrakeTest {
                 "ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.IN_PROGRESS, 20, ActionOrigin.BOARD)))
-                        .silentSince(30).silentBecause("idle").build(),
+                        .session(Session.defaults().withQuietSince(30)).build(),
                 "ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.IN_PROGRESS, 21, ActionOrigin.BOARD)))
-                        .silentSince(31).silentBecause("idle").build(),
+                        .session(Session.defaults().withQuietSince(31)).build(),
                 "ABC-3", TaskState.builder("proj", "/wt3", TaskStatus.IN_PROGRESS).history(List.of(
                         new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.IN_PROGRESS, 22, ActionOrigin.BOARD)))
-                        .silentSince(32).silentBecause("idle").build()));
+                        .session(Session.defaults().withQuietSince(32)).build()));
 
         assertThat(root.resolve("act-stopped")).doesNotExist();
     }

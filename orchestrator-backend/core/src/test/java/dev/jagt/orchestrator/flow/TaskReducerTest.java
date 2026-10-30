@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.RoundTrail;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -226,6 +227,17 @@ class TaskReducerTest {
     }
 
     @Test
+    void keepsAPermissionTheSessionReportedAfterAPromptStampedItWhenWorkStartsAgain() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState asked = TaskReducer.signed(task, new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK), 1_000);
+        TaskState reported = TaskReducer.signed(asked, new SessionSign.Reported(), 2_000);
+
+        TaskState started = TaskReducer.signed(reported, new SessionSign.WorkStarted(), 3_000);
+
+        assertThat(started.report()).isEqualTo(AgentReport.PERMISSION);
+    }
+
+    @Test
     void leavesAQuestionTheSessionSaidWhenAPromptIsReported() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).report(AgentReport.QUESTION).build();
 
@@ -319,13 +331,54 @@ class TaskReducerTest {
     }
 
     @Test
-    void goesQuietSinceTheTurnEndedWhenNothingFollowsIt() {
+    void goesQuietSinceTheTurnEndedWhenAReadFindsNothingAfterItForLongerThanTheLimit() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
-        TaskState quiet = TaskReducer.signed(idle, new SessionSign.WentQuiet(), 9_000);
+        TaskState quiet = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000), 9_000);
 
         assertThat(SessionPhase.of(quiet.session())).isEqualTo(SessionPhase.QUIET);
         assertThat(quiet.session().quietSince()).isEqualTo(1_000);
+    }
+
+    @Test
+    void staysIdleWhenAReadFindsTheTurnEndWithinTheLimit() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+
+        TaskState read = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000), 4_000);
+
+        assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.IDLE);
+    }
+
+    @Test
+    void goesQuietSinceTheWindowLastPrintedWhenItPrintedAfterTheTurnEnded() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+
+        TaskState quiet = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.RUNNING, 2_000, 0, 0, 5_000), 9_000);
+
+        assertThat(quiet.session().halt()).isNull();
+        assertThat(quiet.session().quietSince()).isEqualTo(2_000);
+    }
+
+    @Test
+    void keepsAnEndedSessionGoneWhenItsWindowPrintedAfterTheEnd() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("boom"), 1_000);
+
+        TaskState read = TaskReducer.signed(ended, new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 0, 0, 5_000), 9_000);
+
+        assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.GONE);
+    }
+
+    @Test
+    void endsAFailureWhenTheSessionsLogGrewAfterIt() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState read = TaskReducer.signed(failed, new SessionSign.Read(Session.Window.State.UNREAD, 0, 2_000, 0, 5_000), 3_000);
+
+        assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.WORKING);
     }
 }

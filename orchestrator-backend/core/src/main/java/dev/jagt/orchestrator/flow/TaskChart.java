@@ -275,6 +275,7 @@ final class TaskChart {
                     .stay();
             signed(chart, from, "called", SessionPhase.WORKING, SessionSign.Called.class);
             signed(chart, from, "reported", from, SessionSign.Reported.class);
+            signed(chart, from, "read", turnsEnd.contains(from) ? SessionPhase.QUIET : from, SessionSign.Read.class);
             signed(chart, from, "ended", SessionPhase.GONE, SessionSign.Ended.class);
             signed(chart, from, "restarted", SessionPhase.IDLE, SessionSign.Restarted.class);
             if (turnsEnd.contains(from)) {
@@ -283,9 +284,6 @@ final class TaskChart {
             if (turnsEnd.contains(from) || from == SessionPhase.FAILED) {
                 signed(chart, from, "turn failed", SessionPhase.FAILED, SessionSign.TurnFailed.class);
             }
-        }
-        for (SessionPhase from : EnumSet.of(SessionPhase.WORKING, SessionPhase.IDLE, SessionPhase.QUIET)) {
-            signed(chart, from, "went quiet", SessionPhase.QUIET, SessionSign.WentQuiet.class);
         }
     }
 

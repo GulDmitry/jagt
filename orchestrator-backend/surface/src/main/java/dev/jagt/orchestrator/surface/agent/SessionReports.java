@@ -64,7 +64,7 @@ public class SessionReports {
 
     /** The brief for a session that has just been compacted, or empty for every other report. */
     public String record(String taskId, SessionProbe.State state, Report report) {
-        signs.record(taskId, continued(state, report.endedBy()), null, report.sessionLog(), signOf(state, report));
+        signs.record(taskId, report.sessionLog(), signOf(state, report));
         if (blocked(state, report.said())) {
             signs.asked(taskId, new SessionSign.Asked(report.said(), SessionSign.Asked.Channel.HOOK));
         }
@@ -73,8 +73,7 @@ public class SessionReports {
 
     /** Records the turn as failed on the error the CLI named, and says whether that error is a usage limit. */
     public boolean turnFailed(String taskId, Report report) {
-        signs.record(taskId, SessionProbe.State.FAILED, report.failedOn(), report.sessionLog(),
-                new SessionSign.TurnFailed(report.failedOn()));
+        signs.record(taskId, report.sessionLog(), new SessionSign.TurnFailed(report.failedOn()));
         String limit = runtime.rateLimitError();
         return report.failedOn() != null && limit != null && !limit.isBlank()
                 && limit.equalsIgnoreCase(report.failedOn().strip());
@@ -93,10 +92,6 @@ public class SessionReports {
         String blocking = runtime.blockingNotification();
         return blocking != null && !blocking.isBlank()
                 && said.toLowerCase(java.util.Locale.ROOT).contains(blocking.toLowerCase(java.util.Locale.ROOT));
-    }
-
-    private SessionProbe.State continued(SessionProbe.State state, @Nullable String endedBy) {
-        return continuing(state, endedBy) ? SessionProbe.State.IDLE : state;
     }
 
     private boolean continuing(SessionProbe.State state, @Nullable String endedBy) {

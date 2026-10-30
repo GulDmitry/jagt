@@ -37,7 +37,7 @@ class TaskViewTest {
     void asksYouToAnswerTheSessionWhenItsHookReportedABlockingPromptWhileItsReportIsPlain() {
         TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState asked = TaskReducer.signed(working, new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK), 1_000)
-                .withSilentSince(500, "its turn ended and nothing has moved since");
+                .withSession(Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 500, null)).withQuietSince(500));
 
         TaskView view = TaskView.of("ABC-1", asked, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
