@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -22,6 +23,7 @@ public class RoundRelay {
 
     public SweepResult relay(String taskId, String mrUrl, ReviewFacts round, String said, String tip) {
         ReviewFacts r = stops.asking(taskId) ? round.withoutChecks() : round;
+        Standing standing = steps.standing(taskId);
         String told = RoundRecord.orUnknown(r.pipelineStatus());
         String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
         TaskStatus checked = null;
@@ -38,7 +40,7 @@ public class RoundRelay {
             case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);
             case ASKING -> asking(read, said);
-            case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, told), brief, checked)
+            case RELAY -> steps.relayComposed(taskId, RoundBrief.steps(r, told), brief, checked, standing)
                     ? new SweepResult(SweepResult.Kind.RELAYED, read + " relayed, checks " + said)
                     : stops.stopped(taskId) ? stopped(read, said) : unchanged(read, said);
         };

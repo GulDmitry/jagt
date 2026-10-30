@@ -21,7 +21,7 @@ Accepted 2026-10-25.
 ## Known limits
 
 - `ship`'s status is still applied by the flow engine after the send.
-- A flow-side claim for claim-less verbs is open.
+- Claim-less verbs check `Standing` (status, stop kind, turn) against their read, not a flow-side claim.
 - `write` re-sends a hand-off by design.
 
 ## Rejected

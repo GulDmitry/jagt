@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -42,7 +44,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(state, sessions, relay).run();
 
-        verify(relay).say("ABC-42", "restarted", "jagt was restarted.");
+        verify(relay).say("ABC-42", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
     }
 
     @Test
@@ -53,7 +55,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(state, sessions, relay).run();
 
-        verify(relay, never()).say(anyString(), anyString(), anyString());
+        verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
     }
 
     @Test
@@ -65,7 +67,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(state, sessions, relay).run();
 
-        verify(relay, never()).say(anyString(), anyString(), anyString());
+        verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
     }
 
     @Test
@@ -78,7 +80,7 @@ class RestartAskJobTest {
 
         new RestartAskJob(state, sessions, relay).run();
 
-        verify(relay, never()).say(anyString(), anyString(), anyString());
+        verify(relay, never()).say(anyString(), anyString(), anyString(), any(Standing.class));
     }
 
     @Test
@@ -90,11 +92,11 @@ class RestartAskJobTest {
         turns.opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
         turns.opened("ABC-43", "start", "digest", TaskStatus.IN_PROGRESS);
         when(sessions.agentLive(anyString())).thenReturn(true);
-        doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", "restarted", "jagt was restarted.");
+        doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
 
         new RestartAskJob(state, sessions, relay).run();
 
-        verify(relay).say("ABC-43", "restarted", "jagt was restarted.");
+        verify(relay).say("ABC-43", "restarted", "jagt was restarted.", Standing.of(state.task("ABC-43").orElseThrow()));
     }
 
     @Test

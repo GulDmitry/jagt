@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.PlanGate;
@@ -12,6 +13,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -31,13 +33,13 @@ class PlanApprovalTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build());
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
-        when(relay.relay(eq("ABC-1"), eq("plan"), anyString())).thenReturn(true);
+        when(relay.relay(eq("ABC-1"), eq("plan"), anyString(), any(Standing.class))).thenReturn(true);
 
         boolean told = new PlanApproval(state, relay, door).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
-        verify(relay).relay("ABC-1", "plan", "The human read plan.md: the plan holds.");
+        verify(relay).relay("ABC-1", "plan", "The human read plan.md: the plan holds.", Standing.of(state.task("ABC-1").orElseThrow()));
     }
 
     @Test
@@ -47,7 +49,7 @@ class PlanApprovalTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build());
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
-        when(relay.relay(eq("ABC-1"), eq("plan"), anyString())).thenReturn(false);
+        when(relay.relay(eq("ABC-1"), eq("plan"), anyString(), any(Standing.class))).thenReturn(false);
 
         boolean told = new PlanApproval(state, relay, door).approve("ABC-1", "The human read plan.md");
 
@@ -66,6 +68,6 @@ class PlanApprovalTest {
 
         assertThat(told).isFalse();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
-        verify(relay, never()).relay(anyString(), anyString(), anyString());
+        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
     }
 }

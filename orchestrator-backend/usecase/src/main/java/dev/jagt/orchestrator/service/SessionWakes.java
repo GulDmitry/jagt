@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Wake;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ import java.util.function.Predicate;
 public class SessionWakes {
 
     /** A step due to be said to the session of {@code taskId}. */
-    public record Due(String taskId, String step) {
+    public record Due(String taskId, String step, Standing read) {
     }
 
     private final StateService stateService;
@@ -62,7 +63,7 @@ public class SessionWakes {
             }
             turns.unmark(entry.getKey(), Wake.MARK);
             if (wake.get().turn() == entry.getValue().turnOrNone().id()) {
-                due.add(new Due(entry.getKey(), wake.get().step()));
+                due.add(new Due(entry.getKey(), wake.get().step(), Standing.of(entry.getValue())));
             }
         });
         return due;

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
@@ -63,10 +64,11 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
+        when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
         new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
 
-        verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"));
+        verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
 
     @Test
@@ -84,7 +86,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString());
+        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
         assertThat(state.task("ABC-42").orElseThrow().message())
                 .isEqualTo("deployed to dev — waiting on its pipeline: proj 01234567: pipeline running");
     }
@@ -108,7 +110,7 @@ class DeployCheckJobTest {
         assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         assertThat(handed.message())
                 .isEqualTo("red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7");
-        verify(relay, never()).relay(anyString(), anyString(), anyString());
+        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
     }
 
     @Test
@@ -131,7 +133,7 @@ class DeployCheckJobTest {
                 new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(before, Clock.systemUTC()));
         new DeployCheckJob(before, config, relay, pipelines, new FlowReports(before, Clock.systemUTC())).run();
-        relay.relay("ABC-42", "answered", "The Master answered your question, standing in for the human:\nyes");
+        relay.relay("ABC-42", "answered", "The Master answered your question, standing in for the human:\nyes", relay.standing("ABC-42"));
         StateService restarted = new StateService(new JsonMapper(), paths);
 
         new DeployCheckJob(restarted, config, new StepRelay(new SessionBrief(paths), sessions,
@@ -153,7 +155,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString());
+        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());
     }
 
@@ -168,10 +170,11 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
+        when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
         new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
 
-        verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"));
+        verify(relay).relay(eq("ABC-42"), eq("deploy"), contains("- proj: 01234567 on dev"), any(Standing.class));
     }
 
     @Test
@@ -186,7 +189,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString());
+        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
     }
 
     @Test
@@ -204,7 +207,7 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(state, config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).run();
 
-        verify(relay, never()).relay(anyString(), anyString(), anyString());
+        verify(relay, never()).relay(anyString(), anyString(), anyString(), any(Standing.class));
         verify(pipelines, never()).read(anyString(), any());
     }
 }

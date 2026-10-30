@@ -47,7 +47,7 @@ public class SessionWakeJob implements Job {
     public void run() {
         for (SessionWakes.Due due : wakes.takeDue(sessions::composing)) {
             try {
-                relay.say(due.taskId(), due.step(), LINES.getOrDefault(due.step(), ""));
+                relay.say(due.taskId(), due.step(), LINES.getOrDefault(due.step(), ""), due.read());
             } catch (RuntimeException e) {
                 log.atWarn().setMessage("session wake not sent").addKeyValue("task", due.taskId())
                         .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "the session stays stopped").log();

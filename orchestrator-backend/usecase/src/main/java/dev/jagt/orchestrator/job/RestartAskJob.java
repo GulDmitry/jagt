@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -46,12 +47,12 @@ public class RestartAskJob implements Job {
     public void run() {
         stateService.tasks().forEach((taskId, task) -> {
             if (task.turnOrNone().open()) {
-                ask(taskId);
+                ask(taskId, Standing.of(task));
             }
         });
     }
 
-    private void ask(String taskId) {
+    private void ask(String taskId, Standing read) {
         if (!sessions.agentLive(taskId) || sessions.composing(taskId)) {
             log.atInfo().setMessage("restart ask skipped").addKeyValue("task", taskId)
                     .addKeyValue("cause", "no session is running, or the human is typing in it")
@@ -59,7 +60,7 @@ public class RestartAskJob implements Job {
             return;
         }
         try {
-            relay.say(taskId, "restarted", FACTS);
+            relay.say(taskId, "restarted", FACTS, read);
         } catch (RuntimeException e) {
             log.atWarn().setMessage("restart ask not sent").addKeyValue("task", taskId)
                     .addKeyValue("cause", e.toString()).addKeyValue("effect", "the session was not asked").log();

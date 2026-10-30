@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -925,7 +926,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
         OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "asked-human",
-                "The reviewer asked the human: Add v3 beside v2, or replace it?"));
+                "The reviewer asked the human: Add v3 beside v2, or replace it?", Standing.of(task)));
 
         boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
                 List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
@@ -972,7 +973,7 @@ class MasterVerdictsTest {
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
                 new PlanApproval(state, relay, door));
         OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", "answered",
-                "The Master answered your question, standing in for the human:\nkeep v2 beside v3"));
+                "The Master answered your question, standing in for the human:\nkeep v2 beside v3", Standing.of(task)));
 
         boolean moved = verdicts.answered("ABC-1", state.task("ABC-1").orElseThrow(), "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 

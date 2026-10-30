@@ -74,7 +74,7 @@ public class DeployCheckJob implements Job {
         switch (reading.kind()) {
             case GREEN -> {
                 reports.readDeploy(taskId, false, stamp);
-                relay.relay(taskId, STEP, landed);
+                relay.relay(taskId, STEP, landed, relay.standing(taskId));
             }
             case WAITING -> reports.readDeploy(taskId, false, stamp + " — waiting on its pipeline: " + reading.said());
             case RED -> reports.readDeploy(taskId, true, reading.said() + " " + reading.url());

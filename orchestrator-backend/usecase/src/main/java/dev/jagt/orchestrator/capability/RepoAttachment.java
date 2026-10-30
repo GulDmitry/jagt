@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.capability;
 
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
@@ -32,14 +33,14 @@ class RepoAttachment {
         NewRepo added = worktrees.attach(id, project, configService.load());
         log.atInfo().setMessage("repository added").addKeyValue("task", id).addKeyValue("project", project)
                 .addKeyValue("path", added.worktreePath()).log();
-        return told(id, added);
+        return told(id, added, Standing.of(task));
     }
 
-    private String told(String taskId, NewRepo added) {
+    private String told(String taskId, NewRepo added, Standing read) {
         String where = added.project() + " is at " + added.worktreePath();
         try {
             relay.relayUnder(taskId, "repo", "jagt added the repository you asked for: " + where + ", on branch " + taskId
-                    + ", cut from " + added.baseBranch() + ".", false);
+                    + ", cut from " + added.baseBranch() + ".", false, read);
             return "add-repo " + taskId + ": " + where + "; the session was told";
         } catch (RuntimeException unheard) {
             log.atWarn().setMessage("session not told of repository").addKeyValue("task", taskId)

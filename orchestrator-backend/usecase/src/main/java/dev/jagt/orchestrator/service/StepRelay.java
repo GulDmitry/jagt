@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -44,8 +45,14 @@ public class StepRelay {
                         Function<UnaryOperator<TaskState>, FlowReports.Claimed> write, Predicate<Turn> undo) {
     }
 
-    public boolean relay(String taskId, String step, String facts) {
-        return opened(taskId, step, facts, false, told -> sessions.writeTaskContext(taskId, told));
+    /** Where the task stands now, for a caller with no read of its own to decide on. */
+    public Standing standing(String taskId) {
+        return turns.standing(taskId).orElse(Standing.ABSENT);
+    }
+
+    public boolean relay(String taskId, String step, String facts, Standing read) {
+        requireStanding(taskId, step, read);
+        return opened(taskId, step, facts, false, null, told -> sessions.writeTaskContext(taskId, told));
     }
 
     public boolean relay(String taskId, String step, String facts, Claim claim) {
@@ -53,8 +60,9 @@ public class StepRelay {
     }
 
     /** A round sent back to work, false too where the rounds of this step running reached their ceiling. */
-    public boolean relayRound(String taskId, String step, String facts) {
-        return opened(taskId, step, facts, true, told -> sessions.writeTaskContext(taskId, told));
+    public boolean relayRound(String taskId, String step, String facts, Standing read) {
+        requireStanding(taskId, step, read);
+        return opened(taskId, step, facts, true, null, told -> sessions.writeTaskContext(taskId, told));
     }
 
     public boolean relayRound(String taskId, String step, String facts, Claim claim) {
@@ -62,7 +70,8 @@ public class StepRelay {
     }
 
     /** Written whatever the session already holds, as a hand-off that must land again. */
-    public boolean write(String taskId, String step, String facts) {
+    public boolean write(String taskId, String step, String facts, Standing read) {
+        requireStanding(taskId, step, read);
         CaseDoor.Admission admission = door.opens(taskId, step);
         if (!admission.admitted()) {
             return false;
@@ -72,14 +81,10 @@ public class StepRelay {
         return true;
     }
 
-    /** In a session started afresh, which reads the text with the task's notes rather than its conversation. */
-    public boolean relayFresh(String taskId, String step, String facts) {
-        return opened(taskId, step, facts, false, told -> sessions.relayFresh(taskId, told));
-    }
-
     /** Below an instruction still pending, which stands. */
-    public boolean relayUnder(String taskId, String step, String facts, boolean fresh) {
-        return opened(taskId, step, facts, false, told -> sessions.relayUnder(taskId, told, fresh));
+    public boolean relayUnder(String taskId, String step, String facts, boolean fresh, Standing read) {
+        requireStanding(taskId, step, read);
+        return opened(taskId, step, facts, false, null, told -> sessions.relayUnder(taskId, told, fresh));
     }
 
     public boolean relayUnder(String taskId, String step, String facts, boolean fresh, Claim claim) {
@@ -87,7 +92,8 @@ public class StepRelay {
     }
 
     /** Typed into the session's window, which takes one line. */
-    public boolean say(String taskId, String step, String facts) {
+    public boolean say(String taskId, String step, String facts, Standing read) {
+        requireStanding(taskId, step, read);
         CaseDoor.Admission admission = door.opens(taskId, step);
         if (!admission.admitted()) {
             return false;
@@ -98,18 +104,16 @@ public class StepRelay {
     }
 
     /** A round of text already holding its steps' sections, sent afresh; every step has passed the door at {@code checked}. */
-    public boolean relayComposed(String taskId, List<String> steps, String text, @Nullable TaskStatus checked) {
+    public boolean relayComposed(String taskId, List<String> steps, String text, @Nullable TaskStatus checked,
+                                 Standing read) {
         String step = String.join("+", steps);
+        requireStanding(taskId, step, read);
         String digest = Turn.digestOf(text);
         if (turns.of(taskId).holds(step, digest) || !door.roundDue(taskId, step)) {
             return false;
         }
         recorded(taskId, step, digest, checked, () -> sessions.relayFresh(taskId, text));
         return true;
-    }
-
-    private boolean opened(String taskId, String step, String facts, boolean round, Consumer<String> send) {
-        return opened(taskId, step, facts, round, null, send);
     }
 
     private boolean opened(String taskId, String step, String facts, boolean round, @Nullable Claim claim,
@@ -191,9 +195,21 @@ public class StepRelay {
         }
     }
 
+    /** Throws where the task no longer stands where the caller read it, before any door records a miss against it. */
+    private void requireStanding(String taskId, String step, Standing read) {
+        Standing now = standing(taskId);
+        if (!now.equals(read)) {
+            throw dropped(taskId, step, read.turn(), now.turn());
+        }
+    }
+
     private TaskMovedOn dropped(String taskId, String step, Claim claim) {
+        return dropped(taskId, step, claim.read().turnOrNone().id(), turns.of(taskId).id());
+    }
+
+    private TaskMovedOn dropped(String taskId, String step, long turn, long turnNow) {
         log.atInfo().setMessage("step dropped").addKeyValue("task", taskId).addKeyValue("step", step)
-                .addKeyValue("turn", claim.read().turnOrNone().id()).addKeyValue("turnNow", turns.of(taskId).id())
+                .addKeyValue("turn", turn).addKeyValue("turnNow", turnNow)
                 .addKeyValue("cause", "the task moved on while the step was decided")
                 .addKeyValue("effect", "nothing relayed, the status left as it is")
                 .log();

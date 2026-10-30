@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Refusal;
@@ -62,7 +63,7 @@ class RepoAttachmentTest {
 
         String said = attachment.attach("ABC-7");
 
-        verify(relay).relayUnder(eq("ABC-7"), eq("repo"), contains("/wt/ABC-7-registry"), eq(false));
+        verify(relay).relayUnder(eq("ABC-7"), eq("repo"), contains("/wt/ABC-7-registry"), eq(false), any(Standing.class));
         assertThat(said).contains("the session was told");
     }
 
@@ -71,7 +72,7 @@ class RepoAttachmentTest {
         state.putTask("ABC-7", TaskState.builder("api", "/wt/ABC-7-api", TaskStatus.IN_PROGRESS).alias("a1")
                 .repoRequest("registry").build());
         when(worktrees.attach(eq("ABC-7"), eq("registry"), any())).thenReturn(registry);
-        doThrow(new IllegalStateException("no window")).when(relay).relayUnder(any(), any(), any(), anyBoolean());
+        doThrow(new IllegalStateException("no window")).when(relay).relayUnder(any(), any(), any(), anyBoolean(), any(Standing.class));
 
         String said = attachment.attach("ABC-7");
 

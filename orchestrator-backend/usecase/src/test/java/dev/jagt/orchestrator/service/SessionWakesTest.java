@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -70,7 +71,7 @@ class SessionWakesTest {
         List<SessionWakes.Due> first = later.takeDue(taskId -> false);
         List<SessionWakes.Due> second = later.takeDue(taskId -> false);
 
-        assertThat(first).containsExactly(new SessionWakes.Due("ABC-42", "wake"));
+        assertThat(first).containsExactly(new SessionWakes.Due("ABC-42", "wake", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
         assertThat(second).isEmpty();
     }
 
@@ -88,7 +89,7 @@ class SessionWakesTest {
         List<SessionWakes.Due> again = later.takeDue(taskId -> false);
 
         assertThat(whileTyping).isEmpty();
-        assertThat(afterSending).containsExactly(new SessionWakes.Due("ABC-42", "wake"));
+        assertThat(afterSending).containsExactly(new SessionWakes.Due("ABC-42", "wake", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
         assertThat(again).isEmpty();
     }
 
@@ -116,7 +117,7 @@ class SessionWakesTest {
 
         List<SessionWakes.Due> afterRestart = sessionWakes(file, RESET).takeDue(taskId -> false);
 
-        assertThat(afterRestart).containsExactly(new SessionWakes.Due("ABC-42", "wake"));
+        assertThat(afterRestart).containsExactly(new SessionWakes.Due("ABC-42", "wake", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
     }
 
     @Test
@@ -212,6 +213,6 @@ class SessionWakesTest {
 
         List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
 
-        assertThat(due).containsExactly(new SessionWakes.Due("ABC-42", "wait-over"));
+        assertThat(due).containsExactly(new SessionWakes.Due("ABC-42", "wait-over", new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
     }
 }

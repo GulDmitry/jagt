@@ -154,3 +154,17 @@ human extends the cases.
 #### Scenario: A ship with nothing new to push
 - **WHEN** the Master ships ABC-42 whose tree is clean and branch pushed, and its session replies CI_POLLING with `no_changes`
 - **THEN** the reply is taken and ABC-42 is not stopped
+
+### Requirement: A relay acts only where the task still stands
+Every relay SHALL carry the standing of the task it decided on: `flow/Standing`, its status, the way its stop ends and its turn.
+It SHALL refuse where the task stands elsewhere by the time it is sent, opening no turn and writing nothing.
+Writes that move none of these (usage, polls, silence, probes) never refuse one.
+
+#### Scenario: The turn moved on since the read
+- **WHEN** ABC-42's turn was opened or closed after a ship, a verification, a deploy check, a wake or a round was decided on it
+- **THEN** that relay is dropped and logged with both turns, whatever step it carries
+- **AND** the session is told nothing and no turn is opened
+
+#### Scenario: Only usage was written since the read
+- **WHEN** ABC-42's token usage was written after its Master verdict was read
+- **THEN** the verdict is relayed as read

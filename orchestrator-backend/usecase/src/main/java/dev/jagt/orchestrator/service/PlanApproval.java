@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.MasterMove;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.task.PlanGate;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -31,10 +32,11 @@ public class PlanApproval {
         if (!door.presses(id, MasterMove.APPROVE_PLAN.id())) {
             return false;
         }
+        Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
         if (claim == null) {
             stateService.updateTask(id, task -> task.withPlanGate(PlanGate.OPEN));
         }
-        boolean told = claim == null ? relay.relay(id, "plan", reader + ": the plan holds.")
+        boolean told = claim == null ? relay.relay(id, "plan", reader + ": the plan holds.", read)
                 : relay.relay(id, "plan", reader + ": the plan holds.", opened(claim));
         if (claim != null && !told) {
             stateService.updateTask(id, task -> task.withPlanGate(PlanGate.OPEN));

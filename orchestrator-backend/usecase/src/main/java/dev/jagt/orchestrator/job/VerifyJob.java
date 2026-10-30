@@ -1,8 +1,10 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.Verification;
@@ -74,7 +76,7 @@ public class VerifyJob implements Job {
         Optional<String> failure = verification.failure(task);
         if (failure.isPresent()) {
             if (stillThisRound(taskId, task, "verify")) {
-                returned(taskId, key, "verify", failure.get(), "verification failed; relayed");
+                returned(taskId, task, key, "verify", failure.get(), "verification failed; relayed");
             }
             return;
         }
@@ -90,7 +92,7 @@ public class VerifyJob implements Job {
             statusReports.verified(true, "verified", taskId);
             return;
         }
-        returned(taskId, key, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
+        returned(taskId, task, key, "probes", failed.stream().map(Probe::result).collect(Collectors.joining("\n\n")),
                 "acceptance probe failed; relayed");
     }
 
@@ -112,8 +114,14 @@ public class VerifyJob implements Job {
     }
 
     /** A round stopped at its ceiling stays at VERIFYING, verified anew once the human lifts the stop. */
-    private void returned(String taskId, Optional<String> key, String step, String facts, String said) {
-        if (relay.relayRound(taskId, step, facts)) {
+    private void returned(String taskId, TaskState read, Optional<String> key, String step, String facts, String said) {
+        boolean told;
+        try {
+            told = relay.relayRound(taskId, step, facts, Standing.of(read));
+        } catch (TaskMovedOn dropped) {
+            return;
+        }
+        if (told) {
             key.ifPresent(failing -> stateService.updateTask(taskId,
                     current -> current.withTurn(current.turnOrNone().withMark(FAILED, failing))));
         } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {

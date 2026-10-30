@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
@@ -12,6 +13,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /** A task's turn, written into the task so a restart keeps it; whoever it passes to is {@link Turns#next}'s answer. */
@@ -34,6 +36,10 @@ public class TaskTurns {
 
     public Turn of(String taskId) {
         return stateService.task(stateService.canonicalTaskId(taskId)).map(TaskState::turnOrNone).orElse(Turn.none());
+    }
+
+    public Optional<Standing> standing(String taskId) {
+        return stateService.task(stateService.canonicalTaskId(taskId)).map(Standing::of);
     }
 
     public void opened(String taskId, String step, String digest, @Nullable TaskStatus checked) {
