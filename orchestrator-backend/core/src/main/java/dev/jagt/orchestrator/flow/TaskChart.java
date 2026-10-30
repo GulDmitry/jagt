@@ -224,6 +224,7 @@ final class TaskChart {
                     || step instanceof DeployStep.Fixed || step instanceof DeployStep.Pushed);
             deployed(chart, from, "conflicted", DeployPhase.HANDED, step -> step instanceof DeployStep.Conflicted);
         }
+        deployed(chart, DeployPhase.LANDING, "asked", DeployPhase.CHECK_ASKED, step -> step instanceof DeployStep.Asked);
     }
 
     private static void deployed(ChartBuilder<TaskMove, Object, TaskEffect> chart, DeployPhase from, String label,

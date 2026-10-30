@@ -1,6 +1,5 @@
 # Cases
-One row per use case a defect broke; a fixed defect adds or updates its row in the same commit, and names its family
-in a `Defect-family:` trailer. Seeded 2026-10-23 from the session ↔ Master families' fix commits since 2026-08-01.
+One row per use case a defect broke; a fixed defect adds or updates its row in the same commit, with a `Defect-family:` trailer.
 Families:
 - A text vs. text: a jagt text contradicts another, or asks what the machine refuses at that step.
 - B state overwritten: a record or dedup key is overwritten, lost on restart or kept in the wrong place.
@@ -108,6 +107,7 @@ Families:
 | E24 | an `UNDELIVERED` stop stands (a step never landed) and the session's window runs again → the stop ends, one INFO says `read=session alive`; a window still not running keeps it | seen 2026-10-29: found by the status × condition inventory | `SessionAliveJobTest` |
 | E25 | a `WAIT` stop stands (a dependency stayed down) → jagt says `wait-over` again at the last backoff, a wait keeps the stop and the next wake, any other report of the session ends it | seen 2026-10-29: found by the status × condition inventory | `ReportEffectsTest` |
 | E26 | a deploy's pipeline fails after the deploy landed → jagt reads it by the deploy commit and the session is asked only once green; red on the code hands the deploy worktree back as a conflict, its staged fix committed and pushed by the deploy, and `revert` takes fix and merge out; red on infrastructure is retried; none listed after 10 minutes or no host address settles it, and a press before the fix is refused | seen 2026-10-29: a resolved conflict landed and its pipeline failed on an import unused only in the merge result; the session checked in a worktree without the merge and the human fixed it by hand | `DeployCheckJobTest`, `DeployPipelinesTest`, `ConflictHandOffTest`, `GitDeployTest`, `RevertServiceTest`, `CliPipelineRetryTest` |
+| E27 | a deploy handed back for its pipeline, a status change after the push → the 10 minutes with no pipeline count from the recorded push, and the hand-back is read from the record | seen 2026-10-30: a status change restarted the clock | `DeployPipelinesTest`, `FlowReportsTest` |
 
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |

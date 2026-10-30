@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
@@ -175,9 +176,11 @@ public class FlowReports {
     /**
      * What jagt read of the pipeline on a deployed task's commit: the line the task carries while it is open, or
      * the deploy handed back for a red the code owns. A task that is not live on the deploy branch is left alone,
-     * and so is one already saying it; false where nothing was written.
+     * and so is one already saying it; false where nothing was written. {@code redProject} is the repository whose
+     * pipeline is red on the code, null while none is; the handed-back deploy records it as conflicted for that cause.
      */
-    public boolean readDeploy(String taskId, boolean redOnTheCode, String message) {
+    public boolean readDeploy(String taskId, @Nullable String redProject, String message) {
+        boolean redOnTheCode = redProject != null;
         AtomicBoolean written = new AtomicBoolean();
         tasks.updateTask(taskId, task -> {
             if (!FlowRules.checkedWhereItLanded(task.status())) {
@@ -188,9 +191,16 @@ public class FlowReports {
                 return task;
             }
             written.set(true);
-            return TaskReducer.reduce(task, new TaskMove.DeployRead(redOnTheCode), message, now != task.status(),
-                    clock.millis());
+            TaskState read = TaskReducer.reduce(task, new TaskMove.DeployRead(redOnTheCode), message,
+                    now != task.status(), clock.millis());
+            return redProject == null ? read : TaskReducer.deployStepped(read,
+                    new DeployStep.Conflicted(redProject, Deployment.Cause.RED_PIPELINE), clock.millis());
         });
         return written.get();
+    }
+
+    /** The deploy's check recorded as asked on the facts of {@code digest}, so the session is not asked again. */
+    public void deployAsked(String taskId, String digest) {
+        tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Asked(digest), clock.millis()));
     }
 }

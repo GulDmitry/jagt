@@ -19,23 +19,23 @@ public sealed interface DeployStep {
     record Merged(String project, String sha) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {
-            return deployment.withTarget(project, target -> target.withMerge(sha).withConflicted(false));
+            return deployment.withTarget(project, target -> target.withMerge(sha).withConflict(null));
         }
     }
 
     record Fixed(String project, String sha) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {
-            return deployment.withTarget(project, target -> target.withFix(sha).withConflicted(false));
+            return deployment.withTarget(project, target -> target.withFix(sha).withConflict(null));
         }
     }
 
-    record Conflicted(String project) implements DeployStep {
+    record Conflicted(String project, Deployment.Cause cause) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {
             int index = deployment.indexOf(project);
             return index < 0 ? deployment
-                    : deployment.withTarget(project, target -> target.withConflicted(true)).withAt(index);
+                    : deployment.withTarget(project, target -> target.withConflict(cause)).withAt(index);
         }
     }
 
@@ -45,6 +45,13 @@ public sealed interface DeployStep {
             int index = deployment.indexOf(project);
             return index < 0 ? deployment : deployment.withTarget(project, target -> target.withPushedAt(at))
                     .withAt(Math.max(deployment.at(), index + 1));
+        }
+    }
+
+    record Asked(String digest) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withAskedDigest(digest);
         }
     }
 }

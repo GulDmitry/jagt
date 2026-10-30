@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.RedCauses;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -139,6 +140,20 @@ class DeployPipelinesTest {
     void aDeployStandsOnceTheHostStillListsNoPipelineAfterTheGrace() {
         TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
                 TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(10 * 60).toEpochMilli()).build();
+        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+                TokenUsage.NONE));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    }
+
+    @Test
+    void aDeployStandsWhenTheHostListsNoPipelineTenMinutesAfterThePushWhateverTheStatusSince() {
+        Deployment recorded = Deployment.defaults().withTargets(List.of(
+                Deployment.Target.of("shop", "dev").withPushedAt(NOW.minusSeconds(11 * 60).toEpochMilli())));
+        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null, SHA)),
+                TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(60).toEpochMilli()).deployment(recorded).build();
         when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
 

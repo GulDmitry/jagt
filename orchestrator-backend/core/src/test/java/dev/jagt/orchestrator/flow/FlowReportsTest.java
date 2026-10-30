@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -289,7 +290,7 @@ class FlowReportsTest {
 
     @Test
     void handsADeployedTaskBackWhenItsDeployPipelineIsRedOnTheCode() {
-        reports.readDeploy("ABC-1", true, "deploy pipeline red");
+        reports.readDeploy("ABC-1", "web", "deploy pipeline red");
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());
@@ -299,8 +300,21 @@ class FlowReportsTest {
     }
 
     @Test
+    void recordsTheRedPipelineAsTheCauseTheDeployWaitsOn() {
+        reports.readDeploy("ABC-1", "web", "deploy pipeline red");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        Deployment recorded = Deployment.defaults().withTargets(java.util.List.of(
+                Deployment.Target.of("web", "dev").withPushedAt(5)));
+        TaskState handed = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+                .deployment(recorded).build());
+        assertThat(handed.deployment().conflictedTarget().get().conflict()).isEqualTo(Deployment.Cause.RED_PIPELINE);
+    }
+
+    @Test
     void keepsADeployedTaskDeployedWhileItsPipelineIsOnlyWaited() {
-        reports.readDeploy("ABC-1", false, "waiting on its pipeline");
+        reports.readDeploy("ABC-1", null, "waiting on its pipeline");
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());
@@ -311,7 +325,7 @@ class FlowReportsTest {
 
     @Test
     void movesNoTaskThatIsNotLiveOnTheDeployBranchWhateverItsDeployPipelineSays() {
-        reports.readDeploy("ABC-1", true, "deploy pipeline red");
+        reports.readDeploy("ABC-1", "web", "deploy pipeline red");
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());

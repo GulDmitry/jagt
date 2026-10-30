@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ConflictWatch;
-import dev.jagt.orchestrator.task.DeployRedLine;
 import dev.jagt.orchestrator.task.TaskState;
 import org.jspecify.annotations.Nullable;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,7 @@ public class DeployConflicts {
         Path worktree = GitDeploy.deployWorktreePath(target.path(), taskId);
         return new WaitingConflict(worktree, gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()),
                 gitDeploy.deployProgress(target.path(), taskId),
-                DeployRedLine.marks(task.message()) ? task.message() : null);
+                DeployTargets.handedBackForItsPipeline(task) ? task.message() : null);
     }
 
     /** {@code red} is the line of a deploy handed back for its pipeline, null for a merge that conflicts. */

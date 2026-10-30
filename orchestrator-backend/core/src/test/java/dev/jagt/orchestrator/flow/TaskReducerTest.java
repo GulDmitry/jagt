@@ -34,7 +34,7 @@ class TaskReducerTest {
         TaskState merged = TaskReducer.deployStepped(opened, new DeployStep.Merged("a", "cafe"), 1_100);
         TaskState pushed = TaskReducer.deployStepped(merged, new DeployStep.Pushed("a", 1_200), 1_200);
 
-        TaskState conflicted = TaskReducer.deployStepped(pushed, new DeployStep.Conflicted("b"), 1_300);
+        TaskState conflicted = TaskReducer.deployStepped(pushed, new DeployStep.Conflicted("b", Deployment.Cause.MERGE), 1_300);
 
         assertThat(conflicted.deployment().at()).isEqualTo(1);
         assertThat(conflicted.deployment().targets().get(0).merge()).isEqualTo("cafe");

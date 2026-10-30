@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.task.DeployRedLine;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -81,6 +82,16 @@ public class DeployTargets {
                         Objects.requireNonNull(projects.get(repo.project()))))
                 .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
                 .findFirst();
+    }
+
+    /**
+     * Whether the deploy waits for its pipeline: its record says so, and a deploy begun before the record is read
+     * from the line it was handed back with.
+     */
+    public static boolean handedBackForItsPipeline(TaskState task) {
+        return Optional.ofNullable(task.deployment()).flatMap(Deployment::conflictedTarget)
+                .map(target -> target.conflict() == Deployment.Cause.RED_PIPELINE)
+                .orElseGet(() -> DeployRedLine.marks(task.message()));
     }
 
     /** The deploy branch must NEVER be the base branch tasks are cut from. */

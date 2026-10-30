@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.task.DeployRedLine;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -92,11 +93,22 @@ public class DeployPipelines {
             case GREEN -> Reading.green();
             case RED -> red(taskId, task, label, project, at, pipeline.url());
             case RUNNING -> Reading.waiting(at + "running");
-            case NONE -> clock.millis() - task.statusSince() >= NO_PIPELINE_AFTER.toMillis()
+            case NONE -> clock.millis() - pushedAt(task, project) >= NO_PIPELINE_AFTER.toMillis()
                     ? withoutPipeline(taskId, label, "the host listed none after " + NO_PIPELINE_AFTER.toMinutes() + " min")
                     : Reading.waiting(at + "not started");
             case UNKNOWN -> Reading.waiting(at + "state unknown");
         };
+    }
+
+    /** When the commit was pushed, from the record; a deploy begun before the record counts from its status. */
+    private static long pushedAt(TaskState task, String project) {
+        Deployment deployment = task.deployment();
+        if (deployment == null || deployment.indexOf(project) < 0) {
+            return task.statusSince();
+        }
+        int index = deployment.indexOf(project);
+        return deployment.targets().get(index).pushedAt() > 0
+                ? deployment.targets().get(index).pushedAt() : task.statusSince();
     }
 
     /** The one way a deploy settles with no pipeline behind it: none can come, so none is waited for. */

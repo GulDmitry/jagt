@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.task.DeployRedLine;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -81,7 +80,7 @@ public class DeployService {
     /** A deploy handed back for its pipeline finishes with the session's fix, not with a merge of the task again. */
     private void requireTheFixStaged(TaskState task, String taskId, Optional<Target> waiting) {
         waiting
-                .filter(target -> DeployRedLine.marks(task.message())
+                .filter(target -> DeployTargets.handedBackForItsPipeline(task)
                         && !gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))
                 .ifPresent(target -> {
                     throw Refusal.byState("deploy " + taskId + " waits on the session's fix in "
@@ -168,7 +167,7 @@ public class DeployService {
                                     GitDeploy.MergeConflictException e) {
         Target conflicted = targets.get(at);
         stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t,
-                new DeployStep.Conflicted(conflicted.project()), clock.millis()));
+                new DeployStep.Conflicted(conflicted.project(), Deployment.Cause.MERGE), clock.millis()));
         String half = targets.size() > 1 ? halfState(targets, at) : "";
         String note = half.isEmpty() ? "" : " — " + half;
         String what = targets.size() > 1

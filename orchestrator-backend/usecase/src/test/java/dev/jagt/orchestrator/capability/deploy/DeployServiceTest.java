@@ -337,7 +337,7 @@ class DeployServiceTest {
         TaskState opened = TaskReducer.deployStepped(pressed, new DeployStep.Opened(List.of(
                 Deployment.Target.of("api", "dev"), Deployment.Target.of("web", "dev"))), 1L);
         TaskState pushed = TaskReducer.deployStepped(opened, new DeployStep.Pushed("api", 2L), 2L);
-        state.putTask("ABC-1", TaskReducer.deployStepped(pushed, new DeployStep.Conflicted("web"), 3L));
+        state.putTask("ABC-1", TaskReducer.deployStepped(pushed, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 3L));
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));

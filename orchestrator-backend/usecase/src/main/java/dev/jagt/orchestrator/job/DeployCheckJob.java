@@ -65,7 +65,7 @@ public class DeployCheckJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        landed(taskId, task).filter(landed -> !task.turnOrNone().marked(STEP.id(), Turn.digestOf(landed)))
+        landed(taskId, task).filter(landed -> !asked(task, Turn.digestOf(landed)))
                 .ifPresent(landed -> settle(taskId, task, landed));
     }
 
@@ -74,12 +74,20 @@ public class DeployCheckJob implements TaskJob {
         String stamp = "deployed to " + deployBranches(task);
         switch (reading.kind()) {
             case GREEN -> {
-                reports.readDeploy(taskId, false, stamp);
-                relay.relay(taskId, STEP, landed, relay.standing(taskId));
+                reports.readDeploy(taskId, null, stamp);
+                if (relay.relay(taskId, STEP, landed, relay.standing(taskId))) {
+                    reports.deployAsked(taskId, Turn.digestOf(landed));
+                }
             }
-            case WAITING -> reports.readDeploy(taskId, false, stamp + " — waiting on its pipeline: " + reading.said());
-            case RED -> reports.readDeploy(taskId, true, reading.said() + " " + reading.url());
+            case WAITING -> reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
+            case RED -> reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
         }
+    }
+
+    /** From the record; a deploy begun before it is read from the turn's mark, as before. */
+    private static boolean asked(TaskState task, String digest) {
+        return task.deployment() == null ? task.turnOrNone().marked(STEP.id(), digest)
+                : digest.equals(task.deployment().askedDigest());
     }
 
     private String deployBranches(TaskState task) {
