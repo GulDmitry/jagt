@@ -41,7 +41,8 @@ public final class DashboardLine {
         }
         Optional<Conflict> conflict = task.currentConflict().filter(Conflict::stalled);
         if (conflict.isPresent()) {
-            return new Line(Kind.YOURS, "NEEDS YOU: the deploy conflict stopped moving: "
+            return new Line(Kind.YOURS, "NEEDS YOU: the " + (Facts.revertConflicted(task) ? "revert" : "deploy")
+                    + " conflict stopped moving: "
                     + Objects.requireNonNull(conflict.get().told()).reason());
         }
         return switch (task.status()) {

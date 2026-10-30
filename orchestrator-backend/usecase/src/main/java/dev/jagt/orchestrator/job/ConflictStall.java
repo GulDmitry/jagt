@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.DeployStep;
+import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
@@ -52,13 +53,15 @@ class ConflictStall {
     }
 
     private void announce(String taskId, Conflict.Told stop, Duration after) {
-        String alias = stateService.task(taskId).map(TaskState::alias).orElse(taskId);
-        log.atWarn().setMessage("deploy conflict stalled").addKeyValue("task", taskId).addKeyValue("alias", alias)
-                .addKeyValue("cause", "no change in the deploy worktree for " + after.toMinutes() + " min")
+        Optional<TaskState> task = stateService.task(taskId);
+        String alias = task.map(TaskState::alias).orElse(taskId);
+        String kind = task.filter(Facts::revertConflicted).isPresent() ? "revert" : "deploy";
+        log.atWarn().setMessage(kind + " conflict stalled").addKeyValue("task", taskId).addKeyValue("alias", alias)
+                .addKeyValue("cause", "no change in the " + kind + " worktree for " + after.toMinutes() + " min")
                 .addKeyValue("said", stop.reason())
-                .addKeyValue("effect", "the human is told once; the deploy waits")
-                .addKeyValue("fix", "resolve it in the deploy worktree, git add, then deploy " + alias)
+                .addKeyValue("effect", "the human is told once; the " + kind + " waits")
+                .addKeyValue("fix", "resolve it in the " + kind + " worktree, git add, then " + kind + " " + alias)
                 .log();
-        notifications.send(Notification.watchdog(taskId, "deploy conflict stalled", stop.reason()));
+        notifications.send(Notification.watchdog(taskId, kind + " conflict stalled", stop.reason()));
     }
 }

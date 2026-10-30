@@ -203,4 +203,19 @@ class DashboardLineTest {
                 .isEqualTo(new DashboardLine.Line(DashboardLine.Kind.YOURS,
                         "NEEDS YOU: core.fsmonitor in /r/.git/config added"));
     }
+
+    @Test
+    void namesTheRevertWhenAStalledConflictIsARevertsOne() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT).lastActiveTimestamp(1_000).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("p", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("p",
+                Deployment.Cause.REVERT), 1_000);
+        TaskState seen = TaskReducer.deployStepped(conflicted, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")),
+                1_000);
+        TaskState stalled = TaskReducer.deployStepped(seen, new DeployStep.Told("7 paths unmerged"), 1_201_000);
+
+        assertThat(DashboardLine.forTask(stalled, null).text())
+                .isEqualTo("NEEDS YOU: the revert conflict stopped moving: 7 paths unmerged");
+    }
 }
