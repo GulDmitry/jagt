@@ -19,9 +19,8 @@ public record RoundTrail(List<Round> rounds, long since) {
             notes = notes == null ? "" : notes;
         }
 
-        /** Blank notes are unknown, never a repeat. */
         public boolean repeats(String other) {
-            return !notes.isBlank() && notes.equals(other);
+            return RoundKey.stored(notes).sameAs(RoundKey.stored(other));
         }
     }
 
@@ -51,7 +50,7 @@ public record RoundTrail(List<Round> rounds, long since) {
 
     /** Known notes that the last round did not carry. */
     public boolean newNotes(String notes) {
-        return !notes.isBlank() && (rounds.isEmpty() || !rounds.getLast().repeats(notes));
+        return RoundKey.stored(notes).known() && (rounds.isEmpty() || !rounds.getLast().repeats(notes));
     }
 
     public boolean relayed(String digest) {

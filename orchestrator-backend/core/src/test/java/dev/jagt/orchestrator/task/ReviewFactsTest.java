@@ -122,4 +122,14 @@ class ReviewFactsTest {
 
         assertThat(facts.noteFingerprint()).isEmpty();
     }
+
+    @Test
+    void twoReadsWithABlankNewestNoteIdOnOneThreadAreNeverTheSameRound() {
+        ReviewFacts first = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a", "l2\nrev: b"), 7,
+                List.of(), List.of("note_1", ""), "", false, false);
+        ReviewFacts second = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a", "l2\nrev: b"), 9,
+                List.of(), List.of("note_1", ""), "", false, false);
+
+        assertThat(first.noteKey().sameAs(second.noteKey())).isFalse();
+    }
 }

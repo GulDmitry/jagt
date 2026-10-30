@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.task;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -30,15 +29,19 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
         pipelineUrl = pipelineUrl == null ? "" : pipelineUrl;
     }
 
-    /** Equal for two reads of the same open threads with the same newest notes, whatever the copied text; empty where any id is unknown. */
-    public String noteFingerprint() {
-        if (newestNotes.size() != threads.size() || newestNotes.stream().anyMatch(String::isBlank)) {
-            return "";
+    /** The same for two reads of the same open threads with the same newest notes, whatever the copied text; unknown where any id is. */
+    public RoundKey noteKey() {
+        if (newestNotes.size() != threads.size()) {
+            return RoundKey.unknown();
         }
-        return IntStream.range(0, threads.size())
-                .mapToObj(i -> threads.get(i).strip().lines().findFirst().orElse("")
-                        + " " + newestNotes.get(i))
-                .sorted().collect(Collectors.joining("\n"));
+        return RoundKey.of(IntStream.range(0, threads.size())
+                .mapToObj(i -> newestNotes.get(i).isBlank() ? ""
+                        : threads.get(i).strip().lines().findFirst().orElse("") + " " + newestNotes.get(i))
+                .sorted().toList());
+    }
+
+    public String noteFingerprint() {
+        return noteKey().stored();
     }
 
     /** The same round with its checks left unsaid. */
