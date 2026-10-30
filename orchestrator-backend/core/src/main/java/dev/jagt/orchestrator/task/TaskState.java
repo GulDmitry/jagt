@@ -80,7 +80,9 @@ public record TaskState(
         // Absent in a file written before the deployment was recorded.
         @Nullable Deployment deployment,
         // Absent in a file written before the session was recorded, which reads as no sign yet.
-        Session session
+        Session session,
+        // Null until an auto-review ping was sent.
+        @Nullable AutoReviewTold told
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -146,7 +148,8 @@ public record TaskState(
             @JsonProperty("checksTip") @Nullable String checksTip,
             @JsonProperty("headTip") @Nullable String headTip,
             @JsonProperty("deployment") @Nullable Deployment deployment,
-            @JsonProperty("session") @Nullable Session session) {
+            @JsonProperty("session") @Nullable Session session,
+            @JsonProperty("told") @Nullable AutoReviewTold told) {
         List<LegacyDeployment.Repo> stored = LegacyDeployment.stored(repos,
                 new LegacyDeployment.Repo(project, worktreePath, remoteUrl, mrUrl, deployCommit, null, null, null));
         TaskState read = new TaskState(stored.stream().map(LegacyDeployment.Repo::repo).toList(), status,
@@ -160,7 +163,7 @@ public record TaskState(
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
                 Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, turn, switches == null ? Map.of() : switches,
                 infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment,
-                Session.migrated(session, legacySilentSince));
+                Session.migrated(session, legacySilentSince), told);
         Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
         return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
     }
@@ -627,6 +630,15 @@ public record TaskState(
 
     public TaskState withDeployment(Deployment deployment) {
         return toBuilder().deployment(deployment).build();
+    }
+
+    @JsonIgnore
+    public AutoReviewTold toldOrNone() {
+        return told == null ? AutoReviewTold.none() : told;
+    }
+
+    public TaskState withTold(AutoReviewTold told) {
+        return toBuilder().told(told.isNone() ? null : told).build();
     }
 
     public TaskState withSession(Session session) {

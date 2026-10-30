@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskLabel;
+import dev.jagt.orchestrator.task.AutoReviewTold;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -17,8 +18,6 @@ import java.time.Clock;
 import java.time.Duration;
 
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Polls the request of every task that HAS one through the SHARED {@link ReviewSweepService}, so an unattended
@@ -55,7 +54,6 @@ public class AutoReviewScheduler implements Job {
     private final AutoReviewPolls polls;
     private final Notifications notifications;
     private final Clock clock;
-    private final Set<String> windowElapsedNotified = ConcurrentHashMap.newKeySet();
 
     @Override
     public void run() {
@@ -65,20 +63,20 @@ public class AutoReviewScheduler implements Job {
         }
         long now = clock.millis();
         var tasks = stateService.tasks();
-        // A task RETIRED while out for review never leaves that status, so its marker would never be dropped.
-        windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
-        polls.rearmUnreadable(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
         tasks.forEach((taskId, task) -> {
-            // A task the poller has no business with any more re-arms its window-elapsed ping.
+            // A task the poller has no business with any more re-arms its pings.
             if (!cadence.polls(task)) {
-                windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
-                polls.rearmUnreadable(marker -> marker.startsWith(taskId + "@"));
+                if (!task.toldOrNone().isNone()) {
+                    stateService.updateTask(taskId, t -> t.withTold(AutoReviewTold.none()));
+                }
                 return;
             }
             switch (decide(task, cadence, now)) {
                 case WINDOW_ELAPSED -> {
                     // Keyed by the WINDOW: another round starts a new one without ever leaving CI_POLLING.
-                    if (windowElapsedNotified.add(taskId + "@" + task.mrCreatedAt())) {
+                    if (task.toldOrNone().windowElapsed() != task.mrCreatedAt()) {
+                        stateService.updateTask(taskId,
+                                t -> t.withTold(t.toldOrNone().withWindowElapsed(task.mrCreatedAt())));
                         notifications.send(Notification.fromAgent(taskId, "auto-review",
                                 Objects.requireNonNull(AutoReviewWatch.windowElapsed(cadence.windowHours()).note())));
                     }

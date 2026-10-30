@@ -39,7 +39,7 @@ The window SHALL run per round from `mrCreatedAt`, restamped on each entry into 
 
 #### Scenario: Polling stopped
 - **WHEN** a round not waiting on reviewers outlives `autoReview.windowHours`
-- **THEN** the card says `polling stopped` and asks for you
+- **THEN** the card says `polling stopped` and asks for you, and one banner says so, none again after a restart
 
 ### Requirement: The cadence is the whole policy
 `AutoReviewCadence` SHALL be the whole policy: enabled, the interval ramp, `watch(task, now)` → `task/AutoReviewWatch` (the next-poll stamp, window

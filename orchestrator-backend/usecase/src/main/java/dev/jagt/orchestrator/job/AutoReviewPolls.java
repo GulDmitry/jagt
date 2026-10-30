@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ReviewSweepService;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import lombok.AccessLevel;
@@ -17,7 +18,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.function.Predicate;
 
 @Component
 @Slf4j
@@ -29,8 +29,8 @@ class AutoReviewPolls {
     private final TaskStops stops;
     @Qualifier("autoReviewSweeps")
     private final Executor executor;
+    private final StateService stateService;
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
-    private final Set<String> unreadableNotified = ConcurrentHashMap.newKeySet();
 
     /**
      * Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a task's sweeps
@@ -59,10 +59,6 @@ class AutoReviewPolls {
         }
     }
 
-    void rearmUnreadable(Predicate<String> marker) {
-        unreadableNotified.removeIf(marker);
-    }
-
     private void pollNow(String taskId, long round, Runnable finished) {
         try {
             ReviewSweepService.SweepResult result = OriginContext.as(ActionOrigin.AUTO_REVIEW,
@@ -71,7 +67,8 @@ class AutoReviewPolls {
             // retries are spent, and every further tick would say the same thing to the same log.
             if ((result.kind() == ReviewSweepService.SweepResult.Kind.UNREADABLE
                     || result.kind() == ReviewSweepService.SweepResult.Kind.GONE)
-                    && unreadableNotified.add(taskId + "@" + round)) {
+                    && stateService.task(taskId).filter(t -> t.toldOrNone().unreadable() != round).isPresent()) {
+                stateService.updateTask(taskId, t -> t.withTold(t.toldOrNone().withUnreadable(round)));
                 notifications.send(Notification.fromAgent(taskId, "auto-review", result.message()));
             }
         } catch (RuntimeException e) {
