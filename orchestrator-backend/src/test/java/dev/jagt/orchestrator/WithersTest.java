@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -155,6 +156,9 @@ class WithersTest {
         }
         if (raw == OptionalInt.class) {
             return OptionalInt.of(variant + 1);
+        }
+        if (raw == BooleanSupplier.class) {
+            return (BooleanSupplier) () -> variant == 0;
         }
         if (raw.isEnum()) {
             Object[] constants = raw.getEnumConstants();

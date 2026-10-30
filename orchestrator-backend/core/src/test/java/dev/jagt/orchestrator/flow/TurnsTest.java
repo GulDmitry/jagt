@@ -49,7 +49,7 @@ class TurnsTest {
     void theBoardShowsTheHolderWhereNoMasterHoldsTheTurn(TaskStatus status, AgentReport report, String profile) {
         Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
 
-        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false, false, false),
+        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
                 RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
                 AutoReviewWatch.watching(Long.MAX_VALUE));
 
@@ -63,7 +63,7 @@ class TurnsTest {
             "REVIEWED, PLAIN, act",
             "APPROVED, PLAIN, act"})
     void theBoardShowsTheMasterAtWorkWhereItStandsInForTheHuman(TaskStatus status, AgentReport report, String profile) {
-        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false, false, false),
+        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
                 RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
                 AutoReviewWatch.watching(Long.MAX_VALUE));
 
@@ -93,7 +93,7 @@ class TurnsTest {
                                                                   String profile) {
         Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
 
-        Move move = Move.forTask(status, new Facts(true, false, () -> false, false, false, false, false, false),
+        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
                 RoundState.of(report, false).withMasterReading(true), false);
 
         assertThat(holder).isEqualTo(Holder.MASTER);
