@@ -46,15 +46,20 @@ public enum SessionPhase {
 
     /** The words a human is owed for the silence, or null where the session said nothing and the surface speaks for itself. */
     public static @Nullable String silentBecause(TaskState task) {
-        Session.Halt halt = task.session().halt();
-        if (!silent(task) || halt == null) {
+        Session session = task.session();
+        Session.Halt halt = session.halt();
+        if (!silent(task)) {
             return null;
+        }
+        boolean running = session.alive() == Boolean.TRUE;
+        if (halt == null) {
+            return running ? "no sign of life, process running" : null;
         }
         String cause = halt.cause();
         return switch (halt.kind()) {
             case GONE -> cause == null ? "the session ended" : "the session ended: " + cause;
             case FAILED -> cause == null ? "its turn failed" : "its turn failed: " + cause;
-            case IDLE -> "its turn ended and nothing has moved since";
+            case IDLE -> "its turn ended and nothing has moved since" + (running ? ", process running" : "");
         };
     }
 }

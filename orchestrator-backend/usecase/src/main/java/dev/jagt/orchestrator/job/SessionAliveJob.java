@@ -57,6 +57,9 @@ public class SessionAliveJob implements TaskJob {
                         .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())
                         .addKeyValue("read", "session alive").log());
             }
+        } catch (AgentPresence.Unread unread) {
+            log.atDebug().setMessage("session window unread").addKeyValue("task", taskId)
+                    .addKeyValue("cause", unread.getMessage()).addKeyValue("effect", "the stop stands").log();
         } catch (RuntimeException e) {
             log.atWarn().setMessage("session read failed").addKeyValue("task", taskId)
                     .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "look again in a minute").log();

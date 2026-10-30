@@ -68,9 +68,18 @@ public class FlowEngine {
         return outcome.message();
     }
 
+    private boolean live(String taskId) {
+        try {
+            return agents.agentLive(taskId);
+        } catch (AgentPresence.Unread unread) {
+            throw Refusal.byState("Cannot tell whether the session runs, its window was not read: "
+                    + unread.getMessage());
+        }
+    }
+
     /** The real liveness probe, unlike the projection's: this one is about to act on the answer. */
     private Facts facts(TaskState task, String taskId) {
-        return new Facts(task.hasReviewRequest(), Facts.deployLive(task), () -> agents.agentLive(taskId),
+        return new Facts(task.hasReviewRequest(), Facts.deployLive(task), () -> live(taskId),
                 task.gitStateChanged(), task.stopped(), task.asksForARepository(), task.requestsMerged(),
                 Facts.revertConflicted(task));
     }

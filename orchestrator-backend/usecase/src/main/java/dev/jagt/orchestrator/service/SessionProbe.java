@@ -8,6 +8,8 @@ import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import org.jspecify.annotations.Nullable;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -26,7 +28,7 @@ public class SessionProbe {
     public enum State { GONE, FAILED, IDLE, WORKING }
 
     private final ConfigService configService;
-    private final SessionHost sessions;
+    private final AgentSessions sessions;
     private final AgentRuntime runtime;
     private final Map<String, Path> reportedLog = new ConcurrentHashMap<>();
 
@@ -57,18 +59,36 @@ public class SessionProbe {
         reportedLog.put(taskId, log);
     }
 
-    /** The windows are asked only once the free signs have run out and already read stale: that is a process spawn. */
+    /**
+     * The window's process is read on every look, as nothing else tells a dead one; what it printed costs a second
+     * spawn and is asked only once the free signs read stale.
+     */
     public SessionSign.Read read(String taskId, TaskState task, long staleMs, long now) {
         long log = ownLog(taskId, task);
+        SessionHost.WindowState process = sessions.windowState(taskId);
+        if (process != SessionHost.WindowState.AGENT_RUNNING) {
+            return new SessionSign.Read(gone(process), 0, log, task.lastActiveTimestamp(), staleMs, exitTail(taskId));
+        }
         Session session = task.session();
         Session.Halt halt = session.halt();
         long lastSign = Math.max(Math.max(task.lastActiveTimestamp(), log),
                 Math.max(session.movedAt(), halt == null ? 0 : halt.at()));
         boolean verdictStands = halt != null && halt.kind() != Session.Halt.Kind.IDLE;
-        long printed = verdictStands || now - lastSign < staleMs ? 0 : sessions.lastWindowActivityMillis(
-                sessions.sessionName(config().viewer().session()), taskId);
-        return new SessionSign.Read(printed > 0 ? Session.Window.State.RUNNING : Session.Window.State.UNREAD, printed,
-                log, task.lastActiveTimestamp(), staleMs);
+        long printed = verdictStands || now - lastSign < staleMs ? 0 : sessions.printedAt(taskId);
+        return new SessionSign.Read(Session.Window.State.RUNNING, printed, log, task.lastActiveTimestamp(), staleMs, null);
+    }
+
+    private static Session.Window.State gone(SessionHost.WindowState process) {
+        return process == SessionHost.WindowState.MISSING ? Session.Window.State.MISSING : Session.Window.State.DEAD_SHELL;
+    }
+
+    /** What the agent printed on its way out; a window that cannot be captured only costs the words. */
+    private @Nullable String exitTail(String taskId) {
+        try {
+            return sessions.exitTail(taskId).filter(printed -> !printed.isBlank()).map(OneLine::clipped).orElse(null);
+        } catch (RuntimeException unread) {
+            return null;
+        }
     }
 
     /**

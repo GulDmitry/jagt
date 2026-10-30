@@ -24,6 +24,14 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
                 ? session.withQuietSince(legacySilentSince) : session;
     }
 
+    /** Whether its process runs as the last window read showed; null where no read has told. */
+    public @Nullable Boolean alive() {
+        if (window == null || window.state() == Window.State.UNREAD) {
+            return null;
+        }
+        return window.state() == Window.State.RUNNING;
+    }
+
     /** How a session stopped, when, and why in the words a human reads. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)

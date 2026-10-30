@@ -275,7 +275,8 @@ final class TaskChart {
                     .stay();
             signed(chart, from, "called", SessionPhase.WORKING, SessionSign.Called.class);
             signed(chart, from, "reported", from, SessionSign.Reported.class);
-            signed(chart, from, "read", turnsEnd.contains(from) ? SessionPhase.QUIET : from, SessionSign.Read.class);
+            read(chart, from, "read", turnsEnd.contains(from) ? SessionPhase.QUIET : from, false);
+            read(chart, from, "read found no process", SessionPhase.GONE, true);
             signed(chart, from, "ended", SessionPhase.GONE, SessionSign.Ended.class);
             signed(chart, from, "restarted", SessionPhase.IDLE, SessionSign.Restarted.class);
             if (turnsEnd.contains(from)) {
@@ -284,6 +285,19 @@ final class TaskChart {
             if (turnsEnd.contains(from) || from == SessionPhase.FAILED) {
                 signed(chart, from, "turn failed", SessionPhase.FAILED, SessionSign.TurnFailed.class);
             }
+        }
+    }
+
+    private static void read(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from, String label,
+                             SessionPhase to, boolean processGone) {
+        EdgeBuilder<TaskMove, Boolean, TaskEffect, SessionPhase> edge = chart.onMatching(SESSION, from, label,
+                        move -> move instanceof TaskMove.Signed signed && signed.sign() instanceof SessionSign.Read read
+                                && read.processGone() == processGone)
+                .emitFor(move -> new TaskEffect.Signs(((TaskMove.Signed) move).sign()));
+        if (from == to) {
+            edge.stay();
+        } else {
+            edge.to(to);
         }
     }
 

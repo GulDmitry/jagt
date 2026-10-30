@@ -77,15 +77,24 @@ public sealed interface SessionSign {
      * What a look at the session found, with the signs that need no hook: the window's last print, the file the
      * session appends to, and the task's own last activity. The window is {@code UNREAD} where it was not asked.
      * A halt older than a later sign is dropped, except that output alone never undoes a failure or an end.
+     * A window holding no agent process ends the session, its reason what the agent printed on the way out.
      */
-    record Read(Session.Window.State window, long printedAt, long logAt, long activeAt, long staleAfter)
-            implements SessionSign {
+    record Read(Session.Window.State window, long printedAt, long logAt, long activeAt, long staleAfter,
+                @Nullable String exitTail) implements SessionSign {
+
+        public boolean processGone() {
+            return window == Session.Window.State.DEAD_SHELL || window == Session.Window.State.MISSING;
+        }
+
         @Override
         public Session applyTo(Session session, long now) {
             Session.Halt halt = session.halt();
             long later = Math.max(session.movedAt(), Math.max(logAt, activeAt));
             if (halt != null && halt.at() < later) {
                 halt = null;
+            }
+            if (processGone()) {
+                return session.withHalt(goneHalt(halt, now)).withQuietSince(0).withWindow(windowAfter(session, now));
             }
             long last = Math.max(later, halt == null ? 0 : halt.at());
             if ((halt == null || halt.kind() == Session.Halt.Kind.IDLE) && printedAt > last) {
@@ -95,6 +104,11 @@ public sealed interface SessionSign {
             boolean stale = halt == null || halt.kind() == Session.Halt.Kind.IDLE;
             long quiet = stale && last > 0 && now - last >= staleAfter ? last : 0;
             return session.withHalt(halt).withQuietSince(quiet).withWindow(windowAfter(session, now));
+        }
+
+        private Session.Halt goneHalt(Session.@Nullable Halt standing, long now) {
+            return standing != null && standing.kind() == Session.Halt.Kind.GONE ? standing
+                    : new Session.Halt(Session.Halt.Kind.GONE, now, exitTail);
         }
 
         private Session.@Nullable Window windowAfter(Session session, long now) {

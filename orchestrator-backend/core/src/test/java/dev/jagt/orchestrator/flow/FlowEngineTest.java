@@ -222,4 +222,18 @@ class FlowEngineTest {
 
         assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("shipped again");
     }
+
+    @Test
+    void refusesToShipAStuckTaskWhoseSessionWindowCouldNotBeRead() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
+        when(sessions.agentLive("ABC-1")).thenThrow(new AgentPresence.Unread("tmux timed out"));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new NeverRunCapability(
+                TaskAction.SHIP)), List.of()), sessions, Clock.systemUTC());
+
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
+                .asInstanceOf(type(Refusal.class))
+                .satisfies(refusal -> assertThat(refusal.getMessage()).contains("window was not read"));
+    }
 }

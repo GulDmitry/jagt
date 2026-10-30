@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
+public class AgentSessions {
 
     private static final Duration DRAFT_POLL = Duration.ofSeconds(1);
     private static final Duration SUBMIT_WAIT = Duration.ofMillis(700);
@@ -70,10 +70,14 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return true;
     }
 
-    @Override
-    public boolean agentLive(String taskId) {
-        return sessions.taskWindowState(agentSession(configService.load(), taskId), taskId)
-                == SessionHost.WindowState.AGENT_RUNNING;
+    /** A session that cannot list its windows throws: unknown is never missing. */
+    public SessionHost.WindowState windowState(String taskId) {
+        return sessions.taskWindowState(agentSession(configService.load(), taskId), taskId);
+    }
+
+    /** When the task's window last printed, epoch millis, 0 where it never did. */
+    public long printedAt(String taskId) {
+        return sessions.lastWindowActivityMillis(agentSession(configService.load(), taskId), taskId);
     }
 
     private TaskState requireTask(String taskId) {

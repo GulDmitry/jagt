@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.flow.TurnKind;
 import dev.jagt.orchestrator.flow.Watch;
@@ -23,6 +24,7 @@ public class RestartAskJob implements TaskJob {
     static final String FACTS = "jagt was restarted.";
 
     private final AgentSessions sessions;
+    private final AgentPresence presence;
     private final StepRelay relay;
 
     @Override
@@ -55,10 +57,18 @@ public class RestartAskJob implements TaskJob {
         ask(taskId, Standing.of(task));
     }
 
+    private boolean running(String taskId) {
+        try {
+            return presence.agentLive(taskId);
+        } catch (AgentPresence.Unread unread) {
+            return false;
+        }
+    }
+
     private void ask(String taskId, Standing read) {
-        if (!sessions.agentLive(taskId) || sessions.composing(taskId)) {
+        if (!running(taskId) || sessions.composing(taskId)) {
             log.atInfo().setMessage("restart ask skipped").addKeyValue("task", taskId)
-                    .addKeyValue("cause", "no session is running, or the human is typing in it")
+                    .addKeyValue("cause", "no session is running, its window was not read, or the human is typing in it")
                     .addKeyValue("effect", "nothing said, the session is not revived for it").log();
             return;
         }

@@ -367,23 +367,13 @@ class AgentSessionsTest {
     }
 
     @Test
-    void reportsAnAgentLiveOnlyWhileItsWindowRunsTheAgent() {
+    void answersTheWindowStateOfTheTasksOwnSession() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions.agentLive("ABC-1")).isFalse();
-    }
-
-    @Test
-    void reportsAnAgentLiveWhereItsWindowRunsTheAgent() {
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
-
-        assertThat(sessions.agentLive("ABC-1")).isTrue();
+        assertThat(sessions.windowState("ABC-1")).isEqualTo(SessionHost.WindowState.DEAD_SHELL);
     }
 
     @Test

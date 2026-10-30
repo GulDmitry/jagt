@@ -335,7 +335,7 @@ class TaskReducerTest {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
-        TaskState quiet = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000), 9_000);
+        TaskState quiet = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 9_000);
 
         assertThat(SessionPhase.of(quiet.session())).isEqualTo(SessionPhase.QUIET);
         assertThat(quiet.session().quietSince()).isEqualTo(1_000);
@@ -346,7 +346,7 @@ class TaskReducerTest {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
-        TaskState read = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000), 4_000);
+        TaskState read = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 4_000);
 
         assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.IDLE);
     }
@@ -356,7 +356,7 @@ class TaskReducerTest {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
-        TaskState quiet = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.RUNNING, 2_000, 0, 0, 5_000), 9_000);
+        TaskState quiet = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.RUNNING, 2_000, 0, 0, 5_000, null), 9_000);
 
         assertThat(quiet.session().halt()).isNull();
         assertThat(quiet.session().quietSince()).isEqualTo(2_000);
@@ -367,7 +367,7 @@ class TaskReducerTest {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("boom"), 1_000);
 
-        TaskState read = TaskReducer.signed(ended, new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 0, 0, 5_000), 9_000);
+        TaskState read = TaskReducer.signed(ended, new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 0, 0, 5_000, null), 9_000);
 
         assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.GONE);
     }
@@ -377,8 +377,30 @@ class TaskReducerTest {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-        TaskState read = TaskReducer.signed(failed, new SessionSign.Read(Session.Window.State.UNREAD, 0, 2_000, 0, 5_000), 3_000);
+        TaskState read = TaskReducer.signed(failed, new SessionSign.Read(Session.Window.State.UNREAD, 0, 2_000, 0, 5_000, null), 3_000);
 
         assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.WORKING);
+    }
+
+    @Test
+    void endsTheSessionWithWhatItPrintedWhenAReadFindsItsWindowHoldingNoAgent() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+
+        TaskState read = TaskReducer.signed(task, new SessionSign.Read(Session.Window.State.DEAD_SHELL, 0, 0, 0, 5_000,
+                "Error: bad config"), 9_000);
+
+        assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.GONE);
+        assertThat(read.session().halt().cause()).isEqualTo("Error: bad config");
+    }
+
+    @Test
+    void keepsTheCauseAnEndedSessionGaveWhenAReadFindsItsWindowGone() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("boom"), 8_000);
+
+        TaskState read = TaskReducer.signed(ended, new SessionSign.Read(Session.Window.State.MISSING, 0, 0, 0, 5_000,
+                null), 9_000);
+
+        assertThat(read.session().halt()).isEqualTo(ended.session().halt());
     }
 }

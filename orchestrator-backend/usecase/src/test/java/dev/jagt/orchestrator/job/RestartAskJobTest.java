@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.when;
 class RestartAskJobTest {
 
     private final AgentSessions sessions = mock(AgentSessions.class);
+    private final AgentPresence presence = mock(AgentPresence.class);
     private final StepRelay relay = mock(StepRelay.class);
 
     private StateService state(Path root) {
@@ -41,9 +43,9 @@ class RestartAskJobTest {
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "round-not-ready", "digest", TaskStatus.REVIEW_PENDING);
-        when(sessions.agentLive("ABC-42")).thenReturn(true);
+        when(presence.agentLive("ABC-42")).thenReturn(true);
 
-        new RestartAskJob(sessions, relay).runOn(state.tasks());
+        new RestartAskJob(sessions, presence, relay).runOn(state.tasks());
 
         verify(relay).say("ABC-42", Step.RESTARTED, "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
     }
@@ -52,9 +54,9 @@ class RestartAskJobTest {
     void asksNothingOfATaskWhoseTurnIsNotTheSessions(@TempDir Path root) {
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
-        when(sessions.agentLive("ABC-42")).thenReturn(true);
+        when(presence.agentLive("ABC-42")).thenReturn(true);
 
-        new RestartAskJob(sessions, relay).runOn(state.tasks());
+        new RestartAskJob(sessions, presence, relay).runOn(state.tasks());
 
         verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
@@ -64,9 +66,9 @@ class RestartAskJobTest {
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
-        when(sessions.agentLive("ABC-42")).thenReturn(false);
+        when(presence.agentLive("ABC-42")).thenReturn(false);
 
-        new RestartAskJob(sessions, relay).runOn(state.tasks());
+        new RestartAskJob(sessions, presence, relay).runOn(state.tasks());
 
         verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
@@ -76,10 +78,10 @@ class RestartAskJobTest {
         StateService state = state(root);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
-        when(sessions.agentLive("ABC-42")).thenReturn(true);
+        when(presence.agentLive("ABC-42")).thenReturn(true);
         when(sessions.composing("ABC-42")).thenReturn(true);
 
-        new RestartAskJob(sessions, relay).runOn(state.tasks());
+        new RestartAskJob(sessions, presence, relay).runOn(state.tasks());
 
         verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
@@ -92,16 +94,28 @@ class RestartAskJobTest {
         state.putTask("ABC-43", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).build());
         turns.opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
         turns.opened("ABC-43", "start", "digest", TaskStatus.IN_PROGRESS);
-        when(sessions.agentLive(anyString())).thenReturn(true);
+        when(presence.agentLive(anyString())).thenReturn(true);
         doThrow(new IllegalStateException("No session")).when(relay).say("ABC-42", Step.RESTARTED, "jagt was restarted.", Standing.of(state.task("ABC-42").orElseThrow()));
 
-        new RestartAskJob(sessions, relay).runOn(state.tasks());
+        new RestartAskJob(sessions, presence, relay).runOn(state.tasks());
 
         verify(relay).say("ABC-43", Step.RESTARTED, "jagt was restarted.", Standing.of(state.task("ABC-43").orElseThrow()));
     }
 
     @Test
     void runsOnceAfterTheStartAndNotOnAnInterval(@TempDir Path root) {
-        assertThat(new RestartAskJob(sessions, relay).every()).isNull();
+        assertThat(new RestartAskJob(sessions, presence, relay).every()).isNull();
+    }
+
+    @Test
+    void doesNotAskASessionWhoseWindowCouldNotBeRead(@TempDir Path root) {
+        StateService state = state(root);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
+        when(presence.agentLive("ABC-42")).thenThrow(new AgentPresence.Unread("tmux timed out"));
+
+        new RestartAskJob(sessions, presence, relay).runOn(state.tasks());
+
+        verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 }
