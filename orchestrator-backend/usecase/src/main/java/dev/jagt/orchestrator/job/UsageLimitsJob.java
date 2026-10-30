@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
@@ -22,11 +23,11 @@ public class UsageLimitsJob implements Job {
     private final Clock clock;
 
     public UsageLimitsJob(UsageLimits limits, Notifications notifications, UsageLimitsProperties properties,
-                          Clock clock) {
+                          OrchestratorPaths paths, Clock clock) {
         this.limits = limits;
         this.notifications = notifications;
         this.every = properties.every();
-        this.alerts = new UsageAlerts(properties.thresholds(), properties.paidThresholds());
+        this.alerts = new UsageAlerts(properties.thresholds(), properties.paidThresholds(), paths.usageAlerts());
         this.clock = clock;
     }
 

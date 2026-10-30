@@ -31,7 +31,7 @@ The job SHALL send a `USAGE` banner (`job/UsageAlerts`) once per window period a
 
 #### Scenario: A window fills
 - **WHEN** the weekly window reaches 96% with thresholds 80 and 95
-- **THEN** one banner says `week window at 95%`, and no later poll before its reset repeats it
+- **THEN** one banner says `week window at 95%`, and no later poll before its reset, nor a restart, repeats it
 
 #### Scenario: Money starts flowing
 - **WHEN** a window reads 100% while paid usage is enabled, or paid usage rises

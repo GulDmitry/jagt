@@ -50,6 +50,11 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("act-strikes");
     }
 
+    /** The usage levels already told, with the period each was told in. */
+    public Path usageAlerts() {
+        return stateFile.resolveSibling("usage-alerts.properties");
+    }
+
     private Path resolve(@Nullable String override, String defaultName) {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()

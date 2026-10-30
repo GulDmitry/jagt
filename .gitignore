@@ -54,6 +54,7 @@ memory/
 # Records of finished tasks, written beside state.json and never read back
 finished.jsonl
 usage-by-day.jsonl
+usage-alerts.properties
 interactions.jsonl
 interactions.jsonl.1
 /archive/

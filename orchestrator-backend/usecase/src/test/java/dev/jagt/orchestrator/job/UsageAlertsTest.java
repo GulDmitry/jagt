@@ -5,8 +5,10 @@ import dev.jagt.orchestrator.port.SubscriptionUsage.Paid;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Snapshot;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Window;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -20,8 +22,8 @@ class UsageAlertsTest {
     private static final Optional<Instant> RESET = Optional.of(Instant.parse("2026-10-10T16:00:00Z"));
 
     @Test
-    void tellsOnlyTheHighestThresholdAWindowJumpedPast() {
-        var alerts = new UsageAlerts(List.of(80, 95), List.of());
+    void tellsOnlyTheHighestThresholdAWindowJumpedPast(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(80, 95), List.of(), dir.resolve("usage-alerts"));
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 96, RESET)), Optional.empty()), NOW);
 
@@ -29,8 +31,19 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsAThresholdOncePerWindowPeriod() {
-        var alerts = new UsageAlerts(List.of(80), List.of());
+    void tellsAThresholdOncePerWindowPeriodAcrossARestart(@TempDir Path dir) {
+        new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"))
+                .after(new Snapshot(List.of(new Window("week", 81, RESET)), Optional.empty()), NOW);
+
+        var told = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"))
+                .after(new Snapshot(List.of(new Window("week", 84, RESET)), Optional.empty()), NOW);
+
+        assertThat(told).isEmpty();
+    }
+
+    @Test
+    void tellsAThresholdOncePerWindowPeriod(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
         alerts.after(new Snapshot(List.of(new Window("week", 81, RESET)), Optional.empty()), NOW);
 
         var told = alerts.after(new Snapshot(List.of(new Window("week", 84, RESET)), Optional.empty()), NOW);
@@ -39,8 +52,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsAThresholdOnceWhenTheSameResetIsReportedWithDifferentFractions() {
-        var alerts = new UsageAlerts(List.of(80), List.of());
+    void tellsAThresholdOnceWhenTheSameResetIsReportedWithDifferentFractions(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
         alerts.after(new Snapshot(List.of(new Window("5h", 81,
                 Optional.of(Instant.parse("2026-10-10T16:00:00.574417Z")))), Optional.empty()), NOW);
 
@@ -51,8 +64,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsTheThresholdAgainInTheNextPeriod() {
-        var alerts = new UsageAlerts(List.of(80), List.of());
+    void tellsTheThresholdAgainInTheNextPeriod(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
         alerts.after(new Snapshot(List.of(new Window("5h", 81, RESET)), Optional.empty()), NOW);
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 85,
@@ -62,8 +75,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsPaidUsageStartedWhenAWindowRunsOutWithPaidUsageEnabled() {
-        var alerts = new UsageAlerts(List.of(), List.of());
+    void tellsPaidUsageStartedWhenAWindowRunsOutWithPaidUsageEnabled(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(), dir.resolve("usage-alerts"));
         var paid = new Paid(Optional.of(BigDecimal.ZERO), Optional.of(new BigDecimal("500")), "USD", Optional.empty());
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 100, RESET)), Optional.of(paid)), NOW);
@@ -73,8 +86,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsPaidUsageStartedWhenItsSpendRisesWithNoWindowRunOut() {
-        var alerts = new UsageAlerts(List.of(), List.of());
+    void tellsPaidUsageStartedWhenItsSpendRisesWithNoWindowRunOut(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(), dir.resolve("usage-alerts"));
         alerts.after(new Snapshot(List.of(new Window("week", 40, RESET)), Optional.of(
                 new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
 
@@ -85,8 +98,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsPaidUsageStartedOnceWhileTheSameWindowStaysRunOut() {
-        var alerts = new UsageAlerts(List.of(), List.of());
+    void tellsPaidUsageStartedOnceWhileTheSameWindowStaysRunOut(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(), dir.resolve("usage-alerts"));
         alerts.after(new Snapshot(List.of(new Window("5h", 100, RESET)), Optional.of(
                 new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
 
@@ -97,8 +110,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsPaidUsageCrossingAThresholdOfItsMonthlyLimit() {
-        var alerts = new UsageAlerts(List.of(), List.of(80));
+    void tellsPaidUsageCrossingAThresholdOfItsMonthlyLimit(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(80), dir.resolve("usage-alerts"));
 
         var told = alerts.after(new Snapshot(List.of(new Window("week", 40, RESET)), Optional.of(
                 new Paid(Optional.of(new BigDecimal("410")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
@@ -107,8 +120,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsAThresholdTheWindowReadsExactly() {
-        var alerts = new UsageAlerts(List.of(80), List.of());
+    void tellsAThresholdTheWindowReadsExactly(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 80, RESET)), Optional.empty()), NOW);
 
@@ -116,8 +129,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsWhenAWindowResetsAndHowToReadItsBody() {
-        var alerts = new UsageAlerts(List.of(80), List.of());
+    void tellsWhenAWindowResetsAndHowToReadItsBody(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
 
         var told = alerts.after(new Snapshot(List.of(new Window("5h", 81, RESET),
                 new Window("week", 81, Optional.empty())), Optional.empty()), NOW);
@@ -126,8 +139,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsPaidThresholdAgainAfterTheSpendReadsBelowItAndRisesBack() {
-        var alerts = new UsageAlerts(List.of(), List.of(80));
+    void tellsPaidThresholdAgainAfterTheSpendReadsBelowItAndRisesBack(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(80), dir.resolve("usage-alerts"));
         alerts.after(new Snapshot(List.of(), Optional.of(
                 new Paid(Optional.of(new BigDecimal("410")), Optional.of(new BigDecimal("500")), "USD", Optional.empty()))), NOW);
         alerts.after(new Snapshot(List.of(), Optional.of(
@@ -140,8 +153,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsPaidUsageStartedWhenItsBalanceFalls() {
-        var alerts = new UsageAlerts(List.of(), List.of());
+    void tellsPaidUsageStartedWhenItsBalanceFalls(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(), dir.resolve("usage-alerts"));
         alerts.after(new Snapshot(List.of(), Optional.of(
                 new Paid(Optional.empty(), Optional.empty(), "USD", Optional.of(new BigDecimal("50"))))), NOW);
 
@@ -152,8 +165,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void staysSilentWhenPaidSpendAndBalanceAreUnchanged() {
-        var alerts = new UsageAlerts(List.of(), List.of());
+    void staysSilentWhenPaidSpendAndBalanceAreUnchanged(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(), dir.resolve("usage-alerts"));
         var paid = new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD",
                 Optional.of(new BigDecimal("50")));
         alerts.after(new Snapshot(List.of(), Optional.of(paid)), NOW);
@@ -164,8 +177,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void tellsPaidUsageStartedAgainWhenTheNextWindowRunsOut() {
-        var alerts = new UsageAlerts(List.of(), List.of());
+    void tellsPaidUsageStartedAgainWhenTheNextWindowRunsOut(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(), dir.resolve("usage-alerts"));
         var paid = new Paid(Optional.of(new BigDecimal("3")), Optional.of(new BigDecimal("500")), "USD", Optional.empty());
         alerts.after(new Snapshot(List.of(new Window("5h", 100, RESET)), Optional.of(paid)), NOW);
 
@@ -176,8 +189,8 @@ class UsageAlertsTest {
     }
 
     @Test
-    void staysSilentOnPaidThresholdsWhenTheMonthlyLimitIsZero() {
-        var alerts = new UsageAlerts(List.of(), List.of(80));
+    void staysSilentOnPaidThresholdsWhenTheMonthlyLimitIsZero(@TempDir Path dir) {
+        var alerts = new UsageAlerts(List.of(), List.of(80), dir.resolve("usage-alerts"));
 
         var told = alerts.after(new Snapshot(List.of(), Optional.of(
                 new Paid(Optional.of(new BigDecimal("5")), Optional.of(BigDecimal.ZERO), "USD", Optional.empty()))), NOW);

@@ -5,10 +5,17 @@ import dev.jagt.orchestrator.port.SubscriptionUsage.Paid;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Snapshot;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Window;
 import dev.jagt.orchestrator.service.UsageLimits;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.YearMonth;
@@ -22,11 +29,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 /**
  * Each event once per period: a window's period ends at its reset, and a level carrying no reset re-arms once
  * it reads below its threshold again.
  */
+@Slf4j
 class UsageAlerts {
 
     private static final String NO_PERIOD = "-";
@@ -35,15 +44,27 @@ class UsageAlerts {
 
     private final List<Integer> thresholds;
     private final List<Integer> paidThresholds;
+    private final Path file;
     private final Map<String, String> firedIn = new HashMap<>();
     private @Nullable Paid previous;
 
-    UsageAlerts(List<Integer> thresholds, List<Integer> paidThresholds) {
+    UsageAlerts(List<Integer> thresholds, List<Integer> paidThresholds, Path file) {
         this.thresholds = thresholds.stream().sorted(Comparator.reverseOrder()).toList();
         this.paidThresholds = paidThresholds.stream().sorted(Comparator.reverseOrder()).toList();
+        this.file = file;
+        firedIn.putAll(kept());
     }
 
     List<Notification> after(Snapshot snapshot, Instant now) {
+        Map<String, String> before = Map.copyOf(firedIn);
+        List<Notification> due = told(snapshot, now);
+        if (!before.equals(firedIn)) {
+            keep();
+        }
+        return due;
+    }
+
+    private List<Notification> told(Snapshot snapshot, Instant now) {
         List<Notification> due = new ArrayList<>();
         for (Window window : snapshot.windows()) {
             String period = periodOf(window.resetsAt());
@@ -64,6 +85,33 @@ class UsageAlerts {
         });
         previous = snapshot.paid().orElse(null);
         return due;
+    }
+
+    private Map<String, String> kept() {
+        Properties read = new Properties();
+        try (Reader in = Files.newBufferedReader(file)) {
+            read.load(in);
+        } catch (NoSuchFileException absent) {
+            return Map.of();
+        } catch (IOException | RuntimeException e) {
+            log.atWarn().setMessage("usage alerts unread").addKeyValue("file", file)
+                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "the levels already told are told again").log();
+            return Map.of();
+        }
+        Map<String, String> told = new HashMap<>();
+        read.forEach((key, period) -> told.put(key.toString(), period.toString()));
+        return told;
+    }
+
+    private void keep() {
+        Properties write = new Properties();
+        write.putAll(firedIn);
+        try (Writer out = Files.newBufferedWriter(file)) {
+            write.store(out, null);
+        } catch (IOException e) {
+            log.atWarn().setMessage("usage alerts not kept").addKeyValue("file", file)
+                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "a restart tells them again").log();
+        }
     }
 
     /** The highest threshold first reached in {@code period}, every lower one counted as reached with it. */
