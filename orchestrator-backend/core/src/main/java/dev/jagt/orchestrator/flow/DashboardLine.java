@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.jspecify.annotations.Nullable;
@@ -39,7 +39,7 @@ public final class DashboardLine {
         if (report.asks() && task.status() != TaskStatus.DONE) {
             return needsInput(report, message);
         }
-        Optional<ConflictWatch> conflict = task.currentConflict().filter(ConflictWatch::stalled);
+        Optional<Conflict> conflict = task.currentConflict().filter(Conflict::stalled);
         if (conflict.isPresent()) {
             return new Line(Kind.YOURS, "NEEDS YOU: the deploy conflict stopped moving: "
                     + Objects.requireNonNull(conflict.get().told()).reason());

@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.service.DeployTargets;
 
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.TaskState;
 import org.jspecify.annotations.Nullable;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class DeployConflicts {
     }
 
     /** {@code red} is the line of a deploy handed back for its pipeline, null for a merge that conflicts. */
-    public record WaitingConflict(Path worktree, boolean resolved, ConflictWatch.Progress progress,
+    public record WaitingConflict(Path worktree, boolean resolved, Conflict.Progress progress,
                                   @Nullable String red) {
     }
 }

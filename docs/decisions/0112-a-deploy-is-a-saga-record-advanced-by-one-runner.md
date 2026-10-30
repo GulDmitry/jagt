@@ -26,6 +26,8 @@ Accepted 2026-10-30. Extends [0013](0013-a-deploy-conflict-is-the-sessions-in-ac
 - The first commit reaches `NONE`, `LANDING` and `HANDED`; `PIPELINE`, `SETTLED`, `CHECK_ASKED` and `REVERTING` come with their steps.
 - `Standing` does not include the deploy region: a poll during a press must not refuse a relay
   ([0111](0111-a-relay-acts-only-where-the-task-still-stands.md)).
+- The conflicted target holds a `Conflict`: cause, since, the progress and when it moved, the human told once, the stop holding it;
+  leaving `DEPLOY_CONFLICT` clears it through the deploy region.
 - A revert leaves the record as it is until the revert commit of the migration.
 
 ## Rejected

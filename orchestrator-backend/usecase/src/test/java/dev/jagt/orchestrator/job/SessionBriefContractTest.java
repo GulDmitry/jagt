@@ -25,7 +25,7 @@ import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -79,7 +79,7 @@ class SessionBriefContractTest {
                 new TaskTurns(state, Clock.systemUTC())),
                 mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
-                        new ConflictWatch.Progress(7, 0, "d"), null));
+                        new Conflict.Progress(7, 0, "d"), null));
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
         verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());

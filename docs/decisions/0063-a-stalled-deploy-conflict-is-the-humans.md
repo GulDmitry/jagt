@@ -18,7 +18,8 @@ Accepted 2026-10-22. Adds to [0013](0013-a-deploy-conflict-is-the-sessions-in-ac
 - The deploy worktree is the session's: named in its brief, admitted by `AgentRuntime.admit` at spawn and at hand-off.
 - Claude's `admit` rewrites `.claude/settings.local.json`, reread mid-session (not yet seen live): a path rule always, an
   additional directory and a sandbox write path once the directory exists.
-- A hand-off is `TaskState.conflict`, keyed by the moment the task entered DEPLOY_CONFLICT: each press is a new one.
+- A hand-off is the `Conflict` of the deployment's conflicted target, new with each press
+  ([0112](0112-a-deploy-is-a-saga-record-advanced-by-one-runner.md)).
 - Progress is a digest of the worktree's status and diff, so an edit before `git add` counts.
 - Unchanged for `conflictStallMinutes`, the human is told once; the card says why until the worktree moves.
 

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.TaskName;
 import lombok.RequiredArgsConstructor;
@@ -158,7 +158,7 @@ public class GitDeploy {
     }
 
     /** Where the resolution in this task's deploy worktree stands; any edit, staged or not, changes the digest. */
-    public ConflictWatch.Progress deployProgress(Path projectPath, String sourceBranch) {
+    public Conflict.Progress deployProgress(Path projectPath, String sourceBranch) {
         Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
         String status = git.run(deployWorktree, List.of("git", "status", "--porcelain"))
                 .expectSuccess("git status in " + deployWorktree).stdout();
@@ -168,7 +168,7 @@ public class GitDeploy {
         int unmerged = (int) paths.stream().filter(GitDeploy::unmerged).count();
         int staged = (int) paths.stream().filter(line -> !unmerged(line) && "MADRC".indexOf(line.charAt(0)) >= 0)
                 .count();
-        return new ConflictWatch.Progress(unmerged, staged, sha256(status + "\0" + diff));
+        return new Conflict.Progress(unmerged, staged, sha256(status + "\0" + diff));
     }
 
     private static boolean unmerged(String statusLine) {

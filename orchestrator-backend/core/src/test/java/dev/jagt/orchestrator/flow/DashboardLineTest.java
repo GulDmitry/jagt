@@ -2,7 +2,8 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Conflict;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 
@@ -11,6 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,11 +84,17 @@ class DashboardLineTest {
     void saysWhereAndSinceWhenADeployConflictStoppedMoving() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT).lastActiveTimestamp(1_000)
                 .message("resolve conflict in /src/ABC-42-deploy")
-                .conflict(ConflictWatch.handed(1_000, "/src/ABC-42-deploy", new ConflictWatch.Progress(7, 0, "d"), 1_000)
-                        .toldAt(1_201_000))
                 .build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("p", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("p",
+                Deployment.Cause.MERGE), 1_000);
+        TaskState seen = TaskReducer.deployStepped(conflicted, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")),
+                1_000);
+        TaskState stalled = TaskReducer.deployStepped(seen, new DeployStep.Told("7 paths unmerged, 0 staged in "
+                + "/src/ABC-42-deploy, unchanged since 1970-01-01T00:00:00Z"), 1_201_000);
 
-        assertThat(DashboardLine.forTask(task, null).text()).isEqualTo("NEEDS YOU: the deploy conflict stopped moving:"
+        assertThat(DashboardLine.forTask(stalled, null).text()).isEqualTo("NEEDS YOU: the deploy conflict stopped moving:"
                 + " 7 paths unmerged, 0 staged in /src/ABC-42-deploy, unchanged since 1970-01-01T00:00:00Z");
     }
 

@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
@@ -16,14 +15,16 @@ class TaskReducerTest {
 
     @Test
     void forgetsTheDeployConflictOnceTheDeployLands() {
-        TaskState conflicted = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT)
-                .conflict(ConflictWatch.handed(1_000, "/wt-deploy", new ConflictWatch.Progress(7, 252, "d"), 1_000))
-                .build();
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("api", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("api",
+                Deployment.Cause.MERGE), 1_000);
 
         TaskState deployed = TaskReducer.reduce(conflicted, new TaskMove.Ran(TaskAction.DEPLOY, Outcome.Kind.OK),
                 "deployed", true, 2_000);
 
-        assertThat(deployed.conflict()).isNull();
+        assertThat(deployed.deployment().targets().getFirst().conflict()).isNull();
     }
 
     @Test
@@ -101,14 +102,16 @@ class TaskReducerTest {
 
     @Test
     void keepsTheDeployConflictWhereAHeldReportLeavesTheTaskInIt() {
-        TaskState conflicted = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT)
-                .conflict(ConflictWatch.handed(1_000, "/wt-deploy", new ConflictWatch.Progress(7, 252, "d"), 1_000))
-                .build();
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("api", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("api",
+                Deployment.Cause.MERGE), 1_000);
 
         TaskState held = TaskReducer.reduce(conflicted, new TaskMove.Reported(TaskStatus.IN_PROGRESS, false),
                 "working", false, 2_000);
 
         assertThat(held.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-        assertThat(held.conflict()).isEqualTo(conflicted.conflict());
+        assertThat(held.deployment().conflictedTarget()).isEqualTo(conflicted.deployment().conflictedTarget());
     }
 }

@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Conflict;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -370,12 +370,12 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
-        ConflictWatch.Progress conflicted = git.deployProgress(repo, "ABC-1");
+        Conflict.Progress conflicted = git.deployProgress(repo, "ABC-1");
         Files.writeString(dir.resolve("ABC-1-deploy").resolve("f.txt"), "resolving");
 
-        ConflictWatch.Progress edited = git.deployProgress(repo, "ABC-1");
+        Conflict.Progress edited = git.deployProgress(repo, "ABC-1");
 
-        assertThat(conflicted).extracting(ConflictWatch.Progress::unmerged, ConflictWatch.Progress::staged)
+        assertThat(conflicted).extracting(Conflict.Progress::unmerged, Conflict.Progress::staged)
                 .containsExactly(1, 0);
         assertThat(edited.digest()).isNotEqualTo(conflicted.digest());
     }

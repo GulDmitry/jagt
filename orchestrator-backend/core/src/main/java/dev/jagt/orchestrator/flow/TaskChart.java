@@ -132,7 +132,6 @@ final class TaskChart {
     private static Chart<TaskMove, Object, TaskEffect> build() {
         ChartBuilder<TaskMove, Object, TaskEffect> chart = Chart.builder();
         chart.region(LIFECYCLE, NEW, Set.of(DONE));
-        chart.onExit(LIFECYCLE, DEPLOY_CONFLICT, new TaskEffect.ClearsConflict());
         stops(chart);
         plans(chart);
         says(chart);
@@ -224,6 +223,12 @@ final class TaskChart {
                     || step instanceof DeployStep.Fixed || step instanceof DeployStep.Pushed);
             deployed(chart, from, "conflicted", DeployPhase.HANDED, step -> step instanceof DeployStep.Conflicted);
         }
+        deployed(chart, DeployPhase.HANDED, "watched", DeployPhase.HANDED, step -> step instanceof DeployStep.Seen
+                || step instanceof DeployStep.Told || step instanceof DeployStep.Held);
+        chart.onMatching(DEPLOY, DeployPhase.HANDED, "conflict left", move -> !(move instanceof TaskMove.DeployStepped))
+                .when((others, move) -> others.get(LIFECYCLE) == DEPLOY_CONFLICT
+                        && land(DEPLOY_CONFLICT, move).filter(to -> to != DEPLOY_CONFLICT).isPresent())
+                .emit(new TaskEffect.Deploys(new DeployStep.Cleared())).to(DeployPhase.LANDING);
         deployed(chart, DeployPhase.LANDING, "asked", DeployPhase.CHECK_ASKED, step -> step instanceof DeployStep.Asked);
     }
 

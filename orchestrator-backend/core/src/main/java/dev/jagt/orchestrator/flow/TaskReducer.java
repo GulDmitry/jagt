@@ -117,7 +117,6 @@ public final class TaskReducer {
                                    long now) {
         return switch (effect) {
             case TaskEffect.Lands lands -> task.withStatus(lands.to(), message, event, now);
-            case TaskEffect.ClearsConflict cleared -> task.withoutConflict();
             case TaskEffect.Stops stops -> task.withStop(stops.stop().countedOn(task.requests()));
             case TaskEffect.ClearsStop cleared -> task.lifted(now);
             case TaskEffect.GatesPlan gates -> task.withPlanGate(gates.gate());

@@ -69,7 +69,6 @@ public record TaskState(
         @Nullable RoundTrail trail,
         // Set by jagt alone, cleared by a human's lift alone.
         @Nullable TaskStop stop,
-        @Nullable ConflictWatch conflict,
         // The project key a session asked to have a repository of, until one is added or it reports anything else.
         @Nullable String repoRequest,
         // Absent in a file written before the turn existed, which reads as no turn open.
@@ -142,7 +141,8 @@ public record TaskState(
             @JsonProperty("stop") @Nullable TaskStop stop,
             // Written before the stop left the trail: read once, rewritten as the two above.
             @JsonProperty("loop") @Nullable Loop loop,
-            @JsonProperty("conflict") @Nullable ConflictWatch conflict,
+            // Written before the conflict moved onto the deployment: read once, rewritten there.
+            @JsonProperty("conflict") @Nullable Conflict legacyConflict,
             @JsonProperty("repoRequest") @Nullable String repoRequest,
             @JsonProperty("turn") @Nullable Turn turn,
             @JsonProperty("switches") @Nullable Map<String, String> switches,
@@ -161,8 +161,33 @@ public record TaskState(
                 unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
-                Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn, switches == null ? Map.of() : switches,
-                infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment);
+                Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, turn, switches == null ? Map.of() : switches,
+                infraRetries == null ? List.of() : infraRetries, checksTip, headTip,
+                withLegacyConflict(deployment, legacyConflict, status, message, lastActiveTimestamp, resolved));
+    }
+
+    private static @Nullable Deployment withLegacyConflict(@Nullable Deployment deployment,
+                                                           @Nullable Conflict legacy, TaskStatus status,
+                                                           @Nullable String message, long lastActive,
+                                                           List<TaskRepo> repos) {
+        Optional<Deployment.Target> recorded = Optional.ofNullable(deployment).flatMap(Deployment::conflictedTarget);
+        if (status != TaskStatus.DEPLOY_CONFLICT || recorded.isPresent() && legacy == null) {
+            return deployment;
+        }
+        Deployment.Cause cause = recorded.map(target -> Objects.requireNonNull(target.conflict()).cause())
+                .orElse(DeployRedLine.marks(message) ? Deployment.Cause.RED_PIPELINE : Deployment.Cause.MERGE);
+        Conflict carried = legacy == null ? Conflict.of(cause, lastActive)
+                : new Conflict(cause, legacy.since(), legacy.progress(), legacy.movedAt(), legacy.told(), null);
+        if (recorded.isPresent()) {
+            return Objects.requireNonNull(deployment).withConflict(standing -> carried);
+        }
+        if (deployment != null && deployment.at() < deployment.targets().size()) {
+            return deployment.withTarget(deployment.targets().get(deployment.at()).project(),
+                    target -> target.withConflict(carried));
+        }
+        String project = repos.getFirst().project();
+        return Deployment.defaults().withPressedAt(carried.since())
+                .withTargets(List.of(Deployment.Target.of(project == null ? "" : project, "").withConflict(carried)));
     }
 
     record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
@@ -468,14 +493,10 @@ public record TaskState(
                 .build();
     }
 
-    /** The status, line and conflict {@code read} had, written back as one move. */
+    /** The status, line and deployment {@code read} had, written back as one move. */
     public TaskState restoredFrom(TaskState read, long now) {
-        return withStatus(read.status, read.message, now).toBuilder().conflict(read.conflict)
+        return withStatus(read.status, read.message, now).toBuilder().deployment(read.deployment)
                 .planGate(read.planGate).report(read.report).build();
-    }
-
-    public TaskState withoutConflict() {
-        return toBuilder().conflict(null).build();
     }
 
     public TaskState withReport(AgentReport report) {
@@ -609,16 +630,12 @@ public record TaskState(
         return stop != null;
     }
 
-    /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
-    public TaskState withConflict(ConflictWatch conflict) {
-        return toBuilder().conflict(conflict).build();
-    }
-
-    /** The watch of the conflict this task stands in now; one kept from an earlier press is not it. */
+    /** The conflict this task stands in now, as its deployment records it. */
     @JsonIgnore
-    public Optional<ConflictWatch> currentConflict() {
-        return status == TaskStatus.DEPLOY_CONFLICT && conflict != null && conflict.handedFor(statusSince())
-                ? Optional.of(conflict) : Optional.empty();
+    public Optional<Conflict> currentConflict() {
+        return status == TaskStatus.DEPLOY_CONFLICT
+                ? Optional.ofNullable(deployment).flatMap(Deployment::conflictedTarget).map(Deployment.Target::conflict)
+                : Optional.empty();
     }
 
     /** Does NOT touch lastActiveTimestamp: jagt recorded them, the agent did nothing. */

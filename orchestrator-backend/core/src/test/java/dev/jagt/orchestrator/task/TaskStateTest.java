@@ -72,7 +72,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of(), null, null, null);
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -126,7 +126,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of(), null, null, null);
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
@@ -720,5 +720,42 @@ class TaskStateTest {
                 .withHead("aaa");
 
         assertThat(read.withHead("bbb").infraRetries()).isEmpty();
+    }
+
+    @Test
+    void readsAnOldConflictWatchAsTheConflictOfTheDeploymentItsTaskStandsIn() {
+        TaskState legacy = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"DEPLOY_CONFLICT","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0,"conflict":{"conflictSince":4,"worktree":"/wt-deploy",
+                 "progress":{"unmerged":7,"staged":0,"digest":"d"},"movedAt":6,"told":{"at":8,"reason":"stuck"}}}""",
+                TaskState.class);
+
+        assertThat(legacy.currentConflict()).hasValueSatisfying(conflict -> {
+            assertThat(conflict.progress()).isEqualTo(new Conflict.Progress(7, 0, "d"));
+            assertThat(conflict.told()).isEqualTo(new Conflict.Told(8, "stuck"));
+            assertThat(conflict.movedAt()).isEqualTo(6);
+        });
+    }
+
+    @Test
+    void readsATaskInADeployConflictThatNothingRecordedAsOneNotYetHanded() {
+        TaskState legacy = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"DEPLOY_CONFLICT","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
+
+        assertThat(legacy.currentConflict()).hasValueSatisfying(conflict -> assertThat(conflict.handed()).isFalse());
+    }
+
+    @Test
+    void keepsTheConflictOfADeployTargetAcrossASave() {
+        TaskState conflicted = TaskState.builder("demo", "/wt", TaskStatus.DEPLOY_CONFLICT).build().withDeployment(
+                new Deployment(1, List.of(Deployment.Target.of("demo", "dev")
+                        .withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 2)
+                                .seen(new Conflict.Progress(1, 2, "d"), 3).toldAt(4, "stuck").heldBy(5))), 0, null));
+        JsonMapper mapper = new JsonMapper();
+
+        TaskState reread = mapper.readValue(mapper.writeValueAsString(conflicted), TaskState.class);
+
+        assertThat(reread.deployment()).isEqualTo(conflicted.deployment());
     }
 }

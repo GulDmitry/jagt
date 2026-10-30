@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 
 import java.util.List;
@@ -35,7 +36,7 @@ public sealed interface DeployStep {
         public Deployment applyTo(Deployment deployment, long now) {
             int index = deployment.indexOf(project);
             return index < 0 ? deployment
-                    : deployment.withTarget(project, target -> target.withConflict(cause)).withAt(index);
+                    : deployment.withTarget(project, target -> target.withConflict(Conflict.of(cause, now))).withAt(index);
         }
     }
 
@@ -52,6 +53,36 @@ public sealed interface DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {
             return deployment.withAskedDigest(digest);
+        }
+    }
+
+    record Seen(Conflict.Progress progress) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withConflict(conflict -> conflict.seen(progress, now));
+        }
+    }
+
+    record Told(String reason) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withConflict(conflict -> conflict.toldAt(now, reason));
+        }
+    }
+
+    record Held(long stopAt) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withConflict(conflict -> conflict.heldBy(stopAt));
+        }
+    }
+
+    record Cleared() implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.conflictedTarget().map(Deployment.Target::project)
+                    .map(project -> deployment.withTarget(project, target -> target.withConflict(null)))
+                    .orElse(deployment);
         }
     }
 }

@@ -2,10 +2,12 @@ package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
@@ -57,6 +59,13 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
         return at < targets.size() && targets.get(at).conflicted() ? Optional.of(targets.get(at)) : Optional.empty();
     }
 
+    /** {@code change} applied to the conflict of the target the press stopped at; none leaves the deployment as it is. */
+    public Deployment withConflict(UnaryOperator<Conflict> change) {
+        Optional<Target> stopped = conflictedTarget();
+        return stopped.isEmpty() ? this : withTarget(stopped.get().project(), target ->
+                target.withConflict(change.apply(Objects.requireNonNull(target.conflict()))));
+    }
+
     /** What a conflicted target waits on: a merge that conflicts, or the pipeline of the commit it pushed. */
     public enum Cause { MERGE, RED_PIPELINE }
 
@@ -73,7 +82,7 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Target(String project, String deployBranch, @Nullable String merge, List<String> fixes,
-                         long pushedAt, @Nullable Cause conflict) {
+                         long pushedAt, @JsonProperty("conflicted") @Nullable Conflict conflict) {
 
         public Target {
             fixes = fixes == null ? List.of() : List.copyOf(fixes);
@@ -102,7 +111,7 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
             return conflict != null;
         }
 
-        public Target withConflict(@Nullable Cause conflict) {
+        public Target withConflict(@Nullable Conflict conflict) {
             return new Target(project, deployBranch, merge, fixes, pushedAt, conflict);
         }
     }

@@ -90,7 +90,7 @@ public class DeployTargets {
      */
     public static boolean handedBackForItsPipeline(TaskState task) {
         return Optional.ofNullable(task.deployment()).flatMap(Deployment::conflictedTarget)
-                .map(target -> target.conflict() == Deployment.Cause.RED_PIPELINE)
+                .map(target -> Objects.requireNonNull(target.conflict()).cause() == Deployment.Cause.RED_PIPELINE)
                 .orElseGet(() -> DeployRedLine.marks(task.message()));
     }
 

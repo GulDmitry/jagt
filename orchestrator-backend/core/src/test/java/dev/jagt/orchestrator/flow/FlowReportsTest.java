@@ -309,7 +309,7 @@ class FlowReportsTest {
                 Deployment.Target.of("web", "dev").withPushedAt(5)));
         TaskState handed = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
                 .deployment(recorded).build());
-        assertThat(handed.deployment().conflictedTarget().get().conflict()).isEqualTo(Deployment.Cause.RED_PIPELINE);
+        assertThat(handed.deployment().conflictedTarget().get().conflict().cause()).isEqualTo(Deployment.Cause.RED_PIPELINE);
     }
 
     @Test

@@ -12,9 +12,6 @@ sealed interface TaskEffect {
     record Lands(TaskStatus to) implements TaskEffect {
     }
 
-    record ClearsConflict() implements TaskEffect {
-    }
-
     record Stops(TaskStop stop) implements TaskEffect {
     }
 

@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.ConflictWatch;
+import dev.jagt.orchestrator.task.Conflict;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -22,13 +23,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TaskReducerProperties {
 
     @Property
-    void aConflictNeverTravelsWithAStatusChange(@ForAll("tasks") TaskState start,
+    void aDeployConflictNeverTravelsWithAStatusChange(@ForAll("tasks") TaskState start,
                                                 @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
             Optional.of(next).filter(moved -> moved.status() != task.status())
-                    .filter(moved -> task.status() == TaskStatus.DEPLOY_CONFLICT || task.conflict() == null)
-                    .ifPresent(moved -> assertThat(moved.conflict()).isNull());
+                    .filter(moved -> task.status() == TaskStatus.DEPLOY_CONFLICT
+                            || Optional.ofNullable(task.deployment()).flatMap(Deployment::conflictedTarget).isEmpty())
+                    .ifPresent(moved -> assertThat(Optional.ofNullable(moved.deployment())
+                            .flatMap(Deployment::conflictedTarget)).isEmpty());
             return next;
         }, (left, right) -> right);
     }
@@ -73,14 +76,14 @@ class TaskReducerProperties {
     }
 
     @Property
-    void aMoveTheChartHasNoEdgeForLeavesStatusConflictAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
+    void aMoveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
             Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
                     TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), move))
                     .filter(List::isEmpty).ifPresent(none -> {
                         assertThat(next.status()).isEqualTo(task.status());
-                        assertThat(next.conflict()).isEqualTo(task.conflict());
+                        assertThat(next.deployment()).isEqualTo(task.deployment());
                         assertThat(next.stop()).isEqualTo(task.stop());
                     });
             return next;
@@ -126,15 +129,16 @@ class TaskReducerProperties {
 
     @Provide
     Arbitrary<TaskState> tasks() {
-        Arbitrary<ConflictWatch> conflict = Arbitraries.just(ConflictWatch.handed(1_000, "/wt-deploy",
-                new ConflictWatch.Progress(7, 252, "d"), 1_000)).injectNull(0.5);
+        Arbitrary<Deployment> deployment = Arbitraries.just(new Deployment(1_000, List.of(
+                Deployment.Target.of("api", "dev").withConflict(Conflict.of(Deployment.Cause.MERGE, 1_000))), 0, null))
+                .injectNull(0.5);
         Arbitrary<TaskStop> stop = Arbitraries.of(TaskStop.Trigger.class).map(trigger ->
                 new TaskStop(trigger, 1_000, "evidence")).injectNull(0.5);
         Arbitrary<Turn> turn = Arbitraries.of("", "d").map(digest -> new Turn("ship", 4, digest, 1_000, null, null));
-        return Combinators.combine(Arbitraries.of(TaskStatus.class), conflict, stop, Arbitraries.of(PlanGate.class),
+        return Combinators.combine(Arbitraries.of(TaskStatus.class), deployment, stop, Arbitraries.of(PlanGate.class),
                         Arbitraries.of(AgentReport.class), turn)
-                .as((status, watch, standing, gate, report, held) -> TaskState.builder("api", "/wt", status)
-                        .conflict(watch).stop(standing).planGate(gate).report(report).turn(held).build());
+                .as((status, recorded, standing, gate, report, held) -> TaskState.builder("api", "/wt", status)
+                        .deployment(recorded).stop(standing).planGate(gate).report(report).turn(held).build());
     }
 
     @Provide
