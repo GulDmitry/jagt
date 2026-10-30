@@ -363,13 +363,33 @@ class TaskReducerTest {
     }
 
     @Test
-    void keepsAnEndedSessionGoneWhenItsWindowPrintedAfterTheEnd() {
+    void endsAnEndedSessionWhenALaterReadFindsItsAgentProcessRunning() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("boom"), 1_000);
 
         TaskState read = TaskReducer.signed(ended, new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 0, 0, 5_000, null), 9_000);
 
-        assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.GONE);
+        assertThat(SessionPhase.of(read.session())).isNotEqualTo(SessionPhase.GONE);
+    }
+
+    @Test
+    void endsAGoneSessionAReadSetWhenALaterReadFindsItsAgentProcessRunning() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState gone = TaskReducer.signed(task, new SessionSign.Read(Session.Window.State.MISSING, 0, 0, 0, 5_000, null), 2_000);
+
+        TaskState read = TaskReducer.signed(gone, new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 5_000, null), 3_000);
+
+        assertThat(SessionPhase.of(read.session())).isNotEqualTo(SessionPhase.GONE);
+    }
+
+    @Test
+    void keepsAFailedSessionFailedWhenALaterReadFindsItsAgentProcessRunning() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState read = TaskReducer.signed(failed, new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 5_000, null), 3_000);
+
+        assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.FAILED);
     }
 
     @Test

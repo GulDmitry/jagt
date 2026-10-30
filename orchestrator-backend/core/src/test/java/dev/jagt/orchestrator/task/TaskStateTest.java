@@ -759,4 +759,15 @@ class TaskStateTest {
         assertThat(moved.session().halt()).isNull();
         assertThat(moved.session().quietSince()).isZero();
     }
+
+    @Test
+    void keepsAnIdleHaltWhenTheTaskMovesOnToAStatusOfItsOwn() {
+        TaskState idle = TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build().withSession(
+                Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 4_000, null)).withQuietSince(3_000));
+
+        TaskState moved = idle.withStatus(TaskStatus.REVIEW_PENDING, "shipped", 5_000);
+
+        assertThat(moved.session().halt()).isEqualTo(idle.session().halt());
+        assertThat(moved.session().quietSince()).isZero();
+    }
 }

@@ -76,7 +76,8 @@ public sealed interface SessionSign {
     /**
      * What a look at the session found, with the signs that need no hook: the window's last print, the file the
      * session appends to, and the task's own last activity. The window is {@code UNREAD} where it was not asked.
-     * A halt older than a later sign is dropped, except that output alone never undoes a failure or an end.
+     * A halt older than a later sign is dropped, except that output alone never undoes a failure or an end; a running
+     * agent process ends an end.
      * A window holding no agent process ends the session, its reason what the agent printed on the way out.
      */
     record Read(Session.Window.State window, long printedAt, long logAt, long activeAt, long staleAfter,
@@ -91,6 +92,10 @@ public sealed interface SessionSign {
             Session.Halt halt = session.halt();
             long later = Math.max(session.movedAt(), Math.max(logAt, activeAt));
             if (halt != null && halt.at() < later) {
+                halt = null;
+            }
+            if (halt != null && halt.kind() == Session.Halt.Kind.GONE && window == Session.Window.State.RUNNING
+                    && now > halt.at()) {
                 halt = null;
             }
             if (processGone()) {

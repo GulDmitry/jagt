@@ -258,7 +258,8 @@ public record TaskState(
         List<StatusChange> known = seededHistory(now);
         boolean record = event || status != this.status;
         return toBuilder().status(status).lastActiveTimestamp(now).message(message)
-                .session(session.withHalt(null).withQuietSince(0))
+                .session(session.withQuietSince(0).withHalt(session.halt() != null && session.halt().kind() == Session.Halt.Kind.IDLE
+                        ? session.halt() : null))
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
     }
