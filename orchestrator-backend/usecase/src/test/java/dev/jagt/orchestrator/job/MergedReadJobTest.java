@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.WorktreeInspection;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
@@ -34,7 +35,7 @@ class MergedReadJobTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
         when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
 
-        new MergedReadJob(new MergedRequests(state, config, inspection)).runOn(state.tasks());
+        new MergedReadJob(new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection))).runOn(state.tasks());
 
         assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isFalse();
     }

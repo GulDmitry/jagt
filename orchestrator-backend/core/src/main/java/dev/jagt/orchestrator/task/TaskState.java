@@ -77,7 +77,11 @@ public record TaskState(
         // Switch name to the session's "yes — why" or "no — why"; empty until it judged one.
         @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> switches,
         // The re-runs of a pipeline that died on infrastructure: the ones sent, and at most one still armed.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<InfraRetry> infraRetries
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<InfraRetry> infraRetries,
+        // The pushed commit the stored checks and approval were read on; null = a read that named none.
+        @Nullable String checksTip,
+        // The newest pushed commit a read saw. Null = none yet, and the stored reads stand as they are.
+        @Nullable String headTip
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -140,7 +144,9 @@ public record TaskState(
             @JsonProperty("repoRequest") @Nullable String repoRequest,
             @JsonProperty("turn") @Nullable Turn turn,
             @JsonProperty("switches") @Nullable Map<String, String> switches,
-            @JsonProperty("infraRetries") @Nullable List<InfraRetry> infraRetries) {
+            @JsonProperty("infraRetries") @Nullable List<InfraRetry> infraRetries,
+            @JsonProperty("checksTip") @Nullable String checksTip,
+            @JsonProperty("headTip") @Nullable String headTip) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
@@ -153,7 +159,7 @@ public record TaskState(
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
                 Loop.trail(trail, loop), Loop.stop(stop, loop), conflict, repoRequest, turn, switches == null ? Map.of() : switches,
-                infraRetries == null ? List.of() : infraRetries);
+                infraRetries == null ? List.of() : infraRetries, checksTip, headTip);
     }
 
     record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
@@ -274,7 +280,7 @@ public record TaskState(
     public TaskState withReviewRound(@Nullable String project, String reviewRequestUrl, long now) {
         return relinked(project, reviewRequestUrl, now).lastActiveTimestamp(now)
                 // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
-                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null)
+                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null).checksTip(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
                 .build();
@@ -337,9 +343,36 @@ public record TaskState(
         return requestOpenedAt <= 0 ? this : toBuilder().requestOpenedAt(requestOpenedAt).build();
     }
 
-    /** What a round actually READ off the host, which also ends any older round's failure to read it. */
-    public TaskState withChecksRead(String hostStatus) {
-        return toBuilder().pipelineStatus(hostStatus).checksUnread(List.of()).build();
+    /** What a round actually READ off the host on {@code tip}, which also ends any older round's failure to read it. */
+    public TaskState withChecksRead(String hostStatus, @Nullable String tip) {
+        return toBuilder().pipelineStatus(hostStatus).checksUnread(List.of()).checksTip(blankToNull(tip)).build();
+    }
+
+    /** The newest commit a read saw pushed: a move off the one before drops the retry armed for it. */
+    public TaskState withHead(@Nullable String tip) {
+        String head = blankToNull(tip);
+        if (head == null || head.equals(headTip)) {
+            return this;
+        }
+        return toBuilder().headTip(head).infraRetries(infraRetries.stream().filter(InfraRetry::sent).toList()).build();
+    }
+
+    /** The checks as the host last said them of the request's current head; null where they were read on another or on none. */
+    public @Nullable String checksRead() {
+        return readsStale() ? null : pipelineStatus;
+    }
+
+    /** The approval as the host last said it of the request's current head; null where it was read on another or on none. */
+    public @Nullable Boolean approvedRead() {
+        return readsStale() ? null : approved;
+    }
+
+    private boolean readsStale() {
+        return headTip != null && !headTip.equals(checksTip);
+    }
+
+    private static @Nullable String blankToNull(@Nullable String tip) {
+        return tip == null || tip.isBlank() ? null : tip;
     }
 
     /** A round that could not read them: the last verdict stands, marked as not this round's. */
@@ -475,7 +508,7 @@ public record TaskState(
         }
         TaskState base = stop != null && stop.voidedBy(requestsOf(repos)) ? lifted(now) : this;
         return base.toBuilder().repos(repos).requestOpenedAt(now)
-                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null);
+                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null).checksTip(null);
     }
 
     public TaskState withMrUrl(String mrUrl, long now) {

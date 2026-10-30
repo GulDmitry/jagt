@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -21,6 +19,7 @@ public class MergedRequests {
     private final StateService stateService;
     private final ConfigService configService;
     private final WorktreeInspection inspection;
+    private final WorktreeChanges worktreeChanges;
 
     /**
      * Reads every request the host has not said merged, records what git says, merged or not, and answers whether
@@ -59,25 +58,7 @@ public class MergedRequests {
 
     /** The commit each request's branch last had pushed, one per repository; blank where the repository cannot name every one. */
     public String pushedTips(String taskId) {
-        List<String> tips = new ArrayList<>();
-        for (TaskRepo repo : stateService.task(taskId).map(TaskState::repos).orElse(List.of())) {
-            if (!repo.hasReviewRequest()) {
-                continue;
-            }
-            String project = Objects.requireNonNull(repo.project());
-            Optional<String> tip = Optional.empty();
-            try {
-                tip = inspection.pushedTip(projectPath(project), Path.of(Objects.requireNonNull(repo.worktreePath())));
-            } catch (RuntimeException e) {
-                log.atWarn().setMessage("pushed tip read failed").addKeyValue("task", taskId)
-                        .addKeyValue("project", project).addKeyValue("cause", e.toString()).log();
-            }
-            if (tip.isEmpty()) {
-                return "";
-            }
-            tips.add(project + "=" + tip.get());
-        }
-        return String.join(",", tips);
+        return stateService.task(taskId).map(worktreeChanges::pushedTips).orElse("");
     }
 
     private Path projectPath(String project) {

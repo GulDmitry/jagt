@@ -51,7 +51,7 @@ public record FinishedTask(
 
     public static FinishedTask of(String id, TaskState task, long finishedAt, @Nullable String masterVerdict) {
         return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
-                task.rounds(), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict,
+                task.rounds(), task.checksRead(), task.totalUsage().total(), task.history(), masterVerdict,
                 task.refusals(), task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd(),
                 countedOrNull(task.usageOrNone()), countedOrNull(task.agentSpendOrNone().usageOrNone()),
                 List.copyOf(task.agentSpendOrNone().marks().keySet()));

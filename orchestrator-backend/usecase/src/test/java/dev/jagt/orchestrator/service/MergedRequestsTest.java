@@ -31,7 +31,7 @@ class MergedRequestsTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
         when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
 
-        boolean none = new MergedRequests(state, config, inspection).refresh("ABC-42");
+        boolean none = new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection)).refresh("ABC-42");
 
         assertThat(none).isFalse();
         assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isFalse();
@@ -46,7 +46,7 @@ class MergedRequestsTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
         when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
 
-        boolean none = new MergedRequests(state, config, inspection).refresh("ABC-42");
+        boolean none = new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection)).refresh("ABC-42");
 
         assertThat(none).isTrue();
     }
@@ -60,7 +60,7 @@ class MergedRequestsTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
         when(inspection.mergedIntoTarget(any(), any(), any())).thenThrow(new IllegalStateException("fetch failed"));
 
-        boolean none = new MergedRequests(state, config, inspection).refresh("ABC-42");
+        boolean none = new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection)).refresh("ABC-42");
 
         assertThat(none).isTrue();
     }

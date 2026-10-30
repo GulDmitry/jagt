@@ -28,7 +28,7 @@ class RoundOutcomeTest {
 
     @BeforeEach
     void theRoundRecordsNothingUnusual() {
-        when(roundRecord.record(any(), any())).thenReturn(new RoundRecord.Recorded(Optional.empty(), RedCauses.Verdict.CODE));
+        when(roundRecord.record(any(), any(), any())).thenReturn(new RoundRecord.Recorded(Optional.empty(), RedCauses.Verdict.CODE));
     }
 
     @Test
@@ -37,13 +37,13 @@ class RoundOutcomeTest {
 
         outcome.settle("ABC-1", "http://mr/1", facts, "");
 
-        verify(roundRecord).record("ABC-1", facts);
+        verify(roundRecord).record("ABC-1", facts, "");
     }
 
     @Test
     void saysTheTaskStoppedWhenItsChecksCouldNotBeListedOnceTooOften() {
         ReviewFacts facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), "", false, false);
-        when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.of(new TaskStop(
+        when(roundRecord.record("ABC-1", facts, "")).thenReturn(new RoundRecord.Recorded(Optional.of(new TaskStop(
                 TaskStop.Trigger.CHECKS, 3_000, "3 reads running could not list the checks: list_pipelines: 403 Forbidden")),
                 RedCauses.Verdict.CODE));
 
@@ -125,7 +125,7 @@ class RoundOutcomeTest {
     void aPipelineWhoseRunnerWasKilledIsRetriedRatherThanHandedToTheSession() {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(), List.of(),
                 "https://host.invalid/p/1", false, false);
-        when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.empty(),
+        when(roundRecord.record("ABC-1", facts, "")).thenReturn(new RoundRecord.Recorded(Optional.empty(),
                 new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
                         Optional.empty())));
 
@@ -142,7 +142,7 @@ class RoundOutcomeTest {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of("mia: rename x"), 0, List.of(),
                 List.of("n1"), "https://host.invalid/p/1", false, false);
         ReviewFacts threadsOnly = facts.withoutChecks();
-        when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.empty(),
+        when(roundRecord.record("ABC-1", facts, "")).thenReturn(new RoundRecord.Recorded(Optional.empty(),
                 new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC",
                         Optional.empty())));
 
@@ -157,7 +157,7 @@ class RoundOutcomeTest {
         ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(), List.of(),
                 "https://host.invalid/p/1", false, false);
         TaskStop stop = new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
-        when(roundRecord.record("ABC-1", facts)).thenReturn(new RoundRecord.Recorded(Optional.empty(),
+        when(roundRecord.record("ABC-1", facts, "")).thenReturn(new RoundRecord.Recorded(Optional.empty(),
                 new RedCauses.Verdict(RedCause.CODE, false, "", Optional.of(stop))));
 
         var result = outcome.settle("ABC-1", "http://mr/1", facts, "");

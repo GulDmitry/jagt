@@ -57,6 +57,8 @@ public class RoundReading {
                     + String.join(", ", unshipped) + " — `ship` again"));
         }
         // One unreadable request fails the WHOLE sweep: half a task's repositories cannot say "green".
+        // Taken before the host is asked: a push between the two leaves the read under the older commit, which only hides it.
+        String tip = mergedRequests.pushedTips(taskId);
         List<ReviewFacts> rounds = new ArrayList<>();
         for (TaskRepo repo : reviewed) {
             Answer<ReviewFacts> answer = reviewReader.read(taskId, Objects.requireNonNull(repo.mrUrl()));
@@ -74,8 +76,7 @@ public class RoundReading {
             }
             rounds.add(reviewed.size() == 1 ? read.get() : named(Objects.requireNonNull(repo.project()), read.get()));
         }
-        return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds),
-                mergedRequests.pushedTips(taskId));
+        return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds), tip);
     }
 
     static String cause(String failure) {

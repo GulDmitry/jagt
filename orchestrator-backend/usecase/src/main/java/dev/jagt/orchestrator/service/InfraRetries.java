@@ -83,7 +83,7 @@ public class InfraRetries {
     /** The task is not stopped and its checks still read red, or it is live on the deploy branch, whose own pipeline a retry was armed for. */
     public boolean stillWaiting(String taskId) {
         return stateService.task(taskId).filter(task -> !task.stopped() && (FlowRules.checkedWhereItLanded(task.status())
-                || FlowRules.waitsOnTheHost(task.status()) && Pipeline.of(task.pipelineStatus()) == Pipeline.RED))
+                || FlowRules.waitsOnTheHost(task.status()) && Pipeline.of(task.checksRead()) == Pipeline.RED))
                 .isPresent();
     }
 

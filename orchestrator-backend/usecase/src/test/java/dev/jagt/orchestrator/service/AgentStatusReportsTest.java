@@ -537,6 +537,44 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void keepsTheRecordedApprovalAndChecksWhenTheSessionReportsAgainOnTheSameCommit(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://mr/1").headTip("proj=aaa").checksTip("proj=aaa")
+                .pipelineStatus("success").approved(true).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(worktreeChanges.pushedTips(any())).thenReturn("proj=aaa");
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
+                configService);
+
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().approvedRead()).isTrue();
+        assertThat(state.task("ABC-1").orElseThrow().checksRead()).isEqualTo("success");
+    }
+
+    @Test
+    void hidesTheRecordedChecksWhenTheSessionReportsAgainAfterPushingAnotherCommit(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://mr/1").headTip("proj=aaa").checksTip("proj=aaa")
+                .pipelineStatus("failed").approved(true).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(worktreeChanges.pushedTips(any())).thenReturn("proj=bbb");
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview(state)), configService),
+                configService);
+
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().checksRead()).isNull();
+        assertThat(state.task("ABC-1").orElseThrow().approvedRead()).isNull();
+    }
+
+    @Test
     void refusesAPlanWithoutAcceptanceCriteria(@TempDir Path root) throws IOException {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

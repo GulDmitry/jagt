@@ -110,6 +110,28 @@ public class WorktreeChanges {
         });
     }
 
+    /** The commit each request's branch last had pushed, one per repository; blank where the repository cannot name every one. */
+    public String pushedTips(TaskState task) {
+        List<String> tips = new java.util.ArrayList<>();
+        for (TaskRepo repo : task.repos()) {
+            if (!repo.hasReviewRequest()) {
+                continue;
+            }
+            String project = Objects.requireNonNull(repo.project());
+            Optional<String> tip = Optional.empty();
+            try {
+                tip = inspection.pushedTip(projectPath(project), Path.of(Objects.requireNonNull(repo.worktreePath())));
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+            }
+            if (tip.isEmpty()) {
+                return "";
+            }
+            tips.add(project + "=" + tip.get());
+        }
+        return String.join(",", tips);
+    }
+
     /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */
     public static String targetBranch(TaskState task, String configuredBase) {
         String base = task.baseBranchOr(configuredBase);

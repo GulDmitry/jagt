@@ -72,7 +72,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of());
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of(), null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -126,7 +126,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of());
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, null, List.of(), null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
@@ -137,7 +137,7 @@ class TaskStateTest {
     @Test
     void keepsWhatTheHostSaidAboutTheChecksWhenTheTaskGoesOnMoving() {
         TaskState red = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
-                .withChecksRead("failed");
+                .withChecksRead("failed", null);
 
         TaskState reported = red.withStatus(TaskStatus.CI_FAILED, "build broken", 2_000);
 
@@ -528,7 +528,7 @@ class TaskStateTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
                 .withChecksUnread(new ChecksUnread(1_000, "list_pipelines: 403 Forbidden"));
 
-        TaskState read = task.withChecksRead("success");
+        TaskState read = task.withChecksRead("success", null);
 
         assertThat(read.checksUnread()).isEmpty();
     }
@@ -684,5 +684,41 @@ class TaskStateTest {
         TaskState reopened = stopped.withMrUrl("https://host/mr/573", 3_000);
 
         assertThat(reopened.stopped()).isFalse();
+    }
+
+    @Test
+    void readsChecksAndApprovalAsUnknownWhenTheHeadMovedOffTheCommitTheyWereReadOn() {
+        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withHead("aaa").withChecksRead("failed", "aaa").withApproved(true);
+
+        TaskState pushed = read.withHead("bbb");
+
+        assertThat(pushed.checksRead()).isNull();
+        assertThat(pushed.approvedRead()).isNull();
+    }
+
+    @Test
+    void keepsChecksWhenTheHeadIsStillTheCommitTheyWereReadOn() {
+        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withHead("aaa").withChecksRead("failed", "aaa").withApproved(true);
+
+        assertThat(read.withHead("aaa").checksRead()).isEqualTo("failed");
+        assertThat(read.withHead("aaa").approvedRead()).isTrue();
+    }
+
+    @Test
+    void readsChecksAsUnknownWhenAStoredReadNamesNoCommitOnceAHeadIsKnown() {
+        TaskState legacy = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build();
+
+        assertThat(legacy.withHead("aaa").checksRead()).isNull();
+    }
+
+    @Test
+    void disarmsTheInfraRetryArmedForTheCommitBeforeWhenTheHeadMoves() {
+        InfraRetry armed = InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
+        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).infraRetries(List.of(armed)).build()
+                .withHead("aaa");
+
+        assertThat(read.withHead("bbb").infraRetries()).isEmpty();
     }
 }

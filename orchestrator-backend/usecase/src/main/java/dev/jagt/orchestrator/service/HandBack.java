@@ -29,6 +29,10 @@ public class HandBack {
         return worktreeChanges.anyUncommitted(task);
     }
 
+    public String pushedTips(TaskState task) {
+        return worktreeChanges.pushedTips(task);
+    }
+
     public RoundState round(TaskState task) {
         return rounds.of(task);
     }

@@ -126,7 +126,7 @@ public record TaskView(
                 task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
                         change.origin(), change.why())).toList(), deployed, draftedReplies, autoReview,
                 checks(task), checksSaid(task), task.pipelineUnread(),
-                task.hasReviewRequest() ? task.approved() : null, task.switches(), stop, waiting(task));
+                task.hasReviewRequest() ? task.approvedRead() : null, task.switches(), stop, waiting(task));
     }
 
     private static String statusLabel(TaskState task, RoundState round) {
@@ -145,16 +145,16 @@ public record TaskView(
     }
 
     private static Optional<InfraRetry> awaitingRetry(TaskState task) {
-        return Pipeline.of(task.pipelineStatus()) == Pipeline.RED ? InfraRetry.pending(task.infraRetries()) : Optional.empty();
+        return Pipeline.of(task.checksRead()) == Pipeline.RED ? InfraRetry.pending(task.infraRetries()) : Optional.empty();
     }
 
     /** A red whose retry is armed reads as running: its verdict is not in. */
     private static Pipeline checks(TaskState task) {
-        return awaitingRetry(task).isPresent() ? Pipeline.RUNNING : Pipeline.of(task.pipelineStatus());
+        return awaitingRetry(task).isPresent() ? Pipeline.RUNNING : Pipeline.of(task.checksRead());
     }
 
     private static @Nullable String checksSaid(TaskState task) {
-        return awaitingRetry(task).map(InfraRetry::reading).orElse(task.pipelineStatus());
+        return awaitingRetry(task).map(InfraRetry::reading).orElse(task.checksRead());
     }
 
     private static @Nullable String asked(Move move, @Nullable Stop stop) {

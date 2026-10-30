@@ -21,7 +21,7 @@ class StopReads {
     void probe(String taskId) {
         switch (reading.read(taskId)) {
             case RoundReading.Round round -> {
-                record.recordListed(taskId, round.facts());
+                record.recordListed(taskId, round.facts(), round.tip());
                 Pipeline pipeline = Pipeline.of(round.facts().pipelineStatus());
                 stops.endOnRead(taskId, pipeline).ifPresent(stop -> log.atInfo().setMessage("stop voided by read")
                         .addKeyValue("task", taskId).addKeyValue("trigger", stop.trigger())

@@ -54,7 +54,7 @@ class StopReadsTest {
 
         reads.probe("ABC-42");
 
-        verify(record).recordListed("ABC-42", green);
+        verify(record).recordListed("ABC-42", green, "");
     }
 
     @Test

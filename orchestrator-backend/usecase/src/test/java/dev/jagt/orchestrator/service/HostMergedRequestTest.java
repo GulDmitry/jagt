@@ -30,8 +30,10 @@ class HostMergedRequestTest {
                         .withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
                 .alias("a1").mrUrl("http://mr/1").build());
+        ConfigService config = mock(ConfigService.class);
+        WorktreeInspection inspection = mock(WorktreeInspection.class);
         RoundReading reading = new RoundReading(state, reviewReader,
-                new MergedRequests(state, mock(ConfigService.class), mock(WorktreeInspection.class)));
+                new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection)));
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(new Answer<>(Optional.of(
                 new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", true, false)),
                 TokenUsage.NONE));

@@ -24,7 +24,7 @@ public class RoundOutcome {
         // THIS round's own read is what decides and what is relayed; the word the CARD carries is the last one
         // a round managed to read, and a green nobody looked at must not mark the task REVIEWED.
         String said = RoundRecord.orUnknown(r.pipelineStatus());
-        RoundRecord.Recorded recorded = roundRecord.record(taskId, r);
+        RoundRecord.Recorded recorded = roundRecord.record(taskId, r, tip);
         if (recorded.stop().isPresent()) {
             return stopped(taskId, said, recorded.stop().get());
         }

@@ -115,6 +115,10 @@ public class AgentStatusReports {
                         .withRepoRequest(said.needsProject())
                         .judged(said.switches()), closesTurn), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
+        if (url != null && FlowRules.outForReview(written.now())) {
+            stateService.task(taskId).map(handBack::pushedTips)
+                    .ifPresent(tip -> stateService.updateTask(taskId, task -> task.withHead(tip)));
+        }
         if (said.noPlan()) {
             stateService.updateTask(taskId, TaskReducer::noPlanDeclared);
         }
