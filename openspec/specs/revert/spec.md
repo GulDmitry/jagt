@@ -17,6 +17,10 @@ repositories last first, each **forgetting** its commit, then discards a DEPLOY_
 - **WHEN** `revert <task>` after several deploys
 - **THEN** only the last; earlier ones by hand: `git log --merges --grep ABC-42`, `git revert -m 1 <sha>`
 
+#### Scenario: Deploy branch moved since the deploy
+- **WHEN** `deployBranch` of proj changed after ABC-42 deployed
+- **THEN** revert takes the merge out of the branch the record holds
+
 #### Scenario: Revert from a conflict with nothing landed
 - **WHEN** `revert` from DEPLOY_CONFLICT, no commit recorded
 - **THEN** the half-merge is discarded; REVERTED

@@ -83,6 +83,26 @@ class RevertServiceTest {
     }
 
     @Test
+    void revertsOnTheBranchTheMergeLandedOnWhenTheConfigurationMovedSince(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("cafebabe1234")), 1, null)).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "staging", null));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
+                .thenReturn("f00dfeed5678");
+        DeployTargets targets = new DeployTargets(config, git);
+        RevertService service = new RevertService(state, targets, new RevertRunner(state, git, Clock.systemUTC()), git);
+
+        service.revert("a1");
+
+        verify(git).revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList());
+        verify(git, never()).revertMergeAndPush(any(), anyString(), eq("staging"), anyString(), anyList());
+    }
+
+    @Test
     void revertsAPreUpgradeDeployOnTheProjectsConfiguredDeployBranch(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

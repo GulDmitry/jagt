@@ -24,9 +24,9 @@ class DeployFixWorktreesTest {
     void opensTheWorktreeInTheRepositoryWhosePipelineWentRed() {
         TaskState task = TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
                 TaskStatus.DEPLOYED).build();
-        when(targets.all(task)).thenReturn(List.of(
-                new DeployTargets.Target("api", new ProjectConfig("/src/api", "origin/main", "dev", null)),
-                new DeployTargets.Target("web", new ProjectConfig("/src/web", "origin/main", "test", null))));
+        when(targets.landed(task)).thenReturn(List.of(
+                new DeployTargets.Target("api", new ProjectConfig("/src/api", "origin/main", "dev", null), "dev"),
+                new DeployTargets.Target("web", new ProjectConfig("/src/web", "origin/main", "test", null), "test")));
 
         new DeployFixWorktrees(targets, gitDeploy).open(task, "ABC-42", "web");
 

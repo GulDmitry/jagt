@@ -31,7 +31,8 @@ public class DeployTargets {
     public List<Target> all(TaskState task) {
         List<Target> targets = new ArrayList<>();
         for (TaskRepo repo : task.repos()) {
-            targets.add(new Target(Objects.requireNonNull(repo.project()), configService.project(Objects.requireNonNull(repo.project()))));
+            ProjectConfig config = configService.project(Objects.requireNonNull(repo.project()));
+            targets.add(new Target(repo.project(), config, config.deployBranch()));
         }
         return targets;
     }
@@ -44,7 +45,7 @@ public class DeployTargets {
         List<Target> landed = new ArrayList<>();
         for (Deployment.Target recorded : Optional.ofNullable(task.deployment()).map(Deployment::targets).orElse(List.of())) {
             if (recorded.landed()) {
-                landed.add(new Target(recorded.project(), configService.project(recorded.project())));
+                landed.add(recorded(recorded, configService.project(recorded.project())));
             }
         }
         return landed;
@@ -67,9 +68,15 @@ public class DeployTargets {
         }
         Map<String, ProjectConfig> projects = configService.load().projects();
         return Optional.ofNullable(task.deployment())
-                .flatMap(Deployment::conflictedTarget).map(Deployment.Target::project)
-                .filter(projects::containsKey)
-                .map(project -> new Target(project, Objects.requireNonNull(projects.get(project))));
+                .flatMap(Deployment::conflictedTarget)
+                .filter(recorded -> projects.containsKey(recorded.project()))
+                .map(recorded -> recorded(recorded, Objects.requireNonNull(projects.get(recorded.project()))));
+    }
+
+    /** The branch the press recorded, the configured one where the record holds none. */
+    private static Target recorded(Deployment.Target recorded, ProjectConfig config) {
+        return new Target(recorded.project(), config,
+                recorded.deployBranch().isBlank() ? config.deployBranch() : recorded.deployBranch());
     }
 
     /** What the task's deployment waits on, as its record says; none while it stands in no conflict. */
@@ -107,14 +114,10 @@ public class DeployTargets {
         return cause.getMessage() == null ? "" : " " + cause.getMessage();
     }
 
-    public record Target(String project, ProjectConfig config) {
+    public record Target(String project, ProjectConfig config, String deployBranch) {
 
         public Path path() {
             return Path.of(config.path());
-        }
-
-        public String deployBranch() {
-            return config.deployBranch();
         }
     }
 }

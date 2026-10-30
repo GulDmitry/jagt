@@ -15,7 +15,7 @@ public class DeployFixWorktrees {
     private final GitDeploy gitDeploy;
 
     public void open(TaskState task, String taskId, String project) {
-        DeployTargets.Target target = targets.all(task).stream().filter(one -> one.project().equals(project))
+        DeployTargets.Target target = targets.landed(task).stream().filter(one -> one.project().equals(project))
                 .findFirst().orElseThrow();
         gitDeploy.openFixWorktree(target.path(), taskId, target.deployBranch());
     }
