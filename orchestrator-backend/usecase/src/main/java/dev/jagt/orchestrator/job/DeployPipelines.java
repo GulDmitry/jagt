@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,15 +32,22 @@ public class DeployPipelines {
 
     public enum Kind { GREEN, WAITING, RED }
 
-    /** {@code said} names the repository, the commit and what the pipeline did; {@code url} is the pipeline's, blank where none ran. */
-    public record Reading(Kind kind, String said, String project, String url) {
+    /**
+     * {@code said} names the repository, the commit and what the pipeline did; {@code url} is the pipeline's, blank
+     * where none ran; {@code bare}, the repositories green only because the host listed no pipeline in time.
+     */
+    public record Reading(Kind kind, String said, String project, String url, List<String> bare) {
 
         static Reading green() {
-            return new Reading(Kind.GREEN, "", "", "");
+            return new Reading(Kind.GREEN, "", "", "", List.of());
+        }
+
+        static Reading bare(String project) {
+            return new Reading(Kind.GREEN, "", "", "", List.of(project));
         }
 
         static Reading waiting(String said) {
-            return new Reading(Kind.WAITING, said, "", "");
+            return new Reading(Kind.WAITING, said, "", "", List.of());
         }
     }
 
@@ -54,18 +62,20 @@ public class DeployPipelines {
     /** The first red the code owns, else the first repository still open, else green. */
     public Reading read(String taskId, TaskState task) {
         Reading open = null;
+        List<String> bare = new ArrayList<>();
         for (Deployment.Target landed : landedTargets(task)) {
             Reading one = read(taskId, task, landed);
             if (one.kind() == Kind.RED) {
                 return one;
             }
             open = open == null && one.kind() == Kind.WAITING ? one : open;
+            bare.addAll(one.bare());
         }
         if (open != null) {
             return open;
         }
         causes.deployStands(taskId);
-        return Reading.green();
+        return new Reading(Kind.GREEN, "", "", "", List.copyOf(bare));
     }
 
     private static List<Deployment.Target> landedTargets(TaskState task) {
@@ -97,11 +107,20 @@ public class DeployPipelines {
             case GREEN -> Reading.green();
             case RED -> red(taskId, task, label, project, at, pipeline.url());
             case RUNNING -> Reading.waiting(at + "running");
-            case NONE -> clock.millis() - landed.pushedAt() >= NO_PIPELINE_AFTER.toMillis()
-                    ? withoutPipeline(taskId, label, "the host listed none after " + NO_PIPELINE_AFTER.toMinutes() + " min")
-                    : Reading.waiting(at + "not started");
+            case NONE -> none(taskId, landed, label, at);
             case UNKNOWN -> Reading.waiting(at + "state unknown");
         };
+    }
+
+    private Reading none(String taskId, Deployment.Target landed, String label, String at) {
+        if (landed.isBare()) {
+            return Reading.bare(landed.project());
+        }
+        if (clock.millis() - landed.pushedAt() < NO_PIPELINE_AFTER.toMillis()) {
+            return Reading.waiting(at + "not started");
+        }
+        withoutPipeline(taskId, label, "the host listed none after " + NO_PIPELINE_AFTER.toMinutes() + " min");
+        return Reading.bare(landed.project());
     }
 
     /** The one way a deploy settles with no pipeline behind it: none can come, so none is waited for. */
@@ -127,6 +146,6 @@ public class DeployPipelines {
                     .addKeyValue("effect", "the deploy stays open, tried again").log();
             return Reading.waiting(at + "red on the code, its deploy worktree not opened: " + e.getMessage());
         }
-        return new Reading(Kind.RED, DeployRedLine.CAUSE + ": " + label, project, url);
+        return new Reading(Kind.RED, DeployRedLine.CAUSE + ": " + label, project, url, List.of());
     }
 }

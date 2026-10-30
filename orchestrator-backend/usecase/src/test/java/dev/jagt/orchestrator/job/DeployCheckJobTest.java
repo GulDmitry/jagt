@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 
 class DeployCheckJobTest {
 
-    private static final DeployPipelines.Reading GREEN = new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "");
+    private static final DeployPipelines.Reading GREEN = new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of());
 
     private StateService state(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -74,6 +74,30 @@ class DeployCheckJobTest {
     }
 
     @Test
+    void handsBackAPipelineRedOnTheCodeThatTheHostListedAfterTheDeployStoodWithNone(@TempDir Path root) {
+        ConfigService config = mock(ConfigService.class);
+        StepRelay relay = mock(StepRelay.class);
+        DeployPipelines pipelines = mock(DeployPipelines.class);
+        StateService state = state(root);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
+        when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class))).thenReturn(true);
+        when(pipelines.read(eq("ABC-42"), any())).thenReturn(
+                new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of("proj")),
+                new DeployPipelines.Reading(DeployPipelines.Kind.RED, "red pipeline on the deploy commit: proj 01234567",
+                        "proj", "https://git.example.invalid/p/7", List.of()));
+        DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()));
+        job.runOn(state.tasks());
+
+        job.runOn(state.tasks());
+
+        assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    }
+
+    @Test
     void asksNothingAndSaysItWaitsOnItsPipelineWhileTheDeployPipelineIsRunning(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
         StepRelay relay = mock(StepRelay.class);
@@ -84,7 +108,7 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(
-                DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", ""));
+                DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 
@@ -104,7 +128,7 @@ class DeployCheckJobTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
-                "red pipeline on the deploy commit: proj 01234567", "proj", "https://git.example.invalid/p/7"));
+                "red pipeline on the deploy commit: proj 01234567", "proj", "https://git.example.invalid/p/7", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC())).runOn(state.tasks());
 

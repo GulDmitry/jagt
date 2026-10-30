@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -66,8 +67,35 @@ public class DeployCheckJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        landed(taskId, task).filter(landed -> !asked(task, Turn.digestOf(landed)))
-                .ifPresent(landed -> settle(taskId, task, landed));
+        landed(taskId, task).ifPresent(landed -> {
+            if (!asked(task, Turn.digestOf(landed))) {
+                settle(taskId, task, landed);
+            } else if (!bareOf(task).isEmpty()) {
+                readLate(taskId, task);
+            }
+        });
+    }
+
+    /** A pipeline the host lists after the deploy settled bare is read still: red hands it back, green is the end. */
+    private void readLate(String taskId, TaskState task) {
+        DeployPipelines.Reading reading = pipelines.read(taskId, task);
+        switch (reading.kind()) {
+            case RED -> reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
+            case GREEN -> markBare(taskId, task, reading.bare());
+            case WAITING -> {
+            }
+        }
+    }
+
+    private void markBare(String taskId, TaskState task, List<String> bare) {
+        if (!bareOf(task).equals(Set.copyOf(bare))) {
+            reports.deployBare(taskId, bare);
+        }
+    }
+
+    private static Set<String> bareOf(TaskState task) {
+        return task.deployment() == null ? Set.of() : task.deployment().targets().stream()
+                .filter(Deployment.Target::isBare).map(Deployment.Target::project).collect(Collectors.toSet());
     }
 
     private void settle(String taskId, TaskState task, String landed) {
@@ -75,6 +103,7 @@ public class DeployCheckJob implements TaskJob {
         String stamp = "deployed to " + deployBranches(task);
         switch (reading.kind()) {
             case GREEN -> {
+                markBare(taskId, task, reading.bare());
                 reports.readDeploy(taskId, null, stamp);
                 if (relay.relay(taskId, STEP, landed, relay.standing(taskId))) {
                     reports.deployAsked(taskId, Turn.digestOf(landed));

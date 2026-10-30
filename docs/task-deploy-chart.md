@@ -27,5 +27,7 @@ stateDiagram-v2
         deploy_HANDED --> deploy_HANDED : watched
         deploy_HANDED --> deploy_LANDING : conflict left
         deploy_LANDING --> deploy_CHECK_ASKED : asked
+        deploy_LANDING --> deploy_LANDING : settled bare
+        deploy_CHECK_ASKED --> deploy_CHECK_ASKED : settled bare
     }
 ```

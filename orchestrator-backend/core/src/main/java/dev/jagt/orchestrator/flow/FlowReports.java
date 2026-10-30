@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -200,6 +201,11 @@ public class FlowReports {
     }
 
     /** The deploy's check recorded as asked on the facts of {@code digest}, so the session is not asked again. */
+    /** Marks {@code bare} as the landed targets that settled with no pipeline listed; a target listed since is cleared. */
+    public void deployBare(String taskId, List<String> bare) {
+        tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Bare(bare), clock.millis()));
+    }
+
     public void deployAsked(String taskId, String digest) {
         tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Asked(digest), clock.millis()));
     }

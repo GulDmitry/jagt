@@ -237,6 +237,9 @@ final class TaskChart {
                         && land(DEPLOY_CONFLICT, move).filter(to -> to != DEPLOY_CONFLICT).isPresent())
                 .emit(new TaskEffect.Deploys(new DeployStep.Cleared())).to(DeployPhase.LANDING);
         deployed(chart, DeployPhase.LANDING, "asked", DeployPhase.CHECK_ASKED, step -> step instanceof DeployStep.Asked);
+        for (DeployPhase at : EnumSet.of(DeployPhase.LANDING, DeployPhase.CHECK_ASKED)) {
+            deployed(chart, at, "settled bare", at, step -> step instanceof DeployStep.Bare);
+        }
     }
 
     private static void deployed(ChartBuilder<TaskMove, Object, TaskEffect> chart, DeployPhase from, String label,

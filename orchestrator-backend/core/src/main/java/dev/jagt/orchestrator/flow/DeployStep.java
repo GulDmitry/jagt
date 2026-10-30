@@ -80,6 +80,15 @@ public sealed interface DeployStep {
         }
     }
 
+    /** Which landed targets settled with no pipeline listed on their tip: {@code projects}, and no other. */
+    record Bare(List<String> projects) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withTargets(deployment.targets().stream()
+                    .map(target -> target.withBare(projects.contains(target.project()))).toList());
+        }
+    }
+
     record Seen(Conflict.Progress progress) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {

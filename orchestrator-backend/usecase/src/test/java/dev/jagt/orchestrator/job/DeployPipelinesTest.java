@@ -79,7 +79,7 @@ class DeployPipelinesTest {
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
 
         assertThat(reading).isEqualTo(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
-                "red pipeline on the deploy commit: shop 01234567", "shop", url));
+                "red pipeline on the deploy commit: shop 01234567", "shop", url, List.of()));
         verify(fixes).open(deployed, "ABC-42", "shop");
     }
 
@@ -148,6 +148,19 @@ class DeployPipelinesTest {
         DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
 
         assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    }
+
+    @Test
+    void namesTheRepositoryWhoseDeployStoodWithNoPipelineListedSoALaterOneIsStillRead() {
+        TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
+                TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
+                .withPushedAt(NOW.minusSeconds(10 * 60).toEpochMilli())), 1, null)).build();
+        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+                TokenUsage.NONE));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
+
+        assertThat(reading.bare()).containsExactly("shop");
     }
 
     @Test
