@@ -70,4 +70,7 @@ sealed interface TaskMove {
 
     record DeployStepped(DeployStep step) implements TaskMove {
     }
+
+    record Signed(SessionSign sign) implements TaskMove {
+    }
 }

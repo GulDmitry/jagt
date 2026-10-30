@@ -71,7 +71,7 @@ class TaskStateTest {
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null);
+                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -125,7 +125,7 @@ class TaskStateTest {
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
                 1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, 0, null, null, null, List.of(), null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null);
+                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null, null);
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
@@ -736,5 +736,26 @@ class TaskStateTest {
         TaskState reread = mapper.readValue(mapper.writeValueAsString(conflicted), TaskState.class);
 
         assertThat(reread.deployment()).isEqualTo(conflicted.deployment());
+    }
+
+    @Test
+    void keepsTheSessionSignsAcrossASave() {
+        TaskState signed = TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build().withSession(
+                new Session(5, 4, 3, new Session.Halt(Session.Halt.Kind.FAILED, 6, "overloaded"), 2,
+                        new Session.Window(Session.Window.State.RUNNING, 7, 8), "/logs/s.jsonl", true));
+        JsonMapper mapper = new JsonMapper();
+
+        TaskState reread = mapper.readValue(mapper.writeValueAsString(signed), TaskState.class);
+
+        assertThat(reread.session()).isEqualTo(signed.session());
+    }
+
+    @Test
+    void readsATaskWrittenBeforeTheSessionWasRecordedAsOneWithNoSign() {
+        TaskState old = new JsonMapper().readValue("""
+                {"project":"demo","worktreePath":"/wt","status":"IN_PROGRESS","lastActiveTimestamp":5,
+                 "mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
+
+        assertThat(old.session()).isEqualTo(Session.defaults());
     }
 }

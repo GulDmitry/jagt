@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -27,7 +28,7 @@ class SessionReportsTest {
         new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.WAITING, null, null);
+        verify(signs).record("ABC-1", SessionProbe.State.WAITING, null, null, new SessionSign.TurnEnded(null));
     }
 
     @Test
@@ -37,7 +38,7 @@ class SessionReportsTest {
         new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude is waiting for your input"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null);
+        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null, new SessionSign.TurnEnded(null));
     }
 
     @Test
@@ -47,7 +48,7 @@ class SessionReportsTest {
         new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.GONE,
                 SessionReports.Report.defaults().withEndedBy("clear"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null);
+        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null, new SessionSign.Restarted("clear"));
     }
 
     @Test
@@ -57,7 +58,7 @@ class SessionReportsTest {
         new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.GONE,
                 SessionReports.Report.defaults().withEndedBy("prompt_input_exit"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.GONE, null, null);
+        verify(signs).record("ABC-1", SessionProbe.State.GONE, null, null, new SessionSign.Ended("prompt_input_exit"));
     }
 
     @Test
@@ -67,7 +68,7 @@ class SessionReportsTest {
         boolean limit = new SessionReports(signs, runtime, turnEnds)
                 .turnFailed("ABC-1", SessionReports.Report.defaults().withFailedOn("rate_limit"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.FAILED, "rate_limit", null);
+        verify(signs).record("ABC-1", SessionProbe.State.FAILED, "rate_limit", null, new SessionSign.TurnFailed("rate_limit"));
         assertThat(limit).isTrue();
     }
 
@@ -78,7 +79,8 @@ class SessionReportsTest {
         boolean limit = new SessionReports(signs, runtime, turnEnds)
                 .turnFailed("ABC-1", SessionReports.Report.defaults().withFailedOn("overloaded"));
 
-        verify(signs).record("ABC-1", SessionProbe.State.FAILED, "overloaded", null);
+        verify(signs).record("ABC-1", SessionProbe.State.FAILED, "overloaded", null,
+                new SessionSign.TurnFailed("overloaded"));
         assertThat(limit).isFalse();
     }
 
@@ -90,7 +92,7 @@ class SessionReportsTest {
         String answered = new SessionReports(signs, runtime, turnEnds)
                 .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
 
-        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null);
+        verify(signs).record("ABC-1", SessionProbe.State.IDLE, null, null, new SessionSign.TurnEnded(null));
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
     }
 
@@ -101,7 +103,7 @@ class SessionReportsTest {
         new SessionReports(signs, runtime, turnEnds)
                 .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, true);
 
-        verify(signs).record("ABC-1", SessionProbe.State.WORKING, null, null);
+        verify(signs).record("ABC-1", SessionProbe.State.WORKING, null, null, new SessionSign.WorkStarted());
     }
 
     @Test

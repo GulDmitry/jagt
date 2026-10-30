@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.surface.mcp;
 
 import org.jspecify.annotations.Nullable;
+import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.protocol.Message;
@@ -106,7 +108,8 @@ public class McpProtocolService implements McpToolRegistry {
         long now = clock.millis();
         caller.ifPresent(entry -> {
             if (now - entry.getValue().lastActiveTimestamp() > KEEP_ALIVE_THROTTLE_MS) {
-                stateService.updateTask(entry.getKey(), task -> task.touched(now));
+                stateService.updateTask(entry.getKey(),
+                        task -> TaskReducer.signed(task.touched(now), new SessionSign.Called(), now));
             }
         });
         return caller.map(Map.Entry::getKey).orElse(null);

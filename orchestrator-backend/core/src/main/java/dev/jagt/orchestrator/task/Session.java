@@ -1,0 +1,34 @@
+package dev.jagt.orchestrator.task;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.With;
+import org.jspecify.annotations.Nullable;
+
+/** What a task's session has signed: times in millis, 0 meaning never; {@code halt} null while nothing has stopped it. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record Session(@With long movedAt, @With long workStartedAt, @With long reportedAt, @With @Nullable Halt halt,
+                      @With long quietSince, @With @Nullable Window window, @With @Nullable String log,
+                      @With boolean stampedAsk) {
+
+    public static Session defaults() {
+        return new Session(0, 0, 0, null, 0, null, null, false);
+    }
+
+    /** How a session stopped, when, and why in the words a human reads. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Halt(Kind kind, long at, @Nullable String cause) {
+
+        public enum Kind { IDLE, FAILED, GONE }
+    }
+
+    /** What the session's terminal window showed when last read, and when it last printed. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Window(State state, long at, long printedAt) {
+
+        public enum State { MISSING, DEAD_SHELL, RUNNING, UNREAD }
+    }
+}

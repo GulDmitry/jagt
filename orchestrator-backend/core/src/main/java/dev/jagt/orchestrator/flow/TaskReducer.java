@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
-/** The one place a task's status, stop, plan gate, report, turn and deployment are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report, turn, deployment and session are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -107,9 +107,14 @@ public final class TaskReducer {
         return step(task, new TaskMove.DeployStepped(step), now);
     }
 
+    /** {@code task} with the sign its session made recorded; a sign the phase has no edge for is dropped. */
+    public static TaskState signed(TaskState task, SessionSign sign, long now) {
+        return step(task, new TaskMove.Signed(sign), now);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
         return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
-                TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), move);
+                TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), SessionPhase.of(task.session()), move);
     }
 
     private static TaskState step(TaskState task, TaskMove move, long now) {
@@ -134,6 +139,7 @@ public final class TaskReducer {
             case TaskEffect.RestoresTurn restores -> task.withTurn(restores.before());
             case TaskEffect.Deploys deploys -> task.withDeployment(deploys.step()
                     .applyTo(task.deployment() == null ? Deployment.defaults() : task.deployment(), now));
+            case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }
 }

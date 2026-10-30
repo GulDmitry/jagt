@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.agent;
 
 import org.jspecify.annotations.Nullable;
+import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.TaskFacts;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -63,13 +64,15 @@ public class SessionReports {
 
     /** The brief for a session that has just been compacted, or empty for every other report. */
     public String record(String taskId, SessionProbe.State state, Report report) {
-        signs.record(taskId, continued(blocked(state, report.said()), report.endedBy()), null, report.sessionLog());
+        signs.record(taskId, continued(blocked(state, report.said()), report.endedBy()), null, report.sessionLog(),
+                signOf(state, report));
         return brief(taskId, report.startedBy(), report.task());
     }
 
     /** Records the turn as failed on the error the CLI named, and says whether that error is a usage limit. */
     public boolean turnFailed(String taskId, Report report) {
-        signs.record(taskId, SessionProbe.State.FAILED, report.failedOn(), report.sessionLog());
+        signs.record(taskId, SessionProbe.State.FAILED, report.failedOn(), report.sessionLog(),
+                new SessionSign.TurnFailed(report.failedOn()));
         String limit = runtime.rateLimitError();
         return report.failedOn() != null && limit != null && !limit.isBlank()
                 && limit.equalsIgnoreCase(report.failedOn().strip());
@@ -96,9 +99,21 @@ public class SessionReports {
     }
 
     private SessionProbe.State continued(SessionProbe.State state, @Nullable String endedBy) {
+        return continuing(state, endedBy) ? SessionProbe.State.IDLE : state;
+    }
+
+    private boolean continuing(SessionProbe.State state, @Nullable String endedBy) {
         return state == SessionProbe.State.GONE && endedBy != null
-                && runtime.continuingEnds().stream().anyMatch(reason -> reason.equalsIgnoreCase(endedBy.strip()))
-                ? SessionProbe.State.IDLE : state;
+                && runtime.continuingEnds().stream().anyMatch(reason -> reason.equalsIgnoreCase(endedBy.strip()));
+    }
+
+    private SessionSign signOf(SessionProbe.State state, Report report) {
+        return switch (state) {
+            case WORKING -> new SessionSign.WorkStarted();
+            case GONE -> continuing(state, report.endedBy()) ? new SessionSign.Restarted(report.endedBy())
+                    : new SessionSign.Ended(report.endedBy());
+            default -> new SessionSign.TurnEnded(report.sessionLog() == null ? null : report.sessionLog().toString());
+        };
     }
 
     /** A compaction drops the brief and the task's facts silently: the rules are named, the facts restated. */

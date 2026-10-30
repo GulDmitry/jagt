@@ -70,6 +70,15 @@ class FlowDoorsTest {
     }
 
     @Test
+    void aSessionIsWrittenOnlyByTheReducer() {
+        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
+                .should().callMethodWhere(target(name("withSession")))
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("dev.jagt.orchestrator"));
+    }
+
+    @Test
     void aStatusIsRestoredOnlyByTheClaimUndo() {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.FlowReports")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")

@@ -15,7 +15,7 @@ class TaskChartTest {
     void startsAtNewOnAChartTheEngineValidatedAsReachableAndLeavable() {
         assertThat(TaskChart.chart().initial().toPlain()).containsExactly(
                 entry("lifecycle", "NEW"), entry("stop", "NONE"), entry("plan", "OPEN"), entry("report", "PLAIN"),
-                entry("turn", "CLOSED"), entry("deploy", "NONE"));
+                entry("turn", "CLOSED"), entry("deploy", "NONE"), entry("session", "NONE"));
     }
 
     @Test
@@ -34,5 +34,7 @@ class TaskChartTest {
                 .isEqualTo("# The task turn chart\n\n```mermaid\nstateDiagram-v2\n" + regions[4] + "```\n");
         assertThat(Files.readString(Path.of("../../docs/task-deploy-chart.md")))
                 .isEqualTo("# The task deploy chart\n\n```mermaid\nstateDiagram-v2\n" + regions[5] + "```\n");
+        assertThat(Files.readString(Path.of("../../docs/task-session-chart.md")))
+                .isEqualTo("# The task session chart\n\n```mermaid\nstateDiagram-v2\n" + regions[6] + "```\n");
     }
 }

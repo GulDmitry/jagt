@@ -35,4 +35,7 @@ sealed interface TaskEffect {
 
     record Deploys(DeployStep step) implements TaskEffect {
     }
+
+    record Signs(SessionSign sign) implements TaskEffect {
+    }
 }

@@ -19,7 +19,10 @@ import java.util.function.Predicate;
 
 import static dev.jagt.orchestrator.task.TaskStatus.*;
 
-/** The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan region; the report region; the turn region. */
+/**
+ * The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan, report,
+ * turn, deploy and session regions.
+ */
 final class TaskChart {
 
     private static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
@@ -33,6 +36,8 @@ final class TaskChart {
     private static final RegionId<TurnKind> TURN = new RegionId<>("turn", TurnKind.class);
 
     private static final RegionId<DeployPhase> DEPLOY = new RegionId<>("deploy", DeployPhase.class);
+
+    private static final RegionId<SessionPhase> SESSION = new RegionId<>("session", SessionPhase.class);
 
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
 
@@ -74,16 +79,16 @@ final class TaskChart {
 
     /** What {@code move} does to a task at {@code from} under {@code stop}, {@code plan}, {@code report} and {@code turn}, in order; empty where no edge takes it. */
     static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, AgentReport report,
-                                TurnKind turn, DeployPhase deploy, TaskMove move) {
+                                TurnKind turn, DeployPhase deploy, SessionPhase session, TaskMove move) {
         return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name(),
                 PLAN.name(), plan.name(), REPORT.name(), report.name(), TURN.name(), turn.name(),
-                DEPLOY.name(), deploy.name())), NO_FACTS, move).effects();
+                DEPLOY.name(), deploy.name(), SESSION.name(), session.name())), NO_FACTS, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
         return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, TurnKind.CLOSED,
-                DeployPhase.NONE, move).stream().filter(TaskEffect.Lands.class::isInstance)
+                DeployPhase.NONE, SessionPhase.NONE, move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -137,6 +142,7 @@ final class TaskChart {
         says(chart);
         turns(chart);
         deploys(chart);
+        sessions(chart);
         ran(chart);
         reports(chart);
         reads(chart);
@@ -242,6 +248,39 @@ final class TaskChart {
         for (DeployPhase at : EnumSet.of(DeployPhase.LANDING, DeployPhase.CHECK_ASKED)) {
             deployed(chart, at, "settled bare", at, step -> step instanceof DeployStep.Bare);
             deployed(chart, at, "read", at, step -> step instanceof DeployStep.ReadOn);
+        }
+    }
+
+    private static void sessions(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
+        chart.region(SESSION, SessionPhase.NONE);
+        EnumSet<SessionPhase> turnsEnd = EnumSet.of(SessionPhase.NONE, SessionPhase.WORKING, SessionPhase.IDLE,
+                SessionPhase.QUIET);
+        for (SessionPhase from : SessionPhase.values()) {
+            signed(chart, from, "work started", SessionPhase.WORKING, SessionSign.WorkStarted.class);
+            signed(chart, from, "called", SessionPhase.WORKING, SessionSign.Called.class);
+            signed(chart, from, "ended", SessionPhase.GONE, SessionSign.Ended.class);
+            signed(chart, from, "restarted", SessionPhase.IDLE, SessionSign.Restarted.class);
+            if (turnsEnd.contains(from)) {
+                signed(chart, from, "turn ended", SessionPhase.IDLE, SessionSign.TurnEnded.class);
+            }
+            if (turnsEnd.contains(from) || from == SessionPhase.FAILED) {
+                signed(chart, from, "turn failed", SessionPhase.FAILED, SessionSign.TurnFailed.class);
+            }
+        }
+        for (SessionPhase from : EnumSet.of(SessionPhase.WORKING, SessionPhase.IDLE, SessionPhase.QUIET)) {
+            signed(chart, from, "went quiet", SessionPhase.QUIET, SessionSign.WentQuiet.class);
+        }
+    }
+
+    private static void signed(ChartBuilder<TaskMove, Object, TaskEffect> chart, SessionPhase from, String label,
+                               SessionPhase to, Class<? extends SessionSign> kind) {
+        EdgeBuilder<TaskMove, Object, TaskEffect, SessionPhase> edge = chart.onMatching(SESSION, from, label,
+                        move -> move instanceof TaskMove.Signed signed && kind.isInstance(signed.sign()))
+                .emitFor(move -> new TaskEffect.Signs(((TaskMove.Signed) move).sign()));
+        if (from == to) {
+            edge.stay();
+        } else {
+            edge.to(to);
         }
     }
 

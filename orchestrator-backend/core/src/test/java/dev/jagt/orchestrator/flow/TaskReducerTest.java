@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 
@@ -200,5 +201,100 @@ class TaskReducerTest {
         TaskState reopened = TaskReducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
         assertThat(reopened.stopped()).isFalse();
+    }
+
+    @Test
+    void keepsATurnFailureWhenAnIdleNoticeFollowsIt() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState noticed = TaskReducer.signed(failed, new SessionSign.TurnEnded(null), 2_000);
+
+        assertThat(SessionPhase.of(noticed.session())).isEqualTo(SessionPhase.FAILED);
+        assertThat(noticed.session().halt().cause()).isEqualTo("overloaded");
+    }
+
+    @Test
+    void endsATurnFailureWhenTheSessionRestarts() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState restarted = TaskReducer.signed(failed, new SessionSign.Restarted("compact"), 2_000);
+
+        assertThat(SessionPhase.of(restarted.session())).isEqualTo(SessionPhase.IDLE);
+    }
+
+    @Test
+    void worksAgainWhenAFailedSessionStartsWork() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState started = TaskReducer.signed(failed, new SessionSign.WorkStarted(), 2_000);
+
+        assertThat(SessionPhase.of(started.session())).isEqualTo(SessionPhase.WORKING);
+        assertThat(started.session().workStartedAt()).isEqualTo(2_000);
+    }
+
+    @Test
+    void isGoneWithItsReasonWhenTheSessionEnds() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+
+        TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("prompt_input_exit"), 1_000);
+
+        assertThat(SessionPhase.of(ended.session())).isEqualTo(SessionPhase.GONE);
+        assertThat(ended.session().halt().cause()).isEqualTo("prompt_input_exit");
+    }
+
+    @Test
+    void isIdleWhenATurnEndsWhileWorking() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState working = TaskReducer.signed(task, new SessionSign.WorkStarted(), 1_000);
+
+        TaskState idle = TaskReducer.signed(working, new SessionSign.TurnEnded("/logs/s.jsonl"), 2_000);
+
+        assertThat(SessionPhase.of(idle.session())).isEqualTo(SessionPhase.IDLE);
+        assertThat(idle.session().log()).isEqualTo("/logs/s.jsonl");
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {500, 1_000})
+    void keepsAHaltWhenACallIsNoNewerThanIt(long calledAt) {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState called = TaskReducer.signed(failed, new SessionSign.Called(), calledAt);
+
+        assertThat(SessionPhase.of(called.session())).isEqualTo(SessionPhase.FAILED);
+    }
+
+    @Test
+    void dropsAHaltWhenACallComesAfterIt() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("prompt_input_exit"), 1_000);
+
+        TaskState called = TaskReducer.signed(ended, new SessionSign.Called(), 2_000);
+
+        assertThat(SessionPhase.of(called.session())).isEqualTo(SessionPhase.WORKING);
+    }
+
+    @Test
+    void dropsAHaltWhenWorkStartsInTheSameMillisecond() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+
+        TaskState started = TaskReducer.signed(failed, new SessionSign.WorkStarted(), 1_000);
+
+        assertThat(SessionPhase.of(started.session())).isEqualTo(SessionPhase.WORKING);
+    }
+
+    @Test
+    void goesQuietSinceTheTurnEndedWhenNothingFollowsIt() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+
+        TaskState quiet = TaskReducer.signed(idle, new SessionSign.WentQuiet(), 9_000);
+
+        assertThat(SessionPhase.of(quiet.session())).isEqualTo(SessionPhase.QUIET);
+        assertThat(quiet.session().quietSince()).isEqualTo(1_000);
     }
 }
