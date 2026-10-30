@@ -82,7 +82,7 @@ public class MasterReview {
     private boolean store(String taskId, TaskState task, Review review) {
         return JagtJson.serialise(review).map(bytes -> {
             String fingerprint = JagtJson.fingerprint(bytes);
-            state.updateTask(taskId, current -> current.withTurn(current.turnOrNone().withMark(SEAL, fingerprint)));
+            state.updateTask(taskId, current -> current.withMark(SEAL, fingerprint));
             return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
         }).orElse(false);
     }

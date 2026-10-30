@@ -19,7 +19,7 @@ import java.util.function.Predicate;
 
 import static dev.jagt.orchestrator.task.TaskStatus.*;
 
-/** The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan region; the report region. */
+/** The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan region; the report region; the turn region. */
 final class TaskChart {
 
     private static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
@@ -29,6 +29,8 @@ final class TaskChart {
     private static final RegionId<PlanGate> PLAN = new RegionId<>("plan", PlanGate.class);
 
     private static final RegionId<AgentReport> REPORT = new RegionId<>("report", AgentReport.class);
+
+    private static final RegionId<TurnKind> TURN = new RegionId<>("turn", TurnKind.class);
 
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
 
@@ -68,16 +70,16 @@ final class TaskChart {
         return CHART;
     }
 
-    /** What {@code move} does to a task at {@code from} under {@code stop}, {@code plan} and {@code report}, in order; empty where no edge takes it. */
+    /** What {@code move} does to a task at {@code from} under {@code stop}, {@code plan}, {@code report} and {@code turn}, in order; empty where no edge takes it. */
     static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, AgentReport report,
-                                TaskMove move) {
+                                TurnKind turn, TaskMove move) {
         return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name(),
-                PLAN.name(), plan.name(), REPORT.name(), report.name())), NO_FACTS, move).effects();
+                PLAN.name(), plan.name(), REPORT.name(), report.name(), TURN.name(), turn.name())), NO_FACTS, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
-        return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, move).stream().filter(TaskEffect.Lands.class::isInstance)
+        return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, TurnKind.CLOSED, move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -130,6 +132,7 @@ final class TaskChart {
         stops(chart);
         plans(chart);
         says(chart);
+        turns(chart);
         ran(chart);
         reports(chart);
         reads(chart);
@@ -183,6 +186,38 @@ final class TaskChart {
             if (from != AgentReport.PLAIN) {
                 clears(chart, from);
             }
+        }
+    }
+
+    private static void turns(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
+        chart.region(TURN, TurnKind.CLOSED);
+        for (TurnKind from : TurnKind.values()) {
+            relayed(chart, from);
+            EdgeBuilder<TaskMove, Object, TaskEffect, TurnKind> closed = chart.onMatching(TURN, from, "turn closed",
+                    new TaskMove.TurnClosed()::equals).emit(new TaskEffect.ClosesTurn());
+            if (from == TurnKind.CLOSED) {
+                closed.stay();
+            } else {
+                closed.to(TurnKind.CLOSED);
+            }
+            for (TurnKind restored : TurnKind.values()) {
+                chart.onMatching(TURN, from, "turn restored " + restored, move -> move instanceof TaskMove.TurnRestored
+                                undone && TurnKind.of(undone.before()) == restored)
+                        .emitFor(move -> new TaskEffect.RestoresTurn(((TaskMove.TurnRestored) move).before()))
+                        .to(restored);
+            }
+        }
+    }
+
+    private static void relayed(ChartBuilder<TaskMove, Object, TaskEffect> chart, TurnKind from) {
+        EdgeBuilder<TaskMove, Object, TaskEffect, TurnKind> relayed = chart.onMatching(TURN, from, "relayed",
+                        move -> move instanceof TaskMove.Relayed)
+                .emitFor(move -> new TaskEffect.OpensTurn(((TaskMove.Relayed) move).step(),
+                        ((TaskMove.Relayed) move).digest(), ((TaskMove.Relayed) move).answered()));
+        if (from == TurnKind.OPEN) {
+            relayed.stay();
+        } else {
+            relayed.to(TurnKind.OPEN);
         }
     }
 

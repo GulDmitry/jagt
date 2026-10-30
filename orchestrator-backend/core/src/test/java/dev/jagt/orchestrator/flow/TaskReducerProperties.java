@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.Turn;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -75,12 +76,30 @@ class TaskReducerProperties {
     void aMoveTheChartHasNoEdgeForLeavesStatusConflictAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
-            Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(), move))
+            Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
+                    TurnKind.of(task.turnOrNone()), move))
                     .filter(List::isEmpty).ifPresent(none -> {
                         assertThat(next.status()).isEqualTo(task.status());
                         assertThat(next.conflict()).isEqualTo(task.conflict());
                         assertThat(next.stop()).isEqualTo(task.stop());
                     });
+            return next;
+        }, (left, right) -> right);
+    }
+
+    @Property
+    void aTurnCountsExactlyOneMoreOnEveryRelayAndCloseAndOtherwiseNotAtAll(@ForAll("tasks") TaskState start,
+                                                                          @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, move) -> {
+            TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+            long id = task.turnOrNone().id();
+            Optional.of(move).filter(m -> m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed)
+                    .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id + 1));
+            Optional.of(move).filter(m -> m instanceof TaskMove.TurnRestored restored)
+                    .ifPresent(m -> assertThat(next.turnOrNone()).isEqualTo(((TaskMove.TurnRestored) m).before()));
+            Optional.of(move).filter(m -> !(m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed
+                            || m instanceof TaskMove.TurnRestored))
+                    .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id));
             return next;
         }, (left, right) -> right);
     }
@@ -111,10 +130,11 @@ class TaskReducerProperties {
                 new ConflictWatch.Progress(7, 252, "d"), 1_000)).injectNull(0.5);
         Arbitrary<TaskStop> stop = Arbitraries.of(TaskStop.Trigger.class).map(trigger ->
                 new TaskStop(trigger, 1_000, "evidence")).injectNull(0.5);
+        Arbitrary<Turn> turn = Arbitraries.of("", "d").map(digest -> new Turn("ship", 4, digest, 1_000, null, null));
         return Combinators.combine(Arbitraries.of(TaskStatus.class), conflict, stop, Arbitraries.of(PlanGate.class),
-                        Arbitraries.of(AgentReport.class))
-                .as((status, watch, standing, gate, report) -> TaskState.builder("api", "/wt", status).conflict(watch)
-                        .stop(standing).planGate(gate).report(report).build());
+                        Arbitraries.of(AgentReport.class), turn)
+                .as((status, watch, standing, gate, report, held) -> TaskState.builder("api", "/wt", status)
+                        .conflict(watch).stop(standing).planGate(gate).report(report).turn(held).build());
     }
 
     @Provide
@@ -138,7 +158,11 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.NoPlanDeclared()),
                 Arbitraries.just(new TaskMove.Autoplanned()),
                 Arbitraries.of(AgentReport.class).map(TaskMove.Said::new),
-                Arbitraries.of(AgentReport.class).map(TaskMove.Stamped::new));
+                Arbitraries.of(AgentReport.class).map(TaskMove.Stamped::new),
+                Arbitraries.just(new TaskMove.Relayed("ship", "d", "a")),
+                Arbitraries.just(new TaskMove.TurnClosed()),
+                Arbitraries.of("", "d").map(digest -> new TaskMove.TurnRestored(
+                        new Turn("ship", 2, digest, 500, null, null))));
         return move.list().ofMaxSize(50);
     }
 }

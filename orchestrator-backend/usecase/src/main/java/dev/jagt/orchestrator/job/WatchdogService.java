@@ -113,8 +113,7 @@ public class WatchdogService implements Job {
             return;
         }
         String said = body(silence.get());
-        stateService.updateTask(taskId, current -> current.withTurn(
-                current.turnOrNone().withMark(ALERTED, String.valueOf(silence.get().since()))));
+        stateService.updateTask(taskId, current -> current.withMark(ALERTED, String.valueOf(silence.get().since())));
         log.atWarn().setMessage("task stopped")
                 .addKeyValue("task", taskId)
                 .addKeyValue("said", OneLine.clipped(said))
@@ -126,7 +125,7 @@ public class WatchdogService implements Job {
 
     private void forgetAlert(String taskId, TaskState task) {
         if (task.turnOrNone().mark(ALERTED) != null) {
-            stateService.updateTask(taskId, current -> current.withTurn(current.turnOrNone().withoutMark(ALERTED)));
+            stateService.updateTask(taskId, current -> current.withoutMark(ALERTED));
         }
     }
 

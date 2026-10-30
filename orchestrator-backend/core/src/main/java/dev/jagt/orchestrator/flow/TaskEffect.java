@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.Turn;
 
 /** What a chart step does to a task, as data; {@link TaskReducer} is the one place that applies it. */
 sealed interface TaskEffect {
@@ -24,5 +25,14 @@ sealed interface TaskEffect {
     }
 
     record Reports(AgentReport report) implements TaskEffect {
+    }
+
+    record OpensTurn(String step, String digest, String answered) implements TaskEffect {
+    }
+
+    record ClosesTurn() implements TaskEffect {
+    }
+
+    record RestoresTurn(Turn before) implements TaskEffect {
     }
 }

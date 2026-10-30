@@ -123,7 +123,7 @@ public class VerifyJob implements Job {
         }
         if (told) {
             key.ifPresent(failing -> stateService.updateTask(taskId,
-                    current -> current.withTurn(current.turnOrNone().withMark(FAILED, failing))));
+                    current -> current.withMark(FAILED, failing)));
         } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
             return;
         }

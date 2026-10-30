@@ -622,6 +622,14 @@ public record TaskState(
         return toBuilder().switches(merged).build();
     }
 
+    public TaskState withMark(String step, String value) {
+        return withTurn(turnOrNone().withMark(step, value));
+    }
+
+    public TaskState withoutMark(String step) {
+        return withTurn(turnOrNone().withoutMark(step));
+    }
+
     public TaskState withTurn(Turn turn) {
         return toBuilder().turn(turn).build();
     }

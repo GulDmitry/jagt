@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
@@ -52,14 +53,14 @@ public class TaskTurns {
         boolean[] restored = new boolean[1];
         stateService.updateTask(stateService.canonicalTaskId(taskId), task -> {
             restored[0] = task.turnOrNone().sameTurnAs(opened);
-            return restored[0] ? task.withTurn(before) : task;
+            return restored[0] ? TaskReducer.turnRestored(task, before) : task;
         });
         return restored[0];
     }
 
     /** The write that opens the session's turn, for a caller that makes it part of a larger one. */
     public UnaryOperator<TaskState> opening(String step, String digest) {
-        return task -> task.withTurn(task.turnOrNone().relayed(step, digest, answeredBy(task), clock.millis()));
+        return task -> TaskReducer.relayed(task, step, digest, answeredBy(task), clock.millis());
     }
 
     private static String answeredBy(TaskState task) {
@@ -82,15 +83,15 @@ public class TaskTurns {
 
     /** The turn the task's last report answered, passed to whoever holds it now. */
     public static TaskState closed(TaskState task) {
-        return task.withTurn(task.turnOrNone().closed(task.lastActiveTimestamp()));
+        return TaskReducer.turnClosed(task, task.lastActiveTimestamp());
     }
 
     public void mark(String taskId, String step, String value) {
-        update(taskId, turn -> turn.withMark(step, value));
+        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> task.withMark(step, value));
     }
 
     public void unmark(String taskId, String step) {
-        update(taskId, turn -> turn.withoutMark(step));
+        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> task.withoutMark(step));
     }
 
     /** The question standing on the task, as {@link #UNANSWERED} records it. */
@@ -104,10 +105,5 @@ public class TaskTurns {
         return turn.mark(LEFT) != null || task.report().asks() && turn.marked(UNANSWERED, asked(task))
                 || FlowRules.deployedByTheMaster(task.status())
                 && turn.marked(PRESSED_DEPLOY, String.valueOf(task.statusSince()));
-    }
-
-    private void update(String taskId, UnaryOperator<Turn> change) {
-        stateService.updateTask(stateService.canonicalTaskId(taskId),
-                task -> task.withTurn(change.apply(task.turnOrNone())));
     }
 }

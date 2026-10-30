@@ -102,7 +102,7 @@ public class FlowReports {
             }
             undone.set(true);
             long now = clock.millis();
-            return task.restoredFrom(read, now).withTurn(claimed.closed(now));
+            return TaskReducer.turnClosed(task.restoredFrom(read, now), now);
         });
         return undone.get();
     }

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.Turn;
 
 /** What can happen to a task's status, named by the door it came through. */
 sealed interface TaskMove {
@@ -49,5 +50,17 @@ sealed interface TaskMove {
 
     /** A verb's stamp meaning {@code means}, set whatever the status. */
     record Stamped(AgentReport means) implements TaskMove {
+    }
+
+    /** A relay handing the turn over; {@code answered} fingerprints what the session had last reported. */
+    record Relayed(String step, String digest, String answered) implements TaskMove {
+    }
+
+    /** A report, or a refusal, closing the turn it answers. */
+    record TurnClosed() implements TaskMove {
+    }
+
+    /** A relay that failed to send, put back to the turn it found. */
+    record TurnRestored(Turn before) implements TaskMove {
     }
 }

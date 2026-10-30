@@ -3,11 +3,12 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.Turn;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
-/** The one place a task's status, stop, plan gate and report are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report and turn are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -78,8 +79,24 @@ public final class TaskReducer {
         return step(task, new TaskMove.Stamped(means), 0);
     }
 
+    /** {@code task} whose session was handed the turn {@code step} opens; a turn already open is replaced. */
+    public static TaskState relayed(TaskState task, String step, String digest, String answered, long now) {
+        return step(task, new TaskMove.Relayed(step, digest, answered), now);
+    }
+
+    /** {@code task} whose turn a report closed, the next holder's starting at {@code now}. */
+    public static TaskState turnClosed(TaskState task, long now) {
+        return step(task, new TaskMove.TurnClosed(), now);
+    }
+
+    /** {@code task} with the turn {@code before} put back where a relay failed to send. */
+    public static TaskState turnRestored(TaskState task, Turn before) {
+        return step(task, new TaskMove.TurnRestored(before), 0);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
-        return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(), move);
+        return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
+                TurnKind.of(task.turnOrNone()), move);
     }
 
     private static TaskState step(TaskState task, TaskMove move, long now) {
@@ -99,6 +116,10 @@ public final class TaskReducer {
             case TaskEffect.ClearsStop cleared -> task.lifted(now);
             case TaskEffect.GatesPlan gates -> task.withPlanGate(gates.gate());
             case TaskEffect.Reports reports -> task.withReport(reports.report());
+            case TaskEffect.OpensTurn opens -> task.withTurn(task.turnOrNone()
+                    .relayed(opens.step(), opens.digest(), opens.answered(), now));
+            case TaskEffect.ClosesTurn closes -> task.withTurn(task.turnOrNone().closed(now));
+            case TaskEffect.RestoresTurn restores -> task.withTurn(restores.before());
         };
     }
 }
