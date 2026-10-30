@@ -22,7 +22,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Finds the sessions that have stopped rather than the ones that are merely busy. What it finds is STAMPED on the
@@ -33,12 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class WatchdogService implements Job {
 
+    private static final String ALERTED = "alerted:silence";
+
     private final StateService stateService;
     private final Notifications notifications;
     private final OrchestratorProperties properties;
     private final SessionProbe probe;
     private final Clock clock;
-    private final Map<String, Long> alertedSince = new ConcurrentHashMap<>();
 
     @Override
     public String id() {
@@ -103,17 +103,18 @@ public class WatchdogService implements Job {
         }
         stamp(taskId, task, silence.orElse(null));
         if (silence.isEmpty()) {
-            alertedSince.remove(taskId);
+            forgetAlert(taskId, task);
             return;
         }
         // The wait FOLLOWING an agent's own question was announced when it asked.
         boolean announcedWhenItAsked = silence.get().atAPrompt()
                 && task.report().asks();
-        if (announcedWhenItAsked || Objects.equals(alertedSince.get(taskId), silence.get().since())) {
+        if (announcedWhenItAsked || task.turnOrNone().marked(ALERTED, String.valueOf(silence.get().since()))) {
             return;
         }
         String said = body(silence.get());
-        alertedSince.put(taskId, silence.get().since());
+        stateService.updateTask(taskId, current -> current.withTurn(
+                current.turnOrNone().withMark(ALERTED, String.valueOf(silence.get().since()))));
         log.atWarn().setMessage("task stopped")
                 .addKeyValue("task", taskId)
                 .addKeyValue("said", OneLine.clipped(said))
@@ -121,6 +122,12 @@ public class WatchdogService implements Job {
                 .addKeyValue("silent", (now - silence.get().since()) / 60_000)
                 .log();
         notifications.send(Notification.watchdog(taskId, "agent stopped", said));
+    }
+
+    private void forgetAlert(String taskId, TaskState task) {
+        if (task.turnOrNone().mark(ALERTED) != null) {
+            stateService.updateTask(taskId, current -> current.withTurn(current.turnOrNone().withoutMark(ALERTED)));
+        }
     }
 
     private static String cause(SessionProbe.Silence silence) {

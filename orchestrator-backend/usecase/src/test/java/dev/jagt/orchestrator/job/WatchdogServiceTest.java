@@ -181,7 +181,7 @@ class WatchdogServiceTest {
         watchdog.run();
         watchdog.run();
 
-        assertThat(writes).hasValue(1);
+        assertThat(writes).hasValue(2);
     }
 
     @Test
@@ -270,6 +270,23 @@ class WatchdogServiceTest {
 
         watchdog.run();
         watchdog.run();
+
+        verify(notifications, times(1)).send(any());
+    }
+
+    @Test
+    void alertsOnceForOneSilenceAcrossARestart(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.of(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.GONE, null)));
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
 
         verify(notifications, times(1)).send(any());
     }
