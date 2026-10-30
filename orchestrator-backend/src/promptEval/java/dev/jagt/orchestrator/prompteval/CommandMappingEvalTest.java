@@ -50,6 +50,8 @@ class CommandMappingEvalTest {
         registry.add("server.port", () -> port);
         registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + port + "/api/agent");
         java.nio.file.Files.createDirectories(workspace.resolve("root"));
+        java.nio.file.Files.copy(Path.of("../session-brief.md.dist"), workspace.resolve("root/session-brief.md.dist"));
+        java.nio.file.Files.copy(Path.of("../session-cases.md.dist"), workspace.resolve("root/session-cases.md.dist"));
         registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
         registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
