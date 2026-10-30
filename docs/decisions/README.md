@@ -126,3 +126,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0108 A stop ends on the read that disproves it](0108-a-stop-ends-on-the-read-that-disproves-it.md)
 - [0109 A deploy's outcome is the pipeline jagt reads on its commit](0109-a-deploys-outcome-is-the-pipeline-jagt-reads-on-its-commit.md)
 - [0110 The task statechart runs on an engine of our own](0110-the-task-statechart-runs-on-an-engine-of-our-own.md)
+- [0111 A relay acts only where the task still stands](0111-a-relay-acts-only-where-the-task-still-stands.md)
