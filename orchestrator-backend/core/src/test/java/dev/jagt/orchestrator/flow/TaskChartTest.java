@@ -14,7 +14,7 @@ class TaskChartTest {
     @Test
     void startsAtNewOnAChartTheEngineValidatedAsReachableAndLeavable() {
         assertThat(TaskChart.chart().initial().toPlain()).containsExactly(
-                entry("lifecycle", "NEW"), entry("stop", "NONE"), entry("plan", "OPEN"));
+                entry("lifecycle", "NEW"), entry("stop", "NONE"), entry("plan", "OPEN"), entry("report", "PLAIN"));
     }
 
     @Test
@@ -27,5 +27,7 @@ class TaskChartTest {
                 .isEqualTo("# The task stop chart\n\n```mermaid\nstateDiagram-v2\n" + regions[1] + "```\n");
         assertThat(Files.readString(Path.of("../../docs/task-plan-chart.md")))
                 .isEqualTo("# The task plan chart\n\n```mermaid\nstateDiagram-v2\n" + regions[2] + "```\n");
+        assertThat(Files.readString(Path.of("../../docs/task-report-chart.md")))
+                .isEqualTo("# The task report chart\n\n```mermaid\nstateDiagram-v2\n" + regions[3] + "```\n");
     }
 }

@@ -96,7 +96,8 @@ answer. Every type in `flow/`, one question each:
 
 - The lifecycle's legal moves are `flow/TaskChart`, drawn in [`docs/task-chart.md`](docs/task-chart.md);
   the stop's way out, in [`docs/task-stop-chart.md`](docs/task-stop-chart.md); the plan gate,
-  in [`docs/task-plan-chart.md`](docs/task-plan-chart.md).
+  in [`docs/task-plan-chart.md`](docs/task-plan-chart.md); the report, in
+  [`docs/task-report-chart.md`](docs/task-report-chart.md).
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
   (`service/TaskProvisioning`).
 - **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the

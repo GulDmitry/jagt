@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 
@@ -40,5 +41,13 @@ sealed interface TaskMove {
     }
 
     record Autoplanned() implements TaskMove {
+    }
+
+    /** A session's report meaning {@code means}; a status that holds its line keeps a report that is not a question. */
+    record Said(AgentReport means) implements TaskMove {
+    }
+
+    /** A verb's stamp meaning {@code means}, set whatever the status. */
+    record Stamped(AgentReport means) implements TaskMove {
     }
 }

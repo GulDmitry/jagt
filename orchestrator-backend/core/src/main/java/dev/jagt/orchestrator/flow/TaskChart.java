@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.statechart.Chart;
 import dev.jagt.statechart.ChartBuilder;
+import dev.jagt.statechart.Condition;
 import dev.jagt.statechart.EdgeBuilder;
 import dev.jagt.statechart.RegionId;
 
@@ -17,7 +19,7 @@ import java.util.function.Predicate;
 
 import static dev.jagt.orchestrator.task.TaskStatus.*;
 
-/** The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan region. */
+/** The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan region; the report region. */
 final class TaskChart {
 
     private static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
@@ -25,6 +27,10 @@ final class TaskChart {
     private static final RegionId<StopKind> STOP = new RegionId<>("stop", StopKind.class);
 
     private static final RegionId<PlanGate> PLAN = new RegionId<>("plan", PlanGate.class);
+
+    private static final RegionId<AgentReport> REPORT = new RegionId<>("report", AgentReport.class);
+
+    private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
 
     private static final Object NO_FACTS = new Object();
 
@@ -50,6 +56,9 @@ final class TaskChart {
 
     private static final Set<TaskStatus> READ_FROM = EnumSet.of(CI_POLLING, REVIEWED, APPROVED, CI_FAILED);
 
+    private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
+            AgentReport.PERMISSION);
+
     private static final Chart<TaskMove, Object, TaskEffect> CHART = build();
 
     private TaskChart() {
@@ -59,15 +68,16 @@ final class TaskChart {
         return CHART;
     }
 
-    /** What {@code move} does to a task at {@code from} under {@code stop} and {@code plan}, in order; empty where no edge takes it. */
-    static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, TaskMove move) {
+    /** What {@code move} does to a task at {@code from} under {@code stop}, {@code plan} and {@code report}, in order; empty where no edge takes it. */
+    static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, AgentReport report,
+                                TaskMove move) {
         return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name(),
-                PLAN.name(), plan.name())), NO_FACTS, move).effects();
+                PLAN.name(), plan.name(), REPORT.name(), report.name())), NO_FACTS, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
-        return effects(from, StopKind.NONE, PlanGate.OPEN, move).stream().filter(TaskEffect.Lands.class::isInstance)
+        return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -105,6 +115,10 @@ final class TaskChart {
         return HELD.contains(status);
     }
 
+    static boolean standsThroughARead(AgentReport report) {
+        return STANDING_THROUGH_A_READ.contains(report);
+    }
+
     static Set<TaskStatus> reads() {
         return EnumSet.copyOf(READ);
     }
@@ -115,6 +129,7 @@ final class TaskChart {
         chart.onExit(LIFECYCLE, DEPLOY_CONFLICT, new TaskEffect.ClearsConflict());
         stops(chart);
         plans(chart);
+        says(chart);
         ran(chart);
         reports(chart);
         reads(chart);
@@ -155,6 +170,51 @@ final class TaskChart {
         for (PlanGate from : EnumSet.of(PlanGate.CLOSED, PlanGate.REQUIRED)) {
             chart.onMatching(PLAN, from, "plan approved", new TaskMove.PlanApproved()::equals)
                     .emit(new TaskEffect.GatesPlan(PlanGate.OPEN)).to(PlanGate.OPEN);
+        }
+    }
+
+    private static void says(ChartBuilder<TaskMove, Object, TaskEffect> chart) {
+        chart.region(REPORT, AgentReport.PLAIN);
+        for (AgentReport from : AgentReport.values()) {
+            said(chart, from, "said on a status that holds its line", from.asks() ? AgentReport.PLAIN : from,
+                    move -> move instanceof TaskMove.Said said && !said.means().asks(),
+                    (others, move) -> HELD.contains(others.get(LIFECYCLE)));
+            becomes(chart, from);
+            if (from != AgentReport.PLAIN) {
+                clears(chart, from);
+            }
+        }
+    }
+
+    private static void becomes(ChartBuilder<TaskMove, Object, TaskEffect> chart, AgentReport from) {
+        for (AgentReport means : AgentReport.values()) {
+            if (means != from) {
+                said(chart, from, "said " + means, means, move -> move instanceof TaskMove.Said said
+                        && said.means() == means, ALWAYS);
+                said(chart, from, "stamped " + means, means, move -> move instanceof TaskMove.Stamped stamped
+                        && stamped.means() == means, ALWAYS);
+            }
+        }
+    }
+
+    private static void clears(ChartBuilder<TaskMove, Object, TaskEffect> chart, AgentReport from) {
+        said(chart, from, "verified", AgentReport.PLAIN, move -> move instanceof TaskMove.Verified, ALWAYS);
+        said(chart, from, "deploy read moving the status", AgentReport.PLAIN,
+                move -> move instanceof TaskMove.DeployRead, (others, move) -> land(others.get(LIFECYCLE), move)
+                        .filter(to -> to != others.get(LIFECYCLE)).isPresent());
+        if (!STANDING_THROUGH_A_READ.contains(from)) {
+            said(chart, from, "read", AgentReport.PLAIN, move -> move instanceof TaskMove.Read, ALWAYS);
+        }
+    }
+
+    private static void said(ChartBuilder<TaskMove, Object, TaskEffect> chart, AgentReport from, String label,
+                             AgentReport to, Predicate<TaskMove> matches, Condition<TaskMove> when) {
+        EdgeBuilder<TaskMove, Object, TaskEffect, AgentReport> edge = chart.onMatching(REPORT, from, label, matches)
+                .when(when).emit(new TaskEffect.Reports(to));
+        if (from == to) {
+            edge.stay();
+        } else {
+            edge.to(to);
         }
     }
 

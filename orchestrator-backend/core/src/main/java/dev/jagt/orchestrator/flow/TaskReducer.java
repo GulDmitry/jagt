@@ -1,12 +1,13 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
-/** The one place a task's status, stop and plan gate are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate and report are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -67,8 +68,18 @@ public final class TaskReducer {
         return step(task, new TaskMove.Autoplanned(), 0);
     }
 
+    /** {@code task} with the report a session made; a status that holds its line keeps a report that is not a question. */
+    static TaskState said(TaskState task, AgentReport means) {
+        return step(task, new TaskMove.Said(means), 0);
+    }
+
+    /** {@code task} with the report a verb's stamp means. */
+    static TaskState stamped(TaskState task, AgentReport means) {
+        return step(task, new TaskMove.Stamped(means), 0);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
-        return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), move);
+        return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(), move);
     }
 
     private static TaskState step(TaskState task, TaskMove move, long now) {
@@ -87,6 +98,7 @@ public final class TaskReducer {
             case TaskEffect.Stops stops -> task.withStop(stops.stop().countedOn(task.requests()));
             case TaskEffect.ClearsStop cleared -> task.lifted(now);
             case TaskEffect.GatesPlan gates -> task.withPlanGate(gates.gate());
+            case TaskEffect.Reports reports -> task.withReport(reports.report());
         };
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -20,5 +21,8 @@ sealed interface TaskEffect {
     }
 
     record GatesPlan(PlanGate gate) implements TaskEffect {
+    }
+
+    record Reports(AgentReport report) implements TaskEffect {
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.ConflictWatch;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
@@ -57,10 +58,24 @@ class TaskReducerProperties {
     }
 
     @Property
+    void aQuestionStandsUntilTheSessionSpeaksOrAVerdictOrADeployReadMovesTheStatus(
+            @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, move) -> {
+            TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+            Optional.of(task).filter(before -> before.report().asks())
+                    .filter(before -> !(move instanceof TaskMove.Said || move instanceof TaskMove.Stamped
+                            || move instanceof TaskMove.Verified))
+                    .filter(before -> !(move instanceof TaskMove.DeployRead && next.status() != before.status()))
+                    .ifPresent(before -> assertThat(next.report()).isEqualTo(before.report()));
+            return next;
+        }, (left, right) -> right);
+    }
+
+    @Property
     void aMoveTheChartHasNoEdgeForLeavesStatusConflictAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
-            Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), move))
+            Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(), move))
                     .filter(List::isEmpty).ifPresent(none -> {
                         assertThat(next.status()).isEqualTo(task.status());
                         assertThat(next.conflict()).isEqualTo(task.conflict());
@@ -96,9 +111,10 @@ class TaskReducerProperties {
                 new ConflictWatch.Progress(7, 252, "d"), 1_000)).injectNull(0.5);
         Arbitrary<TaskStop> stop = Arbitraries.of(TaskStop.Trigger.class).map(trigger ->
                 new TaskStop(trigger, 1_000, "evidence")).injectNull(0.5);
-        return Combinators.combine(Arbitraries.of(TaskStatus.class), conflict, stop, Arbitraries.of(PlanGate.class))
-                .as((status, watch, standing, gate) ->
-                        TaskState.builder("api", "/wt", status).conflict(watch).stop(standing).planGate(gate).build());
+        return Combinators.combine(Arbitraries.of(TaskStatus.class), conflict, stop, Arbitraries.of(PlanGate.class),
+                        Arbitraries.of(AgentReport.class))
+                .as((status, watch, standing, gate, report) -> TaskState.builder("api", "/wt", status).conflict(watch)
+                        .stop(standing).planGate(gate).report(report).build());
     }
 
     @Provide
@@ -120,7 +136,9 @@ class TaskReducerProperties {
                 flag.map(TaskMove.PlanAsked::new),
                 Arbitraries.just(new TaskMove.PlanApproved()),
                 Arbitraries.just(new TaskMove.NoPlanDeclared()),
-                Arbitraries.just(new TaskMove.Autoplanned()));
+                Arbitraries.just(new TaskMove.Autoplanned()),
+                Arbitraries.of(AgentReport.class).map(TaskMove.Said::new),
+                Arbitraries.of(AgentReport.class).map(TaskMove.Stamped::new));
         return move.list().ofMaxSize(50);
     }
 }

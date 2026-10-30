@@ -59,7 +59,7 @@ public class FlowEngine {
                 long at = clock.millis();
                 TaskState written = next.isPresent() ? TaskReducer.reduce(task, move, line, true, at)
                         : TaskReducer.stayed(task, line, true, at);
-                return written.withReport(outcome.stamp() == null ? task.report() : outcome.stampMeans());
+                return outcome.stamp() == null ? written : TaskReducer.stamped(written, outcome.stampMeans());
             });
         }
         if (outcome.kind().refuses()) {

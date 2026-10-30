@@ -251,7 +251,7 @@ public record TaskState(
         return repos.stream().anyMatch(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank());
     }
 
-    /** A status move — the ONE place history grows. A new line means nothing until {@link #withReport} says so. */
+    /** A status move — the ONE place history grows. A new line says nothing about the report. */
     public TaskState withStatus(TaskStatus status, @Nullable String message, long now) {
         return withStatus(status, message, false, now);
     }
@@ -263,7 +263,7 @@ public record TaskState(
     public TaskState withStatus(TaskStatus status, @Nullable String message, boolean event, long now) {
         List<StatusChange> known = seededHistory(now);
         boolean record = event || status != this.status;
-        return toBuilder().status(status).lastActiveTimestamp(now).message(message).report(AgentReport.PLAIN)
+        return toBuilder().status(status).lastActiveTimestamp(now).message(message)
                 .silentSince(0)
                 .silentBecause(null)
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
@@ -435,7 +435,7 @@ public record TaskState(
     /** The status, line and conflict {@code read} had, written back as one move. */
     public TaskState restoredFrom(TaskState read, long now) {
         return withStatus(read.status, read.message, now).toBuilder().conflict(read.conflict)
-                .planGate(read.planGate).build();
+                .planGate(read.planGate).report(read.report).build();
     }
 
     public TaskState withoutConflict() {

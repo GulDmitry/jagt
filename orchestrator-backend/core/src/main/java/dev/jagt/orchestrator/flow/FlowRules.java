@@ -190,7 +190,7 @@ public final class FlowRules {
 
     /** Whether a read of the review round leaves this report standing: only the session or a human answers it. */
     public static boolean standsThroughARead(AgentReport report) {
-        return STANDING_THROUGH_A_READ.contains(report);
+        return TaskChart.standsThroughARead(report);
     }
 
     /** What a read of the review round can conclude, which only the host's round read may land. */
@@ -364,9 +364,6 @@ public final class FlowRules {
 
     private static final Set<TaskStatus> AWAITING_ITS_INSTRUCTION = EnumSet.of(TaskStatus.SHIPPING,
             TaskStatus.DEPLOY_CONFLICT);
-
-    private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
-            AgentReport.PERMISSION);
 
     private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
             TaskStatus.REVIEWED, TaskStatus.APPROVED);
