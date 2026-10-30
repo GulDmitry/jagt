@@ -64,6 +64,7 @@ interactions.jsonl.1
 # Present while the Master's act is stopped, written beside state.json
 act-stopped
 act-strikes
+intake-turned-away
 # The Master's MCP token, drawn by jagt at each start
 /.jagt/
 

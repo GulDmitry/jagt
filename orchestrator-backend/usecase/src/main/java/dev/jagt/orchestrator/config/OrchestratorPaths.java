@@ -50,6 +50,11 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("act-strikes");
     }
 
+    /** The keys intake turned away, one per line. */
+    public Path intakeTurnedAway() {
+        return stateFile.resolveSibling("intake-turned-away");
+    }
+
     /** The usage levels already told, with the period each was told in. */
     public Path usageAlerts() {
         return stateFile.resolveSibling("usage-alerts.properties");

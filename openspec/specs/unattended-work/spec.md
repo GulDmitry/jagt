@@ -116,7 +116,7 @@ When a written rule leaves `memory/routing.md` at its ceiling, one read of the w
 Each of these jobs SHALL do its one thing unasked: - `jarwatch`: each minute, tells you the jar this process runs from was rebuilt underneath it. -
 `orphanscan`: at startup, deletes jagt's own worktree residue and warns about leftovers holding work or secrets. - `ticket-prefetch`: reads each
 working task's ticket once, for the Master's next review of it. - `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready
-for one. - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
+for one, and tells you once of one it cannot. - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
 `run <job>` SHALL make one job due at once instead of at its interval.
 
 #### Scenario: A husk of a worktree, work that landed
