@@ -23,6 +23,10 @@ sealed interface TaskMove {
     record QaDeclined(AgentReport means, TaskStatus reported) implements TaskMove {
     }
 
+    /** A note on what the Master left; {@code after} is where the master region then stands. */
+    record MasterNoted(MasterNote note, MasterPhase after) implements TaskMove {
+    }
+
     /** QA's read of a step ended; {@code holds} where the turn it opened still stands. */
     record QaReadEnded(boolean holds) implements TaskMove {
     }

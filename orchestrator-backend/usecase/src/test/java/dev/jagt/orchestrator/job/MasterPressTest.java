@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -100,7 +101,7 @@ class MasterPressTest {
         new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC()))
                 .press("ABC-1", task, TaskAction.DEPLOY);
 
-        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.LEFT))
+        assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
                 .isEqualTo("deploy demo/src/auth/Login.java");
     }
 
@@ -109,14 +110,14 @@ class MasterPressTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
-                .turn(Turn.none().withMark(TaskTurns.LEFT, "deploy demo/src/old/Old.java")).build();
+                .master(Master.defaults().withLeft("deploy demo/src/old/Old.java")).build();
         state.putTask("ABC-1", task);
         when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
         new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC()))
                 .press("ABC-1", task, TaskAction.DEPLOY);
 
-        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.LEFT))
+        assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
                 .isEqualTo("deploy demo/src/auth/Login.java");
     }
 
@@ -125,7 +126,7 @@ class MasterPressTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
-                .turn(Turn.none().withMark(TaskTurns.LEFT, "deploy demo/src/old/Old.java")).build();
+                .master(Master.defaults().withLeft("deploy demo/src/old/Old.java")).build();
         state.putTask("ABC-1", task);
         when(stops.moveDue("ABC-1")).thenReturn(true);
         when(humanPaths.touched(task)).thenReturn(Optional.empty());
@@ -133,7 +134,7 @@ class MasterPressTest {
         new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC()))
                 .press("ABC-1", task, TaskAction.DEPLOY);
 
-        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.LEFT)).isNull();
+        assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left()).isEmpty();
     }
 
     @Test

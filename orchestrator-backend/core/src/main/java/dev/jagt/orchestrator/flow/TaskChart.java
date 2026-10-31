@@ -56,6 +56,8 @@ final class TaskChart {
 
     private static final RegionId<QaPhase> QA = new RegionId<>("qa", QaPhase.class);
 
+    private static final RegionId<MasterPhase> MASTER = new RegionId<>("master", MasterPhase.class);
+
     private static final RegionId<QaPhase> BENEATH_QA = new RegionId<>("qa beneath a read", QaPhase.class);
 
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
@@ -111,7 +113,8 @@ final class TaskChart {
                 Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
                 Map.entry(CHECKS.name(), phases.checks().name()),
                 Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()),
-                Map.entry(QA.name(), phases.qa().name()))), phases.facts(), move);
+                Map.entry(QA.name(), phases.qa().name()), Map.entry(MASTER.name(), phases.master().name()))),
+                phases.facts(), move);
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
@@ -177,6 +180,7 @@ final class TaskChart {
         approvals(chart);
         infras(chart);
         qas(chart);
+        masters(chart);
         sessions(chart);
         ran(chart);
         reports(chart);
@@ -454,6 +458,17 @@ final class TaskChart {
     private static boolean declinesAQaRound(TaskMove move) {
         return move instanceof TaskMove.QaDeclined declined && declined.means() == AgentReport.NO_CHANGES
                 && declined.reported() == IN_PROGRESS;
+    }
+
+    private static void masters(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+        chart.region(MASTER, MasterPhase.STANDS_IN);
+        for (MasterPhase from : MasterPhase.values()) {
+            for (MasterPhase to : MasterPhase.values()) {
+                regionEdge(chart, MASTER, from, "noted, " + to + " after", move -> move instanceof TaskMove.MasterNoted
+                                noted && noted.after() == to,
+                        move -> new TaskEffect.NotesMaster(((TaskMove.MasterNoted) move).note()), to);
+            }
+        }
     }
 
     private static void qas(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {

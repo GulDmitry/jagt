@@ -106,6 +106,35 @@ public final class TaskReducer {
         return step(task, new TaskMove.QaReadEnded(task.turnOrNone().holds(step, digest)), now);
     }
 
+    /** {@code task} whose Master offered the human {@code step} instead of pressing it. */
+    public static TaskState masterLeft(TaskState task, String step) {
+        return noted(task, new MasterNote.Left(step));
+    }
+
+    /** {@code task} whose Master no longer leaves a step to the human. */
+    public static TaskState masterTook(TaskState task) {
+        return noted(task, new MasterNote.Took());
+    }
+
+    /** {@code task} whose Master gave the question {@code digest} no usable answer. */
+    public static TaskState masterUnanswered(TaskState task, String digest) {
+        return noted(task, new MasterNote.Unanswered(digest));
+    }
+
+    /** {@code task} whose Master pressed deploy on the arrival {@code arrival}. */
+    public static TaskState masterPressedDeploy(TaskState task, String arrival) {
+        return noted(task, new MasterNote.PressedDeploy(arrival));
+    }
+
+    /** {@code task} with the fingerprint of the verdict jagt wrote for its Master, answering {@code round}. */
+    public static TaskState masterSealed(TaskState task, String seal, long round) {
+        return noted(task, new MasterNote.Sealed(seal, round));
+    }
+
+    private static TaskState noted(TaskState task, MasterNote note) {
+        return step(task, resolved(task, new TaskMove.MasterNoted(note, MasterPhase.STANDS_IN)), 0);
+    }
+
     /** {@code task} that QA passed at the deploy standing on {@code sha}. */
     public static TaskState qaPassed(TaskState task, String sha) {
         return step(task, resolved(task, new TaskMove.QaPassed(sha, false)), 0);
@@ -243,6 +272,8 @@ public final class TaskReducer {
                     RequestPhase.of(task.withMerged(merges.project(), merges.merged())) == RequestPhase.MERGED);
             case TaskMove.MergedByHost merges -> new TaskMove.MergedByHost(merges.project(),
                     RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
+            case TaskMove.MasterNoted noted -> new TaskMove.MasterNoted(noted.note(), MasterPhase.of(
+                    task.withMaster(noted.note().applyTo(task.masterOrNone()))));
             case TaskMove.QaPassed passed -> new TaskMove.QaPassed(passed.sha(),
                     QaPhase.of(task.withQa(task.qaOrNone().withPassed(passed.sha()))) == QaPhase.PASSED);
             case TaskMove.QaRoundSent sent -> new TaskMove.QaRoundSent(sent.digest(), sent.rows(),
@@ -316,6 +347,7 @@ public final class TaskReducer {
             case TaskEffect.ResetsChecks resets -> task.withChecksReset();
             case TaskEffect.ResetsApproval resets -> task.withApproved(null);
             case TaskEffect.ResetsInfra resets -> task.withInfraRetries(List.of());
+            case TaskEffect.NotesMaster notes -> task.withMaster(notes.note().applyTo(task.masterOrNone()));
             case TaskEffect.OpensQaRead opens -> task.withQa(task.qaOrNone().withReading(opens.step()));
             case TaskEffect.ClosesQaRead closes -> task.withQa(task.qaOrNone().withReading(""));
             case TaskEffect.PassesQa passes -> task.withQa(task.qaOrNone().withPassed(passes.sha()));

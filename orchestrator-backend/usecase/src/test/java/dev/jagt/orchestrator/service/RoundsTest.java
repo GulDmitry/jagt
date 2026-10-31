@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -36,8 +37,8 @@ class RoundsTest {
 
     @Test
     void theMasterNoLongerReadsAHandBackItHasAlreadyJudged() {
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
-        when(masterReview.readsTheRoundInFront(task)).thenReturn(true);
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .master(Master.defaults().withSeal("fingerprint", 0)).build();
 
         var round = rounds.of(task, ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));

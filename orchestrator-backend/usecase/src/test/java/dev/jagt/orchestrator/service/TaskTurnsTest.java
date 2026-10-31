@@ -5,7 +5,9 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -64,18 +66,18 @@ class TaskTurnsTest {
     @Test
     void leavesTheStepToTheHumanWhereTheMasterOfferedItInsteadOfPressingIt() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
-                .turn(Turn.none().withMark(TaskTurns.LEFT, "deploy src/Login.java")).build();
+                .master(Master.defaults().withLeft("deploy src/Login.java")).build();
 
-        assertThat(TaskTurns.leftToTheHuman(task)).isTrue();
+        assertThat(MasterPhase.of(task)).isEqualTo(MasterPhase.LEFT);
     }
 
     @Test
     void leavesAQuestionToTheHumanOnceTheMasterGaveItNoUsableAnswer() {
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).report(AgentReport.QUESTION)
                 .message("which cache").build();
-        TaskState unanswered = asking.withTurn(Turn.none().withMark(TaskTurns.UNANSWERED, TaskTurns.asked(asking)));
+        TaskState unanswered = asking.withMaster(Master.defaults().withUnanswered(TaskTurns.asked(asking)));
 
-        assertThat(TaskTurns.leftToTheHuman(unanswered)).isTrue();
+        assertThat(MasterPhase.of(unanswered)).isEqualTo(MasterPhase.LEFT);
     }
 
     @Test
@@ -83,34 +85,33 @@ class TaskTurnsTest {
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).report(AgentReport.QUESTION)
                 .message("which cache").build();
 
-        assertThat(TaskTurns.leftToTheHuman(asking)).isFalse();
+        assertThat(MasterPhase.of(asking)).isEqualTo(MasterPhase.STANDS_IN);
     }
 
     @Test
     void leavesAnotherQuestionToTheMasterThanTheOneItFailedToAnswer() {
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).report(AgentReport.QUESTION)
                 .message("which cache")
-                .turn(Turn.none().withMark(TaskTurns.UNANSWERED, Turn.digestOf("which queue"))).build();
+                .master(Master.defaults().withUnanswered(Turn.digestOf("which queue"))).build();
 
-        assertThat(TaskTurns.leftToTheHuman(asking)).isFalse();
+        assertThat(MasterPhase.of(asking)).isEqualTo(MasterPhase.STANDS_IN);
     }
 
     @Test
     void leavesAMarkedAnswerToTheMasterWhereTheTaskIsNotAsking() {
         TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).message("which cache")
-                .turn(Turn.none().withMark(TaskTurns.UNANSWERED, Turn.digestOf("which cache"))).build();
+                .master(Master.defaults().withUnanswered(Turn.digestOf("which cache"))).build();
 
-        assertThat(TaskTurns.leftToTheHuman(working)).isFalse();
+        assertThat(MasterPhase.of(working)).isEqualTo(MasterPhase.STANDS_IN);
     }
 
     @Test
     void leavesADeployTheMasterPressedToTheHumanWhileTheTaskStillWaitsForIt() {
         TaskState deployed = TaskState.builder("proj", "/wt", TaskStatus.APPROVED).lastActiveTimestamp(7).build();
-        TaskState pressed = deployed.withTurn(Turn.none()
-                .withMark(TaskTurns.PRESSED_DEPLOY, String.valueOf(deployed.statusSince())));
+        TaskState pressed = deployed.withMaster(Master.defaults().withPressedDeploy(String.valueOf(deployed.statusSince())));
 
-        assertThat(TaskTurns.leftToTheHuman(pressed)).isTrue();
-        assertThat(TaskTurns.leftToTheHuman(deployed)).isFalse();
+        assertThat(MasterPhase.of(pressed)).isEqualTo(MasterPhase.LEFT);
+        assertThat(MasterPhase.of(deployed)).isEqualTo(MasterPhase.STANDS_IN);
     }
 
     @Test
@@ -120,13 +121,13 @@ class TaskTurnsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
         TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
 
-        turns.mark("ABC-42", TaskTurns.LEFT, "deploy src/Login.java");
-        turns.mark("ABC-42", TaskTurns.UNANSWERED, "d1");
-        String marked = turns.of("ABC-42").mark(TaskTurns.LEFT);
-        turns.unmark("ABC-42", TaskTurns.LEFT);
+        turns.left("ABC-42", "deploy src/Login.java");
+        turns.unanswered("ABC-42");
+        String left = state.task("ABC-42").orElseThrow().masterOrNone().left();
+        turns.took("ABC-42");
 
-        assertThat(marked).isEqualTo("deploy src/Login.java");
-        assertThat(turns.of("ABC-42").mark(TaskTurns.LEFT)).isNull();
-        assertThat(turns.of("ABC-42").mark(TaskTurns.UNANSWERED)).isEqualTo("d1");
+        assertThat(left).isEqualTo("deploy src/Login.java");
+        assertThat(state.task("ABC-42").orElseThrow().masterOrNone().left()).isEmpty();
+        assertThat(state.task("ABC-42").orElseThrow().masterOrNone().unanswered()).isNotEmpty();
     }
 }

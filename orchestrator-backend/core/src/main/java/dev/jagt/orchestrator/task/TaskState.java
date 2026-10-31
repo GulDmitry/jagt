@@ -86,7 +86,9 @@ public record TaskState(
         // Every stretch the human held the turn, oldest first; the last may still stand.
         @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits,
         // What QA left on the task; absent until it read or judged one.
-        @Nullable Qa qa
+        @Nullable Qa qa,
+        // What the Master left on the task; absent until it left, answered or sealed one.
+        @Nullable Master master
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -156,7 +158,8 @@ public record TaskState(
             @JsonProperty("session") @Nullable Session session,
             @JsonProperty("told") @Nullable AutoReviewTold told,
             @JsonProperty("waits") @Nullable List<HumanWait> waits,
-            @JsonProperty("qa") @Nullable Qa qa) {
+            @JsonProperty("qa") @Nullable Qa qa,
+            @JsonProperty("master") @Nullable Master master) {
         List<LegacyDeployment.Repo> stored = LegacyDeployment.stored(repos,
                 new LegacyDeployment.Repo(project, worktreePath, remoteUrl, mrUrl, deployCommit, null, null, null));
         TaskState read = new TaskState(stored.stream().map(LegacyDeployment.Repo::repo).toList(), status,
@@ -168,10 +171,10 @@ public record TaskState(
                 unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
-                Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, LegacyQa.withoutMarks(turn), switches == null ? Map.of() : switches,
+                Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, LegacyMaster.withoutMarks(LegacyQa.withoutMarks(turn)), switches == null ? Map.of() : switches,
                 infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment,
                 Session.migrated(session, legacySilentSince), told,
-                waits == null ? List.of() : waits, LegacyQa.of(qa, turn, status));
+                waits == null ? List.of() : waits, LegacyQa.of(qa, turn, status), LegacyMaster.of(master, turn));
         Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
         return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
     }
@@ -645,6 +648,20 @@ public record TaskState(
     @JsonIgnore
     public Qa qaOrNone() {
         return qa == null ? Qa.defaults() : qa;
+    }
+
+    @JsonIgnore
+    public Master masterOrNone() {
+        return master == null ? Master.defaults() : master;
+    }
+
+    public TaskState withMaster(Master master) {
+        return toBuilder().master(master.isEmpty() ? null : master).build();
+    }
+
+    /** The digest of the question standing on the task, which the Master's unanswered mark names. */
+    public String askedDigest() {
+        return Turn.digestOf(message == null ? "" : message);
     }
 
     public TaskState withQa(Qa qa) {

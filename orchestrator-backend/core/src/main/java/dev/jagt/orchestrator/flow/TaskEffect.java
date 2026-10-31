@@ -83,6 +83,9 @@ sealed interface TaskEffect {
     record ResetsInfra() implements TaskEffect {
     }
 
+    record NotesMaster(MasterNote note) implements TaskEffect {
+    }
+
     record OpensQaRead(String step) implements TaskEffect {
     }
 

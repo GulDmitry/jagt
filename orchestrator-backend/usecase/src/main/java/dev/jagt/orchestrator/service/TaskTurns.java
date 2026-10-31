@@ -23,12 +23,6 @@ import java.util.function.UnaryOperator;
 @Slf4j
 public class TaskTurns {
 
-    /** A step the Master offered the human instead of pressing it. */
-    public static final String LEFT = "left";
-    /** The question the Master read and gave no usable answer to. */
-    public static final String UNANSWERED = "unanswered";
-    /** The arrival at which the Master pressed deploy. */
-    public static final String PRESSED_DEPLOY = "press:deploy";
     /** The tree, as {@code WorktreeChanges#state} reads it, on which the Master pressed ship. */
     public static final String PRESSED_SHIP = "press:ship";
 
@@ -92,6 +86,24 @@ public class TaskTurns {
         return TaskReducer.turnClosed(task, task.lastActiveTimestamp());
     }
 
+    public void left(String taskId, String step) {
+        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> TaskReducer.masterLeft(task, step));
+    }
+
+    public void took(String taskId) {
+        stateService.updateTask(stateService.canonicalTaskId(taskId), TaskReducer::masterTook);
+    }
+
+    public void unanswered(String taskId) {
+        stateService.updateTask(stateService.canonicalTaskId(taskId),
+                task -> TaskReducer.masterUnanswered(task, task.askedDigest()));
+    }
+
+    public void pressedDeploy(String taskId, String arrival) {
+        stateService.updateTask(stateService.canonicalTaskId(taskId),
+                task -> TaskReducer.masterPressedDeploy(task, arrival));
+    }
+
     public void mark(String taskId, String step, String value) {
         stateService.updateTask(stateService.canonicalTaskId(taskId), task -> task.withMark(step, value));
     }
@@ -102,14 +114,6 @@ public class TaskTurns {
 
     /** The question standing on the task, as {@link #UNANSWERED} records it. */
     public static String asked(TaskState task) {
-        return Turn.digestOf(task.message() == null ? "" : task.message());
-    }
-
-    /** The Master left what it would hold to the human: a step it offered, a question, a deploy that did not land. */
-    public static boolean leftToTheHuman(TaskState task) {
-        Turn turn = task.turnOrNone();
-        return turn.mark(LEFT) != null || task.report().asks() && turn.marked(UNANSWERED, asked(task))
-                || FlowRules.deployedByTheMaster(task.status())
-                && turn.marked(PRESSED_DEPLOY, String.valueOf(task.statusSince()));
+        return task.askedDigest();
     }
 }

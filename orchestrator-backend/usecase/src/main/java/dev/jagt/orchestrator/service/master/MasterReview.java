@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service.master;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.OneLine;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
@@ -32,7 +33,6 @@ public class MasterReview {
 
     public static final String FILE = Artifact.REVIEW.fileName();
     static final String STORED = "master-review.json";
-    static final String SEAL = "master-review:seal";
 
     private final StateService state;
 
@@ -48,7 +48,7 @@ public class MasterReview {
         }
         Path file = JagtJson.in(worktree, STORED);
         return JagtJson.bytes(file).flatMap(bytes -> {
-            if (JagtJson.fingerprint(bytes).equals(task.turnOrNone().mark(SEAL))) {
+            if (JagtJson.fingerprint(bytes).equals(task.masterOrNone().seal())) {
                 return JagtJson.parse(file, bytes, Review.class);
             }
             log.atWarn().setMessage("master review not written by jagt").addKeyValue("alias", task.alias())
@@ -82,7 +82,7 @@ public class MasterReview {
     private boolean store(String taskId, TaskState task, Review review) {
         return JagtJson.serialise(review).map(bytes -> {
             String fingerprint = JagtJson.fingerprint(bytes);
-            state.updateTask(taskId, current -> current.withMark(SEAL, fingerprint));
+            state.updateTask(taskId, current -> TaskReducer.masterSealed(current, fingerprint, review.round()));
             return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
         }).orElse(false);
     }

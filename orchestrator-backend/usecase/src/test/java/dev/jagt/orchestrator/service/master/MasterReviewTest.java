@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
@@ -171,8 +172,8 @@ class MasterReviewTest {
         String stored = "{\"round\":3,\"ownDiff\":\"abc123\",\"reads\":[]}";
         Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), stored);
         TaskState unsealed = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        TaskState task = unsealed.withTurn(unsealed.turnOrNone().withMark(MasterReview.SEAL,
-                JagtJson.fingerprint(stored.getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+        TaskState task = unsealed.withMaster(Master.defaults().withSeal(
+                JagtJson.fingerprint(stored.getBytes(java.nio.charset.StandardCharsets.UTF_8)), 0));
 
         MasterReview.Review review = reviews.stored(task).orElseThrow();
 

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn.Holder;
 
@@ -34,6 +35,12 @@ public final class Turns {
     }
 
     private Turns() {
+    }
+
+    /** Who holds {@code task}'s turn, the Master standing in only where it neither read the round nor left it. */
+    public static Holder owner(TaskState task, Profile configured) {
+        Profile profile = MasterPhase.of(task) == MasterPhase.STANDS_IN ? configured : Profile.OFF;
+        return next(task.status(), task.report(), task.stopped(), QaPhase.of(task), profile);
     }
 
     /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check QA reads holds it. */

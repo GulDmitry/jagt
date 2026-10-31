@@ -71,7 +71,7 @@ class MasterAnswerJobTest {
 
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
-        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().mark(TaskTurns.UNANSWERED)).isNull();
+        assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered()).isEmpty();
     }
 
     @Test
@@ -166,8 +166,8 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-        assertThat(state.task("ABC-1").orElseThrow().turnOrNone().marked(TaskTurns.UNANSWERED, TaskTurns.asked(asking)))
-                .isTrue();
+        assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
+                .isEqualTo(TaskTurns.asked(asking));
     }
 
     @Test
@@ -232,8 +232,8 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
-        assertThat(state.task("ABC-1").orElseThrow().turnOrNone()
-                .marked(TaskTurns.UNANSWERED, TaskTurns.asked(state.task("ABC-1").orElseThrow()))).isTrue();
+        assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered())
+                .isEqualTo(TaskTurns.asked(state.task("ABC-1").orElseThrow()));
     }
 
     @Test

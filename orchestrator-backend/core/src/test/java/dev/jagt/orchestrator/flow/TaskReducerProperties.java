@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.InfraRetry;
+import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -21,6 +22,7 @@ import net.jqwik.api.Provide;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -197,6 +199,18 @@ class TaskReducerProperties {
         }, (left, right) -> right);
     }
 
+    @Property
+    void theMasterHoldsATurnOnlyWhereItStandsIn(@ForAll("tasks") TaskState start,
+                                                @ForAll("moves") List<TaskMove> moves) {
+        Turns.Profile acting = new Turns.Profile(MasterMode.ACT, Set.of());
+        moves.stream().reduce(start, (task, raw) -> {
+            TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
+            Optional.of(next).filter(moved -> MasterPhase.of(moved) != MasterPhase.STANDS_IN)
+                    .ifPresent(moved -> assertThat(Turns.owner(moved, acting)).isNotEqualTo(Turn.Holder.MASTER));
+            return next;
+        }, (left, right) -> right);
+    }
+
     @Provide
     Arbitrary<TaskState> tasks() {
         Arbitrary<Deployment> deployment = Arbitraries.of(new Deployment(1_000, List.of(
@@ -248,6 +262,8 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.Relayed("ship", "d", "a")),
                 Arbitraries.of("accept", "decline", "again").map(step -> new TaskMove.Relayed(step, "d1", "a")),
                 flag.map(TaskMove.QaReadEnded::new),
+                Arbitraries.of(new MasterNote.Left("deploy x"), new MasterNote.Took(), new MasterNote.Unanswered("u"),
+                        new MasterNote.Sealed("s", 4)).map(note -> new TaskMove.MasterNoted(note, MasterPhase.LEFT)),
                 Arbitraries.just(new TaskMove.QaPassed("api@abc", false)),
                 Arbitraries.just(new TaskMove.QaRoundSent("d1", "- row", false)),
                 Arbitraries.just(new TaskMove.TurnClosed()),

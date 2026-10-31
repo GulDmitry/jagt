@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -466,7 +467,7 @@ class YourMoveJobTest {
         job.run();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1")
                 .message("which uniqueness rule").report(AgentReport.QUESTION)
-                .turn(Turn.none().withMark(TaskTurns.UNANSWERED, Turn.digestOf("which uniqueness rule"))).build());
+                .master(Master.defaults().withUnanswered(Turn.digestOf("which uniqueness rule"))).build());
         job.run();
         clock.advance(Duration.ofSeconds(10));
         job.run();
