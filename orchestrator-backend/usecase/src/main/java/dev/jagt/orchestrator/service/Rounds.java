@@ -30,8 +30,10 @@ public class Rounds {
 
     /** Where the Master read the round in front or left the task to the human, nothing of it stands in any more. */
     public RoundState of(TaskState task, ConfigService.ConfigFile config) {
-        Turns.Profile master = MasterPhase.of(task) == MasterPhase.STANDS_IN ? config.master().profile()
-                : Turns.Profile.OFF;
+        MasterPhase phase = MasterPhase.of(task);
+        boolean read = phase != MasterPhase.LEFT && FlowRules.readByTheMaster(task.status()) && config.master().running()
+                && masterReview.readsTheRoundInFront(task);
+        Turns.Profile master = read || phase == MasterPhase.LEFT ? Turns.Profile.OFF : config.master().profile();
         return RoundState.of(task.report(),
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
                 .withMaster(master)

@@ -200,12 +200,12 @@ class TaskReducerProperties {
     }
 
     @Property
-    void theMasterHoldsATurnOnlyWhereItStandsIn(@ForAll("tasks") TaskState start,
+    void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman(@ForAll("tasks") TaskState start,
                                                 @ForAll("moves") List<TaskMove> moves) {
         Turns.Profile acting = new Turns.Profile(MasterMode.ACT, Set.of());
         moves.stream().reduce(start, (task, raw) -> {
             TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
-            Optional.of(next).filter(moved -> MasterPhase.of(moved) != MasterPhase.STANDS_IN)
+            Optional.of(next).filter(moved -> MasterPhase.of(moved) == MasterPhase.LEFT)
                     .ifPresent(moved -> assertThat(Turns.owner(moved, acting)).isNotEqualTo(Turn.Holder.MASTER));
             return next;
         }, (left, right) -> right);

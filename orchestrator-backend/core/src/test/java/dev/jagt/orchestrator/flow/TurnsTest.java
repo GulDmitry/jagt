@@ -2,8 +2,10 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn.Holder;
 import org.junit.jupiter.api.Test;
@@ -151,5 +153,15 @@ class TurnsTest {
         Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, true, QaPhase.READING, PROFILES.get("act"));
 
         assertThat(holder).isEqualTo(Holder.HUMAN);
+    }
+
+    @Test
+    void theMasterHoldsARoundItSealedWhoseVerdictFileTheCallerFoundGone() {
+        TaskState sealed = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .master(Master.defaults().withSeal("fingerprint", 0)).build();
+
+        Holder holder = Turns.owner(sealed, new Turns.Profile(MasterMode.JUDGE, Set.of()));
+
+        assertThat(holder).isEqualTo(Holder.MASTER);
     }
 }

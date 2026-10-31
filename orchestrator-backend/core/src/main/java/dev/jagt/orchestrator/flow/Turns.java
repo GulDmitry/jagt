@@ -37,9 +37,9 @@ public final class Turns {
     private Turns() {
     }
 
-    /** Who holds {@code task}'s turn, the Master standing in only where it neither read the round nor left it. */
+    /** Who holds {@code task}'s turn, the Master standing in only where it did not leave the task to the human. */
     public static Holder owner(TaskState task, Profile configured) {
-        Profile profile = MasterPhase.of(task) == MasterPhase.STANDS_IN ? configured : Profile.OFF;
+        Profile profile = MasterPhase.of(task) == MasterPhase.LEFT ? Profile.OFF : configured;
         return next(task.status(), task.report(), task.stopped(), QaPhase.of(task), profile);
     }
 
