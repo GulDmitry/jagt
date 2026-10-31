@@ -95,6 +95,16 @@ final class E2eWorkspace {
                 """.formatted(master.mode(), String.join(", ", master.mine())), StandardOpenOption.APPEND);
     }
 
+    static void failVerificationWith(Path configFile, String shellScript) throws IOException {
+        String configured = Files.readString(configFile);
+        Files.writeString(configFile, configured.replace("deployBranch: dev }",
+                "deployBranch: dev, verifyCommand: [\"sh\", \"-c\", \"" + shellScript + "\"] }"));
+    }
+
+    static void stallConflictsAfterMinutes(Path configFile, int minutes) throws IOException {
+        Files.writeString(configFile, "  conflictStallMinutes: " + minutes + "\n", StandardOpenOption.APPEND);
+    }
+
     static void writeConfig(Path configFile, Map<String, Path> projects, String viewMode, boolean autoReview)
             throws IOException {
         Files.createDirectories(configFile.getParent());

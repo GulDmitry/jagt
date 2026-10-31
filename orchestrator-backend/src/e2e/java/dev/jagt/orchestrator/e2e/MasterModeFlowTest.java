@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,7 +56,10 @@ import java.util.function.Predicate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @Tag("e2e")
@@ -246,6 +250,79 @@ class MasterModeFlowTest {
     }
 
     @Test
+    void sendsARedVerificationBackToTheSession() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
+        E2eWorkspace.failVerificationWith(paths.configFile(), "echo widget broken >&2; exit 1");
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+
+        handBackOwingVerification();
+
+        awaitTold("jagt ran this project's verification command and it failed");
+        assertThat(awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).history())
+                .extracting(StatusChange::status)
+                .contains(TaskStatus.VERIFYING).doesNotContain(TaskStatus.REVIEW_PENDING);
+        assertThat(Files.readString(worktree().resolve("task_context.md")))
+                .contains("[proj] `sh -c echo widget broken >&2; exit 1` exited 1\nwidget broken");
+        assertThat(asked()).isFalse();
+    }
+
+    @Test
+    void stopsATaskWhoseRoundsBringNothingNew() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
+        E2eWorkspace.failVerificationWith(paths.configFile(), "echo widget broken >&2; exit 1");
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+        handBackOwingVerification();
+        awaitTold("jagt ran this project's verification command and it failed");
+        awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS);
+        Files.writeString(worktree().resolve("task_notes.md"), "widget fixed again\n");
+
+        agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed again", "");
+
+        assertThat(awaitTask(TaskState::stopped).stop().trigger()).isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
+        assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
+        assertThat(asked()).isFalse();
+    }
+
+    @Test
+    void tellsTheHumanOnceAConflictStallsAndPressesNothing() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
+        E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+        handBackTheFirstRound();
+        shipsTheRoundTheMasterShipped();
+        E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
+        act("sweep");
+        awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+        awaitTold("did not deploy");
+
+        await().atMost(Duration.ofSeconds(120)).pollInterval(Duration.ofMillis(500))
+                .until(() -> task().currentConflict().filter(conflict -> conflict.told() != null).isPresent());
+
+        verify(userNotifier, times(1)).notify(contains("deploy conflict stalled"), any(), any());
+        assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(E2eWorkspace.git(workspace.resolve("origin.git"), "log", "-1", "--format=%s", "dev"))
+                .contains("Someone else changed widget.txt");
+    }
+
+    @Test
+    void asksTheSessionToCheckTheDeployOnceItsPipelineIsGreen() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+        handBackTheFirstRound();
+        shipsTheRoundTheMasterShipped();
+        act("sweep");
+        awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
+        String deployed = E2eWorkspace.git(workspace.resolve("origin.git"), "rev-parse", "dev").substring(0, 8);
+
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-check");
+
+        awaitTold("Make sure it is deployed and works");
+        assertThat(Files.readString(worktree().resolve("task_context.md")))
+                .contains(TASK + " is deployed:\n- proj: " + deployed + " on dev");
+    }
+
+    @Test
     void leavesAPermissionTheSessionAsksForToTheHuman() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.questions().findFirst().orElseThrow());
         judges(new Judgement("", "ready",
@@ -275,6 +352,15 @@ class MasterModeFlowTest {
         Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
         Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
         agentReports("REVIEW_PENDING", "widget fixed", "");
+    }
+
+    private void handBackOwingVerification() throws Exception {
+        provisioning.initializeTask(NewTask.builder(TASK, "proj").instructions("Fix the widget")
+                .title("Widget layout is off").build());
+        Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
+        Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
+        agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed", "");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
     }
 
     private void shipsTheRoundTheMasterShipped() throws Exception {
@@ -307,13 +393,17 @@ class MasterModeFlowTest {
     }
 
     private void agentReports(String status, String message, String extraArgument) throws Exception {
+        agentReports(status, status, message, extraArgument);
+    }
+
+    private void agentReports(String status, String landsAt, String message, String extraArgument) throws Exception {
         String call = """
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                  "params": {"name": "update_agent_status",
                             "arguments": {"status": "%s", "message": "%s", "why": "the session reports"%s}}}"""
                 .formatted(status, message, extraArgument);
         assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
-                .contains("-> " + status);
+                .contains("-> " + landsAt);
     }
 
     private String act(String action) throws Exception {
