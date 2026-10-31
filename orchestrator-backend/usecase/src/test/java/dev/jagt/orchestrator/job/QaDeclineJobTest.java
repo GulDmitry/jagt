@@ -62,7 +62,7 @@ class QaDeclineJobTest {
         CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
 
-        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes)
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, records, outcomes)
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
         verify(outcomes).declined(eq("ABC-42"), eq(accepted), eq(false));
@@ -77,7 +77,7 @@ class QaDeclineJobTest {
         CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
 
-        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, mock(CheckerOutcomes.class))
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, records, mock(CheckerOutcomes.class))
                 .run("ABC-42", declined(1));
 
         verify(reader, never()).decline(any(), any(), any(), any());
@@ -92,7 +92,7 @@ class QaDeclineJobTest {
         CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.ESCALATED);
 
-        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, mock(CheckerOutcomes.class))
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, records, mock(CheckerOutcomes.class))
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
         verify(reader, never()).decline(any(), any(), any(), any());
@@ -110,7 +110,7 @@ class QaDeclineJobTest {
         CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.DISPUTED);
 
-        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes)
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, records, outcomes)
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
         verify(outcomes).declined(eq("ABC-42"), eq(disputed), eq(true));
@@ -129,7 +129,7 @@ class QaDeclineJobTest {
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
         TaskState reading = TaskReducer.relayed(declined(System.currentTimeMillis() + 1000), "decline", "digest", "", 1);
 
-        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", reading);
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, records, outcomes).run("ABC-42", reading);
 
         verify(reader).decline(eq("ABC-42"), eq(QaVerdict.AGAIN), any(), any());
     }
@@ -157,7 +157,7 @@ class QaDeclineJobTest {
                         .withMerge("0123456789abcdef")), 1, "digest"))
                 .withSession(Session.startedOver(Session.defaults()).withReportedAt(System.currentTimeMillis() + 1000));
 
-        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", legacy);
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, records, outcomes).run("ABC-42", legacy);
 
         verify(reader).decline(eq("ABC-42"), eq(QaVerdict.AGAIN), any(), any());
     }

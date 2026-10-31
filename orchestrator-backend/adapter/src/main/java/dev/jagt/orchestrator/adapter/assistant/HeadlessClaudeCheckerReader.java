@@ -3,8 +3,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.QaReader;
-import dev.jagt.orchestrator.protocol.QaRead;
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.QaDecline;
@@ -21,6 +20,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -28,9 +28,7 @@ import java.util.stream.Collectors;
 @ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
 @RequiredArgsConstructor
 @Slf4j
-public class HeadlessClaudeQaReader implements QaReader {
-
-    static final String REPORT = "qa-report.md";
+public class HeadlessClaudeCheckerReader implements CheckerReader {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(20);
     private static final String TOOLS = "Read,Grep,Glob,Bash,WebFetch";
@@ -45,15 +43,15 @@ public class HeadlessClaudeQaReader implements QaReader {
 
     @Override
     public Answer<QaVerdict> read(Run run) {
-        HeadlessClaude.Reply reply = ask(run, QaRead.SCHEMA.json());
+        HeadlessClaude.Reply reply = ask(run);
         QaVerdict verdict = verdict(run.sha(), reply);
-        write(run.worktree().resolve(REPORT), verdict);
+        write(run.worktree().resolve(run.role() + "-report.md"), run.role(), verdict);
         return new Answer<>(Optional.of(verdict), reply.usage());
     }
 
     @Override
     public Answer<QaDecline> reconsider(Run run) {
-        HeadlessClaude.Reply reply = ask(run, QaRead.DECLINE.json());
+        HeadlessClaude.Reply reply = ask(run);
         JsonNode answer = reply.envelope() == null ? null : reply.envelope().path("structured_output");
         QaDecline decline = answer == null || !answer.isObject()
                 ? QaDecline.failed(run.sha(), reply.envelope() == null ? "the check failed: " + reply.cause()
@@ -62,10 +60,10 @@ public class HeadlessClaudeQaReader implements QaReader {
         return new Answer<>(Optional.of(decline), reply.usage());
     }
 
-    private HeadlessClaude.Reply ask(Run run, String schema) {
+    private HeadlessClaude.Reply ask(Run run) {
         List<String> mcpReads = ReadOnlyTools.mcpNamed(assistant.allowedTools());
         List<String> cmd = new ArrayList<>(List.of(claude.command(), run.prompt(), "-p",
-                "--json-schema", schema, "--output-format", "json",
+                "--json-schema", run.schema(), "--output-format", "json",
                 "--setting-sources", "user", "--no-session-persistence"));
         if (!run.shared().isBlank()) {
             cmd.addAll(List.of("--append-system-prompt", run.shared()));
@@ -88,14 +86,14 @@ public class HeadlessClaudeQaReader implements QaReader {
                 AssistantCallKind.QA_CHECK, run.worktree().toString());
     }
 
-    private static void write(Path file, QaVerdict verdict) {
+    private static void write(Path file, String role, QaVerdict verdict) {
         if (verdict.rows().isEmpty()) {
             return;
         }
         String rows = verdict.rows().stream().map(row -> "| " + row.criterion() + " | " + row.status() + " | "
                 + row.evidence() + " |").collect(Collectors.joining("\n"));
         try {
-            Files.writeString(file, "# QA report, " + verdict.sha() + "\n\n| criterion | status | evidence |\n|---|---|---|\n"
+            Files.writeString(file, "# " + role.toUpperCase(Locale.ROOT) + " report, " + verdict.sha() + "\n\n| criterion | status | evidence |\n|---|---|---|\n"
                     + rows + "\n");
         } catch (IOException unwritten) {
             log.atWarn().setMessage("qa report not written").addKeyValue("file", file)

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.QaReader;
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaVerdict;
@@ -16,10 +16,10 @@ import org.springframework.stereotype.Component;
 public class CheckerReads {
 
     private final RoleDefinition role;
-    private final QaReader reader;
+    private final CheckerReader reader;
     private final TaskTurns turns;
 
-    public Answer<QaVerdict> check(String taskId, String step, String digest, QaReader.Run run) {
+    public Answer<QaVerdict> check(String taskId, String step, String digest, CheckerReader.Run run) {
         turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
         try {
             return reader.read(run);
@@ -28,7 +28,7 @@ public class CheckerReads {
         }
     }
 
-    public Answer<QaDecline> decline(String taskId, String step, String digest, QaReader.Run run) {
+    public Answer<QaDecline> decline(String taskId, String step, String digest, CheckerReader.Run run) {
         turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
         try {
             return reader.reconsider(run);

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.QaReader;
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -14,7 +14,7 @@ import java.util.Optional;
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "replay")
 @RequiredArgsConstructor
-public class ReplayQaReader implements QaReader {
+public class ReplayCheckerReader implements CheckerReader {
 
     @Override
     public Answer<QaVerdict> read(Run run) {

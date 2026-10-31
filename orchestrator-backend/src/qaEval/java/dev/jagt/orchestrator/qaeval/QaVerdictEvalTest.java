@@ -11,7 +11,7 @@ import dev.jagt.orchestrator.eval.QaJudgement;
 import dev.jagt.orchestrator.eval.QaScore;
 import dev.jagt.orchestrator.eval.QaScoreboard;
 import dev.jagt.orchestrator.job.CheckerPrompts;
-import dev.jagt.orchestrator.port.QaReader;
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
@@ -80,7 +80,7 @@ abstract class QaVerdictEvalTest {
     @MockitoBean
     private UserNotifier userNotifier;
     @Autowired
-    private QaReader reader;
+    private CheckerReader reader;
     @Autowired
     private CheckerPrompts prompts;
     @Autowired
@@ -125,13 +125,13 @@ abstract class QaVerdictEvalTest {
         String landedProbe = deployed.probe().isEmpty() ? null
                 : url + deployed.probe().substring(deployed.probe().indexOf(' ') + 1);
         QaConfig qa = new QaConfig(true, System.getProperty("qaEval.model"), List.of(new QaEnvironment(url, landedProbe)));
-        QaReader.Run run = deployed.declines()
+        CheckerReader.Run run = deployed.declines()
                 ? prompts.decline(deployed.key(), worktree.toString(), sha, qa,
                         "- " + deployed.criteria().getFirst().id() + " — not met: " + deployed.decline().evidence(),
                         deployed.decline().why())
                 : prompts.accept(deployed.key(), worktree.toString(), sha, qa, QaVerdict.ACCEPT);
-        QaReader.Run told = new QaReader.Run(run.shared(), run.prompt() + QaEvalWorkspace.ticket(deployed, url, sha),
-                run.worktree(), run.sha(), run.model(), run.environments());
+        CheckerReader.Run told = new CheckerReader.Run(run.shared(), run.prompt() + QaEvalWorkspace.ticket(deployed, url, sha),
+                run.worktree(), run.sha(), run.model(), run.environments(), run.schema(), run.role());
         if (deployed.declines()) {
             return QaJudgement.ofDecline(deployed, reader.reconsider(told).facts()
                     .orElseThrow(() -> EvalStalled.because("no decline answer")));

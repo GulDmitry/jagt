@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.QaReader;
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.Deployment;
@@ -34,7 +34,8 @@ import static org.mockito.Mockito.when;
 
 class QaReadsTest {
 
-    private static final QaReader.Run RUN = new QaReader.Run("", "", Paths.get("/wt"), "proj@0123", "", List.of());
+    private static final CheckerReader.Run RUN = new CheckerReader.Run("", "", Paths.get("/wt"), "proj@0123", "", List.of(),
+            RoleDefinition.QA.answer().json(), "qa");
 
     private static TaskState deployed() {
         return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build().withDeployment(new Deployment(1,
@@ -51,7 +52,7 @@ class QaReadsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-42", deployed());
         List<Turn.Holder> whileReading = new ArrayList<>();
-        QaReader reader = mock(QaReader.class);
+        CheckerReader reader = mock(CheckerReader.class);
         when(reader.read(any())).thenAnswer(call -> {
             TaskState task = state.task("ABC-42").orElseThrow();
             whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task),
