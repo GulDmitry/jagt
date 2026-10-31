@@ -70,6 +70,26 @@ class ReadGateTest {
                 .contains("refuses fetching " + url).contains("qa.environments");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"curl -sS http://127.0.0.1:5000/version", "curl -sS -i http://127.0.0.1:5000/quotes?id=1"})
+    void letsACurlGetReachAnEnvironmentTheRoundNamed(String command) {
+        ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
+
+        assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), "/tmp")).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"curl -sS http://127.0.0.1:5001/version", "curl -sS http://127.0.0.1:5000@evil.test/",
+            "curl -sS -X POST http://127.0.0.1:5000/quotes", "curl -sS http://127.0.0.1:5000/ -o /tmp/page",
+            "curl -sS http://127.0.0.1:5000/$(id)", "curl -sS http://127.0.0.1:5000/;id", "curl http://127.0.0.1:5000/",
+            "curl -sS -K /tmp/config http://127.0.0.1:5000/"})
+    void refusesACurlThatIsMoreThanAPlainGetOfANamedEnvironment(String command) {
+        ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
+
+        assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), "/tmp")).get().asString()
+                .contains("refuses");
+    }
+
     @Test
     void refusesAWriteVerbMidNameThatOnlyAGlobAllowed() {
         ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*"), false, List.of("mcp__*__*_delete_*"), List.of());

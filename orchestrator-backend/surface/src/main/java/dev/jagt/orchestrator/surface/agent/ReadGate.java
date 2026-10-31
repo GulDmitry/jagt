@@ -15,7 +15,8 @@ import java.util.regex.Pattern;
 
 /**
  * What a headless read may call, answered tool by tool: the human's own allow rules cannot widen it. A file tool
- * stays inside the scope's roots, the shell runs one read-only git command, and any other tool must be named.
+ * stays inside the scope's roots, the shell runs one read-only git command or one GET of a named environment, and
+ * any other tool must be named.
  */
 public final class ReadGate {
 
@@ -24,6 +25,8 @@ public final class ReadGate {
     private static final List<String> PATH_KEYS = List.of("file_path", "path");
     private static final String SHELL_TOOL = "Bash";
     private static final String WEB_TOOL = "WebFetch";
+    /** WebFetch reaches no host without a dot and no plain http, so an environment is read with one bare GET too. */
+    private static final Pattern CURL_GET = Pattern.compile("curl -sS (?:-i )?([A-Za-z0-9._:/?#=%-]+)");
     static final Pattern PARENT = Pattern.compile("(^|/)\\.\\.(/|$)");
     /** A brace builds a parent out of pieces no single one of which is {@code ..}. */
     private static final Pattern GLOB_ESCAPE = Pattern.compile("[{}]|\\.\\.");
@@ -43,13 +46,26 @@ public final class ReadGate {
         if (FILE_TOOLS.contains(tool)) {
             return fileRefusal(read, arguments, here, GLOB.equals(tool));
         }
-        if (SHELL_TOOL.equals(tool) && read.git()) {
-            return GitReadLine.refusal(read, String.valueOf(arguments.getOrDefault("command", "")), here);
+        if (SHELL_TOOL.equals(tool)) {
+            return shellRefusal(read, String.valueOf(arguments.getOrDefault("command", "")), here);
         }
         if (WEB_TOOL.equals(tool) && !read.fetchable().isEmpty()) {
             return fetchRefusal(read, String.valueOf(arguments.getOrDefault("url", "")));
         }
+        return given(tool);
+    }
+
+    private static Optional<String> given(String tool) {
         return Optional.of("jagt refuses " + tool + " in a read: only the tools it was given may run.");
+    }
+
+    private static Optional<String> shellRefusal(ReadScope read, String command, Path here) {
+        if (command.startsWith("curl ") && !read.fetchable().isEmpty()) {
+            var get = CURL_GET.matcher(command);
+            return get.matches() ? fetchRefusal(read, get.group(1))
+                    : Optional.of("jagt refuses " + command + ": a read runs curl -sS [-i] <url> and nothing more.");
+        }
+        return read.git() ? GitReadLine.refusal(read, command, here) : given(SHELL_TOOL);
     }
 
     private static Optional<String> fetchRefusal(ReadScope read, String url) {

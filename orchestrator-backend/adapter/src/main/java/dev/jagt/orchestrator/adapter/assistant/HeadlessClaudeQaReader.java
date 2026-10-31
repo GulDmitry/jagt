@@ -34,8 +34,8 @@ public class HeadlessClaudeQaReader implements QaReader {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(20);
     private static final String TOOLS = "Read,Grep,Glob,Bash,WebFetch";
-    private static final List<String> ALLOWED = List.of("Read", "Grep", "Glob", "WebFetch", "Bash(git log:*)",
-            "Bash(git show:*)", "Bash(git diff:*)");
+    private static final List<String> ALLOWED = List.of("Read", "Grep", "Glob", "WebFetch", "Bash(curl -sS:*)",
+            "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)");
     private static final List<String> REFUSED = List.of("Write", "Edit", "NotebookEdit", "Bash(git * --output*)",
             "Bash(git push:*)", "Bash(git commit:*)", "Bash(git reset:*)", "Bash(git checkout:*)");
 

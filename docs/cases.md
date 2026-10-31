@@ -141,6 +141,7 @@ Families:
 | H6 | a task past the code is reopened in plan mode → the open is refused as a state refusal, the gate and the tab stay; a plan comes only before the code | seen 2026-10-30: `open_task_tab` mode=plan on a VERIFYING task closed its gate and refused every source write, with the only exit unreachable | `AgentSessionsTest` |
 | H7 | QA is told to POST, to save a response to a file or to write a file → it holds no Bash curl and no Write tool, only GET through the web fetch and read-only git; jagt writes `qa-report.md` from its rows | seen 2026-10-31: `curl -s -XPOST`, `-o` and Write passed the command patterns | `HeadlessClaudeQaReaderTest` |
 | H8 | QA's read fetches a page of an environment qa.environments names → the gate lets the web fetch through; any other URL is refused with its reason | seen 2026-10-31: the first qaEval run, every fetch refused, every row unprovable | `ReadGateTest`, `HeadlessClaudeQaReaderTest`, `QaPromptsTest` |
+| H9 | QA reads an environment on a host without a dot or on plain http → `curl -sS [-i] <url>` reaches a qa.environments URL; any other curl is refused | seen 2026-10-31: the second qaEval run, every web fetch of `127.0.0.1` timed out | `ReadGateTest`, `HeadlessClaudeQaReaderTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

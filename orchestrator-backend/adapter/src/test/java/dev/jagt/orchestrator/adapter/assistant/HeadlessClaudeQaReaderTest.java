@@ -40,7 +40,7 @@ class HeadlessClaudeQaReaderTest {
     Path worktree;
 
     @Test
-    void holdsNoBashCurlAndNoWriteToolSoNothingItReadsCanChangeTheEnvironmentOrTheTree() {
+    void holdsNoWriteToolAndCurlOnlyAsAQuietGetSoNothingItReadsCanChangeTheEnvironmentOrTheTree() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
@@ -51,8 +51,8 @@ class HeadlessClaudeQaReaderTest {
         List<String> argv = command.getValue();
         assertThat(argv.get(argv.indexOf("--tools") + 1)).isEqualTo("Read,Grep,Glob,Bash,WebFetch");
         assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
-                .contains("WebFetch", "Bash(git log:*)")
-                .noneMatch(tool -> tool.contains("curl") || tool.startsWith("Write"));
+                .contains("WebFetch", "Bash(curl -sS:*)", "Bash(git log:*)")
+                .noneMatch(tool -> tool.startsWith("Write") || tool.startsWith("Bash(curl") && !tool.equals("Bash(curl -sS:*)"));
         assertThat(argv.subList(argv.indexOf("--disallowedTools"), argv.indexOf("--allowedTools")))
                 .contains("Write", "Edit", "Bash(git * --output*)");
     }
