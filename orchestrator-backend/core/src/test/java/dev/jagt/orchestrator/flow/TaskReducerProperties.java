@@ -138,7 +138,7 @@ class TaskReducerProperties {
             Optional.of(move).filter(m -> m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed
                             || m instanceof TaskMove.QaReadEnded ended && ended.holds())
                     .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id + 1));
-            Optional.of(move).filter(m -> m instanceof TaskMove.TurnRestored restored)
+            Optional.of(move).filter(m -> m instanceof TaskMove.TurnRestored _)
                     .ifPresent(m -> assertThat(next.turnOrNone()).isEqualTo(((TaskMove.TurnRestored) m).before()));
             Optional.of(move).filter(m -> !(m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed
                             || m instanceof TaskMove.TurnRestored || m instanceof TaskMove.QaReadEnded ended

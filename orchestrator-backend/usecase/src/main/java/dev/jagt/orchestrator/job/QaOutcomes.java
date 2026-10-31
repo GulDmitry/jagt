@@ -14,7 +14,6 @@ import dev.jagt.orchestrator.task.QaEnding;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

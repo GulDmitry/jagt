@@ -325,31 +325,31 @@ public final class TaskReducer {
         return switch (effect) {
             case TaskEffect.Lands lands -> task.withStatus(lands.to(), message, event, now);
             case TaskEffect.Stops stops -> task.withStop(stops.stop().countedOn(task.requests()));
-            case TaskEffect.ClearsStop cleared -> task.lifted(now);
+            case TaskEffect.ClearsStop _ -> task.lifted(now);
             case TaskEffect.GatesPlan gates -> task.withPlanGate(gates.gate());
             case TaskEffect.Reports reports -> task.withReport(reports.report());
             case TaskEffect.OpensTurn opens -> task.withTurn(task.turnOrNone()
                     .relayed(opens.step(), opens.digest(), opens.answered(), now));
-            case TaskEffect.ClosesTurn closes -> task.withTurn(task.turnOrNone().closed(now));
+            case TaskEffect.ClosesTurn _ -> task.withTurn(task.turnOrNone().closed(now));
             case TaskEffect.RestoresTurn restores -> task.withTurn(restores.before());
             case TaskEffect.Deploys deploys -> task.withDeployment(deploys.step()
                     .applyTo(task.deployment() == null ? Deployment.defaults() : task.deployment(), now));
-            case TaskEffect.RestartsSession restarts -> task.withSession(Session.startedOver());
+            case TaskEffect.RestartsSession _ -> task.withSession(Session.startedOver());
             case TaskEffect.TrustsGit trusts -> task.withGitTrust(trusts.trust());
             case TaskEffect.ParksGit parks -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).withChanged(parks.changed()));
             case TaskEffect.JoinsGit joins -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).including(joins.added()));
             case TaskEffect.AsksRepo asks -> task.withRepoRequest(asks.project());
-            case TaskEffect.DropsRepoRequest drops -> task.withRepoRequest(null);
+            case TaskEffect.DropsRepoRequest _ -> task.withRepoRequest(null);
             case TaskEffect.AttachesRepo attaches -> task.withRepo(attaches.repo());
             case TaskEffect.LinksRequests links -> linked(task, links, now);
             case TaskEffect.MergesRequest merges -> task.withMerged(merges.project(), merges.merged());
             case TaskEffect.MergesRequestByHost merges -> task.withMergedByHost(merges.project());
-            case TaskEffect.ResetsChecks resets -> task.withChecksReset();
-            case TaskEffect.ResetsApproval resets -> task.withApproved(null);
-            case TaskEffect.ResetsInfra resets -> task.withInfraRetries(List.of());
+            case TaskEffect.ResetsChecks _ -> task.withChecksReset();
+            case TaskEffect.ResetsApproval _ -> task.withApproved(null);
+            case TaskEffect.ResetsInfra _ -> task.withInfraRetries(List.of());
             case TaskEffect.NotesMaster notes -> task.withMaster(notes.note().applyTo(task.masterOrNone()));
             case TaskEffect.OpensQaRead opens -> task.withQa(task.qaOrNone().withReading(opens.step()));
-            case TaskEffect.ClosesQaRead closes -> task.withQa(task.qaOrNone().withReading(""));
+            case TaskEffect.ClosesQaRead _ -> task.withQa(task.qaOrNone().withReading(""));
             case TaskEffect.PassesQa passes -> task.withQa(task.qaOrNone().withPassed(passes.sha()));
             case TaskEffect.SendsQaRound sends -> task.withQa(task.qaOrNone().withRound(sends.digest(), sends.rows()));
             case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
@@ -360,7 +360,7 @@ public final class TaskReducer {
                     InfraRetry.sentSince(task.infraRetries(), task.trailOrNone()), arms.retry()));
             case TaskEffect.ClearsInfra clears -> task.withInfraRetries(clears.all() ? List.of() : sent(task));
             case TaskEffect.SendsInfra sends -> task.withInfraRetries(joined(sent(task), sends.retry().sentAt(now)));
-            case TaskEffect.DisarmsInfra disarms -> task.withInfraRetries(sent(task));
+            case TaskEffect.DisarmsInfra _ -> task.withInfraRetries(sent(task));
             case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }

@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * The after-deploy check where {@code qa.enabled} is on: one QA run per deploy, opened once the deploy's pipelines are
