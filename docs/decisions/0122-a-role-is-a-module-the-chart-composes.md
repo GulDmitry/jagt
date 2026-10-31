@@ -15,22 +15,20 @@ Proposed 2026-10-31 by the owner's direction; building from 2026-10-31: QA first
 
 ## Decision
 
-- A task's chart is the core regions (status, session, git, request, checks, approval, deploy, infra) plus one region
-  per enabled role, composed at startup. A role off is never composed: no state, no job, no call.
-- A role is an **arbiter** (one, the Master: may act where the human stands, bounded by `Offers`) or a **checker**
-  (many: reads only, answers a typed verdict).
-- A role module holds: id, kind, trigger (a guard over core regions), states of its own region, answer schema, outcome
-  map (verdict → core events among the legal `Offers` alone), tool scope, model, brief, cases.
-- A checker is declarative: `roles/<id>/role.yml` + `brief.md` + `cases.md`. Its trigger names predicates from a closed
-  vocabulary; its outcomes are the fixed core events (a round to the session, a question to the human, a label).
-  jagt compiles it into a region and lints it at startup: reachable, every state naming its exit; a role failing is
-  refused with its reason and the rest start.
-- Shipped checkers use the same format, QA first: if QA cannot be written as a `role.yml`, the format is wrong.
-- The arbiter stays code: rights, `act`, the feed window.
-- Config: `orchestrator.roles.<id>.{enabled, model, mode}` for every role.
-- Turn holder: `SESSION`, `HUMAN` or a role id from the composed set. Precedence: human > arbiter > checker.
-- One eval harness, `roleEval -Prole=<id>`, reads any role's cases.
-- Pinned by: no class outside a role's module names it; the chart lint over all on, all off and each alone.
+- A task's chart is the core regions plus one region per installed role (shipped, or a `roles/<id>/role.yml` read at
+  boot), set once at startup as the installed composition; with none set, the built-in roles. `enabled` stays live and
+  gates the trigger and the job: a role off holds a region at rest, runs nothing and calls no model.
+- A role is the **arbiter** (one, the Master, in code: rights, `act`, the feed window) or a **checker** (many, read-only,
+  a typed verdict). A checker's region is one closed vocabulary, `CheckerPhase`; its moves carry the role id.
+- A checker is declarative: `role.yml` (trigger from a closed predicate vocabulary, tool scope, model, outcomes),
+  `brief.md`, `cases.md` (its step gate) and `eval/*.yml`. Outcomes are fixed core events: a round to the session,
+  a question, a wait on a probe, a dispute to the arbiter else the human, a stop, a label. QA is the first.
+- A role failing its lint (reachable, every state naming its exit) is skipped with its reason; the rest start.
+- Config `orchestrator.roles.<id>.*`; the old `qa:` and `master:` keys are still read. A user's old brief copy wins.
+- Turn order stays as built: a checker reading holds the turn; a dispute goes checker → arbiter → human.
+- A module is a declared package set per ring; `roleEval -Prole=<id>` is the one harness; pinned by a rule test that no
+  class outside a module names it, persisted names (`state.json`, `usage-by-day.jsonl`) allow-listed.
+- Not yet: a user checker's round needs a generic session-brief step; until then only QA rounds.
 
 ## Rejected
 
