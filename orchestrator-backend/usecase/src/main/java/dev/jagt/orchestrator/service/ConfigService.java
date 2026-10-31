@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.With;
@@ -410,8 +411,8 @@ public class ConfigService implements LoopBreaker.Current {
                 return modeOrDefault() != MasterMode.OFF;
             }
 
-            public Turns.Profile profile() {
-                return new Turns.Profile(modeOrDefault(), mineOrDefault().stream().map(MasterRight::of)
+            public Arbiter.Profile profile() {
+                return new Arbiter.Profile(modeOrDefault(), mineOrDefault().stream().map(MasterRight::of)
                         .flatMap(Optional::stream).collect(java.util.stream.Collectors.toSet()));
             }
         }
@@ -618,7 +619,7 @@ public class ConfigService implements LoopBreaker.Current {
 
     private static final String LEGACY_QA = "qa";
 
-    private static final String MASTER = "master";
+    private static final String MASTER = Arbiter.ID;
 
     private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;

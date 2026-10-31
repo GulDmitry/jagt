@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -60,7 +61,7 @@ public class MasterAnswerJob implements Job {
         if (!config.may(MasterRight.ANSWER)) {
             return;
         }
-        Turns.Profile profile = config.profile();
+        Arbiter.Profile profile = config.profile();
         stateService.tasks().entrySet().stream()
                 .filter(entry -> answers(entry.getValue(), profile))
                 .findFirst()
@@ -68,7 +69,7 @@ public class MasterAnswerJob implements Job {
     }
 
     /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
-    private static boolean answers(TaskState task, Turns.Profile profile) {
+    private static boolean answers(TaskState task, Arbiter.Profile profile) {
         return Move.asking(task.status(), task.report())
                 && Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task), profile) == Turn.Holder.ARBITER
                 && !task.masterOrNone().unanswered().equals(task.askedDigest());

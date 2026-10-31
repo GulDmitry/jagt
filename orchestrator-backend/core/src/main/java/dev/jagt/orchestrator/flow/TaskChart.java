@@ -56,8 +56,6 @@ final class TaskChart {
 
     private static final RegionId<InfraPhase> INFRA = new RegionId<>("infra", InfraPhase.class);
 
-    private static final RegionId<MasterPhase> MASTER = new RegionId<>("master", MasterPhase.class);
-
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
@@ -156,7 +154,7 @@ final class TaskChart {
                 Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
                 Map.entry(CHECKS.name(), phases.checks().name()),
                 Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()),
-                Map.entry(MASTER.name(), phases.master().name()));
+                Map.entry(MasterRegion.REGION.name(), phases.master().name()));
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
@@ -211,7 +209,6 @@ final class TaskChart {
         approvals(chart);
         infras(chart);
         composition.roles().forEach(role -> role.declareRegion(chart));
-        masters(chart);
         sessions(chart, composition);
         ran(chart);
         TaskOffers.declare(chart, LIFECYCLE);
@@ -481,17 +478,6 @@ final class TaskChart {
                             && seen.staleReads(), TaskChart::seesHead, ChecksPhase.STALE);
             regionEdge(chart, CHECKS, from, "head seen, reads of it", move -> move instanceof TaskMove.HeadSeen seen
                             && !seen.staleReads(), TaskChart::seesHead, ChecksPhase.READ);
-        }
-    }
-
-    private static void masters(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
-        chart.region(MASTER, MasterPhase.STANDS_IN);
-        for (MasterPhase from : MasterPhase.values()) {
-            for (MasterPhase to : MasterPhase.values()) {
-                regionEdge(chart, MASTER, from, "noted, " + to + " after", move -> move instanceof TaskMove.MasterNoted
-                                noted && noted.after() == to,
-                        move -> new TaskEffect.NotesMaster(((TaskMove.MasterNoted) move).note()), to);
-            }
         }
     }
 

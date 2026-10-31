@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.MasterPhase;
@@ -27,7 +28,7 @@ public class Rounds {
 
     /** Where the Master read the round in front or left the task to the human, nothing of it stands in any more. */
     public RoundState of(TaskState task, ConfigService.ConfigFile config) {
-        Turns.Profile master = config.master().profile().at(MasterPhase.of(task));
+        Arbiter.Profile master = config.master().profile().at(MasterPhase.of(task));
         return RoundState.of(task.report(),
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
                 .withMaster(master)

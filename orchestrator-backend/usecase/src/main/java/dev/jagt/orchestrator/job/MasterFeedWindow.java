@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +13,7 @@ import java.time.Duration;
 @Service
 public class MasterFeedWindow implements Job {
 
-    private static final String WINDOW = "master";
+    private static final String WINDOW = Arbiter.WINDOW;
 
     private final ConfigService configService;
     private final SessionHost sessions;

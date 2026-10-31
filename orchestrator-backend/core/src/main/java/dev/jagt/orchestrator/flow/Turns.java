@@ -1,13 +1,11 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn.Holder;
 
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -18,35 +16,12 @@ import java.util.Set;
  */
 public final class Turns {
 
-    /** {@code mine} are the steps the human keeps even where the Master acts. */
-    public record Profile(MasterMode mode, Set<MasterRight> mine) {
-
-        public static final Profile OFF = new Profile(MasterMode.OFF, Set.of());
-
-        public Profile {
-            mine = mine.isEmpty() ? Set.of() : Set.copyOf(EnumSet.copyOf(mine));
-        }
-
-        public boolean running() {
-            return mode != MasterMode.OFF;
-        }
-
-        public boolean may(MasterRight right) {
-            return mode == MasterMode.ACT && !mine.contains(right);
-        }
-
-        /** This profile where the Master stands in, none where it read the round or left the task to the human. */
-        public Profile at(MasterPhase phase) {
-            return phase == MasterPhase.STANDS_IN ? this : OFF;
-        }
-    }
-
     private Turns() {
     }
 
     /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check a checker reads holds it. */
     public static Holder next(TaskStatus status, AgentReport report, boolean stopped,
-                              Map<String, CheckerPhase> checkers, Profile profile) {
+                              Map<String, CheckerPhase> checkers, Arbiter.Profile profile) {
         if (FlowRules.closed(status)) {
             return Holder.NOBODY;
         }
@@ -72,7 +47,7 @@ public final class Turns {
         return of(status);
     }
 
-    private static Holder asked(AgentReport report, Profile profile) {
+    private static Holder asked(AgentReport report, Arbiter.Profile profile) {
         return report == AgentReport.QUESTION && profile.may(MasterRight.ANSWER) ? Holder.ARBITER : Holder.HUMAN;
     }
 

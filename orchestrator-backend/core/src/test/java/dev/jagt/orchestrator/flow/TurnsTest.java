@@ -23,11 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TurnsTest {
 
-    private static final Map<String, Turns.Profile> PROFILES = Map.of(
-            "off", Turns.Profile.OFF,
-            "judge", new Turns.Profile(MasterMode.JUDGE, Set.of()),
-            "act-mine-plan", new Turns.Profile(MasterMode.ACT, Set.of(MasterRight.PLAN)),
-            "act", new Turns.Profile(MasterMode.ACT, Set.of()));
+    private static final Map<String, Arbiter.Profile> PROFILES = Map.of(
+            "off", Arbiter.Profile.OFF,
+            "judge", new Arbiter.Profile(MasterMode.JUDGE, Set.of()),
+            "act-mine-plan", new Arbiter.Profile(MasterMode.ACT, Set.of(MasterRight.PLAN)),
+            "act", new Arbiter.Profile(MasterMode.ACT, Set.of()));
 
     static Stream<Arguments> everyTurn() {
         return Arrays.stream(TaskStatus.values()).flatMap(status -> Arrays.stream(AgentReport.values())
@@ -161,7 +161,7 @@ class TurnsTest {
                 .master(Master.defaults().withSeal("fingerprint", 0)).build());
 
         Holder holder = Turns.next(sealed.status(), sealed.report(), sealed.stopped(), Checkers.of(sealed),
-                new Turns.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
+                new Arbiter.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
 
         assertThat(holder).isEqualTo(Holder.ARBITER);
     }
@@ -177,7 +177,7 @@ class TurnsTest {
     void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman(TaskStatus status, AgentReport report, boolean stopped,
                                                           CheckerPhase qa) {
         Holder holder = Turns.next(status, report, stopped, Map.of("qa", qa),
-                new Turns.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT));
+                new Arbiter.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT));
 
         assertThat(holder).isNotEqualTo(Holder.ARBITER);
     }

@@ -12,12 +12,12 @@ import java.util.Map;
  * waiting, whether the Master has yet to read it, and where the Master still stands in for the human on it. All
  * decide the human's next move, and none is in {@link TaskStatus}.
  */
-public record RoundState(AgentReport report, boolean draftedReplies, @With boolean masterReading, @With Turns.Profile master,
+public record RoundState(AgentReport report, boolean draftedReplies, @With boolean masterReading, @With Arbiter.Profile master,
                          @With Map<String, CheckerPhase> checkers) {
 
     public static final RoundState NONE = of(AgentReport.PLAIN, false);
 
     public static RoundState of(AgentReport report, boolean draftedReplies) {
-        return new RoundState(report, draftedReplies, false, Turns.Profile.OFF, Map.of());
+        return new RoundState(report, draftedReplies, false, Arbiter.Profile.OFF, Map.of());
     }
 }

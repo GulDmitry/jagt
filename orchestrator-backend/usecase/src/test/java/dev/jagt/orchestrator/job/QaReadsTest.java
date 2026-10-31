@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -57,7 +58,7 @@ class QaReadsTest {
         when(reader.read(any())).thenAnswer(call -> {
             TaskState task = state.task("ABC-42").orElseThrow();
             whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task),
-                    Turns.Profile.OFF));
+                    Arbiter.Profile.OFF));
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         });
 
@@ -65,7 +66,7 @@ class QaReadsTest {
 
         TaskState after = state.task("ABC-42").orElseThrow();
         assertThat(whileReading).containsExactly(new Turn.Holder.Role("qa"));
-        assertThat(Turns.next(after.status(), after.report(), after.stopped(), Checkers.of(after), Turns.Profile.OFF))
+        assertThat(Turns.next(after.status(), after.report(), after.stopped(), Checkers.of(after), Arbiter.Profile.OFF))
                 .isEqualTo(Turn.Holder.NOBODY);
     }
 }

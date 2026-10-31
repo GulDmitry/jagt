@@ -191,7 +191,7 @@ class TaskReducerProperties {
             TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
             Optional.of(next).filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
                     .ifPresent(moved -> assertThat(Turns.next(moved.status(), moved.report(), false,
-                            Checkers.of(moved), Turns.Profile.OFF).equals(new Turn.Holder.Role("qa")))
+                            Checkers.of(moved), Arbiter.Profile.OFF).equals(new Turn.Holder.Role("qa")))
                             .isEqualTo(CheckerPhase.of(moved, Checkers.QA) == CheckerPhase.READING));
             return next;
         }, (left, right) -> right);
