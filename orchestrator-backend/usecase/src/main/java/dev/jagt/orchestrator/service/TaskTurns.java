@@ -69,10 +69,10 @@ public class TaskTurns {
                 .addKeyValue("turn", of(id).id()).log();
     }
 
-    /** QA's read of {@code step} ended: its turn closes where it still stands, and a turn opened since stays. */
-    public void closed(String taskId, String step, String digest) {
+    /** The {@code role}'s read of {@code step} ended: its turn closes where it still stands, and a turn opened since stays. */
+    public void closed(String taskId, String role, String step, String digest) {
         stateService.updateTask(stateService.canonicalTaskId(taskId),
-                task -> TaskReducer.qaReadEnded(task, step, digest, task.lastActiveTimestamp()));
+                task -> TaskReducer.checkerReadEnded(task, role, step, digest, task.lastActiveTimestamp()));
     }
 
     /** A reply refused stops its task first, and a stopped task's turn is the human's whatever the Master's profile. */

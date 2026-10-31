@@ -23,24 +23,30 @@ sealed interface TaskMove {
     record Reported(TaskStatus status, boolean verificationOwed) implements TaskMove {
     }
 
-    /** A session's no_changes answering a QA round: the deployed change stays as it was. */
-    record QaDeclined(AgentReport means, TaskStatus reported) implements TaskMove {
-    }
-
     /** A note on what the Master left; {@code after} is where the master region then stands. */
     record MasterNoted(MasterNote note, MasterPhase after) implements TaskMove {
     }
 
-    /** QA's read of a step ended; {@code holds} where the turn it opened still stands. */
-    record QaReadEnded(boolean holds) implements TaskMove {
-    }
+    /** What a checker did to the deploy; only the region of the role it names takes it. */
+    sealed interface Checked extends TaskMove {
 
-    /** QA passed the deploy standing at {@code sha}; {@code standing} where the qa region then reads a pass. */
-    record QaPassed(String sha, boolean standing) implements TaskMove {
-    }
+        String role();
 
-    /** A QA round went out on the deploy asked on {@code digest}, carrying {@code rows}; {@code opens} where that is the deploy's. */
-    record QaRoundSent(String digest, String rows, boolean opens) implements TaskMove {
+        /** A session's no_changes answering the role's round: the deployed change stays as it was. */
+        record RoundDeclined(String role, AgentReport means, TaskStatus reported) implements Checked {
+        }
+
+        /** The role's read of a step ended; {@code holds} where the turn it opened still stands. */
+        record ReadEnded(String role, boolean holds) implements Checked {
+        }
+
+        /** The role passed the deploy standing at {@code sha}; {@code standing} where its region then reads a pass. */
+        record Passed(String role, String sha, boolean standing) implements Checked {
+        }
+
+        /** The role sent a round on the deploy asked on {@code digest}, carrying {@code rows}; {@code opens} where that is the deploy's. */
+        record RoundSent(String role, String digest, String rows, boolean opens) implements Checked {
+        }
     }
 
     record Read(TaskStatus concluded) implements TaskMove {

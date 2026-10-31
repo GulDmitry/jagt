@@ -134,12 +134,12 @@ class TaskReducerProperties {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
             long id = task.turnOrNone().id();
             Optional.of(move).filter(m -> m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed
-                            || m instanceof TaskMove.QaReadEnded ended && ended.holds())
+                            || m instanceof TaskMove.Checked.ReadEnded ended && ended.holds())
                     .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id + 1));
             Optional.of(move).filter(m -> m instanceof TaskMove.TurnRestored _)
                     .ifPresent(m -> assertThat(next.turnOrNone()).isEqualTo(((TaskMove.TurnRestored) m).before()));
             Optional.of(move).filter(m -> !(m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed
-                            || m instanceof TaskMove.TurnRestored || m instanceof TaskMove.QaReadEnded ended
+                            || m instanceof TaskMove.TurnRestored || m instanceof TaskMove.Checked.ReadEnded ended
                             && ended.holds()))
                     .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id));
             return next;
@@ -264,11 +264,11 @@ class TaskReducerProperties {
                 Arbitraries.of(AgentReport.class).map(TaskMove.Stamped::new),
                 Arbitraries.just(new TaskMove.Relayed("ship", "d", "a")),
                 Arbitraries.of("accept", "decline", "again").map(step -> new TaskMove.Relayed(step, "d1", "a")),
-                flag.map(TaskMove.QaReadEnded::new),
+                flag.map(holds -> new TaskMove.Checked.ReadEnded("qa", holds)),
                 Arbitraries.of(new MasterNote.Left("deploy x"), new MasterNote.Took(), new MasterNote.Unanswered("u"),
                         new MasterNote.Sealed("s", 4)).map(note -> new TaskMove.MasterNoted(note, MasterPhase.LEFT)),
-                Arbitraries.just(new TaskMove.QaPassed("api@abc", false)),
-                Arbitraries.just(new TaskMove.QaRoundSent("d1", "- row", false)),
+                Arbitraries.just(new TaskMove.Checked.Passed("qa", "api@abc", false)),
+                Arbitraries.just(new TaskMove.Checked.RoundSent("qa", "d1", "- row", false)),
                 Arbitraries.just(new TaskMove.TurnClosed()),
                 Arbitraries.just(new TaskMove.GitTrusted(GitTrust.of(Map.of("b", "2")))),
                 Arbitraries.just(new TaskMove.GitChanged("b changed")),

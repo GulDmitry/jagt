@@ -147,7 +147,7 @@ public class FlowReports {
             TaskMove.Reported move = new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));
             TaskState said = TaskReducer.reduce(TaskReducer.said(task, means), move, lineOf(task, means, message),
                     false, clock.millis());
-            said = TaskReducer.qaDeclined(said, means, status, clock.millis());
+            said = declined(said, task.turnOrNone().step(), means, status);
             landed.set(new Landed(task.status(), said.status()));
             return alsoRecord.apply(task.status(), said);
         });
@@ -157,6 +157,11 @@ public class FlowReports {
             throw Refusal.byState(why.get());
         }
         return Optional.ofNullable(landed.get());
+    }
+
+    private TaskState declined(TaskState said, String turnStep, AgentReport means, TaskStatus status) {
+        return Checkers.roleOfRound(turnStep).map(role -> TaskReducer.checkerDeclined(said, role, means, status,
+                clock.millis())).orElse(said);
     }
 
     /** A question still reaches the card; once one is behind, the line falls back to the status's own. */

@@ -86,16 +86,16 @@ sealed interface TaskEffect {
     record NotesMaster(MasterNote note) implements TaskEffect {
     }
 
-    record OpensQaRead(String step) implements TaskEffect {
+    record OpensCheckerRead(String role, String step) implements TaskEffect {
     }
 
-    record ClosesQaRead() implements TaskEffect {
+    record ClosesCheckerRead(String role) implements TaskEffect {
     }
 
-    record PassesQa(String sha) implements TaskEffect {
+    record PassesChecker(String role, String sha) implements TaskEffect {
     }
 
-    record SendsQaRound(String digest, String rows) implements TaskEffect {
+    record SendsCheckerRound(String role, String digest, String rows) implements TaskEffect {
     }
 
     record SeesHead(String tip) implements TaskEffect {

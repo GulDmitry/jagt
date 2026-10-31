@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -68,7 +69,7 @@ public class QaOutcomes {
     public QaEnding apply(String taskId, TaskState task, QaVerdict verdict) {
         QaEnding ending = stands(taskId, verdict.sha()) ? verdict.ending() : notStanding(taskId);
         switch (ending) {
-            case PASSED -> state.updateTask(taskId, current -> TaskReducer.qaPassed(current, verdict.sha()));
+            case PASSED -> state.updateTask(taskId, current -> TaskReducer.checkerPassed(current, Checkers.QA, verdict.sha()));
             case NOT_MET -> notMet(taskId, task, verdict);
             case UNPROVABLE -> unprovable(taskId, verdict);
             case FAILED -> failed(taskId, verdict);
@@ -88,7 +89,7 @@ public class QaOutcomes {
         boolean sent = OriginContext.as(ActionOrigin.QA, () -> relay.relayRound(taskId, Step.QA_ROUND, facts, claim));
         if (sent) {
             String digest = Objects.requireNonNull(Objects.requireNonNull(task.deployment()).askedDigest());
-            state.updateTask(taskId, current -> TaskReducer.qaRoundSent(current, digest, facts));
+            state.updateTask(taskId, current -> TaskReducer.checkerRoundSent(current, Checkers.QA, digest, facts));
         }
         log.atInfo().setMessage("qa returns the round").addKeyValue("task", taskId)
                 .addKeyValue("rows", verdict.notMet().size()).addKeyValue("sent", sent).log();

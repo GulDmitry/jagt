@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -22,7 +23,7 @@ public class QaReads {
         try {
             return reader.read(run);
         } finally {
-            turns.closed(taskId, step, digest);
+            turns.closed(taskId, Checkers.QA, step, digest);
         }
     }
 
@@ -31,7 +32,7 @@ public class QaReads {
         try {
             return reader.reconsider(run);
         } finally {
-            turns.closed(taskId, step, digest);
+            turns.closed(taskId, Checkers.QA, step, digest);
         }
     }
 }

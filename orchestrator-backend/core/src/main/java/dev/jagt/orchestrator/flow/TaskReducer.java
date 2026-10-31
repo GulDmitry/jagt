@@ -96,14 +96,14 @@ public final class TaskReducer {
         return stayed(said(task, means), message, false, now);
     }
 
-    /** {@code task} whose session answered {@code means} on {@code reported}: a QA round it declines holds DEPLOYED. */
-    static TaskState qaDeclined(TaskState task, AgentReport means, TaskStatus reported, long now) {
-        return step(task, new TaskMove.QaDeclined(means, reported), now);
+    /** {@code task} whose session answered {@code means} on {@code reported}: a round of {@code role} it declines holds DEPLOYED. */
+    static TaskState checkerDeclined(TaskState task, String role, AgentReport means, TaskStatus reported, long now) {
+        return step(task, new TaskMove.Checked.RoundDeclined(role, means, reported), now);
     }
 
-    /** {@code task} whose QA read of {@code step} on {@code digest} ended: the turn it opened closes where it still stands. */
-    public static TaskState qaReadEnded(TaskState task, String step, String digest, long now) {
-        return step(task, new TaskMove.QaReadEnded(task.turnOrNone().holds(step, digest)), now);
+    /** {@code task} whose {@code role} read of {@code step} on {@code digest} ended: the turn it opened closes where it still stands. */
+    public static TaskState checkerReadEnded(TaskState task, String role, String step, String digest, long now) {
+        return step(task, new TaskMove.Checked.ReadEnded(role, task.turnOrNone().holds(step, digest)), now);
     }
 
     /** {@code task} whose Master offered the human {@code step} instead of pressing it. */
@@ -140,14 +140,14 @@ public final class TaskReducer {
         return step(task, resolved(task, new TaskMove.MasterNoted(note, MasterPhase.STANDS_IN)), 0);
     }
 
-    /** {@code task} that QA passed at the deploy standing on {@code sha}. */
-    public static TaskState qaPassed(TaskState task, String sha) {
-        return step(task, resolved(task, new TaskMove.QaPassed(sha, false)), 0);
+    /** {@code task} that {@code role} passed at the deploy standing on {@code sha}. */
+    public static TaskState checkerPassed(TaskState task, String role, String sha) {
+        return step(task, resolved(task, new TaskMove.Checked.Passed(role, sha, false)), 0);
     }
 
-    /** {@code task} that QA sent a round on, the deploy's asked {@code digest} and the {@code rows} it carried. */
-    public static TaskState qaRoundSent(TaskState task, String digest, String rows) {
-        return step(task, resolved(task, new TaskMove.QaRoundSent(digest, rows, false)), 0);
+    /** {@code task} that {@code role} sent a round on, the deploy's asked {@code digest} and the {@code rows} it carried. */
+    public static TaskState checkerRoundSent(TaskState task, String role, String digest, String rows) {
+        return step(task, resolved(task, new TaskMove.Checked.RoundSent(role, digest, rows, false)), 0);
     }
 
     /** {@code task} with the report a verb's stamp means. */
@@ -279,9 +279,9 @@ public final class TaskReducer {
                     RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
             case TaskMove.MasterNoted noted -> new TaskMove.MasterNoted(noted.note(), MasterPhase.of(
                     task.withMaster(noted.note().applyTo(task.masterOrNone()))));
-            case TaskMove.QaPassed passed -> new TaskMove.QaPassed(passed.sha(),
+            case TaskMove.Checked.Passed passed -> new TaskMove.Checked.Passed(passed.role(), passed.sha(),
                     CheckerPhase.of(task.withQa(task.qaOrNone().withPassed(passed.sha()))) == CheckerPhase.PASSED);
-            case TaskMove.QaRoundSent sent -> new TaskMove.QaRoundSent(sent.digest(), sent.rows(),
+            case TaskMove.Checked.RoundSent sent -> new TaskMove.Checked.RoundSent(sent.role(), sent.digest(), sent.rows(),
                     CheckerPhase.of(task.withQa(task.qaOrNone().withRound(sent.digest(), sent.rows())))
                             == CheckerPhase.ROUND_OPEN);
             case TaskMove.InfraCleared cleared -> new TaskMove.InfraCleared(cleared.all(), unarmed(task));
@@ -353,10 +353,10 @@ public final class TaskReducer {
             case TaskEffect.ResetsApproval _ -> task.withApproved(null);
             case TaskEffect.ResetsInfra _ -> task.withInfraRetries(List.of());
             case TaskEffect.NotesMaster notes -> task.withMaster(notes.note().applyTo(task.masterOrNone()));
-            case TaskEffect.OpensQaRead opens -> task.withQa(task.qaOrNone().withReading(opens.step()));
-            case TaskEffect.ClosesQaRead _ -> task.withQa(task.qaOrNone().withReading(""));
-            case TaskEffect.PassesQa passes -> task.withQa(task.qaOrNone().withPassed(passes.sha()));
-            case TaskEffect.SendsQaRound sends -> task.withQa(task.qaOrNone().withRound(sends.digest(), sends.rows()));
+            case TaskEffect.OpensCheckerRead opens -> task.withQa(task.qaOrNone().withReading(opens.step()));
+            case TaskEffect.ClosesCheckerRead _ -> task.withQa(task.qaOrNone().withReading(""));
+            case TaskEffect.PassesChecker passes -> task.withQa(task.qaOrNone().withPassed(passes.sha()));
+            case TaskEffect.SendsCheckerRound sends -> task.withQa(task.qaOrNone().withRound(sends.digest(), sends.rows()));
             case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
             case TaskEffect.ReadsChecks reads -> task.withChecksRead(reads.hostStatus(), reads.tip());
             case TaskEffect.FailsToReadChecks fails -> task.withChecksUnread(fails.read());

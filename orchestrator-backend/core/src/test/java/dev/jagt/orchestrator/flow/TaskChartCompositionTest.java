@@ -42,19 +42,20 @@ class TaskChartCompositionTest {
     void aChartWithTwoCheckersTellsWhoseRoundTheSessionDeclined() {
         Chart<TaskMove, ChartFacts, TaskEffect> chart = TaskChart.of(
                 new Composition(List.of(CheckerRegion.QA, new CheckerRegion("lint"))));
-        Map<String, String> standing = new HashMap<>(chart.initial().toPlain());
-        standing.put("lifecycle", TaskStatus.IN_PROGRESS.name());
-        standing.put("turn", TurnKind.OPEN.name());
-        TaskMove declined = new TaskMove.QaDeclined(AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS);
+        Map<String, String> lintRound = new HashMap<>(chart.initial().toPlain());
+        lintRound.put("lifecycle", TaskStatus.IN_PROGRESS.name());
+        lintRound.put("turn", TurnKind.OPEN.name());
+        lintRound.put("lint", CheckerPhase.ROUND_OPEN.name());
         ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults());
 
-        Map<String, String> lintRound = new HashMap<>(standing);
-        lintRound.put("lint", CheckerPhase.ROUND_OPEN.name());
-        Map<String, String> nobodysRound = new HashMap<>(standing);
+        Map<String, String> declinedByLint = chart.step(chart.configuration(lintRound), facts,
+                new TaskMove.Checked.RoundDeclined("lint", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS))
+                .configuration().toPlain();
+        Map<String, String> declinedByQa = chart.step(chart.configuration(lintRound), facts,
+                new TaskMove.Checked.RoundDeclined("qa", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS))
+                .configuration().toPlain();
 
-        assertThat(chart.step(chart.configuration(lintRound), facts, declined).configuration().toPlain())
-                .containsEntry("lifecycle", "DEPLOYED");
-        assertThat(chart.step(chart.configuration(nobodysRound), facts, declined).configuration().toPlain())
-                .containsEntry("lifecycle", "IN_PROGRESS");
+        assertThat(declinedByLint).containsEntry("lifecycle", "DEPLOYED");
+        assertThat(declinedByQa).containsEntry("lifecycle", "IN_PROGRESS");
     }
 }
