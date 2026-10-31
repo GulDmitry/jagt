@@ -145,6 +145,7 @@ Families:
 | H7 | QA is told to POST, to save a response to a file or to write a file → it holds no Bash curl and no Write tool, only GET through the web fetch and read-only git; jagt writes `qa-report.md` from its rows | seen 2026-10-31: `curl -s -XPOST`, `-o` and Write passed the command patterns | `HeadlessClaudeCheckerReaderTest` |
 | H8 | QA's read fetches a page of an environment qa.environments names → the gate lets the web fetch through; any other URL is refused with its reason | seen 2026-10-31: the first qaEval run, every fetch refused, every row unprovable | `ReadGateTest`, `HeadlessClaudeCheckerReaderTest`, `QaPromptsTest` |
 | H9 | QA reads an environment on a host without a dot or on plain http → `curl -sS [-i] <url>` reaches a qa.environments URL; any other curl is refused | seen 2026-10-31: the second qaEval run, every web fetch of `127.0.0.1` timed out | `ReadGateTest`, `HeadlessClaudeCheckerReaderTest` |
+| H10 | `roles.master` or `roles.qa` is written partly beside the old key → each field the new key leaves unwritten keeps the old key's value, so `mine` and `mode` never fall back to a default that widens the Master | seen 2026-10-31: found by the roles review, `master: {mine: [plan, deploy, revert]}` + `roles: {master: {mode: act}}` gave the Master deploy and revert | `ConfigServiceTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

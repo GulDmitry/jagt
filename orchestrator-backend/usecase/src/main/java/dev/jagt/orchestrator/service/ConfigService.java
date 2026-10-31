@@ -342,6 +342,11 @@ public class ConfigService implements LoopBreaker.Current {
                 return new RoleConfig(legacy.enabled(), legacy.model(), legacy.environments());
             }
 
+            RoleConfig over(RoleConfig fallback) {
+                return new RoleConfig(enabled != null ? enabled : fallback.enabled, model != null ? model : fallback.model,
+                        environments != null ? environments : fallback.environments);
+            }
+
             public boolean enabledOrDefault() {
                 return enabled != null && enabled;
             }
@@ -601,10 +606,11 @@ public class ConfigService implements LoopBreaker.Current {
         /** The role as {@code roles.<id>} writes it; where it names none, QA falls back to the old {@code qa} key. */
         public RoleConfig role(String id) {
             RoleConfig written = roles == null ? null : roles.get(id);
-            if (written != null) {
-                return written;
+            RoleConfig legacy = Checkers.QA.equals(id) && qa != null ? RoleConfig.of(qa) : null;
+            if (written == null) {
+                return legacy == null ? RoleConfig.defaults() : legacy;
             }
-            return Checkers.QA.equals(id) ? RoleConfig.of(qa()) : RoleConfig.defaults();
+            return legacy == null ? written : written.over(legacy);
         }
 
         @Override
@@ -639,7 +645,7 @@ public class ConfigService implements LoopBreaker.Current {
         return masterByDefault(config.projects() == null ? config.withProjects(Map.of()) : config);
     }
 
-    /** The Master is written under {@code roles.master}, which wins over the old {@code master}; the rest reads it as before. */
+    /** {@code roles.master} wins field by field over the old {@code master}, which fills what it leaves unwritten. */
     private static Object masterUnderItsKey(Object section) {
         if (!(section instanceof Map<?, ?> keys) || !(keys.get("roles") instanceof Map<?, ?> roles) || !roles.containsKey(MASTER)) {
             return section;
@@ -648,10 +654,17 @@ public class ConfigService implements LoopBreaker.Current {
         Map<Object, Object> others = new java.util.LinkedHashMap<>(roles);
         Object written = others.remove(MASTER);
         if (written != null) {
-            moved.put(MASTER, written);
+            moved.put(MASTER, keys.get(MASTER) instanceof Map<?, ?> old && written instanceof Map<?, ?> over
+                    ? fieldByField(old, over) : written);
         }
         moved.put("roles", others);
         return moved;
+    }
+
+    private static Map<Object, Object> fieldByField(Map<?, ?> old, Map<?, ?> over) {
+        Map<Object, Object> merged = new java.util.LinkedHashMap<>(old);
+        merged.putAll(over);
+        return merged;
     }
 
     /** Unset, the Master judges where the runtime reads the human's words, else is off; a stopped act judges. */

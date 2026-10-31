@@ -147,6 +147,49 @@ class ConfigServiceTest {
     }
 
     @Test
+    void aPartialRolesMasterKeepsTheMinesTheOldKeyNamed(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mine: [plan, deploy, revert]\n  roles:\n    master:\n      mode: act\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        MasterConfig master = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().master();
+
+        assertThat(master.mineOrDefault()).containsExactly("plan", "deploy", "revert");
+        assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
+    }
+
+    @Test
+    void aPartialRolesMasterKeepsTheOldMode(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        MasterConfig master = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().master();
+
+        assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
+        assertThat(master.mineOrDefault()).containsExactly("reply");
+    }
+
+    @Test
+    void aPartialRolesQaKeepsTheEnvironmentsTheOldKeyNamed(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n    environments:\n      - url: https://dev.example\n  roles:\n    qa:\n      model: haiku\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        ConfigService.ConfigFile.RoleConfig qa = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().role("qa");
+
+        assertThat(qa.enabledOrDefault()).isTrue();
+        assertThat(qa.environmentsOrEmpty()).hasSize(1);
+        assertThat(qa.modelOr("sonnet")).isEqualTo("haiku");
+    }
+
+    @Test
     void theRolesKeyWinsOverTheOldOne(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n  roles:\n    qa:\n      enabled: false\n");
