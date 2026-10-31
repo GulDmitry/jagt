@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.service.ReviewDrafts;
 import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
-import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,7 +45,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
 
         assertThat(out).contains(
                 "  1 · NO CHANGE · !12 thread 1",
@@ -67,7 +66,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").mrCreatedAt(2_000).build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config))
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config))
                 .render("a1");
 
         assertThat(out).contains("drafted in a round already shipped", "Renamed it.");
@@ -85,7 +84,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
 
         assertThat(out).contains("the bot reviewed a stale diff of that file");
     }
@@ -102,7 +101,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
 
         assertThat(out).contains("  1 · no verdict · thread 1", "      Measured it two rounds ago.");
     }
@@ -118,7 +117,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("Widget layout is off").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
 
         assertThat(out).startsWith(
                 "review replies drafted for a1 · Widget layout is off — nothing is posted until `ship a1`");
@@ -133,7 +132,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("wt").toString(),
                 TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render("a1");
 
         assertThat(out).isEqualTo("a1 has no drafted replies — review_replies.md is not in its worktree.");
     }
@@ -145,7 +144,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults().withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())));
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render("zz");
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render("zz");
 
         assertThat(out).isEqualTo("no task `zz`.");
     }
@@ -163,7 +162,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("wt2").toString(),
                 TaskStatus.IN_PROGRESS).alias("a2").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render("");
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render("");
 
         assertThat(out).contains("review replies drafted for a1").doesNotContain("a2");
     }
@@ -177,7 +176,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("wt").toString(),
                 TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state, new ReviewDrafts(config)).render(null);
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state, new ReviewDrafts(config)).render(null);
 
         assertThat(out).isEqualTo("no drafted review replies: no task is carrying a review_replies.md.");
     }
@@ -206,7 +205,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-2", TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a2").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state,
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state,
                 new ReviewDrafts(config)).render("a2");
 
         assertThat(out).contains("nothing is posted until `ship a2`\n\n  1 · FIXED · src/Two.java:2")
@@ -224,7 +223,7 @@ class ReviewRepliesReportTest {
         state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").build());
 
-        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()), state,
+        String out = new ReviewRepliesReport(new TaskViews(state, config, new Rounds(config), Clock.systemUTC()), state,
                 new ReviewDrafts(config)).render("");
 
         assertThat(out).isEqualTo("no drafted review replies: no task is carrying a review_replies.md.");

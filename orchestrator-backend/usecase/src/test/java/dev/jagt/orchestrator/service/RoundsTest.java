@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -13,9 +13,8 @@ import static org.mockito.Mockito.when;
 
 class RoundsTest {
 
-    private final MasterReview masterReview = mock(MasterReview.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final Rounds rounds = new Rounds(configService, masterReview);
+    private final Rounds rounds = new Rounds(configService);
 
     @Test
     void theMasterReadsAHandBackItHasNotReadYetWhileItRuns() {
@@ -39,8 +38,8 @@ class RoundsTest {
 
     @Test
     void theMasterNoLongerReadsAHandBackItHasAlreadyJudged() {
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
-        when(masterReview.readsTheRoundInFront(task)).thenReturn(true);
+        TaskState task = TaskReducer.masterSealed(
+                TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
 
         var round = rounds.of(task, ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
@@ -55,8 +54,7 @@ class RoundsTest {
                  "repos":[{"project":"proj","worktreePath":"/wt"}],
                  "turn":{"step":"ship","id":3,"digest":"","since":4,"marks":{"master-review:seal":"fingerprint"}}}
                 """;
-        TaskState task = new JsonMapper().readValue(json, TaskState.class);
-        when(masterReview.readsTheRoundInFront(task)).thenReturn(true);
+        TaskState task = TaskReducer.masterSealed(new JsonMapper().readValue(json, TaskState.class), "fingerprint", 3);
 
         var round = rounds.of(task, ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
@@ -66,9 +64,8 @@ class RoundsTest {
 
     @Test
     void theMasterReadsTheHandBackAgainWhereTheVerdictFileIsGone() {
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-                .master(Master.defaults().withSeal("fingerprint", 0)).build();
-        when(masterReview.readsTheRoundInFront(task)).thenReturn(false);
+        TaskState task = TaskReducer.masterVerdictGone(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .master(Master.defaults().withSeal("fingerprint", 0)).build());
 
         var round = rounds.of(task, ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
@@ -78,8 +75,8 @@ class RoundsTest {
 
     @Test
     void theMasterHasJudgedNothingWhileItIsOff() {
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
-        when(masterReview.readsTheRoundInFront(task)).thenReturn(true);
+        TaskState task = TaskReducer.masterSealed(
+                TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 

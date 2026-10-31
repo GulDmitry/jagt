@@ -62,6 +62,7 @@ public class MasterReviewJob implements Job {
             if (!FlowRules.readByTheMaster(task.status()) || task.stopped()) {
                 return;
             }
+            reviews.settle(taskId, task);
             Optional<MasterReview.Verdict> verdict = reviews.of(task);
             read.put(taskId, verdict);
             verdict.filter(written -> written.answers(task))

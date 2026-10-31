@@ -32,15 +32,14 @@ public final class Turns {
         public boolean may(MasterRight right) {
             return mode == MasterMode.ACT && !mine.contains(right);
         }
+
+        /** This profile where the Master stands in, none where it read the round or left the task to the human. */
+        public Profile at(MasterPhase phase) {
+            return phase == MasterPhase.STANDS_IN ? this : OFF;
+        }
     }
 
     private Turns() {
-    }
-
-    /** Who holds {@code task}'s turn, the Master standing in only where it did not leave the task to the human. */
-    public static Holder owner(TaskState task, Profile configured) {
-        Profile profile = MasterPhase.of(task) == MasterPhase.LEFT ? Profile.OFF : configured;
-        return next(task.status(), task.report(), task.stopped(), QaPhase.of(task), profile);
     }
 
     /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check QA reads holds it. */

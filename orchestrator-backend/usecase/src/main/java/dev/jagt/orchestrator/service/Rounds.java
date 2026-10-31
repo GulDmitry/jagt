@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.flow.QaPhase;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.flow.Turns;
-import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Component;
 public class Rounds {
 
     private final ConfigService configService;
-    private final MasterReview masterReview;
 
     public RoundState of(TaskState task) {
         return of(task, configService.load());
@@ -24,16 +22,12 @@ public class Rounds {
 
     /** The Master runs and has read the plan or round in front. */
     public boolean judged(TaskState task) {
-        return FlowRules.readByTheMaster(task.status()) && configService.load().master().running()
-                && masterReview.readsTheRoundInFront(task);
+        return configService.load().master().running() && MasterPhase.readTheRoundInFront(task);
     }
 
     /** Where the Master read the round in front or left the task to the human, nothing of it stands in any more. */
     public RoundState of(TaskState task, ConfigService.ConfigFile config) {
-        MasterPhase phase = MasterPhase.of(task);
-        boolean read = phase != MasterPhase.LEFT && FlowRules.readByTheMaster(task.status()) && config.master().running()
-                && masterReview.readsTheRoundInFront(task);
-        Turns.Profile master = read || phase == MasterPhase.LEFT ? Turns.Profile.OFF : config.master().profile();
+        Turns.Profile master = config.master().profile().at(MasterPhase.of(task));
         return RoundState.of(task.report(),
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
                 .withMaster(master)

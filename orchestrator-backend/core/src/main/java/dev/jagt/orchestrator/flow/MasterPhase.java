@@ -14,7 +14,13 @@ public enum MasterPhase {
                 && master.pressedDeploy().equals(String.valueOf(task.statusSince()))) {
             return LEFT;
         }
-        boolean sealed = !master.seal().isEmpty() && master.sealedRound() == task.turnOrNone().id();
-        return sealed && FlowRules.readByTheMaster(task.status()) ? READ : STANDS_IN;
+        return readTheRoundInFront(task) ? READ : STANDS_IN;
+    }
+
+    /** A verdict jagt wrote and its file still stands for was read for the turn in front of a status the Master reads. */
+    public static boolean readTheRoundInFront(TaskState task) {
+        Master master = task.masterOrNone();
+        return !master.seal().isEmpty() && master.sealedRound() == task.turnOrNone().id()
+                && FlowRules.readByTheMaster(task.status());
     }
 }

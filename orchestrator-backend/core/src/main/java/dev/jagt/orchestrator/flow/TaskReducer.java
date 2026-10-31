@@ -131,6 +131,11 @@ public final class TaskReducer {
         return noted(task, new MasterNote.Sealed(seal, round));
     }
 
+    /** {@code task} whose Master found the verdict file it sealed gone or not the one jagt wrote. */
+    public static TaskState masterVerdictGone(TaskState task) {
+        return masterSealed(task, "", 0);
+    }
+
     private static TaskState noted(TaskState task, MasterNote note) {
         return step(task, resolved(task, new TaskMove.MasterNoted(note, MasterPhase.STANDS_IN)), 0);
     }

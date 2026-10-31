@@ -157,10 +157,11 @@ class TurnsTest {
 
     @Test
     void theMasterHoldsARoundItSealedWhoseVerdictFileTheCallerFoundGone() {
-        TaskState sealed = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-                .master(Master.defaults().withSeal("fingerprint", 0)).build();
+        TaskState sealed = TaskReducer.masterVerdictGone(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .master(Master.defaults().withSeal("fingerprint", 0)).build());
 
-        Holder holder = Turns.owner(sealed, new Turns.Profile(MasterMode.JUDGE, Set.of()));
+        Holder holder = Turns.next(sealed.status(), sealed.report(), sealed.stopped(), QaPhase.of(sealed),
+                new Turns.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
 
         assertThat(holder).isEqualTo(Holder.MASTER);
     }

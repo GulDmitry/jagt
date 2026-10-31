@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
@@ -78,8 +79,19 @@ public class MasterReview {
         return stored(task).map(review -> store(taskId, task, review.withRound(task.turnOrNone().id()))).orElse(false);
     }
 
+    /** Tells the master region what the verdict file says now: the round it answers, or that it is gone or not jagt's. */
+    public synchronized void settle(String taskId, TaskState task) {
+        Master sealed = task.masterOrNone();
+        Optional<Review> read = stored(task);
+        if (read.isEmpty() && !sealed.seal().isEmpty()) {
+            state.updateTask(taskId, TaskReducer::masterVerdictGone);
+        } else if (read.isPresent() && read.get().round() != sealed.sealedRound()) {
+            state.updateTask(taskId, current -> TaskReducer.masterSealed(current, sealed.seal(), read.get().round()));
+        }
+    }
+
     /** The fingerprint is recorded before the file lands, so a reader never meets a verdict without its seal. */
-    private boolean store(String taskId, TaskState task, Review review) {
+    private synchronized boolean store(String taskId, TaskState task, Review review) {
         return JagtJson.serialise(review).map(bytes -> {
             String fingerprint = JagtJson.fingerprint(bytes);
             state.updateTask(taskId, current -> TaskReducer.masterSealed(current, fingerprint, review.round()));

@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
-import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()));
+                new TaskViews(state, config, new Rounds(config), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 
@@ -52,7 +51,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()));
+                new TaskViews(state, config, new Rounds(config), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 
@@ -100,7 +99,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview(state)), Clock.systemUTC()));
+                new TaskViews(state, config, new Rounds(config), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 

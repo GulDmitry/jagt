@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.StateService;
@@ -110,6 +111,53 @@ class MasterReviewTest {
                 .closed(7_000));
 
         assertThat(reviews.readsTheRoundInFront(handedBackAgain)).isFalse();
+    }
+
+    @Test
+    void theMasterReadsTheRoundAgainWhereTheVerdictFileWasDeleted(@TempDir Path worktree) throws Exception {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+        Files.delete(worktree.resolve(".jagt").resolve(MasterReview.STORED));
+
+        reviews.settle("a1", state.task("a1").orElseThrow());
+
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.STANDS_IN);
+    }
+
+    @Test
+    void theMasterReadsTheRoundAgainWhereTheVerdictFileWasRewritten(@TempDir Path worktree) throws Exception {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+        Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), "{\"round\":5,\"reads\":[]}");
+
+        reviews.settle("a1", state.task("a1").orElseThrow());
+
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.STANDS_IN);
+    }
+
+    @Test
+    void theMasterHoldsReadTheRoundWhereTheVerdictFileStandsAsJagtWroteIt(@TempDir Path worktree) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+
+        reviews.settle("a1", state.task("a1").orElseThrow());
+
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.READ);
     }
 
     @Test

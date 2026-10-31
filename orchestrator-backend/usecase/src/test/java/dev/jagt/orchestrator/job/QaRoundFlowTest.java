@@ -22,7 +22,6 @@ import dev.jagt.orchestrator.service.StopLog;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
-import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.QaEnding;
@@ -70,7 +69,7 @@ class QaRoundFlowTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, new Notifications(List.of(), state, Runnable::run), flow,
-                new HandBack(mock(WorktreeChanges.class), new Rounds(config, new MasterReview(state)), config), config);
+                new HandBack(mock(WorktreeChanges.class), new Rounds(config), config), config);
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
 

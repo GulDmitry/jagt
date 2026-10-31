@@ -206,7 +206,25 @@ class TaskReducerProperties {
         moves.stream().reduce(start, (task, raw) -> {
             TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
             Optional.of(next).filter(moved -> MasterPhase.of(moved) == MasterPhase.LEFT)
-                    .ifPresent(moved -> assertThat(Turns.owner(moved, acting)).isNotEqualTo(Turn.Holder.MASTER));
+                    .ifPresent(moved -> assertThat(Turns.next(moved.status(), moved.report(), moved.stopped(), QaPhase.of(moved),
+                            acting.at(MasterPhase.of(moved)))).isNotEqualTo(Turn.Holder.MASTER));
+            return next;
+        }, (left, right) -> right);
+    }
+
+    @Property
+    void theMasterReadsTheRoundOnlyWhileItsVerdictStands(@ForAll("tasks") TaskState start,
+                                                         @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, raw) -> {
+            TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
+            Optional.of(next).filter(moved -> MasterPhase.of(moved) != MasterPhase.LEFT
+                            && FlowRules.readByTheMaster(moved.status()))
+                    .ifPresent(moved -> {
+                        TaskState read = TaskReducer.masterSealed(moved, "fingerprint", moved.turnOrNone().id());
+                        assertThat(MasterPhase.of(read)).isEqualTo(MasterPhase.READ);
+                        assertThat(MasterPhase.of(TaskReducer.masterVerdictGone(read)))
+                                .isEqualTo(MasterPhase.STANDS_IN);
+                    });
             return next;
         }, (left, right) -> right);
     }
