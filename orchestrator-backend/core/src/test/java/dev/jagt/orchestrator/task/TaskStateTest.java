@@ -90,17 +90,6 @@ class TaskStateTest {
     }
 
     @Test
-    void forgetsTheInfraRetriesOfARoundWhenANewRoundIsShipped() {
-        TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("https://host/mr/9")
-                .infraRetries(List.of(InfraRetry.armed(5_000, "https://host/p/1", "unit-tests", "runner_system_failure", 1, 3)))
-                .build();
-
-        TaskState round = polling.withReviewRound("https://host/mr/9", 2_000L);
-
-        assertThat(round.infraRetries()).isEmpty();
-    }
-
-    @Test
     void recordsSomethingDoneToTheTaskEvenWhenItsStatusDoesNotChange() {
         TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .history(List.of(new StatusChange(TaskStatus.CI_POLLING, 1_000, null))).build();
@@ -219,18 +208,6 @@ class TaskStateTest {
         assertThat(opened).isEqualTo(1_700_000_005_000L);
         assertThat(stamped.withMrUrl("http://mr/1", 1_700_000_005_000L).requestOpenedAt())
                 .isEqualTo(1_700_000_000_000L);
-    }
-
-    @Test
-    void forgetsWhatWasReadAboutARequestWhenTheTaskIsPointedAtAnotherOne() {
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/mr/1")
-                .approved(true).pipelineStatus("success").requestOpenedAt(1_700_000_000_000L).build();
-
-        TaskState relinked = task.withMrUrl("https://host/mr/2", 1_700_000_005_000L);
-
-        assertThat(relinked.approved()).isNull();
-        assertThat(relinked.pipelineStatus()).isNull();
-        assertThat(relinked.requestOpenedAt()).isEqualTo(1_700_000_005_000L);
     }
 
     @Test

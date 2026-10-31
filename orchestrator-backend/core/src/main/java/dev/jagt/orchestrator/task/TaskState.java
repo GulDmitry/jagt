@@ -275,8 +275,6 @@ public record TaskState(
     /** A NEW review round on one repository's request. The status that follows is not decided here. */
     public TaskState withReviewRound(@Nullable String project, String reviewRequestUrl, long now) {
         return relinked(project, reviewRequestUrl, now).lastActiveTimestamp(now)
-                // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
-                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null).checksTip(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
                 .build();
@@ -351,7 +349,12 @@ public record TaskState(
     }
 
     private boolean readsStale() {
-        return headTip != null && !headTip.equals(checksTip);
+        return readsStaleOn(checksTip);
+    }
+
+    /** Whether checks read on {@code tip} are not of the head the task has seen; none seen, none stale. */
+    public boolean readsStaleOn(@Nullable String tip) {
+        return headTip != null && !headTip.equals(blankToNull(tip));
     }
 
     private static @Nullable String blankToNull(@Nullable String tip) {
@@ -380,7 +383,12 @@ public record TaskState(
         return toBuilder().infraRetries(retries).build();
     }
 
-    public TaskState withApproved(Boolean approved) {
+    /** No checks read, none unread: a round's answers describe a dead state once the round is over. */
+    public TaskState withChecksReset() {
+        return toBuilder().pipelineStatus(null).checksUnread(List.of()).checksTip(null).build();
+    }
+
+    public TaskState withApproved(@Nullable Boolean approved) {
         return toBuilder().approved(approved).build();
     }
 
@@ -472,8 +480,7 @@ public record TaskState(
         if (repos.equals(this.repos)) {
             return toBuilder().repos(repos);
         }
-        return toBuilder().repos(repos).requestOpenedAt(now)
-                .pipelineStatus(null).checksUnread(List.of()).infraRetries(List.of()).approved(null).checksTip(null);
+        return toBuilder().repos(repos).requestOpenedAt(now);
     }
 
     public TaskState withMrUrl(String mrUrl, long now) {

@@ -163,28 +163,27 @@ public final class TaskReducer {
     /** {@code task} with the requests a report linked, a new round where it is one; the links are stamped {@code now}. */
     public static TaskState requestLinked(TaskState task, Map<String, String> byProject, String url,
                                           boolean newRound, long now) {
-        return step(task, new TaskMove.RequestLinked(byProject, url, newRound), now);
+        return step(task, resolved(task, new TaskMove.RequestLinked(byProject, url, newRound, false, false)), now);
     }
 
     /** {@code task} with what git found of {@code project}'s request: merged into its target or not. */
     public static TaskState mergedByGit(TaskState task, String project, boolean merged) {
-        return step(task, new TaskMove.MergedByGit(project, merged), 0);
+        return step(task, resolved(task, new TaskMove.MergedByGit(project, merged, false)), 0);
     }
 
     /** {@code task} whose host said {@code project}'s request is merged, a word git's later reads do not take back. */
     public static TaskState mergedByHost(TaskState task, String project) {
-        return step(task, new TaskMove.MergedByHost(project), 0);
+        return step(task, resolved(task, new TaskMove.MergedByHost(project, false)), 0);
     }
 
     /** {@code task} that has seen {@code tip} pushed, where it is not the head it already had. */
     public static TaskState headSeen(TaskState task, String tip) {
-        String head = tip.isBlank() ? null : tip;
-        return step(task, new TaskMove.HeadSeen(tip, head != null && !head.equals(task.headTip())), 0);
+        return step(task, resolved(task, new TaskMove.HeadSeen(tip, false, false, InfraPhase.NONE)), 0);
     }
 
     /** {@code task} with the checks a read listed on {@code tip}, which ends any older round's failure to read them. */
     public static TaskState checksRead(TaskState task, String hostStatus, String tip) {
-        return step(task, new TaskMove.ChecksRead(hostStatus, tip), 0);
+        return step(task, resolved(task, new TaskMove.ChecksRead(hostStatus, tip, false)), 0);
     }
 
     /** {@code task} with a round that could not read the checks: the last verdict stands, marked as not this round's. */
@@ -204,12 +203,39 @@ public final class TaskReducer {
 
     /** {@code task} without the armed re-run, and without the sent ones where {@code all}. */
     public static TaskState infraCleared(TaskState task, boolean all) {
-        return step(task, new TaskMove.InfraCleared(all), 0);
+        return step(task, resolved(task, new TaskMove.InfraCleared(all, InfraPhase.NONE)), 0);
     }
 
     /** {@code task} whose armed re-run went out at {@code now}, counted with those sent. */
     public static TaskState infraSent(TaskState task, InfraRetry retry, long now) {
         return step(task, new TaskMove.InfraSent(retry), now);
+    }
+
+    /** {@code move} with the flags only the record can say filled in: where a head or a read stands against it. */
+    static TaskMove resolved(TaskState task, TaskMove move) {
+        return switch (move) {
+            case TaskMove.HeadSeen seen -> new TaskMove.HeadSeen(seen.tip(),
+                    !seen.tip().isBlank() && !seen.tip().equals(task.headTip()),
+                    task.withHead(seen.tip()).readsStaleOn(task.checksTip()), unarmed(task));
+            case TaskMove.RequestLinked links -> {
+                TaskState after = linked(task, new TaskEffect.LinksRequests(links.byProject(), links.url(),
+                        links.newRound()), 0);
+                yield new TaskMove.RequestLinked(links.byProject(), links.url(), links.newRound(),
+                        !after.repos().equals(task.repos()), RequestPhase.of(after) == RequestPhase.OPEN);
+            }
+            case TaskMove.MergedByGit merges -> new TaskMove.MergedByGit(merges.project(), merges.merged(),
+                    RequestPhase.of(task.withMerged(merges.project(), merges.merged())) == RequestPhase.MERGED);
+            case TaskMove.MergedByHost merges -> new TaskMove.MergedByHost(merges.project(),
+                    RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
+            case TaskMove.InfraCleared cleared -> new TaskMove.InfraCleared(cleared.all(), unarmed(task));
+            case TaskMove.ChecksRead read -> new TaskMove.ChecksRead(read.hostStatus(), read.tip(),
+                    !task.readsStaleOn(read.tip()));
+            default -> move;
+        };
+    }
+
+    private static InfraPhase unarmed(TaskState task) {
+        return InfraPhase.of(task.withInfraRetries(sent(task)));
     }
 
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
@@ -266,6 +292,9 @@ public final class TaskReducer {
             case TaskEffect.LinksRequests links -> linked(task, links, now);
             case TaskEffect.MergesRequest merges -> task.withMerged(merges.project(), merges.merged());
             case TaskEffect.MergesRequestByHost merges -> task.withMergedByHost(merges.project());
+            case TaskEffect.ResetsChecks resets -> task.withChecksReset();
+            case TaskEffect.ResetsApproval resets -> task.withApproved(null);
+            case TaskEffect.ResetsInfra resets -> task.withInfraRetries(List.of());
             case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
             case TaskEffect.ReadsChecks reads -> task.withChecksRead(reads.hostStatus(), reads.tip());
             case TaskEffect.FailsToReadChecks fails -> task.withChecksUnread(fails.read());

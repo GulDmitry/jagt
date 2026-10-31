@@ -111,24 +111,35 @@ sealed interface TaskMove {
     record RepoAttached(TaskRepo repo) implements TaskMove {
     }
 
-    /** A report's request links: one per repository, or the one {@code url} on the primary where {@code byProject} is empty. */
-    record RequestLinked(Map<String, String> byProject, String url, boolean newRound) implements TaskMove {
+    /**
+     * A report's request links: one per repository, or the one {@code url} on the primary where {@code byProject} is
+     * empty. {@code relinks} where a repository's record then differs, {@code opens} where the requests then stand open.
+     */
+    record RequestLinked(Map<String, String> byProject, String url, boolean newRound, boolean relinks, boolean opens)
+            implements TaskMove {
     }
 
-    /** What git found of whether a repository's request is merged into its target. */
-    record MergedByGit(String project, boolean merged) implements TaskMove {
+    /**
+     * What git found of whether a repository's request is merged into its target; {@code completes} where every
+     * repository's request is then merged.
+     */
+    record MergedByGit(String project, boolean merged, boolean completes) implements TaskMove {
     }
 
-    /** The host's word that a repository's request is merged. */
-    record MergedByHost(String project) implements TaskMove {
+    /** The host's word that a repository's request is merged; {@code completes} as in {@link MergedByGit}. */
+    record MergedByHost(String project, boolean completes) implements TaskMove {
     }
 
-    /** The newest commit a read saw pushed; {@code moved} where it is not the head the task already had. */
-    record HeadSeen(String tip, boolean moved) implements TaskMove {
+    /**
+     * The newest commit a read saw pushed; {@code moved} where it is not the head the task already had,
+     * {@code staleReads} where the checks it read are then not of the head, {@code unarmed} where the infra region
+     * stands once an armed re-run is gone.
+     */
+    record HeadSeen(String tip, boolean moved, boolean staleReads, InfraPhase unarmed) implements TaskMove {
     }
 
-    /** What a read listed of the checks on {@code tip}. */
-    record ChecksRead(String hostStatus, String tip) implements TaskMove {
+    /** What a read listed of the checks on {@code tip}, {@code onHead} where that is the head the task has seen. */
+    record ChecksRead(String hostStatus, String tip, boolean onHead) implements TaskMove {
     }
 
     /** A round that could not list the checks. */
@@ -143,8 +154,8 @@ sealed interface TaskMove {
     record InfraArmed(InfraRetry retry) implements TaskMove {
     }
 
-    /** The armed re-run forgotten, and the sent ones too where {@code all}. */
-    record InfraCleared(boolean all) implements TaskMove {
+    /** The armed re-run forgotten, and the sent ones too where {@code all}; {@code unarmed} as in {@link HeadSeen}. */
+    record InfraCleared(boolean all, InfraPhase unarmed) implements TaskMove {
     }
 
     /** The re-run sent. */

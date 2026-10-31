@@ -164,6 +164,24 @@ class TaskReducerProperties {
         }, (left, right) -> right);
     }
 
+    @Property
+    void eachDerivedRegionReadFromTheNewRecordIsTheStateTheTakenEdgeDeclared(@ForAll("tasks") TaskState start,
+                                                                           @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, raw) -> {
+            TaskMove move = TaskReducer.resolved(task, raw);
+            Map<String, String> declared = TaskChart.step(Phases.of(task), move).configuration().toPlain();
+            TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+            assertThat(Map.of("git", GitPhase.of(next.gitTrust()).name(), "repo",
+                    RepoPhase.of(next.repoRequest()).name(), "request", RequestPhase.of(next).name(),
+                    "checks", ChecksPhase.of(next).name(), "approval", ApprovalPhase.of(next).name(),
+                    "infra", InfraPhase.of(next).name()))
+                    .isEqualTo(Map.of("git", declared.get("git"), "repo", declared.get("repo"),
+                            "request", declared.get("request"), "checks", declared.get("checks"),
+                            "approval", declared.get("approval"), "infra", declared.get("infra")));
+            return next;
+        }, (left, right) -> right);
+    }
+
     @Provide
     Arbitrary<TaskState> tasks() {
         Arbitrary<Deployment> deployment = Arbitraries.just(new Deployment(1_000, List.of(
@@ -217,19 +235,19 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.GitChanged("b changed")),
                 Arbitraries.just(new TaskMove.RepoAsked("registry")),
                 Arbitraries.just(new TaskMove.RepoUnasked()),
-                Arbitraries.of("t1", "t2").map(tip -> new TaskMove.HeadSeen(tip, true)),
-                Arbitraries.of("t1", "t2").map(tip -> new TaskMove.ChecksRead("failed", tip)),
+                Arbitraries.of("t1", "t2").map(tip -> new TaskMove.HeadSeen(tip, true, false, InfraPhase.NONE)),
+                Arbitraries.of("t1", "t2").map(tip -> new TaskMove.ChecksRead("failed", tip, false)),
                 Arbitraries.just(new TaskMove.InfraArmed(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests",
                         "runner_system_failure", 1, 3))),
-                flag.map(TaskMove.InfraCleared::new),
+                flag.map(all -> new TaskMove.InfraCleared(all, InfraPhase.NONE)),
                 Arbitraries.just(new TaskMove.InfraSent(new InfraRetry(9_500, "https://host.invalid/p/1", "unit-tests",
                         "runner_system_failure", true, 1, 3))),
                 Arbitraries.just(new TaskMove.ChecksUnread(new ChecksUnread(500, "no listing"))),
                 flag.map(TaskMove.ApprovalRead::new),
                 flag.map(owed -> new TaskMove.RequestLinked(Map.of("api", "https://host.example/2"),
-                        "https://host.example/2", owed)),
-                flag.map(merged -> new TaskMove.MergedByGit("api", merged)),
-                Arbitraries.just(new TaskMove.MergedByHost("api")),
+                        "https://host.example/2", owed, false, false)),
+                flag.map(merged -> new TaskMove.MergedByGit("api", merged, false)),
+                Arbitraries.just(new TaskMove.MergedByHost("api", false)),
                 Arbitraries.just(new TaskMove.RepoAttached(TaskRepo.of("registry", "/wt-registry"))),
                 Arbitraries.just(new TaskMove.GitRepoJoined(GitTrust.of(Map.of("c", "3")))),
                 Arbitraries.of("", "d").map(digest -> new TaskMove.TurnRestored(

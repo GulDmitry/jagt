@@ -571,4 +571,28 @@ class TaskReducerTest {
 
         assertThat(again.infraRetries()).containsExactly(armed);
     }
+
+    @Test
+    void forgetsWhatWasReadAboutARequestWhenTheTaskIsPointedAtAnotherOne() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/mr/1")
+                .approved(true).pipelineStatus("success").requestOpenedAt(1_700_000_000_000L).build();
+
+        TaskState relinked = TaskReducer.requestLinked(task, Map.of(), "https://host/mr/2", false,
+                1_700_000_005_000L);
+
+        assertThat(relinked.approved()).isNull();
+        assertThat(relinked.pipelineStatus()).isNull();
+        assertThat(relinked.requestOpenedAt()).isEqualTo(1_700_000_005_000L);
+    }
+
+    @Test
+    void forgetsTheInfraRetriesOfARoundWhenANewRoundIsShipped() {
+        TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("https://host/mr/9")
+                .infraRetries(List.of(InfraRetry.armed(5_000, "https://host/p/1", "unit-tests",
+                        "runner_system_failure", 1, 3))).build();
+
+        TaskState round = TaskReducer.requestLinked(polling, Map.of(), "https://host/mr/9", true, 2_000L);
+
+        assertThat(round.infraRetries()).isEmpty();
+    }
 }

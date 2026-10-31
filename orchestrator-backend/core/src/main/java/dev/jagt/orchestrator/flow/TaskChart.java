@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.statechart.Chart;
 import dev.jagt.statechart.ChartBuilder;
+import dev.jagt.statechart.ChartStep;
 import dev.jagt.statechart.Condition;
 import dev.jagt.statechart.EdgeBuilder;
 import dev.jagt.statechart.RegionId;
@@ -92,6 +93,11 @@ final class TaskChart {
 
     /** What {@code move} does to a task standing at {@code phases}, in order; empty where no edge takes it. */
     static List<TaskEffect> effects(Phases phases, TaskMove move) {
+        return step(phases, move).effects();
+    }
+
+    /** The configuration {@code move} leaves a task standing at {@code phases} in, with the effects it took. */
+    static ChartStep<TaskEffect> step(Phases phases, TaskMove move) {
         return CHART.step(CHART.configuration(Map.ofEntries(
                 Map.entry(LIFECYCLE.name(), phases.lifecycle().name()), Map.entry(STOP.name(), phases.stop().name()),
                 Map.entry(PLAN.name(), phases.plan().name()), Map.entry(REPORT.name(), phases.report().name()),
@@ -100,7 +106,7 @@ final class TaskChart {
                 Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
                 Map.entry(CHECKS.name(), phases.checks().name()),
                 Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()))),
-                phases.stampedAsk(), move).effects();
+                phases.stampedAsk(), move);
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
@@ -356,33 +362,49 @@ final class TaskChart {
 
     private static void requests(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
         chart.region(REQUEST, RequestPhase.NONE);
-        chart.onMatching(REQUEST, RequestPhase.NONE, "linked", move -> move instanceof TaskMove.RequestLinked)
-                .emitFor(move -> linksRequests((TaskMove.RequestLinked) move)).to(RequestPhase.OPEN);
-        chart.onMatching(REQUEST, RequestPhase.OPEN, "linked again", move -> move instanceof TaskMove.RequestLinked)
-                .emitFor(move -> linksRequests((TaskMove.RequestLinked) move)).stay();
-        chart.onMatching(REQUEST, RequestPhase.MERGED, "linked anew", move -> move instanceof TaskMove.RequestLinked)
-                .emitFor(move -> linksRequests((TaskMove.RequestLinked) move)).to(RequestPhase.OPEN);
-        chart.onMatching(REQUEST, RequestPhase.OPEN, "merged", TaskChart::merges)
-                .emitFor(TaskChart::mergesRequest).to(RequestPhase.MERGED);
-        chart.onMatching(REQUEST, RequestPhase.OPEN, "found unmerged", TaskChart::unmerges)
-                .emitFor(TaskChart::mergesRequest).stay();
-        chart.onMatching(REQUEST, RequestPhase.MERGED, "merged again", TaskChart::merges)
-                .emitFor(TaskChart::mergesRequest).stay();
-        chart.onMatching(REQUEST, RequestPhase.MERGED, "found unmerged", TaskChart::unmerges)
-                .emitFor(TaskChart::mergesRequest).to(RequestPhase.OPEN);
-        chart.onMatching(REQUEST, RequestPhase.NONE, "merge recorded unrequested", move -> merges(move)
-                        || unmerges(move)).emitFor(TaskChart::mergesRequest).stay();
+        for (RequestPhase from : RequestPhase.values()) {
+            regionEdge(chart, REQUEST, from, "linked, open", move -> move instanceof TaskMove.RequestLinked linked
+                    && linked.opens(), TaskChart::linksRequests, RequestPhase.OPEN);
+            regionEdge(chart, REQUEST, from, "linked, standing", move -> move instanceof TaskMove.RequestLinked linked
+                    && !linked.opens(), TaskChart::linksRequests, from);
+        }
+        chart.onMatching(REQUEST, RequestPhase.NONE, "repository added with a request", TaskChart::attachesARequest)
+                .to(RequestPhase.OPEN);
+        chart.onMatching(REQUEST, RequestPhase.MERGED, "repository added with a request merged",
+                TaskChart::attachesAMergedRequest).stay();
+        chart.onMatching(REQUEST, RequestPhase.MERGED, "repository added without one",
+                move -> move instanceof TaskMove.RepoAttached).to(RequestPhase.OPEN);
+        regionEdge(chart, REQUEST, RequestPhase.OPEN, "merged (all)", TaskChart::completesMerge,
+                TaskChart::mergesRequest, RequestPhase.MERGED);
+        regionEdge(chart, REQUEST, RequestPhase.OPEN, "merge read (some)", TaskChart::readsMerge,
+                TaskChart::mergesRequest, RequestPhase.OPEN);
+        regionEdge(chart, REQUEST, RequestPhase.MERGED, "merged (all)", TaskChart::completesMerge,
+                TaskChart::mergesRequest, RequestPhase.MERGED);
+        regionEdge(chart, REQUEST, RequestPhase.MERGED, "unmerged (some)", TaskChart::readsMerge,
+                TaskChart::mergesRequest, RequestPhase.OPEN);
+        regionEdge(chart, REQUEST, RequestPhase.NONE, "merge recorded unrequested", TaskChart::readsMerge,
+                TaskChart::mergesRequest, RequestPhase.NONE);
     }
 
-    private static boolean merges(TaskMove move) {
-        return move instanceof TaskMove.MergedByHost || move instanceof TaskMove.MergedByGit git && git.merged();
+    private static boolean attachesARequest(TaskMove move) {
+        return move instanceof TaskMove.RepoAttached attached && attached.repo().hasReviewRequest();
     }
 
-    private static boolean unmerges(TaskMove move) {
-        return move instanceof TaskMove.MergedByGit git && !git.merged();
+    private static boolean attachesAMergedRequest(TaskMove move) {
+        return attachesARequest(move) && ((TaskMove.RepoAttached) move).repo().wasMerged();
     }
 
-    private static TaskEffect linksRequests(TaskMove.RequestLinked linked) {
+    private static boolean readsMerge(TaskMove move) {
+        return move instanceof TaskMove.MergedByHost || move instanceof TaskMove.MergedByGit;
+    }
+
+    private static boolean completesMerge(TaskMove move) {
+        return move instanceof TaskMove.MergedByHost host && host.completes()
+                || move instanceof TaskMove.MergedByGit git && git.completes();
+    }
+
+    private static TaskEffect linksRequests(TaskMove move) {
+        TaskMove.RequestLinked linked = (TaskMove.RequestLinked) move;
         return new TaskEffect.LinksRequests(linked.byProject(), linked.url(), linked.newRound());
     }
 
@@ -394,21 +416,47 @@ final class TaskChart {
     private static void checks(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
         chart.region(CHECKS, ChecksPhase.NONE);
         for (ChecksPhase from : ChecksPhase.values()) {
-            regionEdge(chart, CHECKS, from, "read", move -> move instanceof TaskMove.ChecksRead,
-                    move -> new TaskEffect.ReadsChecks(((TaskMove.ChecksRead) move).hostStatus(),
-                            ((TaskMove.ChecksRead) move).tip()), ChecksPhase.READ);
+            regionEdge(chart, CHECKS, from, "read on the head", move -> move instanceof TaskMove.ChecksRead read
+                            && read.onHead(), TaskChart::readsChecks, ChecksPhase.READ);
+            regionEdge(chart, CHECKS, from, "read on another head", move -> move instanceof TaskMove.ChecksRead read
+                            && !read.onHead(), TaskChart::readsChecks, ChecksPhase.STALE);
             regionEdge(chart, CHECKS, from, "unread", move -> move instanceof TaskMove.ChecksUnread,
                     move -> new TaskEffect.FailsToReadChecks(((TaskMove.ChecksUnread) move).read()),
                     ChecksPhase.UNREAD);
-            regionEdge(chart, CHECKS, from, "head seen", move -> move instanceof TaskMove.HeadSeen,
-                    move -> new TaskEffect.SeesHead(((TaskMove.HeadSeen) move).tip()),
-                    from == ChecksPhase.READ ? ChecksPhase.STALE : from);
         }
+        for (ChecksPhase from : ChecksPhase.values()) {
+            regionEdge(chart, CHECKS, from, "a new round", TaskChart::beginsARound,
+                    move -> new TaskEffect.ResetsChecks(), ChecksPhase.NONE);
+        }
+        for (ChecksPhase from : EnumSet.of(ChecksPhase.NONE, ChecksPhase.UNREAD)) {
+            regionEdge(chart, CHECKS, from, "head seen", move -> move instanceof TaskMove.HeadSeen,
+                    TaskChart::seesHead, from);
+        }
+        for (ChecksPhase from : EnumSet.of(ChecksPhase.READ, ChecksPhase.STALE)) {
+            regionEdge(chart, CHECKS, from, "head seen, reads of another", move -> move instanceof TaskMove.HeadSeen seen
+                            && seen.staleReads(), TaskChart::seesHead, ChecksPhase.STALE);
+            regionEdge(chart, CHECKS, from, "head seen, reads of it", move -> move instanceof TaskMove.HeadSeen seen
+                            && !seen.staleReads(), TaskChart::seesHead, ChecksPhase.READ);
+        }
+    }
+
+    private static boolean beginsARound(TaskMove move) {
+        return move instanceof TaskMove.RequestLinked linked && (linked.newRound() || linked.relinks());
+    }
+
+    private static TaskEffect readsChecks(TaskMove move) {
+        return new TaskEffect.ReadsChecks(((TaskMove.ChecksRead) move).hostStatus(), ((TaskMove.ChecksRead) move).tip());
+    }
+
+    private static TaskEffect seesHead(TaskMove move) {
+        return new TaskEffect.SeesHead(((TaskMove.HeadSeen) move).tip());
     }
 
     private static void approvals(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
         chart.region(APPROVAL, ApprovalPhase.UNREAD);
         for (ApprovalPhase from : ApprovalPhase.values()) {
+            regionEdge(chart, APPROVAL, from, "a new round", TaskChart::beginsARound,
+                    move -> new TaskEffect.ResetsApproval(), ApprovalPhase.UNREAD);
             regionEdge(chart, APPROVAL, from, "approved", move -> move instanceof TaskMove.ApprovalRead read
                     && read.approved(), move -> new TaskEffect.ReadsApproval(true), ApprovalPhase.APPROVED);
             regionEdge(chart, APPROVAL, from, "withheld", move -> move instanceof TaskMove.ApprovalRead read
@@ -419,13 +467,16 @@ final class TaskChart {
     private static void infras(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
         chart.region(INFRA, InfraPhase.NONE);
         for (InfraPhase from : InfraPhase.values()) {
+            regionEdge(chart, INFRA, from, "a new round", TaskChart::beginsARound,
+                    move -> new TaskEffect.ResetsInfra(), InfraPhase.NONE);
             regionEdge(chart, INFRA, from, "armed", move -> move instanceof TaskMove.InfraArmed,
                     move -> new TaskEffect.ArmsInfra(((TaskMove.InfraArmed) move).retry()), InfraPhase.ARMED);
             regionEdge(chart, INFRA, from, "cleared with the sent", move -> move instanceof TaskMove.InfraCleared clear
                     && clear.all(), move -> new TaskEffect.ClearsInfra(true), InfraPhase.NONE);
-            regionEdge(chart, INFRA, from, "armed one cleared", move -> move instanceof TaskMove.InfraCleared clear
-                    && !clear.all(), move -> new TaskEffect.ClearsInfra(false),
-                    from == InfraPhase.ARMED ? InfraPhase.SENT : from);
+            if (from != InfraPhase.ARMED) {
+                regionEdge(chart, INFRA, from, "sent one cleared", move -> move instanceof TaskMove.InfraCleared clear
+                        && !clear.all(), move -> new TaskEffect.ClearsInfra(false), from);
+            }
             regionEdge(chart, INFRA, from, "sent", move -> move instanceof TaskMove.InfraSent sent
                     && sent.retry().attempt() < sent.retry().of(),
                     move -> new TaskEffect.SendsInfra(((TaskMove.InfraSent) move).retry()), InfraPhase.SENT);
@@ -433,8 +484,14 @@ final class TaskChart {
                     && sent.retry().attempt() >= sent.retry().of(),
                     move -> new TaskEffect.SendsInfra(((TaskMove.InfraSent) move).retry()), InfraPhase.SPENT);
         }
-        regionEdge(chart, INFRA, InfraPhase.ARMED, "head moved", move -> move instanceof TaskMove.HeadSeen seen
-                && seen.moved(), move -> new TaskEffect.DisarmsInfra(), InfraPhase.SENT);
+        for (InfraPhase unarmed : EnumSet.of(InfraPhase.NONE, InfraPhase.SENT, InfraPhase.SPENT)) {
+            regionEdge(chart, INFRA, InfraPhase.ARMED, "armed one cleared, " + unarmed + " remains",
+                    move -> move instanceof TaskMove.InfraCleared clear && !clear.all() && clear.unarmed() == unarmed,
+                    move -> new TaskEffect.ClearsInfra(false), unarmed);
+            regionEdge(chart, INFRA, InfraPhase.ARMED, "head moved, " + unarmed + " remains",
+                    move -> move instanceof TaskMove.HeadSeen seen && seen.moved() && seen.unarmed() == unarmed,
+                    move -> new TaskEffect.DisarmsInfra(), unarmed);
+        }
     }
 
     private static <S extends Enum<S>> void regionEdge(ChartBuilder<TaskMove, Boolean, TaskEffect> chart,

@@ -74,6 +74,15 @@ sealed interface TaskEffect {
     record MergesRequestByHost(String project) implements TaskEffect {
     }
 
+    record ResetsChecks() implements TaskEffect {
+    }
+
+    record ResetsApproval() implements TaskEffect {
+    }
+
+    record ResetsInfra() implements TaskEffect {
+    }
+
     record SeesHead(String tip) implements TaskEffect {
     }
 
