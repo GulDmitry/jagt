@@ -20,6 +20,12 @@ public class Rounds {
         return of(task, configService.load());
     }
 
+    /** The Master runs and has read the plan or round in front. */
+    public boolean judged(TaskState task) {
+        return FlowRules.readByTheMaster(task.status()) && configService.load().master().running()
+                && masterReview.readsTheRoundInFront(task);
+    }
+
     /** Where the Master read the round in front or left the task to the human, nothing of it stands in any more. */
     public RoundState of(TaskState task, ConfigService.ConfigFile config) {
         boolean read = FlowRules.readByTheMaster(task.status()) && config.master().running()

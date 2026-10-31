@@ -36,7 +36,7 @@ public class HumanWaitRecorder {
 
     void sweep(Map<String, TaskState> tasks) {
         tasks.forEach((id, task) -> {
-            if (HumanWaits.noted(task, holder(task), clock.millis()) != task) {
+            if (HumanWaits.noted(task, holder(task), rounds.judged(task), clock.millis()) != task) {
                 note(id);
             }
         });
@@ -45,7 +45,7 @@ public class HumanWaitRecorder {
     private void note(String id) {
         AtomicReference<Optional<HumanWait>> ended = new AtomicReference<>(Optional.empty());
         stateService.updateTask(id, task -> {
-            TaskState noted = HumanWaits.noted(task, holder(task), clock.millis());
+            TaskState noted = HumanWaits.noted(task, holder(task), rounds.judged(task), clock.millis());
             ended.set(HumanWaits.ended(task, noted));
             return noted;
         });

@@ -162,8 +162,9 @@ waiting on a question repaints every 10-30s, so nothing is ever stamped.
 
 ### Requirement: The human's waits are recorded
 A task SHALL keep an interval per stretch its turn rested with the human: start, end, why. The why is `QUESTION`,
-`PERMISSION`, `VERDICT` or `STOP`; the newest 50 stay, and the finished record carries them. One stays open in
-`state.json` until a write shows the turn gone, a restart included. Closing logs `human wait closed`.
+`PERMISSION`, `STOP`, `VERDICT` (the Master read the round and left it, in `judge`) or `STATUS` (the status is theirs).
+The newest 50 stay, in the finished record. One stays open in `state.json` until a write shows
+the turn gone, a restart included. Closing logs `human wait closed`.
 
 #### Scenario: A question is answered, a restart between
 - **WHEN** a session asks, jagt restarts, the session works on

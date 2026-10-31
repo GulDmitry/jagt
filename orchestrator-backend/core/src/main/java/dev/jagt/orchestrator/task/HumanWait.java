@@ -9,7 +9,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record HumanWait(long since, long until, Why why) {
 
-    public enum Why { QUESTION, PERMISSION, VERDICT, STOP }
+    public enum Why { QUESTION, PERMISSION, VERDICT, STATUS, STOP }
 
     @JsonIgnore
     public boolean open() {
