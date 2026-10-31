@@ -26,7 +26,7 @@ redirect followed; a sign-in is that one GET. A git read is one `git log`, `show
 ## accept
 
 The deploy's pipeline is green and the change is read up. Check every row on the environment you are given:
-GET pages, read the logs through the user's own MCP, nothing that writes. A login you lack is a question, never a guess.
+GET pages, read the logs through the user's own MCP, nothing that writes.
 First prove the change landed: the host's deploy job, else the environment's `landed` probe, else it is `unprovable` and a `question`.
 
 ## answered
