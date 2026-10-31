@@ -118,7 +118,7 @@ class TaskTurnsTest {
     void setsAndClearsAMarkOnTheTasksTurn(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).message("which cache").build());
         TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
 
         turns.left("ABC-42", "deploy src/Login.java");
@@ -128,6 +128,7 @@ class TaskTurnsTest {
 
         assertThat(left).isEqualTo("deploy src/Login.java");
         assertThat(state.task("ABC-42").orElseThrow().masterOrNone().left()).isEmpty();
-        assertThat(state.task("ABC-42").orElseThrow().masterOrNone().unanswered()).isNotEmpty();
+        assertThat(state.task("ABC-42").orElseThrow().masterOrNone().unanswered())
+                .isEqualTo("28e31f5a9bb2534351673c735fe222a1");
     }
 }
