@@ -97,15 +97,6 @@ next run sits in the row's hover. Each row's Run now sends `run <job>`.
 - **WHEN** the human presses Run now on jarwatch
 - **THEN** it runs within a second, and the toast says so
 
-### Requirement: A project is added from the board
-Add a project SHALL read a repository path as it is typed: a repository, its origin, the branch tasks are cut
-from, a key no project holds. It fills the fields the human has not typed. It writes one entry under `projects:` in
-`jagt.yml`, leaving every other line as it was. A path that is not ready is refused and nothing is written.
-
-#### Scenario: A folder that is no repository
-- **WHEN** the human types the path of a plain folder and adds it
-- **THEN** the reading says it is not a git repository, the add is refused, and `jagt.yml` is unchanged
-
 ### Requirement: The open task has four tabs
 The open task SHALL have the tabs Overview, Drafted review, Artifacts and Session, in that order. Overview shows its
 status history, newest first. Session shows its session's screen read without colour codes, with a line to tell the

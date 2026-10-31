@@ -17,7 +17,7 @@ class ProjectsControllerTest {
     @Test
     void servesWhatTheSetupReadsAtThePathTheHumanTyped() {
         ProjectSetup.Reading reading = new ProjectSetup.Reading(
-                List.of(new ProjectSetup.Line(true, "a git repository")), "demo", "main", "main", List.of());
+                List.of(new ProjectSetup.Line(true, "a git repository")), "demo", "main", "main", List.of(), List.of());
         when(setup.read("/work/demo")).thenReturn(reading);
 
         assertThat(projects.check("/work/demo")).isSameAs(reading);

@@ -37,13 +37,14 @@ public class ProjectSetup {
     private static final Duration GIT = Duration.ofSeconds(10);
     private static final Pattern KEY = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{0,39}");
     private static final Pattern ROOT = Pattern.compile("(?m)^orchestrator:[ \\t]*(#.*)?$");
+    private static final List<String> DEPLOY_NAMES = List.of("dev", "develop", "staging");
     private static final Pattern LEADING = Pattern.compile("^( *)\\S");
 
     public record Line(boolean ok, String text) {
     }
 
     public record Reading(List<Line> lines, String key, String baseBranch, String deployBranch,
-                          List<String> verifyCommand) {
+                          List<String> deployBranches, List<String> verifyCommand) {
 
         public boolean ready() {
             return lines.stream().allMatch(Line::ok);
@@ -65,17 +66,18 @@ public class ProjectSetup {
         String key = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
         Optional<String> notARepositoryRoot = problemWith(path);
         if (notARepositoryRoot.isPresent()) {
-            return new Reading(List.of(new Line(false, notARepositoryRoot.get())), key, "", "", List.of());
+            return new Reading(List.of(new Line(false, notARepositoryRoot.get())), key, "", "", List.of(), List.of());
         }
         List<Line> lines = new ArrayList<>();
         lines.add(remoteLine(path));
         String base = baseBranch(path);
         lines.add(new Line(!base.isBlank(), base.isBlank() ? "no origin/main or origin/master to cut tasks from"
                 : "tasks are cut from " + base));
-        String deploy = exists(path, "origin/dev") ? "dev" : "";
+        List<String> offered = deployBranches(path, base);
+        String deploy = DEPLOY_NAMES.stream().filter(offered::contains).findFirst().orElse("");
         boolean taken = taken(path);
         lines.add(new Line(!taken, taken ? "a project already points here" : "no project points here yet"));
-        return new Reading(lines, key, base, deploy, verifyCommand(path));
+        return new Reading(lines, key, base, deploy, offered, verifyCommand(path));
     }
 
     private Optional<String> problemWith(Path path) {
@@ -116,11 +118,37 @@ public class ProjectSetup {
                 .anyMatch(project -> real(Path.of(expand(project.path())).toAbsolutePath().normalize()).equals(real));
     }
 
+    /** The remote's branches as last fetched, without its head and without the base tasks are cut from. */
+    private List<String> deployBranches(Path path, String base) {
+        String prefix = "origin/";
+        return gitOut(path, "for-each-ref", "--format=%(refname:short)", "refs/remotes/origin").stream()
+                .flatMap(String::lines)
+                .map(String::strip)
+                .filter(ref -> ref.startsWith(prefix) && !ref.equals(prefix + "HEAD") && !ref.equals(base))
+                .map(ref -> ref.substring(prefix.length()))
+                .toList();
+    }
+
     private static List<String> verifyCommand(Path path) {
         if (Files.exists(path.resolve("gradlew"))) {
             return List.of("./gradlew", "test");
         }
-        return Files.exists(path.resolve("package.json")) ? List.of("npm", "test") : List.of();
+        if (Files.exists(path.resolve("mvnw"))) {
+            return List.of("./mvnw", "test");
+        }
+        if (Files.exists(path.resolve("package.json"))) {
+            return List.of("npm", "test");
+        }
+        return hasTestTarget(path.resolve("Makefile")) ? List.of("make", "test") : List.of();
+    }
+
+    private static boolean hasTestTarget(Path makefile) {
+        try {
+            return Files.isRegularFile(makefile) && Files.readString(makefile, StandardCharsets.UTF_8).lines()
+                    .anyMatch(line -> line.startsWith("test:"));
+        } catch (IOException unreadable) {
+            return false;
+        }
     }
 
     /** Refuses an entry the file could not hold, and leaves the file as it was when the result does not read. */

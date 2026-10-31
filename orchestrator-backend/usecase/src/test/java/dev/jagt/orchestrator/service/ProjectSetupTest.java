@@ -382,7 +382,7 @@ class ProjectSetupTest {
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
         doReturn(new Processes.Result(0, "origin/trunk\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
-        doReturn(new Processes.Result(0, "abc\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("origin/dev")));
+        doReturn(new Processes.Result(0, "origin/HEAD\norigin/trunk\norigin/dev\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("for-each-ref")));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
@@ -393,6 +393,67 @@ class ProjectSetupTest {
         assertThat(reading.verifyCommand()).containsExactly("./gradlew", "test");
         assertThat(reading.lines()).extracting(ProjectSetup.Line::text)
                 .contains("tasks are cut from origin/trunk", "no project points here yet");
+    }
+
+    @Test
+    void offersTheRemotesBranchesExceptItsHeadAndTheBaseAndPrefillsTheFirstConventionalOne() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+        doReturn(new Processes.Result(0, "origin/main\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
+        doReturn(new Processes.Result(0, "origin\norigin/main\norigin/feature-x\norigin/staging\norigin/develop\n", ""))
+                .when(git).run(any(), any(), argThat(command -> command.contains("for-each-ref")));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        ProjectSetup.Reading reading = setup.read(repo.toString());
+
+        assertThat(reading.deployBranch()).isEqualTo("develop");
+        assertThat(reading.deployBranches()).containsExactly("feature-x", "staging", "develop");
+    }
+
+    @Test
+    void prefillsNoDeployBranchWhereNoRemoteBranchIsAConventionalOne() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+        doReturn(new Processes.Result(0, "origin/main\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
+        doReturn(new Processes.Result(0, "origin/main\norigin/feature-x\n", ""))
+                .when(git).run(any(), any(), argThat(command -> command.contains("for-each-ref")));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        ProjectSetup.Reading reading = setup.read(repo.toString());
+
+        assertThat(reading.deployBranch()).isEmpty();
+        assertThat(reading.deployBranches()).containsExactly("feature-x");
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "mvnw|#!/bin/sh|./mvnw test",
+            "Makefile|test:\\n\\tgo test ./...|make test",
+            "Makefile|build:\\n\\tgo build|''"})
+    void suggestsTheVerifyCommandTheRepositoryItselfCarries(String file, String content, String expected) throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.writeString(repo.resolve(file), content.replace("\\n", "\n").replace("\\t", "\t"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        ProjectSetup.Reading reading = setup.read(repo.toString());
+
+        assertThat(String.join(" ", reading.verifyCommand())).isEqualTo(expected);
     }
 
     @Test

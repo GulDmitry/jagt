@@ -1,6 +1,6 @@
 # 0120 — jagt.yml is edited as text, one block per project
 
-[← decisions](README.md) · rule: [`board-workspace`](../../openspec/specs/board-workspace/spec.md#requirement-a-project-is-added-from-the-board)
+[← decisions](README.md) · rule: [`project-setup`](../../openspec/specs/project-setup/spec.md#requirement-a-project-is-added-from-the-board)
 
 ## Status
 

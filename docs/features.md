@@ -38,7 +38,7 @@
 - **Session and Files tabs** — Read the session's screen as it stands and type a line to it; read a task's plan, notes and sketch rendered.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
 - **Add a project, run a job now** — Add a repository to the configuration from the board, never by hand; any unattended job runs now, from its row.
-  [add](../openspec/specs/board-workspace/spec.md#requirement-a-project-is-added-from-the-board) ·
+  [add](../openspec/specs/project-setup/spec.md#requirement-a-project-is-added-from-the-board) ·
   [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Keys for verbs, who asked** — Every verb shows its key, even one that asks first; each history step names who asked.
   [keys](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key) ·
