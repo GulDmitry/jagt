@@ -67,21 +67,21 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 
 ### The e2e matrix and the model evals
 
-- `e2eTest` runs the flow per `TaskFlowCase` under `orchestrator.agent.cli=stub` (`StubAgentRuntime`, GUI
-  drivers doubled), asserting an exact end state. Widening coverage is a **row** in `TaskFlowCase.matrix()`;
-  an uncovered one is named there, with why. It asserts the **sentence** a flow returns: run it before pushing a reword.
-- Two matrices: `TaskFlowCase` × `TaskFlowMatrixTest` is CREATE → TEARDOWN across the viewer combinations;
-  `ReviewRoundCase` × `ReviewAndDeployFlowTest` is everything between (ship, a round, deploy, revert, resume)
-  on **one** combination. Its verbs go through the board's HTTP endpoints, the agent reports over
-  `POST /mcp`: origins (`board` vs `mcp`) are asserted end to end.
-- `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant: run it on a
-  change to the mapping prompt, a `TaskAction`'s hint, the task-list shape or the model; `-PevalParallelism` (6) rows at once.
-- `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped `master-brief.md.dist`, asserting
-  what the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PmasterShards` 3 JVMs.
+- `e2eTest` runs the flow per `TaskFlowCase` under `orchestrator.agent.cli=stub` (`StubAgentRuntime`, GUI drivers doubled), asserting an exact end
+  state. Widening coverage is a **row** in `TaskFlowCase.matrix()`; an uncovered one is named there, with why.
+  It asserts the **sentence** a flow returns: run it before pushing a reword.
+- Two matrices: `TaskFlowCase` × `TaskFlowMatrixTest` is CREATE → TEARDOWN across the viewer combinations; `ReviewRoundCase` ×
+  `ReviewAndDeployFlowTest` is everything between (ship, a round, deploy, revert, resume) on **one** combination. Its verbs go through
+  the board's HTTP endpoints, the agent reports over `POST /mcp`: origins (`board` vs `mcp`) are asserted end to end.
+- `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant: run it on a change to the mapping prompt,
+  a `TaskAction`'s hint, the task-list shape or the model; `-PevalParallelism` (6) rows at once.
+- `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped `master-brief.md.dist`, asserting what
+  the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PmasterShards` 3 JVMs.
+- `qaEval` hands the real QA reader a deploy with a known answer (`evalSupport/resources/qa-cases/*.yml`); `-PqaBrief`, `-PqaModel`. Bar (estimate):
+  false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; a QA step stays only if cutting it loses more than it costs.
 - Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), each recording seconds, cost and stalls in `eval-stats.jsonl`.
 - `masterEval` reads the brief's `context` step; `SessionBriefContractTest` holds each relayed step naming a worktree or a git verb to what it grants.
-- Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall,
-  the deploy check.
+- Loops the Master closes in `act` with no e2e yet: a red `VERIFYING` round, a `LoopBreaker` stop, a conflict stall, the deploy check.
 - `standTest`: real sessions on invariants (`-Pmodelfree`: no tokens); `StandSlots` caps runs at 6; kicks jobs per second; `build/stand/failed`.
 - A live stand run records its model moves (`recording.jsonl`); `ReplayStandTest` replays one, no model, a turn it never answered a divergence.
 
