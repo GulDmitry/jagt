@@ -20,4 +20,4 @@ expect:
   rows: {C1: met, C2: met}
   report: plain
   ending: passed
-names: ["01.07.2027", "dash"]
+names: ["01.07.2027", "dash|\"-\""]

@@ -100,7 +100,8 @@ final class QaEvalWorkspace {
         }).collect(Collectors.joining("\n"));
         return "\n\nThe ticket " + deployed.key() + ", " + deployed.title() + ", has these acceptance criteria:\n"
                 + criteria + "\n" + landed + "\nThe change is the last commit of the worktree you run in."
-                + "\nRoles you may sign in as:\n" + roles + "\nPages the environment serves:\n" + served;
+                + "\nRoles you may sign in as:\n" + roles + "\nPages the environment serves:\n" + served
+                + "\nEach page answers with what it renders, as JSON; a sign-in GET needs no session.";
     }
 
     static void git(Path directory, String... arguments) throws Exception {

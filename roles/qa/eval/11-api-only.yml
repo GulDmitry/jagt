@@ -15,7 +15,7 @@ environment:
   login: {api-token-role: ok}
   http:
     "GET /quotes/sample-q1": {status: 200, body: {id: "sample-q1", validUntil: "2026-12-01"}}
-    "GET /quotes/sample-old": {status: 410}
+    "GET /quotes/sample-old": {status: 410, body: {id: "sample-old", createdAt: "2026-08-01", error: "quote is 91 days old, older than 30 days"}}
 expect:
   rows: {C1: met, C2: met}
   report: plain

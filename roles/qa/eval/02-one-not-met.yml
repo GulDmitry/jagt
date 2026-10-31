@@ -13,6 +13,8 @@ deploy:
   flags: {}
 environment:
   login: {broker-role: ok}
+  ui:
+    "/contracts": {exportButton: {label: "Export CSV", href: "/export.csv"}}
   http:
     "GET /export.csv": {status: 200, contentType: "text/csv", body: "sample-1,100\nsample-2,200\n"}
 expect:
