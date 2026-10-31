@@ -2,7 +2,7 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate, and **a cached green is not a run**: before a commit it is
+`./gradlew test` is the hermetic gate, and **a cached green is not a run**: at a batch's end and before a push it is
 `./gradlew test --rerun-tasks`. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest` needs git +
 tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`);
 `promptEval` the assistant's CLI and tokens; `masterEval` and `qaEval` those plus minutes; `pitest` of every ring is a mutation report
