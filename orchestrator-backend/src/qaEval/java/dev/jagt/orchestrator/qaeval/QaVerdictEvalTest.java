@@ -121,7 +121,7 @@ abstract class QaVerdictEvalTest {
     private QaJudgement judge(QaCase deployed, String url) throws Exception {
         Path worktree = QaEvalWorkspace.worktreeFor(QaEvalWorkspace.root()
                 .resolve("repos/" + ROUND.incrementAndGet() + "/repo"), deployed);
-        String sha = deployed.deploy().sha();
+        String sha = QaEvalWorkspace.head(worktree);
         String landedProbe = deployed.environment().toString().contains("GET /version") ? url + "/version" : null;
         QaConfig qa = new QaConfig(true, System.getProperty("qaEval.model"), List.of(new QaEnvironment(url, landedProbe)));
         QaReader.Run run = deployed.declines()
@@ -129,7 +129,7 @@ abstract class QaVerdictEvalTest {
                         "- " + deployed.criteria().getFirst().id() + " — not met: " + deployed.decline().evidence(),
                         deployed.decline().why())
                 : prompts.accept(deployed.key(), worktree.toString(), sha, qa, QaVerdict.ACCEPT);
-        QaReader.Run told = new QaReader.Run(run.shared(), run.prompt() + QaEvalWorkspace.ticket(deployed, url),
+        QaReader.Run told = new QaReader.Run(run.shared(), run.prompt() + QaEvalWorkspace.ticket(deployed, url, sha),
                 run.worktree(), run.sha(), run.model(), run.environments());
         if (deployed.declines()) {
             return QaJudgement.ofDecline(deployed, reader.reconsider(told).facts()

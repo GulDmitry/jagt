@@ -64,13 +64,22 @@ final class QaEvalWorkspace {
         return repo;
     }
 
-    static String ticket(QaCase deployed, String environmentUrl) {
+    static String head(Path repo) throws Exception {
+        Process process = new ProcessBuilder("git", "rev-parse", "--short", "HEAD").directory(repo.toFile()).start();
+        String sha = new String(process.getInputStream().readAllBytes()).strip();
+        if (!process.waitFor(2, TimeUnit.MINUTES) || process.exitValue() != 0) {
+            throw new IllegalStateException("git rev-parse HEAD failed in " + repo);
+        }
+        return sha;
+    }
+
+    static String ticket(QaCase deployed, String environmentUrl, String sha) {
         String criteria = deployed.criteria().stream()
                 .map(criterion -> "- " + criterion.id() + ": " + criterion.text()
                         + (criterion.testable() ? "" : " (a non-functional wish, no threshold is named)"))
                 .collect(Collectors.joining("\n"));
         String landed = switch (deployed.deploy().landed()) {
-            case "host-job" -> "The host's deploy job for " + deployed.deploy().sha() + " succeeded.";
+            case "host-job" -> "The host's deploy job for " + sha + " succeeded.";
             default -> "The host reports no deploy job for this change.";
         };
         String roles = ((java.util.Map<?, ?>) deployed.environment().getOrDefault("login", java.util.Map.of()))
