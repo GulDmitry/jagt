@@ -37,7 +37,7 @@ Two kinds of flexibility, and only one is wanted:
 - A verdict before a round reaches a human — `verifyCommand` per project, the VERIFYING status and `VerifyJob`
   ([`task-flow`](../openspec/specs/task-flow/spec.md)).
 - The plan as an artifact with a gate — `plan.md` and PLAN_PENDING, whose move is yours.
-- One record per finished task — `finished.jsonl` beside `state.json`, the status log kept whole, read by the
+- One record per finished task — `finished.jsonl` beside `state.json`, the status log kept whole and the human's waits, read by the
   `finished` report ([`components.md`](rules/components.md)).
 
 ## 1. The quality gate: a Master session running unattended

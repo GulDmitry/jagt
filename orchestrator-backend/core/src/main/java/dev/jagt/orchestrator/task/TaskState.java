@@ -82,7 +82,9 @@ public record TaskState(
         // Absent in a file written before the session was recorded, which reads as no sign yet.
         Session session,
         // Null until an auto-review ping was sent.
-        @Nullable AutoReviewTold told
+        @Nullable AutoReviewTold told,
+        // Every stretch the human held the turn, oldest first; the last may still stand.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -96,6 +98,7 @@ public record TaskState(
         checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
         switches = switches == null ? Map.of() : Map.copyOf(switches);
         infraRetries = infraRetries == null ? List.of() : List.copyOf(infraRetries);
+        waits = waits == null ? List.of() : List.copyOf(waits);
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
@@ -149,7 +152,8 @@ public record TaskState(
             @JsonProperty("headTip") @Nullable String headTip,
             @JsonProperty("deployment") @Nullable Deployment deployment,
             @JsonProperty("session") @Nullable Session session,
-            @JsonProperty("told") @Nullable AutoReviewTold told) {
+            @JsonProperty("told") @Nullable AutoReviewTold told,
+            @JsonProperty("waits") @Nullable List<HumanWait> waits) {
         List<LegacyDeployment.Repo> stored = LegacyDeployment.stored(repos,
                 new LegacyDeployment.Repo(project, worktreePath, remoteUrl, mrUrl, deployCommit, null, null, null));
         TaskState read = new TaskState(stored.stream().map(LegacyDeployment.Repo::repo).toList(), status,
@@ -163,7 +167,8 @@ public record TaskState(
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
                 Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, turn, switches == null ? Map.of() : switches,
                 infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment,
-                Session.migrated(session, legacySilentSince), told);
+                Session.migrated(session, legacySilentSince), told,
+                waits == null ? List.of() : waits);
         Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
         return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
     }
@@ -653,6 +658,10 @@ public record TaskState(
     @JsonIgnore
     public AutoReviewTold toldOrNone() {
         return told == null ? AutoReviewTold.none() : told;
+    }
+
+    public TaskState withWaits(List<HumanWait> waits) {
+        return toBuilder().waits(waits).build();
     }
 
     public TaskState withTold(AutoReviewTold told) {

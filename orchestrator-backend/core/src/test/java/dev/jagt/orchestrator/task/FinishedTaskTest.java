@@ -143,7 +143,7 @@ class FinishedTaskTest {
 
     @Test
     void tookNothingWhenNoStepWasEverRecorded() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 6_000L, 0, null, 0, List.of(), null, null, null, null, null, null);
+        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 6_000L, 0, null, 0, List.of(), null, null, null, null, null, null, null);
 
         assertThat(task.tookMillis()).isZero();
     }

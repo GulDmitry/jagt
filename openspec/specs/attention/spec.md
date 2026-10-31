@@ -16,9 +16,7 @@ or not. The move must have stood five seconds; a card already yours when jagt st
 - **WHEN** an agent asks
 - **THEN** NEEDS INPUT, one desktop ping the first time
 - **AND** where the Master answers it in `act`, the card shows the Master at work and nobody is pinged until it gives up
-
-#### Scenario: The task contradicts the code
-- **WHEN** it breaks a code guarantee
+- **WHEN** the task breaks a code guarantee
 - **THEN** the agent asks before the code picks a side; "the ticket wins" is yours
 
 #### Scenario: Settled unasked
@@ -149,13 +147,7 @@ An alias is the lowest free number, so alias order puts a new task where a retir
 
 #### Scenario: A status changes
 - **WHEN** a task's tier changes to waiting on the human
-- **THEN** its row moves into the band on top
-
-#### Scenario: The rest
-- **WHEN** no tier changes
-- **THEN** the other rows keep their place, in project order
-
-#### Scenario: The filter
+- **THEN** its row moves into the band on top; where no tier changes, rows keep their place, in project order
 - **WHEN** the human types in the filter box
 - **THEN** rows narrow by alias, id or title, and no checkbox narrows them by tier
 
@@ -167,6 +159,15 @@ waiting on a question repaints every 10-30s, so nothing is ever stamped.
 #### Scenario: A transition
 - **WHEN** status changes
 - **THEN** `statusSince` restarts
+
+### Requirement: The human's waits are recorded
+A task SHALL keep an interval per stretch its turn rested with the human: start, end, why. The why is `QUESTION`,
+`PERMISSION`, `VERDICT` or `STOP`; the newest 50 stay, and the finished record carries them. One stays open in
+`state.json` until a write shows the turn gone, a restart included. Closing logs `human wait closed`.
+
+#### Scenario: A question is answered, a restart between
+- **WHEN** a session asks, jagt restarts, the session works on
+- **THEN** one `QUESTION` interval runs from the ask to the answer
 
 ### Requirement: The request's age
 `TaskState.requestOpenedAt` SHALL be the `MR <age>` chip: a floor at `TaskState.relinked`, replaced on each review
@@ -191,10 +192,8 @@ a closed viewer stops nothing; after a backend restart the next call reaches the
 board SHALL stay local unless `--server.address=0.0.0.0`: it has no password, and it can deploy. A worktree is
 briefed once, at creation; one older than a brief change keeps the old wording.
 
-#### Scenario: The viewer was closed
-- **WHEN** you press Focus
+#### Scenario: The viewer was closed, or a brief changed
+- **WHEN** you press Focus on a closed viewer
 - **THEN** another viewer opens
-
-#### Scenario: A brief changed
 - **WHEN** a session uses old wording
 - **THEN** answer in the window, or recreate the task

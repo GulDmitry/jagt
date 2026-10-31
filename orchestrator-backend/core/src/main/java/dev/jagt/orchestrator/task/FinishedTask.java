@@ -37,12 +37,15 @@ public record FinishedTask(
         @Nullable TokenUsage usage,
         @Nullable TokenUsage agentUsage,
         // The session logs the agent spend was read from: paths only, the logs themselves are not kept.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> transcripts
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> transcripts,
+        // The stretches the human held the turn: when, until when, and why.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits
 ) {
 
     public FinishedTask {
         refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
         transcripts = transcripts == null ? List.of() : List.copyOf(transcripts);
+        waits = waits == null ? List.of() : List.copyOf(waits);
     }
 
     public static FinishedTask of(String id, TaskState task, long finishedAt) {
@@ -54,7 +57,7 @@ public record FinishedTask(
                 task.rounds(), task.checksRead(), task.totalUsage().total(), task.history(), masterVerdict,
                 task.refusals(), task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd(),
                 countedOrNull(task.usageOrNone()), countedOrNull(task.agentSpendOrNone().usageOrNone()),
-                List.copyOf(task.agentSpendOrNone().marks().keySet()));
+                List.copyOf(task.agentSpendOrNone().marks().keySet()), HumanWait.endedAt(task.waits(), finishedAt));
     }
 
     private static @Nullable TokenUsage countedOrNull(TokenUsage usage) {
