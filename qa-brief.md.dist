@@ -33,11 +33,6 @@ The environment you named answers its probe again. Run the same check.
 The session answered your round with no change and a reason. Read the reason against your evidence: accept it and leave
 `dispute` empty, which ends the check `declined`, or fill `dispute` with the evidence that stands against it.
 
-## ruled
-
-An arbiter ruled on your dispute for the session. Read the ruling: end the check `declined`, or take it to the human
-once more. The human's word ends it either way.
-
 ## again
 
 The same check on the same sha, since the run never answered. Check every row again; nothing is asked twice.

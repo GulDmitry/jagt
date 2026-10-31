@@ -29,7 +29,8 @@ Builds on [0072](0072-the-conversation-turn-is-the-machines.md),
 - At `accept` QA first writes one row per acceptance criterion in `qa-report.md`, then fills met / not met / unprovable: one list, one home.
 - QA runs sonnet by default (`orchestrator.qa.model`); its lines join the Master's feed, each naming its role.
 - Choices: a derived label shown while the sha is the tip; landing proven by host job, else a named probe, else a question;
-  a new `AgentReport.DISPUTE`; a decline holds `DEPLOYED` as `no_changes`; a not-met goes back in any mode;
+  a dispute is a `QUESTION` on the DEPLOYED card, a second a `PERMISSION`;
+  a decline holds `DEPLOYED` as `no_changes`; a not-met goes back in any mode;
   a declined ending has no mark, its why in the hover; no human rerun verb; no second dispute after the human ruled.
 
 ## Rejected

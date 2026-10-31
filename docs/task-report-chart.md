@@ -7,7 +7,6 @@ stateDiagram-v2
         state "PERMISSION" as report_PERMISSION
         state "NO_CHANGES" as report_NO_CHANGES
         state "WAIT" as report_WAIT
-        state "DISPUTE" as report_DISPUTE
         state "PLAIN" as report_PLAIN
         [*] --> report_PLAIN
         report_QUESTION --> report_PLAIN : said on a status that holds its line
@@ -17,8 +16,6 @@ stateDiagram-v2
         report_QUESTION --> report_NO_CHANGES : stamped NO_CHANGES
         report_QUESTION --> report_WAIT : said WAIT
         report_QUESTION --> report_WAIT : stamped WAIT
-        report_QUESTION --> report_DISPUTE : said DISPUTE
-        report_QUESTION --> report_DISPUTE : stamped DISPUTE
         report_QUESTION --> report_PLAIN : said PLAIN
         report_QUESTION --> report_PLAIN : stamped PLAIN
         report_QUESTION --> report_PLAIN : verified
@@ -30,8 +27,6 @@ stateDiagram-v2
         report_PERMISSION --> report_NO_CHANGES : stamped NO_CHANGES
         report_PERMISSION --> report_WAIT : said WAIT
         report_PERMISSION --> report_WAIT : stamped WAIT
-        report_PERMISSION --> report_DISPUTE : said DISPUTE
-        report_PERMISSION --> report_DISPUTE : stamped DISPUTE
         report_PERMISSION --> report_PLAIN : said PLAIN
         report_PERMISSION --> report_PLAIN : stamped PLAIN
         report_PERMISSION --> report_PLAIN : verified
@@ -43,8 +38,6 @@ stateDiagram-v2
         report_NO_CHANGES --> report_PERMISSION : stamped PERMISSION
         report_NO_CHANGES --> report_WAIT : said WAIT
         report_NO_CHANGES --> report_WAIT : stamped WAIT
-        report_NO_CHANGES --> report_DISPUTE : said DISPUTE
-        report_NO_CHANGES --> report_DISPUTE : stamped DISPUTE
         report_NO_CHANGES --> report_PLAIN : said PLAIN
         report_NO_CHANGES --> report_PLAIN : stamped PLAIN
         report_NO_CHANGES --> report_PLAIN : verified
@@ -57,27 +50,11 @@ stateDiagram-v2
         report_WAIT --> report_PERMISSION : stamped PERMISSION
         report_WAIT --> report_NO_CHANGES : said NO_CHANGES
         report_WAIT --> report_NO_CHANGES : stamped NO_CHANGES
-        report_WAIT --> report_DISPUTE : said DISPUTE
-        report_WAIT --> report_DISPUTE : stamped DISPUTE
         report_WAIT --> report_PLAIN : said PLAIN
         report_WAIT --> report_PLAIN : stamped PLAIN
         report_WAIT --> report_PLAIN : verified
         report_WAIT --> report_PLAIN : deploy read moving the status
         report_WAIT --> report_PLAIN : read
-        report_DISPUTE --> report_DISPUTE : said on a status that holds its line
-        report_DISPUTE --> report_QUESTION : said QUESTION
-        report_DISPUTE --> report_QUESTION : stamped QUESTION
-        report_DISPUTE --> report_PERMISSION : said PERMISSION
-        report_DISPUTE --> report_PERMISSION : stamped PERMISSION
-        report_DISPUTE --> report_NO_CHANGES : said NO_CHANGES
-        report_DISPUTE --> report_NO_CHANGES : stamped NO_CHANGES
-        report_DISPUTE --> report_WAIT : said WAIT
-        report_DISPUTE --> report_WAIT : stamped WAIT
-        report_DISPUTE --> report_PLAIN : said PLAIN
-        report_DISPUTE --> report_PLAIN : stamped PLAIN
-        report_DISPUTE --> report_PLAIN : verified
-        report_DISPUTE --> report_PLAIN : deploy read moving the status
-        report_DISPUTE --> report_PLAIN : read
         report_PLAIN --> report_PLAIN : said on a status that holds its line
         report_PLAIN --> report_QUESTION : said QUESTION
         report_PLAIN --> report_QUESTION : stamped QUESTION
@@ -87,7 +64,5 @@ stateDiagram-v2
         report_PLAIN --> report_NO_CHANGES : stamped NO_CHANGES
         report_PLAIN --> report_WAIT : said WAIT
         report_PLAIN --> report_WAIT : stamped WAIT
-        report_PLAIN --> report_DISPUTE : said DISPUTE
-        report_PLAIN --> report_DISPUTE : stamped DISPUTE
     }
 ```

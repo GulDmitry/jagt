@@ -4,7 +4,7 @@ When jagt may open each step of `qa-brief.md.dist` for QA, and what QA may repor
 file to `qa-cases.md` to edit a case; a case your copy lacks is read from here. Read only where `qa.enabled` is on.
 
 Each case: `step:` a brief step · `at:` the task's statuses · `by:` jagt, human or master, who sets it off ·
-`replies:` what QA may report, its statuses then its kinds (plain, question, wait, dispute) · one line saying what the
+`replies:` what QA may report, its statuses then its kinds (plain, question, wait) · one line saying what the
 case is, then the case as WHEN/THEN.
 
 ## accept
@@ -40,19 +40,9 @@ The environment QA named answers its probe again, so the check runs.
 step: decline
 at: DEPLOYED
 by: jagt
-replies: DEPLOYED; plain, dispute
+replies: DEPLOYED; plain
 The session answered a QA round with no change and its reason, so QA reads the reason against its evidence.
 > WHEN the session replies `no_changes` with why THEN QA ends the check `declined` with the why on the card, or disputes once.
-
-## ruled
-
-step: ruled
-at: DEPLOYED
-by: master
-replies: DEPLOYED; plain, dispute
-The Master, standing as arbiter, ruled for the session, so QA reads the ruling.
-> WHEN the Master in `act` answers QA's dispute for the session THEN the check ends `declined`, or QA takes it to you once more;
-> your word ends it either way (0010): "fix it" is `qa-round` by human, "it stands" ends the check, QA reads nothing.
 
 ## again-restarted
 

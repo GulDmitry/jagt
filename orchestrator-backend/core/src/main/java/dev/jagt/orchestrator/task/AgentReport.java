@@ -11,8 +11,6 @@ public enum AgentReport {
     NO_CHANGES,
     /** The session works but a dependency it needs is down; the message names it and how to probe it. */
     WAIT,
-    /** QA's disagreement with a decline, taken once to an arbiter. */
-    DISPUTE,
     PLAIN;
 
     public boolean asks() {
