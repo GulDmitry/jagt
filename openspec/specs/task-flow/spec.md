@@ -58,7 +58,6 @@ watchdog off that silence.
 - **WHEN** `verifyCommand` and the probes run on a task at `VERIFYING`
 - **THEN** green lands `REVIEW_PENDING` and runs no more; red goes to the session, not you
 
-#### Scenario: Verification before the Master
 - **WHEN** a hand-back is `VERIFYING` and the Master runs
 - **THEN** you and the session hear: verification first, then the Master
 
@@ -122,21 +121,17 @@ sentence MAY name the status; nothing parses it. `withStatus` MUST appear only i
 ### Requirement: Starting a task
 `do` SHALL cut a branch from the project's base into its own worktree, an agent in it; at most 24 open (`NewTaskWorktrees.MAX_TASKS`).
 
-#### Scenario: New ticket
+#### Scenario: A task starts
 - **WHEN** you run `do ABC-42`, or `do ABC-42 <project>`
 - **THEN** branch `ABC-42` is cut from the project's base
-
-#### Scenario: Work with no ticket
 - **WHEN** you run `do <project> <what to do…>`
 - **THEN** your words are the instructions and name the branch
+- **WHEN** you run `do ABC-42 from <branch>`
+- **THEN** it is cut from that branch and the request targets it ([git](../git/spec.md))
 
 #### Scenario: Plan before code
 - **WHEN** you pick `plan first`
 - **THEN** the card reads `plan waiting`; `approve-plan` starts the session on it
-
-#### Scenario: Starting from another branch
-- **WHEN** you run `do ABC-42 from <branch>`
-- **THEN** it is cut from that branch and the request targets it ([git](../git/spec.md))
 
 #### Scenario: A twenty-fifth task
 - **WHEN** 24 tasks are open and you start another
@@ -154,8 +149,6 @@ write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused
 #### Scenario: A plan lists its files
 - **WHEN** a session plans first
 - **THEN** `plan.md` lists every file it will create after approval: spec delta, code, tests
-
-#### Scenario: A write through the shell
 - **WHEN** a session writes a file through the shell before approval
 - **THEN** it is not refused ([guards](../../../docs/rules/guards.md))
 
