@@ -85,6 +85,41 @@ class QaRoundFlowTest {
     }
 
     @Test
+    void holdsDeployedWhereTheSessionDeclinesARoundAfterItsQuestionWasAnsweredInsideTheRound(@TempDir Path root)
+            throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).alias("a1").build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
+                        .withMerge("0123456789abcdef")), 1, "digest"));
+        state.putTask("ABC-42", task);
+        FlowReports flow = new FlowReports(state, Clock.systemUTC());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths)), Clock.systemUTC());
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()), stops);
+        TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, turns);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, new Notifications(List.of(), state, Runnable::run), flow,
+                new HandBack(mock(WorktreeChanges.class), new Rounds(config), config), config);
+        QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
+                new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
+
+        new CheckerOutcomes(RoleDefinition.QA, relay, flow, stops, state).apply("ABC-42", task, verdict);
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "which environment?", "question", null, Map.of()), "ABC-42");
+        turns.opened("ABC-42", "answered", "d2", TaskStatus.IN_PROGRESS);
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "the endpoint is fine", "no_changes", null, Map.of()), "ABC-42");
+
+        assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+    }
+
+    @Test
     void asksTheHumanThroughTheFlowWhereARowIsUnprovableAndKeepsTheStatusDeployed(@TempDir Path root) {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));

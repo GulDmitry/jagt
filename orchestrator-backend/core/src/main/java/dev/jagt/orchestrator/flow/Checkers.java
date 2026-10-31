@@ -11,8 +11,6 @@ public final class Checkers {
 
     public static final String QA = "qa";
 
-    private static final String ROUND = "-round";
-
     private Checkers() {
     }
 
@@ -27,12 +25,6 @@ public final class Checkers {
     static Optional<String> reading(Map<String, CheckerPhase> checkers) {
         return checkers.entrySet().stream().filter(entry -> entry.getValue() == CheckerPhase.READING)
                 .map(Map.Entry::getKey).findFirst();
-    }
-
-    /** The role whose round a turn on {@code step} is: {@code <id>-round}. */
-    public static Optional<String> roleOfRound(String step) {
-        return step.endsWith(ROUND) && step.length() > ROUND.length()
-                ? Optional.of(step.substring(0, step.length() - ROUND.length())) : Optional.empty();
     }
 
     /** The role whose read a turn on {@code step} opens. */

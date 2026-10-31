@@ -42,4 +42,17 @@ class LegacyRolesTest {
 
         assertThat(task.roleOrNone("qa").passed()).isEqualTo("proj@new");
     }
+
+    @Test
+    void aStateFileWithANullRoleRecordLoadsWithoutIt() {
+        String json = """
+                {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+                 "repos":[{"project":"proj","worktreePath":"/wt"}],
+                 "roles":{"qa":null}}
+                """;
+
+        TaskState task = new JsonMapper().readValue(json, TaskState.class);
+
+        assertThat(task.roles()).isEmpty();
+    }
 }

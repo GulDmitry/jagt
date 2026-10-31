@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -147,7 +148,7 @@ public class FlowReports {
             TaskMove.Reported move = new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));
             TaskState said = TaskReducer.reduce(TaskReducer.said(task, means), move, lineOf(task, means, message),
                     false, clock.millis());
-            said = declined(said, task.turnOrNone().step(), means, status);
+            said = declined(said, means, status);
             landed.set(new Landed(task.status(), said.status()));
             return alsoRecord.apply(task.status(), said);
         });
@@ -159,9 +160,14 @@ public class FlowReports {
         return Optional.ofNullable(landed.get());
     }
 
-    private TaskState declined(TaskState said, String turnStep, AgentReport means, TaskStatus status) {
-        return Checkers.roleOfRound(turnStep).map(role -> TaskReducer.checkerDeclined(said, role, means, status,
-                clock.millis())).orElse(said);
+    private TaskState declined(TaskState said, AgentReport means, TaskStatus status) {
+        TaskState declined = said;
+        for (Map.Entry<String, CheckerPhase> checker : Checkers.of(said).entrySet()) {
+            if (checker.getValue() == CheckerPhase.ROUND_OPEN) {
+                declined = TaskReducer.checkerDeclined(declined, checker.getKey(), means, status, clock.millis());
+            }
+        }
+        return declined;
     }
 
     /** A question still reaches the card; once one is behind, the line falls back to the status's own. */

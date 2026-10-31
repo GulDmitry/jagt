@@ -44,7 +44,7 @@ class TurnsTest {
     void namesExactlyOneHolderForEveryStatusReportAndProfile(TaskStatus status, AgentReport report, String profile) {
         Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
-        assertThat(holder).isNotNull();
+        assertThat(holder).isInstanceOf(Holder.Fixed.class);
     }
 
     @ParameterizedTest

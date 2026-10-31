@@ -14,12 +14,17 @@ final class LegacyRoles {
     }
 
     static Map<String, RoleRecord> of(@Nullable Map<String, RoleRecord> roles, @Nullable RoleRecord qa) {
-        Map<String, RoleRecord> read = roles == null ? Map.of() : roles;
-        if (qa == null || read.containsKey(QA)) {
-            return read;
+        Map<String, RoleRecord> read = new TreeMap<>();
+        if (roles != null) {
+            roles.forEach((id, record) -> {
+                if (record != null) {
+                    read.put(id, record);
+                }
+            });
         }
-        Map<String, RoleRecord> merged = new TreeMap<>(read);
-        merged.put(QA, qa);
-        return merged;
+        if (qa != null) {
+            read.putIfAbsent(QA, qa);
+        }
+        return read;
     }
 }
