@@ -7,7 +7,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -17,17 +16,17 @@ import java.util.stream.Stream;
 
 public final class QaCases {
 
-    private static final String DIRECTORY = "/qa-cases";
+    private static final String ROLE = "eval.role";
 
     private QaCases() {
     }
 
     public static List<QaCase> all() {
-        try (Stream<Path> files = Files.list(Path.of(QaCases.class.getResource(DIRECTORY).toURI()))) {
+        try (Stream<Path> files = Files.list(Path.of("..", "roles", System.getProperty(ROLE, "qa"), "eval"))) {
             return files.filter(file -> file.getFileName().toString().endsWith(".yml")).sorted()
                     .map(QaCases::read).toList();
-        } catch (IOException | URISyntaxException unreadable) {
-            throw new UncheckedIOException(new IOException("qa cases unreadable: " + unreadable, unreadable));
+        } catch (IOException unreadable) {
+            throw new UncheckedIOException(new IOException("the role's eval cases unreadable: " + unreadable, unreadable));
         }
     }
 

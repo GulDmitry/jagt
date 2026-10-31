@@ -24,7 +24,7 @@ SHALL be refused.
 - **THEN** no third run is made
 
 ### Requirement: An eval asserts what jagt heard, not only what the model said
-Each `masterEval` run SHALL be asserted on what the read gate heard: a call made in that run's worktree. A refused call
+Each `roleEval -Prole=master` run SHALL be asserted on what the read gate heard: a call made in that run's worktree. A refused call
 SHALL NOT fail the run; refusing is the gate's work.
 
 #### Scenario: The round was read

@@ -26,7 +26,7 @@ class TextBudgetTest {
     private static final int PAGE = 200;
     private static final int MAP = 500;
     private static final int WIDTH = 150;
-    private static final String PROMPT_RULE = " — a prompt: compress it, then run promptEval and masterEval"
+    private static final String PROMPT_RULE = " — a prompt: compress it, then run promptEval and roleEval -Prole=master"
             + " (docs/rules/testing.md)";
 
     @Test

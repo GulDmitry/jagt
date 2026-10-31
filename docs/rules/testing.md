@@ -5,7 +5,7 @@
 `./gradlew test` is the hermetic gate, and **a cached green is not a run**: at a batch's end and before a push it is
 `./gradlew test --rerun-tasks`. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest` needs git +
 tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`);
-`promptEval` the assistant's CLI and tokens; `masterEval` and `qaEval` those plus minutes; `pitest` of every ring is a mutation report
+`promptEval` the assistant's CLI and tokens; `roleEval -Prole=<id>` those plus minutes; `pitest` of every ring is a mutation report
 a human reads, never a gate: a change runs `-PpitestTargets=<its changed classes>`, the full run is release-review's and refresh's.
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix. Its
@@ -75,12 +75,12 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
   the board's HTTP endpoints, the agent reports over `POST /mcp`: origins (`board` vs `mcp`) are asserted end to end.
 - `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant: run it on a change to the mapping prompt,
   a `TaskAction`'s hint, the task-list shape or the model; `-PevalParallelism` (6) rows at once.
-- `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped `master-brief.md.dist`, asserting what
-  the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PmasterShards` 3 JVMs.
-- `qaEval` hands the real QA reader a deploy with a known answer (`evalSupport/resources/qa-cases/*.yml`); `-PqaBrief`, `-PqaModel`. Bar (estimate):
+- `roleEval -Prole=master` hands the real session a round of known verdict (`MasterCase`), judged by `master-brief.md.dist`, asserting what
+  the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PevalShards` 3 JVMs.
+- `roleEval -Prole=<checker>` hands the real reader a deploy of known answer (`roles/<id>/eval/*.yml`); `-ProleBrief`, `-ProleModel`. Bar (estimate):
   false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; a QA step stays only if cutting it loses more than it costs.
 - Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), each recording seconds, cost and stalls in `eval-stats.jsonl`.
-- `masterEval` reads the brief's `context` step; `SessionBriefContractTest` holds each relayed step naming a worktree or a git verb to what it grants.
+- `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
 - `standTest`: real sessions on invariants (`-Pmodelfree`: no tokens); `StandSlots` caps runs at 6; kicks jobs per second; `build/stand/failed`.
 - A live stand run records its model moves (`recording.jsonl`); `ReplayStandTest` replays one, no model, a turn it never answered a divergence.
 

@@ -456,97 +456,69 @@ tasks.register('standReport', JavaExec) {
     }
 }
 
-tasks.register('masterEval', Test) {
-    description = 'Reads the shipped Master brief against rounds whose verdict is known (spends tokens, minutes).'
+// One harness per kind of role: a checker reads its brief against the deploys of `roles/<id>/eval/*.yml`, the arbiter
+// against the rounds of `MasterCase`. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
+// model against the same cases, to compare cost.
+def evalRole = (project.findProperty('role') ?: 'qa').toString()
+def evalIsArbiter = evalRole == 'master'
+tasks.register('roleEval', Test) {
+    description = 'Reads a role\'s shipped brief against cases whose verdict is known, -Prole=<id> (spends tokens, minutes).'
     group = 'verification'
-    testClassesDirs = sourceSets.masterEval.output.classesDirs
-    classpath = sourceSets.masterEval.runtimeClasspath
+    testClassesDirs = evalIsArbiter ? sourceSets.masterEval.output.classesDirs : sourceSets.qaEval.output.classesDirs
+    classpath = evalIsArbiter ? sourceSets.masterEval.runtimeClasspath : sourceSets.qaEval.runtimeClasspath
     useJUnitPlatform()
-    // A review is one task per tick, so rounds go in parallel only across JVMs: one per shard class, each a full context.
-    int shards = (project.findProperty('masterShards') ?: '3') as int
+    String harness = evalIsArbiter ? 'master' : 'qa'
+    String testClass = evalIsArbiter ? 'MasterVerdictEvalShard' : 'QaVerdictEvalShard'
+    // A review is one task per tick, so cases go in parallel only across JVMs: one per shard class, each a full context.
+    int shards = (project.findProperty('evalShards') ?: '3') as int
     if (shards < 1 || shards > 6) {
-        throw new GradleException("-PmasterShards ${shards} must be between 1 and 6, the shard classes there are.")
+        throw new GradleException("-PevalShards ${shards} must be between 1 and 6, the shard classes there are.")
     }
     maxParallelForks = shards
     forkEvery = 1
-    systemProperty 'masterEval.shards', shards
+    systemProperty "${harness}Eval.shards", shards
+    systemProperty 'eval.role', evalRole
+    if (!evalIsArbiter) {
+        testLogging.showStandardStreams = true
+    }
     filter {
-        (0..<shards).each { includeTestsMatching "*MasterVerdictEvalShard${it}Test" }
+        (0..<shards).each { includeTestsMatching "*${testClass}${it}Test" }
     }
     ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
         if (project.hasProperty(property)) {
             systemProperty key, project.property(property)
         }
     }
-    // -PmasterBrief and -PmasterModel read another brief or model against the same rounds, to compare cost.
-    ['masterBrief': 'masterEval.brief', 'masterModel': 'masterEval.model'].each { property, key ->
+    ['roleBrief': "${harness}Eval.brief", 'roleModel': "${harness}Eval.model"].each { property, key ->
         if (project.hasProperty(property)) {
             systemProperty key, project.property(property)
         }
     }
-    // Gated on CAPABILITY, and it names what is missing rather than failing every round on it.
-    def brief = file('../master-brief.md.dist')
+    def brief = file(evalIsArbiter ? '../master-brief.md.dist' : "../roles/${evalRole}/brief.md.dist")
+    boolean roleNamed = project.hasProperty('role')
+    File evalCases = file("../roles/${evalRole}/eval")
+    doFirst {
+        if (!roleNamed) {
+            throw new GradleException('roleEval needs -Prole=<id>: master, or a checker with roles/<id>/eval/*.yml.')
+        }
+        if (!evalIsArbiter && !evalCases.isDirectory()) {
+            throw new GradleException("roles/${evalRole}/eval holds no cases: a checker is evaluated over its eval/*.yml.")
+        }
+    }
+    // Gated on CAPABILITY, and it names what is missing rather than failing every case on it.
     onlyIf { task ->
         List<String> missing = []
-        ['claude', 'tmux', 'git'].each { binary ->
+        (evalIsArbiter ? ['claude', 'tmux', 'git'] : ['claude', 'git']).each { binary ->
             if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
                     .any { dir -> dir && new File(dir, binary).canExecute() }) {
                 missing << binary
             }
         }
         if (!brief.exists()) {
-            missing << 'master-brief.md.dist'
+            missing << brief.name
         }
         if (missing) {
-            task.logger.lifecycle("Skipping masterEval — missing: ${missing.join(', ')}.")
-        }
-        missing.isEmpty()
-    }
-    shouldRunAfter tasks.named('test')
-}
-
-tasks.register('qaEval', Test) {
-    description = 'Reads the shipped QA brief against deploys whose verdict is known (spends tokens, minutes).'
-    group = 'verification'
-    testClassesDirs = sourceSets.qaEval.output.classesDirs
-    classpath = sourceSets.qaEval.runtimeClasspath
-    useJUnitPlatform()
-    int shards = (project.findProperty('qaShards') ?: '3') as int
-    if (shards < 1 || shards > 6) {
-        throw new GradleException("-PqaShards ${shards} must be between 1 and 6, the shard classes there are.")
-    }
-    maxParallelForks = shards
-    forkEvery = 1
-    systemProperty 'qaEval.shards', shards
-    testLogging.showStandardStreams = true
-    filter {
-        (0..<shards).each { includeTestsMatching "*QaVerdictEvalShard${it}Test" }
-    }
-    ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
-        if (project.hasProperty(property)) {
-            systemProperty key, project.property(property)
-        }
-    }
-    // -PqaBrief and -PqaModel read another brief or model against the same deploys, to compare cost.
-    ['qaBrief': 'qaEval.brief', 'qaModel': 'qaEval.model'].each { property, key ->
-        if (project.hasProperty(property)) {
-            systemProperty key, project.property(property)
-        }
-    }
-    def brief = file('../roles/qa/brief.md.dist')
-    onlyIf { task ->
-        List<String> missing = []
-        ['claude', 'git'].each { binary ->
-            if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
-                    .any { dir -> dir && new File(dir, binary).canExecute() }) {
-                missing << binary
-            }
-        }
-        if (!brief.exists()) {
-            missing << 'roles/qa/brief.md.dist'
-        }
-        if (missing) {
-            task.logger.lifecycle("Skipping qaEval — missing: ${missing.join(', ')}.")
+            task.logger.lifecycle("Skipping roleEval -Prole=${evalRole} — missing: ${missing.join(', ')}.")
         }
         missing.isEmpty()
     }
@@ -583,22 +555,24 @@ tasks.register('promptEval', Test) {
 }
 
 // Each case of a model eval appends its outcome to one gitignored file a later run reads; nothing else reads it.
-['promptEval', 'masterEval', 'qaEval'].each { name ->
-    tasks.named(name) {
-        systemProperty 'eval.suite', name
-        systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
-        String modelProperty = ['masterEval': 'masterModel', 'qaEval': 'qaModel'][name]
-        systemProperty 'eval.model', (modelProperty ? project.findProperty(modelProperty) : null) ?: 'default'
-        systemProperty 'eval.brief.file', (name == 'masterEval'
-                ? (project.findProperty('masterBrief') ?: file('../master-brief.md.dist').path)
-                : name == 'qaEval' ? (project.findProperty('qaBrief') ?: file('../roles/qa/brief.md.dist').path)
-                : file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path)
-    }
+tasks.named('promptEval') {
+    systemProperty 'eval.suite', 'promptEval'
+    systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
+    systemProperty 'eval.model', 'default'
+    systemProperty 'eval.brief.file', file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path
+}
+// The suite names stay `masterEval` and `qaEval`, so the trend a later run reads continues across the rename.
+tasks.named('roleEval') {
+    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : 'qaEval'
+    systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
+    systemProperty 'eval.model', project.findProperty('roleModel') ?: 'default'
+    systemProperty 'eval.brief.file', project.findProperty('roleBrief')
+            ?: (evalIsArbiter ? file('../master-brief.md.dist').path : file("../roles/${evalRole}/brief.md.dist").path)
 }
 
 // What these prove is the MACHINE — or a model — and no such state is in a cache key: a restored result would
 // come back green without anything having run.
-['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval', 'masterEval', 'qaEval'].each { name ->
+['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval', 'roleEval'].each { name ->
     tasks.named(name) {
         outputs.cacheIf { false }
         outputs.upToDateWhen { false }

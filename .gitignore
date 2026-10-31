@@ -58,10 +58,10 @@ usage-alerts.properties
 interactions.jsonl
 interactions.jsonl.1
 /archive/
-# The masterEval suite's own root, trusted once by a human and rebuilt each run, and its run lock
+# The roleEval -Prole=master suite's own root, trusted once by a human and rebuilt each run, and its run lock
 .master-eval/
 .master-eval.lock
-# The qaEval suite's own root, rebuilt each run
+# The roleEval suite over a checker's own root, rebuilt each run
 .qa-eval/
 # Present while the Master's act is stopped, written beside state.json
 act-stopped
@@ -75,6 +75,6 @@ TODO.md
 TESTBED.md
 DETERMINISM.md
 
-# Pass/fail per eval case across runs, written by promptEval and masterEval
+# Pass/fail per eval case across runs, written by promptEval and roleEval
 orchestrator-backend/eval-stats.jsonl*
 .jqwik-database
