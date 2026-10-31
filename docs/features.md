@@ -176,7 +176,7 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-starting-a-task)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../openspec/specs/task-flow/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
-- **QA check** — A read-only run checks a deploy against its ticket. Key: `orchestrator.roles.qa.enabled`. [spec](../openspec/specs/qa/spec.md)
+- **QA check** — A read-only role checks a deploy against its ticket. Key: `orchestrator.roles.qa.enabled`. [spec](../openspec/specs/qa/spec.md)
 
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 

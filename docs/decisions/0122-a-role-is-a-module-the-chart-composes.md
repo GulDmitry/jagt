@@ -5,7 +5,8 @@
 
 ## Status
 
-Proposed 2026-10-31 by the owner's direction; building from 2026-10-31: QA first, then the Master, then one eval.
+Accepted 2026-10-31: the chart is composed from `roles/<id>/role.yml`, the Master is an arbiter role, `roleEval -Prole=<id>`
+is the one harness, and `RoleNamesTest` pins each module's declared names.
 
 ## Context
 
