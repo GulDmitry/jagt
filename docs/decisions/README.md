@@ -135,3 +135,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0116 QA is a turn holder of its own](0116-qa-is-a-turn-holder-of-its-own.md)
 - [0117 The board installs as an app](0117-the-board-installs-as-an-app.md)
 - [0120 jagt.yml is edited as text, one block per project](0120-jagt-yml-is-edited-as-text-one-block-per-project.md)
+- [0122 A role is a module the chart composes](0122-a-role-is-a-module-the-chart-composes.md)
