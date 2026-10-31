@@ -20,6 +20,8 @@ final class TaskOffers {
     static final Set<TaskStatus> DEPLOY_FROM = EnumSet.of(REVIEW_PENDING, CI_POLLING, CI_FAILED, REVIEWED,
             APPROVED, DEPLOYED, DEPLOY_CONFLICT);
 
+    static final Set<TaskStatus> APPROVE_PLAN_FROM = EnumSet.of(PLAN_PENDING);
+
     private static final RegionId<Fact> REVIEW_REQUEST = new RegionId<>("review request", Fact.class);
 
     private static final RegionId<Fact> LIVE_DEPLOY = new RegionId<>("live deploy", Fact.class);
@@ -60,7 +62,7 @@ final class TaskOffers {
             offer(TaskAction.SHIP, WRITTEN, no(GIT_CHANGED), no(REQUEST_MERGED)),
             offer(TaskAction.SHIP, EnumSet.of(SHIPPING), no(GIT_CHANGED), no(REQUEST_MERGED), no(AGENT_LIVE)),
             offer(TaskAction.SHIP, SHIP_ON_A_REQUEST, no(GIT_CHANGED), no(REQUEST_MERGED), yes(REVIEW_REQUEST)),
-            offer(TaskAction.APPROVE_PLAN, EnumSet.of(PLAN_PENDING)),
+            offer(TaskAction.APPROVE_PLAN, APPROVE_PLAN_FROM),
             offer(TaskAction.ADD_REPO, OPEN, yes(REPO_REQUESTED)),
             offer(TaskAction.SWEEP, ANY, yes(REVIEW_REQUEST)),
             offer(TaskAction.DEPLOY, EnumSet.of(DEPLOY_CONFLICT), no(GIT_CHANGED), no(REVERT_CONFLICT)),
