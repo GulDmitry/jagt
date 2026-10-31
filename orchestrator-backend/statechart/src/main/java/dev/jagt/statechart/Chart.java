@@ -3,6 +3,7 @@ package dev.jagt.statechart;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,8 +12,9 @@ import java.util.Optional;
 /**
  * Regions run in parallel and a step is pure. Within a microstep every region picks its first enabled transition
  * against the configuration from before it, exits are emitted before transition effects, and raised events run
- * to completion in raise order. A transition to its own state still exits it; an internal one ({@code stay}) does not. A derived region is read from the
- * facts the caller passes, the same for every raised event of the step.
+ * to completion in raise order. A transition to its own state still exits it; an internal one ({@code stay}) does not.
+ * A derived region is computed from the facts the caller passes only when a guard first reads it, and once for
+ * every raised event of the step.
  */
 public final class Chart<E, X, F> {
 
@@ -62,10 +64,11 @@ public final class Chart<E, X, F> {
         List<F> effects = new ArrayList<>();
         List<String> moves = new ArrayList<>();
         Deque<E> queue = new ArrayDeque<>(List.of(event));
+        Map<String, Enum<?>> computed = new HashMap<>();
         int raised = 0;
         while (!queue.isEmpty()) {
             E current = queue.poll();
-            List<Edge<E, F>> taken = enabled(config, facts, current);
+            List<Edge<E, F>> taken = enabled(config, facts, current, computed);
             taken.stream().filter(t -> !t.internal()).forEach(t -> effects.addAll(exitEffects(t)));
             for (Edge<E, F> t : taken) {
                 effects.addAll(t.effectsFor(current));
@@ -83,14 +86,23 @@ public final class Chart<E, X, F> {
         return new ChartStep<>(config, List.copyOf(effects));
     }
 
+    /** Whether an edge leaving {@code region} takes {@code event} in {@code start}; nothing moves and nothing is emitted. */
+    public <S extends Enum<S>> boolean takes(RegionId<S> region, Configuration start, X facts, E event) {
+        Map<String, Enum<?>> computed = new HashMap<>();
+        Others others = new Others(region.name(), name -> stateOf(start, facts, name, computed));
+        Enum<?> state = start.find(region.name()).orElseThrow(
+                () -> new IllegalArgumentException("no stored region " + region.name()));
+        return transitions.stream().anyMatch(t -> t.region().equals(region.name()) && t.takes(state, event, others));
+    }
+
     public String render() {
         return Mermaid.render(stored, derived, transitions);
     }
 
-    private List<Edge<E, F>> enabled(Configuration config, X facts, E event) {
+    private List<Edge<E, F>> enabled(Configuration config, X facts, E event, Map<String, Enum<?>> computed) {
         List<Edge<E, F>> taken = new ArrayList<>();
         for (Stored<F> region : stored) {
-            Others others = new Others(region.name(), name -> stateOf(config, facts, name));
+            Others others = new Others(region.name(), name -> stateOf(config, facts, name, computed));
             Enum<?> state = config.find(region.name()).orElseThrow();
             transitions.stream().filter(t -> t.region().equals(region.name()) && t.takes(state, event, others))
                     .findFirst().ifPresent(taken::add);
@@ -98,9 +110,13 @@ public final class Chart<E, X, F> {
         return taken;
     }
 
-    private Enum<?> stateOf(Configuration config, X facts, String region) {
-        return config.find(region).or(() -> derived.stream().filter(d -> d.name().equals(region)).findFirst()
-                        .map(d -> d.compute().apply(facts)))
+    private Enum<?> stateOf(Configuration config, X facts, String region, Map<String, Enum<?>> computed) {
+        return config.find(region).or(() -> Optional.ofNullable(computed.get(region)))
+                .or(() -> derived.stream().filter(d -> d.name().equals(region)).findFirst()
+                        .map(d -> d.compute().apply(facts)).map(state -> {
+                            computed.put(region, state);
+                            return state;
+                        }))
                 .orElseThrow(() -> new IllegalArgumentException("no region " + region));
     }
 

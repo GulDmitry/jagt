@@ -26,7 +26,7 @@ and [0108](0108-a-stop-ends-on-the-read-that-disproves-it.md).
 - A configuration is a plain record that jagt persists in `state.json`. The engine keeps no state.
 - jagt's chart is data: one typed Java DSL file in `flow/` declaring regions, states, events, guards, exits and effects.
 - A rule change is one row there and touches nothing else.
-- A derived region (host, checks, infra) is declared as derived. It is computed from the last read and never stored.
+- A derived region (host, checks, infra) is computed from the last read, when a guard reads it and once per step, never stored.
 - One reducer in `flow/` is the only writer of status and conditions. The `updateTask` sites become events fed to it,
   one condition per commit.
 - A test validates the chart: every stored non-final state has an exit, a guard reads only other regions, and every

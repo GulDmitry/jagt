@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -196,5 +197,61 @@ class ChartStepTest {
         assertThat(chart.initial().toPlain()).containsOnlyKeys("power");
         assertThat(bright.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
         assertThat(dim.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
+    }
+
+    @Test
+    void aDerivedRegionNoGuardReadsIsNeverComputed() {
+        AtomicInteger computed = new AtomicInteger();
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+                .derived(Lamp.LEVEL, facts -> {
+                    computed.incrementAndGet();
+                    return facts.level();
+                })
+                .on(Lamp.POWER, Power.OFF, Press.class).when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
+                .to(Power.ON)
+                .build();
+
+        chart.step(chart.initial(), new Facts(Mode.BRIGHT), new Tick());
+
+        assertThat(computed).hasValue(0);
+    }
+
+    @Test
+    void aDerivedRegionTwoGuardsReadIsComputedOnceForTheStep() {
+        AtomicInteger computed = new AtomicInteger();
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+                .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
+                .derived(Lamp.LEVEL, facts -> {
+                    computed.incrementAndGet();
+                    return facts.level();
+                })
+                .on(Lamp.POWER, Power.OFF, Press.class).when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
+                .to(Power.ON)
+                .on(Lamp.MODE, Mode.DIM, Press.class).when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
+                .to(Mode.BRIGHT)
+                .build();
+
+        chart.step(chart.initial(), new Facts(Mode.BRIGHT), new Press());
+
+        assertThat(computed).hasValue(1);
+    }
+
+    @Test
+    void aGroupThatStaysIsTakenWhereItsGuardHoldsAndMovesNothing() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+                .derived(Lamp.LEVEL, Facts::level)
+                .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
+                .onMatching(Lamp.POWER, Set.of(Power.OFF, Power.ON), "probe", event -> event instanceof Hit)
+                .when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT).stay()
+                .build();
+        Configuration start = chart.initial();
+
+        assertThat(chart.takes(Lamp.POWER, start, new Facts(Mode.BRIGHT), new Hit())).isTrue();
+        assertThat(chart.takes(Lamp.POWER, start, new Facts(Mode.DIM), new Hit())).isFalse();
+        assertThat(chart.step(start, new Facts(Mode.BRIGHT), new Hit()).configuration()).isEqualTo(start);
+        assertThat(chart.step(start, new Facts(Mode.BRIGHT), new Hit()).effects()).isEmpty();
     }
 }

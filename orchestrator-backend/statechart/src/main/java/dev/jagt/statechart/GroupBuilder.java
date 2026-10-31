@@ -17,6 +17,17 @@ public final class GroupBuilder<E, X, F, S extends Enum<S>> {
         return this;
     }
 
+    public GroupBuilder<E, X, F, S> when(Condition<E> allowed) {
+        edges.forEach(edge -> edge.when(allowed));
+        return this;
+    }
+
+    /** Every source keeps its state, exiting and entering nothing. */
+    public ChartBuilder<E, X, F> stay() {
+        edges.forEach(EdgeBuilder::stay);
+        return chart;
+    }
+
     /** Every source leads to {@code target}; the one standing there stays. */
     public ChartBuilder<E, X, F> to(S target) {
         edges.forEach(edge -> edge.leadsTo(target));
