@@ -17,7 +17,8 @@ One criterion is one row; give none the ticket does not name. jagt writes `qa-re
 ## accept
 
 The deploy's pipeline is green and the change is read up. Check every row on the environment you are given:
-GET through the web fetch tool and the logs through the user's own MCP, nothing that writes. A login you lack is a question, never a guess.
+GET through the web fetch tool and the logs through the user's own MCP, nothing that writes. One git read per call: no `&&`, pipe or
+semicolon. A login you lack is a question, never a guess.
 First prove the change landed: the host's deploy job, else the environment's `landed` probe, else it is `unprovable`.
 
 ## answered

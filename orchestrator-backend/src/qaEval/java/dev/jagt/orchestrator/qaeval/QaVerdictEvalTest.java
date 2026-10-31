@@ -58,6 +58,7 @@ abstract class QaVerdictEvalTest {
         registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
         registry.add("orchestrator.hook-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/api/agent/session");
         registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
+        registry.add("orchestrator.assistant.max-cost-usd", () -> "0.10");
         QaEvalWorkspace.shard();
         QaEvalWorkspace.clean();
         Path root = QaEvalWorkspace.root();
