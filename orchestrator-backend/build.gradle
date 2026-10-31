@@ -489,15 +489,23 @@ tasks.register('roleEval', Test) {
             systemProperty key, project.property(property)
         }
     }
-    ['roleBrief': "${harness}Eval.brief", 'roleModel': "${harness}Eval.model"].each { property, key ->
-        if (project.hasProperty(property)) {
-            systemProperty key, project.property(property)
-        }
-    }
     def brief = file(evalIsArbiter ? '../master-brief.md.dist' : "../roles/${evalRole}/brief.md.dist")
+    systemProperty "${harness}Eval.brief", project.findProperty('roleBrief') ?: brief.path
+    if (project.hasProperty('roleModel')) {
+        systemProperty "${harness}Eval.model", project.property('roleModel')
+    }
+    Map<String, String> retired = ['masterBrief': '-Prole=master -ProleBrief', 'masterModel': '-Prole=master -ProleModel',
+                                   'qaBrief': '-Prole=qa -ProleBrief', 'qaModel': '-Prole=qa -ProleModel',
+                                   'masterShards': '-PevalShards', 'qaShards': '-PevalShards'].findAll { name, use ->
+        project.hasProperty(name)
+    }
     boolean roleNamed = project.hasProperty('role')
     File evalCases = file("../roles/${evalRole}/eval")
     doFirst {
+        if (retired) {
+            throw new GradleException("roleEval no longer reads ${retired.keySet().collect { '-P' + it }.join(', ')}: use "
+                    + retired.values().unique().join(', ') + '.')
+        }
         if (!roleNamed) {
             throw new GradleException('roleEval needs -Prole=<id>: master, or a checker with roles/<id>/eval/*.yml.')
         }
