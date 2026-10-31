@@ -79,6 +79,45 @@ class ConfigServiceTest {
     }
 
     @Test
+    void qaIsOffWhenNeitherTheRolesKeyNorTheOldOneSaysOtherwise(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        boolean enabled = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().role("qa").enabledOrDefault();
+
+        assertThat(enabled).isFalse();
+    }
+
+    @Test
+    void aJagtYmlWithTheOldQaKeyStillTurnsQaOn(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        boolean enabled = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().role("qa").enabledOrDefault();
+
+        assertThat(enabled).isTrue();
+    }
+
+    @Test
+    void theRolesKeyWinsOverTheOldOne(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n  roles:\n    qa:\n      enabled: false\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        boolean enabled = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().role("qa").enabledOrDefault();
+
+        assertThat(enabled).isFalse();
+    }
+
+    @Test
     void readsTheMastersModeAsWrittenInTheShippedExample(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, """

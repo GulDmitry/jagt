@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.eval.QaScoreboard;
 import dev.jagt.orchestrator.job.CheckerPrompts;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.UserNotifier;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -124,7 +124,7 @@ abstract class QaVerdictEvalTest {
         String sha = QaEvalWorkspace.head(worktree);
         String landedProbe = deployed.probe().isEmpty() ? null
                 : url + deployed.probe().substring(deployed.probe().indexOf(' ') + 1);
-        QaConfig qa = new QaConfig(true, System.getProperty("qaEval.model"), List.of(new QaEnvironment(url, landedProbe)));
+        RoleConfig qa = new RoleConfig(true, System.getProperty("qaEval.model"), List.of(new QaEnvironment(url, landedProbe)));
         CheckerReader.Run run = deployed.declines()
                 ? prompts.decline(deployed.key(), worktree.toString(), sha, qa,
                         "- " + deployed.criteria().getFirst().id() + " — not met: " + deployed.decline().evidence(),

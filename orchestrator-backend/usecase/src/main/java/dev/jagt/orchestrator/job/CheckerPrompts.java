@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.QaBrief;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
 import dev.jagt.orchestrator.task.QaVerdict;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ public class CheckerPrompts {
     private final RoleDefinition role;
     private final QaBrief brief;
 
-    public CheckerReader.Run accept(String taskId, String worktree, String sha, QaConfig qa, String step) {
+    public CheckerReader.Run accept(String taskId, String worktree, String sha, RoleConfig qa, String step) {
         String environments = qa.environmentsOrEmpty().stream().map(CheckerPrompts::environment)
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nCheck it on:\n" + environments;
@@ -31,7 +31,7 @@ public class CheckerPrompts {
     }
 
     /** The round QA sent back and the reason the session gave for changing nothing, read against fresh evidence. */
-    public CheckerReader.Run decline(String taskId, String worktree, String sha, QaConfig qa, String rows, String reason) {
+    public CheckerReader.Run decline(String taskId, String worktree, String sha, RoleConfig qa, String rows, String reason) {
         String environments = qa.environmentsOrEmpty().stream().map(CheckerPrompts::environment)
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nThe rows you found not met:\n" + rows
@@ -40,7 +40,7 @@ public class CheckerPrompts {
                 qa.modelOrDefault(), reachable(qa), role.decline().json(), role.id());
     }
 
-    private static List<String> reachable(QaConfig qa) {
+    private static List<String> reachable(RoleConfig qa) {
         return qa.environmentsOrEmpty().stream()
                 .flatMap(environment -> Stream.of(environment.url(), environment.landed()))
                 .filter(url -> url != null && !url.isBlank()).distinct().toList();

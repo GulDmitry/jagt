@@ -1,7 +1,8 @@
 # jagt — your whole configuration, and the only file there is: `cp jagt.yml.dist jagt.yml`, then fill in ONE
 # project. Every other key already has the value shown and can stay commented out.
 # `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview`, `master`, `tracker`, `maxStartsPerDay`,
-# `loopBreaker`, `conflictStallMinutes`, `archive` and `qa` are re-read on every access; every other key is read once, at startup.
+# `loopBreaker`, `conflictStallMinutes`, `archive` and `roles` (and the legacy `qa`) are re-read on every access;
+# every other key is read once, at startup.
 
 orchestrator:
 
@@ -138,16 +139,22 @@ orchestrator:
                              # Unset: [plan]; [] hands the Master every step. Anything not listed the Master may do;
                              # closing a task and a plan you opened in `plan` mode are always yours
 
-  # ── The QA role ────────────────────────────────────────────────────────────────────────────────────────────
-  # A headless model that checks a deployed change against its ticket on a running environment, read-only, once
-  # per deploy; what it finds goes back to the session as a round. With it on, `DeployCheckJob` asks the session
-  # nothing: one check per deploy, never two. Needs the tracker's `doneStatus` and your own MCP for logins.
-  qa:
-    enabled: false          # off: the session checks its own deploy
-    # model: sonnet         # the model of the check; blank inherits the agent CLI's
-    # environments:         # allow-list of base URLs QA may touch; a deploy to any other is not checked
-    #   - url: https://stage.example.com
-    #     landed: https://stage.example.com/health   # answers once the change is up, where the host reports no deploy job
+  # ── The roles ──────────────────────────────────────────────────────────────────────────────────────────────
+  # A checker is a headless model that reads a deployed change, read-only, once per deploy; what it finds goes
+  # back to the session as a round. One block per role, under `roles`, by the role's id. With a checker on,
+  # `DeployCheckJob` asks the session nothing: one check per deploy, never two. Needs the tracker's `doneStatus`
+  # and your own MCP for logins.
+  roles:
+    qa:                     # checks a deployed change against its ticket on a running environment
+      enabled: false        # off: the session checks its own deploy
+      # model: sonnet       # the model of the check; blank inherits the agent CLI's
+      # environments:       # allow-list of base URLs the role may touch; a deploy to any other is not checked
+      #   - url: https://stage.example.com
+      #     landed: https://stage.example.com/health   # answers once the change is up, where the host reports no deploy job
+
+  # LEGACY, still read: `qa:` with the same keys as `roles.qa`. Where `roles.qa` is written it wins; unwritten, this stands.
+  # qa:
+  #   enabled: false
 
   # ── The two ends the tracker drives (EXPERIMENTAL) ─────────────────────────────────────────────────────────
   # `take` turns items at your starting stage into tasks; `close` ends a task whose item reached the stage that

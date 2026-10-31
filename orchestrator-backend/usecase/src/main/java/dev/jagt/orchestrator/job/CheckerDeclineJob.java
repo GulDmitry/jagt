@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.RoleSettings;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.QaDecline;
@@ -61,7 +61,7 @@ public class CheckerDeclineJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        QaConfig qa = settings.load();
+        RoleConfig qa = settings.load();
         String role = settings.role().id();
         CheckerPhase reading = CheckerPhase.of(task, role);
         Optional<CheckerRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, role, record));

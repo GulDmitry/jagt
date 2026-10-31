@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.RoleSettings;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
@@ -58,7 +58,7 @@ public class CheckerCheckJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        QaConfig qa = settings.load();
+        RoleConfig qa = settings.load();
         String worktree = task.worktreePath();
         Optional<Deployment> open = openFor(task, qa);
         if (open.isEmpty() || worktree == null) {
@@ -76,7 +76,7 @@ public class CheckerCheckJob implements TaskJob {
     }
 
     /** The deployment where a check may open: QA on, an environment named, the pipelines green and the change live. */
-    private static Optional<Deployment> openFor(TaskState task, QaConfig qa) {
+    private static Optional<Deployment> openFor(TaskState task, RoleConfig qa) {
         return Optional.ofNullable(task.deployment()).filter(deployment -> qa.enabledOrDefault()
                 && !qa.environmentsOrEmpty().isEmpty() && deployment.live() && deployment.askedDigest() != null);
     }

@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.protocol.SwitchJudgements;
@@ -49,6 +51,7 @@ import java.util.stream.Collectors;
  * omitted: {@link ConfigFile}'s accessors coalesce a missing one to its all-default instance.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ConfigService implements LoopBreaker.Current {
 
@@ -60,7 +63,7 @@ public class ConfigService implements LoopBreaker.Current {
                              @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
                              @Nullable LoopBreakerConfig loopBreaker,
                              @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive,
-                             @Nullable QaConfig qa) {
+                             @Nullable QaConfig qa, @Nullable Map<String, RoleConfig> roles) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -323,6 +326,33 @@ public class ConfigService implements LoopBreaker.Current {
             }
         }
 
+        /** What {@code orchestrator.roles.<id>} says of one checker role; the old {@code orchestrator.qa} reads as {@code roles.qa}. */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record RoleConfig(@Nullable Boolean enabled, @Nullable String model,
+                                 @Nullable List<QaEnvironment> environments) {
+
+            public static RoleConfig defaults() {
+                return new RoleConfig(null, null, null);
+            }
+
+            static RoleConfig of(QaConfig legacy) {
+                return new RoleConfig(legacy.enabled(), legacy.model(), legacy.environments());
+            }
+
+            public boolean enabledOrDefault() {
+                return enabled != null && enabled;
+            }
+
+            public String modelOrDefault() {
+                return model == null || model.isBlank() ? "sonnet" : model.strip();
+            }
+
+            public List<QaEnvironment> environmentsOrEmpty() {
+                return environments == null ? List.of() : environments;
+            }
+        }
+
         /** {@code landed} is a URL whose answer proves the change is up where the host reports no deploy job. */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -502,7 +532,7 @@ public class ConfigService implements LoopBreaker.Current {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         public Duration conflictStallOrDefault() {
@@ -558,6 +588,15 @@ public class ConfigService implements LoopBreaker.Current {
             return qa == null ? QaConfig.defaults() : qa;
         }
 
+        /** The role as {@code roles.<id>} writes it; where it names none, QA falls back to the old {@code qa} key. */
+        public RoleConfig role(String id) {
+            RoleConfig written = roles == null ? null : roles.get(id);
+            if (written != null) {
+                return written;
+            }
+            return RoleDefinition.QA.id().equals(id) ? RoleConfig.of(qa()) : RoleConfig.defaults();
+        }
+
         @Override
         public ArchiveConfig archive() {
             return archive == null ? ArchiveConfig.defaults() : archive;
@@ -567,6 +606,8 @@ public class ConfigService implements LoopBreaker.Current {
 
     /** The one root everything a human writes lives under, Spring's keys and jagt's own alike. */
     private static final String ROOT = "orchestrator";
+
+    private static final String LEGACY_QA = "qa";
 
     private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;
@@ -630,6 +671,10 @@ public class ConfigService implements LoopBreaker.Current {
                     new DumperOptions(), new WordsStayWords()).load(Files.readString(file));
             Object section = tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
             parsed = version == null ? null : new Parsed(version, section);
+            if (section instanceof Map<?, ?> keys && keys.containsKey(LEGACY_QA)) {
+                log.atInfo().setMessage("config key deprecated").addKeyValue("key", "orchestrator.qa")
+                        .addKeyValue("use", "orchestrator.roles.qa").log();
+            }
             return section;
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read " + file, e);

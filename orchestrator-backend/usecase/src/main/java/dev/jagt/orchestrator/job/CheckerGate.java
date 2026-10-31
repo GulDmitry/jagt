@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ public class CheckerGate {
     private final ConfigService config;
 
     public boolean checking() {
-        return config.load().qa().enabledOrDefault();
+        return config.load().role(RoleDefinition.QA.id()).enabledOrDefault();
     }
 
     public Map<String, ProjectConfig> projects() {

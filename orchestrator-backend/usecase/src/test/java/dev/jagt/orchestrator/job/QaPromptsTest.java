@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.QaBrief;
 import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
 import dev.jagt.orchestrator.task.QaVerdict;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ class QaPromptsTest {
 
     @Test
     void aRunMayFetchEachEnvironmentUrlAndItsLandedProbeAndNothingElse(@TempDir Path root) {
-        QaConfig qa = new QaConfig(true, null, List.of(
+        RoleConfig qa = new RoleConfig(true, null, List.of(
                 new QaEnvironment("https://dev.example.test", "https://dev.example.test/version"),
                 new QaEnvironment("https://stage.example.test", null)));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
