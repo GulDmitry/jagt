@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.QaEnding;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -40,6 +41,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class QaRoundFlowTest {
@@ -101,5 +103,24 @@ class QaRoundFlowTest {
         assertThat(asked.status()).isEqualTo(TaskStatus.DEPLOYED);
         assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
         assertThat(asked.message()).contains("QA could not prove");
+    }
+
+    @Test
+    void refusesAVerdictAtTheDoorWhereTheTaskWasClosedWhileQaRead(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).alias("a1").build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
+                        .withMerge("0123456789abcdef")), 1, "digest"));
+        QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
+                new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
+        StepRelay relay = mock(StepRelay.class);
+
+        QaEnding ending = new QaOutcomes(relay, new FlowReports(state, Clock.systemUTC()), mock(TaskStops.class), state)
+                .apply("ABC-42", task, verdict);
+
+        assertThat(ending).isEqualTo(QaEnding.GONE);
+        verifyNoInteractions(relay);
     }
 }

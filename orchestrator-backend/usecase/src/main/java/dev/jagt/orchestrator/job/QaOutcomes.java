@@ -38,13 +38,18 @@ public class QaOutcomes {
                 .filter(deployment -> deployment.live() && deployment.tips().equals(sha)).isPresent();
     }
 
+    /** A task closed while QA read is gone, and its verdict is refused at the door; any other is a deploy moved on. */
+    private QaEnding notStanding(String taskId) {
+        return state.task(taskId).isEmpty() ? QaEnding.GONE : QaEnding.DROPPED;
+    }
+
     /**
      * What QA made of the session's decline: no dispute ends the check, a first one goes to whoever stands in for the
      * human, and one after that to the human alone, since only a right the human grants is never answered by another.
      */
     public QaEnding declined(String taskId, QaDecline decline, boolean disputedBefore) {
         if (!stands(taskId, decline.sha())) {
-            return QaEnding.DROPPED;
+            return notStanding(taskId);
         }
         if (!decline.failure().isBlank()) {
             stops.stop(taskId, TaskStop.Trigger.QA_FAILED, decline.failure());
@@ -61,7 +66,7 @@ public class QaOutcomes {
 
     /** A verdict on a sha no longer the deploy's tip is dropped, whatever it found. */
     public QaEnding apply(String taskId, TaskState task, QaVerdict verdict) {
-        QaEnding ending = stands(taskId, verdict.sha()) ? verdict.ending() : QaEnding.DROPPED;
+        QaEnding ending = stands(taskId, verdict.sha()) ? verdict.ending() : notStanding(taskId);
         switch (ending) {
             case PASSED -> state.updateTask(taskId, current -> current.withMark(QaVerdict.MARK, verdict.sha()));
             case NOT_MET -> notMet(taskId, task, verdict);

@@ -107,3 +107,10 @@ A turn left open and unanswered by a restart SHALL run the same check again on t
 #### Scenario: A restart in the middle of a read
 - **WHEN** jagt restarts with QA's turn on ABC-42 open and unanswered
 - **THEN** the same check runs again on the same sha
+
+### Requirement: A closed task refuses a late verdict
+A task closed by you or by `ticket-close` SHALL end its check: a verdict arriving afterwards is refused and changes nothing.
+
+#### Scenario: Closed while QA reads
+- **WHEN** ABC-42 is closed while QA reads it and the verdict arrives
+- **THEN** the verdict is refused and no round or question is raised
