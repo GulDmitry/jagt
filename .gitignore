@@ -78,3 +78,8 @@ DETERMINISM.md
 # Pass/fail per eval case across runs, written by promptEval and roleEval
 orchestrator-backend/eval-stats.jsonl*
 .jqwik-database
+
+# A human's copy of a role file, made from its .dist beside it; the shipped .dist files and eval/ cases stay tracked
+roles/*/*
+!roles/*/*.dist
+!roles/*/eval/

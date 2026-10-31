@@ -11,17 +11,17 @@ public final class StandConfig {
     private StandConfig() {
     }
 
-    public static void write(Path root, Path repo, String mcpUrl, String tmuxSession, StandMode mode,
+    public static void write(Path shipped, Path root, Path repo, String mcpUrl, String tmuxSession, StandMode mode,
                              @Nullable Path replay) {
         try {
-            try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
-                for (Path file : shipped) {
+            try (var dists = Files.newDirectoryStream(shipped, "*.dist")) {
+                for (Path file : dists) {
                     Files.copy(file, root.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
                 }
             }
-            Path roles = Path.of("..", "roles");
+            Path roles = shipped.resolve("roles");
             try (var files = Files.walk(roles)) {
-                for (Path file : (Iterable<Path>) files.filter(Files::isRegularFile).filter(StandConfig::shipped)::iterator) {
+                for (Path file : (Iterable<Path>) files.filter(Files::isRegularFile).filter(candidate -> shipped(roles, candidate))::iterator) {
                     Path target = root.resolve("roles").resolve(roles.relativize(file).toString());
                     Files.createDirectories(target.getParent());
                     Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
@@ -37,8 +37,8 @@ public final class StandConfig {
         }
     }
 
-    private static boolean shipped(Path file) {
-        Path inRole = Path.of("..", "roles").relativize(file);
+    private static boolean shipped(Path roles, Path file) {
+        Path inRole = roles.relativize(file);
         return file.getFileName().toString().endsWith(".dist")
                 || inRole.getNameCount() > 2 && "eval".equals(inRole.getName(1).toString());
     }

@@ -17,7 +17,7 @@ class StandConfigTest {
         Path repo = Files.createDirectory(root.resolve("repo"));
         Path stand = Files.createDirectory(root.resolve("stand"));
 
-        StandConfig.write(stand, repo, "http://localhost:1/mcp", "stand-tmux", StandMode.JUDGE, null);
+        StandConfig.write(Path.of(".."), stand, repo, "http://localhost:1/mcp", "stand-tmux", StandMode.JUDGE, null);
 
         assertThat(stand.resolve("roles/qa/role.yml.dist")).exists();
     }
@@ -26,16 +26,16 @@ class StandConfigTest {
     void theStandRootHoldsOnlyTheShippedFilesOfARoleNotADevelopersOverride() throws Exception {
         Path repo = Files.createDirectory(root.resolve("repo"));
         Path stand = Files.createDirectory(root.resolve("stand"));
-        Path override = Path.of("..", "roles", "qa", "role.yml");
-        Files.writeString(Files.createFile(override), "id: local\n");
+        Path source = Files.createDirectories(root.resolve("source/roles/qa"));
+        Files.createDirectory(source.resolve("eval"));
+        Files.writeString(source.resolve("role.yml.dist"), "id: qa\n");
+        Files.writeString(source.resolve("role.yml"), "id: local\n");
+        Files.writeString(source.resolve("eval/01.yml"), "case\n");
 
-        try {
-            StandConfig.write(stand, repo, "http://localhost:1/mcp", "stand-tmux", StandMode.JUDGE, null);
-        } finally {
-            Files.delete(override);
-        }
+        StandConfig.write(root.resolve("source"), stand, repo, "http://localhost:1/mcp", "stand-tmux", StandMode.JUDGE, null);
 
         assertThat(stand.resolve("roles/qa/role.yml")).doesNotExist();
-        assertThat(stand.resolve("roles/qa/eval/01-all-met.yml")).exists();
+        assertThat(stand.resolve("roles/qa/role.yml.dist")).exists();
+        assertThat(stand.resolve("roles/qa/eval/01.yml")).exists();
     }
 }

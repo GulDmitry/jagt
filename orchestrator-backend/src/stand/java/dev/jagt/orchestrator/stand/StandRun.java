@@ -84,7 +84,7 @@ public final class StandRun implements AutoCloseable {
         StandProject project = StandProject.create(root);
         StandHost host = new StandHost(root.resolve("host")).start();
         try {
-            StandConfig.write(root, project.repo(), host.mcpUrl(), root.getFileName().toString(), mode, replayed);
+            StandConfig.write(Path.of(".."), root, project.repo(), host.mcpUrl(), root.getFileName().toString(), mode, replayed);
             JagtProcess jagt = JagtProcess.start(root);
             return new StandRun(root, marker.withJagt(jagt.pid(), jagt.port()).writeTo(root), mode, project, host, jagt,
                     replayed);
