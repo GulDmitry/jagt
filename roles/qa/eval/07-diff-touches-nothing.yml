@@ -18,5 +18,5 @@ expect:
   rows: {C1: not_met}
   report: plain
   ending: not-met
-names: ["phone", "diff|commit"]
+names: ["phone", "diff|commit|git show|changelog|build.gradle"]
 note: Evidence is the environment (no field) and the diff (nothing touches the form), both cited.
