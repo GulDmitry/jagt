@@ -71,7 +71,8 @@ class ReadGateTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"curl -sS http://127.0.0.1:5000/version", "curl -sS -i http://127.0.0.1:5000/quotes?id=1"})
+    @ValueSource(strings = {"curl -sS http://127.0.0.1:5000/version", "curl -sS -i http://127.0.0.1:5000/quotes?id=1",
+            "curl -i -sS http://127.0.0.1:5000/version", "curl -sS http://127.0.0.1:5000/version -i"})
     void letsACurlGetReachAnEnvironmentTheRoundNamed(String command) {
         ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
 
@@ -82,7 +83,8 @@ class ReadGateTest {
     @ValueSource(strings = {"curl -sS http://127.0.0.1:5001/version", "curl -sS http://127.0.0.1:5000@evil.test/",
             "curl -sS -X POST http://127.0.0.1:5000/quotes", "curl -sS http://127.0.0.1:5000/ -o /tmp/page",
             "curl -sS http://127.0.0.1:5000/$(id)", "curl -sS http://127.0.0.1:5000/;id", "curl http://127.0.0.1:5000/",
-            "curl -sS -K /tmp/config http://127.0.0.1:5000/"})
+            "curl -sS -K /tmp/config http://127.0.0.1:5000/",
+            "curl -sS http://127.0.0.1:5000/a http://127.0.0.1:5000/b"})
     void refusesACurlThatIsMoreThanAPlainGetOfANamedEnvironment(String command) {
         ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
 

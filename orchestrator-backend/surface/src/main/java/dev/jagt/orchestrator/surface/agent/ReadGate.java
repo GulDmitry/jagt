@@ -26,7 +26,8 @@ public final class ReadGate {
     private static final String SHELL_TOOL = "Bash";
     private static final String WEB_TOOL = "WebFetch";
     /** WebFetch reaches no host without a dot and no plain http, so an environment is read with one bare GET too. */
-    private static final Pattern CURL_GET = Pattern.compile("curl -sS (?:-i )?([A-Za-z0-9._:/?#=%-]+)");
+    private static final Pattern CURL_GET = Pattern.compile("curl(?= .*(?<= )-sS(?: |$))(?: -sS| -i)*"
+            + " ([A-Za-z0-9._:/?#=%-]+)(?: -sS| -i)*");
     static final Pattern PARENT = Pattern.compile("(^|/)\\.\\.(/|$)");
     /** A brace builds a parent out of pieces no single one of which is {@code ..}. */
     private static final Pattern GLOB_ESCAPE = Pattern.compile("[{}]|\\.\\.");
