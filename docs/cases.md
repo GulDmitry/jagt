@@ -8,7 +8,6 @@ Families:
 - F unbounded loop: a repeat, a store or a spend has no ceiling. G prose routing: jagt decided by reading text.
 - H a guard refuses what it should allow, or allows what it should refuse. I a vendor CLI behaves otherwise. J git, worktrees,
   several repositories. K the board. L the tests themselves. M anything else. H–M are counted by trailer and get rows here as their defects recur.
-
 "pinned by": the fix commits' subjects name almost no test, so it lists the test classes the fix commits touched; `none` = no test touched.
 ## A — text vs. text
 | id | the case, one line | defects | pinned by |
@@ -198,3 +197,4 @@ Families:
 | M7 | the stand writes its root → it holds the shipped roles beside the top-level `.dist` files, so its jagt installs QA and starts | seen 2026-10-31: found by the roles review, the stand copied no `roles/` | `StandConfigTest` |
 | M8 | QA is off and no `roles/qa` role is installed → jagt starts, QA's jobs stand idle and the start note says why; only QA turned on with no role refuses the start with that reason | seen 2026-10-31: found by the roles review, a raw bean exception stopped a start with QA off | `RoleStartupTest`, `RoleBeansTest` |
 | M9 | `orchestrator.roles` names a key that is no installed role with jobs → the session's own deploy check stays on and the start note names the key; only an installed QA turned on switches it off | seen 2026-10-31: found by the roles review, `roles: { foo: { enabled: true } }` or `QA:` silently turned the deploy check off | `ConfigServiceTest`, `RoleStartupTest` |
+| M10 | a role's `role.yml` names a checker trigger without `deployed` → the role is refused with that reason and skipped, so no check opens before the change is live | seen 2026-10-31: found by the roles review, `trigger: []` opened a check on a deployment not yet live | `RoleDefinitionsTest` |

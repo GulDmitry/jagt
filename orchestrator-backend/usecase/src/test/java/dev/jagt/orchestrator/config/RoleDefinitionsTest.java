@@ -30,6 +30,12 @@ class RoleDefinitionsTest {
     }
 
     @Test
+    void aCheckerTriggerWithoutDeployedIsRefused() {
+        assertThatThrownBy(() -> RoleDefinitions.compile("id: x\nname: X\nmodel: m\ntrigger: [pipelines-green]\n"
+                + "oncePer: deploy\noutcomes: [round]\n")).isInstanceOf(RoleInvalid.class).hasMessageContaining("deployed");
+    }
+
+    @Test
     void refusesARoleWhoseReadHasNoOutcome() {
         assertThatThrownBy(() -> RoleDefinitions.compile("id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
                 + "oncePer: deploy\noutcomes: []\n")).isInstanceOf(RoleInvalid.class).hasMessageContaining("no exit");

@@ -44,8 +44,12 @@ public final class RoleDefinitions {
         if (outcomes.isEmpty()) {
             throw new RoleInvalid(id + ": its read has no exit, for no outcome ends it");
         }
+        List<String> trigger = words(document, "trigger", TRIGGERS);
+        if (!trigger.contains("deployed")) {
+            throw new RoleInvalid(id + ": its trigger names deployed, or a check would open before the change is live");
+        }
         return new RoleDefinition(id, text(document, "name"), text(document, "model"),
-                words(document, "trigger", TRIGGERS), word(document, "oncePer", ONCE_PER), outcomes,
+                trigger, word(document, "oncePer", ONCE_PER), outcomes,
                 tools(map(document, "tools")), schema(document, "answer"), schema(document, "decline"));
     }
 
