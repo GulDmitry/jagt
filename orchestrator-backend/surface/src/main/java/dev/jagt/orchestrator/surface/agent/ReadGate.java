@@ -74,7 +74,7 @@ public final class ReadGate {
                 || url.startsWith(environment) && "/?#".indexOf(url.charAt(environment.length())) >= 0
                 || url.startsWith(environment) && environment.endsWith("/"));
         return listed ? Optional.empty()
-                : Optional.of("jagt refuses fetching " + url + ": a read reaches only the environments named in qa.environments.");
+                : Optional.of("jagt refuses fetching " + url + ": a read reaches only the environments the role names.");
     }
 
     /** A bare server names none of its tools. */

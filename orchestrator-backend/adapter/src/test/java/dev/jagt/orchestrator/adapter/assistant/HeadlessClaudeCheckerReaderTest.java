@@ -35,7 +35,7 @@ class HeadlessClaudeCheckerReaderTest {
     private final HeadlessClaudeCheckerReader reader = new HeadlessClaudeCheckerReader(new HeadlessClaude(
             new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), Clock.systemUTC())),
             ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
-            AssistantProperties.empty());
+            AssistantProperties.empty(), List.of(RoleDefinition.QA));
 
     @TempDir
     Path worktree;

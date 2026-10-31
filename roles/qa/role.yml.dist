@@ -1,0 +1,25 @@
+# The QA role: a headless model that checks a deployed change against its ticket, read-only, once per deploy.
+# Copy to `roles/qa/role.yml` to change it; a copy replaces this file whole.
+id: qa
+name: QA
+model: sonnet
+trigger: [deployed, pipelines-green, environment-named]
+oncePer: deploy
+outcomes: [round, question, wait, dispute, stop]
+tools:
+  cli: [Read, Grep, Glob, Bash, WebFetch]
+  allow: [Read, Grep, Glob, WebFetch, "Bash(curl -sS:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)"]
+  refuse: [Write, Edit, NotebookEdit, "Bash(git * --output*)", "Bash(git push:*)", "Bash(git commit:*)",
+           "Bash(git reset:*)", "Bash(git checkout:*)"]
+  git: true
+  fetch: environments
+answer:
+  - required: failure
+  - records: rows
+    fields: [criterion, status, evidence]
+    choices: {status: [met, "not met", unprovable]}
+  - text: question
+  - text: waitingOn
+decline:
+  - required: failure
+  - text: dispute

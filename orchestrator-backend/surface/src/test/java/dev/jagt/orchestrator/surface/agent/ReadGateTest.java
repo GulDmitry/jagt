@@ -67,7 +67,7 @@ class ReadGateTest {
         ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
 
         assertThat(ReadGate.refusal(scope, "WebFetch", Map.of("url", url), "/tmp")).get().asString()
-                .contains("refuses fetching " + url).contains("qa.environments");
+                .contains("refuses fetching " + url).contains("the environments the role names");
     }
 
     @ParameterizedTest
