@@ -310,6 +310,9 @@ final class TaskChart {
         chart.onMatching(GIT, GitPhase.TRUSTED, "changed", move -> move instanceof TaskMove.GitChanged)
                 .emitFor(move -> new TaskEffect.ParksGit(((TaskMove.GitChanged) move).changed()))
                 .to(GitPhase.CHANGED);
+        chart.onMatching(GIT, GitPhase.CHANGED, "changed again", move -> move instanceof TaskMove.GitChanged)
+                .emitFor(move -> new TaskEffect.ParksGit(((TaskMove.GitChanged) move).changed()))
+                .stay();
         for (GitPhase from : EnumSet.of(GitPhase.TRUSTED, GitPhase.CHANGED)) {
             chart.onMatching(GIT, from, "repository joined", move -> move instanceof TaskMove.GitRepoJoined)
                     .emitFor(move -> new TaskEffect.JoinsGit(((TaskMove.GitRepoJoined) move).added())).stay();

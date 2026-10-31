@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.RoundTrail;
 import dev.jagt.orchestrator.task.Session;
@@ -14,6 +15,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -492,5 +494,16 @@ class TaskReducerTest {
                 null), 9_000);
 
         assertThat(read.session().halt()).isEqualTo(ended.session().halt());
+    }
+
+    @Test
+    void aSecondGitChangeFoundReplacesTheOneParked() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+                .gitTrust(GitTrust.of(Map.of("a", "1"))).build();
+        TaskState first = TaskReducer.gitChanged(task, "a changed");
+
+        TaskState second = TaskReducer.gitChanged(first, "a changed; b added");
+
+        assertThat(second.gitTrust().changed()).isEqualTo("a changed; b added");
     }
 }

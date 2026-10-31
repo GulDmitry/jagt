@@ -11,6 +11,7 @@ stateDiagram-v2
         git_TRUSTED --> git_TRUSTED : trusted
         git_CHANGED --> git_TRUSTED : trusted
         git_TRUSTED --> git_CHANGED : changed
+        git_CHANGED --> git_CHANGED : changed again
         git_TRUSTED --> git_TRUSTED : repository joined
         git_CHANGED --> git_CHANGED : repository joined
     }
