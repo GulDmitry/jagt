@@ -6,6 +6,7 @@
 
 Accepted 2026-10-30. Extends [0006](0006-the-machine-owns-every-move-a-model-only-judges.md)
 and [0108](0108-a-stop-ends-on-the-read-that-disproves-it.md).
+Completed 2026-10-31: every task condition is a region, legality is the chart's `Offers` edges.
 
 ## Context
 
@@ -15,8 +16,8 @@ and [0108](0108-a-stop-ends-on-the-read-that-disproves-it.md).
   stop on a merged request refused its follow-up.
 - No JVM library checked 2026-10-29 has all four: a release within 18 months, maintenance, parallel regions, and a
   pure Spring-free step that returns effects as data.
-- The closest, KStateMachine 0.38.1 (2026-06-17), is Kotlin-first and pre-1.0. It steps by suspending, fires its
-  effects as callbacks, and does not document persisting parallel regions.
+- The closest, KStateMachine 0.38.1 (2026-06-17), is Kotlin-first, pre-1.0, steps by suspending, fires effects as
+  callbacks and does not document persisting parallel regions.
 
 ## Decision
 
@@ -30,8 +31,7 @@ and [0108](0108-a-stop-ends-on-the-read-that-disproves-it.md).
 - One reducer in `flow/` is the only writer of status and conditions. The `updateTask` sites become events fed to it,
   one condition per commit.
 - A test validates the chart: every stored non-final state has an exit, a guard reads only other regions, and every
-  state is reachable.
-- A jqwik property drives random event sequences against the same invariants.
+  state is reachable. A jqwik property drives random event sequences against the same invariants.
 - The diagram is rendered from the chart into `docs/`, and a golden test pins it.
 - Semantics follow SCXML, with KStateMachine as the reference: document order, exits before entries, and a
   run-to-completion step.

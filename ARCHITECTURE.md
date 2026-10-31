@@ -30,7 +30,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | kind | its one job | state |
 |------|-------------|-------|
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` |
-| `flow/` | which status allows what, where each outcome leads, whose turn | built — `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
+| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, qa, master, plus derived lazy `ask` and `qa beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
@@ -277,7 +277,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 
 | module | holds | sees |
 |--------|-------|------|
-| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step | the JDK only, no jagt type |
+| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step over stored and derived regions | the JDK only, no jagt type |
 | `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
