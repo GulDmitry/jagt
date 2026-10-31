@@ -27,6 +27,16 @@ public class QaPrompts {
                 qa.modelOrDefault());
     }
 
+    /** The round QA sent back and the reason the session gave for changing nothing, read against fresh evidence. */
+    public QaReader.Run decline(String taskId, String worktree, String sha, QaConfig qa, String rows, String reason) {
+        String environments = qa.environmentsOrEmpty().stream().map(QaPrompts::environment)
+                .collect(Collectors.joining("\n"));
+        String facts = taskId + " is deployed at " + sha + ".\nThe rows you found not met:\n" + rows
+                + "\nThe session changed nothing, and says:\n" + reason + "\nCheck on:\n" + environments;
+        return new QaReader.Run(brief.text(), brief.section("decline") + "\n\n" + facts, Path.of(worktree), sha,
+                qa.modelOrDefault());
+    }
+
     private static String environment(QaEnvironment environment) {
         return "- " + environment.url() + (environment.landed() == null || environment.landed().isBlank() ? ""
                 : " (the change is up when " + environment.landed() + " answers)");

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.QaDecline;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -64,5 +65,16 @@ class HeadlessClaudeQaReaderTest {
 
         assertThat(Files.readString(worktree.resolve("qa-report.md")))
                 .contains("abc123", "page opens", "GET answered 200");
+    }
+
+    @Test
+    void readsTheDisputeQaFilledAgainstASessionsDecline() {
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"failure\":\"\",\"dispute\":\"GET /list is unsorted\"}}", ""));
+
+        QaDecline decline = reader.reconsider(new QaReader.Run("", "decide", worktree, "abc123", "")).facts()
+                .orElseThrow();
+
+        assertThat(decline).isEqualTo(new QaDecline("abc123", "", "GET /list is unsorted"));
     }
 }

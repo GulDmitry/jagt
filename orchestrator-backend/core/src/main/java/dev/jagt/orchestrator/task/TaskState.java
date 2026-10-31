@@ -616,6 +616,12 @@ public record TaskState(
         return status == TaskStatus.DEPLOYED && deployment != null && turnOrNone().marked(QaVerdict.MARK, deployment.tips());
     }
 
+    /** A QA round went out on the deploy now live and the session has not yet settled it. */
+    public boolean qaRoundOpen() {
+        return deployment != null && deployment.askedDigest() != null
+                && deployment.askedDigest().equals(turnOrNone().mark(QaVerdict.ROUND_DIGEST));
+    }
+
     public TaskState withMark(String step, String value) {
         return withTurn(turnOrNone().withMark(step, value));
     }

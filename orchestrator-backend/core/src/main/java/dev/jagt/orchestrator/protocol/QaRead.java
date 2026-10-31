@@ -14,6 +14,10 @@ public final class QaRead {
             .text("question", null)
             .text("waitingOn", null);
 
+    public static final Schema DECLINE = Schema.answer()
+            .required("failure", "string", null)
+            .text("dispute", null);
+
     private QaRead() {
     }
 }

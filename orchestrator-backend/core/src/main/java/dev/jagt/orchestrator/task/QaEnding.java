@@ -7,6 +7,8 @@ public enum QaEnding {
     UNPROVABLE,
     WAITING,
     DECLINED,
+    DISPUTED,
+    ESCALATED,
     DROPPED,
     FAILED,
     GONE

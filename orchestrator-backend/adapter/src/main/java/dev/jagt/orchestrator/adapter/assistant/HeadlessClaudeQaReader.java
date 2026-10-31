@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.protocol.QaRead;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaVerdict;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,9 +45,27 @@ public class HeadlessClaudeQaReader implements QaReader {
 
     @Override
     public Answer<QaVerdict> read(Run run) {
+        HeadlessClaude.Reply reply = ask(run, QaRead.SCHEMA.json());
+        QaVerdict verdict = verdict(run.sha(), reply);
+        write(run.worktree().resolve(REPORT), verdict);
+        return new Answer<>(Optional.of(verdict), reply.usage());
+    }
+
+    @Override
+    public Answer<QaDecline> reconsider(Run run) {
+        HeadlessClaude.Reply reply = ask(run, QaRead.DECLINE.json());
+        JsonNode answer = reply.envelope() == null ? null : reply.envelope().path("structured_output");
+        QaDecline decline = answer == null || !answer.isObject()
+                ? QaDecline.failed(run.sha(), reply.envelope() == null ? "the check failed: " + reply.cause()
+                        : "the check answered nothing readable")
+                : new QaDecline(run.sha(), answer.path("failure").asString(""), answer.path("dispute").asString(""));
+        return new Answer<>(Optional.of(decline), reply.usage());
+    }
+
+    private HeadlessClaude.Reply ask(Run run, String schema) {
         List<String> mcpReads = ReadOnlyTools.mcpNamed(assistant.allowedTools());
         List<String> cmd = new ArrayList<>(List.of(claude.command(), run.prompt(), "-p",
-                "--json-schema", QaRead.SCHEMA.json(), "--output-format", "json",
+                "--json-schema", schema, "--output-format", "json",
                 "--setting-sources", "user", "--no-session-persistence"));
         if (!run.shared().isBlank()) {
             cmd.addAll(List.of("--append-system-prompt", run.shared()));
@@ -65,12 +84,8 @@ public class HeadlessClaudeQaReader implements QaReader {
         cmd.addAll(mcpReads);
         List<String> tools = new ArrayList<>(mcpReads);
         tools.add(HeadlessClaude.STRUCTURED_OUTPUT);
-        HeadlessClaude.Reply reply = headless.run(run.worktree(), TIMEOUT, cmd,
-                new ReadScope(List.of(run.worktree()), tools, true), AssistantCallKind.QA_CHECK,
-                run.worktree().toString());
-        QaVerdict verdict = verdict(run.sha(), reply);
-        write(run.worktree().resolve(REPORT), verdict);
-        return new Answer<>(Optional.of(verdict), reply.usage());
+        return headless.run(run.worktree(), TIMEOUT, cmd, new ReadScope(List.of(run.worktree()), tools, true),
+                AssistantCallKind.QA_CHECK, run.worktree().toString());
     }
 
     private static void write(Path file, QaVerdict verdict) {

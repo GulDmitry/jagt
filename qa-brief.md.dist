@@ -30,8 +30,8 @@ The environment you named answers its probe again. Run the same check.
 
 ## decline
 
-The session answered your round with no change and a reason. Read the reason against your evidence: accept it and end
-the check `declined`, or `dispute` it once, naming the evidence that stands against it.
+The session answered your round with no change and a reason. Read the reason against your evidence: accept it and leave
+`dispute` empty, which ends the check `declined`, or fill `dispute` with the evidence that stands against it.
 
 ## ruled
 

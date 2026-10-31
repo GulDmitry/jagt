@@ -12,6 +12,10 @@ public record QaVerdict(String sha, String failure, List<Row> rows, String quest
 
     public static final String MARK = "qa";
 
+    /** The deploy a QA round went out on, and the rows that round carried, kept on the turn for the decline read. */
+    public static final String ROUND_DIGEST = "qa:digest";
+    public static final String ROUND_ROWS = "qa:rows";
+
     public enum Status {
         MET, NOT_MET, UNPROVABLE;
 

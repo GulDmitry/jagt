@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.port;
 
+import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaVerdict;
 
 import java.nio.file.Path;
@@ -14,4 +15,7 @@ public interface QaReader {
     }
 
     Answer<QaVerdict> read(Run run);
+
+    /** The same read, of the reason the session gave for changing nothing, or of an arbiter's ruling. */
+    Answer<QaDecline> reconsider(Run run);
 }

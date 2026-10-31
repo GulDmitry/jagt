@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaEnding;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.Step;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /** What a finished check does to the task: rows not met go back as a round, unprovable ones to the human. */
@@ -31,11 +33,35 @@ public class QaOutcomes {
     private final TaskStops stops;
     private final StateService state;
 
+    private boolean stands(String taskId, String sha) {
+        return state.task(taskId).map(TaskState::deployment)
+                .filter(deployment -> deployment.live() && deployment.tips().equals(sha)).isPresent();
+    }
+
+    /**
+     * What QA made of the session's decline: no dispute ends the check, a first one goes to whoever stands in for the
+     * human, and one after that to the human alone, since only a right the human grants is never answered by another.
+     */
+    public QaEnding declined(String taskId, QaDecline decline, boolean disputedBefore) {
+        if (!stands(taskId, decline.sha())) {
+            return QaEnding.DROPPED;
+        }
+        if (!decline.failure().isBlank()) {
+            stops.stop(taskId, TaskStop.Trigger.QA_FAILED, decline.failure());
+            return QaEnding.FAILED;
+        }
+        if (decline.dispute().isBlank()) {
+            return QaEnding.DECLINED;
+        }
+        String said = "QA disputes your answer to its round, on " + decline.sha() + ":\n" + decline.dispute();
+        reports.ask(taskId, disputedBefore ? AgentReport.PERMISSION : AgentReport.QUESTION, said);
+        log.atInfo().setMessage("qa disputes").addKeyValue("task", taskId).addKeyValue("again", disputedBefore).log();
+        return disputedBefore ? QaEnding.ESCALATED : QaEnding.DISPUTED;
+    }
+
     /** A verdict on a sha no longer the deploy's tip is dropped, whatever it found. */
     public QaEnding apply(String taskId, TaskState task, QaVerdict verdict) {
-        boolean stands = state.task(taskId).map(TaskState::deployment)
-                .filter(deployment -> deployment.live() && deployment.tips().equals(verdict.sha())).isPresent();
-        QaEnding ending = stands ? verdict.ending() : QaEnding.DROPPED;
+        QaEnding ending = stands(taskId, verdict.sha()) ? verdict.ending() : QaEnding.DROPPED;
         switch (ending) {
             case PASSED -> state.updateTask(taskId, current -> current.withMark(QaVerdict.MARK, verdict.sha()));
             case NOT_MET -> notMet(taskId, task, verdict);
@@ -55,6 +81,11 @@ public class QaOutcomes {
                         "qa: not met; relayed", opensTheTurn),
                 opened -> reports.undoClaim(taskId, task, opened));
         boolean sent = OriginContext.as(ActionOrigin.QA, () -> relay.relayRound(taskId, Step.QA_ROUND, facts, claim));
+        if (sent) {
+            String digest = Objects.requireNonNull(Objects.requireNonNull(task.deployment()).askedDigest());
+            state.updateTask(taskId, current -> current.withMark(QaVerdict.ROUND_DIGEST, digest)
+                    .withMark(QaVerdict.ROUND_ROWS, facts));
+        }
         log.atInfo().setMessage("qa returns the round").addKeyValue("task", taskId)
                 .addKeyValue("rows", verdict.notMet().size()).addKeyValue("sent", sent).log();
         return sent;
