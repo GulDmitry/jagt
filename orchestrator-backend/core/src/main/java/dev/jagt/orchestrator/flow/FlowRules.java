@@ -2,109 +2,27 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
-import java.util.EnumMap;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiPredicate;
 
-/**
- * THE life of a task, in one file: which statuses allow which action, and what each outcome of that action leads
- * to. Nothing else may answer either question, so a card cannot advertise a move the gate then refuses. Java
- * rather than configuration, so every status and action here is compiler-checked.
- */
+/** What a task's status allows and where an outcome leads it, answered by the task chart alone. */
 public final class FlowRules {
-
-    /** An action a task's own status has nothing to say about: looking at it, or restarting its session. */
-    private static final Set<TaskAction> ALWAYS = EnumSet.of(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF,
-            TaskAction.RESPAWN, TaskAction.DONE);
-
-    private record Rule(Set<TaskStatus> from, BiPredicate<TaskStatus, Facts> when) {
-
-        boolean allows(TaskStatus status, Facts facts) {
-            return from.contains(status) && when.test(status, facts);
-        }
-    }
-
-    private static final Map<TaskAction, Rule> RULES = new EnumMap<>(TaskAction.class);
-
-    static {
-        // `ship` IS the human's approval, so a task an agent has not reported on passes too; a SHIPPING task
-        // whose agent has DIED passes as recovery, while a live one means the push is already in flight.
-        rule(TaskAction.SHIP)
-                .fromChart()
-                .when((status, facts) -> !facts.gitStateChanged() && !facts.requestMerged() && switch (status) {
-                    case IN_PROGRESS, VERIFYING, REVIEW_PENDING -> true;
-                    case SHIPPING -> !facts.agentLive().getAsBoolean();
-                    default -> facts.hasReviewRequest();
-                })
-                .add();
-
-        // The plan holds: the session is told to start on it, which is the one way out of a plan.
-        rule(TaskAction.APPROVE_PLAN)
-                .fromChart()
-                .add();
-
-        // The session stopped to ask for another repository; the task goes back to work unless a human owns its status.
-        rule(TaskAction.ADD_REPO)
-                .fromAny()
-                .when((status, facts) -> status != TaskStatus.DONE && facts.repoRequested())
-                .add();
-
-        // Reading a review round decides nothing by itself: what it found is REPORTED.
-        rule(TaskAction.SWEEP)
-                .fromAny()
-                .when((status, facts) -> facts.hasReviewRequest())
-                .add();
-
-        // What a reviewer SAID is not a gate: deploy merges the task BRANCH, and git's only precondition is
-        // commits on it. Excluded are the statuses where it could only race or refuse.
-        rule(TaskAction.DEPLOY)
-                .fromChart()
-                // A stalled deploy is finished by deploying again, whatever the request says.
-                .when((status, facts) -> !facts.gitStateChanged()
-                        && !facts.revertConflict()
-                        && (status == TaskStatus.DEPLOY_CONFLICT || facts.hasReviewRequest()))
-                .add();
-
-        // A deploy that stopped part way, or one the task has moved on from, may have left a repository live.
-        rule(TaskAction.REVERT)
-                .fromAny()
-                .when((status, facts) -> !facts.gitStateChanged() && (status == TaskStatus.DEPLOYED
-                        || status == TaskStatus.DEPLOY_CONFLICT || facts.liveDeploy()))
-                .add();
-
-        // Git that runs with the human's credentials waits until the human trusts what it would obey.
-        rule(TaskAction.TRUST)
-                .fromAny()
-                .when((status, facts) -> facts.gitStateChanged())
-                .add();
-
-        rule(TaskAction.LIFT)
-                .fromAny()
-                .when((status, facts) -> facts.stopped())
-                .add();
-
-        for (TaskAction action : ALWAYS) {
-            rule(action).fromAny().add();
-        }
-    }
 
     private FlowRules() {
     }
 
     public static boolean allows(TaskStatus status, TaskAction action, Facts facts) {
-        Rule rule = RULES.get(action);
-        return rule != null && rule.allows(status, facts);
+        return TaskChart.offers(status, action, facts);
     }
 
     /** Every action legal for a task, what moves it on before what only looks at it — so no surface sorts. */
     public static List<TaskAction> allowed(TaskStatus status, Facts facts) {
-        return RULES.entrySet().stream().filter(entry -> entry.getValue().allows(status, facts))
-                .map(Map.Entry::getKey)
-                .sorted(java.util.Comparator.comparing(TaskAction::group)).toList();
+        return Arrays.stream(TaskAction.values()).filter(action -> allows(status, action, facts))
+                .sorted(Comparator.comparing(TaskAction::group)).toList();
     }
 
     /** The status this outcome leads a task in {@code from} to, or empty to leave the task where it is. */
@@ -114,7 +32,7 @@ public final class FlowRules {
 
     /** Whether the table says anything at all about this action — a verb it does not mention can never run. */
     public static boolean mentions(TaskAction action) {
-        return RULES.containsKey(action);
+        return TaskOffers.mentions(action);
     }
 
     /** Every status any action can lead to. */
@@ -362,37 +280,4 @@ public final class FlowRules {
     /** Statuses the work has been handed over from, so a tracker reaching its own last stage may close it. */
     private static final Set<TaskStatus> HANDED_OVER = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
             TaskStatus.DEPLOYED);
-
-    private static Builder rule(TaskAction action) {
-        return new Builder(action);
-    }
-
-    private static final class Builder {
-
-        private final TaskAction action;
-        private Set<TaskStatus> from = EnumSet.allOf(TaskStatus.class);
-        private BiPredicate<TaskStatus, Facts> when = (status, facts) -> true;
-
-        private Builder(TaskAction action) {
-            this.action = action;
-        }
-
-        private Builder fromChart() {
-            this.from = TaskChart.leavesBy(action);
-            return this;
-        }
-
-        private Builder fromAny() {
-            return this;
-        }
-
-        private Builder when(BiPredicate<TaskStatus, Facts> when) {
-            this.when = when;
-            return this;
-        }
-
-        private void add() {
-            RULES.put(action, new Rule(from, when));
-        }
-    }
 }

@@ -16,6 +16,10 @@ sealed interface TaskMove {
     record Ran(TaskAction action, Outcome.Kind outcome) implements TaskMove {
     }
 
+    /** Whether a human may run {@code action} now; no edge on it changes a state or emits an effect. */
+    record Offers(TaskAction action) implements TaskMove {
+    }
+
     record Reported(TaskStatus status, boolean verificationOwed) implements TaskMove {
     }
 

@@ -9,9 +9,11 @@ import dev.jagt.statechart.Chart;
 import dev.jagt.statechart.ChartBuilder;
 import dev.jagt.statechart.ChartStep;
 import dev.jagt.statechart.Condition;
+import dev.jagt.statechart.Configuration;
 import dev.jagt.statechart.EdgeBuilder;
 import dev.jagt.statechart.RegionId;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -66,12 +68,6 @@ final class TaskChart {
 
     private static final Set<TaskStatus> OPEN = EnumSet.complementOf(EnumSet.of(DONE));
 
-    private static final Set<TaskStatus> SHIP_FROM = EnumSet.of(IN_PROGRESS, VERIFYING, REVIEW_PENDING, SHIPPING,
-            CI_POLLING, CI_FAILED, REVIEWED, DEPLOYED, REVERTED);
-
-    private static final Set<TaskStatus> DEPLOY_FROM = EnumSet.of(REVIEW_PENDING, CI_POLLING, CI_FAILED, REVIEWED,
-            APPROVED, DEPLOYED, DEPLOY_CONFLICT);
-
     private static final Set<TaskStatus> HELD = EnumSet.of(REVERTED, DEPLOY_CONFLICT);
 
     private static final Set<TaskStatus> REPORTED = EnumSet.of(PLAN_PENDING, IN_PROGRESS, SHIPPING, REVIEW_PENDING,
@@ -91,6 +87,8 @@ final class TaskChart {
 
     private static final Chart<TaskMove, ChartFacts, TaskEffect> CHART = build();
 
+    private static final List<Configuration> STARTS = starts();
+
     private TaskChart() {
     }
 
@@ -105,7 +103,21 @@ final class TaskChart {
 
     /** The configuration {@code move} leaves a task standing at {@code phases} in, with the effects it took. */
     static ChartStep<TaskEffect> step(Phases phases, TaskMove move) {
-        return CHART.step(CHART.configuration(Map.ofEntries(
+        return CHART.step(configurationOf(phases), phases.facts(), move);
+    }
+
+    /** Whether a task at {@code status} with {@code facts} may be offered {@code action}. */
+    static boolean offers(TaskStatus status, TaskAction action, Facts facts) {
+        return CHART.takes(LIFECYCLE, STARTS.get(status.ordinal()), new ChartFacts(false, QaPhase.NONE, facts),
+                new TaskMove.Offers(action));
+    }
+
+    private static List<Configuration> starts() {
+        return Arrays.stream(TaskStatus.values()).map(status -> configurationOf(Phases.at(status))).toList();
+    }
+
+    private static Configuration configurationOf(Phases phases) {
+        return CHART.configuration(Map.ofEntries(
                 Map.entry(LIFECYCLE.name(), phases.lifecycle().name()), Map.entry(STOP.name(), phases.stop().name()),
                 Map.entry(PLAN.name(), phases.plan().name()), Map.entry(REPORT.name(), phases.report().name()),
                 Map.entry(TURN.name(), phases.turn().name()), Map.entry(DEPLOY.name(), phases.deploy().name()),
@@ -113,25 +125,13 @@ final class TaskChart {
                 Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
                 Map.entry(CHECKS.name(), phases.checks().name()),
                 Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()),
-                Map.entry(QA.name(), phases.qa().name()), Map.entry(MASTER.name(), phases.master().name()))),
-                phases.facts(), move);
+                Map.entry(QA.name(), phases.qa().name()), Map.entry(MASTER.name(), phases.master().name())));
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
         return effects(Phases.at(from), move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
-    }
-
-    /** The statuses an action leads out of, whatever its outcome. */
-    static Set<TaskStatus> leavesBy(TaskAction action) {
-        Set<TaskStatus> leaves = EnumSet.noneOf(TaskStatus.class);
-        for (TaskStatus from : TaskStatus.values()) {
-            for (Outcome.Kind outcome : Outcome.Kind.values()) {
-                land(from, new TaskMove.Ran(action, outcome)).ifPresent(to -> leaves.add(from));
-            }
-        }
-        return leaves;
     }
 
     /** Every status some action's outcome leads to; a task that is gone is written nothing. */
@@ -183,6 +183,7 @@ final class TaskChart {
         masters(chart);
         sessions(chart);
         ran(chart);
+        TaskOffers.declare(chart, LIFECYCLE);
         reports(chart);
         reads(chart);
         edge(chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
@@ -686,15 +687,15 @@ final class TaskChart {
     }
 
     private static void ran(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
-        ran(chart, TaskAction.SHIP, Outcome.Kind.OK, CI_POLLING, SHIP_FROM);
-        ran(chart, TaskAction.SHIP, Outcome.Kind.RELAYED, SHIPPING, SHIP_FROM);
+        ran(chart, TaskAction.SHIP, Outcome.Kind.OK, CI_POLLING, TaskOffers.SHIP_FROM);
+        ran(chart, TaskAction.SHIP, Outcome.Kind.RELAYED, SHIPPING, TaskOffers.SHIP_FROM);
         ran(chart, TaskAction.APPROVE_PLAN, Outcome.Kind.RELAYED, IN_PROGRESS, EnumSet.of(PLAN_PENDING));
         ran(chart, TaskAction.ADD_REPO, Outcome.Kind.RELAYED, IN_PROGRESS,
                 EnumSet.complementOf(EnumSet.of(PLAN_PENDING, DEPLOYED, DEPLOY_CONFLICT, REVERTED, DONE)));
-        ran(chart, TaskAction.DEPLOY, Outcome.Kind.OK, DEPLOYED, DEPLOY_FROM);
-        ran(chart, TaskAction.DEPLOY, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, DEPLOY_FROM);
+        ran(chart, TaskAction.DEPLOY, Outcome.Kind.OK, DEPLOYED, TaskOffers.DEPLOY_FROM);
+        ran(chart, TaskAction.DEPLOY, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, TaskOffers.DEPLOY_FROM);
         ran(chart, TaskAction.REVERT, Outcome.Kind.OK, REVERTED, OPEN);
-        ran(chart, TaskAction.REVERT, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, DEPLOY_FROM);
+        ran(chart, TaskAction.REVERT, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, TaskOffers.DEPLOY_FROM);
         ran(chart, TaskAction.REVERT, Outcome.Kind.PARTIAL, DEPLOYED, EnumSet.complementOf(
                 EnumSet.of(DEPLOY_CONFLICT, DONE)));
         ran(chart, TaskAction.DONE, Outcome.Kind.GONE, DONE, OPEN);

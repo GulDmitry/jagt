@@ -27,6 +27,6 @@ record Phases(TaskStatus lifecycle, StopKind stop, PlanGate plan, AgentReport re
     }
 
     ChartFacts facts() {
-        return new ChartFacts(stampedAsk, beneathQa);
+        return new ChartFacts(stampedAsk, beneathQa, Facts.defaults());
     }
 }

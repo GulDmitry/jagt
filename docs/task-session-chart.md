@@ -94,4 +94,12 @@ stateDiagram-v2
     }
     %% derived ask
     %% derived qa beneath a read
+    %% derived review request
+    %% derived live deploy
+    %% derived agent live
+    %% derived git changed
+    %% derived stopped
+    %% derived repo requested
+    %% derived request merged
+    %% derived revert conflict
 ```

@@ -36,9 +36,10 @@ final class Mermaid {
             if (sharing.size() < 2) {
                 lines.add("        " + id(region, t.from()) + " --> " + id(region, t.to()) + " : " + t.label());
             } else if (drawn.add(t.group())) {
-                lines.add("        state \"" + sources(region, sharing) + "\" as " + region.name() + "_from_" + t.group());
-                lines.add("        " + region.name() + "_from_" + t.group() + " --> " + id(region, t.to()) + " : "
-                        + t.label());
+                String source = region.name() + "_from_" + t.group();
+                boolean loops = sharing.stream().allMatch(edge -> edge.from() == edge.to());
+                lines.add("        state \"" + sources(region, sharing) + "\" as " + source);
+                lines.add("        " + source + " --> " + (loops ? source : id(region, t.to())) + " : " + t.label());
             }
         }
         region.states().stream().filter(region.finals()::contains)
