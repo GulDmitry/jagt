@@ -21,7 +21,7 @@ import static dev.jagt.orchestrator.task.TaskStatus.*;
 
 /**
  * The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends; the plan, report,
- * turn, deploy and session regions.
+ * turn, deploy, session and git regions.
  */
 final class TaskChart {
 
@@ -38,6 +38,8 @@ final class TaskChart {
     private static final RegionId<DeployPhase> DEPLOY = new RegionId<>("deploy", DeployPhase.class);
 
     private static final RegionId<SessionPhase> SESSION = new RegionId<>("session", SessionPhase.class);
+
+    private static final RegionId<GitPhase> GIT = new RegionId<>("git", GitPhase.class);
 
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
@@ -79,17 +81,17 @@ final class TaskChart {
 
     /** What {@code move} does to a task at {@code from} under {@code stop}, {@code plan}, {@code report} and {@code turn}, in order; empty where no edge takes it. */
     static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, AgentReport report,
-                                TurnKind turn, DeployPhase deploy, SessionPhase session, boolean stampedAsk,
+                                TurnKind turn, DeployPhase deploy, SessionPhase session, GitPhase git, boolean stampedAsk,
                                 TaskMove move) {
         return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name(),
                 PLAN.name(), plan.name(), REPORT.name(), report.name(), TURN.name(), turn.name(),
-                DEPLOY.name(), deploy.name(), SESSION.name(), session.name())), stampedAsk, move).effects();
+                DEPLOY.name(), deploy.name(), SESSION.name(), session.name(), GIT.name(), git.name())), stampedAsk, move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
         return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, TurnKind.CLOSED,
-                DeployPhase.NONE, SessionPhase.NONE, false, move).stream().filter(TaskEffect.Lands.class::isInstance)
+                DeployPhase.NONE, SessionPhase.NONE, GitPhase.UNREAD, false, move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -143,6 +145,7 @@ final class TaskChart {
         says(chart);
         turns(chart);
         deploys(chart);
+        gits(chart);
         sessions(chart);
         ran(chart);
         reports(chart);
@@ -289,6 +292,27 @@ final class TaskChart {
             if (turnsEnd.contains(from) || from == SessionPhase.FAILED) {
                 signed(chart, from, "turn failed", SessionPhase.FAILED, SessionSign.TurnFailed.class);
             }
+        }
+    }
+
+    private static void gits(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+        chart.region(GIT, GitPhase.UNREAD);
+        for (GitPhase from : GitPhase.values()) {
+            EdgeBuilder<TaskMove, Boolean, TaskEffect, GitPhase> trusted = chart.onMatching(GIT, from, "trusted",
+                            move -> move instanceof TaskMove.GitTrusted)
+                    .emitFor(move -> new TaskEffect.TrustsGit(((TaskMove.GitTrusted) move).trust()));
+            if (from == GitPhase.TRUSTED) {
+                trusted.stay();
+            } else {
+                trusted.to(GitPhase.TRUSTED);
+            }
+        }
+        chart.onMatching(GIT, GitPhase.TRUSTED, "changed", move -> move instanceof TaskMove.GitChanged)
+                .emitFor(move -> new TaskEffect.ParksGit(((TaskMove.GitChanged) move).changed()))
+                .to(GitPhase.CHANGED);
+        for (GitPhase from : EnumSet.of(GitPhase.TRUSTED, GitPhase.CHANGED)) {
+            chart.onMatching(GIT, from, "repository joined", move -> move instanceof TaskMove.GitRepoJoined)
+                    .emitFor(move -> new TaskEffect.JoinsGit(((TaskMove.GitRepoJoined) move).added())).stay();
         }
     }
 

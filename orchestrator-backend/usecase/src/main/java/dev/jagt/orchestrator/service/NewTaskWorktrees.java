@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
@@ -191,7 +192,7 @@ public class NewTaskWorktrees {
 
     /** A task trusted at its first check stays so; else the added repository joins what was trusted as it stood. */
     private static TaskState trusted(TaskState task, @Nullable GitTrust added) {
-        return task.gitTrust() == null || added == null ? task : task.withGitTrust(task.gitTrust().including(added));
+        return added == null ? task : TaskReducer.gitRepoJoined(task, added);
     }
 
     private List<NewRepo> held(TaskState task, ConfigService.ConfigFile config) {

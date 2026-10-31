@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -40,5 +41,14 @@ sealed interface TaskEffect {
     }
 
     record RestartsSession() implements TaskEffect {
+    }
+
+    record TrustsGit(GitTrust trust) implements TaskEffect {
+    }
+
+    record ParksGit(String changed) implements TaskEffect {
+    }
+
+    record JoinsGit(GitTrust added) implements TaskEffect {
     }
 }

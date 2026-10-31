@@ -41,6 +41,15 @@ class FlowDoorsTest {
     }
 
     @Test
+    void aGitTrustIsWrittenOnlyByTheReducer() {
+        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
+                .should().callMethodWhere(target(name("withGitTrust")))
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("dev.jagt.orchestrator"));
+    }
+
+    @Test
     void aReportIsWrittenOnlyByTheReducer() {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")

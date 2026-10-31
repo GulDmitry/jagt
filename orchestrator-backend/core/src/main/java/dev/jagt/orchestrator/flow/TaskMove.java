@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
@@ -80,5 +81,17 @@ sealed interface TaskMove {
 
     /** A session started over: nothing the old one signed speaks for the new one. */
     record SessionStartedOver() implements TaskMove {
+    }
+
+    /** The git state a human adopted, or a first check found and took as it stands. */
+    record GitTrusted(GitTrust trust) implements TaskMove {
+    }
+
+    /** A check found git obeying something other than what was trusted. */
+    record GitChanged(String changed) implements TaskMove {
+    }
+
+    /** An added repository's entries joining what was trusted. */
+    record GitRepoJoined(GitTrust added) implements TaskMove {
     }
 }

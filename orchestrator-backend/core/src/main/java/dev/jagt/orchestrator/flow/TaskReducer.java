@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -9,8 +10,9 @@ import dev.jagt.orchestrator.task.Turn;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 
-/** The one place a task's status, stop, plan gate, report, turn, deployment and session are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report, turn, deployment, session and git trust are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -128,9 +130,24 @@ public final class TaskReducer {
         return step(task, new TaskMove.SessionStartedOver(), 0);
     }
 
+    /** {@code task} trusting {@code trust} as the git state it obeys; a change found stands no longer. */
+    public static TaskState gitTrusted(TaskState task, GitTrust trust) {
+        return step(task, new TaskMove.GitTrusted(trust), 0);
+    }
+
+    /** {@code task} with a git change found, kept until a human trusts it; where nothing was trusted yet, nothing is kept. */
+    public static TaskState gitChanged(TaskState task, String changed) {
+        return step(task, new TaskMove.GitChanged(changed), 0);
+    }
+
+    /** {@code task} whose trusted git state takes in the entries of a repository added to it; where nothing was trusted, it stays so. */
+    public static TaskState gitRepoJoined(TaskState task, GitTrust added) {
+        return step(task, new TaskMove.GitRepoJoined(added), 0);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
         return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
-                TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), SessionPhase.of(task.session()), task.session().stampedAsk(), move);
+                TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), SessionPhase.of(task.session()), GitPhase.of(task.gitTrust()), task.session().stampedAsk(), move);
     }
 
     private static TaskState step(TaskState task, TaskMove move, long now) {
@@ -156,6 +173,9 @@ public final class TaskReducer {
             case TaskEffect.Deploys deploys -> task.withDeployment(deploys.step()
                     .applyTo(task.deployment() == null ? Deployment.defaults() : task.deployment(), now));
             case TaskEffect.RestartsSession restarts -> task.withSession(Session.startedOver());
+            case TaskEffect.TrustsGit trusts -> task.withGitTrust(trusts.trust());
+            case TaskEffect.ParksGit parks -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).withChanged(parks.changed()));
+            case TaskEffect.JoinsGit joins -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).including(joins.added()));
             case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }

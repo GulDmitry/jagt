@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -16,6 +17,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,11 +78,22 @@ class TaskReducerProperties {
     }
 
     @Property
+    void aGitChangeLeavesOnlyOnATrustMove(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, move) -> {
+            TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+            Optional.of(task).filter(TaskState::gitStateChanged)
+                    .filter(before -> !(move instanceof TaskMove.GitTrusted))
+                    .ifPresent(before -> assertThat(next.gitStateChanged()).isTrue());
+            return next;
+        }, (left, right) -> right);
+    }
+
+    @Property
     void aMoveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
             Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
-                    TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), SessionPhase.of(task.session()), task.session().stampedAsk(), move))
+                    TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), SessionPhase.of(task.session()), GitPhase.of(task.gitTrust()), task.session().stampedAsk(), move))
                     .filter(List::isEmpty).ifPresent(none -> {
                         assertThat(next.status()).isEqualTo(task.status());
                         assertThat(next.deployment()).isEqualTo(task.deployment());
@@ -135,10 +148,13 @@ class TaskReducerProperties {
         Arbitrary<TaskStop> stop = Arbitraries.of(TaskStop.Trigger.class).map(trigger ->
                 new TaskStop(trigger, 1_000, "evidence")).injectNull(0.5);
         Arbitrary<Turn> turn = Arbitraries.of("", "d").map(digest -> new Turn("ship", 4, digest, 1_000, null, null));
+        Arbitrary<GitTrust> trust = Arbitraries.of(GitTrust.of(Map.of("a", "1")),
+                GitTrust.of(Map.of("a", "1")).withChanged("a changed")).injectNull(0.3);
         return Combinators.combine(Arbitraries.of(TaskStatus.class), deployment, stop, Arbitraries.of(PlanGate.class),
-                        Arbitraries.of(AgentReport.class), turn)
-                .as((status, recorded, standing, gate, report, held) -> TaskState.builder("api", "/wt", status)
-                        .deployment(recorded).stop(standing).planGate(gate).report(report).turn(held).build());
+                        Arbitraries.of(AgentReport.class), turn, trust)
+                .as((status, recorded, standing, gate, report, held, git) -> TaskState.builder("api", "/wt", status)
+                        .deployment(recorded).stop(standing).planGate(gate).report(report).turn(held)
+                        .gitTrust(git).build());
     }
 
     @Provide
@@ -165,6 +181,9 @@ class TaskReducerProperties {
                 Arbitraries.of(AgentReport.class).map(TaskMove.Stamped::new),
                 Arbitraries.just(new TaskMove.Relayed("ship", "d", "a")),
                 Arbitraries.just(new TaskMove.TurnClosed()),
+                Arbitraries.just(new TaskMove.GitTrusted(GitTrust.of(Map.of("b", "2")))),
+                Arbitraries.just(new TaskMove.GitChanged("b changed")),
+                Arbitraries.just(new TaskMove.GitRepoJoined(GitTrust.of(Map.of("c", "3")))),
                 Arbitraries.of("", "d").map(digest -> new TaskMove.TurnRestored(
                         new Turn("ship", 2, digest, 500, null, null))));
         return move.list().ofMaxSize(50);
