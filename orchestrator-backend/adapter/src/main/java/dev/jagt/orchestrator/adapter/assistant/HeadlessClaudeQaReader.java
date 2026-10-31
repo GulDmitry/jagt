@@ -84,7 +84,7 @@ public class HeadlessClaudeQaReader implements QaReader {
         cmd.addAll(mcpReads);
         List<String> tools = new ArrayList<>(mcpReads);
         tools.add(HeadlessClaude.STRUCTURED_OUTPUT);
-        return headless.run(run.worktree(), TIMEOUT, cmd, new ReadScope(List.of(run.worktree()), tools, true),
+        return headless.run(run.worktree(), TIMEOUT, cmd, new ReadScope(List.of(run.worktree()), tools, true, List.of(), run.environments()),
                 AssistantCallKind.QA_CHECK, run.worktree().toString());
     }
 

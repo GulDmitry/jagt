@@ -22,7 +22,7 @@ class ReadGateTest {
     @ValueSource(strings = {"mcp__acme__get_issue", "mcp__whole__add_comment", "StructuredOutput"})
     void letsThroughEveryToolTheReadWasGiven(String tool) {
         ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__whole__add_comment",
-                "StructuredOutput"), false, List.of("mcp__*__*_delete_*"));
+                "StructuredOutput"), false, List.of("mcp__*__*_delete_*"), List.of());
 
         assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp")).isEmpty();
     }
@@ -51,9 +51,28 @@ class ReadGateTest {
         assertThat(ReadGate.refusal(scope, "mcp__acme__get.x?", Map.of(), "/tmp")).isEmpty();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"http://127.0.0.1:5000", "http://127.0.0.1:5000/health", "http://127.0.0.1:5000/?a=1",
+            "http://127.0.0.1:5000/version"})
+    void letsAWebFetchReachAnEnvironmentTheRoundNamed(String url) {
+        ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
+
+        assertThat(ReadGate.refusal(scope, "WebFetch", Map.of("url", url), "/tmp")).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http://127.0.0.1:5001/health", "http://127.0.0.1:5000.evil.test/", "https://example.org/",
+            "http://127.0.0.1:5000@evil.test/"})
+    void refusesAWebFetchOfAnyUrlNoEnvironmentNamesWithItsReason(String url) {
+        ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
+
+        assertThat(ReadGate.refusal(scope, "WebFetch", Map.of("url", url), "/tmp")).get().asString()
+                .contains("refuses fetching " + url).contains("qa.environments");
+    }
+
     @Test
     void refusesAWriteVerbMidNameThatOnlyAGlobAllowed() {
-        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*"), false, List.of("mcp__*__*_delete_*"));
+        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*"), false, List.of("mcp__*__*_delete_*"), List.of());
 
         assertThat(ReadGate.refusal(scope, "mcp__acme__get_and_delete_issue", Map.of(), "/tmp")).get().asString()
                 .contains("refuses mcp__acme__get_and_delete_issue");
@@ -62,7 +81,7 @@ class ReadGateTest {
     @Test
     void letsThroughAWriteVerbMidNameTheHumanNamedExactly() {
         ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__acme__get_and_delete_issue"),
-                false, List.of("mcp__*__*_delete_*"));
+                false, List.of("mcp__*__*_delete_*"), List.of());
 
         assertThat(ReadGate.refusal(scope, "mcp__acme__get_and_delete_issue", Map.of(), "/tmp")).isEmpty();
     }

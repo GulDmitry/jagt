@@ -20,13 +20,15 @@ public class ReadScopes {
 
     /**
      * {@code tools} are tool names or globs; {@code roots} bound the file tools; {@code git} admits the read-only
-     * git subcommands inside them; {@code writes} are globs a tool only a glob allowed must not match.
+     * git subcommands inside them; {@code writes} are globs a tool only a glob allowed must not match;
+     * {@code fetchable} are the URLs a web fetch may reach, each itself and what lies below it.
      */
     @With
-    public record ReadScope(List<Path> roots, List<String> tools, boolean git, List<String> writes) {
+    public record ReadScope(List<Path> roots, List<String> tools, boolean git, List<String> writes,
+                            List<String> fetchable) {
 
         public ReadScope(List<Path> roots, List<String> tools, boolean git) {
-            this(roots, tools, git, List.of());
+            this(roots, tools, git, List.of(), List.of());
         }
     }
 

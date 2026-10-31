@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 
 class QaReadsTest {
 
-    private static final QaReader.Run RUN = new QaReader.Run("", "", Paths.get("/wt"), "proj@0123", "");
+    private static final QaReader.Run RUN = new QaReader.Run("", "", Paths.get("/wt"), "proj@0123", "", List.of());
 
     private static TaskState deployed() {
         return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build().withDeployment(new Deployment(1,

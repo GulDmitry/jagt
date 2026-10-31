@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** What a QA run is told: the brief, then the facts of the deploy it checks. */
 @Component
@@ -23,7 +25,7 @@ public class QaPrompts {
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nCheck it on:\n" + environments;
         return new QaReader.Run(brief.text(), brief.section(step) + "\n\n" + facts, Path.of(worktree), sha,
-                qa.modelOrDefault());
+                qa.modelOrDefault(), reachable(qa));
     }
 
     /** The round QA sent back and the reason the session gave for changing nothing, read against fresh evidence. */
@@ -33,7 +35,13 @@ public class QaPrompts {
         String facts = taskId + " is deployed at " + sha + ".\nThe rows you found not met:\n" + rows
                 + "\nThe session changed nothing, and says:\n" + reason + "\nCheck on:\n" + environments;
         return new QaReader.Run(brief.text(), brief.section(QaVerdict.DECLINE) + "\n\n" + facts, Path.of(worktree), sha,
-                qa.modelOrDefault());
+                qa.modelOrDefault(), reachable(qa));
+    }
+
+    private static List<String> reachable(QaConfig qa) {
+        return qa.environmentsOrEmpty().stream()
+                .flatMap(environment -> Stream.of(environment.url(), environment.landed()))
+                .filter(url -> url != null && !url.isBlank()).distinct().toList();
     }
 
     private static String environment(QaEnvironment environment) {

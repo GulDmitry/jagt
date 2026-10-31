@@ -129,7 +129,7 @@ abstract class QaVerdictEvalTest {
                         deployed.decline().why())
                 : prompts.accept(deployed.key(), worktree.toString(), sha, qa, QaVerdict.ACCEPT);
         QaReader.Run told = new QaReader.Run(run.shared(), run.prompt() + QaEvalWorkspace.ticket(deployed, url),
-                run.worktree(), run.sha(), run.model());
+                run.worktree(), run.sha(), run.model(), run.environments());
         if (deployed.declines()) {
             return QaJudgement.ofDecline(deployed, reader.reconsider(told).facts()
                     .orElseThrow(() -> EvalStalled.because("no decline answer")));

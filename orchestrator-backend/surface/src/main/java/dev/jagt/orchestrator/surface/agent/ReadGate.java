@@ -23,6 +23,7 @@ public final class ReadGate {
     private static final Set<String> FILE_TOOLS = Set.of("Read", "Grep", GLOB);
     private static final List<String> PATH_KEYS = List.of("file_path", "path");
     private static final String SHELL_TOOL = "Bash";
+    private static final String WEB_TOOL = "WebFetch";
     static final Pattern PARENT = Pattern.compile("(^|/)\\.\\.(/|$)");
     /** A brace builds a parent out of pieces no single one of which is {@code ..}. */
     private static final Pattern GLOB_ESCAPE = Pattern.compile("[{}]|\\.\\.");
@@ -45,7 +46,18 @@ public final class ReadGate {
         if (SHELL_TOOL.equals(tool) && read.git()) {
             return GitReadLine.refusal(read, String.valueOf(arguments.getOrDefault("command", "")), here);
         }
+        if (WEB_TOOL.equals(tool) && !read.fetchable().isEmpty()) {
+            return fetchRefusal(read, String.valueOf(arguments.getOrDefault("url", "")));
+        }
         return Optional.of("jagt refuses " + tool + " in a read: only the tools it was given may run.");
+    }
+
+    private static Optional<String> fetchRefusal(ReadScope read, String url) {
+        boolean listed = read.fetchable().stream().anyMatch(environment -> url.equals(environment)
+                || url.startsWith(environment) && "/?#".indexOf(url.charAt(environment.length())) >= 0
+                || url.startsWith(environment) && environment.endsWith("/"));
+        return listed ? Optional.empty()
+                : Optional.of("jagt refuses fetching " + url + ": a read reaches only the environments named in qa.environments.");
     }
 
     /** A bare server names none of its tools. */
