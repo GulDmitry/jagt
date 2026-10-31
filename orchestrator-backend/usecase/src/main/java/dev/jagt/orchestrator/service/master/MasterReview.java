@@ -85,7 +85,7 @@ public class MasterReview {
     public void settle(String taskId, TaskState task) {
         Path file = storedFile(task);
         if (file == null || !Files.isRegularFile(file)) {
-            clearSeal(taskId, task, "");
+            clearSeal(taskId, task);
             return;
         }
         JagtJson.bytes(file).ifPresent(bytes -> reconcile(taskId, task, file, bytes));
@@ -95,7 +95,7 @@ public class MasterReview {
         String fingerprint = JagtJson.fingerprint(bytes);
         Master sealed = task.masterOrNone();
         if (!fingerprint.equals(sealed.seal())) {
-            clearSeal(taskId, task, fingerprint);
+            clearSeal(taskId, task);
             return;
         }
         JagtJson.parse(file, bytes, Review.class).filter(read -> read.round() != sealed.sealedRound())
@@ -104,10 +104,11 @@ public class MasterReview {
                         ? TaskReducer.masterSealed(current, fingerprint, read.round()) : current));
     }
 
-    private void clearSeal(String taskId, TaskState task, String fingerprint) {
-        if (!task.masterOrNone().seal().isEmpty()) {
-            state.updateTask(taskId, current -> current.masterOrNone().seal().isEmpty() || sealedAs(current, fingerprint)
-                    ? current : TaskReducer.masterVerdictGone(current));
+    private void clearSeal(String taskId, TaskState task) {
+        String held = task.masterOrNone().seal();
+        if (!held.isEmpty()) {
+            state.updateTask(taskId, current -> current.masterOrNone().seal().equals(held)
+                    ? TaskReducer.masterVerdictGone(current) : current);
         }
     }
 

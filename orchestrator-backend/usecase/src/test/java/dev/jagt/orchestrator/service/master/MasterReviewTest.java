@@ -208,6 +208,23 @@ class MasterReviewTest {
     }
 
     @Test
+    void theMasterKeepsASealWrittenWhileTheCallerSawTheVerdictFileGone(@TempDir Path worktree) throws Exception {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+        TaskState older = state.task("a1").orElseThrow().withMaster(Master.defaults().withSeal("older", 5));
+        Files.delete(worktree.resolve(".jagt").resolve(MasterReview.STORED));
+
+        reviews.settle("a1", older);
+
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.READ);
+    }
+
+    @Test
     void theMasterHoldsReadTheRoundWhereTheVerdictFileStandsAsJagtWroteIt(@TempDir Path worktree) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
