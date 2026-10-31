@@ -1,0 +1,13 @@
+package dev.jagt.orchestrator.task;
+
+/** How a check ended, each named in the record with the sha it checked. */
+public enum QaEnding {
+    PASSED,
+    NOT_MET,
+    UNPROVABLE,
+    WAITING,
+    DECLINED,
+    DROPPED,
+    FAILED,
+    GONE
+}

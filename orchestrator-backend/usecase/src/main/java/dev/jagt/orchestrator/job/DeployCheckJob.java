@@ -146,7 +146,9 @@ public class DeployCheckJob implements TaskJob {
             case GREEN -> {
                 markBare(taskId, task, reading.bare());
                 reports.readDeploy(taskId, null, stamp);
-                if (relay.relay(taskId, STEP, landed, relay.standing(taskId))) {
+                if (configService.load().qa().enabledOrDefault()) {
+                    reports.deployAsked(taskId, Turn.digestOf(landed));
+                } else if (relay.relay(taskId, STEP, landed, relay.standing(taskId))) {
                     reports.deployAsked(taskId, Turn.digestOf(landed));
                 }
             }

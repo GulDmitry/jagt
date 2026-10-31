@@ -29,7 +29,8 @@ public enum Step {
     CONFLICT("conflict"),
     RESTARTED("restarted"),
     WAKE("wake"),
-    WAIT_OVER("wait-over");
+    WAIT_OVER("wait-over"),
+    QA_ROUND("qa-round");
 
     private static final String JOINT = "+";
 

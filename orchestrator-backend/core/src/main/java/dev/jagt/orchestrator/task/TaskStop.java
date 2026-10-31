@@ -31,6 +31,7 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         UNCHANGED_FAILURE("same failure again", "Change the tree, or fix the check itself: its access or a file it needs", Ends.LIFT, true),
         INFRA("checks failed on infrastructure", "Re-run the job or fix the runner, then lift", Ends.HOST_READ, true),
         WAIT("a dependency stayed down", "Bring up what the session named, then lift", Ends.SESSION_REPORT, false),
+        QA_FAILED("the QA check failed", "Fix what the check needs, then lift: the same check runs once more", Ends.LIFT, false),
         DEPLOY_UNREAD("deploy pipeline cannot be read", "Check that the code host's CLI can list the deploy commit's pipelines", Ends.DEPLOY_READ, false);
 
         /**

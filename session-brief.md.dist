@@ -37,6 +37,13 @@ earlier round. The parentheses closing a comment name its pattern, a class of de
 holds, not only the one cited. Ask (rule 1) only for a decision nobody gave you. Leave the fix uncommitted and report
 REVIEW_PENDING again.
 
+## qa-round
+
+QA checked the deployed change against the ticket and found the rows above not met; each says what it expected, what
+it saw and where. Fix them, or where you believe QA wrong, change nothing for it and report `no_changes` with your
+reason and the evidence: a ticket line, a file:line, or a command and what it printed. A fix runs the whole path again:
+leave it uncommitted and report REVIEW_PENDING.
+
 ## plan-not-ready
 
 The Master read plan.md against the ticket: NOT READY. Rework the plan for each line above. Where you believe one

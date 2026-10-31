@@ -22,7 +22,9 @@ public enum AssistantCallKind {
     /** Which repository an item belongs in, asked only where its labels did not say. */
     ROUTE("project routing"),
     /** One role's reading of a round handed back to the Master. */
-    MASTER_REVIEW("master review");
+    MASTER_REVIEW("master review"),
+    /** One QA run checking a deployed change against its ticket. */
+    QA_CHECK("qa check");
 
     private final String label;
 

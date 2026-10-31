@@ -55,6 +55,11 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("intake-turned-away");
     }
 
+    /** What each deploy's QA check ended in, one line per task. */
+    public Path qaVerdicts() {
+        return stateFile.resolveSibling("qa-verdicts");
+    }
+
     /** The usage levels already told, with the period each was told in. */
     public Path usageAlerts() {
         return stateFile.resolveSibling("usage-alerts.properties");

@@ -13,6 +13,8 @@ public enum ActionOrigin {
     AUTO_REVIEW,
     /** The Master session acting where a human would have. */
     MASTER,
+    /** The QA check sending the rows it did not meet back to the session. */
+    QA,
     /** A stage the tracker itself reports, which is nobody's judgement and so nobody's to hold. */
     TRACKER,
     /** jagt's own deterministic move on the code host: the re-run of a pipeline that died on infrastructure. */
