@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Processes;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,6 +31,11 @@ class ProjectSetupTest {
 
     @TempDir
     Path root;
+
+    @AfterEach
+    void unlock() {
+        root.resolve("conf").toFile().setWritable(true);
+    }
 
     @Test
     void addsTheEntryUnderProjectsAndKeepsEveryOtherLineAsItWas() throws Exception {
@@ -595,5 +601,252 @@ class ProjectSetupTest {
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
                 null))).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("no origin/main or origin/master to cut tasks from");
+    }
+
+    @Test
+    void editRewritesTheManagedKeysOfOneBlockAndKeepsItsOtherKeysAndEveryOtherLine() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
+                # mine
+                orchestrator:
+                  projects:
+                    billing:
+                      # why
+                      path: /old/path
+                      baseBranch: origin/main
+                      labels: [BILL]
+                      verifyCommand:
+                        - ./gradlew
+                        - test
+                    web:
+                      path: /srv/web
+                      baseBranch: origin/main
+                  keepAwake: false   # stays
+                """);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        String answer = setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "dev",
+                List.of("make", "test"), "the invoicing backend"));
+
+        assertThat(answer).isEqualTo("Changed billing in jagt.yml");
+        assertThat(Files.readString(configFile)).isEqualTo("""
+                # mine
+                orchestrator:
+                  projects:
+                    billing:
+                      path: "%s"
+                      baseBranch: "origin/main"
+                      deployBranch: "dev"
+                      verifyCommand: ["make","test"]
+                      about: "the invoicing backend"
+                      # why
+                      labels: [BILL]
+                    web:
+                      path: /srv/web
+                      baseBranch: origin/main
+                  keepAwake: false   # stays
+                """.formatted(repo));
+    }
+
+    @Test
+    void editKeepsTheProjectsOwnPathWhereItIsUnchanged() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"),
+                "orchestrator:\n  projects:\n    billing:\n      path: \"" + repo + "\"\n      baseBranch: origin/main\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        String answer = setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
+                "now with a line"));
+
+        assertThat(answer).isEqualTo("Changed billing in jagt.yml");
+    }
+
+    @Test
+    void editRefusesAPathAnotherProjectAlreadyHoldsAndLeavesTheFileUnchanged() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        String before = "orchestrator:\n  projects:\n    billing:\n      path: /srv/billing\n      baseBranch: origin/main\n"
+                + "    web:\n      path: \"" + repo + "\"\n      baseBranch: origin/main\n";
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), before);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
+                null))).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("a project already points here");
+        assertThat(Files.readString(configFile)).isEqualTo(before);
+    }
+
+    @Test
+    void editRefusesAProjectTheFileDoesNotHold() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"),
+                "orchestrator:\n  projects:\n    web:\n      path: /srv/web\n      baseBranch: origin/main\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
+                null))).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No project billing");
+    }
+
+    @Test
+    void editRefusesAnEntryWrittenInlineAndLeavesTheFileUnchanged() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        String before = "orchestrator:\n  projects:\n    billing: {path: /srv/billing, baseBranch: origin/main}\n";
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), before);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
+                null))).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("written inline");
+        assertThat(Files.readString(configFile)).isEqualTo(before);
+    }
+
+    @Test
+    void removeDeletesOneBlockAndLeavesTheCommentOfTheNextOne() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
+                orchestrator:
+                  projects:
+                    billing:
+                      path: /srv/billing
+                      baseBranch: origin/main
+                      labels: [BILL]
+
+                    # the web one
+                    web:
+                      path: /srv/web
+                      baseBranch: origin/main
+                  keepAwake: false   # stays
+                """);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        String answer = setup.remove("billing");
+
+        assertThat(answer).isEqualTo("Removed billing from jagt.yml");
+        assertThat(Files.readString(configFile)).isEqualTo("""
+                orchestrator:
+                  projects:
+
+                    # the web one
+                    web:
+                      path: /srv/web
+                      baseBranch: origin/main
+                  keepAwake: false   # stays
+                """);
+    }
+
+    @Test
+    void removeDeletesTheLastBlockOfTheFileWhereTheSectionEndsTheFile() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
+                orchestrator:
+                  projects:
+                    web:
+                      path: /srv/web
+                      baseBranch: origin/main
+                    billing:
+                      path: /srv/billing
+                      baseBranch: origin/main
+                """);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        setup.remove("billing");
+
+        assertThat(Files.readString(configFile)).isEqualTo("""
+                orchestrator:
+                  projects:
+                    web:
+                      path: /srv/web
+                      baseBranch: origin/main
+                """);
+    }
+
+    @Test
+    void removeRefusesTheOnlyProjectBecauseJagtDoesNotStartWithoutOne() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        String before = "orchestrator:\n  projects:\n    billing:\n      path: /srv/billing\n      baseBranch: origin/main\n";
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), before);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+
+        assertThatThrownBy(() -> setup.remove("billing")).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("only project");
+        assertThat(Files.readString(configFile)).isEqualTo(before);
+    }
+
+    @Test
+    void addRefusesAndLeavesTheFileUnchangedWhereItsFolderCannotBeWritten() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        Path folder = Files.createDirectories(root.resolve("conf"));
+        String before = "orchestrator:\n  projects:\n    web:\n      path: /srv/web\n      baseBranch: origin/main\n";
+        Path configFile = Files.writeString(folder.resolve("jagt.yml"), before);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+        when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+                .thenReturn(new Processes.Result(0, repo + "\n", ""));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        folder.toFile().setWritable(false);
+
+        assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
+                null))).isInstanceOf(java.io.UncheckedIOException.class)
+                .hasMessageStartingWith("Cannot change ");
+        assertThat(Files.readString(configFile)).isEqualTo(before);
     }
 }

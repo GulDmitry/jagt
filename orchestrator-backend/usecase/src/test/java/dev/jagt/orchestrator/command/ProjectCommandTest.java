@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.service.ProjectRemoval;
 import dev.jagt.orchestrator.service.ProjectSetup;
 import org.junit.jupiter.api.Test;
 
@@ -15,12 +16,13 @@ import static org.mockito.Mockito.when;
 class ProjectCommandTest {
 
     private final ProjectSetup setup = mock(ProjectSetup.class);
-    private final ProjectCommand command = new ProjectCommand(setup);
+    private final ProjectRemoval removal = mock(ProjectRemoval.class);
+    private final ProjectCommand command = new ProjectCommand(setup, removal);
 
     @Test
     void handsTypedAloneOverToTheAddAProjectForm() {
         assertThat(command.part()).isEqualTo("project");
-        assertThat(command.usage()).containsExactly("project", "project <path>");
+        assertThat(command.usage()).containsExactly("project", "project <path>", "project remove <key>");
     }
 
     @Test
@@ -48,5 +50,12 @@ class ProjectCommandTest {
     void refusesWhereNoPathWasTypedAndPointsAtTheForm() {
         assertThatThrownBy(() -> command.run("  ")).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("project <path>");
+    }
+
+    @Test
+    void removesTheProjectNamedAfterRemove() {
+        when(removal.remove("billing")).thenReturn("Removed billing from jagt.yml");
+
+        assertThat(command.run("remove billing")).isEqualTo("Removed billing from jagt.yml");
     }
 }

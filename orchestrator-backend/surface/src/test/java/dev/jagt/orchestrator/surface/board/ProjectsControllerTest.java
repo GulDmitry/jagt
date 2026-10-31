@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.service.ProjectFolders;
+import dev.jagt.orchestrator.service.ProjectRemoval;
 import dev.jagt.orchestrator.service.ProjectSetup;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +15,8 @@ class ProjectsControllerTest {
 
     private final ProjectSetup setup = mock(ProjectSetup.class);
     private final ProjectFolders folders = mock(ProjectFolders.class);
-    private final ProjectsController projects = new ProjectsController(setup, folders);
+    private final ProjectRemoval removal = mock(ProjectRemoval.class);
+    private final ProjectsController projects = new ProjectsController(setup, folders, removal);
 
     @Test
     void servesWhatTheSetupReadsAtThePathTheHumanTyped() {
@@ -39,5 +41,21 @@ class ProjectsControllerTest {
         when(folders.under("/work/bi")).thenReturn(found);
 
         assertThat(projects.dirs("/work/bi")).isEqualTo(found);
+    }
+
+    @Test
+    void changesTheProjectTheUrlNamesWhateverKeyTheBodyCarries() {
+        when(setup.edit(new ProjectSetup.Entry("demo", "/work/demo", "main", null, null, "one line")))
+                .thenReturn("Changed demo in jagt.yml");
+
+        assertThat(projects.edit("demo", new ProjectSetup.Entry("other", "/work/demo", "main", null, null, "one line"))
+                .message()).isEqualTo("Changed demo in jagt.yml");
+    }
+
+    @Test
+    void removesTheProjectTheUrlNames() {
+        when(removal.remove("demo")).thenReturn("Removed demo from jagt.yml");
+
+        assertThat(projects.remove("demo").message()).isEqualTo("Removed demo from jagt.yml");
     }
 }

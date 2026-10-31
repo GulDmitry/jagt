@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -21,14 +20,15 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 /**
  * A repository read before it becomes a project, and its entry written into the configuration file the human
- * keeps. The file stays theirs: one block is inserted under {@code projects:}, every other line is left as it was,
- * and a file that no longer reads afterwards is put back.
+ * keeps. The file stays theirs: one block is inserted, changed or deleted under {@code projects:}, every other
+ * line is left as it was, and a file that no longer reads afterwards is put back.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,9 +36,7 @@ public class ProjectSetup {
 
     private static final Duration GIT = Duration.ofSeconds(10);
     private static final Pattern KEY = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{0,39}");
-    private static final Pattern ROOT = Pattern.compile("(?m)^orchestrator:[ \\t]*(#.*)?$");
     private static final List<String> DEPLOY_NAMES = List.of("dev", "develop", "staging");
-    private static final Pattern LEADING = Pattern.compile("^( *)\\S");
 
     public record Line(boolean ok, String text) {
     }
@@ -62,10 +60,13 @@ public class ProjectSetup {
     private final ConfigService configService;
     private final OrchestratorPaths paths;
     private final Processes processes;
-    private final JsonMapper json = new JsonMapper();
 
     /** What the path is, and what its entry would most likely say. Writes nothing. */
     public Reading read(String rawPath) {
+        return read(rawPath, null);
+    }
+
+    private Reading read(String rawPath, @Nullable String own) {
         Path path = Path.of(expand(rawPath)).toAbsolutePath().normalize();
         String key = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
         Optional<String> notARepositoryRoot = problemWith(path);
@@ -79,7 +80,7 @@ public class ProjectSetup {
                 : "tasks are cut from " + base));
         List<String> offered = deployBranches(path, base);
         String deploy = DEPLOY_NAMES.stream().filter(offered::contains).findFirst().orElse("");
-        boolean taken = taken(path);
+        boolean taken = taken(path, own);
         lines.add(new Line(!taken, taken ? "a project already points here" : "no project points here yet"));
         return new Reading(lines, key, base, deploy, offered, verifyCommand(path));
     }
@@ -116,10 +117,11 @@ public class ProjectSetup {
                 .orElse(exists(path, "origin/main") ? "origin/main" : exists(path, "origin/master") ? "origin/master" : "");
     }
 
-    private boolean taken(Path path) {
+    private boolean taken(Path path, @Nullable String own) {
         Path real = real(path);
-        return configService.load().projects().values().stream()
-                .anyMatch(project -> real(Path.of(expand(project.path())).toAbsolutePath().normalize()).equals(real));
+        return configService.load().projects().entrySet().stream().filter(project -> !project.getKey().equals(own))
+                .anyMatch(project -> real(Path.of(expand(project.getValue().path())).toAbsolutePath().normalize())
+                        .equals(real));
     }
 
     /** The remote's branches as last fetched, without its head and without the base tasks are cut from. */
@@ -157,18 +159,45 @@ public class ProjectSetup {
 
     /** Refuses an entry the file could not hold, and leaves the file as it was when the result does not read. */
     public synchronized String add(Entry entry) {
-        check(entry);
-        return write(entry);
-    }
-
-    private void check(Entry entry) {
         if (entry.key() == null || !KEY.matcher(entry.key()).matches()) {
             throw new IllegalArgumentException("A key starts with a letter and holds letters, digits, - or _");
         }
         if (configService.load().projects().containsKey(entry.key())) {
             throw new IllegalArgumentException("The key " + entry.key() + " is taken: pick another");
         }
-        Reading reading = read(entry.path());
+        check(entry);
+        return rewrite(entry.key(), file -> ProjectBlocks.inserted(file, entry, normalized(entry)),
+                "Added " + entry.key() + " to jagt.yml");
+    }
+
+    /** Rewrites the managed keys of a project's block, leaving its other keys, comments and every other line. */
+    public synchronized String edit(Entry entry) {
+        if (!configService.load().projects().containsKey(entry.key())) {
+            throw new IllegalArgumentException("No project " + entry.key() + " in jagt.yml to change");
+        }
+        check(entry);
+        return rewrite(entry.key(), file -> ProjectBlocks.replaced(file, entry, normalized(entry)),
+                "Changed " + entry.key() + " in jagt.yml");
+    }
+
+    /** Deletes a project's block; the last project stays, since jagt does not start without one. */
+    public synchronized String remove(String key) {
+        Map<String, ProjectConfig> projects = configService.load().projects();
+        if (!projects.containsKey(key)) {
+            throw new IllegalArgumentException("No project " + key + " in jagt.yml to remove");
+        }
+        if (projects.size() == 1) {
+            throw new IllegalArgumentException(key + " is the only project, and jagt does not start without one");
+        }
+        return rewrite(null, file -> ProjectBlocks.removed(file, key), "Removed " + key + " from jagt.yml");
+    }
+
+    private static Path normalized(Entry entry) {
+        return Path.of(expand(entry.path())).toAbsolutePath().normalize();
+    }
+
+    private void check(Entry entry) {
+        Reading reading = read(entry.path(), entry.key());
         if (!reading.ready()) {
             throw new IllegalArgumentException(reading.firstProblem());
         }
@@ -183,17 +212,22 @@ public class ProjectSetup {
         }
     }
 
-    private String write(Entry entry) {
+    /** {@code readBack} is the project the result must still hold, or null to read the file whole. */
+    private String rewrite(@Nullable String readBack, UnaryOperator<String> change, String done) {
         Path file = real(paths.configFile());
         try {
             String before = Files.readString(file, StandardCharsets.UTF_8);
-            AtomicFiles.write(file, inserted(before, entry).getBytes(StandardCharsets.UTF_8));
+            AtomicFiles.write(file, change.apply(before).getBytes(StandardCharsets.UTF_8));
             try {
-                configService.project(entry.key());
+                if (readBack == null) {
+                    configService.load();
+                } else {
+                    configService.project(readBack);
+                }
             } catch (RuntimeException unreadable) {
                 putBack(file, before, unreadable);
             }
-            return "Added " + entry.key() + " to jagt.yml";
+            return done;
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot change " + file + ": " + e.getMessage(), e);
         }
@@ -208,74 +242,6 @@ public class ProjectSetup {
         }
         throw new IllegalStateException(file.getFileName() + " did not read after the change, so it was put back: "
                 + unreadable.getMessage(), unreadable);
-    }
-
-    /** The file with the entry first under the {@code projects:} that is a direct child of {@code orchestrator:}. */
-    private String inserted(String file, Entry entry) {
-        Matcher root = ROOT.matcher(file);
-        if (!root.find()) {
-            throw new IllegalArgumentException("jagt.yml holds no orchestrator: section");
-        }
-        String[] lines = file.substring(root.end()).split("\n", -1);
-        ProjectsLine found = projectsLine(lines);
-        int at = found.at();
-        String parent = found.parent();
-        String entryIndent = entryIndent(lines, at, parent);
-        lines[at] = parent + "projects:";
-        String block = block(entryIndent, entry, Path.of(expand(entry.path())).toAbsolutePath().normalize(),
-                entryIndent.substring(parent.length()));
-        lines[at] = lines[at] + "\n" + block.substring(0, block.length() - 1);
-        return file.substring(0, root.end()) + String.join("\n", lines);
-    }
-
-    private record ProjectsLine(int at, String parent) {
-    }
-
-    private static ProjectsLine projectsLine(String[] lines) {
-        String child = null;
-        for (int i = 1; i < lines.length; i++) {
-            String indent = indent(lines[i]);
-            if (indent == null) continue;
-            if (indent.isEmpty()) break;
-            if (child == null) child = indent;
-            if (indent.equals(child) && lines[i].strip().matches("projects:\\s*(\\{\\s*})?\\s*(#.*)?")) {
-                return new ProjectsLine(i, child);
-            }
-        }
-        throw new IllegalArgumentException("jagt.yml holds no projects: under orchestrator: to add to");
-    }
-
-    private static String entryIndent(String[] lines, int at, String parent) {
-        for (int i = at + 1; i < lines.length; i++) {
-            String indent = indent(lines[i]);
-            if (indent == null) continue;
-            return indent.length() > parent.length() ? indent : parent + parent;
-        }
-        return parent + parent;
-    }
-
-    /** The leading spaces of a line that holds a key, or null for a blank or comment line. */
-    private static @Nullable String indent(String line) {
-        Matcher leading = LEADING.matcher(line);
-        return leading.find() && !line.strip().startsWith("#") ? leading.group(1) : null;
-    }
-
-    private String block(String indent, Entry entry, Path path, String step) {
-        StringBuilder block = new StringBuilder();
-        String inner = indent + step;
-        block.append(indent).append(entry.key()).append(":\n");
-        block.append(inner).append("path: ").append(json.writeValueAsString(path.toString())).append('\n');
-        block.append(inner).append("baseBranch: ").append(json.writeValueAsString(entry.baseBranch())).append('\n');
-        if (entry.deployBranch() != null && !entry.deployBranch().isBlank()) {
-            block.append(inner).append("deployBranch: ").append(json.writeValueAsString(entry.deployBranch())).append('\n');
-        }
-        if (entry.verifyCommand() != null && !entry.verifyCommand().isEmpty()) {
-            block.append(inner).append("verifyCommand: ").append(json.writeValueAsString(entry.verifyCommand())).append('\n');
-        }
-        if (entry.about() != null && !entry.about().isBlank()) {
-            block.append(inner).append("about: ").append(json.writeValueAsString(entry.about())).append('\n');
-        }
-        return block.toString();
     }
 
     private Processes.Result git(Path path, String... args) {

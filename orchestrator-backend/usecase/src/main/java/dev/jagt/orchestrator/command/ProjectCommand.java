@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.service.ProjectRemoval;
 import dev.jagt.orchestrator.service.ProjectSetup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,7 @@ import java.util.List;
 public class ProjectCommand implements GlobalCommand {
 
     private final ProjectSetup setup;
+    private final ProjectRemoval removal;
 
     @Override
     public String id() {
@@ -24,12 +26,12 @@ public class ProjectCommand implements GlobalCommand {
 
     @Override
     public String hint() {
-        return "add a repository to jagt.yml as a project, its entry read from the repository";
+        return "add a repository to jagt.yml as a project, its entry read from the repository, or remove one";
     }
 
     @Override
     public List<String> usage() {
-        return List.of("project", "project <path>");
+        return List.of("project", "project <path>", "project remove <key>");
     }
 
     @Override
@@ -42,6 +44,9 @@ public class ProjectCommand implements GlobalCommand {
         String path = tail.strip();
         if (path.isEmpty()) {
             throw new IllegalArgumentException("usage: project <path> — typed alone, `project` opens the form");
+        }
+        if (path.startsWith("remove ")) {
+            return removal.remove(path.substring("remove ".length()).strip());
         }
         ProjectSetup.Reading reading = setup.read(path);
         if (!reading.ready()) {

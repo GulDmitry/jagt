@@ -4,7 +4,7 @@
 
 ## Status
 
-Proposed 2026-10-31; accepted by the commit landing edit and remove. Records the writer built 2026-10-16 (`ProjectSetup`).
+Accepted 2026-10-31. Records the writer built 2026-10-16, extended by edit and remove (`ProjectBlocks`).
 
 ## Context
 
