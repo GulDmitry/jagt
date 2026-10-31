@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -11,11 +12,12 @@ import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust, repository request, review requests, checks and approval are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust, repository request, review requests, checks, approval and infrastructure re-runs are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -176,7 +178,8 @@ public final class TaskReducer {
 
     /** {@code task} that has seen {@code tip} pushed, where it is not the head it already had. */
     public static TaskState headSeen(TaskState task, String tip) {
-        return step(task, new TaskMove.HeadSeen(tip), 0);
+        String head = tip.isBlank() ? null : tip;
+        return step(task, new TaskMove.HeadSeen(tip, head != null && !head.equals(task.headTip())), 0);
     }
 
     /** {@code task} with the checks a read listed on {@code tip}, which ends any older round's failure to read them. */
@@ -194,6 +197,21 @@ public final class TaskReducer {
         return step(task, new TaskMove.ApprovalRead(approved), 0);
     }
 
+    /** {@code task} with {@code retry} armed in place of any still waiting, the ones sent since the last lift kept. */
+    public static TaskState infraArmed(TaskState task, InfraRetry retry) {
+        return step(task, new TaskMove.InfraArmed(retry), 0);
+    }
+
+    /** {@code task} without the armed re-run, and without the sent ones where {@code all}. */
+    public static TaskState infraCleared(TaskState task, boolean all) {
+        return step(task, new TaskMove.InfraCleared(all), 0);
+    }
+
+    /** {@code task} whose armed re-run went out at {@code now}, counted with those sent. */
+    public static TaskState infraSent(TaskState task, InfraRetry retry, long now) {
+        return step(task, new TaskMove.InfraSent(retry), now);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
         return TaskChart.effects(Phases.of(task), move);
     }
@@ -204,6 +222,16 @@ public final class TaskReducer {
             moved = apply(moved, effect, null, false, now);
         }
         return moved;
+    }
+
+    private static List<InfraRetry> sent(TaskState task) {
+        return task.infraRetries().stream().filter(InfraRetry::sent).toList();
+    }
+
+    private static List<InfraRetry> joined(List<InfraRetry> kept, InfraRetry retry) {
+        List<InfraRetry> all = new ArrayList<>(kept);
+        all.add(retry);
+        return all;
     }
 
     private static TaskState linked(TaskState task, TaskEffect.LinksRequests links, long now) {
@@ -242,6 +270,11 @@ public final class TaskReducer {
             case TaskEffect.ReadsChecks reads -> task.withChecksRead(reads.hostStatus(), reads.tip());
             case TaskEffect.FailsToReadChecks fails -> task.withChecksUnread(fails.read());
             case TaskEffect.ReadsApproval reads -> task.withApproved(reads.approved());
+            case TaskEffect.ArmsInfra arms -> task.withInfraRetries(joined(
+                    InfraRetry.sentSince(task.infraRetries(), task.trailOrNone()), arms.retry()));
+            case TaskEffect.ClearsInfra clears -> task.withInfraRetries(clears.all() ? List.of() : sent(task));
+            case TaskEffect.SendsInfra sends -> task.withInfraRetries(joined(sent(task), sends.retry().sentAt(now)));
+            case TaskEffect.DisarmsInfra disarms -> task.withInfraRetries(sent(task));
             case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }

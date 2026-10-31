@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.RoundTrail;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -546,5 +547,28 @@ class TaskReducerTest {
         TaskState approved = TaskReducer.approvalRead(task, true);
 
         assertThat(approved.approved()).isTrue();
+    }
+
+    @Test
+    void disarmsTheInfraRetryArmedForTheCommitBeforeWhenTheHeadMoves() {
+        InfraRetry armed = InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
+        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).headTip("aaa")
+                .infraRetries(List.of(armed)).build();
+
+        TaskState moved = TaskReducer.headSeen(read, "bbb");
+
+        assertThat(read.infraRetries()).containsExactly(armed);
+        assertThat(moved.infraRetries()).isEmpty();
+    }
+
+    @Test
+    void keepsTheInfraRetryArmedWhenTheSameHeadIsSeenAgain() {
+        InfraRetry armed = InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
+        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).headTip("aaa")
+                .infraRetries(List.of(armed)).build();
+
+        TaskState again = TaskReducer.headSeen(read, "aaa");
+
+        assertThat(again.infraRetries()).containsExactly(armed);
     }
 }

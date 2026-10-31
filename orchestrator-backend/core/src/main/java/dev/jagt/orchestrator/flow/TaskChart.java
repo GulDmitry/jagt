@@ -50,6 +50,8 @@ final class TaskChart {
 
     private static final RegionId<ApprovalPhase> APPROVAL = new RegionId<>("approval", ApprovalPhase.class);
 
+    private static final RegionId<InfraPhase> INFRA = new RegionId<>("infra", InfraPhase.class);
+
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
@@ -97,7 +99,8 @@ final class TaskChart {
                 Map.entry(SESSION.name(), phases.session().name()), Map.entry(GIT.name(), phases.git().name()),
                 Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
                 Map.entry(CHECKS.name(), phases.checks().name()),
-                Map.entry(APPROVAL.name(), phases.approval().name()))), phases.stampedAsk(), move).effects();
+                Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()))),
+                phases.stampedAsk(), move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
@@ -161,6 +164,7 @@ final class TaskChart {
         requests(chart);
         checks(chart);
         approvals(chart);
+        infras(chart);
         sessions(chart);
         ran(chart);
         reports(chart);
@@ -410,6 +414,27 @@ final class TaskChart {
             regionEdge(chart, APPROVAL, from, "withheld", move -> move instanceof TaskMove.ApprovalRead read
                     && !read.approved(), move -> new TaskEffect.ReadsApproval(false), ApprovalPhase.WITHHELD);
         }
+    }
+
+    private static void infras(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+        chart.region(INFRA, InfraPhase.NONE);
+        for (InfraPhase from : InfraPhase.values()) {
+            regionEdge(chart, INFRA, from, "armed", move -> move instanceof TaskMove.InfraArmed,
+                    move -> new TaskEffect.ArmsInfra(((TaskMove.InfraArmed) move).retry()), InfraPhase.ARMED);
+            regionEdge(chart, INFRA, from, "cleared with the sent", move -> move instanceof TaskMove.InfraCleared clear
+                    && clear.all(), move -> new TaskEffect.ClearsInfra(true), InfraPhase.NONE);
+            regionEdge(chart, INFRA, from, "armed one cleared", move -> move instanceof TaskMove.InfraCleared clear
+                    && !clear.all(), move -> new TaskEffect.ClearsInfra(false),
+                    from == InfraPhase.ARMED ? InfraPhase.SENT : from);
+            regionEdge(chart, INFRA, from, "sent", move -> move instanceof TaskMove.InfraSent sent
+                    && sent.retry().attempt() < sent.retry().of(),
+                    move -> new TaskEffect.SendsInfra(((TaskMove.InfraSent) move).retry()), InfraPhase.SENT);
+            regionEdge(chart, INFRA, from, "last wait sent", move -> move instanceof TaskMove.InfraSent sent
+                    && sent.retry().attempt() >= sent.retry().of(),
+                    move -> new TaskEffect.SendsInfra(((TaskMove.InfraSent) move).retry()), InfraPhase.SPENT);
+        }
+        regionEdge(chart, INFRA, InfraPhase.ARMED, "head moved", move -> move instanceof TaskMove.HeadSeen seen
+                && seen.moved(), move -> new TaskEffect.DisarmsInfra(), InfraPhase.SENT);
     }
 
     private static <S extends Enum<S>> void regionEdge(ChartBuilder<TaskMove, Boolean, TaskEffect> chart,

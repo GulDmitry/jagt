@@ -633,15 +633,6 @@ class TaskStateTest {
     }
 
     @Test
-    void disarmsTheInfraRetryArmedForTheCommitBeforeWhenTheHeadMoves() {
-        InfraRetry armed = InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
-        TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).infraRetries(List.of(armed)).build()
-                .withHead("aaa");
-
-        assertThat(read.withHead("bbb").infraRetries()).isEmpty();
-    }
-
-    @Test
     void readsAnOldConflictWatchAsTheConflictOfTheDeploymentItsTaskStandsIn() {
         TaskState legacy = new JsonMapper().readValue("""
                 {"project":"demo","worktreePath":"/wt","status":"DEPLOY_CONFLICT","lastActiveTimestamp":5,

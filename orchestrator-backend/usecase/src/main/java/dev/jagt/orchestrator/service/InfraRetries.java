@@ -3,13 +3,13 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskStop;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,25 +44,20 @@ public class InfraRetries {
                     .map(wait -> InfraRetry.armed(clock.millis() + wait.toMillis(), pipelineUrl, jobs, reason,
                             sent.size() + 1, properties.backoff().size()));
             armed.set(next);
-            return next.map(retry -> task.withInfraRetries(with(sent, retry))).orElse(task);
+            return next.map(retry -> TaskReducer.infraArmed(task, retry)).orElse(task);
         });
         return armed.get();
     }
 
     /** Forgets the armed retry, and the sent ones too when {@code all}: a run that went green or red for the code owes no more. */
     public void clear(String taskId, boolean all) {
-        stateService.updateTask(taskId, task -> {
-            List<InfraRetry> kept = all ? List.of() : task.infraRetries().stream().filter(InfraRetry::sent).toList();
-            return kept.equals(task.infraRetries()) ? task : task.withInfraRetries(kept);
-        });
+        stateService.updateTask(taskId, task -> TaskReducer.infraCleared(task, all));
     }
 
     /** The retry sent: it joins those counted, and the task's history keeps the move. */
     public void sent(String taskId, InfraRetry retry) {
-        stateService.updateTask(taskId, task -> {
-            List<InfraRetry> kept = task.infraRetries().stream().filter(InfraRetry::sent).toList();
-            return task.withInfraRetries(with(kept, retry.sentAt(clock.millis()))).withMoveRecorded(clock.millis());
-        });
+        long now = clock.millis();
+        stateService.updateTask(taskId, task -> TaskReducer.infraSent(task, retry, now).withMoveRecorded(now));
     }
 
     /** The armed retries whose time has come, by task. */
@@ -102,11 +97,5 @@ public class InfraRetries {
     public String reading(String taskId) {
         return stateService.task(taskId).flatMap(task -> InfraRetry.pending(task.infraRetries()))
                 .map(InfraRetry::reading).orElse("");
-    }
-
-    private static List<InfraRetry> with(List<InfraRetry> kept, InfraRetry retry) {
-        List<InfraRetry> all = new ArrayList<>(kept);
-        all.add(retry);
-        return all;
     }
 }

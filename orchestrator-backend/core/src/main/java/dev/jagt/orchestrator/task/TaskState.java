@@ -331,13 +331,13 @@ public record TaskState(
         return toBuilder().pipelineStatus(hostStatus).checksUnread(List.of()).checksTip(blankToNull(tip)).build();
     }
 
-    /** The newest commit a read saw pushed: a move off the one before drops the retry armed for it. */
+    /** The newest commit a read saw pushed. */
     public TaskState withHead(@Nullable String tip) {
         String head = blankToNull(tip);
         if (head == null || head.equals(headTip)) {
             return this;
         }
-        return toBuilder().headTip(head).infraRetries(infraRetries.stream().filter(InfraRetry::sent).toList()).build();
+        return toBuilder().headTip(head).build();
     }
 
     /** The checks as the host last said them of the request's current head; null where they were read on another or on none. */

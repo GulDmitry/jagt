@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -83,5 +84,17 @@ sealed interface TaskEffect {
     }
 
     record ReadsApproval(boolean approved) implements TaskEffect {
+    }
+
+    record ArmsInfra(InfraRetry retry) implements TaskEffect {
+    }
+
+    record ClearsInfra(boolean all) implements TaskEffect {
+    }
+
+    record SendsInfra(InfraRetry retry) implements TaskEffect {
+    }
+
+    record DisarmsInfra() implements TaskEffect {
     }
 }

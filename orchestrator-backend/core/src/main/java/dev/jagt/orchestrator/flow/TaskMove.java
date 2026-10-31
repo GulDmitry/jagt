@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -122,8 +123,8 @@ sealed interface TaskMove {
     record MergedByHost(String project) implements TaskMove {
     }
 
-    /** The newest commit a read saw pushed. */
-    record HeadSeen(String tip) implements TaskMove {
+    /** The newest commit a read saw pushed; {@code moved} where it is not the head the task already had. */
+    record HeadSeen(String tip, boolean moved) implements TaskMove {
     }
 
     /** What a read listed of the checks on {@code tip}. */
@@ -136,5 +137,17 @@ sealed interface TaskMove {
 
     /** What the host said of the approval. */
     record ApprovalRead(boolean approved) implements TaskMove {
+    }
+
+    /** A re-run armed for a pipeline that died on infrastructure. */
+    record InfraArmed(InfraRetry retry) implements TaskMove {
+    }
+
+    /** The armed re-run forgotten, and the sent ones too where {@code all}. */
+    record InfraCleared(boolean all) implements TaskMove {
+    }
+
+    /** The re-run sent. */
+    record InfraSent(InfraRetry retry) implements TaskMove {
     }
 }

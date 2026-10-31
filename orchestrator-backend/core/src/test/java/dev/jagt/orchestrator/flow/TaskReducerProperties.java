@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -102,6 +103,17 @@ class TaskReducerProperties {
     }
 
     @Property
+    void aNewHeadNeverLeavesAnInfraRetryArmed(@ForAll("tasks") TaskState start,
+                                              @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, move) -> {
+            TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+            Optional.of(move).filter(seen -> seen instanceof TaskMove.HeadSeen head && head.moved())
+                    .ifPresent(seen -> assertThat(InfraPhase.of(next)).isNotEqualTo(InfraPhase.ARMED));
+            return next;
+        }, (left, right) -> right);
+    }
+
+    @Property
     void aMoveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
@@ -165,11 +177,16 @@ class TaskReducerProperties {
         Arbitrary<List<TaskRepo>> repos = Arbitraries.of(List.of(TaskRepo.of("api", "/wt")),
                 List.of(new TaskRepo("api", "/wt", null, "https://host.example/1", true, null)),
                 List.of(new TaskRepo("api", "/wt", null, "https://host.example/1", null, null)));
+        Arbitrary<List<InfraRetry>> retries = Arbitraries.of(List.of(),
+                List.of(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3)),
+                List.of(new InfraRetry(8_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true,
+                        3, 3)));
         return Combinators.combine(Arbitraries.of(TaskStatus.class), deployment, stop, Arbitraries.of(PlanGate.class),
                         Arbitraries.of(AgentReport.class), turn, trust, repos)
                 .as((status, recorded, standing, gate, report, held, git, held2) ->
                         TaskState.builder("api", "/wt", status).deployment(recorded).stop(standing).planGate(gate)
-                                .report(report).turn(held).gitTrust(git).repos(held2).build());
+                                .report(report).turn(held).gitTrust(git).repos(held2).build())
+                .flatMap(task -> retries.map(held -> task.toBuilder().infraRetries(held).build()));
     }
 
     @Provide
@@ -200,8 +217,13 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.GitChanged("b changed")),
                 Arbitraries.just(new TaskMove.RepoAsked("registry")),
                 Arbitraries.just(new TaskMove.RepoUnasked()),
-                Arbitraries.of("t1", "t2").map(TaskMove.HeadSeen::new),
+                Arbitraries.of("t1", "t2").map(tip -> new TaskMove.HeadSeen(tip, true)),
                 Arbitraries.of("t1", "t2").map(tip -> new TaskMove.ChecksRead("failed", tip)),
+                Arbitraries.just(new TaskMove.InfraArmed(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests",
+                        "runner_system_failure", 1, 3))),
+                flag.map(TaskMove.InfraCleared::new),
+                Arbitraries.just(new TaskMove.InfraSent(new InfraRetry(9_500, "https://host.invalid/p/1", "unit-tests",
+                        "runner_system_failure", true, 1, 3))),
                 Arbitraries.just(new TaskMove.ChecksUnread(new ChecksUnread(500, "no listing"))),
                 flag.map(TaskMove.ApprovalRead::new),
                 flag.map(owed -> new TaskMove.RequestLinked(Map.of("api", "https://host.example/2"),
