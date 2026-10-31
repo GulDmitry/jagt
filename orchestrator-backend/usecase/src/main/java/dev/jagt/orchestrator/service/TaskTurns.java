@@ -76,6 +76,12 @@ public class TaskTurns {
                 .addKeyValue("turn", of(id).id()).log();
     }
 
+    /** QA's read of {@code step} ended: its turn closes where it still stands, and a turn opened since stays. */
+    public void closed(String taskId, String step, String digest) {
+        stateService.updateTask(stateService.canonicalTaskId(taskId),
+                task -> task.turnOrNone().holds(step, digest) ? closed(task) : task);
+    }
+
     /** A reply refused stops its task first, and a stopped task's turn is the human's whatever the Master's profile. */
     public void refused(String taskId) {
         stateService.updateTask(stateService.canonicalTaskId(taskId), task -> closed(task));

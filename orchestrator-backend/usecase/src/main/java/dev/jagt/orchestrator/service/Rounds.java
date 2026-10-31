@@ -28,6 +28,7 @@ public class Rounds {
         return RoundState.of(task.report(),
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
                 .withMaster(master)
-                .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running());
+                .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
+                .withQaReading(task.qaReading());
     }
 }

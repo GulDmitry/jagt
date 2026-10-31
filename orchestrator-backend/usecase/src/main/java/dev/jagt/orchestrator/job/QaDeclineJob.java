@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -29,7 +28,7 @@ public class QaDeclineJob implements TaskJob {
 
     private final ConfigService config;
     private final QaPrompts prompts;
-    private final QaReader reader;
+    private final QaReads reads;
     private final QaRecords records;
     private final QaOutcomes outcomes;
 
@@ -63,13 +62,14 @@ public class QaDeclineJob implements TaskJob {
     public void run(String taskId, TaskState task) {
         QaConfig qa = config.load().qa();
         Optional<QaRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, record));
-        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open()) {
+        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && !task.qaReading()) {
             return;
         }
         String sha = asked.get().sha();
         String rows = Optional.ofNullable(task.turnOrNone().mark(QaVerdict.ROUND_ROWS)).orElse("");
-        Answer<QaDecline> answer = reader.reconsider(prompts.decline(taskId, task.worktreePath(), sha, qa, rows,
-                String.valueOf(task.message())));
+        String step = task.qaReading() ? QaVerdict.AGAIN : QaVerdict.DECLINE;
+        Answer<QaDecline> answer = reads.decline(taskId, step, asked.get().digest(), prompts.decline(taskId,
+                task.worktreePath(), sha, qa, rows, String.valueOf(task.message())));
         QaDecline decline = answer.facts().orElse(QaDecline.failed(sha, answer.failure()));
         QaEnding ending = outcomes.declined(taskId, decline, asked.get().ending() == QaEnding.DISPUTED);
         records.put(taskId, asked.get().digest(), sha, ending);

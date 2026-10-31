@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.QaBrief;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -48,11 +47,11 @@ class QaDeclineJobTest {
     @Test
     void readsTheSessionsReasonBackToQaOnceItRepliedToTheRound(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReader reader = mock(QaReader.class);
+        QaReads reader = mock(QaReads.class);
         QaOutcomes outcomes = mock(QaOutcomes.class);
         when(config.load()).thenReturn(ON);
         QaDecline accepted = new QaDecline("proj@0123456789abcdef", "", "");
-        when(reader.reconsider(any())).thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
+        when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         QaRecords records = new QaRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
@@ -66,7 +65,7 @@ class QaDeclineJobTest {
     @Test
     void readsNothingBeforeTheSessionRepliedToTheRound(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReader reader = mock(QaReader.class);
+        QaReads reader = mock(QaReads.class);
         when(config.load()).thenReturn(ON);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         QaRecords records = new QaRecords(paths, Clock.systemUTC());
@@ -75,13 +74,13 @@ class QaDeclineJobTest {
         new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, mock(QaOutcomes.class))
                 .run("ABC-42", declined(1));
 
-        verify(reader, never()).reconsider(any());
+        verify(reader, never()).decline(any(), any(), any(), any());
     }
 
     @Test
     void readsNothingOnceTheDisputeWentToTheHuman(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReader reader = mock(QaReader.class);
+        QaReads reader = mock(QaReads.class);
         when(config.load()).thenReturn(ON);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         QaRecords records = new QaRecords(paths, Clock.systemUTC());
@@ -90,17 +89,17 @@ class QaDeclineJobTest {
         new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, mock(QaOutcomes.class))
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
-        verify(reader, never()).reconsider(any());
+        verify(reader, never()).decline(any(), any(), any(), any());
     }
 
     @Test
     void marksTheSecondReadAsAnotherDisputeWhereOneStandsAlready(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReader reader = mock(QaReader.class);
+        QaReads reader = mock(QaReads.class);
         QaOutcomes outcomes = mock(QaOutcomes.class);
         when(config.load()).thenReturn(ON);
         QaDecline disputed = new QaDecline("proj@0123456789abcdef", "", "still unsorted");
-        when(reader.reconsider(any())).thenReturn(new Answer<>(Optional.of(disputed), TokenUsage.NONE));
+        when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(disputed), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         QaRecords records = new QaRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.DISPUTED);

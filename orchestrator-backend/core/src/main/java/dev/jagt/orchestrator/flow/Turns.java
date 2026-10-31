@@ -36,19 +36,23 @@ public final class Turns {
     private Turns() {
     }
 
-    /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. */
-    public static Holder next(TaskStatus status, AgentReport report, boolean stopped, Profile profile) {
+    /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check QA reads holds it. */
+    public static Holder next(TaskStatus status, AgentReport report, boolean stopped, boolean qaReading,
+                              Profile profile) {
         if (FlowRules.closed(status)) {
             return Holder.NOBODY;
         }
         if (stopped) {
             return Holder.HUMAN;
         }
+        if (qaReading) {
+            return Holder.QA;
+        }
         if (FlowRules.readByTheMaster(status) && profile.running()) {
             return Holder.MASTER;
         }
         if (report.asks()) {
-            return report == AgentReport.QUESTION && profile.may(MasterRight.ANSWER) ? Holder.MASTER : Holder.HUMAN;
+            return asked(report, profile);
         }
         if (FlowRules.deployedByTheMaster(status) && profile.may(MasterRight.DEPLOY)) {
             return Holder.MASTER;
@@ -57,6 +61,10 @@ public final class Turns {
             return Holder.CI;
         }
         return of(status);
+    }
+
+    private static Holder asked(AgentReport report, Profile profile) {
+        return report == AgentReport.QUESTION && profile.may(MasterRight.ANSWER) ? Holder.MASTER : Holder.HUMAN;
     }
 
     private static Holder of(TaskStatus status) {

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn.Holder;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -32,14 +33,14 @@ class TurnsTest {
     }
 
     static Stream<Arguments> everyTurnNoMasterHolds() {
-        return everyTurn().filter(row -> Turns.next((TaskStatus) row.get()[0], (AgentReport) row.get()[1], false,
+        return everyTurn().filter(row -> Turns.next((TaskStatus) row.get()[0], (AgentReport) row.get()[1], false, false,
                 PROFILES.get((String) row.get()[2])) != Holder.MASTER);
     }
 
     @ParameterizedTest
     @MethodSource("everyTurn")
     void namesExactlyOneHolderForEveryStatusReportAndProfile(TaskStatus status, AgentReport report, String profile) {
-        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, false, PROFILES.get(profile));
 
         assertThat(holder).isIn((Object[]) Holder.values());
     }
@@ -47,7 +48,7 @@ class TurnsTest {
     @ParameterizedTest
     @MethodSource("everyTurnNoMasterHolds")
     void theBoardShowsTheHolderWhereNoMasterHoldsTheTurn(TaskStatus status, AgentReport report, String profile) {
-        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, false, PROFILES.get(profile));
 
         Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
                 RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
@@ -78,7 +79,7 @@ class TurnsTest {
             "DONE, PLAIN, act, NOBODY"})
     void aTaskJagtStoppedIsTheHumansWhereverTheMasterStands(TaskStatus status, AgentReport report, String profile,
                                                            Holder expected) {
-        Holder holder = Turns.next(status, report, true, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, true, false, PROFILES.get(profile));
 
         assertThat(holder).isEqualTo(expected);
     }
@@ -91,7 +92,7 @@ class TurnsTest {
             "REVIEW_PENDING, NO_CHANGES, judge"})
     void aRoundTheMasterReadsIsItsTurnAndTheBoardSaysMasterReview(TaskStatus status, AgentReport report,
                                                                   String profile) {
-        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, false, PROFILES.get(profile));
 
         Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
                 RoundState.of(report, false).withMasterReading(true), false);
@@ -113,7 +114,7 @@ class TurnsTest {
             "DONE, QUESTION, act, NOBODY"})
     void theMasterHoldsTheTurnOnlyWhereItStandsInForTheHuman(TaskStatus status, AgentReport report, String profile,
                                                             Holder expected) {
-        Holder holder = Turns.next(status, report, false, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, false, PROFILES.get(profile));
 
         assertThat(holder).isEqualTo(expected);
     }
@@ -121,8 +122,34 @@ class TurnsTest {
     @ParameterizedTest
     @CsvSource({"off", "judge", "act"})
     void aSessionWaitingOnADependencyKeepsItsTurnWhateverTheMasterDoes(String profile) {
-        Holder holder = Turns.next(TaskStatus.IN_PROGRESS, AgentReport.WAIT, false, PROFILES.get(profile));
+        Holder holder = Turns.next(TaskStatus.IN_PROGRESS, AgentReport.WAIT, false, false, PROFILES.get(profile));
 
         assertThat(holder).isEqualTo(Holder.SESSION);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"off", "judge", "act"})
+    void qaHoldsTheDeployedTurnWhileItsCheckReadsAndTheBoardShowsTheAgentAtWork(String profile) {
+        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, true, PROFILES.get(profile));
+
+        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withHasReviewRequest(true),
+                RoundState.of(AgentReport.PLAIN, false).withQaReading(true).withMaster(PROFILES.get(profile)), false);
+
+        assertThat(holder).isEqualTo(Holder.QA);
+        assertThat(move.owner()).isEqualTo(Owner.AGENT);
+    }
+
+    @Test
+    void nobodyHoldsADeployedTaskWhoseCheckIsNotReading() {
+        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, false, PROFILES.get("act"));
+
+        assertThat(holder).isEqualTo(Holder.NOBODY);
+    }
+
+    @Test
+    void aStoppedTaskIsTheHumansEvenWhereQaReads() {
+        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, true, true, PROFILES.get("act"));
+
+        assertThat(holder).isEqualTo(Holder.HUMAN);
     }
 }

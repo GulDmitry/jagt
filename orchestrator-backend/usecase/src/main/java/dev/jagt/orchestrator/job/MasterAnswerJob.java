@@ -69,7 +69,7 @@ public class MasterAnswerJob implements Job {
     /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
     private static boolean answers(TaskState task, Turns.Profile profile) {
         return Move.asking(task.status(), task.report())
-                && Turns.next(task.status(), task.report(), task.stopped(), profile) == Turn.Holder.MASTER
+                && Turns.next(task.status(), task.report(), task.stopped(), task.qaReading(), profile) == Turn.Holder.MASTER
                 && !task.turnOrNone().marked(TaskTurns.UNANSWERED, TaskTurns.asked(task));
     }
 

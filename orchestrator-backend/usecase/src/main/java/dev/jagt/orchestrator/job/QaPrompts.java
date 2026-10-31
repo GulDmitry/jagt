@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.QaBrief;
 import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
+import dev.jagt.orchestrator.task.QaVerdict;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,15 +16,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class QaPrompts {
 
-    private static final String ACCEPT = "accept";
-
     private final QaBrief brief;
 
-    public QaReader.Run accept(String taskId, String worktree, String sha, QaConfig qa) {
+    public QaReader.Run accept(String taskId, String worktree, String sha, QaConfig qa, String step) {
         String environments = qa.environmentsOrEmpty().stream().map(QaPrompts::environment)
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nCheck it on:\n" + environments;
-        return new QaReader.Run(brief.text(), brief.section(ACCEPT) + "\n\n" + facts, Path.of(worktree), sha,
+        return new QaReader.Run(brief.text(), brief.section(step) + "\n\n" + facts, Path.of(worktree), sha,
                 qa.modelOrDefault());
     }
 
@@ -33,7 +32,7 @@ public class QaPrompts {
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nThe rows you found not met:\n" + rows
                 + "\nThe session changed nothing, and says:\n" + reason + "\nCheck on:\n" + environments;
-        return new QaReader.Run(brief.text(), brief.section("decline") + "\n\n" + facts, Path.of(worktree), sha,
+        return new QaReader.Run(brief.text(), brief.section(QaVerdict.DECLINE) + "\n\n" + facts, Path.of(worktree), sha,
                 qa.modelOrDefault());
     }
 

@@ -622,6 +622,13 @@ public record TaskState(
                 && deployment.askedDigest().equals(turnOrNone().mark(QaVerdict.ROUND_DIGEST));
     }
 
+    /** A QA run reads this deploy: its turn is open on one of QA's steps. */
+    public boolean qaReading() {
+        Turn turn = turnOrNone();
+        return status == TaskStatus.DEPLOYED && turn.open() && (turn.step().equals(QaVerdict.ACCEPT)
+                || turn.step().equals(QaVerdict.DECLINE) || turn.step().equals(QaVerdict.AGAIN));
+    }
+
     public TaskState withMark(String step, String value) {
         return withTurn(turnOrNone().withMark(step, value));
     }
