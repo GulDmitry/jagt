@@ -21,7 +21,7 @@ public final class StandConfig {
             }
             Path roles = Path.of("..", "roles");
             try (var files = Files.walk(roles)) {
-                for (Path file : (Iterable<Path>) files.filter(Files::isRegularFile)::iterator) {
+                for (Path file : (Iterable<Path>) files.filter(Files::isRegularFile).filter(StandConfig::shipped)::iterator) {
                     Path target = root.resolve("roles").resolve(roles.relativize(file).toString());
                     Files.createDirectories(target.getParent());
                     Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
@@ -35,6 +35,12 @@ public final class StandConfig {
         } catch (IOException e) {
             throw new StandFailure("cannot write the stand configuration under " + root, e);
         }
+    }
+
+    private static boolean shipped(Path file) {
+        Path inRole = Path.of("..", "roles").relativize(file);
+        return file.getFileName().toString().endsWith(".dist")
+                || inRole.getNameCount() > 2 && "eval".equals(inRole.getName(1).toString());
     }
 
     private static String jagtYml(Path repo, Path servers, String tmuxSession, StandMode mode, @Nullable Path replay) {
