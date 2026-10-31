@@ -19,6 +19,14 @@ public final class StandConfig {
                     Files.copy(file, root.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
                 }
             }
+            Path roles = Path.of("..", "roles");
+            try (var files = Files.walk(roles)) {
+                for (Path file : (Iterable<Path>) files.filter(Files::isRegularFile)::iterator) {
+                    Path target = root.resolve("roles").resolve(roles.relativize(file).toString());
+                    Files.createDirectories(target.getParent());
+                    Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
             Path servers = root.resolve("servers.json");
             Files.writeString(servers, """
                     {"mcpServers":{"stand-host":{"type":"http","url":"%s"}}}
