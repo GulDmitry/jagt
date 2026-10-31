@@ -74,6 +74,18 @@ class FlowDoorsTest {
     }
 
     @Test
+    void theChecksTheApprovalAndTheHeadAreWrittenOnlyByTheReducer() {
+        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
+                .should().callMethodWhere(target(name("withChecksRead")))
+                .orShould().callMethodWhere(target(name("withChecksUnread")))
+                .orShould().callMethodWhere(target(name("withApproved")))
+                .orShould().callMethodWhere(target(name("withHead")))
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("dev.jagt.orchestrator"));
+    }
+
+    @Test
     void aReportIsWrittenOnlyByTheReducer() {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")

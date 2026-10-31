@@ -121,4 +121,20 @@ sealed interface TaskMove {
     /** The host's word that a repository's request is merged. */
     record MergedByHost(String project) implements TaskMove {
     }
+
+    /** The newest commit a read saw pushed. */
+    record HeadSeen(String tip) implements TaskMove {
+    }
+
+    /** What a read listed of the checks on {@code tip}. */
+    record ChecksRead(String hostStatus, String tip) implements TaskMove {
+    }
+
+    /** A round that could not list the checks. */
+    record ChecksUnread(dev.jagt.orchestrator.task.ChecksUnread read) implements TaskMove {
+    }
+
+    /** What the host said of the approval. */
+    record ApprovalRead(boolean approved) implements TaskMove {
+    }
 }

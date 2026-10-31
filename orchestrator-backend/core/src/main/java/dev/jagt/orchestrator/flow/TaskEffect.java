@@ -72,4 +72,16 @@ sealed interface TaskEffect {
 
     record MergesRequestByHost(String project) implements TaskEffect {
     }
+
+    record SeesHead(String tip) implements TaskEffect {
+    }
+
+    record ReadsChecks(String hostStatus, String tip) implements TaskEffect {
+    }
+
+    record FailsToReadChecks(dev.jagt.orchestrator.task.ChecksUnread read) implements TaskEffect {
+    }
+
+    record ReadsApproval(boolean approved) implements TaskEffect {
+    }
 }

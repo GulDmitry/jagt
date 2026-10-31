@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.Session;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust, repository request and review requests are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust, repository request, review requests, checks and approval are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -173,6 +174,26 @@ public final class TaskReducer {
         return step(task, new TaskMove.MergedByHost(project), 0);
     }
 
+    /** {@code task} that has seen {@code tip} pushed, where it is not the head it already had. */
+    public static TaskState headSeen(TaskState task, String tip) {
+        return step(task, new TaskMove.HeadSeen(tip), 0);
+    }
+
+    /** {@code task} with the checks a read listed on {@code tip}, which ends any older round's failure to read them. */
+    public static TaskState checksRead(TaskState task, String hostStatus, String tip) {
+        return step(task, new TaskMove.ChecksRead(hostStatus, tip), 0);
+    }
+
+    /** {@code task} with a round that could not read the checks: the last verdict stands, marked as not this round's. */
+    public static TaskState checksUnread(TaskState task, ChecksUnread read) {
+        return step(task, new TaskMove.ChecksUnread(read), 0);
+    }
+
+    /** {@code task} with the approval the host last said. */
+    public static TaskState approvalRead(TaskState task, boolean approved) {
+        return step(task, new TaskMove.ApprovalRead(approved), 0);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
         return TaskChart.effects(Phases.of(task), move);
     }
@@ -217,6 +238,10 @@ public final class TaskReducer {
             case TaskEffect.LinksRequests links -> linked(task, links, now);
             case TaskEffect.MergesRequest merges -> task.withMerged(merges.project(), merges.merged());
             case TaskEffect.MergesRequestByHost merges -> task.withMergedByHost(merges.project());
+            case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
+            case TaskEffect.ReadsChecks reads -> task.withChecksRead(reads.hostStatus(), reads.tip());
+            case TaskEffect.FailsToReadChecks fails -> task.withChecksUnread(fails.read());
+            case TaskEffect.ReadsApproval reads -> task.withApproved(reads.approved());
             case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }

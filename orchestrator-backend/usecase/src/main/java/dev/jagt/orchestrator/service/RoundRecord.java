@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -34,8 +35,9 @@ public class RoundRecord {
     public Recorded record(String taskId, ReviewFacts facts, String tip) {
         if (gotNoListing(facts.pipelineStatus())) {
             long now = clock.millis();
-            stateService.updateTask(taskId, task -> task.withChecksUnread(new ChecksUnread(now, facts.pipelineFailure()))
-                    .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()).withHead(tip));
+            stateService.updateTask(taskId, task -> TaskReducer.headSeen(TaskReducer.approvalRead(
+                    TaskReducer.checksUnread(task, new ChecksUnread(now, facts.pipelineFailure())), facts.approved())
+                    .withRequestOpenedAt(facts.openedAt()), tip));
             return new Recorded(stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.trailOrNone(), now)),
                     RedCauses.Verdict.CODE);
         }
@@ -57,8 +59,9 @@ public class RoundRecord {
         boolean newOpened = facts.openedAt() > 0
                 && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.openedAt();
         if (newChecks || newTip || newApproval || newOpened) {
-            stateService.updateTask(taskId, task -> task.withHead(tip).withChecksRead(read, tip)
-                    .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
+            stateService.updateTask(taskId, task -> TaskReducer.approvalRead(
+                    TaskReducer.checksRead(TaskReducer.headSeen(task, tip), read, tip), facts.approved())
+                    .withRequestOpenedAt(facts.openedAt()));
         }
     }
 

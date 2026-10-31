@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static dev.jagt.orchestrator.task.TaskStatus.*;
@@ -44,6 +45,10 @@ final class TaskChart {
     private static final RegionId<RepoPhase> REPO = new RegionId<>("repo", RepoPhase.class);
 
     private static final RegionId<RequestPhase> REQUEST = new RegionId<>("request", RequestPhase.class);
+
+    private static final RegionId<ChecksPhase> CHECKS = new RegionId<>("checks", ChecksPhase.class);
+
+    private static final RegionId<ApprovalPhase> APPROVAL = new RegionId<>("approval", ApprovalPhase.class);
 
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
@@ -85,13 +90,14 @@ final class TaskChart {
 
     /** What {@code move} does to a task standing at {@code phases}, in order; empty where no edge takes it. */
     static List<TaskEffect> effects(Phases phases, TaskMove move) {
-        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), phases.lifecycle().name(),
-                STOP.name(), phases.stop().name(), PLAN.name(), phases.plan().name(),
-                REPORT.name(), phases.report().name(), TURN.name(), phases.turn().name(),
-                DEPLOY.name(), phases.deploy().name(), SESSION.name(), phases.session().name(),
-                GIT.name(), phases.git().name(), REPO.name(), phases.repo().name(),
-                REQUEST.name(), phases.request().name())), phases.stampedAsk(), move)
-                .effects();
+        return CHART.step(CHART.configuration(Map.ofEntries(
+                Map.entry(LIFECYCLE.name(), phases.lifecycle().name()), Map.entry(STOP.name(), phases.stop().name()),
+                Map.entry(PLAN.name(), phases.plan().name()), Map.entry(REPORT.name(), phases.report().name()),
+                Map.entry(TURN.name(), phases.turn().name()), Map.entry(DEPLOY.name(), phases.deploy().name()),
+                Map.entry(SESSION.name(), phases.session().name()), Map.entry(GIT.name(), phases.git().name()),
+                Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
+                Map.entry(CHECKS.name(), phases.checks().name()),
+                Map.entry(APPROVAL.name(), phases.approval().name()))), phases.stampedAsk(), move).effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
@@ -153,6 +159,8 @@ final class TaskChart {
         gits(chart);
         repos(chart);
         requests(chart);
+        checks(chart);
+        approvals(chart);
         sessions(chart);
         ran(chart);
         reports(chart);
@@ -377,6 +385,44 @@ final class TaskChart {
     private static TaskEffect mergesRequest(TaskMove move) {
         return move instanceof TaskMove.MergedByGit git ? new TaskEffect.MergesRequest(git.project(), git.merged())
                 : new TaskEffect.MergesRequestByHost(((TaskMove.MergedByHost) move).project());
+    }
+
+    private static void checks(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+        chart.region(CHECKS, ChecksPhase.NONE);
+        for (ChecksPhase from : ChecksPhase.values()) {
+            regionEdge(chart, CHECKS, from, "read", move -> move instanceof TaskMove.ChecksRead,
+                    move -> new TaskEffect.ReadsChecks(((TaskMove.ChecksRead) move).hostStatus(),
+                            ((TaskMove.ChecksRead) move).tip()), ChecksPhase.READ);
+            regionEdge(chart, CHECKS, from, "unread", move -> move instanceof TaskMove.ChecksUnread,
+                    move -> new TaskEffect.FailsToReadChecks(((TaskMove.ChecksUnread) move).read()),
+                    ChecksPhase.UNREAD);
+            regionEdge(chart, CHECKS, from, "head seen", move -> move instanceof TaskMove.HeadSeen,
+                    move -> new TaskEffect.SeesHead(((TaskMove.HeadSeen) move).tip()),
+                    from == ChecksPhase.READ ? ChecksPhase.STALE : from);
+        }
+    }
+
+    private static void approvals(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+        chart.region(APPROVAL, ApprovalPhase.UNREAD);
+        for (ApprovalPhase from : ApprovalPhase.values()) {
+            regionEdge(chart, APPROVAL, from, "approved", move -> move instanceof TaskMove.ApprovalRead read
+                    && read.approved(), move -> new TaskEffect.ReadsApproval(true), ApprovalPhase.APPROVED);
+            regionEdge(chart, APPROVAL, from, "withheld", move -> move instanceof TaskMove.ApprovalRead read
+                    && !read.approved(), move -> new TaskEffect.ReadsApproval(false), ApprovalPhase.WITHHELD);
+        }
+    }
+
+    private static <S extends Enum<S>> void regionEdge(ChartBuilder<TaskMove, Boolean, TaskEffect> chart,
+                                                       RegionId<S> region, S from, String label,
+                                                       Predicate<TaskMove> matches,
+                                                       Function<TaskMove, TaskEffect> effect, S to) {
+        EdgeBuilder<TaskMove, Boolean, TaskEffect, S> edge = chart.onMatching(region, from, label, matches)
+                .emitFor(effect);
+        if (from == to) {
+            edge.stay();
+        } else {
+            edge.to(to);
+        }
     }
 
     private static void startedOver(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from) {

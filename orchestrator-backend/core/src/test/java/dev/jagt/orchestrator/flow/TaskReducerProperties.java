@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
@@ -199,6 +200,10 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.GitChanged("b changed")),
                 Arbitraries.just(new TaskMove.RepoAsked("registry")),
                 Arbitraries.just(new TaskMove.RepoUnasked()),
+                Arbitraries.of("t1", "t2").map(TaskMove.HeadSeen::new),
+                Arbitraries.of("t1", "t2").map(tip -> new TaskMove.ChecksRead("failed", tip)),
+                Arbitraries.just(new TaskMove.ChecksUnread(new ChecksUnread(500, "no listing"))),
+                flag.map(TaskMove.ApprovalRead::new),
                 flag.map(owed -> new TaskMove.RequestLinked(Map.of("api", "https://host.example/2"),
                         "https://host.example/2", owed)),
                 flag.map(merged -> new TaskMove.MergedByGit("api", merged)),

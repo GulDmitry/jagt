@@ -527,4 +527,24 @@ class TaskReducerTest {
 
         assertThat(reported.asksForARepository()).isFalse();
     }
+
+    @Test
+    void aNewHeadMakesTheChecksReadOnTheOldOneStale() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).build();
+        TaskState read = TaskReducer.checksRead(TaskReducer.headSeen(task, "t1"), "failed", "t1");
+
+        TaskState moved = TaskReducer.headSeen(read, "t2");
+
+        assertThat(read.checksRead()).isEqualTo("failed");
+        assertThat(moved.checksRead()).isNull();
+    }
+
+    @Test
+    void anApprovalReadIsKeptAsTheHostSaidIt() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.REVIEWED).build();
+
+        TaskState approved = TaskReducer.approvalRead(task, true);
+
+        assertThat(approved.approved()).isTrue();
+    }
 }

@@ -117,7 +117,7 @@ public class AgentStatusReports {
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (url != null && FlowRules.outForReview(written.now())) {
             stateService.task(taskId).map(handBack::pushedTips)
-                    .ifPresent(tip -> stateService.updateTask(taskId, task -> task.withHead(tip)));
+                    .ifPresent(tip -> stateService.updateTask(taskId, task -> TaskReducer.headSeen(task, tip)));
         }
         if (said.noPlan()) {
             stateService.updateTask(taskId, TaskReducer::noPlanDeclared);
