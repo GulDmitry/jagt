@@ -1,0 +1,24 @@
+case: environment-down-waits
+ticket:
+  key: ABC-104
+  title: Offer comparison shows premium difference
+  criteria:
+    - {id: C1, text: "The comparison shows the difference between two offers"}
+deploy:
+  sha: d4e5f60
+  tip: d4e5f60
+  landed: host-job
+  diff: ["service/Comparison.java: adds delta"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /health": {status: 503}
+    "GET /compare": {status: 502}
+expect:
+  rows: {C1: unprovable}
+  report: wait
+  probe: "GET /health"
+  ending: waiting
+names: ["503", "/health"]
+note: Down is not not-met. Ask nobody, name the probe.

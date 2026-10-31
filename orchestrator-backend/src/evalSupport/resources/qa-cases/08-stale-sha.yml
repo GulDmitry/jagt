@@ -1,0 +1,25 @@
+case: met-only-on-a-stale-sha
+ticket:
+  key: ABC-108
+  title: Fix wrong total on the offer sheet
+  criteria:
+    - {id: C1, text: "The offer sheet total equals the sum of its lines"}
+deploy:
+  sha: 1829304
+  tip: 1829304
+  landed: host-job
+  landed_sha_served: 9988776
+  diff: ["service/OfferTotal.java: sums lines"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /version": {sha: "9988776"}
+    "GET /offers/sample-1": {total: 300, lines: [100, 200]}
+expect:
+  rows: {C1: unprovable}
+  report: wait
+  probe: "GET /version"
+  ending: waiting
+names: ["9988776", "1829304"]
+note: The total is right, but the environment serves the previous build. A met here would belong to the wrong sha; wait until /version shows the tip.

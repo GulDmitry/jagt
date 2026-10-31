@@ -61,6 +61,8 @@ interactions.jsonl.1
 # The masterEval suite's own root, trusted once by a human and rebuilt each run, and its run lock
 .master-eval/
 .master-eval.lock
+# The qaEval suite's own root, rebuilt each run
+.qa-eval/
 # Present while the Master's act is stopped, written beside state.json
 act-stopped
 act-strikes

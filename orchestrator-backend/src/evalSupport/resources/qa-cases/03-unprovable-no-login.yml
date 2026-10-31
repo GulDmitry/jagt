@@ -1,0 +1,21 @@
+case: unprovable-no-login
+ticket:
+  key: ABC-103
+  title: Insurer sees a new status filter on the offers page
+  criteria:
+    - {id: C1, text: "The offers page has a status filter"}
+deploy:
+  sha: c3d4e5f
+  tip: c3d4e5f
+  landed: host-job
+  diff: ["ui/OffersFilter.tsx: adds status select"]
+  flags: {}
+environment:
+  login: {insurer-role: "empty form, no saved credential"}
+  ui: {}
+expect:
+  rows: {C1: unprovable}
+  report: question
+  ending: unprovable
+names: ["login"]
+note: QA holds no credential; an empty login is a question to the human, never a guess from the diff.

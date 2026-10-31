@@ -1,0 +1,28 @@
+case: decline-the-session-justifies-correctly
+ticket:
+  key: ABC-112
+  title: Sort offers by premium, ascending
+  criteria:
+    - {id: C1, text: "The offers list sorts by premium ascending by default"}
+deploy:
+  sha: 5263748
+  tip: 5263748
+  landed: host-job
+  diff: ["service/OfferSort.java: ascending by premium"]
+  flags: {}
+previous_check:
+  verdict: {C1: not_met}
+  evidence: "first row shown has the highest premium"
+session_reply:
+  kind: no_changes
+  why: "The list shows the best offer first by a separate pinned row, then the rest ascending; the ticket's own mock shows the pin. The sort is correct."
+environment:
+  login: {broker-role: ok}
+  ui:
+    "/offers": {rows: [{premium: 900, pinned: true}, {premium: 100}, {premium: 200}, {premium: 300}]}
+expect:
+  rows: {C1: met}
+  report: plain
+  ending: declined
+names: ["pinned", "ascending"]
+note: The reason holds against the recorded evidence. A dispute here is a false not-met in disguise.

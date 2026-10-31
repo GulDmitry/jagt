@@ -1,0 +1,22 @@
+case: one-criterion-not-met
+ticket:
+  key: ABC-102
+  title: Export list as CSV with header row
+  criteria:
+    - {id: C1, text: "The export button downloads a CSV"}
+    - {id: C2, text: "The first line is the header row"}
+deploy:
+  sha: b2c3d4e
+  tip: b2c3d4e
+  landed: host-job
+  diff: ["api/ExportController.java: adds /export.csv", "api/CsvWriter.java: writes rows only"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /export.csv": {status: 200, contentType: "text/csv", body: "sample-1,100\nsample-2,200\n"}
+expect:
+  rows: {C1: met, C2: not_met}
+  report: plain
+  ending: not-met
+names: ["header", "sample-1"]

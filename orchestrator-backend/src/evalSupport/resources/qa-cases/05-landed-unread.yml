@@ -1,0 +1,23 @@
+case: landed-unread
+ticket:
+  key: ABC-105
+  title: Rename column Partner to Broker on the list
+  criteria:
+    - {id: C1, text: "The list column reads Broker"}
+deploy:
+  sha: e5f6071
+  tip: e5f6071
+  landed: none
+  diff: ["ui/ListColumns.ts: label Broker"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  ui:
+    "/list": {column: "Partner"}
+  landed_probe: null
+expect:
+  rows: {C1: unprovable}
+  report: question
+  ending: unprovable
+names: ["landed", "no deploy job"]
+note: The page still says Partner but landing was never proven, so not_met would be a guess. One question per deploy.

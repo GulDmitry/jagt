@@ -5,7 +5,7 @@
 `./gradlew test` is the hermetic gate, and **a cached green is not a run**: before a commit it is
 `./gradlew test --rerun-tasks`. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest` needs git +
 tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`);
-`promptEval` the assistant's CLI and tokens; `masterEval` those plus minutes; `pitest` of every ring is a mutation report
+`promptEval` the assistant's CLI and tokens; `masterEval` and `qaEval` those plus minutes; `pitest` of every ring is a mutation report
 a human reads, never a gate: a change runs `-PpitestTargets=<its changed classes>`, the full run is release-review's and refresh's.
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix. Its

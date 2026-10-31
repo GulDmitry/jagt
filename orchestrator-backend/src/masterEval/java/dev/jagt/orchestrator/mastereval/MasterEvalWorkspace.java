@@ -1,14 +1,11 @@
 package dev.jagt.orchestrator.mastereval;
 
 import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
+import dev.jagt.orchestrator.eval.EvalShards;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 final class MasterEvalWorkspace {
@@ -17,7 +14,7 @@ final class MasterEvalWorkspace {
     static final String TMUX_SESSION = TMUX_PREFIX + "-" + ProcessHandle.current().pid();
     private static final Path FIXED_ROOT_A_HUMAN_TRUSTED_ONCE = Path.of("..", ".master-eval").toAbsolutePath().normalize();
 
-    private static HeldShard heldShard;
+    private static final EvalShards SHARDS = EvalShards.under(FIXED_ROOT_A_HUMAN_TRUSTED_ONCE, shards());
 
     private MasterEvalWorkspace() {
     }
@@ -26,41 +23,12 @@ final class MasterEvalWorkspace {
         return Integer.getInteger("masterEval.shards", 1);
     }
 
-    static synchronized int shard() {
-        if (heldShard == null) {
-            heldShard = claimFreeShard();
-        }
-        return heldShard.index();
+    static int shard() {
+        return SHARDS.claim();
     }
 
     static Path root() {
         return FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolve("root").resolve("shard-" + shard());
-    }
-
-    private record HeldShard(int index, FileChannel channel) {
-    }
-
-    private static HeldShard claimFreeShard() {
-        try {
-            Files.createDirectories(FIXED_ROOT_A_HUMAN_TRUSTED_ONCE);
-            for (int index = 0; index < shards(); index++) {
-                FileChannel channel = FileChannel.open(FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolve("shard-" + index + ".lock"),
-                        StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-                try {
-                    if (channel.tryLock() != null) {
-                        return new HeldShard(index, channel);
-                    }
-                } catch (OverlappingFileLockException heldByThisJvm) {
-                    channel.close();
-                    continue;
-                }
-                channel.close();
-            }
-        } catch (IOException unclaimable) {
-            throw new UncheckedIOException(unclaimable);
-        }
-        throw new IllegalStateException("Another masterEval run holds every shard of " + FIXED_ROOT_A_HUMAN_TRUSTED_ONCE
-                + " — one session cannot serve two. Wait for it, or end it.");
     }
 
     static void claim() throws Exception {
@@ -87,7 +55,7 @@ final class MasterEvalWorkspace {
 
     static synchronized void release() throws Exception {
         new ProcessBuilder("tmux", "kill-session", "-t", "=" + TMUX_SESSION).start().waitFor(10, TimeUnit.SECONDS);
-        heldShard.channel().close();
+        SHARDS.release();
     }
 
     private static boolean alive(String pid) {

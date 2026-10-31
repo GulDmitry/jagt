@@ -1,0 +1,23 @@
+case: all-met
+ticket:
+  key: ABC-101
+  title: Show renewal date on the contract card
+  criteria:
+    - {id: C1, text: "The contract card shows the renewal date as DD.MM.YYYY"}
+    - {id: C2, text: "A contract without a renewal date shows a dash"}
+deploy:
+  sha: a1b2c3d
+  tip: a1b2c3d
+  landed: host-job
+  diff: ["ui/ContractCard.tsx: renders renewal date, dash when null"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  ui:
+    "/contracts/sample-1": {renewalDate: "01.07.2027"}
+    "/contracts/sample-2": {renewalDate: "-"}
+expect:
+  rows: {C1: met, C2: met}
+  report: plain
+  ending: passed
+names: ["01.07.2027", "dash"]

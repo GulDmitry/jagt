@@ -1,0 +1,23 @@
+case: untestable-nfr
+ticket:
+  key: ABC-106
+  title: Faster list loading
+  criteria:
+    - {id: C1, text: "The list opens with 50 rows per page"}
+    - {id: C2, text: "The list feels fast for large brokers", testable: false}
+deploy:
+  sha: f607182
+  tip: f607182
+  landed: host-job
+  diff: ["api/ListController.java: page size 50"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /list": {status: 200, rows: 50, ms: 310}
+expect:
+  rows: {C1: met, C2: unprovable}
+  report: question
+  ending: unprovable
+names: ["feels fast", "no threshold"]
+note: One measured number is not a criterion. C2 unprovable must not turn C1 into not_met nor pass the whole check.

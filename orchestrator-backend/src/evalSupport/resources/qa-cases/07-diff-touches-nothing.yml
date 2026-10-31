@@ -1,0 +1,22 @@
+case: diff-touches-nothing-the-ticket-asks
+ticket:
+  key: ABC-107
+  title: Add phone number field to the contact form
+  criteria:
+    - {id: C1, text: "The contact form has a phone number field"}
+deploy:
+  sha: 0718293
+  tip: 0718293
+  landed: host-job
+  diff: ["docs/CHANGELOG.md: entry", "build.gradle: dependency bump"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  ui:
+    "/contacts/new": {fields: ["name", "email"]}
+expect:
+  rows: {C1: not_met}
+  report: plain
+  ending: not-met
+names: ["phone", "diff"]
+note: Evidence is the environment (no field) and the diff (nothing touches the form), both cited.

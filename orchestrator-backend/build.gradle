@@ -287,6 +287,14 @@ sourceSets {
 }
 
 sourceSets {
+    qaEval {
+        java.srcDirs = ['src/qaEval/java']
+        compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
+    }
+}
+
+sourceSets {
     boardTest {
         java.srcDirs = ['src/boardTest/java']
         compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
@@ -493,6 +501,54 @@ tasks.register('masterEval', Test) {
     shouldRunAfter tasks.named('test')
 }
 
+tasks.register('qaEval', Test) {
+    description = 'Reads the shipped QA brief against deploys whose verdict is known (spends tokens, minutes).'
+    group = 'verification'
+    testClassesDirs = sourceSets.qaEval.output.classesDirs
+    classpath = sourceSets.qaEval.runtimeClasspath
+    useJUnitPlatform()
+    int shards = (project.findProperty('qaShards') ?: '3') as int
+    if (shards < 1 || shards > 6) {
+        throw new GradleException("-PqaShards ${shards} must be between 1 and 6, the shard classes there are.")
+    }
+    maxParallelForks = shards
+    forkEvery = 1
+    systemProperty 'qaEval.shards', shards
+    testLogging.showStandardStreams = true
+    filter {
+        (0..<shards).each { includeTestsMatching "*QaVerdictEvalShard${it}Test" }
+    }
+    ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
+        if (project.hasProperty(property)) {
+            systemProperty key, project.property(property)
+        }
+    }
+    // -PqaBrief and -PqaModel read another brief or model against the same deploys, to compare cost.
+    ['qaBrief': 'qaEval.brief', 'qaModel': 'qaEval.model'].each { property, key ->
+        if (project.hasProperty(property)) {
+            systemProperty key, project.property(property)
+        }
+    }
+    def brief = file('../qa-brief.md.dist')
+    onlyIf { task ->
+        List<String> missing = []
+        ['claude', 'git'].each { binary ->
+            if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                    .any { dir -> dir && new File(dir, binary).canExecute() }) {
+                missing << binary
+            }
+        }
+        if (!brief.exists()) {
+            missing << 'qa-brief.md.dist'
+        }
+        if (missing) {
+            task.logger.lifecycle("Skipping qaEval — missing: ${missing.join(', ')}.")
+        }
+        missing.isEmpty()
+    }
+    shouldRunAfter tasks.named('test')
+}
+
 tasks.register('promptEval', Test) {
     description = 'Maps operator phrasings onto the grammar through the real assistant (spends tokens).'
     group = 'verification'
@@ -523,20 +579,22 @@ tasks.register('promptEval', Test) {
 }
 
 // Each case of a model eval appends its outcome to one gitignored file a later run reads; nothing else reads it.
-['promptEval', 'masterEval'].each { name ->
+['promptEval', 'masterEval', 'qaEval'].each { name ->
     tasks.named(name) {
         systemProperty 'eval.suite', name
         systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
-        systemProperty 'eval.model', (name == 'masterEval' ? project.findProperty('masterModel') : null) ?: 'default'
+        String modelProperty = ['masterEval': 'masterModel', 'qaEval': 'qaModel'][name]
+        systemProperty 'eval.model', (modelProperty ? project.findProperty(modelProperty) : null) ?: 'default'
         systemProperty 'eval.brief.file', (name == 'masterEval'
                 ? (project.findProperty('masterBrief') ?: file('../master-brief.md.dist').path)
+                : name == 'qaEval' ? (project.findProperty('qaBrief') ?: file('../qa-brief.md.dist').path)
                 : file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path)
     }
 }
 
 // What these prove is the MACHINE — or a model — and no such state is in a cache key: a restored result would
 // come back green without anything having run.
-['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval', 'masterEval'].each { name ->
+['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval', 'masterEval', 'qaEval'].each { name ->
     tasks.named(name) {
         outputs.cacheIf { false }
         outputs.upToDateWhen { false }

@@ -1,0 +1,25 @@
+case: partial-ui-change
+ticket:
+  key: ABC-110
+  title: Show status chip on card and detail page
+  criteria:
+    - {id: C1, text: "The list card shows a status chip"}
+    - {id: C2, text: "The detail page shows the same status chip"}
+    - {id: C3, text: "The chip colour follows the status"}
+deploy:
+  sha: 3041526
+  tip: 3041526
+  landed: host-job
+  diff: ["ui/Card.tsx: chip", "ui/chip.css: colours"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  ui:
+    "/list": {chip: "open", colour: "green"}
+    "/detail/sample-1": {chip: null}
+expect:
+  rows: {C1: met, C2: not_met, C3: met}
+  report: plain
+  ending: not-met
+names: ["detail", "chip"]
+note: One failing row must not drag the met rows down; the round lists C2 alone.
