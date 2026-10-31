@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,11 +31,15 @@ class RoleNamesTest {
 
     @Test
     void noClassOutsideARolesModuleNamesIt() {
-        List<String> named = Stream.concat(installedIds().map(RoleNamesTest::capitalised), Stream.of("Master", "Arbiter")).toList();
+        Map<String, List<String>> modules = new LinkedHashMap<>();
+        modules.put("master", RoleModules.ARBITER);
+        modules.put("arbiter", RoleModules.ARBITER);
+        installedIds().forEach(id -> modules.put(id.toLowerCase(Locale.ROOT), RoleModules.CHECKERS.getOrDefault(id, List.of())));
 
-        assertThat(CODE.stream().filter(type -> named.stream().anyMatch(type.getSimpleName()::startsWith))
-                .map(JavaClass::getName).filter(name -> !RoleModules.inAModule(name))
-                .filter(name -> !ALLOWED.containsKey(name))).isEmpty();
+        assertThat(CODE.stream().filter(type -> modules.entrySet().stream()
+                        .anyMatch(role -> type.getSimpleName().toLowerCase(Locale.ROOT).startsWith(role.getKey())
+                                && role.getValue().stream().noneMatch(type.getName()::startsWith)))
+                .map(JavaClass::getName).filter(name -> !ALLOWED.containsKey(name))).isEmpty();
     }
 
     @Test
@@ -49,9 +54,5 @@ class RoleNamesTest {
         } catch (IOException unread) {
             throw new UncheckedIOException(unread);
         }
-    }
-
-    private static String capitalised(String id) {
-        return id.substring(0, 1).toUpperCase(Locale.ROOT) + id.substring(1);
     }
 }

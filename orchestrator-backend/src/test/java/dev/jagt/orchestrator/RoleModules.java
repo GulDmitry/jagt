@@ -17,9 +17,4 @@ final class RoleModules {
 
     private RoleModules() {
     }
-
-    static boolean inAModule(String className) {
-        return Stream.concat(ARBITER.stream(), CHECKERS.values().stream().flatMap(List::stream))
-                .anyMatch(className::startsWith);
-    }
 }
