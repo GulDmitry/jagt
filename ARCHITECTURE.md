@@ -101,7 +101,8 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-turn-chart.md`](docs/task-turn-chart.md); the session's signs, in
   [`docs/task-session-chart.md`](docs/task-session-chart.md); the git trust, in
   [`docs/task-git-chart.md`](docs/task-git-chart.md); the repository request, in
-  [`docs/task-repo-chart.md`](docs/task-repo-chart.md). Marks are bookkeeping, written by `withMark` from anywhere.
+  [`docs/task-repo-chart.md`](docs/task-repo-chart.md); the review requests, in
+  [`docs/task-request-chart.md`](docs/task-request-chart.md). Marks are bookkeeping, written by `withMark` from anywhere.
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
   (`service/TaskProvisioning`).
 - **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the

@@ -11,9 +11,10 @@ import dev.jagt.orchestrator.task.Turn;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-/** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust and repository request are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust, repository request and review requests are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -156,6 +157,22 @@ public final class TaskReducer {
         return step(task, new TaskMove.RepoAttached(repo), 0);
     }
 
+    /** {@code task} with the requests a report linked, a new round where it is one; the links are stamped {@code now}. */
+    public static TaskState requestLinked(TaskState task, Map<String, String> byProject, String url,
+                                          boolean newRound, long now) {
+        return step(task, new TaskMove.RequestLinked(byProject, url, newRound), now);
+    }
+
+    /** {@code task} with what git found of {@code project}'s request: merged into its target or not. */
+    public static TaskState mergedByGit(TaskState task, String project, boolean merged) {
+        return step(task, new TaskMove.MergedByGit(project, merged), 0);
+    }
+
+    /** {@code task} whose host said {@code project}'s request is merged, a word git's later reads do not take back. */
+    public static TaskState mergedByHost(TaskState task, String project) {
+        return step(task, new TaskMove.MergedByHost(project), 0);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
         return TaskChart.effects(Phases.of(task), move);
     }
@@ -166,6 +183,14 @@ public final class TaskReducer {
             moved = apply(moved, effect, null, false, now);
         }
         return moved;
+    }
+
+    private static TaskState linked(TaskState task, TaskEffect.LinksRequests links, long now) {
+        if (links.byProject().isEmpty()) {
+            return links.newRound() ? task.withReviewRound(links.url(), now) : task.withMrUrl(links.url(), now);
+        }
+        return links.newRound() ? task.withReviewRound(links.byProject(), now)
+                : task.withMrUrls(links.byProject(), now);
     }
 
     private static TaskState apply(TaskState task, TaskEffect effect, @Nullable String message, boolean event,
@@ -189,6 +214,9 @@ public final class TaskReducer {
             case TaskEffect.AsksRepo asks -> task.withRepoRequest(asks.project());
             case TaskEffect.DropsRepoRequest drops -> task.withRepoRequest(null);
             case TaskEffect.AttachesRepo attaches -> task.withRepo(attaches.repo());
+            case TaskEffect.LinksRequests links -> linked(task, links, now);
+            case TaskEffect.MergesRequest merges -> task.withMerged(merges.project(), merges.merged());
+            case TaskEffect.MergesRequestByHost merges -> task.withMergedByHost(merges.project());
             case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }

@@ -8,6 +8,8 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 
+import java.util.Map;
+
 /** What a chart step does to a task, as data; {@link TaskReducer} is the one place that applies it. */
 sealed interface TaskEffect {
 
@@ -60,5 +62,14 @@ sealed interface TaskEffect {
     }
 
     record AttachesRepo(TaskRepo repo) implements TaskEffect {
+    }
+
+    record LinksRequests(Map<String, String> byProject, String url, boolean newRound) implements TaskEffect {
+    }
+
+    record MergesRequest(String project, boolean merged) implements TaskEffect {
+    }
+
+    record MergesRequestByHost(String project) implements TaskEffect {
     }
 }

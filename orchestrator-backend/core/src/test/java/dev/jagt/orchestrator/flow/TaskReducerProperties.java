@@ -90,6 +90,17 @@ class TaskReducerProperties {
     }
 
     @Property
+    void aMergedRequestNeverLetsShipRun(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, move) -> {
+            TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+            Optional.of(next).filter(moved -> RequestPhase.of(moved) == RequestPhase.MERGED)
+                    .ifPresent(moved -> assertThat(FlowRules.allows(moved.status(), TaskAction.SHIP,
+                            Facts.projected(moved))).isFalse());
+            return next;
+        }, (left, right) -> right);
+    }
+
+    @Property
     void aMoveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
@@ -150,11 +161,14 @@ class TaskReducerProperties {
         Arbitrary<Turn> turn = Arbitraries.of("", "d").map(digest -> new Turn("ship", 4, digest, 1_000, null, null));
         Arbitrary<GitTrust> trust = Arbitraries.of(GitTrust.of(Map.of("a", "1")),
                 GitTrust.of(Map.of("a", "1")).withChanged("a changed")).injectNull(0.3);
+        Arbitrary<List<TaskRepo>> repos = Arbitraries.of(List.of(TaskRepo.of("api", "/wt")),
+                List.of(new TaskRepo("api", "/wt", null, "https://host.example/1", true, null)),
+                List.of(new TaskRepo("api", "/wt", null, "https://host.example/1", null, null)));
         return Combinators.combine(Arbitraries.of(TaskStatus.class), deployment, stop, Arbitraries.of(PlanGate.class),
-                        Arbitraries.of(AgentReport.class), turn, trust)
-                .as((status, recorded, standing, gate, report, held, git) -> TaskState.builder("api", "/wt", status)
-                        .deployment(recorded).stop(standing).planGate(gate).report(report).turn(held)
-                        .gitTrust(git).build());
+                        Arbitraries.of(AgentReport.class), turn, trust, repos)
+                .as((status, recorded, standing, gate, report, held, git, held2) ->
+                        TaskState.builder("api", "/wt", status).deployment(recorded).stop(standing).planGate(gate)
+                                .report(report).turn(held).gitTrust(git).repos(held2).build());
     }
 
     @Provide
@@ -185,6 +199,10 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.GitChanged("b changed")),
                 Arbitraries.just(new TaskMove.RepoAsked("registry")),
                 Arbitraries.just(new TaskMove.RepoUnasked()),
+                flag.map(owed -> new TaskMove.RequestLinked(Map.of("api", "https://host.example/2"),
+                        "https://host.example/2", owed)),
+                flag.map(merged -> new TaskMove.MergedByGit("api", merged)),
+                Arbitraries.just(new TaskMove.MergedByHost("api")),
                 Arbitraries.just(new TaskMove.RepoAttached(TaskRepo.of("registry", "/wt-registry"))),
                 Arbitraries.just(new TaskMove.GitRepoJoined(GitTrust.of(Map.of("c", "3")))),
                 Arbitraries.of("", "d").map(digest -> new TaskMove.TurnRestored(

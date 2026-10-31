@@ -60,6 +60,20 @@ class FlowDoorsTest {
     }
 
     @Test
+    void aReviewRequestIsLinkedAndMergedOnlyByTheReducer() {
+        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState$TaskStateBuilder")
+                .should().callMethodWhere(target(name("withMrUrl")))
+                .orShould().callMethodWhere(target(name("withMrUrls")))
+                .orShould().callMethodWhere(target(name("withReviewRound")))
+                .orShould().callMethodWhere(target(name("withMerged")))
+                .orShould().callMethodWhere(target(name("withMergedByHost")))
+                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                        .importPackages("dev.jagt.orchestrator"));
+    }
+
+    @Test
     void aReportIsWrittenOnlyByTheReducer() {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")

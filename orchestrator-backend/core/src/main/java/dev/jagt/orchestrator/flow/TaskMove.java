@@ -7,6 +7,8 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 
+import java.util.Map;
+
 /** What can happen to a task's status, named by the door it came through. */
 sealed interface TaskMove {
 
@@ -106,5 +108,17 @@ sealed interface TaskMove {
 
     /** A repository added to the task, which ends any request. */
     record RepoAttached(TaskRepo repo) implements TaskMove {
+    }
+
+    /** A report's request links: one per repository, or the one {@code url} on the primary where {@code byProject} is empty. */
+    record RequestLinked(Map<String, String> byProject, String url, boolean newRound) implements TaskMove {
+    }
+
+    /** What git found of whether a repository's request is merged into its target. */
+    record MergedByGit(String project, boolean merged) implements TaskMove {
+    }
+
+    /** The host's word that a repository's request is merged. */
+    record MergedByHost(String project) implements TaskMove {
     }
 }

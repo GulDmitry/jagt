@@ -43,6 +43,8 @@ final class TaskChart {
 
     private static final RegionId<RepoPhase> REPO = new RegionId<>("repo", RepoPhase.class);
 
+    private static final RegionId<RequestPhase> REQUEST = new RegionId<>("request", RequestPhase.class);
+
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
@@ -87,7 +89,8 @@ final class TaskChart {
                 STOP.name(), phases.stop().name(), PLAN.name(), phases.plan().name(),
                 REPORT.name(), phases.report().name(), TURN.name(), phases.turn().name(),
                 DEPLOY.name(), phases.deploy().name(), SESSION.name(), phases.session().name(),
-                GIT.name(), phases.git().name(), REPO.name(), phases.repo().name())), phases.stampedAsk(), move)
+                GIT.name(), phases.git().name(), REPO.name(), phases.repo().name(),
+                REQUEST.name(), phases.request().name())), phases.stampedAsk(), move)
                 .effects();
     }
 
@@ -149,6 +152,7 @@ final class TaskChart {
         deploys(chart);
         gits(chart);
         repos(chart);
+        requests(chart);
         sessions(chart);
         ran(chart);
         reports(chart);
@@ -336,6 +340,43 @@ final class TaskChart {
                 .to(RepoPhase.NONE);
         chart.onMatching(REPO, RepoPhase.NONE, "attached unasked", move -> move instanceof TaskMove.RepoAttached)
                 .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo())).stay();
+    }
+
+    private static void requests(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+        chart.region(REQUEST, RequestPhase.NONE);
+        chart.onMatching(REQUEST, RequestPhase.NONE, "linked", move -> move instanceof TaskMove.RequestLinked)
+                .emitFor(move -> linksRequests((TaskMove.RequestLinked) move)).to(RequestPhase.OPEN);
+        chart.onMatching(REQUEST, RequestPhase.OPEN, "linked again", move -> move instanceof TaskMove.RequestLinked)
+                .emitFor(move -> linksRequests((TaskMove.RequestLinked) move)).stay();
+        chart.onMatching(REQUEST, RequestPhase.MERGED, "linked anew", move -> move instanceof TaskMove.RequestLinked)
+                .emitFor(move -> linksRequests((TaskMove.RequestLinked) move)).to(RequestPhase.OPEN);
+        chart.onMatching(REQUEST, RequestPhase.OPEN, "merged", TaskChart::merges)
+                .emitFor(TaskChart::mergesRequest).to(RequestPhase.MERGED);
+        chart.onMatching(REQUEST, RequestPhase.OPEN, "found unmerged", TaskChart::unmerges)
+                .emitFor(TaskChart::mergesRequest).stay();
+        chart.onMatching(REQUEST, RequestPhase.MERGED, "merged again", TaskChart::merges)
+                .emitFor(TaskChart::mergesRequest).stay();
+        chart.onMatching(REQUEST, RequestPhase.MERGED, "found unmerged", TaskChart::unmerges)
+                .emitFor(TaskChart::mergesRequest).to(RequestPhase.OPEN);
+        chart.onMatching(REQUEST, RequestPhase.NONE, "merge recorded unrequested", move -> merges(move)
+                        || unmerges(move)).emitFor(TaskChart::mergesRequest).stay();
+    }
+
+    private static boolean merges(TaskMove move) {
+        return move instanceof TaskMove.MergedByHost || move instanceof TaskMove.MergedByGit git && git.merged();
+    }
+
+    private static boolean unmerges(TaskMove move) {
+        return move instanceof TaskMove.MergedByGit git && !git.merged();
+    }
+
+    private static TaskEffect linksRequests(TaskMove.RequestLinked linked) {
+        return new TaskEffect.LinksRequests(linked.byProject(), linked.url(), linked.newRound());
+    }
+
+    private static TaskEffect mergesRequest(TaskMove move) {
+        return move instanceof TaskMove.MergedByGit git ? new TaskEffect.MergesRequest(git.project(), git.merged())
+                : new TaskEffect.MergesRequestByHost(((TaskMove.MergedByHost) move).project());
     }
 
     private static void startedOver(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from) {

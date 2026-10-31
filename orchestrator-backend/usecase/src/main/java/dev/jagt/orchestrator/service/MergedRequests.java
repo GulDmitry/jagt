@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -44,14 +45,14 @@ public class MergedRequests {
         boolean known = stateService.task(taskId).map(task -> task.repos().stream()
                 .anyMatch(repo -> project.equals(repo.project()) && repo.wasHostMerged())).orElse(true);
         if (!known) {
-            stateService.updateTask(taskId, current -> current.withMergedByHost(project));
+            stateService.updateTask(taskId, current -> TaskReducer.mergedByHost(current, project));
             log.atInfo().setMessage("request merged").addKeyValue("task", taskId)
                     .addKeyValue("project", project).addKeyValue("by", "host").log();
         }
     }
 
     private void record(String taskId, String project, boolean merged) {
-        stateService.updateTask(taskId, current -> current.withMerged(project, merged));
+        stateService.updateTask(taskId, current -> TaskReducer.mergedByGit(current, project, merged));
         log.atInfo().setMessage(merged ? "request merged" : "request no longer merged")
                 .addKeyValue("task", taskId).addKeyValue("project", project).addKeyValue("by", "git").log();
     }
