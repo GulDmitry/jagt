@@ -45,7 +45,6 @@ import static org.mockito.Mockito.when;
 class QaRoundFlowTest {
 
     private final AgentSessions sessions = mock(AgentSessions.class);
-    private final ConfigService config = mock(ConfigService.class);
 
     @Test
     void movesADeployedTaskToInProgressAndHoldsItThereUntilTheSessionReportsNoChanges(@TempDir Path root)
@@ -66,6 +65,7 @@ class QaRoundFlowTest {
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()), stops);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+        ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, new Notifications(List.of(), state, Runnable::run), flow,
                 new HandBack(mock(WorktreeChanges.class), new Rounds(config, new MasterReview(state)), config), config);
@@ -80,5 +80,26 @@ class QaRoundFlowTest {
         TaskState answered = state.task("ABC-42").orElseThrow();
         assertThat(answered.status()).isEqualTo(TaskStatus.DEPLOYED);
         assertThat(answered.report()).isEqualTo(AgentReport.NO_CHANGES);
+    }
+
+    @Test
+    void asksTheHumanThroughTheFlowWhereARowIsUnprovableAndKeepsTheStatusDeployed(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).alias("a1").build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
+                        .withMerge("0123456789abcdef")), 1, "digest"));
+        state.putTask("ABC-42", task);
+        QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
+                new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")), "", "");
+
+        new QaOutcomes(mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()), mock(TaskStops.class), state)
+                .apply("ABC-42", task, verdict);
+
+        TaskState asked = state.task("ABC-42").orElseThrow();
+        assertThat(asked.status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
+        assertThat(asked.message()).contains("QA could not prove");
     }
 }

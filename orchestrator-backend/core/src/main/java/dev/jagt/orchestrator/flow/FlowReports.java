@@ -62,6 +62,16 @@ public class FlowReports {
         return report(taskId, status, means, message, alsoRecord, verificationOwed, task -> true);
     }
 
+    /** A question jagt itself puts about a task, which keeps its status: a status no session reports cannot carry it. */
+    public boolean ask(String taskId, AgentReport kind, String message) {
+        AtomicBoolean found = new AtomicBoolean();
+        tasks.updateTask(taskId, task -> {
+            found.set(true);
+            return TaskReducer.asked(task, kind, message, clock.millis());
+        });
+        return found.get();
+    }
+
     /** What a report made while standing found: it landed, the task moved on, or the task is not held. */
     public enum Claimed { LANDED, MOVED_ON, GONE }
 

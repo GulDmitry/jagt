@@ -64,7 +64,7 @@ public class QaOutcomes {
         String said = verdict.question().isBlank() ? verdict.rows().stream()
                 .filter(row -> row.status() != QaVerdict.Status.MET).map(QaVerdict.Row::line)
                 .collect(Collectors.joining("\n")) : verdict.question();
-        reports.report(taskId, TaskStatus.DEPLOYED, AgentReport.QUESTION, "QA could not prove, on "
+        reports.ask(taskId, AgentReport.QUESTION, "QA could not prove, on "
                 + verdict.sha() + ":\n" + (said.isBlank() ? "the check named no criterion" : said));
         log.atInfo().setMessage("qa asks").addKeyValue("task", taskId).addKeyValue("rows", verdict.rows().size()).log();
     }

@@ -83,6 +83,11 @@ public final class TaskReducer {
         return step(task, new TaskMove.Said(means), 0);
     }
 
+    /** {@code task} with a question jagt itself puts, on the status it already has. */
+    static TaskState asked(TaskState task, AgentReport means, String message, long now) {
+        return stayed(said(task, means), message, false, now);
+    }
+
     /** {@code task} whose session declined a QA round: the deployed change holds DEPLOYED. */
     static TaskState qaDeclined(TaskState task, long now) {
         return step(task, new TaskMove.QaDeclined(), now);
