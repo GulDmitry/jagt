@@ -168,15 +168,15 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-one-table-owns-the-life-of-a-task)
 - **Verify before hand-back** — jagt runs the project's check command and sends a red run back to the session.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
-- **Deploy check** — A deploy stands once its commit's pipeline reads green, a red one going back to the session in the deploy worktree.
-  [spec](../openspec/specs/task-flow/spec.md#requirement-every-deploy-is-checked-where-it-landed)
+- **Deploy check** — A deploy is checked where it landed — by its session, or by QA when `roles.qa.enabled`.
+  A green pipeline stands it, a red one goes back to the session in the deploy worktree. Key: `orchestrator.roles.qa.enabled`.
+  [spec](../openspec/specs/task-flow/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [QA](../openspec/specs/qa/spec.md)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
   [spec](../openspec/specs/task-flow/spec.md#requirement-starting-a-task)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../openspec/specs/task-flow/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
-- **QA check** — A read-only role checks a deploy against its ticket. Key: `orchestrator.roles.qa.enabled`. [spec](../openspec/specs/qa/spec.md)
 
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 
