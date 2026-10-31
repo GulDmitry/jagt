@@ -10,15 +10,15 @@ import org.jspecify.annotations.Nullable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Session(@With long movedAt, @With long workStartedAt, @With long reportedAt, @With @Nullable Halt halt,
                       @With long quietSince, @With @Nullable Window window, @With @Nullable String log,
-                      @With boolean stampedAsk) {
+                      @With boolean stampedAsk, @With int generation) {
 
     public static Session defaults() {
-        return new Session(0, 0, 0, null, 0, null, null, false);
+        return new Session(0, 0, 0, null, 0, null, null, false, 0);
     }
 
-    /** The record of a session just started: no read has seen it, and its start is stamped by the first one. */
-    public static Session startedOver() {
-        return defaults().withWindow(new Window(Window.State.UNREAD, 0, 0));
+    /** The record of a session just started: no read has seen it, and its start is stamped by the first one; {@code generation} counts the starts. */
+    public static Session startedOver(Session previous) {
+        return defaults().withGeneration(previous.generation() + 1).withWindow(new Window(Window.State.UNREAD, 0, 0));
     }
 
     /** A session started over and not yet read takes {@code now} as its start; any other is as it was. */

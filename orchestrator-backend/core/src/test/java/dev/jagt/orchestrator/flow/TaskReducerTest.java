@@ -402,6 +402,16 @@ class TaskReducerTest {
     }
 
     @Test
+    void aSessionStartedOverIsNotEndedByTheEndSignOfTheCliItReplaced() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState fresh = TaskReducer.sessionStartedOver(task);
+
+        TaskState late = TaskReducer.signed(fresh, new SessionSign.Ended("exited"), 9_000);
+
+        assertThat(SessionPhase.of(late.session())).isNotEqualTo(SessionPhase.GONE);
+    }
+
+    @Test
     void aSessionStartedOverIsNotQuietFromTheOldTranscriptBeforeItsFirstHook() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState fresh = TaskReducer.sessionStartedOver(task);

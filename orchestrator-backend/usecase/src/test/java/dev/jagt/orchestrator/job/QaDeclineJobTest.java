@@ -44,7 +44,7 @@ class QaDeclineJobTest {
                 .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
                         .withMerge("0123456789abcdef")), 1, "digest"))
                 .withQa(Qa.defaults().withRound("digest", "- list is sorted"))
-                .withSession(Session.startedOver().withReportedAt(reportedAt));
+                .withSession(Session.startedOver(Session.defaults()).withReportedAt(reportedAt));
     }
 
     @Test
@@ -152,7 +152,7 @@ class QaDeclineJobTest {
         TaskState legacy = new JsonMapper().readValue(json, TaskState.class)
                 .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
                         .withMerge("0123456789abcdef")), 1, "digest"))
-                .withSession(Session.startedOver().withReportedAt(System.currentTimeMillis() + 1000));
+                .withSession(Session.startedOver(Session.defaults()).withReportedAt(System.currentTimeMillis() + 1000));
 
         new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", legacy);
 

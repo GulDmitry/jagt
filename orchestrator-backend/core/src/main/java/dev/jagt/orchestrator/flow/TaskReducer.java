@@ -339,7 +339,7 @@ public final class TaskReducer {
             case TaskEffect.RestoresTurn restores -> task.withTurn(restores.before());
             case TaskEffect.Deploys deploys -> task.withDeployment(deploys.step()
                     .applyTo(task.deployment() == null ? Deployment.defaults() : task.deployment(), now));
-            case TaskEffect.RestartsSession _ -> task.withSession(Session.startedOver());
+            case TaskEffect.RestartsSession _ -> task.withSession(Session.startedOver(task.session()));
             case TaskEffect.TrustsGit trusts -> task.withGitTrust(trusts.trust());
             case TaskEffect.ParksGit parks -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).withChanged(parks.changed()));
             case TaskEffect.JoinsGit joins -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).including(joins.added()));

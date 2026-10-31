@@ -94,6 +94,48 @@ class WatchdogServiceTest {
     }
 
     @Test
+    void leavesASessionRestartedTwiceWhileItsWindowWasReadAsNotGone(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        long now = Clock.systemUTC().millis();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .lastActiveTimestamp(now).build());
+        state.updateTask("ABC-1", TaskReducer::sessionStartedOver);
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.read(anyString(), any(), anyLong(), anyLong())).thenAnswer(read -> {
+            state.updateTask("ABC-1", TaskReducer::sessionStartedOver);
+            return new SessionSign.Read(Session.Window.State.DEAD_SHELL, 0, 0, now, 300_000, null);
+        });
+
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+
+        assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session())).isNotEqualTo(SessionPhase.GONE);
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void aMissingWindowBeforeAFreshSessionsFirstReadIsNotAnEnding(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        long now = Clock.systemUTC().millis();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .lastActiveTimestamp(now).build());
+        state.updateTask("ABC-1", TaskReducer::sessionStartedOver);
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.read(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(new SessionSign.Read(Session.Window.State.MISSING, 0, 0, now, 300_000, null));
+
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+
+        assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session())).isNotEqualTo(SessionPhase.GONE);
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
     void watchesOnlyTheStatusesInWhichAnAgentIsSupposedToBeWorking() {
         assertThat(Arrays.stream(TaskStatus.values()).filter(WatchdogService::watches).toList())
                 .containsExactly(TaskStatus.NEW, TaskStatus.IN_PROGRESS, TaskStatus.SHIPPING);

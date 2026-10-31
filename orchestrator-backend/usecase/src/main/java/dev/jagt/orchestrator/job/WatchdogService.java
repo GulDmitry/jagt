@@ -106,7 +106,7 @@ public class WatchdogService implements Job {
     }
 
     private static boolean startedOverSince(TaskState looked, TaskState current) {
-        return current.session().awaitingFirstRead() && !looked.session().awaitingFirstRead();
+        return current.session().generation() != looked.session().generation();
     }
 
     private void alert(String taskId, TaskState task, long now) {

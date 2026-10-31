@@ -690,7 +690,7 @@ class TaskStateTest {
     void keepsTheSessionSignsAcrossASave() {
         TaskState signed = TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build().withSession(
                 new Session(5, 4, 3, new Session.Halt(Session.Halt.Kind.FAILED, 6, "overloaded"), 2,
-                        new Session.Window(Session.Window.State.RUNNING, 7, 8), "/logs/s.jsonl", true));
+                        new Session.Window(Session.Window.State.RUNNING, 7, 8), "/logs/s.jsonl", true, 3));
         JsonMapper mapper = new JsonMapper();
 
         TaskState reread = mapper.readValue(mapper.writeValueAsString(signed), TaskState.class);

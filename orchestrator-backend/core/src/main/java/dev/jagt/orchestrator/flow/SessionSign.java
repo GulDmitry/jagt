@@ -72,9 +72,13 @@ public sealed interface SessionSign {
         }
     }
 
+    /** An end sign carries no start to compare, so one before the first read can only be the replaced CLI's. */
     record Ended(@Nullable String reason) implements SessionSign {
         @Override
         public Session applyTo(Session session, long now) {
+            if (session.awaitingFirstRead()) {
+                return session;
+            }
             return halted(session, new Session.Halt(Session.Halt.Kind.GONE, now, reason), now);
         }
     }
@@ -97,6 +101,19 @@ public sealed interface SessionSign {
     record Read(Session.Window.State window, long printedAt, long logAt, long activeAt, long staleAfter,
                 @Nullable String exitTail) implements SessionSign {
 
+        private Session.@Nullable Halt standing(Session.@Nullable Halt halt, long later, long now) {
+            if (halt == null || halt.at() < later) {
+                return null;
+            }
+            boolean ranAgain = halt.kind() == Session.Halt.Kind.GONE && window == Session.Window.State.RUNNING
+                    && now > halt.at();
+            return ranAgain ? null : halt;
+        }
+
+        private boolean startGap(Session held) {
+            return window == Session.Window.State.MISSING && held.awaitingFirstRead();
+        }
+
         public boolean processGone() {
             return window == Session.Window.State.DEAD_SHELL || window == Session.Window.State.MISSING;
         }
@@ -104,15 +121,11 @@ public sealed interface SessionSign {
         @Override
         public Session applyTo(Session held, long now) {
             Session session = held.readAt(now);
-            Session.Halt halt = session.halt();
+            if (startGap(held)) {
+                return session;
+            }
             long later = Math.max(session.movedAt(), Math.max(logAt, activeAt));
-            if (halt != null && halt.at() < later) {
-                halt = null;
-            }
-            if (halt != null && halt.kind() == Session.Halt.Kind.GONE && window == Session.Window.State.RUNNING
-                    && now > halt.at()) {
-                halt = null;
-            }
+            Session.Halt halt = standing(session.halt(), later, now);
             if (processGone()) {
                 return session.withHalt(goneHalt(halt, now)).withQuietSince(0).withWindow(windowAfter(session, now));
             }

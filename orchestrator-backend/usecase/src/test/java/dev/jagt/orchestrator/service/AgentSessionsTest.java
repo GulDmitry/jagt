@@ -943,7 +943,7 @@ class AgentSessionsTest {
 
         sessions.relayUnderCold("ABC-1", "and handle empty files");
 
-        assertThat(state.task("ABC-1").orElseThrow().session()).isEqualTo(Session.startedOver());
+        assertThat(state.task("ABC-1").orElseThrow().session()).isEqualTo(Session.startedOver(Session.defaults()));
     }
 
     @Test
