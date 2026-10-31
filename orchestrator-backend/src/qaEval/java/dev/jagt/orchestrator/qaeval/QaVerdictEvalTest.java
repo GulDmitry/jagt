@@ -131,7 +131,8 @@ abstract class QaVerdictEvalTest {
         QaScore score = QaScore.of(deployed, judged);
         SCOREBOARD.record(score, (System.nanoTime() - started) / 1e9,
                 OptionalDouble.of(qaSpend().orElse(0) - before.orElse(0)));
-        assertThat(score.passed()).describedAs("%s: %s", deployed.name(), score.describe()).isTrue();
+        assertThat(score.passed()).describedAs("%s: %s; QA said: %s", deployed.name(), score.describe(),
+                judged.cited().substring(0, Math.min(300, judged.cited().length()))).isTrue();
     }
 
     private QaJudgement judge(QaCase deployed, String url) throws Exception {
