@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.QaBrief;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -14,9 +15,11 @@ import dev.jagt.orchestrator.task.Qa;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.time.Clock;
@@ -108,5 +111,51 @@ class QaDeclineJobTest {
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
         verify(outcomes).declined(eq("ABC-42"), eq(disputed), eq(true));
+    }
+
+    @Test
+    void readsTheDeclineAgainAfterARestartDuringItsRead(@TempDir Path root) {
+        ConfigService config = mock(ConfigService.class);
+        QaReads reader = mock(QaReads.class);
+        QaOutcomes outcomes = mock(QaOutcomes.class);
+        when(config.load()).thenReturn(ON);
+        QaDecline accepted = new QaDecline("proj@0123456789abcdef", "", "");
+        when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
+        TaskState reading = TaskReducer.relayed(declined(System.currentTimeMillis() + 1000), "decline", "digest", "", 1);
+
+        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", reading);
+
+        verify(reader).decline(eq("ABC-42"), eq(QaVerdict.AGAIN), any(), any());
+    }
+
+    @Test
+    void readsTheDeclineAgainAfterARestartOnAStateFileWithTheReadOpenAsATurn(@TempDir Path root) {
+        ConfigService config = mock(ConfigService.class);
+        QaReads reader = mock(QaReads.class);
+        QaOutcomes outcomes = mock(QaOutcomes.class);
+        when(config.load()).thenReturn(ON);
+        QaDecline accepted = new QaDecline("proj@0123456789abcdef", "", "");
+        when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
+        String json = """
+                {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,"report":"NO_CHANGES",
+                 "message":"the list is sorted by name, as the ticket says",
+                 "repos":[{"project":"proj","worktreePath":"/wt"}],
+                 "turn":{"step":"decline","id":3,"digest":"digest","since":4,
+                         "marks":{"qa:digest":"digest","qa:rows":"- list is sorted"}}}
+                """;
+        TaskState legacy = new JsonMapper().readValue(json, TaskState.class)
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
+                        .withMerge("0123456789abcdef")), 1, "digest"))
+                .withSession(Session.startedOver().withReportedAt(System.currentTimeMillis() + 1000));
+
+        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", legacy);
+
+        verify(reader).decline(eq("ABC-42"), eq(QaVerdict.AGAIN), any(), any());
     }
 }

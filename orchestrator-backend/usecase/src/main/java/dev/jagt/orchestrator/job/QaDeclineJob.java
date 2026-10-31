@@ -80,7 +80,7 @@ public class QaDeclineJob implements TaskJob {
     /** A round or a first dispute of this deploy stands, and the session replied after it was put. */
     private static boolean answered(TaskState task, QaRecords.Record record) {
         Deployment deployment = task.deployment();
-        return deployment != null && record.digest().equals(deployment.askedDigest()) && QaPhase.of(task) == QaPhase.ROUND_OPEN
+        return deployment != null && record.digest().equals(deployment.askedDigest()) && task.qaRoundOpen()
                 && (record.ending() == QaEnding.NOT_MET || record.ending() == QaEnding.DISPUTED)
                 && task.session().reportedAt() > record.at();
     }
