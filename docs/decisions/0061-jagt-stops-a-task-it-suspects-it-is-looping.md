@@ -9,6 +9,7 @@ Accepted 2026-10-22. Adds to [0043](0043-act-stops-itself-after-three-bad-ending
 Superseded in part by [0070](0070-a-ship-counts-only-without-a-new-low.md): ships with progress no longer count.
 Superseded in part by [0080](0080-a-repeating-round-ends-in-one-stop.md): the stop stands on the task.
 Amended by [0103](0103-a-round-is-the-same-by-its-facts-not-its-brief.md): the digest is of the round's facts.
+Amended by [0104](0104-loops-are-bounded-per-task.md): what a `ROUNDS` run counts.
 Amended by [0100](0100-a-stop-is-scoped-to-its-request.md): a new request replacing the counted one also clears it.
 
 ## Context

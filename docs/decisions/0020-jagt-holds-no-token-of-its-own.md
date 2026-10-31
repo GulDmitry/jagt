@@ -6,6 +6,7 @@
 
 Accepted 2026-10-07. Keeps [0003](0003-tracker-and-code-host-are-read-through-the-agents-own-mcp.md); its
 "reopen when" now lives here.
+Amended by [0033](0033-jagt-reads-the-clis-own-login-for-usage-and-keeps-none.md): jagt reads the CLI's own login for usage.
 
 ## Context
 

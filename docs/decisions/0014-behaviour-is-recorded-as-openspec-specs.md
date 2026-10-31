@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-06.
+Amended by [0059](0059-plan-first-is-jagts-gate-not-the-clis-plan-mode.md).
 
 ## Context
 

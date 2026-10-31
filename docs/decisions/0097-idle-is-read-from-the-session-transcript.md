@@ -7,6 +7,7 @@ Supersedes in part [0094](0094-a-prompt-typed-into-a-cold-session-goes-to-a-fres
 ## Status
 
 Accepted 2026-10-27.
+Superseded by [0115](0115-a-session-is-one-stored-record-read-from-typed-signs.md): idle counts from `Session.idleSince`, not the transcript.
 
 ## Context
 

@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-22. Amends [0014](0014-behaviour-is-recorded-as-openspec-specs.md).
+Amended by [0064](0064-a-plan-the-human-asked-for-is-theirs.md).
 
 ## Context
 
