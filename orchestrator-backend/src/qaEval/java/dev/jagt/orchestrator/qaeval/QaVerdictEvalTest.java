@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
+import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.eval.QaCase;
 import dev.jagt.orchestrator.eval.QaCases;
 import dev.jagt.orchestrator.eval.QaFixtureEnvironment;
@@ -74,16 +75,7 @@ abstract class QaVerdictEvalTest {
         Path root = QaEvalWorkspace.root();
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// qa eval placeholder proxy\n");
-        try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
-            for (Path file : shipped) {
-                Files.copy(file, root.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        Files.createDirectories(root.resolve("roles/qa"));
-        Files.copy(Path.of("../roles/qa/cases.md.dist"), root.resolve("roles/qa/cases.md.dist"),
-                StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"),
-                StandardCopyOption.REPLACE_EXISTING);
+        ShippedRoot.copyInto(root);
         Files.copy(Path.of(System.getProperty("qaEval.brief", "../roles/qa/brief.md.dist")),
                 root.resolve(RoleFiles.oldBriefCopy("qa")),
                 StandardCopyOption.REPLACE_EXISTING);

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.mastereval;
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
+import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.eval.MasterVerdictReport;
 import dev.jagt.orchestrator.surface.agent.ReadGateController;
 import org.mockito.Mockito;
@@ -75,14 +76,7 @@ abstract class MasterVerdictEvalTest {
         Path root = MasterEvalWorkspace.root();
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// master eval placeholder proxy\n");
-        try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
-            for (Path file : shipped) {
-                Files.copy(file, root.resolve(file.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        Files.createDirectories(root.resolve("roles/qa"));
-        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        ShippedRoot.copyInto(root);
         Files.copy(Path.of(System.getProperty("masterEval.brief", "../master-brief.md.dist")),
                 root.resolve("master-brief.md"),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);
