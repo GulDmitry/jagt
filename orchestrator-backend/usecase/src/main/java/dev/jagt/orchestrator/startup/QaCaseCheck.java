@@ -13,7 +13,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Stream;
 
-/** The QA files are read only where {@code qa.enabled} is on, so a disabled QA can never fail a start. */
+/** The QA files are read only where {@code roles.qa.enabled} is on, so a disabled QA can never fail a start. */
 @Component
 @RequiredArgsConstructor
 public class QaCaseCheck implements StartupCheck {

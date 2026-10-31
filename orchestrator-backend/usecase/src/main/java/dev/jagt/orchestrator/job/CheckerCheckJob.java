@@ -44,7 +44,7 @@ public class CheckerCheckJob implements TaskJob {
 
     @Override
     public String describe() {
-        return "check each deployed change against its ticket on the environments qa.environments names";
+        return "check each deployed change against its ticket on the environments roles.qa.environments names";
     }
 
     @Override

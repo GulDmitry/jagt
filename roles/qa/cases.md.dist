@@ -1,7 +1,7 @@
 # QA cases
 
-When jagt may open each step of `qa-brief.md.dist` for QA, and what QA may report while the step's turn is open. Copy this
-file to `qa-cases.md` to edit a case; a case your copy lacks is read from here. Read only where `qa.enabled` is on.
+When jagt may open each step of `roles/qa/brief.md.dist` for QA, and what QA may report while the step's turn is open. Copy this
+file to `roles/qa/cases.md` to edit a case; a case your copy lacks is read from here. Read only where `roles.qa.enabled` is on.
 
 Each case: `step:` a brief step · `at:` the task's statuses · `by:` jagt, human or master, who sets it off ·
 `replies:` what QA may report, its statuses then its kinds (plain, question, wait) · one line saying what the
