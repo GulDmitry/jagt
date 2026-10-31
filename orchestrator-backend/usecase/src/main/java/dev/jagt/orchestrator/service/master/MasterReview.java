@@ -80,7 +80,7 @@ public class MasterReview {
 
     /**
      * Tells the master region what the verdict file says now: the round it answers, or that it is gone or not
-     * jagt's. A file that could not be read says nothing, so the seal stands.
+     * jagt's, or not a verdict this build can read. A file that could not be read says nothing, so the seal stands.
      */
     public void settle(String taskId, TaskState task) {
         Path file = storedFile(task);
@@ -98,7 +98,12 @@ public class MasterReview {
             clearSeal(taskId, task);
             return;
         }
-        JagtJson.parse(file, bytes, Review.class).filter(read -> read.round() != sealed.sealedRound())
+        Optional<Review> parsed = JagtJson.parse(file, bytes, Review.class);
+        if (parsed.isEmpty()) {
+            clearSeal(taskId, task);
+            return;
+        }
+        parsed.filter(read -> read.round() != sealed.sealedRound())
                 .ifPresent(read -> state.updateTask(taskId, current -> sealedAs(current, fingerprint)
                         && current.masterOrNone().sealedRound() != read.round()
                         ? TaskReducer.masterSealed(current, fingerprint, read.round()) : current));
