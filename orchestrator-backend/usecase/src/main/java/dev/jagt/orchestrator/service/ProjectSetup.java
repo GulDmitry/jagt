@@ -49,6 +49,10 @@ public class ProjectSetup {
         public boolean ready() {
             return lines.stream().allMatch(Line::ok);
         }
+
+        public String firstProblem() {
+            return lines.stream().filter(line -> !line.ok()).map(Line::text).findFirst().orElse("the path is not ready");
+        }
     }
 
     public record Entry(String key, String path, String baseBranch, @Nullable String deployBranch,
@@ -166,8 +170,7 @@ public class ProjectSetup {
         }
         Reading reading = read(entry.path());
         if (!reading.ready()) {
-            throw new IllegalArgumentException(reading.lines().stream().filter(line -> !line.ok())
-                    .map(Line::text).findFirst().orElse("the path is not ready"));
+            throw new IllegalArgumentException(reading.firstProblem());
         }
         if (entry.baseBranch() == null || entry.baseBranch().isBlank()) {
             throw new IllegalArgumentException("A project names the branch tasks are cut from");
@@ -296,7 +299,7 @@ public class ProjectSetup {
         return end < 0 ? stripped : stripped.substring(0, end);
     }
 
-    private static String expand(String path) {
+    static String expand(String path) {
         String home = System.getProperty("user.home");
         String typed = path == null ? "" : path.strip();
         return typed.equals("~") || typed.startsWith("~/") ? home + typed.substring(1) : typed;

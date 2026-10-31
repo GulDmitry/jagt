@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import dev.jagt.orchestrator.service.ProjectFolders;
 import dev.jagt.orchestrator.service.ProjectSetup;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +13,8 @@ import static org.mockito.Mockito.when;
 class ProjectsControllerTest {
 
     private final ProjectSetup setup = mock(ProjectSetup.class);
-    private final ProjectsController projects = new ProjectsController(setup);
+    private final ProjectFolders folders = mock(ProjectFolders.class);
+    private final ProjectsController projects = new ProjectsController(setup, folders);
 
     @Test
     void servesWhatTheSetupReadsAtThePathTheHumanTyped() {
@@ -29,5 +31,13 @@ class ProjectsControllerTest {
         when(setup.add(entry)).thenReturn("demo added");
 
         assertThat(projects.add(entry).message()).isEqualTo("demo added");
+    }
+
+    @Test
+    void servesTheFoldersUnderWhatTheHumanTyped() {
+        List<ProjectFolders.Folder> found = List.of(new ProjectFolders.Folder("billing", true));
+        when(folders.under("/work/bi")).thenReturn(found);
+
+        assertThat(projects.dirs("/work/bi")).isEqualTo(found);
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import dev.jagt.orchestrator.service.ProjectFolders;
 import dev.jagt.orchestrator.service.ProjectSetup;
 import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
 import lombok.RequiredArgsConstructor;
@@ -10,17 +11,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
 public class ProjectsController {
 
     private final ProjectSetup setup;
+    private final ProjectFolders folders;
 
     /** A GET: reading a path writes nothing. */
     @GetMapping("/check")
     public ProjectSetup.Reading check(@RequestParam("path") String path) {
         return setup.read(path);
+    }
+
+    /** A GET: listing folders writes nothing. */
+    @GetMapping("/dirs")
+    public List<ProjectFolders.Folder> dirs(@RequestParam("under") String under) {
+        return folders.under(under);
     }
 
     @PostMapping

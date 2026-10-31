@@ -43,7 +43,7 @@ document.getElementById('add-project').onclick = addProject.open;
 document.getElementById('empty-project').onclick = addProject.open;
 filters.onChange(render);
 // Where on this page each part a verb names is.
-const parts = {launch: {focus: launch.open}, legend: {section: legend.node}, jobs: {section: jobs.node}};
+const parts = {launch: {focus: launch.open}, project: {focus: addProject.open}, legend: {section: legend.node}, jobs: {section: jobs.node}};
 palette.wire({partFor: (part) => parts[part] || {}});
 // The menu and the header's Jobs chip open a report the same way: its title and part come from the server's verb.
 const openVerb = (id) => {

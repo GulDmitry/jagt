@@ -105,7 +105,7 @@ orchestrator:
 track. Widen it until your tests pass inside one; each pattern carries matching files from the base repository into every fresh worktree.
 Every other key has a default, described in `jagt.yml.dist`.
 
-**+ add a project** inside New task writes the entry too, no restart.
+**+ add a project** inside New task, or the `project` verb, writes the entry too, no restart.
 
 ### 3 — decide on the Master
 

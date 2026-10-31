@@ -76,7 +76,8 @@
     <header class="report-head"><strong id="project-title">Add a project</strong><span class="grow"></span>
       <button type="button" id="close-project">Close</button></header>
     <label class="field"><span>Repository path</span>
-      <input id="project-path" name="path" placeholder="~/www/billing-api" autocomplete="off" required></label>
+      <input id="project-path" name="path" list="project-folders" placeholder="~/www/billing-api" autocomplete="off" required>
+      <datalist id="project-folders"></datalist></label>
     <ul id="project-checks" class="checks-list" aria-live="polite"></ul>
     <div class="field-row">
       <label class="field"><span>Key</span><input id="project-key" name="key" autocomplete="off" required></label>
@@ -84,7 +85,9 @@
     </div>
     <div class="field-row">
       <label class="field"><span>Deploy branch <span class="muted">— empty: no deploy</span></span>
-        <input id="project-deploy" name="deployBranch" autocomplete="off"></label>
+        <input id="project-deploy" name="deployBranch" list="project-branches" autocomplete="off"
+               title="The remote's branches as last fetched; fetch the repository to refresh them">
+        <datalist id="project-branches"></datalist></label>
       <label class="field"><span>Verify before hand-back</span><input id="project-verify" name="verify" autocomplete="off"></label>
     </div>
     <label class="field"><span>What it is, in one line</span>

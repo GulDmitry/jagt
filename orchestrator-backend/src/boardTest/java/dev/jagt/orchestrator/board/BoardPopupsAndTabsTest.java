@@ -78,6 +78,36 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    void typingAFolderPrefixInTheProjectPathOffersTheFoldersUnderIt() throws Exception {
+        Files.createDirectories(root.resolve("billing/.git"));
+        Files.createDirectories(root.resolve("billboard"));
+        Files.createDirectories(root.resolve("notes"));
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        page.locator("#new-task").click();
+        page.locator("#add-project").click();
+
+        page.locator("#project-path").fill(root + "/bil");
+
+        assertThat(page.locator("#project-folders option")).hasCount(2);
+        assertThat(page.locator("#project-folders option").first()).hasAttribute("value", root + "/billing/");
+    }
+
+    @Test
+    void theProjectVerbTypedAloneOpensTheAddAProjectForm() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("project");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#project-dialog")).isVisible();
+        assertThat(page.locator("#project-path")).isFocused();
+    }
+
+    @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void aFailedJobOpensFromTheHeaderAsATableWhoseRowRunsItNow() {
         breakable.breakIt();
