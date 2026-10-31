@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.qaeval;
 
-import dev.jagt.orchestrator.config.QaBrief;
+import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
@@ -69,7 +69,11 @@ abstract class QaVerdictEvalTest {
                 Files.copy(file, root.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        Files.copy(Path.of(System.getProperty("qaEval.brief", "../qa-brief.md.dist")), root.resolve(QaBrief.FILE),
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../roles/qa/cases.md.dist"), root.resolve("roles/qa/cases.md.dist"),
+                StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(Path.of(System.getProperty("qaEval.brief", "../roles/qa/brief.md.dist")),
+                root.resolve(RoleFiles.oldBriefCopy("qa")),
                 StandardCopyOption.REPLACE_EXISTING);
         QaEvalWorkspace.writeConfig(root.resolve("jagt.yml"), root.resolve("placeholder"));
         registry.add("orchestrator.root", () -> root.toString());

@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.QaBrief;
+import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -60,7 +60,7 @@ class QaCheckJobTest {
         when(config.load()).thenReturn(ConfigFile.defaults());
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, new CheckerRecords(paths, Clock.systemUTC()),
+        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")), reader, new CheckerRecords(paths, Clock.systemUTC()),
                 mock(CheckerOutcomes.class)).run("ABC-42", deployed("digest"));
 
         verify(reader, never()).check(any(), any(), any(), any());
@@ -73,7 +73,7 @@ class QaCheckJobTest {
         when(config.load()).thenReturn(ON);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, new CheckerRecords(paths, Clock.systemUTC()),
+        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")), reader, new CheckerRecords(paths, Clock.systemUTC()),
                 mock(CheckerOutcomes.class)).run("ABC-42", deployed(null));
 
         verify(reader, never()).check(any(), any(), any(), any());
@@ -88,10 +88,10 @@ class QaCheckJobTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
         when(outcomes.apply(any(), any(), any())).thenReturn(dev.jagt.orchestrator.task.QaEnding.PASSED);
-        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, new CheckerRecords(paths, Clock.systemUTC()),
+        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")), reader, new CheckerRecords(paths, Clock.systemUTC()),
                 outcomes).run("ABC-42", deployed("digest"));
 
-        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, new CheckerRecords(paths, Clock.systemUTC()),
+        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")), reader, new CheckerRecords(paths, Clock.systemUTC()),
                 outcomes).run("ABC-42", deployed("digest"));
 
         verify(reader, times(1)).check(any(), any(), any(), any());
@@ -107,7 +107,7 @@ class QaCheckJobTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         TaskState task = deployed("digest");
 
-        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, new CheckerRecords(paths, Clock.systemUTC()),
+        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")), reader, new CheckerRecords(paths, Clock.systemUTC()),
                 outcomes).run("ABC-42", task);
 
         verify(outcomes).apply(eq("ABC-42"), eq(task), eq(notMet()));
@@ -122,7 +122,7 @@ class QaCheckJobTest {
         when(reader.check(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reader, new CheckerRecords(paths, Clock.systemUTC()),
+        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")), reader, new CheckerRecords(paths, Clock.systemUTC()),
                 outcomes).run("ABC-42", deployed("digest"));
 
         verify(outcomes).apply(eq("ABC-42"), any(), eq(met()));
@@ -130,7 +130,8 @@ class QaCheckJobTest {
 
     @Test
     void runsACheckAgainOnTheSameShaWhereItsTurnWasLeftOpenUnanswered(@TempDir Path root) throws IOException {
-        Files.copy(Path.of("../../qa-brief.md.dist"), root.resolve("qa-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../../roles/qa/brief.md.dist"), root.resolve("roles/qa/brief.md.dist"));
         ConfigService config = mock(ConfigService.class);
         CheckerReads reads = mock(CheckerReads.class);
         when(config.load()).thenReturn(ON);
@@ -138,7 +139,7 @@ class QaCheckJobTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         TaskState restarted = TaskReducer.relayed(deployed("digest"), "accept", "digest", "", 1);
 
-        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new QaBrief(paths)), reads, new CheckerRecords(paths, Clock.systemUTC()),
+        new CheckerCheckJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")), reads, new CheckerRecords(paths, Clock.systemUTC()),
                 mock(CheckerOutcomes.class)).run("ABC-42", restarted);
 
         verify(reads).check(eq("ABC-42"), eq("again"), eq("digest"), argThat(run ->

@@ -2,8 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.QaBrief;
-import dev.jagt.orchestrator.config.QaCases;
+import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -29,8 +28,10 @@ class QaCaseCheckTest {
     @Test
     void acceptsTheShippedCasesAgainstTheShippedBriefWhereQaIsOn(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  qa:\n    enabled: true\n");
-        Files.copy(Path.of("../../qa-cases.md.dist"), root.resolve("qa-cases.md.dist"));
-        Files.copy(Path.of("../../qa-brief.md.dist"), root.resolve("qa-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../../roles/qa/cases.md.dist"), root.resolve("roles/qa/cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../../roles/qa/brief.md.dist"), root.resolve("roles/qa/brief.md.dist"));
 
         assertThat(check(root).problems()).isEmpty();
     }
@@ -50,6 +51,6 @@ class QaCaseCheckTest {
                 .withConfigFile(root.resolve("jagt.yml").toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
-        return new QaCaseCheck(new QaCases(paths), new QaBrief(paths), config, paths);
+        return new QaCaseCheck(new RoleFiles(paths, "qa"), config, paths);
     }
 }

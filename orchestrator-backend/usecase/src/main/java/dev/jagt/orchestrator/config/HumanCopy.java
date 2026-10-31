@@ -23,24 +23,41 @@ final class HumanCopy {
 
     /** The copy, then the shipped file, each only where it exists and reads; {@link #unreadable} names the rest. */
     static List<Text> read(Path root, String copy) {
-        return Stream.of(copy, copy + ".dist").map(name -> file(root, name)).flatMap(Optional::stream).toList();
+        return read(root, List.of(copy, copy + ".dist"));
+    }
+
+    /** The first name is the human's own copy; each later one is read only where it exists, after the ones before it. */
+    static List<Text> read(Path root, List<String> names) {
+        return names.stream().map(name -> file(root, name)).flatMap(Optional::stream).toList();
     }
 
     /** What keeps a file that exists from being read: startup refuses on it, so no later read may pass for the shipped one. */
     static List<Problem> unreadable(Path root, String copy) {
-        return Stream.of(copy, copy + ".dist").map(name -> failure(root, name)).flatMap(Optional::stream).toList();
+        return unreadable(root, List.of(copy, copy + ".dist"));
+    }
+
+    static List<Problem> unreadable(Path root, List<String> names) {
+        return names.stream().map(name -> failure(root, name)).flatMap(Optional::stream).toList();
     }
 
     static CaseBook stepCases(Path root, String copy) {
-        return read(root, copy).stream()
+        return stepCases(root, List.of(copy, copy + ".dist"));
+    }
+
+    static CaseBook stepCases(Path root, List<String> names) {
+        return read(root, names).stream()
                 .map(file -> CaseBook.parse(file.file(), file.text()))
                 .reduce(CaseBook::over)
                 .orElseGet(() -> CaseBook.empty(CaseBook.Shape.STEPS))
-                .failing(unreadable(root, copy));
+                .failing(unreadable(root, names));
     }
 
     static Set<String> sectionIds(Path root, String copy) {
-        return read(root, copy).stream()
+        return sectionIds(root, List.of(copy, copy + ".dist"));
+    }
+
+    static Set<String> sectionIds(Path root, List<String> names) {
+        return read(root, names).stream()
                 .flatMap(file -> Sections.of(file.text()).stream())
                 .map(Sections.Section::id)
                 .collect(Collectors.toCollection(TreeSet::new));

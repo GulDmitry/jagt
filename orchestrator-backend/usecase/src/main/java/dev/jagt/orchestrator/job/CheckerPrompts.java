@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.config.QaBrief;
+import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 public class CheckerPrompts {
 
     private final RoleDefinition role;
-    private final QaBrief brief;
+    private final RoleFiles brief;
 
     public CheckerReader.Run accept(String taskId, String worktree, String sha, RoleConfig qa, String step) {
         String environments = qa.environmentsOrEmpty().stream().map(CheckerPrompts::environment)

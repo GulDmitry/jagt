@@ -96,6 +96,11 @@ allprojects {
                 java.nio.file.Files.copy(it.toPath(), new File(testRoot, it.name).toPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING)
             }
+            new File(shipped, 'roles').eachFileRecurse(groovy.io.FileType.FILES) {
+                File target = new File(testRoot, shipped.toPath().relativize(it.toPath()).toString())
+                target.parentFile.mkdirs()
+                java.nio.file.Files.copy(it.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
         }
     }
 
@@ -374,8 +379,7 @@ tasks.named('test') {
         include 'jagt.yml.dist'
         include 'master-brief.md.dist'
         include 'session-brief.md.dist'
-        include 'qa-brief.md.dist'
-        include 'qa-cases.md.dist'
+        include 'roles/**/*.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
     // Outside the tree above: a file tree drops `.gitignore` by default.
     inputs.file(new File(projectDir.parentFile, '.gitignore')).withPropertyName('gitignore')
@@ -529,7 +533,7 @@ tasks.register('qaEval', Test) {
             systemProperty key, project.property(property)
         }
     }
-    def brief = file('../qa-brief.md.dist')
+    def brief = file('../roles/qa/brief.md.dist')
     onlyIf { task ->
         List<String> missing = []
         ['claude', 'git'].each { binary ->
@@ -539,7 +543,7 @@ tasks.register('qaEval', Test) {
             }
         }
         if (!brief.exists()) {
-            missing << 'qa-brief.md.dist'
+            missing << 'roles/qa/brief.md.dist'
         }
         if (missing) {
             task.logger.lifecycle("Skipping qaEval — missing: ${missing.join(', ')}.")
@@ -587,7 +591,7 @@ tasks.register('promptEval', Test) {
         systemProperty 'eval.model', (modelProperty ? project.findProperty(modelProperty) : null) ?: 'default'
         systemProperty 'eval.brief.file', (name == 'masterEval'
                 ? (project.findProperty('masterBrief') ?: file('../master-brief.md.dist').path)
-                : name == 'qaEval' ? (project.findProperty('qaBrief') ?: file('../qa-brief.md.dist').path)
+                : name == 'qaEval' ? (project.findProperty('qaBrief') ?: file('../roles/qa/brief.md.dist').path)
                 : file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path)
     }
 }
