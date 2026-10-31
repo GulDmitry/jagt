@@ -143,7 +143,7 @@ human extends the cases.
 #### Scenario: A press no case allows
 - **WHEN** your copy's `deploy` case says `at: APPROVED` and ABC-42 reaches REVIEWED in `act`
 - **THEN** the Master deploys nothing, `misses.jsonl` names `deploy` at REVIEWED by `master`, and the card asks `lift the stop`
-- **AND** `master.mine` and `humanPaths` still keep a move the human's where a case allows it
+- **AND** `roles.master.mine` and `humanPaths` still keep a move the human's where a case allows it
 
 #### Scenario: A report is applied where a case takes it
 - **WHEN** a report arrives while a turn is open

@@ -39,6 +39,21 @@ class MasterCheckTest {
     }
 
     @Test
+    void anUnknownModeUnderTheRolesKeyIsRefusedByItsNewName(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    master:\n      mode: supervise\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(root.resolve("jagt.yml").toString()));
+        ConfigService real = new ConfigService(paths, agentRuntime, mock(dev.jagt.orchestrator.service.ActStops.class));
+
+        MasterCheck check = new MasterCheck(real, new MasterBriefs(paths, new SessionBrief(paths)), agentRuntime);
+
+        assertThat(check.problems()).singleElement().satisfies(problem -> {
+            assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mode");
+            assertThat(problem.text()).startsWith("orchestrator.roles.master.mode: 'supervise'");
+        });
+    }
+
+    @Test
     void refusesAModeThisMachineDoesNotHave(@TempDir Path root) {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("supervise")));
@@ -48,7 +63,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.mode");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mode");
     }
 
     @Test
@@ -63,7 +78,7 @@ class MasterCheckTest {
                 OrchestratorProperties.defaults().withRoot(root.toString())),
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 agentRuntime).problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.mode");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mode");
     }
 
     @Test
@@ -77,7 +92,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.withhold");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.withhold");
     }
 
     @Test
@@ -91,7 +106,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.mine");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mine");
     }
 
     @Test
@@ -105,7 +120,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.mine");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mine");
     }
 
     @Test
@@ -133,7 +148,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.mine");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mine");
     }
 
     @Test
@@ -146,7 +161,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.brief");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.brief");
     }
 
     @Test
@@ -172,7 +187,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.brief");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.brief");
     }
 
     @Test
@@ -187,7 +202,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.master.model");
+                .extracting(Problem::key).containsExactly("orchestrator.roles.master.model");
     }
 
     @Test
@@ -214,7 +229,7 @@ class MasterCheckTest {
                 agentRuntime);
 
         assertThat(check.problems()).singleElement().satisfies(problem -> {
-            assertThat(problem.key()).isEqualTo("orchestrator.master.mine");
+            assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mine");
             assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
         });
     }

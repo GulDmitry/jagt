@@ -17,7 +17,7 @@ class ActCommandTest {
 
         String answer = new ActCommand(actStops).run("");
 
-        assertThat(answer).isEqualTo("act restored: the Master presses again where `master.mode` is act");
+        assertThat(answer).isEqualTo("act restored: the Master presses again where `roles.master.mode` is act");
     }
 
     @Test

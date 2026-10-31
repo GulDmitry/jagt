@@ -27,7 +27,7 @@ public class ActCommand implements GlobalCommand {
 
     @Override
     public String run(String tail) {
-        return actStops.lift() ? "act restored: the Master presses again where `master.mode` is act"
+        return actStops.lift() ? "act restored: the Master presses again where `roles.master.mode` is act"
                 : "act was not stopped";
     }
 }

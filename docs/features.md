@@ -86,7 +86,7 @@
 - **Master review** — A headless reader judges every handed-back round and writes its verdict for you.
   [spec](../openspec/specs/master/spec.md#requirement-the-master-is-a-headless-run-per-role-not-a-window)
 - **Master brief** — The Master judges by a brief you copy and edit. [spec](../openspec/specs/master/spec.md#requirement-the-master-judges-by-a-brief)
-- **Master acts for you** — In `act` the Master ships and deploys; your word overrules it. Key: `orchestrator.master.mode`, `judge` by default.
+- **Master acts for you** — In `act` the Master ships and deploys; your word overrules it. Key: `orchestrator.roles.master.mode`, `judge` by default.
   [spec](../openspec/specs/master/spec.md#requirement-in-act-the-master-moves-for-you)
 - **Lessons** — When you disagree with the Master, it offers a lesson and changes no brief.
   [spec](../openspec/specs/master/spec.md#requirement-a-disagreement-offers-a-lesson-never-applies-one)

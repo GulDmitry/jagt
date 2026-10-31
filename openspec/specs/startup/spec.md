@@ -47,7 +47,7 @@ other key need a restart.
 - **THEN** a command-line flag outranks the file, or the key is outside the live sections and needs a restart
 
 #### Scenario: Changing the Master's mode
-- **WHEN** you edit `master.mode` while jagt runs
+- **WHEN** you edit `roles.master.mode` while jagt runs
 - **THEN** the next read of it uses the new mode, with no restart
 
 #### Scenario: Legacy config.json
@@ -63,13 +63,26 @@ See [components](../../../docs/rules/components.md#whoever-works-on-jagt-reads-t
 - **THEN** it gets the same rules and the same MCP server
 
 ### Requirement: The steps the Master leaves you are checked at start
-`master.mine` SHALL name only `task/MasterRight` steps, and in `act` `deploy` and `revert` both or neither; anything
+`roles.master.mine` SHALL name only `task/MasterRight` steps, and in `act` `deploy` and `revert` both or neither; anything
 else SHALL refuse the start (`startup/MasterCheck`).
 
 #### Scenario: A misspelled step
-- **WHEN** `master.mine` names a step `task/MasterRight` lacks
+- **WHEN** `roles.master.mine` names a step `task/MasterRight` lacks
 - **THEN** the start is refused, naming the steps there are
 
 #### Scenario: Keeping deploy but not revert
-- **WHEN** `master.mine` names `deploy` without `revert` in `master.mode: act`
+- **WHEN** `roles.master.mine` names `deploy` without `revert` in `roles.master.mode: act`
 - **THEN** the start is refused: both write the same shared branch
+
+### Requirement: The Master is configured under its role
+The Master SHALL be configured under `orchestrator.roles.master`, with `mode`, `model`, `brief` and `mine`. The old
+`orchestrator.master` key SHALL still be read; where `roles.master` is written, it wins. Reading the old key logs one
+deprecation line and is never a startup problem.
+
+#### Scenario: Only the old key
+- **WHEN** `jagt.yml` writes `master: {mode: act}` and no `roles.master`
+- **THEN** the Master acts, and one deprecation line is logged
+
+#### Scenario: Both keys
+- **WHEN** `jagt.yml` writes `master: {mode: act}` and `roles: {master: {mode: judge}}`
+- **THEN** the Master judges

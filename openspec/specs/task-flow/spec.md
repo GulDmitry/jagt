@@ -27,7 +27,7 @@ unresolved, CI green, unapproved; `APPROVED` by a human; `DEPLOY_CONFLICT` resol
 
 ### Requirement: A verb a human keeps is named in the table
 `TaskAction.humanOnly` SHALL mark it, never prose; `done` alone is. A person opens a task and closes it; the work between is what the Master stands
-in for where `master.mode` is `act` ([master](../master/spec.md)).
+in for where `roles.master.mode` is `act` ([master](../master/spec.md)).
 
 #### Scenario: Closing a task
 - **WHEN** `done` runs

@@ -12,7 +12,7 @@ is enabled or `tracker.mode` takes work. Each minute it SHALL check, releasing t
 <jagt's pid>`, ending with jagt; elsewhere nothing. Unset, no job is declared and nothing is spawned.
 
 #### Scenario: Unattended work on
-- **WHEN** `keepAwake: true` and `master.mode: act`
+- **WHEN** `keepAwake: true` and `roles.master.mode: act`
 - **THEN** the machine does not idle-sleep until the mode changes or jagt stops
 
 #### Scenario: Not asked

@@ -9,7 +9,7 @@ value means, so the file you edit is the reference. Your copy is gitignored, so 
 One root, `orchestrator:`, holds all of it.
 
 - The sections `jagt.yml.dist`'s header names are re-read on **every access**, so adding a repository or
-  changing `master.mode` needs no restart. Everything else Spring binds **once at startup**.
+  changing `roles.master.mode` needs no restart. Everything else Spring binds **once at startup**.
 - An omitted key falls back to the defaults built into `orchestrator-backend/src/main/resources/application.yml`.
 - A flag or environment variable (`--server.port=8390`, `LOG_FILE=…`) outranks both files, for one run, but only
   for the keys read once at startup; the re-read sections `jagt.yml.dist`'s header names are file-only.

@@ -95,7 +95,7 @@ Three tasks in a row the Master moved in `act` ending silent, in a deploy confli
 - **AND** a strike counts when the Master ships ABC-42 and its session falls silent, none where you converse in its window and it idles
 
 ### Requirement: Every Master step is seen in one window
-While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following `jagt-master.log`, one line per Master step
+While `roles.master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following `jagt-master.log`, one line per Master step
 (`MasterFeedWindow`). Closed, it SHALL come back within seconds; each start rolls the log into `.1`.
 
 #### Scenario: You want to know why a window opened or closed

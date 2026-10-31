@@ -618,6 +618,8 @@ public class ConfigService implements LoopBreaker.Current {
 
     private static final String LEGACY_QA = "qa";
 
+    private static final String MASTER = "master";
+
     private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;
     private final AgentRuntime agentRuntime;
@@ -632,8 +634,23 @@ public class ConfigService implements LoopBreaker.Current {
         if (section == null) {
             return masterByDefault(ConfigFile.defaults());
         }
-        ConfigFile config = mapper.convertValue(section, ConfigFile.class);
+        ConfigFile config = mapper.convertValue(masterUnderItsKey(section), ConfigFile.class);
         return masterByDefault(config.projects() == null ? config.withProjects(Map.of()) : config);
+    }
+
+    /** The Master is written under {@code roles.master}, which wins over the old {@code master}; the rest reads it as before. */
+    private static Object masterUnderItsKey(Object section) {
+        if (!(section instanceof Map<?, ?> keys) || !(keys.get("roles") instanceof Map<?, ?> roles) || !roles.containsKey(MASTER)) {
+            return section;
+        }
+        Map<Object, Object> moved = new java.util.LinkedHashMap<>(keys);
+        Map<Object, Object> others = new java.util.LinkedHashMap<>(roles);
+        Object written = others.remove(MASTER);
+        if (written != null) {
+            moved.put(MASTER, written);
+        }
+        moved.put("roles", others);
+        return moved;
     }
 
     /** Unset, the Master judges where the runtime reads the human's words, else is off; a stopped act judges. */
@@ -683,6 +700,10 @@ public class ConfigService implements LoopBreaker.Current {
             if (section instanceof Map<?, ?> keys && keys.containsKey(LEGACY_QA)) {
                 log.atInfo().setMessage("config key deprecated").addKeyValue("key", "orchestrator.qa")
                         .addKeyValue("use", "orchestrator.roles.qa").log();
+            }
+            if (section instanceof Map<?, ?> keys && keys.containsKey(MASTER)) {
+                log.atInfo().setMessage("config key deprecated").addKeyValue("key", "orchestrator.master")
+                        .addKeyValue("use", "orchestrator.roles.master").log();
             }
             return section;
         } catch (IOException e) {

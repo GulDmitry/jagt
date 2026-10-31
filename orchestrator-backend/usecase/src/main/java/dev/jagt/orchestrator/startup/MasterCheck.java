@@ -23,8 +23,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MasterCheck implements StartupCheck {
 
-    private static final String MODE = "orchestrator.master.mode";
-    private static final String MINE = "orchestrator.master.mine";
+    private static final String MODE = "orchestrator.roles.master.mode";
+    private static final String MINE = "orchestrator.roles.master.mine";
 
     private final ConfigService configService;
     private final MasterBriefs briefs;
@@ -36,31 +36,31 @@ public class MasterCheck implements StartupCheck {
         ConfigService.ConfigFile.MasterConfig master = config.master();
         List<Problem> problems = new ArrayList<>();
         if (MasterMode.of(master.mode()).isEmpty()) {
-            problems.add(new Problem(MODE, "orchestrator.master.mode: '" + master.mode() + "' is not one of "
+            problems.add(new Problem(MODE, "orchestrator.roles.master.mode: '" + master.mode() + "' is not one of "
                     + MasterMode.ids()));
         }
         if (!master.running()) {
             return List.copyOf(problems);
         }
         if (!master.modelOrInherited().isEmpty() && !agentRuntime.choosesModel()) {
-            problems.add(new Problem("orchestrator.master.model", "orchestrator.master.model: "
+            problems.add(new Problem("orchestrator.roles.master.model", "orchestrator.roles.master.model: "
                     + agentRuntime.displayName() + " cannot be told which model to run — leave it blank to"
                     + " inherit its own"));
         }
         if (master.usesTheRetiredName()) {
-            problems.add(new Problem("orchestrator.master.withhold", "orchestrator.master.withhold is now"
-                    + " orchestrator.master.mine — the same list, named from your side rather than the Master's."
+            problems.add(new Problem("orchestrator.roles.master.withhold", "orchestrator.roles.master.withhold is now"
+                    + " orchestrator.roles.master.mine — the same list, named from your side rather than the Master's."
                     + " Rename the key."));
         }
         master.mineOrDefault().stream().filter(named -> MasterRight.of(named).isEmpty())
-                .forEach(named -> problems.add(new Problem(MINE, "orchestrator.master.mine: '" + named
+                .forEach(named -> problems.add(new Problem(MINE, "orchestrator.roles.master.mine: '" + named
                         + "' is not one of " + MasterRight.ids())));
         if (master.modeOrDefault() == MasterMode.ACT) {
             refuseAHalfAutomatedLoop(config, master, problems);
         }
         Path brief = briefs.file(master);
         if (!Files.isRegularFile(brief)) {
-            problems.add(new Problem("orchestrator.master.brief", "orchestrator.master.brief: no file at " + brief
+            problems.add(new Problem("orchestrator.roles.master.brief", "orchestrator.roles.master.brief: no file at " + brief
                     + " — copy master-brief.md.dist to it and edit it until it reads like you"));
         }
         return List.copyOf(problems);
@@ -74,17 +74,17 @@ public class MasterCheck implements StartupCheck {
                                                  ConfigService.ConfigFile.MasterConfig master,
                                                  List<Problem> problems) {
         if (master.may(MasterRight.REPLY) && !config.codeReview().postReviewRepliesOrDefault()) {
-            problems.add(new Problem(MODE, "orchestrator.master.mode: act with codeReview.postReviewReplies: false"
+            problems.add(new Problem(MODE, "orchestrator.roles.master.mode: act with codeReview.postReviewReplies: false"
                     + " leaves every round waiting for you to post the drafted replies — turn posting on, or keep"
-                    + " `reply` in orchestrator.master.mine"));
+                    + " `reply` in orchestrator.roles.master.mine"));
         }
         if (master.may(MasterRight.DEPLOY) != master.may(MasterRight.REVERT)) {
-            problems.add(new Problem(MINE, "orchestrator.master.mine: deploy and revert write the same shared"
+            problems.add(new Problem(MINE, "orchestrator.roles.master.mine: deploy and revert write the same shared"
                     + " branch, so they are one step with one owner — keep both or neither"));
         }
         if (MasterRight.ids().stream().noneMatch(right -> master.may(MasterRight.of(right).orElseThrow()))) {
-            problems.add(new Problem(MINE, "orchestrator.master.mine: keeping every step in act is `judge` written"
-                    + " long — set orchestrator.master.mode to " + MasterMode.JUDGE.id()));
+            problems.add(new Problem(MINE, "orchestrator.roles.master.mine: keeping every step in act is `judge` written"
+                    + " long — set orchestrator.roles.master.mode to " + MasterMode.JUDGE.id()));
         }
     }
 }

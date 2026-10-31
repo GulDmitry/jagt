@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import java.time.Duration;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -115,6 +116,34 @@ class ConfigServiceTest {
                 .load().anyCheckerEnabled();
 
         assertThat(any).isFalse();
+    }
+
+    @Test
+    void aJagtYmlWithTheOldMasterKeyStillActs(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n    mine: [ship]\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        MasterConfig master = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().master();
+
+        assertThat(master.modeOrDefault()).isEqualTo(MasterMode.ACT);
+        assertThat(master.mineOrDefault()).containsExactly("ship");
+    }
+
+    @Test
+    void theRolesKeyWinsOverTheOldMasterKey(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n  roles:\n    master:\n      mode: judge\n      mine: [reply]\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        MasterConfig master = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().master();
+
+        assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
+        assertThat(master.mineOrDefault()).containsExactly("reply");
     }
 
     @Test

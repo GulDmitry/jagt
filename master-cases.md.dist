@@ -1,8 +1,8 @@
 # Master cases
 
-Which verb the Master may press at which status, read while `master.mode` is not `off`. Copy this file to
+Which verb the Master may press at which status, read while `roles.master.mode` is not `off`. Copy this file to
 `master-cases.md` to edit a case; a case your copy lacks is read from here. A press at a status no case names is not
-made: it is written to `misses.jsonl` beside `state.json` instead, and the task stops for you. `master.mine` and
+made: it is written to `misses.jsonl` beside `state.json` instead, and the task stops for you. `roles.master.mine` and
 `humanPaths` still keep a press yours where a case allows it.
 
 Each case: `move:` a verb the Master presses · `at:` the task's statuses, `any` or `any but <statuses>` ·

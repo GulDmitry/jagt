@@ -18,7 +18,7 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 - **AND** jagt refuses any other call, your allow rules included (`ReadGate`)
 
 #### Scenario: A round read before you look
-- **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
+- **WHEN** `roles.master.mode` is `judge`, or unset where the human's words are readable
 - **THEN** each round is read into the worktree's `master-review.md`; it presses nothing
 - **AND** a verdict answers only the hand-back it was asked about, however late it is written; a file jagt did not write answers none
 
@@ -28,7 +28,7 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 
 #### Scenario: A role worth a lighter model
 - **WHEN** a role's row names a `model`
-- **THEN** it runs on it; blank keeps `master.model`
+- **THEN** it runs on it; blank keeps `roles.master.model`
 
 #### Scenario: A role the diff does not touch
 - **WHEN** the diff touches none of a role's `applies` globs
@@ -39,7 +39,7 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 - **THEN** its `<self_review>` reads it first, then the Master by the same roles unless its brief names others
 
 ### Requirement: The Master judges by a brief
-The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`, else by that `.dist`
+The Master SHALL judge by `roles.master.brief`, copied from `master-brief.md.dist`, else by that `.dist`
 (`MasterBriefs.file`); a named brief missing SHALL refuse the start.
 
 #### Scenario: No brief copied
@@ -55,7 +55,7 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
+With `roles.master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
 answer a question. It SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`) and deploy a
 `REVIEWED` or `APPROVED` task once (`MasterDeployJob`). A permission, and a plan asked for in `plan` mode, stay yours.
 
@@ -68,7 +68,7 @@ answer a question. It SHALL press `add-repo` for a repository a session asked fo
 - **THEN** it presses nothing, and the task waits for you; an unpushed commit, uncommitted work or drafted replies make it due
 
 ### Requirement: The human keeps what mine and humanPaths name
-`master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`
+`roles.master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`
 a task's ship and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: A ship, a reply or a path kept for you

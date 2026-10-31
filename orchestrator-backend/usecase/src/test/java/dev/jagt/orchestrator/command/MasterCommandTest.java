@@ -41,7 +41,7 @@ class MasterCommandTest {
 
         String report = new MasterCommand(configService, usage, record).run("");
 
-        assertThat(report).isEqualTo("master: off. To turn it on, set `orchestrator.master.mode` to judge.");
+        assertThat(report).isEqualTo("master: off. To turn it on, set `orchestrator.roles.master.mode` to judge.");
     }
 
     @Test
