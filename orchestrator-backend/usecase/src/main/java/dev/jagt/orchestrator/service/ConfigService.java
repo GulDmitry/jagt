@@ -588,6 +588,12 @@ public class ConfigService implements LoopBreaker.Current {
             return qa == null ? QaConfig.defaults() : qa;
         }
 
+        public boolean anyCheckerEnabled() {
+            Set<String> ids = new java.util.HashSet<>(roles == null ? Set.<String>of() : roles.keySet());
+            ids.add(RoleDefinition.QA.id());
+            return ids.stream().anyMatch(id -> role(id).enabledOrDefault());
+        }
+
         /** The role as {@code roles.<id>} writes it; where it names none, QA falls back to the old {@code qa} key. */
         public RoleConfig role(String id) {
             RoleConfig written = roles == null ? null : roles.get(id);

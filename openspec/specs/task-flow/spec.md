@@ -63,7 +63,7 @@ watchdog off that silence.
 - **THEN** you and the session hear: verification first, then the Master
 
 ### Requirement: Every deploy is checked where it landed
-With `orchestrator.qa.enabled` off, `DeployCheckJob` SHALL ask the session once per deploy commit, keyed on the task's turn.
+With `orchestrator.roles.qa.enabled` off, `DeployCheckJob` SHALL ask the session once per deploy commit, keyed on the task's turn.
 Neither another relay nor a restart asks again; what it asks is the brief's `deploy` step.
 Green MUST report nothing, the task staying `DEPLOYED`; red is the session's `IN_PROGRESS`, the round running again:
 reviewed, deployed, checked. It SHALL ask only once the pipeline on each deploy commit is green
@@ -75,7 +75,7 @@ With it on, QA checks the deploy ([qa](../qa/spec.md)) and `DeployCheckJob` MUST
 - **THEN** the task is `IN_PROGRESS`
 
 #### Scenario: QA checks the deploy
-- **WHEN** a deploy lands with `orchestrator.qa.enabled` on
+- **WHEN** a deploy lands with `orchestrator.roles.qa.enabled` on
 - **THEN** `deploy` is never sent to the session and QA's check runs
 
 ### Requirement: In act a deploy conflict is the session's

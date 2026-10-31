@@ -1,13 +1,30 @@
 # qa Specification
 
 ## Purpose
-The headless acceptance check of a deployed change against its ticket, run once per deploy where `orchestrator.qa.enabled` is on.
+The headless acceptance check of a deployed change against its ticket, run once per deploy where `orchestrator.roles.qa.enabled` is on.
 
 ## Requirements
 
+### Requirement: A checker is configured under its role
+A checker SHALL be configured under `orchestrator.roles.<id>`, with `enabled`, `model` and `environments`. It is off unless
+`enabled` is true. The old `orchestrator.qa` key SHALL still be read for the role `qa`; where `roles.qa` is written, it wins.
+Reading the old key logs one deprecation line and is never a startup problem.
+
+#### Scenario: Neither key names QA
+- **WHEN** `jagt.yml` writes neither `roles.qa` nor `qa`
+- **THEN** QA is off
+
+#### Scenario: Only the old key
+- **WHEN** `jagt.yml` writes `qa: {enabled: true}` and no `roles.qa`
+- **THEN** QA is on, and one deprecation line is logged
+
+#### Scenario: Both keys
+- **WHEN** `jagt.yml` writes `qa: {enabled: true}` and `roles: {qa: {enabled: false}}`
+- **THEN** QA is off
+
 ### Requirement: QA checks a deployed change against its ticket
-With `orchestrator.qa.enabled`, one headless QA run SHALL check each acceptance criterion of the ticket on the environment.
-It is read-only: `CheckerCheckJob` runs `orchestrator.qa.model`, sonnet by default. It answers one row per criterion, each met,
+With `orchestrator.roles.qa.enabled`, one headless QA run SHALL check each acceptance criterion of the ticket on the environment.
+It is read-only and runs `orchestrator.roles.qa.model`, sonnet by default. It answers one row per criterion, each met,
 not met or unprovable, and jagt writes them to `qa-report.md`. QA is a label, never a status: the card's status reads
 `qa passed` only while the passed verdict's sha is the deploy's tip. Every verdict SHALL carry the sha it checked. Spend is
 metered as `qa check`.
@@ -22,7 +39,7 @@ metered as `qa check`.
 
 ### Requirement: A check opens only where it can run
 A check SHALL open only for a task live on the deploy branch. Its pipelines MUST read green in `DeployCheckJob`, and
-`orchestrator.qa.environments` MUST name an environment. One check runs per deploy, kept beside `state.json` as `qa-verdicts`,
+`orchestrator.roles.qa.environments` MUST name an environment. One check runs per deploy, kept beside `state.json` as `qa-verdicts`,
 so a restart runs none twice. A check that found its environment down holds with nobody until every environment answers its probe.
 The probe is its `landed` address where one is named, else its own. A GET answered by anything but a server fault passes.
 Then the same check runs again.
@@ -32,7 +49,7 @@ Then the same check runs again.
 - **THEN** the same deploy is not checked again
 
 #### Scenario: No environment named
-- **WHEN** `orchestrator.qa.environments` is empty
+- **WHEN** `orchestrator.roles.qa.environments` is empty
 - **THEN** no check runs
 
 #### Scenario: An environment that stays down
@@ -58,7 +75,7 @@ you (`QA_FAILED`) and its lift runs the check once more. A verdict on a sha that
 
 ### Requirement: QA writes nothing but its report
 QA SHALL be read-only by construction. Its tools are Read, Grep, Glob, the agent CLI's web fetch, `curl -sS [-i] <url>`,
-read-only git and the user's own MCP reads. Its curl is a GET of a `qa.environments` URL alone. It holds no Write tool. jagt writes
+read-only git and the user's own MCP reads. Its curl is a GET of a `roles.qa.environments` URL alone. It holds no Write tool. jagt writes
 `qa-report.md` from QA's answer. QA never pushes, never touches the base branch and holds no credential; a login is the user's
 own MCP's. With QA off no QA file is read.
 
@@ -67,11 +84,11 @@ own MCP's. With QA off no QA file is read.
 - **THEN** the read gate refuses any curl but `curl -sS [-i] <url>` and QA holds no Write, so it cannot
 
 #### Scenario: An environment the web fetch cannot reach
-- **WHEN** `qa.environments` names `http://127.0.0.1:5000`, which the web fetch refuses as a host without a dot
+- **WHEN** `roles.qa.environments` names `http://127.0.0.1:5000`, which the web fetch refuses as a host without a dot
 - **THEN** QA reads it with `curl -sS http://127.0.0.1:5000/version`, and a curl of any other host is refused
 
 #### Scenario: QA is off
-- **WHEN** `orchestrator.qa.enabled` is off
+- **WHEN** `orchestrator.roles.qa.enabled` is off
 - **THEN** no QA turn exists, no QA file is read and the session's own deploy check runs as today
 
 ### Requirement: A declined round holds DEPLOYED

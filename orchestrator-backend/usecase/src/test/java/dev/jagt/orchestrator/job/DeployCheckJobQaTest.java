@@ -63,7 +63,7 @@ class DeployCheckJobQaTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(
                 DeployPipelines.Kind.GREEN, "", "", "", List.of()));
 
-        new DeployCheckJob(new CheckerGate(config), relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
