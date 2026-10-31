@@ -403,7 +403,6 @@ public class AgentSessions {
     private void startFresh(String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
         log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias()).addKeyValue("cause", cause).log();
-        stateService.updateTask(taskId, TaskReducer::sessionStartedOver);
         openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
     }
 
@@ -414,6 +413,7 @@ public class AgentSessions {
 
     private String openTab(String taskId, @Nullable String alias, Path worktreePath, ConfigService.ConfigFile config,
                            boolean planMode) {
+        stateService.updateTask(taskId, TaskReducer::sessionStartedOver);
         String session = agentSession(config, taskId);
         sessions.openTaskWindow(session, sessions.sessionName(config.viewer().session()), taskId,
                 alias, worktreePath, planMode, modelFor(worktreePath, config));

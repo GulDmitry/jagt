@@ -519,6 +519,24 @@ class AgentSessionsTest {
     }
 
     @Test
+    void nudgesTheSessionAHumanJustRestartedRatherThanStartingItFreshAgain() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build().withSession(
+                Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null))));
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.displayName()).thenReturn("Claude");
+        when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+        sessions.openTaskTab("ABC-1", "auto");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
+
+        sessions.writeTaskContext("ABC-1", "new instructions");
+
+        verify(tmux).nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString());
+        verify(tmux, times(1)).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), anyBoolean(), anyString());
+    }
+
+    @Test
     void replacesTheRelayForANewRoundOfWork() throws Exception {
         Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
         Files.writeString(worktree.resolve("task_context.md"), "STALE: last round");
