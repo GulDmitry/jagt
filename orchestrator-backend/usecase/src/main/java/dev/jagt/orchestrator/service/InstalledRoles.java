@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleInvalid;
 import dev.jagt.orchestrator.flow.Roles;
 import dev.jagt.orchestrator.port.Problem;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -37,6 +38,10 @@ public final class InstalledRoles {
                         + (standing.isPresent() ? "; the shipped file stands" : "")));
             }
         }
+    }
+
+    @PostConstruct
+    void install() {
         Roles.install(definitions.stream().map(RoleDefinition::id).toList());
     }
 
@@ -69,9 +74,8 @@ public final class InstalledRoles {
         return List.copyOf(skipped);
     }
 
-    public RoleDefinition require(String id) {
-        return definitions.stream().filter(role -> role.id().equals(id)).findFirst().orElseThrow(
-                () -> new IllegalStateException("role " + id + " is not installed: " + skipped));
+    public Optional<RoleDefinition> find(String id) {
+        return definitions.stream().filter(role -> role.id().equals(id)).findFirst();
     }
 
     private static List<Path> files(Path folder) {

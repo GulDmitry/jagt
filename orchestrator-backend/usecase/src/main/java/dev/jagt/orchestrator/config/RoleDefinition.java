@@ -12,6 +12,18 @@ import java.util.List;
 public record RoleDefinition(String id, String name, String model, List<String> trigger, String oncePer,
                              List<String> outcomes, Tools tools, Schema answer, Schema decline) {
 
+    private static final Schema ABSENT = Schema.of("no role installed");
+
+    /** The stand-in for a role no {@code role.yml} installs: it declares nothing, so its jobs find nothing to do. */
+    public static RoleDefinition absent(String id) {
+        return new RoleDefinition(id, id, "", List.of(), "", List.of(), new Tools(List.of(), List.of(), List.of(), false, false),
+                ABSENT, ABSENT);
+    }
+
+    public boolean installed() {
+        return answer != ABSENT;
+    }
+
     /** {@code cli} is the tool set the CLI offers, {@code allow} and {@code refuse} its permission lists. */
     public record Tools(List<String> cli, List<String> allow, List<String> refuse, boolean git, boolean fetch) {
     }

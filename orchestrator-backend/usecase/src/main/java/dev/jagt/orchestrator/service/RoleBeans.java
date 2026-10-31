@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.RoleFiles;
+import dev.jagt.orchestrator.flow.Checkers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,7 +12,7 @@ class RoleBeans {
 
     @Bean
     RoleDefinition qaDefinition(InstalledRoles roles) {
-        return roles.require("qa");
+        return roles.find(Checkers.QA).orElseGet(() -> RoleDefinition.absent(Checkers.QA));
     }
 
     @Bean
