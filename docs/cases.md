@@ -49,7 +49,6 @@ Families:
 | B20 | a `CI_FAILED` task's pipeline is re-run and a poll reads it green with nothing unresolved → it moves on as a `CI_POLLING` one does, no session needed | seen 2026-10-29: found by the status × condition inventory | `FlowRulesTest` |
 | B21 | a request git found merged is no longer inside its target (the base was reset, the merge reverted) and the host never said merged → it reads not merged again within 5 minutes, `ship` is allowed and auto-review polls it; the host's word and a fetch that fails change nothing | seen 2026-10-29: found by the status × condition inventory | `MergedRequestsTest`, `MergedReadJobTest`, `WorktreeInspectionTest` |
 | B22 | a deploy conflict is handed, watched, told or held by a stop and jagt restarts → its facts live on the conflicted target of the task's deployment, so the session is handed it once per press, the human told once and "held by stop" said once per stop | seen 2026-10-30: a restart said "held by stop" again, its record an in-memory map | `ConflictFinishTest`, `ConflictStallTest`, `TaskStateTest`, `TaskReducerProperties` |
-
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -65,7 +64,6 @@ Families:
 | C10 | a step is relayed and jagt dies while the session is told → the turn and its digest are recorded before the send, so a press again tells it nothing twice; a failed send puts the turn back and stops the task for the human | seen 2026-10-25 on the stand (run -8): relayed 11:10:48, turn opened 11:10:49 | `StepRelayTest` |
 | C11 | the session asked the human and the checks are still red → the sweep relays nothing and starts no session until the human answers | seen 2026-10-28: a fresh session ended the one holding the question, three times in 24h, and the ceiling stopped the task | `RoundRelayTest` |
 | C12 | a step is decided on a read and the task moves before it is relayed (a verification outlasting its round, the human shipping, a deploy check, a wake) → every relay carries the task's standing as read and is dropped where it no longer stands there, never relayed, reported or stopped on; usage, polls and silence drop none | seen 2026-10-28: 2.5-minute probes failed after a ship, the case door refused the relay and the task stopped; 2026-10-30: ship, verify and deploy-check told the session on a stale read | `VerifyJobTest`, `StepRelayTest`, `StandingTest` |
-
 ## D — model overreach
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -76,7 +74,6 @@ Families:
 | D5 | the reviewer's framing, severity and comments → fresh session per round, severity one of five, listener wiring never passed as scope | 9eb5cf78, 2a3a40b3, d733224f | `MasterSessionTest`, `SchemaTest`, `ReviewSweepServiceTest` |
 | D6 | a label or command word is mapped → only schema-listed values pass; a layer label is not a repository | 1b5868c6, 452eb3b4 | `IntakeRoutingTest`, `CommandMappingEvalTest`, `PaletteContextTest` |
 | D7 | an item's labels name several projects → every one is attached; a repository leaves a multi-repo task only by an approved plan line | seen 2026-10-28: labels `sng` + `sobrado-connect` placed in one project, the other dropped unlogged | `ProjectRoutingTest`, `PlanRepositoriesTest`, `HandBackTest` |
-
 ## E — missing ending
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -106,7 +103,6 @@ Families:
 | E25 | a `WAIT` stop stands (a dependency stayed down) → jagt says `wait-over` again at the last backoff, a wait keeps the stop and the next wake, any other report of the session ends it | seen 2026-10-29: found by the status × condition inventory | `ReportEffectsTest` |
 | E26 | a deploy's pipeline fails after the deploy landed → jagt reads it by the deploy commit and the session is asked only once green; red on the code hands the deploy worktree back as a conflict, its staged fix committed and pushed by the deploy, and `revert` takes fix and merge out; red on infrastructure is retried; none listed after 10 minutes or no host address settles it, and a press before the fix is refused | seen 2026-10-29: a resolved conflict landed and its pipeline failed on an import unused only in the merge result; the session checked in a worktree without the merge and the human fixed it by hand | `DeployCheckJobTest`, `DeployPipelinesTest`, `ConflictHandOffTest`, `GitDeployTest`, `RevertServiceTest`, `CliPipelineRetryTest` |
 | E27 | a deploy handed back for its pipeline, a status change after the push → the 10 minutes with no pipeline count from the recorded push, and the hand-back is read from the record | seen 2026-10-30: a status change restarted the clock | `DeployPipelinesTest`, `FlowReportsTest` |
-
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -126,7 +122,6 @@ Families:
 | F15 | a round's note fingerprint is blank (note ids unknown) → it is never a repeat: no stalled run, no futile ship counted | seen 2026-10-27: three blank-fingerprint rounds stalled a task and a SHIPS stop read "ships without a new note in 24h: 4" | `LoopBreakerTest`, `MasterVerdictsTest`, `RoundKeyTest`, `ReviewFactsTest` |
 | F16 | a session stays silent across several stale windows → one alert at the silence's start; only a new silence alerts again | seen 2026-10-28: one 35-minute silence logged 7 alerts | `WatchdogServiceTest` |
 | F17 | a not-ready plan is returned after each rework → only rounds answering one unchanged report count toward `loopBreaker.rounds` | seen 2026-10-29: three reworked plans in 24h stopped a task as a loop | `LoopBreakerTest`, `MasterVerdictsTest` |
-
 ## G — prose routing
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -135,7 +130,6 @@ Families:
 | G3 | a `do` line mentions the deploy branch → only a branch after from, into or onto refuses it | 4a41823d | `MasterShipTest` |
 | G4 | a reviewer answers the agent's reply → read as answered, not as a comment nobody answered | 97ebd363 | `ReviewSweepServiceTest`, `ReviewRoundCase` |
 | G5 | a field's teaching word is parsed → the parser reads the word, never a sentence | d779aa20 | `AgentStatusMessageTest`, `AgentStatusReportsTest` |
-
 ## H — a guard
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -146,7 +140,6 @@ Families:
 | H5 | a round carries red checks outside the code and a thread with the reviewer's new answer → the hand-back is refused until `review_replies.md` is written since the relay, and a standing question holds back only the checks | seen 2026-10-29: the session took the checks' "change nothing" route and left the thread unanswered; later sweeps read the round as unchanged | `HandBackDueTest`, `TaskStopsTest`, `RoundRelayTest` |
 | H6 | a task past the code is reopened in plan mode → the open is refused as a state refusal, the gate and the tab stay; a plan comes only before the code | seen 2026-10-30: `open_task_tab` mode=plan on a VERIFYING task closed its gate and refused every source write, with the only exit unreachable | `AgentSessionsTest` |
 | H7 | QA is told to POST, to save a response to a file or to write a file → it holds no Bash curl and no Write tool, only GET through the web fetch and read-only git; jagt writes `qa-report.md` from its rows | seen 2026-10-31: `curl -s -XPOST`, `-o` and Write passed the command patterns | `HeadlessClaudeQaReaderTest` |
-
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -156,7 +149,6 @@ Families:
 | I4 | a session sits idle past its cache, the CLI compacts it unasked → the compaction's start does not read as work, so the next prompt goes to a fresh session | seen 2026-10-27: compacted 54 min after the turn, a prompt 21 min later passed the gate into the old conversation | `ClaudeAgentRuntimeTest` |
 | I5 | a session idles past its cache and jagt restarts or loses the hook's mark → a prompt still goes to a fresh session, idle read from the session record's `idleSince`, the stamp the relay reads | seen 2026-10-27: turn ended 13:16Z, a prompt at 18:06Z passed the gate as warm | `PromptGateTest`, `AgentSessionsTest`, `SessionPhaseTest` |
 | I6 | a prompt is typed into the fresh session a cold prompt went to → it is judged by the record, where its turn is open, so it is never relayed again, and where no hook has landed yet the record started over with the fresh session, its start stamped by the first read, so the old transcript's age never calls it quiet | seen 2026-10-28 08:02Z: the newest log in the directory was the old session's, an endless restart every ~2.5 s | `PromptGateTest`, `AgentSessionsTest`, `TaskReducerTest` |
-
 ## J — git, worktrees, several repositories
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -165,13 +157,11 @@ Families:
 | J3 | every request of a task is merged, the task still `REVIEWED` → its card reads `merged`, offers `done` quietly and is no longer polled | seen 2026-10-29: a squash-merged request left the card "awaiting approval" and polled | `MoveTest`, `TaskViewTest`, `AutoReviewCadenceTest` |
 | J4 | a deploy waits on a recorded conflict whose deploy worktree was deleted → the press is refused naming it, not merged again from the first repository | 2d530917 | `DeployServiceTest` |
 | J5 | jagt reads a task worktree with status or diff while its session commits → the read takes no optional git lock, so the commit never meets `index.lock` | seen 2026-10-30: e2e `git commit` failed on a worktree `index.lock` twice in the full suite, 0 of 17 isolated runs | `ProcessRunnerTest` |
-
 ## K — the board
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
 | K1 | a task jagt stopped shows `lift the stop` → the line adds the stop's short reason and its hover the evidence, the advice and the time | seen 2026-10-28: the card said to read the hover, which held nothing | `TaskViewTest`, `BoardCardTest` |
 | K2 | a REVIEWED task waits on a human approval past the 24h poll window → it stays CI's with no attention asked and is polled again on a lengthening interval | seen 2026-10-29: ABC-42 turned amber `check for the approval` at 24h though only the reviewer could move it | `AutoReviewCadenceTest`, `ConfigServiceTest` |
-
 ## L — the tests themselves
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -190,7 +180,6 @@ Families:
 | L13 | jagt is restarted mid-run → the second binds the first's port and the marker keeps it | seen 2026-10-25, jagt-stand-68761-8: second jagt on another port, the session's `.mcp.json` still named the first, its status reports got ECONNREFUSED | `StandRestartTest` |
 | L14 | the deploy-conflict mutation runs in judge → the task rests at DEPLOY_CONFLICT owned by YOU and no `conflict` step is relayed (`relays-in: act` in `mutations.md`: only act hands the session the conflict, decision 0013); the run is held at once there and passes without the step, act still needs it | seen 2026-10-25: a judge run waited a minute for and then failed on a conflict step jagt never sends | `MutationBookTest`, `MutationProgressTest`, `RunEndTest` |
 | L15 | a board test breaks the shared job → its context is discarded after it, so a later test in the class never opens on a failed job row | seen 2026-10-28: the jobs table test found a failed row before it broke anything whenever the table rendered ahead of its first count; red with a 1.5 s wait before that count | `BoardPopupsAndTabsTest` |
-
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -198,3 +187,4 @@ Families:
 | M2 | a ship finds nothing to commit, push or post → its session may reply `no_changes`, which both ship cases take; the task is not stopped | seen 2026-10-26: a ship with nothing new to push replied no_changes, the task stopped and new review comments were never relayed | `CaseDoorTest` |
 | M3 | a fresh session starts on a task past NEW and is only asked a question → it keeps the board's status and ends its turn unreported; a change begun reports IN_PROGRESS | seen 2026-10-28: a question on a reviewed task set IN_PROGRESS, the session idled, the watchdog flagged it stopped | `SessionBriefTest` |
 | M4 | a launch names a bare command found nowhere on PATH → it fails at once naming it, whatever the machine load | seen 2026-10-28: a loaded run let the wrapper outlive its 200 ms check and the launch answered with a process | `ProcessRunnerTest` |
+| M5 | a session answers a QA round with `no_changes` → the deployed change holds DEPLOYED, not the IN_PROGRESS the round moved it to; the reply is the one door that lands it back | seen 2026-10-31: found proving `qa-round` through the real flow | `QaRoundFlowTest`, `TaskChartTest` |

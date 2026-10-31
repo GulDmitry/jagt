@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.Guard;
+import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
@@ -135,9 +136,12 @@ public class FlowReports {
                 return task.refused(Guard.STATUS_REPORT);
             }
             TaskMove.Reported move = new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));
-            landed.set(new Landed(task.status(), FlowRules.reported(task.status(), status, move.verificationOwed())));
             TaskState said = TaskReducer.reduce(TaskReducer.said(task, means), move, lineOf(task, means, message),
                     false, clock.millis());
+            if (declinesAQaRound(task, status, means)) {
+                said = TaskReducer.qaDeclined(said, clock.millis());
+            }
+            landed.set(new Landed(task.status(), said.status()));
             return alsoRecord.apply(task.status(), said);
         });
         Optional<String> why = Optional.ofNullable(refused.get())
@@ -146,6 +150,12 @@ public class FlowReports {
             throw Refusal.byState(why.get());
         }
         return Optional.ofNullable(landed.get());
+    }
+
+    private static boolean declinesAQaRound(TaskState task, TaskStatus status, AgentReport means) {
+        Turn turn = task.turnOrNone();
+        return means == AgentReport.NO_CHANGES && status == TaskStatus.IN_PROGRESS && turn.open()
+                && turn.step().equals(Step.QA_ROUND.id());
     }
 
     /** A question still reaches the card; once one is behind, the line falls back to the status's own. */

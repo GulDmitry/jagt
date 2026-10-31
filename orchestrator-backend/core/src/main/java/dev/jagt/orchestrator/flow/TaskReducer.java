@@ -83,6 +83,11 @@ public final class TaskReducer {
         return step(task, new TaskMove.Said(means), 0);
     }
 
+    /** {@code task} whose session declined a QA round: the deployed change holds DEPLOYED. */
+    static TaskState qaDeclined(TaskState task, long now) {
+        return step(task, new TaskMove.QaDeclined(), now);
+    }
+
     /** {@code task} with the report a verb's stamp means. */
     static TaskState stamped(TaskState task, AgentReport means) {
         return step(task, new TaskMove.Stamped(means), 0);

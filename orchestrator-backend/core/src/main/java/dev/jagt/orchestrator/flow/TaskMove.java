@@ -14,6 +14,10 @@ sealed interface TaskMove {
     record Reported(TaskStatus status, boolean verificationOwed) implements TaskMove {
     }
 
+    /** A session's no_changes answering a QA round: the deployed change stays as it was. */
+    record QaDeclined() implements TaskMove {
+    }
+
     record Read(TaskStatus concluded) implements TaskMove {
     }
 

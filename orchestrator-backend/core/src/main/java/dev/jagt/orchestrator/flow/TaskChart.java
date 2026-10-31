@@ -148,6 +148,7 @@ final class TaskChart {
         reports(chart);
         reads(chart);
         edge(chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
+        edge(chart, IN_PROGRESS, "qa round declined", new TaskMove.QaDeclined()::equals, DEPLOYED);
         edge(chart, VERIFYING, "verified", new TaskMove.Verified(true)::equals, REVIEW_PENDING);
         edge(chart, VERIFYING, "verification failed", new TaskMove.Verified(false)::equals, IN_PROGRESS);
         return chart.build();

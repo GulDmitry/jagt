@@ -190,6 +190,7 @@ stateDiagram-v2
         lifecycle_REVIEWED --> lifecycle_APPROVED : read APPROVED
         lifecycle_APPROVED --> lifecycle_APPROVED : read APPROVED
         lifecycle_DEPLOYED --> lifecycle_DEPLOY_CONFLICT : deploy read red
+        lifecycle_IN_PROGRESS --> lifecycle_DEPLOYED : qa round declined
         lifecycle_VERIFYING --> lifecycle_REVIEW_PENDING : verified
         lifecycle_VERIFYING --> lifecycle_IN_PROGRESS : verification failed
         lifecycle_DONE --> [*]
