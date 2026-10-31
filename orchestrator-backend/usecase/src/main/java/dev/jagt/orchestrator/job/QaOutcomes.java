@@ -3,10 +3,12 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.QaEnding;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
@@ -27,8 +29,25 @@ public class QaOutcomes {
     private final StepRelay relay;
     private final FlowReports reports;
     private final TaskStops stops;
+    private final StateService state;
 
-    public boolean notMet(String taskId, TaskState task, QaVerdict verdict) {
+    /** A verdict on a sha no longer the deploy's tip is dropped, whatever it found. */
+    public QaEnding apply(String taskId, TaskState task, QaVerdict verdict) {
+        boolean stands = state.task(taskId).map(TaskState::deployment)
+                .filter(deployment -> deployment.live() && deployment.tips().equals(verdict.sha())).isPresent();
+        QaEnding ending = stands ? verdict.ending() : QaEnding.DROPPED;
+        switch (ending) {
+            case PASSED -> state.updateTask(taskId, current -> current.withMark(QaVerdict.MARK, verdict.sha()));
+            case NOT_MET -> notMet(taskId, task, verdict);
+            case UNPROVABLE -> unprovable(taskId, verdict);
+            case FAILED -> failed(taskId, verdict);
+            default -> log.atInfo().setMessage("qa verdict kept").addKeyValue("task", taskId)
+                    .addKeyValue("ending", ending).log();
+        }
+        return ending;
+    }
+
+    private boolean notMet(String taskId, TaskState task, QaVerdict verdict) {
         String facts = verdict.sha() + ":\n" + verdict.notMet().stream().map(QaVerdict.Row::line)
                 .collect(Collectors.joining("\n"));
         StepRelay.Claim claim = new StepRelay.Claim(task, () -> reports.standing(taskId, task),
@@ -41,7 +60,7 @@ public class QaOutcomes {
         return sent;
     }
 
-    public void unprovable(String taskId, QaVerdict verdict) {
+    private void unprovable(String taskId, QaVerdict verdict) {
         String said = verdict.question().isBlank() ? verdict.rows().stream()
                 .filter(row -> row.status() != QaVerdict.Status.MET).map(QaVerdict.Row::line)
                 .collect(Collectors.joining("\n")) : verdict.question();
@@ -50,7 +69,7 @@ public class QaOutcomes {
         log.atInfo().setMessage("qa asks").addKeyValue("task", taskId).addKeyValue("rows", verdict.rows().size()).log();
     }
 
-    public void failed(String taskId, QaVerdict verdict) {
+    private void failed(String taskId, QaVerdict verdict) {
         stops.stop(taskId, TaskStop.Trigger.QA_FAILED, verdict.failure());
         log.atWarn().setMessage("qa check failed").addKeyValue("task", taskId)
                 .addKeyValue("cause", verdict.failure()).log();

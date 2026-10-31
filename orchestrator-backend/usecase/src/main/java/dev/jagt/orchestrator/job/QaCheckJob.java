@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
 import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.QaEnding;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -70,29 +69,15 @@ public class QaCheckJob implements TaskJob {
         if (records.settled(taskId, digest)) {
             return;
         }
-        String sha = tips(open.get());
+        String sha = open.get().tips();
         Answer<QaVerdict> answer = reader.read(prompts.accept(taskId, worktree, sha, qa));
         QaVerdict verdict = answer.facts().orElse(QaVerdict.failed(sha, answer.failure()));
-        QaEnding ending = verdict.ending();
-        records.put(taskId, digest, sha, ending);
-        switch (ending) {
-            case NOT_MET -> outcomes.notMet(taskId, task, verdict);
-            case UNPROVABLE -> outcomes.unprovable(taskId, verdict);
-            case FAILED -> outcomes.failed(taskId, verdict);
-            default -> {
-            }
-        }
+        records.put(taskId, digest, sha, outcomes.apply(taskId, task, verdict));
     }
 
     /** The deployment where a check may open: QA on, an environment named, the pipelines green and the change live. */
     private static Optional<Deployment> openFor(TaskState task, QaConfig qa) {
         return Optional.ofNullable(task.deployment()).filter(deployment -> qa.enabledOrDefault()
                 && !qa.environmentsOrEmpty().isEmpty() && deployment.live() && deployment.askedDigest() != null);
-    }
-
-    /** The commit each landed target stands at, which a verdict carries as the sha it checked. */
-    public static String tips(Deployment deployment) {
-        return deployment.targets().stream().filter(Deployment.Target::landed)
-                .map(target -> target.project() + "@" + target.tip()).collect(Collectors.joining(","));
     }
 }

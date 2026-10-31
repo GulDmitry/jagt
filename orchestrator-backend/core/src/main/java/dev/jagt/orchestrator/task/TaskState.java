@@ -611,6 +611,11 @@ public record TaskState(
         return toBuilder().switches(merged).build();
     }
 
+    /** QA passed the change now live: the mark names the tips it checked, so a later deploy shows none. */
+    public boolean qaPassed() {
+        return status == TaskStatus.DEPLOYED && deployment != null && turnOrNone().marked(QaVerdict.MARK, deployment.tips());
+    }
+
     public TaskState withMark(String step, String value) {
         return withTurn(turnOrNone().withMark(step, value));
     }

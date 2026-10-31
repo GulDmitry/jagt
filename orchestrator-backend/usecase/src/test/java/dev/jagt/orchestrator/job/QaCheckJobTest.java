@@ -82,6 +82,7 @@ class QaCheckJobTest {
         when(reader.read(any())).thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         QaOutcomes outcomes = mock(QaOutcomes.class);
+        when(outcomes.apply(any(), any(), any())).thenReturn(dev.jagt.orchestrator.task.QaEnding.PASSED);
         new QaCheckJob(config, new QaPrompts(new QaBrief(paths)), reader, new QaRecords(paths, Clock.systemUTC()),
                 outcomes).run("ABC-42", deployed("digest"));
 
@@ -104,11 +105,11 @@ class QaCheckJobTest {
         new QaCheckJob(config, new QaPrompts(new QaBrief(paths)), reader, new QaRecords(paths, Clock.systemUTC()),
                 outcomes).run("ABC-42", task);
 
-        verify(outcomes).notMet(eq("ABC-42"), eq(task), any());
+        verify(outcomes).apply(eq("ABC-42"), eq(task), eq(notMet()));
     }
 
     @Test
-    void reportsNothingWhereEveryRowIsMet(@TempDir Path root) {
+    void handsAMetVerdictToTheOutcomesToMarkPassed(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
         QaReader reader = mock(QaReader.class);
         QaOutcomes outcomes = mock(QaOutcomes.class);
@@ -119,7 +120,6 @@ class QaCheckJobTest {
         new QaCheckJob(config, new QaPrompts(new QaBrief(paths)), reader, new QaRecords(paths, Clock.systemUTC()),
                 outcomes).run("ABC-42", deployed("digest"));
 
-        verify(outcomes, never()).notMet(any(), any(), any());
-        verify(outcomes, never()).unprovable(any(), any());
+        verify(outcomes).apply(eq("ABC-42"), any(), eq(met()));
     }
 }

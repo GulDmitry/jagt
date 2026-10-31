@@ -80,6 +80,12 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
         return -1;
     }
 
+    /** The commit each landed target stands at; what a QA verdict names as the sha it checked. */
+    public String tips() {
+        return targets.stream().filter(Target::landed).map(target -> target.project() + "@" + target.tip())
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
     /** A recorded merge is one no revert has taken out yet. */
     public boolean live() {
         return targets.stream().anyMatch(Target::landed);

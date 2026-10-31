@@ -10,6 +10,8 @@ import java.util.Optional;
  */
 public record QaVerdict(String sha, String failure, List<Row> rows, String question, String waitingOn) {
 
+    public static final String MARK = "qa";
+
     public enum Status {
         MET, NOT_MET, UNPROVABLE;
 

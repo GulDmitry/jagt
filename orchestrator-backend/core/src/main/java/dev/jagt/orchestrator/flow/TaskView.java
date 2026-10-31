@@ -133,6 +133,9 @@ public record TaskView(
         if (round.masterReading()) {
             return "master review";
         }
+        if (task.qaPassed()) {
+            return "qa passed";
+        }
         return task.requestsMerged() && FlowRules.awaitsApproval(task.status()) ? "merged" : task.status().label();
     }
 
