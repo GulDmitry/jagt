@@ -14,11 +14,16 @@ Answer with one row per acceptance criterion of the ticket, each `met`, `not met
 evidence: the request you made and what answered, or the log line you read. A row with no evidence is `unprovable`.
 One criterion is one row; give none the ticket does not name. jagt writes `qa-report.md` from your rows; you write no file.
 
+## Your tools
+
+A page is one `curl -sS <url>`, `-i` for the status, or the web fetch tool. No other flag: no cookie jar, no file, no
+redirect followed; a sign-in is that one GET. A git read is one `git log`, `show` or `diff` carrying
+`--no-ext-diff --no-textconv`, with no `&&`, pipe or semicolon. jagt refuses any other form.
+
 ## accept
 
 The deploy's pipeline is green and the change is read up. Check every row on the environment you are given:
-GET through `curl -sS <url>` (`-i` for the status) or the web fetch tool, the logs through the user's own MCP, nothing
-that writes. One git read per call: no `&&`, pipe or semicolon. A login you lack is a question, never a guess.
+GET pages, read the logs through the user's own MCP, nothing that writes. A login you lack is a question, never a guess.
 First prove the change landed: the host's deploy job, else the environment's `landed` probe, else it is `unprovable`.
 
 ## answered
