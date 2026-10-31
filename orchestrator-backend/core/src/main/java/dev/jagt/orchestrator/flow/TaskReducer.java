@@ -280,9 +280,11 @@ public final class TaskReducer {
             case TaskMove.MasterNoted noted -> new TaskMove.MasterNoted(noted.note(), MasterPhase.of(
                     task.withMaster(noted.note().applyTo(task.masterOrNone()))));
             case TaskMove.Checked.Passed passed -> new TaskMove.Checked.Passed(passed.role(), passed.sha(),
-                    CheckerPhase.of(task.withQa(task.qaOrNone().withPassed(passed.sha()))) == CheckerPhase.PASSED);
+                    CheckerPhase.of(task.withRole(passed.role(), task.roleOrNone(passed.role()).withPassed(passed.sha())), passed.role())
+                            == CheckerPhase.PASSED);
             case TaskMove.Checked.RoundSent sent -> new TaskMove.Checked.RoundSent(sent.role(), sent.digest(), sent.rows(),
-                    CheckerPhase.of(task.withQa(task.qaOrNone().withRound(sent.digest(), sent.rows())))
+                    CheckerPhase.of(task.withRole(sent.role(), task.roleOrNone(sent.role()).withRound(sent.digest(), sent.rows())),
+                            sent.role())
                             == CheckerPhase.ROUND_OPEN);
             case TaskMove.InfraCleared cleared -> new TaskMove.InfraCleared(cleared.all(), unarmed(task));
             case TaskMove.ChecksRead read -> new TaskMove.ChecksRead(read.hostStatus(), read.tip(),
@@ -353,10 +355,10 @@ public final class TaskReducer {
             case TaskEffect.ResetsApproval _ -> task.withApproved(null);
             case TaskEffect.ResetsInfra _ -> task.withInfraRetries(List.of());
             case TaskEffect.NotesMaster notes -> task.withMaster(notes.note().applyTo(task.masterOrNone()));
-            case TaskEffect.OpensCheckerRead opens -> task.withQa(task.qaOrNone().withReading(opens.step()));
-            case TaskEffect.ClosesCheckerRead _ -> task.withQa(task.qaOrNone().withReading(""));
-            case TaskEffect.PassesChecker passes -> task.withQa(task.qaOrNone().withPassed(passes.sha()));
-            case TaskEffect.SendsCheckerRound sends -> task.withQa(task.qaOrNone().withRound(sends.digest(), sends.rows()));
+            case TaskEffect.OpensCheckerRead opens -> task.withRole(opens.role(), task.roleOrNone(opens.role()).withReading(opens.step()));
+            case TaskEffect.ClosesCheckerRead closes -> task.withRole(closes.role(), task.roleOrNone(closes.role()).withReading(""));
+            case TaskEffect.PassesChecker passes -> task.withRole(passes.role(), task.roleOrNone(passes.role()).withPassed(passes.sha()));
+            case TaskEffect.SendsCheckerRound sends -> task.withRole(sends.role(), task.roleOrNone(sends.role()).withRound(sends.digest(), sends.rows()));
             case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
             case TaskEffect.ReadsChecks reads -> task.withChecksRead(reads.hostStatus(), reads.tip());
             case TaskEffect.FailsToReadChecks fails -> task.withChecksUnread(fails.read());

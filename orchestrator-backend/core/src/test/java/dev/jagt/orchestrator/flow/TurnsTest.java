@@ -160,7 +160,7 @@ class TurnsTest {
         TaskState sealed = TaskReducer.masterVerdictGone(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0)).build());
 
-        Holder holder = Turns.next(sealed.status(), sealed.report(), sealed.stopped(), CheckerPhase.of(sealed),
+        Holder holder = Turns.next(sealed.status(), sealed.report(), sealed.stopped(), CheckerPhase.of(sealed, Checkers.QA),
                 new Turns.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
 
         assertThat(holder).isEqualTo(Holder.MASTER);

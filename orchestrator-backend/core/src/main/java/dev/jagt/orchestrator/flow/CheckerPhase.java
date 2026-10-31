@@ -6,15 +6,15 @@ import dev.jagt.orchestrator.task.TaskState;
 public enum CheckerPhase {
     NONE, READING, ROUND_OPEN, PASSED;
 
-    public static CheckerPhase of(TaskState task) {
-        return task.qaOrNone().reading().isEmpty() ? beneath(task) : READING;
+    public static CheckerPhase of(TaskState task, String role) {
+        return task.roleOrNone(role).reading().isEmpty() ? beneath(task, role) : READING;
     }
 
-    /** What the deploy reads as were no QA read running on it. */
-    static CheckerPhase beneath(TaskState task) {
-        if (task.qaRoundOpen()) {
+    /** What the deploy reads as were no read of the role running on it. */
+    static CheckerPhase beneath(TaskState task, String role) {
+        if (task.roundOpen(role)) {
             return ROUND_OPEN;
         }
-        return task.qaPassedOnTips() ? PASSED : NONE;
+        return task.passedOnTips(role) ? PASSED : NONE;
     }
 }

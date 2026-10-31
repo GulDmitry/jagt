@@ -6,6 +6,9 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Where each of the chart's regions stands for a task, read from the record alone. */
 record Phases(TaskStatus lifecycle, StopKind stop, PlanGate plan, AgentReport report, TurnKind turn,
@@ -25,8 +28,12 @@ record Phases(TaskStatus lifecycle, StopKind stop, PlanGate plan, AgentReport re
                 GitPhase.of(task.gitTrust()), RepoPhase.of(task.repoRequest()),
                 RequestPhase.of(task),
                 ChecksPhase.of(task), ApprovalPhase.of(task), InfraPhase.of(task),
-                Map.of(CheckerRegion.QA.id(), CheckerPhase.of(task)), MasterPhase.of(task),
-                Map.of(CheckerRegion.QA.id(), CheckerPhase.beneath(task)), task.session().stampedAsk());
+                phasesOf(task, CheckerPhase::of), MasterPhase.of(task), phasesOf(task, CheckerPhase::beneath),
+                task.session().stampedAsk());
+    }
+
+    private static Map<String, CheckerPhase> phasesOf(TaskState task, BiFunction<TaskState, String, CheckerPhase> phase) {
+        return task.roles().keySet().stream().collect(Collectors.toMap(Function.identity(), id -> phase.apply(task, id)));
     }
 
     CheckerPhase checker(String id) {

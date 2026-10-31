@@ -176,7 +176,7 @@ class TaskReducerProperties {
             assertThat(Map.of("git", GitPhase.of(next.gitTrust()).name(), "repo",
                     RepoPhase.of(next.repoRequest()).name(), "request", RequestPhase.of(next).name(),
                     "checks", ChecksPhase.of(next).name(), "approval", ApprovalPhase.of(next).name(),
-                    "infra", InfraPhase.of(next).name(), "qa", CheckerPhase.of(next).name()))
+                    "infra", InfraPhase.of(next).name(), "qa", CheckerPhase.of(next, Checkers.QA).name()))
                     .isEqualTo(Map.of("git", declared.get("git"), "repo", declared.get("repo"),
                             "request", declared.get("request"), "checks", declared.get("checks"),
                             "approval", declared.get("approval"), "infra", declared.get("infra"),
@@ -191,8 +191,8 @@ class TaskReducerProperties {
             TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
             Optional.of(next).filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
                     .ifPresent(moved -> assertThat(Turns.next(moved.status(), moved.report(), false,
-                            CheckerPhase.of(moved), Turns.Profile.OFF) == Turn.Holder.QA)
-                            .isEqualTo(CheckerPhase.of(moved) == CheckerPhase.READING));
+                            CheckerPhase.of(moved, Checkers.QA), Turns.Profile.OFF) == Turn.Holder.QA)
+                            .isEqualTo(CheckerPhase.of(moved, Checkers.QA) == CheckerPhase.READING));
             return next;
         }, (left, right) -> right);
     }

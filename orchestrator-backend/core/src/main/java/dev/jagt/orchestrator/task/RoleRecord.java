@@ -5,34 +5,34 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * What QA left on a task: the step whose read is running, the tips of the deploy it passed, and the digest and rows
+ * What a checker left on a task: the step whose read is running, the tips of the deploy it passed, and the digest and rows
  * of the deploy a round went out on, kept for the decline read. An empty string is none.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public record Qa(String reading, String passed, String roundDigest, String roundRows) {
+public record RoleRecord(String reading, String passed, String roundDigest, String roundRows) {
 
-    public Qa {
+    public RoleRecord {
         reading = reading == null ? "" : reading;
         passed = passed == null ? "" : passed;
         roundDigest = roundDigest == null ? "" : roundDigest;
         roundRows = roundRows == null ? "" : roundRows;
     }
 
-    public static Qa defaults() {
-        return new Qa("", "", "", "");
+    public static RoleRecord defaults() {
+        return new RoleRecord("", "", "", "");
     }
 
-    public Qa withReading(String reading) {
-        return new Qa(reading, passed, roundDigest, roundRows);
+    public RoleRecord withReading(String reading) {
+        return new RoleRecord(reading, passed, roundDigest, roundRows);
     }
 
-    public Qa withPassed(String passed) {
-        return new Qa(reading, passed, roundDigest, roundRows);
+    public RoleRecord withPassed(String passed) {
+        return new RoleRecord(reading, passed, roundDigest, roundRows);
     }
 
-    public Qa withRound(String digest, String rows) {
-        return new Qa(reading, passed, digest, rows);
+    public RoleRecord withRound(String digest, String rows) {
+        return new RoleRecord(reading, passed, digest, rows);
     }
 
     @JsonIgnore

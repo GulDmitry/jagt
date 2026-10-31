@@ -15,11 +15,11 @@ final class LegacyQa {
     private LegacyQa() {
     }
 
-    static @Nullable Qa of(@Nullable Qa stored, @Nullable Turn turn, TaskStatus status) {
+    static @Nullable RoleRecord of(@Nullable RoleRecord stored, @Nullable Turn turn, TaskStatus status) {
         if (stored != null || turn == null) {
             return stored;
         }
-        Qa read = new Qa(reading(turn, status), mark(turn, PASSED), mark(turn, DIGEST), mark(turn, ROWS));
+        RoleRecord read = new RoleRecord(reading(turn, status), mark(turn, PASSED), mark(turn, DIGEST), mark(turn, ROWS));
         return read.isEmpty() ? null : read;
     }
 

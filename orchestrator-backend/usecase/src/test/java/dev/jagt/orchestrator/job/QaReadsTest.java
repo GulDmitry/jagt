@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.CheckerPhase;
@@ -52,7 +53,7 @@ class QaReadsTest {
         QaReader reader = mock(QaReader.class);
         when(reader.read(any())).thenAnswer(call -> {
             TaskState task = state.task("ABC-42").orElseThrow();
-            whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), CheckerPhase.of(task),
+            whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), CheckerPhase.of(task, Checkers.QA),
                     Turns.Profile.OFF));
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         });
@@ -61,7 +62,7 @@ class QaReadsTest {
 
         TaskState after = state.task("ABC-42").orElseThrow();
         assertThat(whileReading).containsExactly(Turn.Holder.QA);
-        assertThat(Turns.next(after.status(), after.report(), after.stopped(), CheckerPhase.of(after), Turns.Profile.OFF))
+        assertThat(Turns.next(after.status(), after.report(), after.stopped(), CheckerPhase.of(after, Checkers.QA), Turns.Profile.OFF))
                 .isEqualTo(Turn.Holder.NOBODY);
     }
 }

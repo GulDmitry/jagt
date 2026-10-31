@@ -85,8 +85,8 @@ public record TaskState(
         @Nullable AutoReviewTold told,
         // Every stretch the human held the turn, oldest first; the last may still stand.
         @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits,
-        // What QA left on the task; absent until it read or judged one.
-        @Nullable Qa qa,
+        // What each checker left on the task, by role id; empty until one read or judged.
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, RoleRecord> roles,
         // What the Master left on the task; absent until it left, answered or sealed one.
         @Nullable Master master
 ) {
@@ -103,6 +103,7 @@ public record TaskState(
         switches = switches == null ? Map.of() : Map.copyOf(switches);
         infraRetries = infraRetries == null ? List.of() : List.copyOf(infraRetries);
         waits = waits == null ? List.of() : List.copyOf(waits);
+        roles = roles == null ? Map.of() : Map.copyOf(roles);
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
@@ -158,7 +159,9 @@ public record TaskState(
             @JsonProperty("session") @Nullable Session session,
             @JsonProperty("told") @Nullable AutoReviewTold told,
             @JsonProperty("waits") @Nullable List<HumanWait> waits,
-            @JsonProperty("qa") @Nullable Qa qa,
+            // Written before roles: read once into roles["qa"], rewritten there.
+            @JsonProperty("qa") @Nullable RoleRecord qa,
+            @JsonProperty("roles") @Nullable Map<String, RoleRecord> roles,
             @JsonProperty("master") @Nullable Master master) {
         List<LegacyDeployment.Repo> stored = LegacyDeployment.stored(repos,
                 new LegacyDeployment.Repo(project, worktreePath, remoteUrl, mrUrl, deployCommit, null, null, null));
@@ -174,7 +177,7 @@ public record TaskState(
                 Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, LegacyMaster.withoutMarks(LegacyQa.withoutMarks(turn)), switches == null ? Map.of() : switches,
                 infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment,
                 Session.migrated(session, legacySilentSince), told,
-                waits == null ? List.of() : waits, LegacyQa.of(qa, turn, status), LegacyMaster.of(master, turn));
+                waits == null ? List.of() : waits, LegacyRoles.of(roles, LegacyQa.of(qa, turn, status)), LegacyMaster.of(master, turn));
         Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
         return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
     }
@@ -629,25 +632,24 @@ public record TaskState(
         return toBuilder().switches(merged).build();
     }
 
-    /** QA passed the change now live: the record names the tips it checked, so a later deploy shows none. */
-    public boolean qaPassed() {
-        return status == TaskStatus.DEPLOYED && qaPassedOnTips();
+    /** The role passed the change now live: its record names the tips it checked, so a later deploy shows none. */
+    public boolean passedBy(String role) {
+        return status == TaskStatus.DEPLOYED && passedOnTips(role);
     }
 
-    /** QA passed the tips the deployment stands at now. */
-    public boolean qaPassedOnTips() {
-        return deployment != null && qaOrNone().passedOn(deployment.tips());
+    /** The role passed the tips the deployment stands at now. */
+    public boolean passedOnTips(String role) {
+        return deployment != null && roleOrNone(role).passedOn(deployment.tips());
     }
 
-    /** A QA round went out on the deploy now live and the session has not yet settled it. */
-    public boolean qaRoundOpen() {
+    /** A round of the role went out on the deploy now live and the session has not yet settled it. */
+    public boolean roundOpen(String role) {
         return deployment != null && deployment.askedDigest() != null
-                && deployment.askedDigest().equals(qaOrNone().roundDigest());
+                && deployment.askedDigest().equals(roleOrNone(role).roundDigest());
     }
 
-    @JsonIgnore
-    public Qa qaOrNone() {
-        return qa == null ? Qa.defaults() : qa;
+    public RoleRecord roleOrNone(String role) {
+        return roles.getOrDefault(role, RoleRecord.defaults());
     }
 
     @JsonIgnore
@@ -664,8 +666,14 @@ public record TaskState(
         return Turn.digestOf(message == null ? "" : message);
     }
 
-    public TaskState withQa(Qa qa) {
-        return toBuilder().qa(qa.isEmpty() ? null : qa).build();
+    public TaskState withRole(String role, RoleRecord record) {
+        Map<String, RoleRecord> kept = new TreeMap<>(roles);
+        if (record.isEmpty()) {
+            kept.remove(role);
+        } else {
+            kept.put(role, record);
+        }
+        return toBuilder().roles(kept).build();
     }
 
     public TaskState withMark(String step, String value) {

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.QaBrief;
@@ -11,7 +12,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaEnding;
-import dev.jagt.orchestrator.task.Qa;
+import dev.jagt.orchestrator.task.RoleRecord;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -43,7 +44,7 @@ class QaDeclineJobTest {
                 .message("the list is sorted by name, as the ticket says").build()
                 .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
                         .withMerge("0123456789abcdef")), 1, "digest"))
-                .withQa(Qa.defaults().withRound("digest", "- list is sorted"))
+                .withRole(Checkers.QA, RoleRecord.defaults().withRound("digest", "- list is sorted"))
                 .withSession(Session.startedOver(Session.defaults()).withReportedAt(reportedAt));
     }
 

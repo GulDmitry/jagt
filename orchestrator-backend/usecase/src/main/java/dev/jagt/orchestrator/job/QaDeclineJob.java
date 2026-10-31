@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.StopKind;
@@ -62,13 +63,13 @@ public class QaDeclineJob implements TaskJob {
     @Override
     public void run(String taskId, TaskState task) {
         QaConfig qa = config.load().qa();
-        CheckerPhase reading = CheckerPhase.of(task);
+        CheckerPhase reading = CheckerPhase.of(task, Checkers.QA);
         Optional<QaRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, record));
         if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && reading != CheckerPhase.READING) {
             return;
         }
         String sha = asked.get().sha();
-        String rows = task.qaOrNone().roundRows();
+        String rows = task.roleOrNone(Checkers.QA).roundRows();
         String step = reading == CheckerPhase.READING ? QaVerdict.AGAIN : QaVerdict.DECLINE;
         Answer<QaDecline> answer = reads.decline(taskId, step, asked.get().digest(), prompts.decline(taskId,
                 task.worktreePath(), sha, qa, rows, String.valueOf(task.message())));
@@ -80,7 +81,7 @@ public class QaDeclineJob implements TaskJob {
     /** A round or a first dispute of this deploy stands, and the session replied after it was put. */
     private static boolean answered(TaskState task, QaRecords.Record record) {
         Deployment deployment = task.deployment();
-        return deployment != null && record.digest().equals(deployment.askedDigest()) && task.qaRoundOpen()
+        return deployment != null && record.digest().equals(deployment.askedDigest()) && task.roundOpen(Checkers.QA)
                 && (record.ending() == QaEnding.NOT_MET || record.ending() == QaEnding.DISPUTED)
                 && task.session().reportedAt() > record.at();
     }

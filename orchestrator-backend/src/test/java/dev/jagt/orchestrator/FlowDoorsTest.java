@@ -87,10 +87,10 @@ class FlowDoorsTest {
     }
 
     @Test
-    void whatQaLeftOnATaskIsWrittenOnlyByTheReducer() {
+    void whatARoleLeftOnATaskIsWrittenOnlyByTheReducer() {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
-                .should().callMethod(dev.jagt.orchestrator.task.TaskState.class, "withQa", dev.jagt.orchestrator.task.Qa.class)
+                .should().callMethod(dev.jagt.orchestrator.task.TaskState.class, "withRole", String.class, dev.jagt.orchestrator.task.RoleRecord.class)
                 .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                         .importPackages("dev.jagt.orchestrator"));
     }

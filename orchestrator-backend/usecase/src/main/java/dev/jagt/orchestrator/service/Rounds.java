@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.flow.CheckerPhase;
@@ -32,6 +33,6 @@ public class Rounds {
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
                 .withMaster(master)
                 .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
-                .withQa(CheckerPhase.of(task));
+                .withQa(CheckerPhase.of(task, Checkers.QA));
     }
 }
