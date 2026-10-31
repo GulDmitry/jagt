@@ -11,8 +11,7 @@ import java.util.Optional;
 /**
  * Regions run in parallel and a step is pure. Within a microstep every region picks its first enabled transition
  * against the configuration from before it, exits are emitted before transition effects, and raised events run
- * to completion in raise order. A region scoped to a state of another is skipped while the parent stands elsewhere,
- * and goes back to its initial state, after its exit effects, when the parent leaves that state. A transition to its own state still exits it; an internal one ({@code stay}) does not. A derived region is read from the
+ * to completion in raise order. A transition to its own state still exits it; an internal one ({@code stay}) does not. A derived region is read from the
  * facts the caller passes, the same for every raised event of the step.
  */
 public final class Chart<E, X, F> {
@@ -67,8 +66,7 @@ public final class Chart<E, X, F> {
         while (!queue.isEmpty()) {
             E current = queue.poll();
             List<Edge<E, F>> taken = enabled(config, facts, current);
-            Configuration before = config;
-            taken.stream().filter(t -> !t.internal()).forEach(t -> effects.addAll(exitEffects(t, before)));
+            taken.stream().filter(t -> !t.internal()).forEach(t -> effects.addAll(exitEffects(t)));
             for (Edge<E, F> t : taken) {
                 effects.addAll(t.effectsFor(current));
                 queue.addAll(t.raises());
@@ -81,7 +79,6 @@ public final class Chart<E, X, F> {
             for (Edge<E, F> t : taken) {
                 config = config.with(t.region(), t.to());
             }
-            config = resetScoped(config, taken);
         }
         return new ChartStep<>(config, List.copyOf(effects));
     }
@@ -92,7 +89,7 @@ public final class Chart<E, X, F> {
 
     private List<Edge<E, F>> enabled(Configuration config, X facts, E event) {
         List<Edge<E, F>> taken = new ArrayList<>();
-        for (Stored<F> region : stored.stream().filter(region -> active(region, config)).toList()) {
+        for (Stored<F> region : stored) {
             Others others = new Others(region.name(), name -> stateOf(config, facts, name));
             Enum<?> state = config.find(region.name()).orElseThrow();
             transitions.stream().filter(t -> t.region().equals(region.name()) && t.takes(state, event, others))
@@ -107,32 +104,8 @@ public final class Chart<E, X, F> {
                 .orElseThrow(() -> new IllegalArgumentException("no region " + region));
     }
 
-    private boolean active(Stored<F> region, Configuration config) {
-        return region.scope().isEmpty() || region.scope().filter(scope -> config.find(scope.parent())
-                .filter(state -> state.equals(scope.state())).isPresent()).isPresent();
-    }
-
-    private List<F> exitEffects(Edge<E, F> transition, Configuration config) {
-        List<F> exits = new ArrayList<>();
-        for (Stored<F> region : stored) {
-            if (region.scopedTo(transition.region(), transition.from())) {
-                exits.addAll(region.exitEffects(config.find(region.name()).orElseThrow()));
-            }
-        }
-        stored.stream().filter(region -> region.name().equals(transition.region())).findFirst()
-                .ifPresent(region -> exits.addAll(region.exitEffects(transition.from())));
-        return exits;
-    }
-
-    private Configuration resetScoped(Configuration config, List<Edge<E, F>> taken) {
-        Configuration reset = config;
-        for (Edge<E, F> t : taken) {
-            for (Stored<F> region : stored) {
-                if (!t.internal() && region.scopedTo(t.region(), t.from())) {
-                    reset = reset.with(region.name(), region.initial());
-                }
-            }
-        }
-        return reset;
+    private List<F> exitEffects(Edge<E, F> transition) {
+        return stored.stream().filter(region -> region.name().equals(transition.region())).findFirst()
+                .map(region -> region.exitEffects(transition.from())).orElse(List.of());
     }
 }

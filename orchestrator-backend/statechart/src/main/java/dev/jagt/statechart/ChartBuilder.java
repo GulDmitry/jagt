@@ -5,15 +5,13 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class ChartBuilder<E, X, F> {
 
-    private record Pending(String name, Class<? extends Enum<?>> type, Enum<?> initial, Set<Enum<?>> finals,
-                           Optional<Stored.Scope> scope) {
+    private record Pending(String name, Class<? extends Enum<?>> type, Enum<?> initial, Set<Enum<?>> finals) {
     }
 
     private final List<Pending> regions = new ArrayList<>();
@@ -31,18 +29,7 @@ public final class ChartBuilder<E, X, F> {
     }
 
     public <S extends Enum<S>> ChartBuilder<E, X, F> region(RegionId<S> id, S initial, Set<S> finals) {
-        regions.add(new Pending(id.name(), id.states(), initial, new LinkedHashSet<Enum<?>>(finals), Optional.empty()));
-        return this;
-    }
-
-    /**
-     * A region that lives inside {@code state} of {@code parent}: its edges are enabled only while the parent stands
-     * there, and when the parent leaves it, it goes back to {@code initial} after running its state's exit effects.
-     */
-    public <S extends Enum<S>, P extends Enum<P>> ChartBuilder<E, X, F> region(RegionId<S> id, S initial,
-                                                                              RegionId<P> parent, P state) {
-        regions.add(new Pending(id.name(), id.states(), initial, new LinkedHashSet<>(),
-                Optional.of(new Stored.Scope(parent.name(), state))));
+        regions.add(new Pending(id.name(), id.states(), initial, new LinkedHashSet<Enum<?>>(finals)));
         return this;
     }
 
@@ -82,7 +69,7 @@ public final class ChartBuilder<E, X, F> {
     public Chart<E, X, F> build() {
         List<Stored<F>> stored = regions.stream().map(region -> new Stored<>(region.name(), region.type(),
                 region.initial(), region.finals(),
-                Map.<Enum<?>, List<F>>copyOf(exits.getOrDefault(region.name(), Map.of())), region.scope())).toList();
+                Map.<Enum<?>, List<F>>copyOf(exits.getOrDefault(region.name(), Map.of())))).toList();
         List<String> names = new ArrayList<>(regions.stream().map(Pending::name).toList());
         derived.forEach(region -> names.add(region.name()));
         List<String> problems = Validation.problems(names, stored, derived, transitions);

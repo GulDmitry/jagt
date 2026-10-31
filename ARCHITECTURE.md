@@ -275,7 +275,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 
 | module | holds | sees |
 |--------|-------|------|
-| `:statechart` | `dev.jagt.statechart`: a generic statechart engine: parallel regions, a region scoped to one state, a pure step | the JDK only, no jagt type |
+| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step | the JDK only, no jagt type |
 | `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
