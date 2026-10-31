@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -248,5 +249,53 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void answersAQuestionWhereTheMasterLeftAnEarlierStepToTheHuman(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .message("keep v2?").report(AgentReport.QUESTION).build();
+        state.putTask("ABC-1", asking.withMaster(Master.defaults().withLeft("deploy src/Login.java")));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.empty());
+
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
+
+        verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void answersAQuestionOnATaskWhoseDeployItPressedAndWasRefused(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.APPROVED).lastActiveTimestamp(7)
+                .message("keep v2?").report(AgentReport.QUESTION).build();
+        state.putTask("ABC-1", asking.withMaster(Master.defaults().withPressedDeploy("7")));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.empty());
+
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
+
+        verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void answersAQuestionThatCameAfterItSealedItsReadOfTheRound(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .message("keep v2?").report(AgentReport.QUESTION).build();
+        state.putTask("ABC-1", asking.withMaster(Master.defaults().withSeal("fingerprint", 0)));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.empty());
+
+        new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
+
+        verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
     }
 }

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.TaskTurns;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -119,5 +120,17 @@ class MasterDeployJobTest {
         new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
 
         verify(press, never()).press(anyString(), any(), any());
+    }
+
+    @Test
+    void deploysATaskWhereTheMasterLeftAnEarlierStepToTheHuman() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(state.tasks()).thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()
+                .withMaster(Master.defaults().withLeft("ship src/Login.java"))));
+
+        new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
+
+        verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
     }
 }
