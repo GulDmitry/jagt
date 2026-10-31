@@ -37,7 +37,7 @@ public final class Turns {
     }
 
     /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check QA reads holds it. */
-    public static Holder next(TaskStatus status, AgentReport report, boolean stopped, boolean qaReading,
+    public static Holder next(TaskStatus status, AgentReport report, boolean stopped, QaPhase qa,
                               Profile profile) {
         if (FlowRules.closed(status)) {
             return Holder.NOBODY;
@@ -45,7 +45,7 @@ public final class Turns {
         if (stopped) {
             return Holder.HUMAN;
         }
-        if (qaReading) {
+        if (qa == QaPhase.READING) {
             return Holder.QA;
         }
         if (FlowRules.readByTheMaster(status) && profile.running()) {

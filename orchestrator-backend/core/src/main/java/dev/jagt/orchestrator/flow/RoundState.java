@@ -11,11 +11,11 @@ import lombok.With;
  * decide the human's next move, and none is in {@link TaskStatus}.
  */
 public record RoundState(AgentReport report, boolean draftedReplies, @With boolean masterReading, @With Turns.Profile master,
-                         @With boolean qaReading) {
+                         @With QaPhase qa) {
 
     public static final RoundState NONE = of(AgentReport.PLAIN, false);
 
     public static RoundState of(AgentReport report, boolean draftedReplies) {
-        return new RoundState(report, draftedReplies, false, Turns.Profile.OFF, false);
+        return new RoundState(report, draftedReplies, false, Turns.Profile.OFF, QaPhase.NONE);
     }
 }

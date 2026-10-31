@@ -84,7 +84,9 @@ public record TaskState(
         // Null until an auto-review ping was sent.
         @Nullable AutoReviewTold told,
         // Every stretch the human held the turn, oldest first; the last may still stand.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits,
+        // What QA left on the task; absent until it read or judged one.
+        @Nullable Qa qa
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -153,7 +155,8 @@ public record TaskState(
             @JsonProperty("deployment") @Nullable Deployment deployment,
             @JsonProperty("session") @Nullable Session session,
             @JsonProperty("told") @Nullable AutoReviewTold told,
-            @JsonProperty("waits") @Nullable List<HumanWait> waits) {
+            @JsonProperty("waits") @Nullable List<HumanWait> waits,
+            @JsonProperty("qa") @Nullable Qa qa) {
         List<LegacyDeployment.Repo> stored = LegacyDeployment.stored(repos,
                 new LegacyDeployment.Repo(project, worktreePath, remoteUrl, mrUrl, deployCommit, null, null, null));
         TaskState read = new TaskState(stored.stream().map(LegacyDeployment.Repo::repo).toList(), status,
@@ -165,10 +168,10 @@ public record TaskState(
                 unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
                 refusals == null ? Map.of() : refusals, gitTrust,
                 probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
-                Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, turn, switches == null ? Map.of() : switches,
+                Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, LegacyQa.withoutMarks(turn), switches == null ? Map.of() : switches,
                 infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment,
                 Session.migrated(session, legacySilentSince), told,
-                waits == null ? List.of() : waits);
+                waits == null ? List.of() : waits, LegacyQa.of(qa, turn, status));
         Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
         return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
     }
@@ -623,22 +626,29 @@ public record TaskState(
         return toBuilder().switches(merged).build();
     }
 
-    /** QA passed the change now live: the mark names the tips it checked, so a later deploy shows none. */
+    /** QA passed the change now live: the record names the tips it checked, so a later deploy shows none. */
     public boolean qaPassed() {
-        return status == TaskStatus.DEPLOYED && deployment != null && turnOrNone().marked(QaVerdict.MARK, deployment.tips());
+        return status == TaskStatus.DEPLOYED && qaPassedOnTips();
+    }
+
+    /** QA passed the tips the deployment stands at now. */
+    public boolean qaPassedOnTips() {
+        return deployment != null && qaOrNone().passedOn(deployment.tips());
     }
 
     /** A QA round went out on the deploy now live and the session has not yet settled it. */
     public boolean qaRoundOpen() {
         return deployment != null && deployment.askedDigest() != null
-                && deployment.askedDigest().equals(turnOrNone().mark(QaVerdict.ROUND_DIGEST));
+                && deployment.askedDigest().equals(qaOrNone().roundDigest());
     }
 
-    /** A QA run reads this deploy: its turn is open on one of QA's steps. */
-    public boolean qaReading() {
-        Turn turn = turnOrNone();
-        return status == TaskStatus.DEPLOYED && turn.open() && (turn.step().equals(QaVerdict.ACCEPT)
-                || turn.step().equals(QaVerdict.DECLINE) || turn.step().equals(QaVerdict.AGAIN));
+    @JsonIgnore
+    public Qa qaOrNone() {
+        return qa == null ? Qa.defaults() : qa;
+    }
+
+    public TaskState withQa(Qa qa) {
+        return toBuilder().qa(qa.isEmpty() ? null : qa).build();
     }
 
     public TaskState withMark(String step, String value) {

@@ -10,16 +10,14 @@ import java.util.Optional;
  */
 public record QaVerdict(String sha, String failure, List<Row> rows, String question, String waitingOn) {
 
-    public static final String MARK = "qa";
-
     /** The brief steps whose turn QA holds while it reads; the same check run again after a restart is {@code AGAIN}. */
     public static final String ACCEPT = "accept";
     public static final String DECLINE = "decline";
     public static final String AGAIN = "again";
 
-    /** The deploy a QA round went out on, and the rows that round carried, kept on the turn for the decline read. */
-    public static final String ROUND_DIGEST = "qa:digest";
-    public static final String ROUND_ROWS = "qa:rows";
+    public static boolean isStep(String step) {
+        return step.equals(ACCEPT) || step.equals(DECLINE) || step.equals(AGAIN);
+    }
 
     public enum Status {
         MET, NOT_MET, UNPROVABLE;

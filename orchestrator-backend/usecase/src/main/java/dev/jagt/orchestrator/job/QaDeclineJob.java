@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.QaPhase;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
@@ -61,13 +62,14 @@ public class QaDeclineJob implements TaskJob {
     @Override
     public void run(String taskId, TaskState task) {
         QaConfig qa = config.load().qa();
+        QaPhase reading = QaPhase.of(task);
         Optional<QaRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, record));
-        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && !task.qaReading()) {
+        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && reading != QaPhase.READING) {
             return;
         }
         String sha = asked.get().sha();
-        String rows = Optional.ofNullable(task.turnOrNone().mark(QaVerdict.ROUND_ROWS)).orElse("");
-        String step = task.qaReading() ? QaVerdict.AGAIN : QaVerdict.DECLINE;
+        String rows = task.qaOrNone().roundRows();
+        String step = reading == QaPhase.READING ? QaVerdict.AGAIN : QaVerdict.DECLINE;
         Answer<QaDecline> answer = reads.decline(taskId, step, asked.get().digest(), prompts.decline(taskId,
                 task.worktreePath(), sha, qa, rows, String.valueOf(task.message())));
         QaDecline decline = answer.facts().orElse(QaDecline.failed(sha, answer.failure()));
@@ -78,7 +80,7 @@ public class QaDeclineJob implements TaskJob {
     /** A round or a first dispute of this deploy stands, and the session replied after it was put. */
     private static boolean answered(TaskState task, QaRecords.Record record) {
         Deployment deployment = task.deployment();
-        return deployment != null && record.digest().equals(deployment.askedDigest()) && task.qaRoundOpen()
+        return deployment != null && record.digest().equals(deployment.askedDigest()) && QaPhase.of(task) == QaPhase.ROUND_OPEN
                 && (record.ending() == QaEnding.NOT_MET || record.ending() == QaEnding.DISPUTED)
                 && task.session().reportedAt() > record.at();
     }

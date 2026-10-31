@@ -133,12 +133,14 @@ class TaskReducerProperties {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
             long id = task.turnOrNone().id();
-            Optional.of(move).filter(m -> m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed)
+            Optional.of(move).filter(m -> m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed
+                            || m instanceof TaskMove.QaReadEnded ended && ended.holds())
                     .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id + 1));
             Optional.of(move).filter(m -> m instanceof TaskMove.TurnRestored restored)
                     .ifPresent(m -> assertThat(next.turnOrNone()).isEqualTo(((TaskMove.TurnRestored) m).before()));
             Optional.of(move).filter(m -> !(m instanceof TaskMove.Relayed || m instanceof TaskMove.TurnClosed
-                            || m instanceof TaskMove.TurnRestored))
+                            || m instanceof TaskMove.TurnRestored || m instanceof TaskMove.QaReadEnded ended
+                            && ended.holds()))
                     .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id));
             return next;
         }, (left, right) -> right);
@@ -174,19 +176,33 @@ class TaskReducerProperties {
             assertThat(Map.of("git", GitPhase.of(next.gitTrust()).name(), "repo",
                     RepoPhase.of(next.repoRequest()).name(), "request", RequestPhase.of(next).name(),
                     "checks", ChecksPhase.of(next).name(), "approval", ApprovalPhase.of(next).name(),
-                    "infra", InfraPhase.of(next).name()))
+                    "infra", InfraPhase.of(next).name(), "qa", QaPhase.of(next).name()))
                     .isEqualTo(Map.of("git", declared.get("git"), "repo", declared.get("repo"),
                             "request", declared.get("request"), "checks", declared.get("checks"),
-                            "approval", declared.get("approval"), "infra", declared.get("infra")));
+                            "approval", declared.get("approval"), "infra", declared.get("infra"),
+                            "qa", declared.get("qa")));
+            return next;
+        }, (left, right) -> right);
+    }
+
+    @Property
+    void qaHoldsTheTurnOnlyWhileItsReadRuns(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
+        moves.stream().reduce(start, (task, raw) -> {
+            TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
+            Optional.of(next).filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
+                    .ifPresent(moved -> assertThat(Turns.next(moved.status(), moved.report(), false,
+                            QaPhase.of(moved), Turns.Profile.OFF) == Turn.Holder.QA)
+                            .isEqualTo(QaPhase.of(moved) == QaPhase.READING));
             return next;
         }, (left, right) -> right);
     }
 
     @Provide
     Arbitrary<TaskState> tasks() {
-        Arbitrary<Deployment> deployment = Arbitraries.just(new Deployment(1_000, List.of(
-                Deployment.Target.of("api", "dev").withConflict(Conflict.of(Deployment.Cause.MERGE, 1_000))), 0, null))
-                .injectNull(0.5);
+        Arbitrary<Deployment> deployment = Arbitraries.of(new Deployment(1_000, List.of(
+                        Deployment.Target.of("api", "dev").withConflict(Conflict.of(Deployment.Cause.MERGE, 1_000))), 0, null),
+                new Deployment(1_000, List.of(Deployment.Target.of("api", "dev").withMerge("abc")), 1, "d1"))
+                .injectNull(0.4);
         Arbitrary<TaskStop> stop = Arbitraries.of(TaskStop.Trigger.class).map(trigger ->
                 new TaskStop(trigger, 1_000, "evidence")).injectNull(0.5);
         Arbitrary<Turn> turn = Arbitraries.of("", "d").map(digest -> new Turn("ship", 4, digest, 1_000, null, null));
@@ -230,6 +246,10 @@ class TaskReducerProperties {
                 Arbitraries.of(AgentReport.class).map(TaskMove.Said::new),
                 Arbitraries.of(AgentReport.class).map(TaskMove.Stamped::new),
                 Arbitraries.just(new TaskMove.Relayed("ship", "d", "a")),
+                Arbitraries.of("accept", "decline", "again").map(step -> new TaskMove.Relayed(step, "d1", "a")),
+                flag.map(TaskMove.QaReadEnded::new),
+                Arbitraries.just(new TaskMove.QaPassed("api@abc", false)),
+                Arbitraries.just(new TaskMove.QaRoundSent("d1", "- row", false)),
                 Arbitraries.just(new TaskMove.TurnClosed()),
                 Arbitraries.just(new TaskMove.GitTrusted(GitTrust.of(Map.of("b", "2")))),
                 Arbitraries.just(new TaskMove.GitChanged("b changed")),

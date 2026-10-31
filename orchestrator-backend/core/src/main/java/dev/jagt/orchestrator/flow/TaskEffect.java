@@ -83,6 +83,18 @@ sealed interface TaskEffect {
     record ResetsInfra() implements TaskEffect {
     }
 
+    record OpensQaRead(String step) implements TaskEffect {
+    }
+
+    record ClosesQaRead() implements TaskEffect {
+    }
+
+    record PassesQa(String sha) implements TaskEffect {
+    }
+
+    record SendsQaRound(String digest, String rows) implements TaskEffect {
+    }
+
     record SeesHead(String tip) implements TaskEffect {
     }
 

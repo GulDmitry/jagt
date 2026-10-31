@@ -20,7 +20,19 @@ sealed interface TaskMove {
     }
 
     /** A session's no_changes answering a QA round: the deployed change stays as it was. */
-    record QaDeclined() implements TaskMove {
+    record QaDeclined(AgentReport means, TaskStatus reported) implements TaskMove {
+    }
+
+    /** QA's read of a step ended; {@code holds} where the turn it opened still stands. */
+    record QaReadEnded(boolean holds) implements TaskMove {
+    }
+
+    /** QA passed the deploy standing at {@code sha}; {@code standing} where the qa region then reads a pass. */
+    record QaPassed(String sha, boolean standing) implements TaskMove {
+    }
+
+    /** A QA round went out on the deploy asked on {@code digest}, carrying {@code rows}; {@code opens} where that is the deploy's. */
+    record QaRoundSent(String digest, String rows, boolean opens) implements TaskMove {
     }
 
     record Read(TaskStatus concluded) implements TaskMove {

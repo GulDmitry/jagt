@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.QaPhase;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.QaReader;
@@ -51,7 +52,7 @@ class QaReadsTest {
         QaReader reader = mock(QaReader.class);
         when(reader.read(any())).thenAnswer(call -> {
             TaskState task = state.task("ABC-42").orElseThrow();
-            whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), task.qaReading(),
+            whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), QaPhase.of(task),
                     Turns.Profile.OFF));
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         });
@@ -60,7 +61,7 @@ class QaReadsTest {
 
         TaskState after = state.task("ABC-42").orElseThrow();
         assertThat(whileReading).containsExactly(Turn.Holder.QA);
-        assertThat(Turns.next(after.status(), after.report(), after.stopped(), after.qaReading(), Turns.Profile.OFF))
+        assertThat(Turns.next(after.status(), after.report(), after.stopped(), QaPhase.of(after), Turns.Profile.OFF))
                 .isEqualTo(Turn.Holder.NOBODY);
     }
 }

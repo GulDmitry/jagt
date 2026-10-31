@@ -93,4 +93,5 @@ stateDiagram-v2
         session_GONE --> session_IDLE : restarted
     }
     %% derived ask
+    %% derived qa beneath a read
 ```

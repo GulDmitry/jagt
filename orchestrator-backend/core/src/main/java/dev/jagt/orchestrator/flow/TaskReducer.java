@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 import org.jspecify.annotations.Nullable;
@@ -95,9 +96,24 @@ public final class TaskReducer {
         return stayed(said(task, means), message, false, now);
     }
 
-    /** {@code task} whose session declined a QA round: the deployed change holds DEPLOYED. */
-    static TaskState qaDeclined(TaskState task, long now) {
-        return step(task, new TaskMove.QaDeclined(), now);
+    /** {@code task} whose session answered {@code means} on {@code reported}: a QA round it declines holds DEPLOYED. */
+    static TaskState qaDeclined(TaskState task, AgentReport means, TaskStatus reported, long now) {
+        return step(task, new TaskMove.QaDeclined(means, reported), now);
+    }
+
+    /** {@code task} whose QA read of {@code step} on {@code digest} ended: the turn it opened closes where it still stands. */
+    public static TaskState qaReadEnded(TaskState task, String step, String digest, long now) {
+        return step(task, new TaskMove.QaReadEnded(task.turnOrNone().holds(step, digest)), now);
+    }
+
+    /** {@code task} that QA passed at the deploy standing on {@code sha}. */
+    public static TaskState qaPassed(TaskState task, String sha) {
+        return step(task, resolved(task, new TaskMove.QaPassed(sha, false)), 0);
+    }
+
+    /** {@code task} that QA sent a round on, the deploy's asked {@code digest} and the {@code rows} it carried. */
+    public static TaskState qaRoundSent(TaskState task, String digest, String rows) {
+        return step(task, resolved(task, new TaskMove.QaRoundSent(digest, rows, false)), 0);
     }
 
     /** {@code task} with the report a verb's stamp means. */
@@ -227,6 +243,11 @@ public final class TaskReducer {
                     RequestPhase.of(task.withMerged(merges.project(), merges.merged())) == RequestPhase.MERGED);
             case TaskMove.MergedByHost merges -> new TaskMove.MergedByHost(merges.project(),
                     RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
+            case TaskMove.QaPassed passed -> new TaskMove.QaPassed(passed.sha(),
+                    QaPhase.of(task.withQa(task.qaOrNone().withPassed(passed.sha()))) == QaPhase.PASSED);
+            case TaskMove.QaRoundSent sent -> new TaskMove.QaRoundSent(sent.digest(), sent.rows(),
+                    QaPhase.of(task.withQa(task.qaOrNone().withRound(sent.digest(), sent.rows())))
+                            == QaPhase.ROUND_OPEN);
             case TaskMove.InfraCleared cleared -> new TaskMove.InfraCleared(cleared.all(), unarmed(task));
             case TaskMove.ChecksRead read -> new TaskMove.ChecksRead(read.hostStatus(), read.tip(),
                     !task.readsStaleOn(read.tip()));
@@ -295,6 +316,10 @@ public final class TaskReducer {
             case TaskEffect.ResetsChecks resets -> task.withChecksReset();
             case TaskEffect.ResetsApproval resets -> task.withApproved(null);
             case TaskEffect.ResetsInfra resets -> task.withInfraRetries(List.of());
+            case TaskEffect.OpensQaRead opens -> task.withQa(task.qaOrNone().withReading(opens.step()));
+            case TaskEffect.ClosesQaRead closes -> task.withQa(task.qaOrNone().withReading(""));
+            case TaskEffect.PassesQa passes -> task.withQa(task.qaOrNone().withPassed(passes.sha()));
+            case TaskEffect.SendsQaRound sends -> task.withQa(task.qaOrNone().withRound(sends.digest(), sends.rows()));
             case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
             case TaskEffect.ReadsChecks reads -> task.withChecksRead(reads.hostStatus(), reads.tip());
             case TaskEffect.FailsToReadChecks fails -> task.withChecksUnread(fails.read());

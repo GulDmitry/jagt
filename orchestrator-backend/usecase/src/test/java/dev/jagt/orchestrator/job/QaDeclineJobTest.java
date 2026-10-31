@@ -10,7 +10,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaEnding;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.Qa;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -40,7 +40,7 @@ class QaDeclineJobTest {
                 .message("the list is sorted by name, as the ticket says").build()
                 .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev")
                         .withMerge("0123456789abcdef")), 1, "digest"))
-                .withMark(QaVerdict.ROUND_DIGEST, "digest").withMark(QaVerdict.ROUND_ROWS, "- list is sorted")
+                .withQa(Qa.defaults().withRound("digest", "- list is sorted"))
                 .withSession(Session.startedOver().withReportedAt(reportedAt));
     }
 

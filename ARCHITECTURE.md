@@ -105,7 +105,8 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-request-chart.md`](docs/task-request-chart.md); the checks and the approval a read
   said, in [`docs/task-checks-chart.md`](docs/task-checks-chart.md) and
   [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure re-runs, in
-  [`docs/task-infra-chart.md`](docs/task-infra-chart.md). Marks are bookkeeping, written by `withMark` from anywhere.
+  [`docs/task-infra-chart.md`](docs/task-infra-chart.md); QA's read, pass and round, in
+  [`docs/task-qa-chart.md`](docs/task-qa-chart.md). The other marks are bookkeeping, written by `withMark` from anywhere.
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
   (`service/TaskProvisioning`).
 - **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the

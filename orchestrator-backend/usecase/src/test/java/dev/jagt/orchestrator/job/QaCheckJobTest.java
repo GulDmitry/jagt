@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.QaBrief;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -11,7 +12,6 @@ import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
-import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -134,7 +134,7 @@ class QaCheckJobTest {
         when(config.load()).thenReturn(ON);
         when(reads.check(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        TaskState restarted = deployed("digest").withTurn(Turn.none().relayed("accept", "digest", "", 1));
+        TaskState restarted = TaskReducer.relayed(deployed("digest"), "accept", "digest", "", 1);
 
         new QaCheckJob(config, new QaPrompts(new QaBrief(paths)), reads, new QaRecords(paths, Clock.systemUTC()),
                 mock(QaOutcomes.class)).run("ABC-42", restarted);

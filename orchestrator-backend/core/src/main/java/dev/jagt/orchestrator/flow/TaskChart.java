@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.statechart.Chart;
@@ -53,6 +54,10 @@ final class TaskChart {
 
     private static final RegionId<InfraPhase> INFRA = new RegionId<>("infra", InfraPhase.class);
 
+    private static final RegionId<QaPhase> QA = new RegionId<>("qa", QaPhase.class);
+
+    private static final RegionId<QaPhase> BENEATH_QA = new RegionId<>("qa beneath a read", QaPhase.class);
+
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
@@ -82,12 +87,12 @@ final class TaskChart {
     private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
             AgentReport.PERMISSION);
 
-    private static final Chart<TaskMove, Boolean, TaskEffect> CHART = build();
+    private static final Chart<TaskMove, ChartFacts, TaskEffect> CHART = build();
 
     private TaskChart() {
     }
 
-    static Chart<TaskMove, Boolean, TaskEffect> chart() {
+    static Chart<TaskMove, ChartFacts, TaskEffect> chart() {
         return CHART;
     }
 
@@ -105,8 +110,8 @@ final class TaskChart {
                 Map.entry(SESSION.name(), phases.session().name()), Map.entry(GIT.name(), phases.git().name()),
                 Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
                 Map.entry(CHECKS.name(), phases.checks().name()),
-                Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()))),
-                phases.stampedAsk(), move);
+                Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()),
+                Map.entry(QA.name(), phases.qa().name()))), phases.facts(), move);
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
@@ -157,8 +162,8 @@ final class TaskChart {
         return EnumSet.copyOf(READ);
     }
 
-    private static Chart<TaskMove, Boolean, TaskEffect> build() {
-        ChartBuilder<TaskMove, Boolean, TaskEffect> chart = Chart.builder();
+    private static Chart<TaskMove, ChartFacts, TaskEffect> build() {
+        ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart = Chart.builder();
         chart.region(LIFECYCLE, NEW, Set.of(DONE));
         stops(chart);
         plans(chart);
@@ -171,18 +176,21 @@ final class TaskChart {
         checks(chart);
         approvals(chart);
         infras(chart);
+        qas(chart);
         sessions(chart);
         ran(chart);
         reports(chart);
         reads(chart);
         edge(chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
-        edge(chart, IN_PROGRESS, "qa round declined", new TaskMove.QaDeclined()::equals, DEPLOYED);
+        chart.onMatching(LIFECYCLE, IN_PROGRESS, "qa round declined", TaskChart::declinesAQaRound)
+                .when((others, move) -> others.get(QA) == QaPhase.ROUND_OPEN && others.get(TURN) == TurnKind.OPEN)
+                .emit(new TaskEffect.Lands(DEPLOYED)).to(DEPLOYED);
         edge(chart, VERIFYING, "verified", new TaskMove.Verified(true)::equals, REVIEW_PENDING);
         edge(chart, VERIFYING, "verification failed", new TaskMove.Verified(false)::equals, IN_PROGRESS);
         return chart.build();
     }
 
-    private static void stops(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void stops(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(STOP, StopKind.NONE);
         chart.onMatching(STOP, StopKind.NONE, "lift", new TaskMove.Lifted()::equals)
                 .emit(new TaskEffect.ClearsStop()).to(StopKind.NONE);
@@ -200,7 +208,7 @@ final class TaskChart {
         }
     }
 
-    private static void plans(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void plans(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(PLAN, PlanGate.OPEN);
         chart.onMatching(PLAN, PlanGate.OPEN, "autoplan", new TaskMove.Autoplanned()::equals)
                 .emit(new TaskEffect.GatesPlan(PlanGate.CLOSED)).to(PlanGate.CLOSED);
@@ -218,7 +226,7 @@ final class TaskChart {
         }
     }
 
-    private static void says(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void says(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(REPORT, AgentReport.PLAIN);
         for (AgentReport from : AgentReport.values()) {
             said(chart, from, "said on a status that holds its line", from.asks() ? AgentReport.PLAIN : from,
@@ -231,17 +239,19 @@ final class TaskChart {
         }
     }
 
-    private static void turns(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void turns(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(TURN, TurnKind.CLOSED);
         for (TurnKind from : TurnKind.values()) {
             relayed(chart, from);
-            EdgeBuilder<TaskMove, Boolean, TaskEffect, TurnKind> closed = chart.onMatching(TURN, from, "turn closed",
+            EdgeBuilder<TaskMove, ChartFacts, TaskEffect, TurnKind> closed = chart.onMatching(TURN, from, "turn closed",
                     new TaskMove.TurnClosed()::equals).emit(new TaskEffect.ClosesTurn());
             if (from == TurnKind.CLOSED) {
                 closed.stay();
             } else {
                 closed.to(TurnKind.CLOSED);
             }
+            chart.onMatching(TURN, from, "qa read ended on its turn", move -> move instanceof TaskMove.QaReadEnded ended
+                            && ended.holds()).emit(new TaskEffect.ClosesTurn()).to(TurnKind.CLOSED);
             for (TurnKind restored : TurnKind.values()) {
                 chart.onMatching(TURN, from, "turn restored " + restored, move -> move instanceof TaskMove.TurnRestored
                                 undone && TurnKind.of(undone.before()) == restored)
@@ -251,7 +261,7 @@ final class TaskChart {
         }
     }
 
-    private static void deploys(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void deploys(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(DEPLOY, DeployPhase.NONE);
         for (DeployPhase from : DeployPhase.values()) {
             deployed(chart, from, "opened", DeployPhase.LANDING, step -> step instanceof DeployStep.Opened);
@@ -281,9 +291,10 @@ final class TaskChart {
         }
     }
 
-    private static void sessions(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void sessions(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(SESSION, SessionPhase.NONE);
-        chart.derived(ASK, stamped -> stamped ? AskStamp.STAMPED : AskStamp.NONE);
+        chart.derived(ASK, facts -> facts.stampedAsk() ? AskStamp.STAMPED : AskStamp.NONE);
+        chart.derived(BENEATH_QA, ChartFacts::beneathQa);
         EnumSet<SessionPhase> turnsEnd = EnumSet.of(SessionPhase.NONE, SessionPhase.WORKING, SessionPhase.IDLE,
                 SessionPhase.QUIET);
         for (SessionPhase from : SessionPhase.values()) {
@@ -320,10 +331,10 @@ final class TaskChart {
         }
     }
 
-    private static void gits(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void gits(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(GIT, GitPhase.UNREAD);
         for (GitPhase from : GitPhase.values()) {
-            EdgeBuilder<TaskMove, Boolean, TaskEffect, GitPhase> trusted = chart.onMatching(GIT, from, "trusted",
+            EdgeBuilder<TaskMove, ChartFacts, TaskEffect, GitPhase> trusted = chart.onMatching(GIT, from, "trusted",
                             move -> move instanceof TaskMove.GitTrusted)
                     .emitFor(move -> new TaskEffect.TrustsGit(((TaskMove.GitTrusted) move).trust()));
             if (from == GitPhase.TRUSTED) {
@@ -344,7 +355,7 @@ final class TaskChart {
         }
     }
 
-    private static void repos(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void repos(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(REPO, RepoPhase.NONE);
         chart.onMatching(REPO, RepoPhase.NONE, "asked", move -> move instanceof TaskMove.RepoAsked)
                 .emitFor(move -> new TaskEffect.AsksRepo(((TaskMove.RepoAsked) move).project()))
@@ -360,7 +371,7 @@ final class TaskChart {
                 .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo())).stay();
     }
 
-    private static void requests(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void requests(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(REQUEST, RequestPhase.NONE);
         for (RequestPhase from : RequestPhase.values()) {
             regionEdge(chart, REQUEST, from, "linked, open", move -> move instanceof TaskMove.RequestLinked linked
@@ -413,7 +424,7 @@ final class TaskChart {
                 : new TaskEffect.MergesRequestByHost(((TaskMove.MergedByHost) move).project());
     }
 
-    private static void checks(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void checks(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(CHECKS, ChecksPhase.NONE);
         for (ChecksPhase from : ChecksPhase.values()) {
             regionEdge(chart, CHECKS, from, "read on the head", move -> move instanceof TaskMove.ChecksRead read
@@ -440,6 +451,62 @@ final class TaskChart {
         }
     }
 
+    private static boolean declinesAQaRound(TaskMove move) {
+        return move instanceof TaskMove.QaDeclined declined && declined.means() == AgentReport.NO_CHANGES
+                && declined.reported() == IN_PROGRESS;
+    }
+
+    private static void qas(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+        chart.region(QA, QaPhase.NONE);
+        for (QaPhase from : QaPhase.values()) {
+            chart.onMatching(QA, from, "a qa read opened", move -> move instanceof TaskMove.Relayed relayed
+                            && QaVerdict.isStep(relayed.step()))
+                    .when((others, move) -> others.get(LIFECYCLE) == DEPLOYED)
+                    .emitFor(move -> new TaskEffect.OpensQaRead(((TaskMove.Relayed) move).step()))
+                    .to(QaPhase.READING);
+        }
+        for (QaPhase beneath : EnumSet.of(QaPhase.NONE, QaPhase.ROUND_OPEN, QaPhase.PASSED)) {
+            chart.onMatching(QA, QaPhase.READING, "the read ended, " + beneath + " beneath",
+                            TaskChart::endsATurn)
+                    .when((others, move) -> others.get(BENEATH_QA) == beneath)
+                    .emit(new TaskEffect.ClosesQaRead()).to(beneath);
+            chart.onMatching(QA, QaPhase.READING, "deployed change left, " + beneath + " beneath",
+                            move -> !endsATurn(move))
+                    .when((others, move) -> others.get(BENEATH_QA) == beneath && others.get(LIFECYCLE) == DEPLOYED
+                            && land(DEPLOYED, move).filter(to -> to != DEPLOYED).isPresent())
+                    .emit(new TaskEffect.ClosesQaRead()).to(beneath);
+        }
+        qaVerdicts(chart);
+    }
+
+    private static void qaVerdicts(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+        for (QaPhase from : QaPhase.values()) {
+            boolean reading = from == QaPhase.READING;
+            regionEdge(chart, QA, from, "qa passed, standing", move -> move instanceof TaskMove.QaPassed passed
+                    && passed.standing(), TaskChart::passesQa, reading ? from : QaPhase.PASSED);
+            regionEdge(chart, QA, from, "qa passed, not standing", move -> move instanceof TaskMove.QaPassed passed
+                    && !passed.standing(), TaskChart::passesQa, from);
+            regionEdge(chart, QA, from, "qa round sent, open", move -> move instanceof TaskMove.QaRoundSent sent
+                    && sent.opens(), TaskChart::sendsQaRound, reading ? from : QaPhase.ROUND_OPEN);
+            regionEdge(chart, QA, from, "qa round sent, not open", move -> move instanceof TaskMove.QaRoundSent sent
+                    && !sent.opens(), TaskChart::sendsQaRound, from);
+        }
+    }
+
+    private static boolean endsATurn(TaskMove move) {
+        return move instanceof TaskMove.Relayed || move instanceof TaskMove.TurnClosed
+                || move instanceof TaskMove.TurnRestored || move instanceof TaskMove.QaReadEnded;
+    }
+
+    private static TaskEffect passesQa(TaskMove move) {
+        return new TaskEffect.PassesQa(((TaskMove.QaPassed) move).sha());
+    }
+
+    private static TaskEffect sendsQaRound(TaskMove move) {
+        TaskMove.QaRoundSent sent = (TaskMove.QaRoundSent) move;
+        return new TaskEffect.SendsQaRound(sent.digest(), sent.rows());
+    }
+
     private static boolean beginsARound(TaskMove move) {
         return move instanceof TaskMove.RequestLinked linked && (linked.newRound() || linked.relinks());
     }
@@ -452,7 +519,7 @@ final class TaskChart {
         return new TaskEffect.SeesHead(((TaskMove.HeadSeen) move).tip());
     }
 
-    private static void approvals(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void approvals(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(APPROVAL, ApprovalPhase.UNREAD);
         for (ApprovalPhase from : ApprovalPhase.values()) {
             regionEdge(chart, APPROVAL, from, "a new round", TaskChart::beginsARound,
@@ -464,7 +531,7 @@ final class TaskChart {
         }
     }
 
-    private static void infras(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void infras(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(INFRA, InfraPhase.NONE);
         for (InfraPhase from : InfraPhase.values()) {
             regionEdge(chart, INFRA, from, "a new round", TaskChart::beginsARound,
@@ -494,11 +561,11 @@ final class TaskChart {
         }
     }
 
-    private static <S extends Enum<S>> void regionEdge(ChartBuilder<TaskMove, Boolean, TaskEffect> chart,
+    private static <S extends Enum<S>> void regionEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
                                                        RegionId<S> region, S from, String label,
                                                        Predicate<TaskMove> matches,
                                                        Function<TaskMove, TaskEffect> effect, S to) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, S> edge = chart.onMatching(region, from, label, matches)
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, S> edge = chart.onMatching(region, from, label, matches)
                 .emitFor(effect);
         if (from == to) {
             edge.stay();
@@ -507,8 +574,8 @@ final class TaskChart {
         }
     }
 
-    private static void startedOver(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, SessionPhase> over = chart.onMatching(SESSION, from, "started over",
+    private static void startedOver(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, SessionPhase from) {
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, SessionPhase> over = chart.onMatching(SESSION, from, "started over",
                 new TaskMove.SessionStartedOver()::equals).emit(new TaskEffect.RestartsSession());
         if (from == SessionPhase.NONE) {
             over.stay();
@@ -517,9 +584,9 @@ final class TaskChart {
         }
     }
 
-    private static void read(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from, String label,
+    private static void read(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, SessionPhase from, String label,
                              SessionPhase to, boolean processGone) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, SessionPhase> edge = chart.onMatching(SESSION, from, label,
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, SessionPhase> edge = chart.onMatching(SESSION, from, label,
                         move -> move instanceof TaskMove.Signed signed && signed.sign() instanceof SessionSign.Read read
                                 && read.processGone() == processGone)
                 .emitFor(move -> new TaskEffect.Signs(((TaskMove.Signed) move).sign()));
@@ -530,9 +597,9 @@ final class TaskChart {
         }
     }
 
-    private static void signed(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from, String label,
+    private static void signed(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, SessionPhase from, String label,
                                SessionPhase to, Class<? extends SessionSign> kind) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, SessionPhase> edge = chart.onMatching(SESSION, from, label,
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, SessionPhase> edge = chart.onMatching(SESSION, from, label,
                         move -> move instanceof TaskMove.Signed signed && kind.isInstance(signed.sign()))
                 .emitFor(move -> new TaskEffect.Signs(((TaskMove.Signed) move).sign()));
         if (from == to) {
@@ -542,9 +609,9 @@ final class TaskChart {
         }
     }
 
-    private static void deployed(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, DeployPhase from, String label,
+    private static void deployed(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, DeployPhase from, String label,
                                  DeployPhase to, Predicate<DeployStep> matches) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, DeployPhase> edge = chart.onMatching(DEPLOY, from, label,
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, DeployPhase> edge = chart.onMatching(DEPLOY, from, label,
                         move -> move instanceof TaskMove.DeployStepped stepped && matches.test(stepped.step()))
                 .emitFor(move -> new TaskEffect.Deploys(((TaskMove.DeployStepped) move).step()));
         if (from == to) {
@@ -554,8 +621,8 @@ final class TaskChart {
         }
     }
 
-    private static void relayed(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, TurnKind from) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, TurnKind> relayed = chart.onMatching(TURN, from, "relayed",
+    private static void relayed(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from) {
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, TurnKind> relayed = chart.onMatching(TURN, from, "relayed",
                         move -> move instanceof TaskMove.Relayed)
                 .emitFor(move -> new TaskEffect.OpensTurn(((TaskMove.Relayed) move).step(),
                         ((TaskMove.Relayed) move).digest(), ((TaskMove.Relayed) move).answered()));
@@ -566,7 +633,7 @@ final class TaskChart {
         }
     }
 
-    private static void becomes(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, AgentReport from) {
+    private static void becomes(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
         for (AgentReport means : AgentReport.values()) {
             if (means != from) {
                 said(chart, from, "said " + means, means, move -> move instanceof TaskMove.Said said
@@ -577,7 +644,7 @@ final class TaskChart {
         }
     }
 
-    private static void clears(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, AgentReport from) {
+    private static void clears(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
         said(chart, from, "verified", AgentReport.PLAIN, move -> move instanceof TaskMove.Verified, ALWAYS);
         said(chart, from, "deploy read moving the status", AgentReport.PLAIN,
                 move -> move instanceof TaskMove.DeployRead, (others, move) -> land(others.get(LIFECYCLE), move)
@@ -587,9 +654,9 @@ final class TaskChart {
         }
     }
 
-    private static void said(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, AgentReport from, String label,
+    private static void said(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from, String label,
                              AgentReport to, Predicate<TaskMove> matches, Condition<TaskMove> when) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, AgentReport> edge = chart.onMatching(REPORT, from, label, matches)
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, AgentReport> edge = chart.onMatching(REPORT, from, label, matches)
                 .when(when).emit(new TaskEffect.Reports(to));
         if (from == to) {
             edge.stay();
@@ -603,7 +670,7 @@ final class TaskChart {
         return land(status, new TaskMove.Reported(PLAN_PENDING, false)).isPresent();
     }
 
-    private static void ran(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void ran(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         ran(chart, TaskAction.SHIP, Outcome.Kind.OK, CI_POLLING, SHIP_FROM);
         ran(chart, TaskAction.SHIP, Outcome.Kind.RELAYED, SHIPPING, SHIP_FROM);
         ran(chart, TaskAction.APPROVE_PLAN, Outcome.Kind.RELAYED, IN_PROGRESS, EnumSet.of(PLAN_PENDING));
@@ -618,12 +685,12 @@ final class TaskChart {
         ran(chart, TaskAction.DONE, Outcome.Kind.GONE, DONE, OPEN);
     }
 
-    private static void ran(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, TaskAction action,
+    private static void ran(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TaskAction action,
                             Outcome.Kind outcome, TaskStatus to, Set<TaskStatus> from) {
         edges(chart, from, action.id() + " " + outcome, new TaskMove.Ran(action, outcome)::equals, to);
     }
 
-    private static void reports(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void reports(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         for (TaskStatus to : REPORTED) {
             Set<TaskStatus> free = EnumSet.noneOf(TaskStatus.class);
             OPEN.stream().filter(from -> mayReport(from, to) && !HELD.contains(from)).forEach(free::add);
@@ -646,22 +713,22 @@ final class TaskChart {
                 && (to != CI_POLLING || BEFORE_THE_VERDICT.contains(from));
     }
 
-    private static void reads(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+    private static void reads(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         for (TaskStatus concluded : READ) {
             edges(chart, READ_FROM, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
         }
     }
 
-    private static void edges(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, Set<TaskStatus> from, String label,
+    private static void edges(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Set<TaskStatus> from, String label,
                               Predicate<TaskMove> matches, TaskStatus to) {
         if (!from.isEmpty()) {
             chart.onMatching(LIFECYCLE, from, label, matches).emit(new TaskEffect.Lands(to)).to(to);
         }
     }
 
-    private static void edge(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, TaskStatus from, String label,
+    private static void edge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TaskStatus from, String label,
                              Predicate<TaskMove> matches, TaskStatus to) {
-        EdgeBuilder<TaskMove, Boolean, TaskEffect, TaskStatus> edge = chart.onMatching(LIFECYCLE, from, label, matches)
+        EdgeBuilder<TaskMove, ChartFacts, TaskEffect, TaskStatus> edge = chart.onMatching(LIFECYCLE, from, label, matches)
                 .emit(new TaskEffect.Lands(to));
         if (from == to) {
             edge.stay();

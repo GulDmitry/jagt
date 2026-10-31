@@ -16,7 +16,7 @@ class TaskChartTest {
         assertThat(TaskChart.chart().initial().toPlain()).containsExactly(
                 entry("lifecycle", "NEW"), entry("stop", "NONE"), entry("plan", "OPEN"), entry("report", "PLAIN"),
                 entry("turn", "CLOSED"), entry("deploy", "NONE"), entry("git", "UNREAD"), entry("repo", "NONE"), entry("request", "NONE"), entry("checks", "NONE"), entry("approval", "UNREAD"),
-                entry("infra", "NONE"), entry("session", "NONE"));
+                entry("infra", "NONE"), entry("qa", "NONE"), entry("session", "NONE"));
     }
 
     @Test
@@ -36,7 +36,7 @@ class TaskChartTest {
         assertThat(Files.readString(Path.of("../../docs/task-deploy-chart.md")))
                 .isEqualTo("# The task deploy chart\n\n```mermaid\nstateDiagram-v2\n" + regions[5] + "```\n");
         assertThat(Files.readString(Path.of("../../docs/task-session-chart.md")))
-                .isEqualTo("# The task session chart\n\n```mermaid\nstateDiagram-v2\n" + regions[12] + "```\n");
+                .isEqualTo("# The task session chart\n\n```mermaid\nstateDiagram-v2\n" + regions[13] + "```\n");
         assertThat(Files.readString(Path.of("../../docs/task-git-chart.md")))
                 .isEqualTo("# The task git chart\n\n```mermaid\nstateDiagram-v2\n" + regions[6] + "```\n");
         assertThat(Files.readString(Path.of("../../docs/task-repo-chart.md")))
@@ -47,6 +47,8 @@ class TaskChartTest {
                 .isEqualTo("# The task checks chart\n\n```mermaid\nstateDiagram-v2\n" + regions[9] + "```\n");
         assertThat(Files.readString(Path.of("../../docs/task-approval-chart.md")))
                 .isEqualTo("# The task approval chart\n\n```mermaid\nstateDiagram-v2\n" + regions[10] + "```\n");
+        assertThat(Files.readString(Path.of("../../docs/task-qa-chart.md")))
+                .isEqualTo("# The task qa chart\n\n```mermaid\nstateDiagram-v2\n" + regions[12] + "```\n");
         assertThat(Files.readString(Path.of("../../docs/task-infra-chart.md")))
                 .isEqualTo("# The task infra chart\n\n```mermaid\nstateDiagram-v2\n" + regions[11] + "```\n");
     }

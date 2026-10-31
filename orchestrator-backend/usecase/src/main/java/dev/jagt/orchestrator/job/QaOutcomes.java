@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -68,7 +69,7 @@ public class QaOutcomes {
     public QaEnding apply(String taskId, TaskState task, QaVerdict verdict) {
         QaEnding ending = stands(taskId, verdict.sha()) ? verdict.ending() : notStanding(taskId);
         switch (ending) {
-            case PASSED -> state.updateTask(taskId, current -> current.withMark(QaVerdict.MARK, verdict.sha()));
+            case PASSED -> state.updateTask(taskId, current -> TaskReducer.qaPassed(current, verdict.sha()));
             case NOT_MET -> notMet(taskId, task, verdict);
             case UNPROVABLE -> unprovable(taskId, verdict);
             case FAILED -> failed(taskId, verdict);
@@ -88,8 +89,7 @@ public class QaOutcomes {
         boolean sent = OriginContext.as(ActionOrigin.QA, () -> relay.relayRound(taskId, Step.QA_ROUND, facts, claim));
         if (sent) {
             String digest = Objects.requireNonNull(Objects.requireNonNull(task.deployment()).askedDigest());
-            state.updateTask(taskId, current -> current.withMark(QaVerdict.ROUND_DIGEST, digest)
-                    .withMark(QaVerdict.ROUND_ROWS, facts));
+            state.updateTask(taskId, current -> TaskReducer.qaRoundSent(current, digest, facts));
         }
         log.atInfo().setMessage("qa returns the round").addKeyValue("task", taskId)
                 .addKeyValue("rows", verdict.notMet().size()).addKeyValue("sent", sent).log();

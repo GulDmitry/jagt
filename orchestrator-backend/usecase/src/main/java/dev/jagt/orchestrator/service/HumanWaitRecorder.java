@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.HumanWaits;
+import dev.jagt.orchestrator.flow.QaPhase;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.task.HumanWait;
 import dev.jagt.orchestrator.task.TaskState;
@@ -55,6 +56,6 @@ public class HumanWaitRecorder {
     }
 
     private Holder holder(TaskState task) {
-        return Turns.next(task.status(), task.report(), task.stopped(), task.qaReading(), rounds.of(task).master());
+        return Turns.next(task.status(), task.report(), task.stopped(), QaPhase.of(task), rounds.of(task).master());
     }
 }

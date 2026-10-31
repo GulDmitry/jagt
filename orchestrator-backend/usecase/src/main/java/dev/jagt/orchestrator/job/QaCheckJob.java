@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.QaPhase;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
@@ -69,7 +70,7 @@ public class QaCheckJob implements TaskJob {
             return;
         }
         String sha = open.get().tips();
-        String step = task.qaReading() ? QaVerdict.AGAIN : QaVerdict.ACCEPT;
+        String step = QaPhase.of(task) == QaPhase.READING ? QaVerdict.AGAIN : QaVerdict.ACCEPT;
         Answer<QaVerdict> answer = reads.check(taskId, step, digest, prompts.accept(taskId, worktree, sha, qa, step));
         QaVerdict verdict = answer.facts().orElse(QaVerdict.failed(sha, answer.failure()));
         records.put(taskId, digest, sha, outcomes.apply(taskId, task, verdict));

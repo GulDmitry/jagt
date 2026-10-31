@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.QaEnding;
+import dev.jagt.orchestrator.task.Qa;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -62,7 +63,7 @@ class QaOutcomesTest {
     void showsNoPassedLabelOnceALaterDeployMovedTheTip(@TempDir Path root) {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build().withDeployment(new Deployment(1,
                 List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, "digest"))
-                .withMark(QaVerdict.MARK, "proj@0123456789abcdef");
+                .withQa(Qa.defaults().withPassed("proj@0123456789abcdef"));
 
         TaskState later = task.withDeployment(new Deployment(2,
                 List.of(Deployment.Target.of("proj", "dev").withMerge("fedcba9876543210")), 1, "next"));
