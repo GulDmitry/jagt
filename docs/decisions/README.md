@@ -136,4 +136,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0117 The board installs as an app](0117-the-board-installs-as-an-app.md)
 - [0120 jagt.yml is edited as text, one block per project](0120-jagt-yml-is-edited-as-text-one-block-per-project.md)
 - [0122 A role is a module the chart composes](0122-a-role-is-a-module-the-chart-composes.md)
-- [0123 Config is layered outside the project](0123-configuration-is-layered-outside-the-project.md)
+- [0123 Config layered, every place configured](0123-configuration-is-layered-outside-the-project.md)
