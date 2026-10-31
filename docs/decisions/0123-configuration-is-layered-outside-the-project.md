@@ -5,7 +5,7 @@
 
 ## Status
 
-Proposed 2026-10-31 by the owner's direction (jagt grows towards an IDE). Built before 0122's declarative roles.
+Proposed 2026-10-31 by the owner's direction (jagt grows towards an IDE). Not scheduled: 0122's roles live in jagt's root until it lands.
 
 ## Context
 

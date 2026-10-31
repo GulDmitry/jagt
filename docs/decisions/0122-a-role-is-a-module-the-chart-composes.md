@@ -5,7 +5,7 @@
 
 ## Status
 
-Proposed 2026-10-31 by the owner's direction. Built after the statechart follow-ups: QA first, then the Master, then one eval.
+Proposed 2026-10-31 by the owner's direction; building from 2026-10-31: QA first, then the Master, then one eval.
 
 ## Context
 
