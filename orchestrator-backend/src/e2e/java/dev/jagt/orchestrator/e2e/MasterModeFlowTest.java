@@ -58,7 +58,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mockingDetails;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -319,7 +319,7 @@ class MasterModeFlowTest {
         await().atMost(Duration.ofSeconds(120)).pollInterval(Duration.ofMillis(500))
                 .until(() -> task().currentConflict().filter(conflict -> conflict.told() != null).isPresent());
 
-        verify(userNotifier, times(1)).notify(contains("deploy conflict stalled"), any(), any());
+        verify(userNotifier, timeout(10_000).times(1)).notify(contains("deploy conflict stalled"), any(), any());
         assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         assertThat(E2eWorkspace.git(workspace.resolve("origin.git"), "log", "-1", "--format=%s", "dev"))
                 .contains("Someone else changed widget.txt");
