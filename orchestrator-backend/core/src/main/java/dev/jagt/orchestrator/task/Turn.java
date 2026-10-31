@@ -35,6 +35,7 @@ public record Turn(String step, long id, String digest, long since,
         SESSION,
         MASTER,
         HUMAN,
+        QA,
         /** The code host: a pipeline or a reviewer. */
         CI,
         NOBODY

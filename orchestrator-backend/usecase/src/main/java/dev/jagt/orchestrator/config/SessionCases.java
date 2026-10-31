@@ -13,10 +13,6 @@ public class SessionCases {
     private final OrchestratorPaths paths;
 
     public CaseBook book() {
-        return HumanCopy.read(paths.root(), FILE).stream()
-                .map(file -> CaseBook.parse(file.file(), file.text()))
-                .reduce(CaseBook::over)
-                .orElseGet(() -> CaseBook.empty(CaseBook.Shape.STEPS))
-                .failing(HumanCopy.unreadable(paths.root(), FILE));
+        return HumanCopy.stepCases(paths.root(), FILE);
     }
 }

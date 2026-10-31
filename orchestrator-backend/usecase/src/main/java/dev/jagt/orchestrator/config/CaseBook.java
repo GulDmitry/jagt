@@ -41,7 +41,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
     }
 
     public enum By {
-        JAGT, MASTER, HUMAN;
+        JAGT, MASTER, HUMAN, QA;
 
         public String id() {
             return name().toLowerCase(Locale.ROOT);
@@ -209,7 +209,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         Optional<By> by = By.of(keys.getOrDefault("by", "")).filter(named -> shape == Shape.STEPS || named == By.MASTER);
         if (by.isEmpty()) {
             faults.add(fault(file, id, "has by: '" + keys.getOrDefault("by", "") + "', which is not "
-                    + (shape == Shape.STEPS ? "jagt, master or human" : "master")));
+                    + (shape == Shape.STEPS ? "jagt, master, human or qa" : "master")));
         }
         Optional<Replies> replies = shape == Shape.MOVES ? Optional.of(Replies.NONE)
                 : readReplies(keys.getOrDefault("replies", ""), faults, file, id);

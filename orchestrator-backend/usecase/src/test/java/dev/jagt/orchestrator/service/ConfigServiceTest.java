@@ -57,6 +57,28 @@ class ConfigServiceTest {
     }
 
     @Test
+    void leavesQaOffWithSonnetAndNoEnvironmentWhereTheHumanWroteNone() {
+        ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
+
+        assertThat(config.qa().enabledOrDefault()).isFalse();
+        assertThat(config.qa().modelOrDefault()).isEqualTo("sonnet");
+        assertThat(config.qa().allows("https://stage.example.com")).isFalse();
+    }
+
+    @Test
+    void allowsOnlyTheEnvironmentsQaNamesWithTheirLandedProbe() {
+        ConfigFile config = new JsonMapper().readValue("""
+                { "qa": { "enabled": true, "environments": [
+                  { "url": "https://stage.example.com", "landed": "https://stage.example.com/health" } ] } }
+                """, ConfigFile.class);
+
+        assertThat(config.qa().enabledOrDefault()).isTrue();
+        assertThat(config.qa().allows("https://stage.example.com")).isTrue();
+        assertThat(config.qa().allows("https://prod.example.com")).isFalse();
+        assertThat(config.qa().environmentsOrEmpty().getFirst().landed()).isEqualTo("https://stage.example.com/health");
+    }
+
+    @Test
     void readsTheMastersModeAsWrittenInTheShippedExample(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, """

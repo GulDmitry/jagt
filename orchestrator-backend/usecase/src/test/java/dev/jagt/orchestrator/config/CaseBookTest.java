@@ -23,6 +23,16 @@ class CaseBookTest {
     }
 
     @Test
+    void readsQaAsWhoSetsAStepOffAndDisputeAsAReply() {
+        CaseBook book = CaseBook.parse("session-cases.md", "## qa-round-by-qa\n\nstep: qa-round\nat: DEPLOYED\n"
+                + "by: qa\nreplies: IN_PROGRESS; plain, dispute\nQA sends its rows back.\n");
+
+        assertThat(book.faults()).isEmpty();
+        assertThat(book.sends("qa-round", TaskStatus.DEPLOYED, CaseBook.By.QA)).isTrue();
+        assertThat(book.replies("qa-round").orElseThrow().takes(TaskStatus.IN_PROGRESS, AgentReport.DISPUTE)).isTrue();
+    }
+
+    @Test
     void readsAnyButAsEveryStatusOutsideTheList() {
         CaseBook book = CaseBook.parse("session-cases.md",
                 "## wake\n\nstep: wake\nat: any but DONE\nby: jagt\nreplies: any; plain\nA limit reset.\n");

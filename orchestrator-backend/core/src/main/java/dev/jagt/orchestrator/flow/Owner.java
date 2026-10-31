@@ -17,7 +17,7 @@ public enum Owner {
     /** The Master's turn reads as the agent's: it is a machine at work, and nothing asks the human. */
     public static Owner of(Turn.Holder holder) {
         return switch (holder) {
-            case SESSION, MASTER -> AGENT;
+            case SESSION, MASTER, QA -> AGENT;
             case HUMAN -> YOU;
             case CI -> CI;
             case NOBODY -> NOBODY;

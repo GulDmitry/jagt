@@ -366,6 +366,8 @@ tasks.named('test') {
         include 'jagt.yml.dist'
         include 'master-brief.md.dist'
         include 'session-brief.md.dist'
+        include 'qa-brief.md.dist'
+        include 'qa-cases.md.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
     // Outside the tree above: a file tree drops `.gitignore` by default.
     inputs.file(new File(projectDir.parentFile, '.gitignore')).withPropertyName('gitignore')

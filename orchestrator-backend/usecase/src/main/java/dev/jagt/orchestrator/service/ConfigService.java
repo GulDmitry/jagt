@@ -59,7 +59,8 @@ public class ConfigService implements LoopBreaker.Current {
                              @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
                              @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
                              @Nullable LoopBreakerConfig loopBreaker,
-                             @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive) {
+                             @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive,
+                             @Nullable QaConfig qa) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -296,6 +297,38 @@ public class ConfigService implements LoopBreaker.Current {
             }
         }
 
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record QaConfig(@Nullable Boolean enabled, @Nullable String model,
+                               @Nullable List<QaEnvironment> environments) {
+
+            public static QaConfig defaults() {
+                return new QaConfig(null, null, null);
+            }
+
+            public boolean enabledOrDefault() {
+                return enabled != null && enabled;
+            }
+
+            public String modelOrDefault() {
+                return model == null || model.isBlank() ? "sonnet" : model.strip();
+            }
+
+            public List<QaEnvironment> environmentsOrEmpty() {
+                return environments == null ? List.of() : environments;
+            }
+
+            public boolean allows(String baseUrl) {
+                return environmentsOrEmpty().stream().anyMatch(environment -> baseUrl.equals(environment.url()));
+            }
+        }
+
+        /** {@code landed} is a URL whose answer proves the change is up where the host reports no deploy job. */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record QaEnvironment(@Nullable String url, @Nullable String landed) {
+        }
+
         /**
          * The Master session: judging unless a human turned it off or up to act. {@code brief} is the file
          * saying what it judges — the thing that outlives every session it runs.
@@ -469,7 +502,7 @@ public class ConfigService implements LoopBreaker.Current {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null);
         }
 
         public Duration conflictStallOrDefault() {
@@ -518,6 +551,11 @@ public class ConfigService implements LoopBreaker.Current {
         @Override
         public TrackerConfig tracker() {
             return tracker == null ? TrackerConfig.defaults() : tracker;
+        }
+
+        @Override
+        public QaConfig qa() {
+            return qa == null ? QaConfig.defaults() : qa;
         }
 
         @Override
