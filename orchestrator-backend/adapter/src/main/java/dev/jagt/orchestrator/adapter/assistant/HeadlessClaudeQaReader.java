@@ -9,30 +9,33 @@ import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.QaVerdict;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
 @RequiredArgsConstructor
+@Slf4j
 public class HeadlessClaudeQaReader implements QaReader {
 
     static final String REPORT = "qa-report.md";
 
     private static final Duration TIMEOUT = Duration.ofMinutes(20);
-    private static final String TOOLS = "Read,Grep,Glob,Bash,Write";
-    private static final List<String> ALLOWED = List.of("Read", "Grep", "Glob", "Write(" + REPORT + ")",
-            "Bash(curl -s:*)", "Bash(curl -sS:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)");
-    /** A request that sends a body or names a method writes to the environment. */
-    private static final List<String> REFUSED = List.of("Edit", "NotebookEdit", "Bash(curl * -X *)",
-            "Bash(curl * --request*)", "Bash(curl * -d*)", "Bash(curl * --data*)", "Bash(curl * -F*)",
-            "Bash(curl * --form*)", "Bash(curl * -T*)", "Bash(curl * --upload*)", "Bash(curl * --json*)",
+    private static final String TOOLS = "Read,Grep,Glob,Bash,WebFetch";
+    private static final List<String> ALLOWED = List.of("Read", "Grep", "Glob", "WebFetch", "Bash(git log:*)",
+            "Bash(git show:*)", "Bash(git diff:*)");
+    private static final List<String> REFUSED = List.of("Write", "Edit", "NotebookEdit", "Bash(git * --output*)",
             "Bash(git push:*)", "Bash(git commit:*)", "Bash(git reset:*)", "Bash(git checkout:*)");
 
     private final HeadlessClaude headless;
@@ -65,7 +68,24 @@ public class HeadlessClaudeQaReader implements QaReader {
         HeadlessClaude.Reply reply = headless.run(run.worktree(), TIMEOUT, cmd,
                 new ReadScope(List.of(run.worktree()), tools, true), AssistantCallKind.QA_CHECK,
                 run.worktree().toString());
-        return new Answer<>(Optional.of(verdict(run.sha(), reply)), reply.usage());
+        QaVerdict verdict = verdict(run.sha(), reply);
+        write(run.worktree().resolve(REPORT), verdict);
+        return new Answer<>(Optional.of(verdict), reply.usage());
+    }
+
+    private static void write(Path file, QaVerdict verdict) {
+        if (verdict.rows().isEmpty()) {
+            return;
+        }
+        String rows = verdict.rows().stream().map(row -> "| " + row.criterion() + " | " + row.status() + " | "
+                + row.evidence() + " |").collect(Collectors.joining("\n"));
+        try {
+            Files.writeString(file, "# QA report, " + verdict.sha() + "\n\n| criterion | status | evidence |\n|---|---|---|\n"
+                    + rows + "\n");
+        } catch (IOException unwritten) {
+            log.atWarn().setMessage("qa report not written").addKeyValue("file", file)
+                    .addKeyValue("cause", unwritten.toString()).log();
+        }
     }
 
     private static QaVerdict verdict(String sha, HeadlessClaude.Reply reply) {

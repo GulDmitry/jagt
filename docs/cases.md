@@ -5,8 +5,7 @@ Families:
 - B state overwritten: a record or dedup key is overwritten, lost on restart or kept in the wrong place.
 - C turn collision: two parties (human, Master, session, reviewer) act on one turn. D model overreach: a model decided what the machine should.
 - E missing ending: a stop, crash, error or limit goes unseen, or two endings are merged.
-- F unbounded loop: a repeat, a store or a spend has no ceiling.
-- G prose routing: jagt decided by reading text.
+- F unbounded loop: a repeat, a store or a spend has no ceiling. G prose routing: jagt decided by reading text.
 - H a guard refuses what it should allow, or allows what it should refuse. I a vendor CLI behaves otherwise. J git, worktrees,
   several repositories. K the board. L the tests themselves. M anything else. H–M are counted by trailer and get rows here as their defects recur.
 
@@ -146,6 +145,7 @@ Families:
 | H4 | the Master ships a task whose request git finds merged → `ship` is withheld and a press records no step, so no ship after the merge counts toward the loop stop | seen 2026-10-28: a fourth ship after the request merged tripped a SHIPS stop on a request that no longer existed | `MergedGuardTest`, `MoveTest`, `WorktreeInspectionTest` |
 | H5 | a round carries red checks outside the code and a thread with the reviewer's new answer → the hand-back is refused until `review_replies.md` is written since the relay, and a standing question holds back only the checks | seen 2026-10-29: the session took the checks' "change nothing" route and left the thread unanswered; later sweeps read the round as unchanged | `HandBackDueTest`, `TaskStopsTest`, `RoundRelayTest` |
 | H6 | a task past the code is reopened in plan mode → the open is refused as a state refusal, the gate and the tab stay; a plan comes only before the code | seen 2026-10-30: `open_task_tab` mode=plan on a VERIFYING task closed its gate and refused every source write, with the only exit unreachable | `AgentSessionsTest` |
+| H7 | QA is told to POST, to save a response to a file or to write a file → it holds no Bash curl and no Write tool, only GET through the web fetch and read-only git; jagt writes `qa-report.md` from its rows | seen 2026-10-31: `curl -s -XPOST`, `-o` and Write passed the command patterns | `HeadlessClaudeQaReaderTest` |
 
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |

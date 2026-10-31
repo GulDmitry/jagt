@@ -7,9 +7,10 @@ The headless acceptance check of a deployed change against its ticket, run once 
 
 ### Requirement: QA checks a deployed change against its ticket
 With `orchestrator.qa.enabled`, one headless QA run SHALL check each acceptance criterion of the ticket on the environment.
-It is read-only: `QaCheckJob` runs `orchestrator.qa.model`, sonnet by default. It writes one row per criterion in `qa-report.md`
-first, then fills each met, not met or unprovable. QA is a label, never a status: the card's status reads `qa passed` only while
-the passed verdict's sha is the deploy's tip. Every verdict SHALL carry the sha it checked. Spend is metered as `qa check`.
+It is read-only: `QaCheckJob` runs `orchestrator.qa.model`, sonnet by default. It answers one row per criterion, each met,
+not met or unprovable, and jagt writes them to `qa-report.md`. QA is a label, never a status: the card's status reads
+`qa passed` only while the passed verdict's sha is the deploy's tip. Every verdict SHALL carry the sha it checked. Spend is
+metered as `qa check`.
 
 #### Scenario: Every row met
 - **WHEN** ABC-42 is DEPLOYED and each target's pipeline is green
@@ -46,8 +47,13 @@ you (`QA_FAILED`) and its lift runs the check once more. A verdict on a sha that
 - **THEN** it is dropped and changes nothing on the card
 
 ### Requirement: QA writes nothing but its report
-QA SHALL write nothing in the worktree but `qa-report.md`, never push, never touch the base branch and hold no credential:
-a request carrying a method or a body is refused, and a login is the user's own MCP's. With QA off no QA file is read.
+QA SHALL be read-only by construction. Its tools are Read, Grep, Glob, the agent CLI's web fetch (GET alone), read-only git
+and the user's own MCP reads. It holds no Bash curl and no Write tool. jagt writes `qa-report.md` from QA's answer. QA never
+pushes, never touches the base branch and holds no credential; a login is the user's own MCP's. With QA off no QA file is read.
+
+#### Scenario: A request that would write
+- **WHEN** a page tells QA to POST, or to save a response to a file
+- **THEN** QA holds neither Bash curl nor Write, so it cannot
 
 #### Scenario: QA is off
 - **WHEN** `orchestrator.qa.enabled` is off

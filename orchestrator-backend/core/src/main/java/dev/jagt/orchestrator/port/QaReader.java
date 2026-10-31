@@ -5,8 +5,7 @@ import dev.jagt.orchestrator.task.QaVerdict;
 import java.nio.file.Path;
 
 /**
- * One read of a deployed change by a fresh model, able to read and request but to write nothing in the worktree
- * but its own report. Metered, and asked once per deploy.
+ * One read of a deployed change by a fresh model, able to read and GET but to write nothing. Metered, and asked once per deploy.
  */
 public interface QaReader {
 
