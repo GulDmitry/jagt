@@ -432,18 +432,25 @@ final class TaskChart {
 
     private static void ran(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, TaskAction action,
                             Outcome.Kind outcome, TaskStatus to, Set<TaskStatus> from) {
-        from.forEach(status -> edge(chart, status, action.id() + " " + outcome,
-                new TaskMove.Ran(action, outcome)::equals, to));
+        edges(chart, from, action.id() + " " + outcome, new TaskMove.Ran(action, outcome)::equals, to);
     }
 
     private static void reports(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
         for (TaskStatus to : REPORTED) {
-            for (TaskStatus from : OPEN) {
-                if (mayReport(from, to)) {
-                    report(chart, from, to);
-                }
+            Set<TaskStatus> free = EnumSet.noneOf(TaskStatus.class);
+            OPEN.stream().filter(from -> mayReport(from, to) && !HELD.contains(from)).forEach(free::add);
+            if (to == REVIEW_PENDING) {
+                edges(chart, free, "report " + to + " owing verification", reportOf(to, true), VERIFYING);
             }
+            edges(chart, free, "report " + to, reportOf(to, false), to);
+            HELD.stream().filter(held -> mayReport(held, to)).forEach(held ->
+                    edge(chart, held, "report " + to, reportOf(to, false), held));
         }
+    }
+
+    private static Predicate<TaskMove> reportOf(TaskStatus to, boolean owedOnly) {
+        return move -> move instanceof TaskMove.Reported report && report.status() == to
+                && (!owedOnly || report.verificationOwed());
     }
 
     private static boolean mayReport(TaskStatus from, TaskStatus to) {
@@ -451,29 +458,16 @@ final class TaskChart {
                 && (to != CI_POLLING || BEFORE_THE_VERDICT.contains(from));
     }
 
-    private static void report(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, TaskStatus from, TaskStatus to) {
-        if (HELD.contains(from)) {
-            reported(chart, from, to, from, false);
-            return;
-        }
-        if (to == REVIEW_PENDING) {
-            reported(chart, from, to, VERIFYING, true);
-        }
-        reported(chart, from, to, to, false);
-    }
-
-    private static void reported(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, TaskStatus from, TaskStatus to,
-                                 TaskStatus lands, boolean owedOnly) {
-        edge(chart, from, "report " + to + (owedOnly ? " owing verification" : ""),
-                move -> move instanceof TaskMove.Reported report && report.status() == to
-                        && (!owedOnly || report.verificationOwed()), lands);
-    }
-
     private static void reads(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
         for (TaskStatus concluded : READ) {
-            for (TaskStatus from : READ_FROM) {
-                edge(chart, from, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
-            }
+            edges(chart, READ_FROM, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
+        }
+    }
+
+    private static void edges(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, Set<TaskStatus> from, String label,
+                              Predicate<TaskMove> matches, TaskStatus to) {
+        if (!from.isEmpty()) {
+            chart.onMatching(LIFECYCLE, from, label, matches).emit(new TaskEffect.Lands(to)).to(to);
         }
     }
 

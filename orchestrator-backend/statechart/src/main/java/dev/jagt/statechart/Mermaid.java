@@ -1,7 +1,10 @@
 package dev.jagt.statechart;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 final class Mermaid {
 
@@ -25,12 +28,33 @@ final class Mermaid {
         lines.add("    state " + region.name() + " {");
         region.states().forEach(state -> lines.add("        state \"" + state.name() + "\" as " + id(region, state)));
         lines.add("        [*] --> " + id(region, region.initial()));
-        transitions.stream().filter(t -> t.region().equals(region.name())).forEach(t -> lines.add(
-                "        " + id(region, t.from()) + " --> " + id(region, t.to()) + " : " + t.label()));
+        List<Edge<E, F>> own = transitions.stream().filter(t -> t.region().equals(region.name())).toList();
+        Set<Integer> drawn = new HashSet<>();
+        for (Edge<E, F> t : own) {
+            List<Edge<E, F>> sharing = own.stream().filter(other -> t.group() > 0 && other.group() == t.group())
+                    .toList();
+            if (sharing.size() < 2) {
+                lines.add("        " + id(region, t.from()) + " --> " + id(region, t.to()) + " : " + t.label());
+            } else if (drawn.add(t.group())) {
+                lines.add("        state \"" + sources(region, sharing) + "\" as " + region.name() + "_from_" + t.group());
+                lines.add("        " + region.name() + "_from_" + t.group() + " --> " + id(region, t.to()) + " : "
+                        + t.label());
+            }
+        }
         region.states().stream().filter(region.finals()::contains)
                 .forEach(state -> lines.add("        " + id(region, state) + " --> [*]"));
         lines.add("    }");
         return lines;
+    }
+
+    private static <E, F> String sources(Stored<F> region, List<Edge<E, F>> sharing) {
+        Set<Enum<?>> from = sharing.stream().map(Edge::from).collect(Collectors.toSet());
+        if (from.size() * 2 <= region.states().size()) {
+            return sharing.stream().map(edge -> edge.from().name()).collect(Collectors.joining(", "));
+        }
+        String left = region.states().stream().filter(state -> !from.contains(state)).map(Enum::name)
+                .collect(Collectors.joining(", "));
+        return left.isEmpty() ? "all" : "all but " + left;
     }
 
     private static String id(Stored<?> region, Enum<?> state) {

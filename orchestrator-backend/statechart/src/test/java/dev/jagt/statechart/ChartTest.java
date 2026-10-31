@@ -2,6 +2,7 @@ package dev.jagt.statechart;
 
 import dev.jagt.statechart.Lamp.Event;
 import dev.jagt.statechart.Lamp.Facts;
+import dev.jagt.statechart.Lamp.Hit;
 import dev.jagt.statechart.Lamp.Mode;
 import dev.jagt.statechart.Lamp.Power;
 import dev.jagt.statechart.Lamp.Press;
@@ -136,5 +137,44 @@ class ChartTest {
                     }
                     %% derived level
                 """);
+    }
+
+    @Test
+    void anEdgeDeclaredFromASetIsDrawnAsOneLabelledEdgeFromTheSet() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.STAGE, Stage.LOW)
+                .on(Lamp.STAGE, Stage.LOW, Press.class).to(Stage.MID)
+                .onMatching(Lamp.STAGE, Set.of(Stage.LOW, Stage.MID), "tick", Tick.class::isInstance).to(Stage.HIGH)
+                .onMatching(Lamp.STAGE, Set.of(Stage.HIGH), "hit", Hit.class::isInstance).to(Stage.LOW)
+                .build();
+
+        assertThat(chart.render()).isEqualTo("""
+                stateDiagram-v2
+                    state stage {
+                        state "LOW" as stage_LOW
+                        state "MID" as stage_MID
+                        state "HIGH" as stage_HIGH
+                        [*] --> stage_LOW
+                        stage_LOW --> stage_MID : Press
+                        state "all but HIGH" as stage_from_1
+                        stage_from_1 --> stage_HIGH : tick
+                        stage_HIGH --> stage_LOW : hit
+                    }
+                """);
+    }
+
+    @Test
+    void anEdgeDeclaredFromASetStaysInTheSourceThatIsItsTarget() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))
+                .onMatching(Lamp.STAGE, Set.of(Stage.LOW, Stage.MID), "tick", Tick.class::isInstance)
+                .emit("moved").to(Stage.MID)
+                .on(Lamp.STAGE, Stage.MID, Press.class).to(Stage.HIGH)
+                .build();
+
+        ChartStep<String> step = chart.step(chart.configuration(Map.of("stage", "MID")), new Facts(Mode.DIM),
+                new Tick());
+
+        assertThat(step.effects()).containsExactly("moved");
     }
 }

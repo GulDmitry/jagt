@@ -18,6 +18,7 @@ public final class ChartBuilder<E, X, F> {
     private final List<Derived<X>> derived = new ArrayList<>();
     private final Map<String, Map<Enum<?>, List<F>>> exits = new HashMap<>();
     private final List<Edge<E, F>> transitions = new ArrayList<>();
+    private int groups;
     private int ceiling = Chart.DEFAULT_CEILING;
 
     ChartBuilder() {
@@ -50,6 +51,14 @@ public final class ChartBuilder<E, X, F> {
     public <S extends Enum<S>> EdgeBuilder<E, X, F, S> onMatching(RegionId<S> id, S from, String label,
                                                                     Predicate<E> matches) {
         return new EdgeBuilder<>(this, id.name(), from, label, matches);
+    }
+
+    /** One edge declared from every state in {@code from}, drawn as a single labelled edge from the set. */
+    public <S extends Enum<S>> GroupBuilder<E, X, F, S> onMatching(RegionId<S> id, Set<S> from, String label,
+                                                                     Predicate<E> matches) {
+        int group = ++groups;
+        return new GroupBuilder<>(this, from.stream().sorted().map(state -> onMatching(id, state, label, matches)
+                .inGroup(group)).toList());
     }
 
     public ChartBuilder<E, X, F> raiseCeiling(int events) {

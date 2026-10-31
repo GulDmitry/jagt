@@ -15,6 +15,7 @@ public final class EdgeBuilder<E, X, F, S extends Enum<S>> {
     private Condition<E> guard = (others, event) -> true;
     private final List<Function<E, F>> effects = new ArrayList<>();
     private final List<E> raises = new ArrayList<>();
+    private int group;
 
     EdgeBuilder(ChartBuilder<E, X, F> chart, String region, S from, String label, Predicate<E> matches) {
         this.chart = chart;
@@ -22,6 +23,11 @@ public final class EdgeBuilder<E, X, F, S extends Enum<S>> {
         this.from = from;
         this.label = label;
         this.matches = matches;
+    }
+
+    EdgeBuilder<E, X, F, S> inGroup(int id) {
+        group = id;
+        return this;
     }
 
     public EdgeBuilder<E, X, F, S> when(Condition<E> allowed) {
@@ -46,14 +52,18 @@ public final class EdgeBuilder<E, X, F, S extends Enum<S>> {
 
     public ChartBuilder<E, X, F> to(S target) {
         chart.add(new Edge<>(region, from, target, label, matches, guard, List.copyOf(effects),
-                List.copyOf(raises), false));
+                List.copyOf(raises), false, group));
         return chart;
+    }
+
+    ChartBuilder<E, X, F> leadsTo(S target) {
+        return from == target ? stay() : to(target);
     }
 
     /** An internal transition: the edge's effects and raises run, the state is neither exited nor entered. */
     public ChartBuilder<E, X, F> stay() {
         chart.add(new Edge<>(region, from, from, label, matches, guard, List.copyOf(effects),
-                List.copyOf(raises), true));
+                List.copyOf(raises), true, group));
         return chart;
     }
 }
