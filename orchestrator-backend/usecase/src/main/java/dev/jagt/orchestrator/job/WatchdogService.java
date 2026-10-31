@@ -100,8 +100,13 @@ public class WatchdogService implements Job {
         } catch (SessionHost.WindowsUnreadable unknown) {
             return;
         }
-        stateService.updateTask(taskId, current -> TaskReducer.signed(current, read, now));
+        stateService.updateTask(taskId, current -> startedOverSince(task, current)
+                ? current : TaskReducer.signed(current, read, now));
         alert(taskId, stateService.task(taskId).orElse(task), now);
+    }
+
+    private static boolean startedOverSince(TaskState looked, TaskState current) {
+        return current.session().awaitingFirstRead() && !looked.session().awaitingFirstRead();
     }
 
     private void alert(String taskId, TaskState task, long now) {

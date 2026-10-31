@@ -23,8 +23,12 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
 
     /** A session started over and not yet read takes {@code now} as its start; any other is as it was. */
     public Session readAt(long now) {
-        boolean awaiting = window != null && window.state() == Window.State.UNREAD && window.at() == 0;
-        return awaiting ? withMovedAt(now).withWindow(null) : this;
+        return awaitingFirstRead() ? withMovedAt(now).withWindow(null) : this;
+    }
+
+    /** Started over and not yet read. */
+    public boolean awaitingFirstRead() {
+        return window != null && window.state() == Window.State.UNREAD && window.at() == 0;
     }
 
     /** The record a file holds, a silence an older file stamped on the task standing as the quiet it was. */
