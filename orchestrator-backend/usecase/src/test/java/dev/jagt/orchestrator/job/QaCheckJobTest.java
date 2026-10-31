@@ -198,22 +198,4 @@ class QaCheckJobTest {
 
         verify(reader).check(any(), any(), any(), any());
     }
-
-    @Test
-    void opensNothingOnATaskNoLongerOpenWhereTheRolesTriggerNamesTrackerOpen(@TempDir Path root) throws IOException {
-        Files.writeString(root.resolve("role.yml"), "id: qa\nname: QA\nmodel: sonnet\ntrigger: [deployed, pipelines-green, environment-named, tracker-open]\noncePer: deploy\noutcomes: [round]\n"
-                + "tools:\n  cli: [Read]\n  allow: [Read]\n  refuse: [Write]\nanswer:\n  - required: failure\ndecline:\n  - required: failure\n");
-        ConfigService config = mock(ConfigService.class);
-        CheckerReads reader = mock(CheckerReads.class);
-        when(config.load()).thenReturn(ON);
-        when(reader.check(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        RoleDefinition role = RoleDefinitions.fromFile(root.resolve("role.yml"));
-
-        new CheckerCheckJob(new RoleSettings(role, config), new CheckerPrompts(role, new RoleFiles(paths, "qa")), reader,
-                new CheckerRecords(paths, Clock.systemUTC()), mock(CheckerOutcomes.class)).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build().withDeployment(new Deployment(1,
-                        List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, "digest")));
-
-        verify(reader, never()).check(any(), any(), any(), any());
-    }
 }

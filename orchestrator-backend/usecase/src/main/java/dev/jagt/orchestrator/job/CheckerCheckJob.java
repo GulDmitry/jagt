@@ -81,15 +81,14 @@ public class CheckerCheckJob implements TaskJob {
         List<String> trigger = settings.role().trigger();
         return Optional.ofNullable(task.deployment()).filter(deployment -> config.enabledOrDefault()
                 && deployment.askedDigest() != null
-                && trigger.stream().allMatch(predicate -> holds(predicate, task, deployment, config)));
+                && trigger.stream().allMatch(predicate -> holds(predicate, deployment, config)));
     }
 
-    private static boolean holds(String predicate, TaskState task, Deployment deployment, RoleConfig config) {
+    private static boolean holds(String predicate, Deployment deployment, RoleConfig config) {
         return switch (predicate) {
             case "deployed" -> deployment.live();
             case "pipelines-green" -> deployment.askedDigest() != null;
             case "environment-named" -> !config.environmentsOrEmpty().isEmpty();
-            case "tracker-open" -> FlowRules.checkedWhereItLanded(task.status());
             default -> false;
         };
     }

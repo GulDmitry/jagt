@@ -18,8 +18,7 @@ import java.util.Set;
 /** Compiles a {@code roles/<id>/role.yml} into a {@link RoleDefinition}; every word it holds is from a closed vocabulary. */
 public final class RoleDefinitions {
 
-    private static final Set<String> TRIGGERS = Set.of("deployed", "pipelines-green", "tracker-open",
-            "environment-named");
+    private static final Set<String> TRIGGERS = Set.of("deployed", "pipelines-green", "environment-named");
     private static final Set<String> ONCE_PER = Set.of("deploy");
     private static final Set<String> OUTCOMES = Set.of("round", "question", "wait", "dispute", "stop", "label");
 
