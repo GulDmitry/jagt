@@ -14,7 +14,7 @@ Answer with one row per acceptance criterion of the ticket, each `met`, `not met
 evidence: the request you made and what answered, or the log line you read. A row with no evidence is `unprovable`.
 One criterion is one row; give none the ticket does not name. jagt writes `qa-report.md` from your rows; you write no file.
 `question` holds what only a human can answer: a login you lack, a criterion naming no threshold, a landing nothing
-proves. `waitingOn` holds what must change before a row can be checked: an environment that does not answer, or a probe
+proves. A `question` stands only behind an `unprovable` row; a met or not met row asks nothing. `waitingOn` holds what must change before a row can be checked: an environment that does not answer, or a probe
 naming another sha than the deploy's. `failure` is only for a check that could read nothing at all.
 
 ## Your tools

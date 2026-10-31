@@ -33,6 +33,18 @@ class QaPromptsTest {
     }
 
     @Test
+    void theRunIsToldTheDeployWasPushedAndNeverThatItLanded(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        CheckerPrompts prompts = new CheckerPrompts(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), new RoleFiles(paths, "qa"));
+
+        CheckerReader.Run accepted = prompts.accept("ABC-42", "/wt", "abc123", new RoleConfig(true, null, List.of()), QaVerdict.ACCEPT);
+        CheckerReader.Run declined = prompts.decline("ABC-42", "/wt", "abc123", new RoleConfig(true, null, List.of()), "- C1 — not met: x", "why");
+
+        assertThat(accepted.prompt()).contains("ABC-42's deploy was pushed at abc123").doesNotContain("is deployed at");
+        assertThat(declined.prompt()).contains("ABC-42's deploy was pushed at abc123").doesNotContain("is deployed at");
+    }
+
+    @Test
     void theRoleYmlsModelIsTheDefaultAndJagtYmlOverridesIt(@TempDir Path root) {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         CheckerPrompts prompts = new CheckerPrompts(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), new RoleFiles(paths, "qa"));

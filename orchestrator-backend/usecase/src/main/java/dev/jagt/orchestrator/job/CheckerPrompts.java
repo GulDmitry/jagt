@@ -25,7 +25,7 @@ public class CheckerPrompts {
     public CheckerReader.Run accept(String taskId, String worktree, String sha, RoleConfig qa, String step) {
         String environments = qa.environmentsOrEmpty().stream().map(CheckerPrompts::environment)
                 .collect(Collectors.joining("\n"));
-        String facts = taskId + " is deployed at " + sha + ".\nCheck it on:\n" + environments;
+        String facts = deployFact(taskId, sha) + "\nCheck it on:\n" + environments;
         return new CheckerReader.Run(brief.text(), brief.section(step) + "\n\n" + facts, Path.of(worktree), sha,
                 qa.modelOr(role.model()), reachable(qa), role.answer().json(), role.id());
     }
@@ -34,10 +34,14 @@ public class CheckerPrompts {
     public CheckerReader.Run decline(String taskId, String worktree, String sha, RoleConfig qa, String rows, String reason) {
         String environments = qa.environmentsOrEmpty().stream().map(CheckerPrompts::environment)
                 .collect(Collectors.joining("\n"));
-        String facts = taskId + " is deployed at " + sha + ".\nThe rows you found not met:\n" + rows
+        String facts = deployFact(taskId, sha) + "\nThe rows you found not met:\n" + rows
                 + "\nThe session changed nothing, and says:\n" + reason + "\nCheck on:\n" + environments;
         return new CheckerReader.Run(brief.text(), brief.section(QaVerdict.DECLINE) + "\n\n" + facts, Path.of(worktree), sha,
                 qa.modelOr(role.model()), reachable(qa), role.decline().json(), role.id());
+    }
+
+    private static String deployFact(String taskId, String sha) {
+        return taskId + "'s deploy was pushed at " + sha + "; whether it landed is yours to prove.";
     }
 
     private static List<String> reachable(RoleConfig qa) {
