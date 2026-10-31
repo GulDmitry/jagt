@@ -80,20 +80,9 @@ class MasterReviewTest {
         state.putTask("a1", handedBackAgain);
         reviews.write("a1", handedBackAgain, new MasterReview.Review(3, "", "", "", List.of()), "");
 
-        assertThat(reviews.readsTheRoundInFront(state.task("a1").orElseThrow())).isFalse();
-    }
+        reviews.settle("a1", state.task("a1").orElseThrow());
 
-    @Test
-    void takesAVerdictAskedAboutTheHandBackInFrontAsAboutIt(@TempDir Path worktree) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
-        MasterReview reviews = new MasterReview(state);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-        state.putTask("a1", task);
-        reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
-
-        assertThat(reviews.readsTheRoundInFront(state.task("a1").orElseThrow())).isTrue();
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.STANDS_IN);
     }
 
     @Test
@@ -109,8 +98,11 @@ class MasterReviewTest {
 
         TaskState handedBackAgain = state.task("a1").orElseThrow().withTurn(handedBack.closed(6_000)
                 .closed(7_000));
+        state.putTask("a1", handedBackAgain);
 
-        assertThat(reviews.readsTheRoundInFront(handedBackAgain)).isFalse();
+        reviews.settle("a1", handedBackAgain);
+
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.STANDS_IN);
     }
 
     @Test
@@ -173,7 +165,7 @@ class MasterReviewTest {
         boolean restamped = reviews.restamp("a1", state.task("a1").orElseThrow());
 
         assertThat(restamped).isTrue();
-        assertThat(reviews.readsTheRoundInFront(state.task("a1").orElseThrow())).isTrue();
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.READ);
     }
 
     @Test
@@ -258,7 +250,6 @@ class MasterReviewTest {
         TaskState sealed = state.task("a1").orElseThrow();
 
         assertThat(reviews.of(sealed)).isEmpty();
-        assertThat(reviews.readsTheRoundInFront(sealed)).isFalse();
     }
 
     @Test

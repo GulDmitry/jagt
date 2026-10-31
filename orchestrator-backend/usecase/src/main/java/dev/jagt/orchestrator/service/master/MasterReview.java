@@ -99,11 +99,6 @@ public class MasterReview {
         }).orElse(false);
     }
 
-    /** Whether the reviewer has looked at the task AS IT STANDS, rather than at an earlier hand-back. */
-    public boolean readsTheRoundInFront(TaskState task) {
-        return of(task).filter(verdict -> verdict.answers(task)).isPresent();
-    }
-
     private static @Nullable Path file(TaskState task) {
         String worktree = task.worktreePath();
         return worktree == null || worktree.isBlank() ? null : Path.of(worktree).resolve(FILE);

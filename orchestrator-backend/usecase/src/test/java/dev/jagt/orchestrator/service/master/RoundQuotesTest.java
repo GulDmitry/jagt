@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.StateService;
@@ -46,7 +47,7 @@ class RoundQuotesTest {
 
         assertThat(carried).isTrue();
         task = state.task("a1").orElseThrow();
-        assertThat(reviews.readsTheRoundInFront(task)).isTrue();
+        assertThat(MasterPhase.of(task)).isEqualTo(MasterPhase.READ);
     }
 
     @Test
@@ -66,7 +67,7 @@ class RoundQuotesTest {
         boolean carried = quotes.carried("a1", task, "in1");
 
         assertThat(carried).isFalse();
-        assertThat(reviews.readsTheRoundInFront(task)).isFalse();
+        assertThat(MasterPhase.of(task)).isEqualTo(MasterPhase.STANDS_IN);
     }
 
     @Test
