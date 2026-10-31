@@ -13,37 +13,47 @@ final class Mermaid {
 
     static <E, X, F> String render(List<Stored<F>> stored, List<Derived<X>> derived, List<Edge<E, F>> transitions) {
         List<String> lines = new ArrayList<>(List.of("stateDiagram-v2"));
-        for (int index = 0; index < stored.size(); index++) {
+        List<Stored<F>> top = stored.stream().filter(region -> region.scope().isEmpty()).toList();
+        for (int index = 0; index < top.size(); index++) {
             if (index > 0) {
                 lines.add("    --");
             }
-            lines.addAll(block(stored.get(index), transitions));
+            lines.addAll(block(top.get(index), "    state " + top.get(index).name() + " {", "    ", stored,
+                    transitions));
         }
         derived.forEach(region -> lines.add("    %% derived " + region.name()));
         return String.join("\n", lines) + "\n";
     }
 
-    private static <E, F> List<String> block(Stored<F> region, List<Edge<E, F>> transitions) {
+    private static <E, F> List<String> block(Stored<F> region, String header, String indent, List<Stored<F>> all,
+                                             List<Edge<E, F>> transitions) {
         List<String> lines = new ArrayList<>();
-        lines.add("    state " + region.name() + " {");
-        region.states().forEach(state -> lines.add("        state \"" + state.name() + "\" as " + id(region, state)));
-        lines.add("        [*] --> " + id(region, region.initial()));
+        String in = indent + "    ";
+        lines.add(header);
+        region.states().forEach(state -> lines.add(in + "state \"" + state.name() + "\" as " + id(region, state)));
+        lines.add(in + "[*] --> " + id(region, region.initial()));
         List<Edge<E, F>> own = transitions.stream().filter(t -> t.region().equals(region.name())).toList();
         Set<Integer> drawn = new HashSet<>();
         for (Edge<E, F> t : own) {
             List<Edge<E, F>> sharing = own.stream().filter(other -> t.group() > 0 && other.group() == t.group())
                     .toList();
             if (sharing.size() < 2) {
-                lines.add("        " + id(region, t.from()) + " --> " + id(region, t.to()) + " : " + t.label());
+                lines.add(in + id(region, t.from()) + " --> " + id(region, t.to()) + " : " + t.label());
             } else if (drawn.add(t.group())) {
-                lines.add("        state \"" + sources(region, sharing) + "\" as " + region.name() + "_from_" + t.group());
-                lines.add("        " + region.name() + "_from_" + t.group() + " --> " + id(region, t.to()) + " : "
+                lines.add(in + "state \"" + sources(region, sharing) + "\" as " + region.name() + "_from_" + t.group());
+                lines.add(in + region.name() + "_from_" + t.group() + " --> " + id(region, t.to()) + " : "
                         + t.label());
             }
         }
         region.states().stream().filter(region.finals()::contains)
-                .forEach(state -> lines.add("        " + id(region, state) + " --> [*]"));
-        lines.add("    }");
+                .forEach(state -> lines.add(in + id(region, state) + " --> [*]"));
+        for (Stored<F> child : all) {
+            if (child.scope().filter(scope -> scope.parent().equals(region.name())).isPresent()) {
+                lines.addAll(block(child, in + "state " + id(region, child.scope().orElseThrow().state()) + " {", in,
+                        all, transitions));
+            }
+        }
+        lines.add(indent + "}");
         return lines;
     }
 

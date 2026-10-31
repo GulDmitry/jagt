@@ -177,4 +177,94 @@ class ChartTest {
 
         assertThat(step.effects()).containsExactly("moved");
     }
+
+    private static ChartBuilder<Event, Facts, String> scopedLamp() {
+        return Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF)
+                .region(Lamp.MODE, Mode.DIM, Lamp.POWER, Power.ON)
+                .onExit(Lamp.MODE, Mode.BRIGHT, "mode left")
+                .onExit(Lamp.POWER, Power.ON, "power left")
+                .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
+                .on(Lamp.POWER, Power.ON, Press.class).to(Power.OFF)
+                .on(Lamp.MODE, Mode.DIM, Tick.class).emit("brightened").to(Mode.BRIGHT)
+                .on(Lamp.MODE, Mode.BRIGHT, Hit.class).to(Mode.DIM);
+    }
+
+    @Test
+    void aScopedRegionTakesNoEdgeWhileItsParentStandsElsewhere() {
+        Chart<Event, Facts, String> chart = scopedLamp().build();
+
+        ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Tick());
+
+        assertThat(step.effects()).isEmpty();
+        assertThat(step.configuration().get(Lamp.MODE)).isEqualTo(Mode.DIM);
+    }
+
+    @Test
+    void aScopedRegionGoesBackToItsInitialStateWhenItsParentLeavesTheState() {
+        Chart<Event, Facts, String> chart = scopedLamp().build();
+        Configuration inside = chart.configuration(Map.of("power", "ON", "mode", "BRIGHT"));
+
+        ChartStep<String> step = chart.step(inside, new Facts(Mode.DIM), new Press());
+
+        assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
+        assertThat(step.configuration().get(Lamp.MODE)).isEqualTo(Mode.DIM);
+    }
+
+    @Test
+    void aScopedRegionRunsTheExitEffectsOfItsStateBeforeItsParents() {
+        Chart<Event, Facts, String> chart = scopedLamp().build();
+        Configuration inside = chart.configuration(Map.of("power", "ON", "mode", "BRIGHT"));
+
+        ChartStep<String> step = chart.step(inside, new Facts(Mode.DIM), new Press());
+
+        assertThat(step.effects()).containsExactly("mode left", "power left");
+    }
+
+    @Test
+    void aScopedRegionStateNothingInsideItsParentReachesIsReported() {
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF)
+                .region(Lamp.MODE, Mode.DIM, Lamp.POWER, Power.ON)
+                .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
+                .on(Lamp.POWER, Power.ON, Press.class).to(Power.OFF)
+                .on(Lamp.MODE, Mode.DIM, Tick.class).to(Mode.DIM);
+
+        assertThatThrownBy(builder::build).isInstanceOfSatisfying(ChartInvalid.class,
+                invalid -> assertThat(invalid.problems()).contains("state mode.BRIGHT is unreachable"));
+    }
+
+    @Test
+    void aRegionScopedToAnUnknownRegionIsReported() {
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
+                .region(Lamp.MODE, Mode.DIM, Lamp.POWER, Power.ON)
+                .on(Lamp.MODE, Mode.DIM, Tick.class).to(Mode.BRIGHT)
+                .on(Lamp.MODE, Mode.BRIGHT, Hit.class).to(Mode.DIM);
+
+        assertThatThrownBy(builder::build).isInstanceOfSatisfying(ChartInvalid.class,
+                invalid -> assertThat(invalid.problems()).containsExactly("region mode is scoped to unknown region power"));
+    }
+
+    @Test
+    void aScopedRegionIsDrawnInsideTheStateItLivesIn() {
+        Chart<Event, Facts, String> chart = scopedLamp().build();
+
+        assertThat(chart.render()).isEqualTo("""
+                stateDiagram-v2
+                    state power {
+                        state "OFF" as power_OFF
+                        state "ON" as power_ON
+                        [*] --> power_OFF
+                        power_OFF --> power_ON : Press
+                        power_ON --> power_OFF : Press
+                        state power_ON {
+                            state "DIM" as mode_DIM
+                            state "BRIGHT" as mode_BRIGHT
+                            [*] --> mode_DIM
+                            mode_DIM --> mode_BRIGHT : Tick
+                            mode_BRIGHT --> mode_DIM : Hit
+                        }
+                    }
+                """);
+    }
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -22,8 +23,22 @@ final class Validation {
         transitions.stream().map(Edge::region).distinct().filter(name -> !storedNames.contains(name))
                 .forEach(name -> problems.add(derivedNames.contains(name)
                         ? "derived region " + name + " has a transition" : "transition on unknown region " + name));
+        stored.forEach(region -> problems.addAll(scopeProblems(region, stored)));
         stored.forEach(region -> problems.addAll(problemsOf(region, transitions)));
         return problems;
+    }
+
+    private static <F> List<String> scopeProblems(Stored<F> region, List<Stored<F>> stored) {
+        String parentName = region.scope().map(Stored.Scope::parent).orElse("");
+        if (region.scope().isEmpty()) {
+            return List.of();
+        }
+        Optional<Stored<F>> parent = stored.stream().filter(other -> other.name().equals(parentName)).findFirst();
+        if (parent.isEmpty()) {
+            return List.of("region " + region.name() + " is scoped to unknown region " + parentName);
+        }
+        return parent.get().scope().isEmpty() ? List.of() : List.of("region " + region.name()
+                + " is scoped to region " + parentName + ", which is itself scoped");
     }
 
     private static <E, X, F> List<String> problemsOf(Stored<F> region, List<Edge<E, F>> transitions) {
