@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.PlanGate;
-import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.statechart.Chart;
@@ -15,6 +14,7 @@ import dev.jagt.statechart.RegionId;
 
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import static dev.jagt.orchestrator.task.TaskStatus.*;
  */
 final class TaskChart {
 
-    private static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
+    static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
 
     private static final RegionId<StopKind> STOP = new RegionId<>("stop", StopKind.class);
 
@@ -38,7 +38,7 @@ final class TaskChart {
 
     private static final RegionId<AgentReport> REPORT = new RegionId<>("report", AgentReport.class);
 
-    private static final RegionId<TurnKind> TURN = new RegionId<>("turn", TurnKind.class);
+    static final RegionId<TurnKind> TURN = new RegionId<>("turn", TurnKind.class);
 
     private static final RegionId<DeployPhase> DEPLOY = new RegionId<>("deploy", DeployPhase.class);
 
@@ -56,11 +56,7 @@ final class TaskChart {
 
     private static final RegionId<InfraPhase> INFRA = new RegionId<>("infra", InfraPhase.class);
 
-    private static final RegionId<QaPhase> QA = new RegionId<>("qa", QaPhase.class);
-
     private static final RegionId<MasterPhase> MASTER = new RegionId<>("master", MasterPhase.class);
-
-    private static final RegionId<QaPhase> BENEATH_QA = new RegionId<>("qa beneath a read", QaPhase.class);
 
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
@@ -85,7 +81,9 @@ final class TaskChart {
     private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
             AgentReport.PERMISSION);
 
-    private static final Chart<TaskMove, ChartFacts, TaskEffect> CHART = build();
+    private static final Composition INSTALLED = Composition.builtIn();
+
+    private static final Chart<TaskMove, ChartFacts, TaskEffect> CHART = of(INSTALLED);
 
     private static final List<Configuration> STARTS = starts();
 
@@ -94,6 +92,10 @@ final class TaskChart {
 
     static Chart<TaskMove, ChartFacts, TaskEffect> chart() {
         return CHART;
+    }
+
+    static Chart<TaskMove, ChartFacts, TaskEffect> of(Composition composition) {
+        return build(composition);
     }
 
     /** What {@code move} does to a task standing at {@code phases}, in order; empty where no edge takes it. */
@@ -108,7 +110,7 @@ final class TaskChart {
 
     /** Whether a task at {@code status} with {@code facts} may be offered {@code action}. */
     static boolean offers(TaskStatus status, TaskAction action, Facts facts) {
-        return CHART.takes(LIFECYCLE, STARTS.get(status.ordinal()), new ChartFacts(false, QaPhase.NONE, facts),
+        return CHART.takes(LIFECYCLE, STARTS.get(status.ordinal()), new ChartFacts(false, Map.of(), facts),
                 new TaskMove.Offers(action));
     }
 
@@ -117,7 +119,13 @@ final class TaskChart {
     }
 
     private static Configuration configurationOf(Phases phases) {
-        return CHART.configuration(Map.ofEntries(
+        Map<String, String> plain = new HashMap<>(corePhases(phases));
+        INSTALLED.checkers().forEach(id -> plain.put(id, phases.checker(id).name()));
+        return CHART.configuration(plain);
+    }
+
+    private static Map<String, String> corePhases(Phases phases) {
+        return Map.ofEntries(
                 Map.entry(LIFECYCLE.name(), phases.lifecycle().name()), Map.entry(STOP.name(), phases.stop().name()),
                 Map.entry(PLAN.name(), phases.plan().name()), Map.entry(REPORT.name(), phases.report().name()),
                 Map.entry(TURN.name(), phases.turn().name()), Map.entry(DEPLOY.name(), phases.deploy().name()),
@@ -125,7 +133,7 @@ final class TaskChart {
                 Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
                 Map.entry(CHECKS.name(), phases.checks().name()),
                 Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()),
-                Map.entry(QA.name(), phases.qa().name()), Map.entry(MASTER.name(), phases.master().name())));
+                Map.entry(MASTER.name(), phases.master().name()));
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
@@ -165,13 +173,13 @@ final class TaskChart {
         return EnumSet.copyOf(READ);
     }
 
-    private static Chart<TaskMove, ChartFacts, TaskEffect> build() {
+    private static Chart<TaskMove, ChartFacts, TaskEffect> build(Composition composition) {
         ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart = Chart.builder();
         chart.region(LIFECYCLE, NEW, Set.of(DONE));
         stops(chart);
         plans(chart);
         says(chart);
-        turns(chart);
+        turns(chart, composition);
         deploys(chart);
         gits(chart);
         repos(chart);
@@ -179,17 +187,15 @@ final class TaskChart {
         checks(chart);
         approvals(chart);
         infras(chart);
-        qas(chart);
+        composition.roles().forEach(role -> role.declareRegion(chart));
         masters(chart);
-        sessions(chart);
+        sessions(chart, composition);
         ran(chart);
         TaskOffers.declare(chart, LIFECYCLE);
         reports(chart);
         reads(chart);
         edge(chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
-        chart.onMatching(LIFECYCLE, IN_PROGRESS, "qa round declined", TaskChart::declinesAQaRound)
-                .when((others, move) -> others.get(QA) == QaPhase.ROUND_OPEN && others.get(TURN) == TurnKind.OPEN)
-                .emit(new TaskEffect.Lands(DEPLOYED)).to(DEPLOYED);
+        composition.roles().forEach(role -> role.declareLifecycleEdge(chart));
         edge(chart, VERIFYING, "verified", new TaskMove.Verified(true)::equals, REVIEW_PENDING);
         edge(chart, VERIFYING, "verification failed", new TaskMove.Verified(false)::equals, IN_PROGRESS);
         return chart.build();
@@ -244,7 +250,7 @@ final class TaskChart {
         }
     }
 
-    private static void turns(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+    private static void turns(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Composition composition) {
         chart.region(TURN, TurnKind.CLOSED);
         for (TurnKind from : TurnKind.values()) {
             relayed(chart, from);
@@ -255,8 +261,7 @@ final class TaskChart {
             } else {
                 closed.to(TurnKind.CLOSED);
             }
-            chart.onMatching(TURN, from, "qa read ended on its turn", move -> move instanceof TaskMove.QaReadEnded ended
-                            && ended.holds()).emit(new TaskEffect.ClosesTurn()).to(TurnKind.CLOSED);
+            composition.roles().forEach(role -> role.declareTurnEdge(chart, from));
             for (TurnKind restored : TurnKind.values()) {
                 chart.onMatching(TURN, from, "turn restored " + restored, move -> move instanceof TaskMove.TurnRestored
                                 undone && TurnKind.of(undone.before()) == restored)
@@ -296,10 +301,10 @@ final class TaskChart {
         }
     }
 
-    private static void sessions(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+    private static void sessions(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Composition composition) {
         chart.region(SESSION, SessionPhase.NONE);
         chart.derived(ASK, facts -> facts.stampedAsk() ? AskStamp.STAMPED : AskStamp.NONE);
-        chart.derived(BENEATH_QA, ChartFacts::beneathQa);
+        composition.roles().forEach(role -> role.declareBeneath(chart));
         EnumSet<SessionPhase> turnsEnd = EnumSet.of(SessionPhase.NONE, SessionPhase.WORKING, SessionPhase.IDLE,
                 SessionPhase.QUIET);
         for (SessionPhase from : SessionPhase.values()) {
@@ -456,11 +461,6 @@ final class TaskChart {
         }
     }
 
-    private static boolean declinesAQaRound(TaskMove move) {
-        return move instanceof TaskMove.QaDeclined declined && declined.means() == AgentReport.NO_CHANGES
-                && declined.reported() == IN_PROGRESS;
-    }
-
     private static void masters(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
         chart.region(MASTER, MasterPhase.STANDS_IN);
         for (MasterPhase from : MasterPhase.values()) {
@@ -470,57 +470,6 @@ final class TaskChart {
                         move -> new TaskEffect.NotesMaster(((TaskMove.MasterNoted) move).note()), to);
             }
         }
-    }
-
-    private static void qas(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
-        chart.region(QA, QaPhase.NONE);
-        for (QaPhase from : QaPhase.values()) {
-            chart.onMatching(QA, from, "a qa read opened", move -> move instanceof TaskMove.Relayed relayed
-                            && QaVerdict.isStep(relayed.step()))
-                    .when((others, move) -> others.get(LIFECYCLE) == DEPLOYED)
-                    .emitFor(move -> new TaskEffect.OpensQaRead(((TaskMove.Relayed) move).step()))
-                    .to(QaPhase.READING);
-        }
-        for (QaPhase beneath : EnumSet.of(QaPhase.NONE, QaPhase.ROUND_OPEN, QaPhase.PASSED)) {
-            chart.onMatching(QA, QaPhase.READING, "the read ended, " + beneath + " beneath",
-                            TaskChart::endsATurn)
-                    .when((others, move) -> others.get(BENEATH_QA) == beneath)
-                    .emit(new TaskEffect.ClosesQaRead()).to(beneath);
-            chart.onMatching(QA, QaPhase.READING, "deployed change left, " + beneath + " beneath",
-                            move -> !endsATurn(move))
-                    .when((others, move) -> others.get(BENEATH_QA) == beneath && others.get(LIFECYCLE) == DEPLOYED
-                            && land(DEPLOYED, move).filter(to -> to != DEPLOYED).isPresent())
-                    .emit(new TaskEffect.ClosesQaRead()).to(beneath);
-        }
-        qaVerdicts(chart);
-    }
-
-    private static void qaVerdicts(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
-        for (QaPhase from : QaPhase.values()) {
-            boolean reading = from == QaPhase.READING;
-            regionEdge(chart, QA, from, "qa passed, standing", move -> move instanceof TaskMove.QaPassed passed
-                    && passed.standing(), TaskChart::passesQa, reading ? from : QaPhase.PASSED);
-            regionEdge(chart, QA, from, "qa passed, not standing", move -> move instanceof TaskMove.QaPassed passed
-                    && !passed.standing(), TaskChart::passesQa, from);
-            regionEdge(chart, QA, from, "qa round sent, open", move -> move instanceof TaskMove.QaRoundSent sent
-                    && sent.opens(), TaskChart::sendsQaRound, reading ? from : QaPhase.ROUND_OPEN);
-            regionEdge(chart, QA, from, "qa round sent, not open", move -> move instanceof TaskMove.QaRoundSent sent
-                    && !sent.opens(), TaskChart::sendsQaRound, from);
-        }
-    }
-
-    private static boolean endsATurn(TaskMove move) {
-        return move instanceof TaskMove.Relayed || move instanceof TaskMove.TurnClosed
-                || move instanceof TaskMove.TurnRestored || move instanceof TaskMove.QaReadEnded;
-    }
-
-    private static TaskEffect passesQa(TaskMove move) {
-        return new TaskEffect.PassesQa(((TaskMove.QaPassed) move).sha());
-    }
-
-    private static TaskEffect sendsQaRound(TaskMove move) {
-        TaskMove.QaRoundSent sent = (TaskMove.QaRoundSent) move;
-        return new TaskEffect.SendsQaRound(sent.digest(), sent.rows());
     }
 
     private static boolean beginsARound(TaskMove move) {
@@ -577,7 +526,7 @@ final class TaskChart {
         }
     }
 
-    private static <S extends Enum<S>> void regionEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
+    static <S extends Enum<S>> void regionEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
                                                        RegionId<S> region, S from, String label,
                                                        Predicate<TaskMove> matches,
                                                        Function<TaskMove, TaskEffect> effect, S to) {

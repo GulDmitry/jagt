@@ -280,10 +280,10 @@ public final class TaskReducer {
             case TaskMove.MasterNoted noted -> new TaskMove.MasterNoted(noted.note(), MasterPhase.of(
                     task.withMaster(noted.note().applyTo(task.masterOrNone()))));
             case TaskMove.QaPassed passed -> new TaskMove.QaPassed(passed.sha(),
-                    QaPhase.of(task.withQa(task.qaOrNone().withPassed(passed.sha()))) == QaPhase.PASSED);
+                    CheckerPhase.of(task.withQa(task.qaOrNone().withPassed(passed.sha()))) == CheckerPhase.PASSED);
             case TaskMove.QaRoundSent sent -> new TaskMove.QaRoundSent(sent.digest(), sent.rows(),
-                    QaPhase.of(task.withQa(task.qaOrNone().withRound(sent.digest(), sent.rows())))
-                            == QaPhase.ROUND_OPEN);
+                    CheckerPhase.of(task.withQa(task.qaOrNone().withRound(sent.digest(), sent.rows())))
+                            == CheckerPhase.ROUND_OPEN);
             case TaskMove.InfraCleared cleared -> new TaskMove.InfraCleared(cleared.all(), unarmed(task));
             case TaskMove.ChecksRead read -> new TaskMove.ChecksRead(read.hostStatus(), read.tip(),
                     !task.readsStaleOn(read.tip()));

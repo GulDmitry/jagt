@@ -80,7 +80,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
     /** An agent that stopped is not working, whatever status it kept: the wait is the human's. */
     private static Owner ownerOf(TaskStatus status, boolean hasReviewRequest, RoundState round,
                                  boolean agentSilent, boolean pollStopped) {
-        if (masterReading(status, round) || round.qa() == QaPhase.READING) {
+        if (masterReading(status, round) || round.qa() == CheckerPhase.READING) {
             return Owner.AGENT;
         }
         // ASKING IS STOPPING, whatever status it was asked from: the session waits until its question is answered.

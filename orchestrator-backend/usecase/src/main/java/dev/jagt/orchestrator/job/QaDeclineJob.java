@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.QaPhase;
+import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
@@ -62,14 +62,14 @@ public class QaDeclineJob implements TaskJob {
     @Override
     public void run(String taskId, TaskState task) {
         QaConfig qa = config.load().qa();
-        QaPhase reading = QaPhase.of(task);
+        CheckerPhase reading = CheckerPhase.of(task);
         Optional<QaRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, record));
-        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && reading != QaPhase.READING) {
+        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && reading != CheckerPhase.READING) {
             return;
         }
         String sha = asked.get().sha();
         String rows = task.qaOrNone().roundRows();
-        String step = reading == QaPhase.READING ? QaVerdict.AGAIN : QaVerdict.DECLINE;
+        String step = reading == CheckerPhase.READING ? QaVerdict.AGAIN : QaVerdict.DECLINE;
         Answer<QaDecline> answer = reads.decline(taskId, step, asked.get().digest(), prompts.decline(taskId,
                 task.worktreePath(), sha, qa, rows, String.valueOf(task.message())));
         QaDecline decline = answer.facts().orElse(QaDecline.failed(sha, answer.failure()));

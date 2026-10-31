@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.flow.QaPhase;
+import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -70,7 +70,7 @@ public class MasterAnswerJob implements Job {
     /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
     private static boolean answers(TaskState task, Turns.Profile profile) {
         return Move.asking(task.status(), task.report())
-                && Turns.next(task.status(), task.report(), task.stopped(), QaPhase.of(task), profile) == Turn.Holder.MASTER
+                && Turns.next(task.status(), task.report(), task.stopped(), CheckerPhase.of(task), profile) == Turn.Holder.MASTER
                 && !task.masterOrNone().unanswered().equals(task.askedDigest());
     }
 
