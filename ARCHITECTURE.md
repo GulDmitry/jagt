@@ -76,7 +76,9 @@ answer. Every type in `flow/`, one question each:
 |------|---------|
 | `flow/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
 | `Outcome` | OK, NOTHING, RELAYED, CONFLICT, PARTIAL, GONE + the sentence, the stamp, the cause |
-| `FlowRules` | `rule(DEPLOY).from(<statuses>).when(<guard>).on(OK, DEPLOYED).on(CONFLICT, DEPLOY_CONFLICT).add()` |
+| `TaskChart` | the regions and their edges: `edge(chart, DEPLOYED, "deploy read red", move, DEPLOY_CONFLICT)` — one per status move |
+| `TaskOffers` | which statuses offer which action: a self-loop per action, guarded by the task's facts |
+| `FlowRules` | the questions asked of the chart — `allows`, `allowed`, `next`, `reportable` — and no declaration |
 | `Facts` | the guard's second argument — an open request, a live deploy, and a liveness probe passed as a SUPPLIER |
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
 | `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
@@ -111,7 +113,7 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-master-chart.md`](docs/task-master-chart.md). The other marks are bookkeeping, written by `withMark` from anywhere.
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
   (`service/TaskProvisioning`).
-- **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
+- **A move with no edge in `TaskChart` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
   PARTIAL alone refuses: stamped first, thrown second, so half a change on a shared branch is recorded.
@@ -175,7 +177,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 | you want to | do this |
 |-------------|---------|
-| add a per-task verb | a constant in `flow/TaskAction`, a class in `capability/`, **and** a rule in `flow/FlowRules` |
+| add a per-task verb | a constant in `flow/TaskAction`, a class in `capability/`, **and** its offer in `flow/TaskOffers` with the edge in `flow/TaskChart` leading each outcome |
 | add a report | one `GlobalCommand` in `command/` with `report()` true — the board picks it up |
 | add a launch shortcut | a `GlobalCommand` whose `part()` names the board form it opens |
 | replace a built-in verb | another `TaskCapability` for the same action with a higher `priority()` |
@@ -253,7 +255,7 @@ file it reads its instructions from.
 
 At startup, **one report of everything wrong**, never first-failure, because a half-valid assembly boots and then does
 nothing: `port/StartupCheck` implementations are collected by `startup/StartupValidation`, which throws
-`Misconfigured` once with every problem. Twelve of them: six in `startup/`, and six at the edge, which can name the
+`Misconfigured` once with every problem. Some live in `startup/`, the rest at the edge, which can name the
 key that fixes it. The composition half, and what of it exists:
 
 | # | check | state |

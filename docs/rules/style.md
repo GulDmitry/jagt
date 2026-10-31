@@ -52,7 +52,7 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 - **No duplicated block of 75 tokens or more in main**, found by PMD's copy-paste detector (`DuplicationTest`): one holder
   named for what it does; identifiers and literals count, so a copy with other names is still found.
 - **Cognitive complexity 12 per method at most**, PMD's count of Sonar's metric (`CognitiveComplexityTest`,
-  [0053](../decisions/0053-a-method-reads-at-cognitive-complexity-fifteen-at-most.md)): over it, extract a named step.
+  [0053](../decisions/0053-a-method-reads-at-cognitive-complexity-twelve-at-most.md)): over it, extract a named step.
   The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
