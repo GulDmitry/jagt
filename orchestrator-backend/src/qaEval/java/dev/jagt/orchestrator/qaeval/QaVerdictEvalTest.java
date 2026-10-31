@@ -122,7 +122,8 @@ abstract class QaVerdictEvalTest {
         Path worktree = QaEvalWorkspace.worktreeFor(QaEvalWorkspace.root()
                 .resolve("repos/" + ROUND.incrementAndGet() + "/repo"), deployed);
         String sha = QaEvalWorkspace.head(worktree);
-        String landedProbe = deployed.environment().toString().contains("GET /version") ? url + "/version" : null;
+        String landedProbe = deployed.probe().isEmpty() ? null
+                : url + deployed.probe().substring(deployed.probe().indexOf(' ') + 1);
         QaConfig qa = new QaConfig(true, System.getProperty("qaEval.model"), List.of(new QaEnvironment(url, landedProbe)));
         QaReader.Run run = deployed.declines()
                 ? prompts.decline(deployed.key(), worktree.toString(), sha, qa,

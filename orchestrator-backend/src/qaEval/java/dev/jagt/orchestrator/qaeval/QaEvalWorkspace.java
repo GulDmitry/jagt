@@ -85,9 +85,18 @@ final class QaEvalWorkspace {
         String roles = ((java.util.Map<?, ?>) deployed.environment().getOrDefault("login", java.util.Map.of()))
                 .keySet().stream().map(role -> "- " + role + ": sign in with GET " + environmentUrl + "/login/" + role)
                 .collect(Collectors.joining("\n"));
+        java.util.List<String> pages = new java.util.ArrayList<>();
+        ((java.util.Map<?, ?>) deployed.environment().getOrDefault("ui", java.util.Map.of()))
+                .keySet().forEach(page -> pages.add("GET " + page));
+        ((java.util.Map<?, ?>) deployed.environment().getOrDefault("http", java.util.Map.of()))
+                .keySet().forEach(call -> pages.add(String.valueOf(call)));
+        String served = pages.stream().map(page -> {
+            int space = page.indexOf(' ');
+            return "- " + page.substring(0, space) + " " + environmentUrl + page.substring(space + 1);
+        }).collect(Collectors.joining("\n"));
         return "\n\nThe ticket " + deployed.key() + ", " + deployed.title() + ", has these acceptance criteria:\n"
                 + criteria + "\n" + landed + "\nThe change is the last commit of the worktree you run in."
-                + "\nRoles you may sign in as:\n" + roles;
+                + "\nRoles you may sign in as:\n" + roles + "\nPages the environment serves:\n" + served;
     }
 
     static void git(Path directory, String... arguments) throws Exception {

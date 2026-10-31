@@ -3,7 +3,7 @@ ticket:
   key: ABC-112
   title: Sort offers by premium, ascending
   criteria:
-    - {id: C1, text: "The offers list sorts by premium ascending by default"}
+    - {id: C1, text: "The offers list sorts by premium ascending by default, below the pinned best offer"}
 deploy:
   sha: 5263748
   tip: 5263748

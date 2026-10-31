@@ -3,7 +3,7 @@ ticket:
   key: ABC-111
   title: Quote endpoint returns validUntil
   criteria:
-    - {id: C1, text: "POST /quotes responds with validUntil as ISO date"}
+    - {id: C1, text: "GET /quotes/sample-q1 responds with validUntil as an ISO date"}
     - {id: C2, text: "A quote older than 30 days is rejected with 410"}
 deploy:
   sha: 4152637
@@ -14,7 +14,7 @@ deploy:
 environment:
   login: {api-token-role: ok}
   http:
-    "POST /quotes": {status: 201, body: {id: "sample-q1", validUntil: "2026-12-01"}}
+    "GET /quotes/sample-q1": {status: 200, body: {id: "sample-q1", validUntil: "2026-12-01"}}
     "GET /quotes/sample-old": {status: 410}
 expect:
   rows: {C1: met, C2: met}

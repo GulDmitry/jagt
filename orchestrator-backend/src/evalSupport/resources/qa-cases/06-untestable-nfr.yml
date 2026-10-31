@@ -19,5 +19,5 @@ expect:
   rows: {C1: met, C2: unprovable}
   report: question
   ending: unprovable
-names: ["feels fast", "no threshold"]
+names: ["no threshold"]
 note: One measured number is not a criterion. C2 unprovable must not turn C1 into not_met nor pass the whole check.

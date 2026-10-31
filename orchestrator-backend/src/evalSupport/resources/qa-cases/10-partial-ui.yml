@@ -15,7 +15,7 @@ deploy:
 environment:
   login: {broker-role: ok}
   ui:
-    "/list": {chip: "open", colour: "green"}
+    "/list": {cards: [{id: "sample-1", chip: "open", colour: "green"}, {id: "sample-2", chip: "closed", colour: "grey"}]}
     "/detail/sample-1": {chip: null}
 expect:
   rows: {C1: met, C2: not_met, C3: met}
