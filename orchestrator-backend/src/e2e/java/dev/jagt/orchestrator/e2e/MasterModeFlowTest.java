@@ -267,7 +267,7 @@ class MasterModeFlowTest {
     }
 
     @Test
-    void stopsATaskWhoseRoundsBringNothingNew() throws Exception {
+    void stopsATaskHandedBackOnTheTreeItsVerificationFailedOn() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
         E2eWorkspace.failVerificationWith(paths.configFile(), "echo widget broken >&2; exit 1");
         judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
@@ -279,6 +279,26 @@ class MasterModeFlowTest {
         agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed again", "");
 
         assertThat(awaitTask(TaskState::stopped).stop().trigger()).isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
+        assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
+        assertThat(asked()).isFalse();
+    }
+
+    @Test
+    void stopsATaskWhoseVerificationRoundIsSentBackPastTheCeiling() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
+        E2eWorkspace.failVerificationWith(paths.configFile(), "echo widget broken >&2; exit 1");
+        E2eWorkspace.stopRoundsOfOneStepAfter(paths.configFile(), 1);
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+        handBackOwingVerification();
+        awaitTold("jagt ran this project's verification command and it failed");
+        awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS);
+        Files.writeString(worktree().resolve("README.md"), "e2e fixture, edited\n");
+        Files.writeString(worktree().resolve("task_notes.md"), "widget fixed another way\n");
+
+        agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed another way", "");
+
+        assertThat(awaitTask(TaskState::stopped).stop().trigger()).isEqualTo(TaskStop.Trigger.ROUNDS);
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
         assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
         assertThat(asked()).isFalse();

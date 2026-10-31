@@ -101,6 +101,10 @@ final class E2eWorkspace {
                 "deployBranch: dev, verifyCommand: [\"sh\", \"-c\", \"" + shellScript + "\"] }"));
     }
 
+    static void stopRoundsOfOneStepAfter(Path configFile, int rounds) throws IOException {
+        Files.writeString(configFile, "  loopBreaker: { rounds: " + rounds + " }\n", StandardOpenOption.APPEND);
+    }
+
     static void stallConflictsAfterMinutes(Path configFile, int minutes) throws IOException {
         Files.writeString(configFile, "  conflictStallMinutes: " + minutes + "\n", StandardOpenOption.APPEND);
     }
