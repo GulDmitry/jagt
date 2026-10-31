@@ -85,7 +85,9 @@ public class WatchdogService implements Job {
     public void ended(String taskId, String printed) {
         long now = clock.millis();
         SessionSign.Ended sign = new SessionSign.Ended(printed.isBlank() ? null : OneLine.clipped(printed));
-        stateService.updateTask(taskId, task -> TaskReducer.signed(task, sign, now));
+        SessionSign.Read unread = new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0,
+                properties.watchdog().staleAfter().toMillis(), null);
+        stateService.updateTask(taskId, task -> TaskReducer.signed(TaskReducer.signed(task, unread, now), sign, now));
         check(taskId);
     }
 

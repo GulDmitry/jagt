@@ -136,6 +136,28 @@ class WatchdogServiceTest {
     }
 
     @Test
+    void endsAFreshSessionWhoseCliExitedBeforeItsFirstRead(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1")
+                .lastActiveTimestamp(1_000).build());
+        state.updateTask("ABC-1", TaskReducer::sessionStartedOver);
+        Notifications notifications = mock(Notifications.class);
+        SessionProbe probe = mock(SessionProbe.class);
+        when(probe.read(anyString(), any(), anyLong(), anyLong()))
+                .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
+
+        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC())
+                .ended("ABC-1", "Error: bad config");
+
+        assertThat(SessionPhase.silentBecause(state.task("ABC-1").orElseThrow()))
+                .isEqualTo("the session ended: Error: bad config");
+        verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
+                && "the session ended: Error: bad config".equals(sent.body())));
+    }
+
+    @Test
     void watchesOnlyTheStatusesInWhichAnAgentIsSupposedToBeWorking() {
         assertThat(Arrays.stream(TaskStatus.values()).filter(WatchdogService::watches).toList())
                 .containsExactly(TaskStatus.NEW, TaskStatus.IN_PROGRESS, TaskStatus.SHIPPING);
