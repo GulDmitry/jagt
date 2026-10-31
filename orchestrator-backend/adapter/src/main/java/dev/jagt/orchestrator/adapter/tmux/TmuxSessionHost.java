@@ -81,6 +81,8 @@ public class TmuxSessionHost implements SessionHost {
             killTaskWindows(session, taskId);
             String windowId = newWindow(session, taskId, worktreePath,
                     WorktreeHooks.gitEnv(worktreePath) + command);
+            log.atInfo().setMessage("task window opened").addKeyValue("task", taskId)
+                    .addKeyValue("window", windowId).log();
             // The window name must stay the taskId; the alias rides in a window user-option.
             if (alias != null && !alias.isBlank()) {
                 processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
@@ -235,6 +237,8 @@ public class TmuxSessionHost implements SessionHost {
                 var kill = processRunner.run(null, TIMEOUT, List.of(tmux(), "kill-window", "-t", id));
                 if (kill.exitCode() == 0) {
                     killed++;
+                    log.atInfo().setMessage("task window closed").addKeyValue("task", taskId)
+                            .addKeyValue("window", id).log();
                 } else {
                     log.atWarn().setMessage("tmux kill-window failed")
                             .addKeyValue("window", id)
