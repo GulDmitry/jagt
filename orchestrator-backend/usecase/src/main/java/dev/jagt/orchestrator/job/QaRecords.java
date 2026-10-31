@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,9 +19,6 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class QaRecords {
-
-    /** A check that found its environment down is made again after this. */
-    public static final Duration WAIT = Duration.ofMinutes(5);
 
     private static final String TAB = "\t";
 
@@ -37,16 +33,28 @@ public class QaRecords {
         return Optional.ofNullable(all().get(taskId));
     }
 
-    /** True where this deploy's check ended and is not one to make again. */
+    /** True where this deploy's check ended or waits on its environment, and is not one to make again yet. */
     public boolean settled(String taskId, String digest) {
-        return latest(taskId).filter(record -> record.digest().equals(digest))
-                .filter(record -> record.ending() != QaEnding.WAITING
-                        || clock.millis() - record.at() < WAIT.toMillis()).isPresent();
+        return latest(taskId).filter(record -> record.digest().equals(digest)).isPresent();
+    }
+
+    /** The environment answered: the waiting check is no longer held and runs again. */
+    public synchronized void released(String taskId, String digest) {
+        Map<String, Record> kept = all();
+        Record record = kept.get(taskId);
+        if (record != null && record.digest().equals(digest) && record.ending() == QaEnding.WAITING) {
+            kept.remove(taskId);
+            write(kept);
+        }
     }
 
     public synchronized void put(String taskId, String digest, String sha, QaEnding ending) {
         Map<String, Record> kept = all();
         kept.put(taskId, new Record(digest, sha, ending, clock.millis()));
+        write(kept);
+    }
+
+    private void write(Map<String, Record> kept) {
         try {
             Files.write(paths.qaVerdicts(), kept.entrySet().stream().map(entry -> entry.getKey() + TAB
                     + entry.getValue().digest() + TAB + entry.getValue().sha() + TAB + entry.getValue().ending()
