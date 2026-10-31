@@ -23,6 +23,9 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.TestInstancePostProcessor;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +45,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("qaEval")
+@ExtendWith(QaVerdictEvalTest.ClaimsItsShard.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.import=",
         "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -52,6 +56,13 @@ abstract class QaVerdictEvalTest {
     private static final AtomicInteger ROUND = new AtomicInteger();
     private static final QaScoreboard SCOREBOARD = QaScoreboard.empty();
 
+    static final class ClaimsItsShard implements TestInstancePostProcessor {
+        @Override
+        public void postProcessTestInstance(Object instance, ExtensionContext context) {
+            QaEvalWorkspace.claim(context.getRequiredTestClass());
+        }
+    }
+
     @DynamicPropertySource
     static void orchestratorLivesInTheTrustedEvalRoot(DynamicPropertyRegistry registry) throws Exception {
         registry.add("server.port", () -> GATE_PORT);
@@ -59,7 +70,6 @@ abstract class QaVerdictEvalTest {
         registry.add("orchestrator.hook-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/api/agent/session");
         registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
         registry.add("orchestrator.assistant.max-cost-usd", () -> "0.10");
-        QaEvalWorkspace.shard();
         QaEvalWorkspace.clean();
         Path root = QaEvalWorkspace.root();
         Files.createDirectories(root);

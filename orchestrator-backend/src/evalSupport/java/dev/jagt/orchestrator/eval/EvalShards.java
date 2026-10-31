@@ -7,8 +7,12 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class EvalShards {
+
+    private static final Pattern SHARD_CLASS = Pattern.compile(".*Shard(\\d+)Test");
 
     private record Held(int index, FileChannel channel) {
     }
@@ -26,11 +30,26 @@ public final class EvalShards {
         return new EvalShards(base, shards);
     }
 
-    public synchronized int claim() {
+    public synchronized int claim(Class<?> shardClass) {
         if (held == null) {
-            held = claimFree();
+            held = claimOwn(indexOf(shardClass));
         }
         return held.index();
+    }
+
+    public synchronized int claimed() {
+        if (held == null) {
+            throw new IllegalStateException("No shard is claimed yet: the shard class claims its own in beforeAll.");
+        }
+        return held.index();
+    }
+
+    static int indexOf(Class<?> shardClass) {
+        Matcher number = SHARD_CLASS.matcher(shardClass.getSimpleName());
+        if (!number.matches()) {
+            throw new IllegalArgumentException(shardClass.getName() + " is not named <Name>Shard<N>Test.");
+        }
+        return Integer.parseInt(number.group(1));
     }
 
     public synchronized void release() throws IOException {
@@ -39,26 +58,31 @@ public final class EvalShards {
         }
     }
 
-    private Held claimFree() {
+    private Held claimOwn(int index) {
+        if (index >= shards) {
+            throw new IllegalStateException("Shard " + index + " is past the " + shards + " this run was given.");
+        }
         try {
             Files.createDirectories(base);
-            for (int index = 0; index < shards; index++) {
-                FileChannel channel = FileChannel.open(base.resolve("shard-" + index + ".lock"),
-                        StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-                try {
-                    if (channel.tryLock() != null) {
-                        return new Held(index, channel);
-                    }
-                } catch (OverlappingFileLockException heldByThisJvm) {
-                    channel.close();
-                    continue;
+            FileChannel channel = FileChannel.open(base.resolve("shard-" + index + ".lock"),
+                    StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            try {
+                if (channel.tryLock() != null) {
+                    return new Held(index, channel);
                 }
+            } catch (OverlappingFileLockException heldByThisJvm) {
                 channel.close();
+                throw heldAlready(index);
             }
+            channel.close();
         } catch (IOException unclaimable) {
             throw new UncheckedIOException(unclaimable);
         }
-        throw new IllegalStateException("Another eval run holds every shard of " + base
+        throw heldAlready(index);
+    }
+
+    private IllegalStateException heldAlready(int index) {
+        return new IllegalStateException("Another eval run holds shard " + index + " of " + base
                 + " — one session cannot serve two. Wait for it, or end it.");
     }
 }

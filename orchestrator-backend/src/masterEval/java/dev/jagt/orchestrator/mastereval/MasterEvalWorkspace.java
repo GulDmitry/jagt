@@ -24,15 +24,15 @@ final class MasterEvalWorkspace {
     }
 
     static int shard() {
-        return SHARDS.claim();
+        return SHARDS.claimed();
     }
 
     static Path root() {
         return FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolve("root").resolve("shard-" + shard());
     }
 
-    static void claim() throws Exception {
-        shard();
+    static void claim(Class<?> shardClass) throws Exception {
+        SHARDS.claim(shardClass);
         reapSessionsOfDeadRuns();
     }
 

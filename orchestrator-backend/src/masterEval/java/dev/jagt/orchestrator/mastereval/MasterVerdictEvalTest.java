@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 @Tag("masterEval")
+@org.junit.jupiter.api.extension.ExtendWith(MasterVerdictEvalTest.ClaimsItsShard.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.import=",
         "orchestrator.startup-checks=false", "orchestrator.open-terminal-window=false"})
 @org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
@@ -56,13 +57,20 @@ abstract class MasterVerdictEvalTest {
 
     private static final AtomicInteger ROUND = new AtomicInteger();
 
+    static final class ClaimsItsShard implements org.junit.jupiter.api.extension.TestInstancePostProcessor {
+        @Override
+        public void postProcessTestInstance(Object instance, org.junit.jupiter.api.extension.ExtensionContext context)
+                throws Exception {
+            MasterEvalWorkspace.claim(context.getRequiredTestClass());
+        }
+    }
+
     @DynamicPropertySource
     static void orchestratorLivesInTheTrustedEvalRoot(DynamicPropertyRegistry registry) throws Exception {
         registry.add("server.port", () -> GATE_PORT);
         registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
         registry.add("orchestrator.hook-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/api/agent/session");
         registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
-        MasterEvalWorkspace.claim();
         MasterEvalWorkspace.clean();
         Path root = MasterEvalWorkspace.root();
         Files.createDirectories(root);

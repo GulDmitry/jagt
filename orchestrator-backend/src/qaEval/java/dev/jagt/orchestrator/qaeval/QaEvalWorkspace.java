@@ -22,8 +22,12 @@ final class QaEvalWorkspace {
         return Integer.getInteger("qaEval.shards", 1);
     }
 
+    static void claim(Class<?> shardClass) {
+        SHARDS.claim(shardClass);
+    }
+
     static int shard() {
-        return SHARDS.claim();
+        return SHARDS.claimed();
     }
 
     static void release() throws IOException {

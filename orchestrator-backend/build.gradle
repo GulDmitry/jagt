@@ -481,6 +481,9 @@ tasks.register('roleEval', Test) {
     if (!evalIsArbiter) {
         testLogging.showStandardStreams = true
     }
+    testLogging.exceptionFormat = 'full'
+    reports.junitXml.outputLocation = layout.buildDirectory.dir("test-results/roleEval-${evalRole}")
+    reports.html.outputLocation = layout.buildDirectory.dir("reports/tests/roleEval-${evalRole}")
     filter {
         (0..<shards).each { includeTestsMatching "*${testClass}${it}Test" }
     }
