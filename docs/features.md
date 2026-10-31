@@ -15,8 +15,7 @@
 
 - **Questions come first** — A session that needs an answer says so before anything else, and the move becomes yours.
   [spec](../openspec/specs/attention/spec.md#requirement-a-question-is-reported-first)
-- **Silence is noticed** — A stalled, crashed or waiting session is flagged on the board without you looking, read from
-  one stored session record that a restart keeps.
+- **Silence is noticed** — A stalled, crashed or waiting session is flagged without you looking, from one session record a restart keeps.
   [spec](../openspec/specs/attention/spec.md#requirement-silence-is-read-by-the-watchdog-and-recorded-by-the-reducer)
 - **Attention tiers** — What needs you is ranked, counted in the header and filterable by whose move it is.
   [spec](../openspec/specs/attention/spec.md#requirement-attention-tiers)
@@ -177,6 +176,7 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-starting-a-task)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../openspec/specs/task-flow/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
+- **QA check** — One read-only model run checks a deploy against its ticket. Key: `orchestrator.qa.enabled`. [spec](../openspec/specs/qa/spec.md)
 
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 

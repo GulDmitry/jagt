@@ -4,7 +4,8 @@
 
 ## Status
 
-Proposed 2026-10-31, signed off by the owner 2026-10-30; nothing is built, its spec delta lands with the code.
+Accepted 2026-10-31, signed off by the owner 2026-10-30; built in the commits of `qa-role`, its spec delta archived with them.
+Dispute routing, the `done` signal, a restart re-run of an open turn, scripted flows and the browser are not built yet.
 Builds on [0072](0072-the-conversation-turn-is-the-machines.md),
 [0073](0073-cases-are-the-humans-and-the-stand-comes-first.md),
 [0010](0010-the-humans-own-word-stands-over-the-master.md), [0017](0017-the-master-is-seen-in-one-feed-window.md).
