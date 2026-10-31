@@ -7,7 +7,8 @@ A task's life: which status allows which action, where each outcome leads, and h
 ## Requirements
 
 ### Requirement: One table owns the life of a task
-`flow/FlowRules` SHALL hold, in one compiler-checked Java file, which statuses allow which action and what each outcome leads to. Its guard MUST
+`flow/TaskChart` SHALL hold, as one compiler-checked statechart, which statuses allow which action and what each outcome leads to;
+`flow/FlowRules` answers from it. Its guard MUST
 read `flow/Facts`: an open request, a request found merged, a live deploy, and a liveness probe the projection passes as "no" (a spawn per row).
 
 #### Scenario: An action is asked
