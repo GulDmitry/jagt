@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
@@ -35,6 +36,7 @@ public class RoleCheck implements StartupCheck {
         if (qaMissing() && roles.skipped().stream().noneMatch(skipped -> skipped.key().equals(QA_KEY))) {
             notes.add(qaWhy());
         }
+        notes.addAll(unknownKeys());
         return notes;
     }
 
@@ -49,6 +51,15 @@ public class RoleCheck implements StartupCheck {
 
     private boolean qaEnabled() {
         return Files.exists(paths.configFile()) && config.load().role(Checkers.QA).enabledOrDefault();
+    }
+
+    private List<Problem> unknownKeys() {
+        if (!Files.exists(paths.configFile())) {
+            return List.of();
+        }
+        List<String> installed = roles.definitions().stream().map(RoleDefinition::id).toList();
+        return config.load().unknownRoles(installed).stream().map(id -> new Problem("roles." + id,
+                "orchestrator.roles." + id + " names no installed role; the installed ones are " + installed)).toList();
     }
 
     private Problem qaWhy() {

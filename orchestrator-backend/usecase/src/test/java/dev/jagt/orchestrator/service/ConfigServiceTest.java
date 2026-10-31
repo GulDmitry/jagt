@@ -105,6 +105,19 @@ class ConfigServiceTest {
     }
 
     @Test
+    void aRolesKeyNamingNoRoleWithJobsNeverSwitchesTheSessionsDeployCheckOff(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  roles:\n    foo:\n      enabled: true\n    QA:\n      enabled: true\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        boolean any = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().anyCheckerEnabled();
+
+        assertThat(any).isFalse();
+    }
+
+    @Test
     void theRolesKeyWinsOverTheOldOne(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n  roles:\n    qa:\n      enabled: false\n");

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,6 +20,11 @@ public final class Checkers {
         Map<String, CheckerPhase> phases = new LinkedHashMap<>();
         TaskChart.installedCheckers().forEach(role -> phases.put(role, CheckerPhase.of(task, role)));
         return phases;
+    }
+
+    /** The installed checkers that run jobs: QA's alone today. */
+    public static List<String> withJobs() {
+        return TaskChart.installedCheckers().stream().filter(QA::equals).toList();
     }
 
     /** The first checker whose read is running: it holds the turn. */

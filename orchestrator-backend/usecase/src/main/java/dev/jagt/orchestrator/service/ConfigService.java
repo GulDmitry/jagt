@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -589,9 +590,11 @@ public class ConfigService implements LoopBreaker.Current {
         }
 
         public boolean anyCheckerEnabled() {
-            Set<String> ids = new java.util.HashSet<>(roles == null ? Set.<String>of() : roles.keySet());
-            ids.add(Checkers.QA);
-            return ids.stream().anyMatch(id -> role(id).enabledOrDefault());
+            return Checkers.withJobs().stream().anyMatch(id -> role(id).enabledOrDefault());
+        }
+
+        public List<String> unknownRoles(Collection<String> installed) {
+            return roles == null ? List.of() : roles.keySet().stream().filter(id -> !installed.contains(id)).sorted().toList();
         }
 
         /** The role as {@code roles.<id>} writes it; where it names none, QA falls back to the old {@code qa} key. */

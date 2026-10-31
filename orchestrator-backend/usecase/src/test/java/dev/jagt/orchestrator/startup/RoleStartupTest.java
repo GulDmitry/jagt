@@ -78,6 +78,23 @@ class RoleStartupTest {
         });
     }
 
+    @Test
+    void aRolesKeyNamingNoInstalledRoleIsANoteNamingTheKey(@TempDir Path root) throws Exception {
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    QA:\n      enabled: true\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(root.resolve("jagt.yml").toString()));
+
+        RoleCheck check = check(new InstalledRoles(paths), paths);
+
+        assertThat(check.notes()).singleElement().satisfies(note -> {
+            assertThat(note.key()).isEqualTo("roles.QA");
+            assertThat(note.text()).contains("orchestrator.roles.QA names no installed role");
+        });
+        assertThat(check.problems()).isEmpty();
+    }
+
     private static RoleCheck check(InstalledRoles roles, OrchestratorPaths paths) {
         return new RoleCheck(roles, new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths);
     }
