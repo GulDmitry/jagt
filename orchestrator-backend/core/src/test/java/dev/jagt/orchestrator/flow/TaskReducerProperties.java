@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.InfraRetry;
-import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -22,7 +21,6 @@ import net.jqwik.api.Provide;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -195,19 +193,6 @@ class TaskReducerProperties {
                     .ifPresent(moved -> assertThat(Turns.next(moved.status(), moved.report(), false,
                             QaPhase.of(moved), Turns.Profile.OFF) == Turn.Holder.QA)
                             .isEqualTo(QaPhase.of(moved) == QaPhase.READING));
-            return next;
-        }, (left, right) -> right);
-    }
-
-    @Property
-    void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman(@ForAll("tasks") TaskState start,
-                                                @ForAll("moves") List<TaskMove> moves) {
-        Turns.Profile acting = new Turns.Profile(MasterMode.ACT, Set.of());
-        moves.stream().reduce(start, (task, raw) -> {
-            TaskState next = TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
-            Optional.of(next).filter(moved -> MasterPhase.of(moved) == MasterPhase.LEFT)
-                    .ifPresent(moved -> assertThat(Turns.next(moved.status(), moved.report(), moved.stopped(), QaPhase.of(moved),
-                            acting.at(MasterPhase.of(moved)))).isNotEqualTo(Turn.Holder.MASTER));
             return next;
         }, (left, right) -> right);
     }

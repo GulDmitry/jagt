@@ -156,7 +156,7 @@ class TurnsTest {
     }
 
     @Test
-    void theMasterHoldsARoundItSealedWhoseVerdictFileTheCallerFoundGone() {
+    void theMasterHoldsARoundWhoseSealWasClearedForItsVerdictFileWasGone() {
         TaskState sealed = TaskReducer.masterVerdictGone(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0)).build());
 
@@ -164,5 +164,13 @@ class TurnsTest {
                 new Turns.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
 
         assertThat(holder).isEqualTo(Holder.MASTER);
+    }
+
+    @Test
+    void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman() {
+        Holder holder = Turns.next(TaskStatus.REVIEW_PENDING, AgentReport.PLAIN, false, QaPhase.NONE,
+                new Turns.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT));
+
+        assertThat(holder).isNotEqualTo(Holder.MASTER);
     }
 }

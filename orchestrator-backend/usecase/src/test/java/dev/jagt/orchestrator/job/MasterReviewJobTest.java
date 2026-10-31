@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -172,5 +174,22 @@ class MasterReviewJobTest {
         boolean reviewable = MasterReviewJob.reviewable(planned, false, true);
 
         assertThat(reviewable).isTrue();
+    }
+
+    @Test
+    void settlesTheMastersSealAgainstTheVerdictFileOnEveryTick(@TempDir Path root) throws Exception {
+        StateService state = stateIn(root);
+        MasterReview reviews = new MasterReview(state);
+        TaskState sealed = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
+                .lastActiveTimestamp(2_000L).build()
+                .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        state.putTask("ABC-1", sealed);
+        reviews.write("ABC-1", sealed, new MasterReview.Review(5, "", "", "", List.of()), "");
+        Files.delete(root.resolve(".jagt").resolve("master-review.json"));
+        master("judge");
+
+        new MasterReviewJob(state, config, panel, reviews, verdicts).run();
+
+        assertThat(MasterPhase.of(state.task("ABC-1").orElseThrow())).isEqualTo(MasterPhase.STANDS_IN);
     }
 }

@@ -82,10 +82,10 @@ public class MasterReview {
      * Tells the master region what the verdict file says now: the round it answers, or that it is gone or not
      * jagt's. A file that could not be read says nothing, so the seal stands.
      */
-    public synchronized void settle(String taskId, TaskState task) {
+    public void settle(String taskId, TaskState task) {
         Path file = storedFile(task);
         if (file == null || !Files.isRegularFile(file)) {
-            clearSeal(taskId, task);
+            clearSeal(taskId, task, "");
             return;
         }
         JagtJson.bytes(file).ifPresent(bytes -> reconcile(taskId, task, file, bytes));
@@ -95,18 +95,24 @@ public class MasterReview {
         String fingerprint = JagtJson.fingerprint(bytes);
         Master sealed = task.masterOrNone();
         if (!fingerprint.equals(sealed.seal())) {
-            clearSeal(taskId, task);
+            clearSeal(taskId, task, fingerprint);
             return;
         }
         JagtJson.parse(file, bytes, Review.class).filter(read -> read.round() != sealed.sealedRound())
-                .ifPresent(read -> state.updateTask(taskId,
-                        current -> TaskReducer.masterSealed(current, fingerprint, read.round())));
+                .ifPresent(read -> state.updateTask(taskId, current -> sealedAs(current, fingerprint)
+                        && current.masterOrNone().sealedRound() != read.round()
+                        ? TaskReducer.masterSealed(current, fingerprint, read.round()) : current));
     }
 
-    private void clearSeal(String taskId, TaskState task) {
+    private void clearSeal(String taskId, TaskState task, String fingerprint) {
         if (!task.masterOrNone().seal().isEmpty()) {
-            state.updateTask(taskId, TaskReducer::masterVerdictGone);
+            state.updateTask(taskId, current -> current.masterOrNone().seal().isEmpty() || sealedAs(current, fingerprint)
+                    ? current : TaskReducer.masterVerdictGone(current));
         }
+    }
+
+    private static boolean sealedAs(TaskState task, String fingerprint) {
+        return fingerprint.equals(task.masterOrNone().seal());
     }
 
     /** The fingerprint is recorded before the file lands, so a reader never meets a verdict without its seal. */

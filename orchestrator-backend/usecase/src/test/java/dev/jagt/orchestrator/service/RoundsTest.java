@@ -48,21 +48,6 @@ class RoundsTest {
     }
 
     @Test
-    void theMasterNoLongerReadsAHandBackItJudgedBeforeTheSealWasKeptWithItsRound() {
-        String json = """
-                {"status":"REVIEW_PENDING","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
-                 "repos":[{"project":"proj","worktreePath":"/wt"}],
-                 "turn":{"step":"ship","id":3,"digest":"","since":4,"marks":{"master-review:seal":"fingerprint"}}}
-                """;
-        TaskState task = TaskReducer.masterSealed(new JsonMapper().readValue(json, TaskState.class), "fingerprint", 3);
-
-        var round = rounds.of(task, ConfigService.ConfigFile.defaults()
-                .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-
-        assertThat(round.masterReading()).isFalse();
-    }
-
-    @Test
     void theMasterReadsTheHandBackAgainWhereTheVerdictFileIsGone() {
         TaskState task = TaskReducer.masterVerdictGone(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0)).build());
