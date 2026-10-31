@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
@@ -35,7 +36,7 @@ class HeadlessClaudeCheckerReaderTest {
     private final HeadlessClaudeCheckerReader reader = new HeadlessClaudeCheckerReader(new HeadlessClaude(
             new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), Clock.systemUTC())),
             ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
-            AssistantProperties.empty(), List.of(RoleDefinition.QA));
+            AssistantProperties.empty(), List.of(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))));
 
     @TempDir
     Path worktree;
@@ -46,7 +47,7 @@ class HeadlessClaudeCheckerReaderTest {
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
         reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
-                RoleDefinition.QA.answer().json(), "qa"));
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa"));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
@@ -65,7 +66,7 @@ class HeadlessClaudeCheckerReaderTest {
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
         reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "",
-                List.of("https://dev.example.test", "https://dev.example.test/version"), RoleDefinition.QA.answer().json(), "qa"));
+                List.of("https://dev.example.test", "https://dev.example.test/version"), RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa"));
 
         verify(reads).fence(any(), eq(new ReadScope(List.of(worktree), List.of("StructuredOutput"), true, List.of(),
                 List.of("https://dev.example.test", "https://dev.example.test/version"))));
@@ -78,7 +79,7 @@ class HeadlessClaudeCheckerReaderTest {
                         + "\"status\":\"met\",\"evidence\":\"GET answered 200\"}]}}", ""));
 
         reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
-                RoleDefinition.QA.answer().json(), "qa"));
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa"));
 
         assertThat(Files.readString(worktree.resolve("qa-report.md")))
                 .contains("abc123", "page opens", "GET answered 200");
@@ -90,7 +91,7 @@ class HeadlessClaudeCheckerReaderTest {
                 "{\"structured_output\":{\"failure\":\"\",\"dispute\":\"GET /list is unsorted\"}}", ""));
 
         QaDecline decline = reader.reconsider(new CheckerReader.Run("", "decide", worktree, "abc123", "", List.of(),
-                RoleDefinition.QA.decline().json(), "qa")).facts()
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).decline().json(), "qa")).facts()
                 .orElseThrow();
 
         assertThat(decline).isEqualTo(new QaDecline("abc123", "", "GET /list is unsorted"));

@@ -42,6 +42,8 @@ class GhosttyProfileContextTest {
     static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) throws IOException {
         Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
         Files.copy(Path.of("../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
         registry.add("orchestrator.root", () -> root.toString());
         registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());

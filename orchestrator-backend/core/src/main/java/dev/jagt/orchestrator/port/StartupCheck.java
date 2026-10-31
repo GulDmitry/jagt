@@ -14,6 +14,11 @@ public interface StartupCheck {
     /** Everything this part needs and does not have. Empty = ready. */
     List<Problem> problems();
 
+    /** What is not there but does not stop the start: said once, never thrown. */
+    default List<Problem> notes() {
+        return List.of();
+    }
+
     /**
      * Whether it asks about the machine jagt runs on, which a test runner is not, so switching the checks off
      * skips it. A check of jagt's own files answers false and runs always.

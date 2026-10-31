@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -37,7 +38,7 @@ class QaDeclineFlowTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", deployed());
 
-        QaEnding ending = new CheckerOutcomes(RoleDefinition.QA, mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+        QaEnding ending = new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
                 mock(TaskStops.class), state).declined("ABC-42", new QaDecline("proj@0123456789abcdef", "", ""), false);
 
         assertThat(ending).isEqualTo(QaEnding.DECLINED);
@@ -50,7 +51,7 @@ class QaDeclineFlowTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", deployed());
 
-        QaEnding ending = new CheckerOutcomes(RoleDefinition.QA, mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+        QaEnding ending = new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
                 mock(TaskStops.class), state).declined("ABC-42",
                 new QaDecline("proj@0123456789abcdef", "", "GET /list still unsorted"), false);
 
@@ -67,7 +68,7 @@ class QaDeclineFlowTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", deployed());
 
-        QaEnding ending = new CheckerOutcomes(RoleDefinition.QA, mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+        QaEnding ending = new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
                 mock(TaskStops.class), state).declined("ABC-42",
                 new QaDecline("proj@0123456789abcdef", "", "still unsorted after the answer"), true);
 
@@ -81,7 +82,7 @@ class QaDeclineFlowTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", deployed());
 
-        QaEnding ending = new CheckerOutcomes(RoleDefinition.QA, mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+        QaEnding ending = new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
                 mock(TaskStops.class), state).declined("ABC-42", new QaDecline("proj@fedcba9876543210", "", "x"), false);
 
         assertThat(ending).isEqualTo(QaEnding.DROPPED);

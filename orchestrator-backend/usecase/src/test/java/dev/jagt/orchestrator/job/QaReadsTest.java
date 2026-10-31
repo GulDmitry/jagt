@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.when;
 class QaReadsTest {
 
     private static final CheckerReader.Run RUN = new CheckerReader.Run("", "", Paths.get("/wt"), "proj@0123", "", List.of(),
-            RoleDefinition.QA.answer().json(), "qa");
+            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa");
 
     private static TaskState deployed() {
         return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build().withDeployment(new Deployment(1,
@@ -60,7 +61,7 @@ class QaReadsTest {
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         });
 
-        new CheckerReads(RoleDefinition.QA, reader, new TaskTurns(state, Clock.systemUTC())).check("ABC-42", QaVerdict.ACCEPT, "digest", RUN);
+        new CheckerReads(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), reader, new TaskTurns(state, Clock.systemUTC())).check("ABC-42", QaVerdict.ACCEPT, "digest", RUN);
 
         TaskState after = state.task("ABC-42").orElseThrow();
         assertThat(whileReading).containsExactly(new Turn.Holder.Role("qa"));

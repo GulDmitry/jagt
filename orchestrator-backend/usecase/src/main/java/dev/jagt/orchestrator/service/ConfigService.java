@@ -6,7 +6,7 @@ import lombok.With;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.protocol.SwitchJudgements;
@@ -590,7 +590,7 @@ public class ConfigService implements LoopBreaker.Current {
 
         public boolean anyCheckerEnabled() {
             Set<String> ids = new java.util.HashSet<>(roles == null ? Set.<String>of() : roles.keySet());
-            ids.add(RoleDefinition.QA.id());
+            ids.add(Checkers.QA);
             return ids.stream().anyMatch(id -> role(id).enabledOrDefault());
         }
 
@@ -600,7 +600,7 @@ public class ConfigService implements LoopBreaker.Current {
             if (written != null) {
                 return written;
             }
-            return RoleDefinition.QA.id().equals(id) ? RoleConfig.of(qa()) : RoleConfig.defaults();
+            return Checkers.QA.equals(id) ? RoleConfig.of(qa()) : RoleConfig.defaults();
         }
 
         @Override

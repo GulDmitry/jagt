@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -74,7 +75,7 @@ class QaRoundFlowTest {
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
 
-        new CheckerOutcomes(RoleDefinition.QA, relay, flow, stops, state).apply("ABC-42", task, verdict);
+        new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), relay, flow, stops, state).apply("ABC-42", task, verdict);
         TaskState relayed = state.task("ABC-42").orElseThrow();
         reports.report(new AgentStatusMessage("IN_PROGRESS", "the endpoint is fine", "no_changes", null, Map.of()), "ABC-42");
 
@@ -111,7 +112,7 @@ class QaRoundFlowTest {
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
 
-        new CheckerOutcomes(RoleDefinition.QA, relay, flow, stops, state).apply("ABC-42", task, verdict);
+        new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), relay, flow, stops, state).apply("ABC-42", task, verdict);
         reports.report(new AgentStatusMessage("IN_PROGRESS", "which environment?", "question", null, Map.of()), "ABC-42");
         turns.opened("ABC-42", "answered", "d2", TaskStatus.IN_PROGRESS);
         reports.report(new AgentStatusMessage("IN_PROGRESS", "the endpoint is fine", "no_changes", null, Map.of()), "ABC-42");
@@ -131,7 +132,7 @@ class QaRoundFlowTest {
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")), "", "");
 
-        new CheckerOutcomes(RoleDefinition.QA, mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()), mock(TaskStops.class), state)
+        new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()), mock(TaskStops.class), state)
                 .apply("ABC-42", task, verdict);
 
         TaskState asked = state.task("ABC-42").orElseThrow();
@@ -152,7 +153,7 @@ class QaRoundFlowTest {
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
         StepRelay relay = mock(StepRelay.class);
 
-        QaEnding ending = new CheckerOutcomes(RoleDefinition.QA, relay, new FlowReports(state, Clock.systemUTC()), mock(TaskStops.class), state)
+        QaEnding ending = new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), relay, new FlowReports(state, Clock.systemUTC()), mock(TaskStops.class), state)
                 .apply("ABC-42", task, verdict);
 
         assertThat(ending).isEqualTo(QaEnding.GONE);

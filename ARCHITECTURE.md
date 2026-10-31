@@ -263,12 +263,14 @@ key that fixes it. The composition half, and what of it exists:
 | 4 | a job's declared capability and watched statuses exist | partly — a `TaskJob` declares its `Watch` and `Jobs` hands it only those tasks (`JobsTest`); capability still planned |
 | 5 | a required port capability present in the selected adapter | weak form: a configured type resolves to a bean, and the platform it was picked for is the one jagt runs on (`adapter/PlatformCheck`) |
 | 6 | one owner per id | built for all three registries |
+| 7 | every role under `roles/<id>/` compiles and composes into the chart | built (`service/InstalledRoles`, `startup/RoleCheck`) — a role that does not is skipped with its reason, a note and never a problem |
 
 - No "stuck status" check beside #2, deliberately: the report door judges the status being reported, not the one being
   left, so no status can trap a task.
 - #5 checks nothing about thread resolution, tab titles or an attachable session host.
 - #6 refuses to start on a duplicate or blank job id, a duplicate command verb or an equal capability priority.
-- **The refusing half exists; the degrading half does not** — a missing kitty refuses rather than falling back.
+- **The refusing half exists; the degrading half is the roles alone** — a missing kitty refuses rather than falling back.
+  A role refused by its lint is left out and the rest start (`StartupCheck.notes`).
 
 ## The build
 

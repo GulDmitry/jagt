@@ -81,21 +81,41 @@ final class TaskChart {
     private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
             AgentReport.PERMISSION);
 
-    private static final Composition INSTALLED = Composition.builtIn();
+    private record Assembled(Composition composition, Chart<TaskMove, ChartFacts, TaskEffect> chart,
+                             List<Configuration> starts) {
 
-    private static final Chart<TaskMove, ChartFacts, TaskEffect> CHART = of(INSTALLED);
+        static Assembled of(Composition composition) {
+            Chart<TaskMove, ChartFacts, TaskEffect> chart = build(composition);
+            return new Assembled(composition, chart, Arrays.stream(TaskStatus.values())
+                    .map(status -> configurationOf(chart, composition, Phases.at(status))).toList());
+        }
+    }
 
-    private static final List<Configuration> STARTS = starts();
+    private static volatile Assembled current = Assembled.of(Composition.builtIn());
+
+    private static boolean installed;
 
     private TaskChart() {
     }
 
     static Chart<TaskMove, ChartFacts, TaskEffect> chart() {
-        return CHART;
+        return current.chart();
     }
 
     static List<String> installedCheckers() {
-        return INSTALLED.checkers();
+        return current.composition().checkers();
+    }
+
+    /** The composition every task is stepped on from now; set once, so a second call must name the same roles. */
+    static synchronized void install(Composition composition) {
+        if (installed && !current.composition().equals(composition)) {
+            throw new IllegalStateException("roles are installed once: " + current.composition().checkers()
+                    + " stand, not " + composition.checkers());
+        }
+        if (!installed) {
+            current = Assembled.of(composition);
+            installed = true;
+        }
     }
 
     static Chart<TaskMove, ChartFacts, TaskEffect> of(Composition composition) {
@@ -109,23 +129,22 @@ final class TaskChart {
 
     /** The configuration {@code move} leaves a task standing at {@code phases} in, with the effects it took. */
     static ChartStep<TaskEffect> step(Phases phases, TaskMove move) {
-        return CHART.step(configurationOf(phases), phases.facts(), move);
+        Assembled now = current;
+        return now.chart().step(configurationOf(now.chart(), now.composition(), phases), phases.facts(), move);
     }
 
     /** Whether a task at {@code status} with {@code facts} may be offered {@code action}. */
     static boolean offers(TaskStatus status, TaskAction action, Facts facts) {
-        return CHART.takes(LIFECYCLE, STARTS.get(status.ordinal()), new ChartFacts(false, Map.of(), facts),
-                new TaskMove.Offers(action));
+        Assembled now = current;
+        return now.chart().takes(LIFECYCLE, now.starts().get(status.ordinal()),
+                new ChartFacts(false, Map.of(), facts), new TaskMove.Offers(action));
     }
 
-    private static List<Configuration> starts() {
-        return Arrays.stream(TaskStatus.values()).map(status -> configurationOf(Phases.at(status))).toList();
-    }
-
-    private static Configuration configurationOf(Phases phases) {
+    private static Configuration configurationOf(Chart<TaskMove, ChartFacts, TaskEffect> chart,
+                                                 Composition composition, Phases phases) {
         Map<String, String> plain = new HashMap<>(corePhases(phases));
-        INSTALLED.checkers().forEach(id -> plain.put(id, phases.checker(id).name()));
-        return CHART.configuration(plain);
+        composition.checkers().forEach(id -> plain.put(id, phases.checker(id).name()));
+        return chart.configuration(plain);
     }
 
     private static Map<String, String> corePhases(Phases phases) {

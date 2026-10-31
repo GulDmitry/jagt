@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
@@ -15,6 +16,7 @@ import java.util.List;
  * once. Switching the checks off skips those about the machine, which a test runner is not; jagt's own files are
  * checked always.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class StartupValidation {
@@ -30,6 +32,9 @@ public class StartupValidation {
         if (!problems.isEmpty()) {
             throw new Misconfigured(problems);
         }
+        checks.stream().flatMap(check -> check.notes().stream()).forEach(note -> log.atWarn()
+                .setMessage("start goes on without").addKeyValue("what", note.key())
+                .addKeyValue("cause", note.text()).log());
     }
 
     /** A check that cannot answer is itself a part that is not there, and the start stops for that too. */

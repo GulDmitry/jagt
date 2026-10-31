@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
 class RoleBeans {
 
     @Bean
-    RoleDefinition qaDefinition() {
-        return RoleDefinition.QA;
+    RoleDefinition qaDefinition(InstalledRoles roles) {
+        return roles.require("qa");
     }
 
     @Bean

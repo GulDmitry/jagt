@@ -52,6 +52,8 @@ class CommandMappingEvalTest {
         java.nio.file.Files.createDirectories(workspace.resolve("root"));
         java.nio.file.Files.copy(Path.of("../session-brief.md.dist"), workspace.resolve("root/session-brief.md.dist"));
         java.nio.file.Files.copy(Path.of("../session-cases.md.dist"), workspace.resolve("root/session-cases.md.dist"));
+        java.nio.file.Files.createDirectories(workspace.resolve("root/roles/qa"));
+        java.nio.file.Files.copy(Path.of("../roles/qa/role.yml.dist"), workspace.resolve("root/roles/qa/role.yml.dist"));
         registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
         registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());

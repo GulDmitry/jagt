@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -36,7 +37,7 @@ class QaWaitJobTest {
         CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.WAITING);
 
-        new CheckerWaitJob(new RoleSettings(RoleDefinition.QA, config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        new CheckerWaitJob(new RoleSettings(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
         assertThat(records.settled("ABC-42", "digest")).isTrue();
     }
@@ -51,7 +52,7 @@ class QaWaitJobTest {
         CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.WAITING);
 
-        new CheckerWaitJob(new RoleSettings(RoleDefinition.QA, config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        new CheckerWaitJob(new RoleSettings(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
         assertThat(records.settled("ABC-42", "digest")).isFalse();
     }
@@ -66,7 +67,7 @@ class QaWaitJobTest {
         CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.PASSED);
 
-        new CheckerWaitJob(new RoleSettings(RoleDefinition.QA, config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        new CheckerWaitJob(new RoleSettings(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
         assertThat(records.settled("ABC-42", "digest")).isTrue();
     }

@@ -121,6 +121,9 @@ abstract class BoardPageContext {
                 Files.copy(file, root.resolve(file.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
         }
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         Files.writeString(root.resolve("jagt.yml"), """
                 orchestrator:
                   projects:

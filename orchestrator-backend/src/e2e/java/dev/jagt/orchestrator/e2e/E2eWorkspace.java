@@ -76,6 +76,9 @@ final class E2eWorkspace {
                 StandardCopyOption.REPLACE_EXISTING);
         Files.copy(Path.of("../master-cases.md.dist"), root.resolve("master-cases.md.dist"),
                 StandardCopyOption.REPLACE_EXISTING);
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"),
+                StandardCopyOption.REPLACE_EXISTING);
     }
 
     static void writeConfig(Path configFile, Path projectPath, TaskFlowCase flowCase) throws IOException {

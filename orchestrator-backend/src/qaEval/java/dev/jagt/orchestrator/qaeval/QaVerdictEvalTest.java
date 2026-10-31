@@ -72,6 +72,8 @@ abstract class QaVerdictEvalTest {
         Files.createDirectories(root.resolve("roles/qa"));
         Files.copy(Path.of("../roles/qa/cases.md.dist"), root.resolve("roles/qa/cases.md.dist"),
                 StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"),
+                StandardCopyOption.REPLACE_EXISTING);
         Files.copy(Path.of(System.getProperty("qaEval.brief", "../roles/qa/brief.md.dist")),
                 root.resolve(RoleFiles.oldBriefCopy("qa")),
                 StandardCopyOption.REPLACE_EXISTING);

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -25,7 +26,7 @@ class QaPromptsTest {
                 new QaEnvironment("https://stage.example.test", null)));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-        CheckerReader.Run run = new CheckerPrompts(RoleDefinition.QA, new RoleFiles(paths, "qa")).accept("ABC-42", "/wt", "abc123", qa, QaVerdict.ACCEPT);
+        CheckerReader.Run run = new CheckerPrompts(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), new RoleFiles(paths, "qa")).accept("ABC-42", "/wt", "abc123", qa, QaVerdict.ACCEPT);
 
         assertThat(run.environments()).containsExactly("https://dev.example.test",
                 "https://dev.example.test/version", "https://stage.example.test");

@@ -13,15 +13,14 @@ class RoleDefinitionsTest {
     void theQaCompiledFromItsRoleYmlIsTheQaDeclaredInCode() {
         RoleDefinition compiled = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"));
 
-        assertThat(compiled.id()).isEqualTo(RoleDefinition.QA.id());
-        assertThat(compiled.name()).isEqualTo(RoleDefinition.QA.name());
-        assertThat(compiled.model()).isEqualTo(RoleDefinition.QA.model());
-        assertThat(compiled.trigger()).isEqualTo(RoleDefinition.QA.trigger());
-        assertThat(compiled.oncePer()).isEqualTo(RoleDefinition.QA.oncePer());
-        assertThat(compiled.outcomes()).isEqualTo(RoleDefinition.QA.outcomes());
-        assertThat(compiled.tools()).isEqualTo(RoleDefinition.QA.tools());
-        assertThat(compiled.answer().json()).isEqualTo(RoleDefinition.QA.answer().json());
-        assertThat(compiled.decline().json()).isEqualTo(RoleDefinition.QA.decline().json());
+        assertThat(compiled.id()).isEqualTo("qa");
+        assertThat(compiled.trigger()).containsExactly("deployed", "pipelines-green", "environment-named");
+        assertThat(compiled.oncePer()).isEqualTo("deploy");
+        assertThat(compiled.outcomes()).containsExactly("round", "question", "wait", "dispute", "stop");
+        assertThat(compiled.tools().cli()).containsExactly("Read", "Grep", "Glob", "Bash", "WebFetch");
+        assertThat(compiled.tools().refuse()).contains("Write", "Bash(git push:*)");
+        assertThat(compiled.tools().git()).isTrue();
+        assertThat(compiled.tools().fetch()).isTrue();
     }
 
     @Test

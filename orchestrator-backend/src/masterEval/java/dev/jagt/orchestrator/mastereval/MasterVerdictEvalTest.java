@@ -72,6 +72,9 @@ abstract class MasterVerdictEvalTest {
                 Files.copy(file, root.resolve(file.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
         }
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         Files.copy(Path.of(System.getProperty("masterEval.brief", "../master-brief.md.dist")),
                 root.resolve("master-brief.md"),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);

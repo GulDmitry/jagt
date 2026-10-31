@@ -2,14 +2,16 @@ package dev.jagt.orchestrator.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class CheckerSchemaTest {
 
     @Test
     void theQaSchemaFromItsDefinitionIsTheOneQaAnsweredBefore() {
-        String answer = RoleDefinition.QA.answer().json();
-        String decline = RoleDefinition.QA.decline().json();
+        String answer = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json();
+        String decline = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).decline().json();
 
         assertThat(answer).isEqualTo("{\"type\":\"object\",\"properties\":{\"failure\":{\"type\":\"string\"},"
                 + "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"criterion\":"
