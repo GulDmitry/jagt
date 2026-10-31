@@ -1,5 +1,9 @@
 # The QA role: a headless model that checks a deployed change against its ticket, read-only, once per deploy.
 # Copy to `roles/qa/role.yml` to change it; a copy replaces this file whole.
+# Take effect: id, model (the default; `roles.qa.model` in jagt.yml overrides it), trigger, tools, answer, decline.
+# trigger: deployed = the change is live; environment-named = jagt.yml names an environment; tracker-open = the task
+# is not closed; pipelines-green always holds, as the check's key is the digest the green deploy pipelines set.
+# Declared for the lint only, nothing else reads them: name, oncePer (one check per deploy is fixed), outcomes.
 id: qa
 name: QA
 model: sonnet

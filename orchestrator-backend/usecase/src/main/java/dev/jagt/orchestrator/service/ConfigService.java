@@ -345,8 +345,8 @@ public class ConfigService implements LoopBreaker.Current {
                 return enabled != null && enabled;
             }
 
-            public String modelOrDefault() {
-                return model == null || model.isBlank() ? "sonnet" : model.strip();
+            public String modelOr(String roleModel) {
+                return model == null || model.isBlank() ? roleModel : model.strip();
             }
 
             public List<QaEnvironment> environmentsOrEmpty() {

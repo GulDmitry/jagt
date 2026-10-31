@@ -31,4 +31,16 @@ class QaPromptsTest {
         assertThat(run.environments()).containsExactly("https://dev.example.test",
                 "https://dev.example.test/version", "https://stage.example.test");
     }
+
+    @Test
+    void theRoleYmlsModelIsTheDefaultAndJagtYmlOverridesIt(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+        CheckerPrompts prompts = new CheckerPrompts(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), new RoleFiles(paths, "qa"));
+
+        CheckerReader.Run byRole = prompts.accept("ABC-42", "/wt", "abc123", new RoleConfig(true, null, List.of()), QaVerdict.ACCEPT);
+        CheckerReader.Run overridden = prompts.accept("ABC-42", "/wt", "abc123", new RoleConfig(true, "opus", List.of()), QaVerdict.ACCEPT);
+
+        assertThat(byRole.model()).isEqualTo("sonnet");
+        assertThat(overridden.model()).isEqualTo("opus");
+    }
 }

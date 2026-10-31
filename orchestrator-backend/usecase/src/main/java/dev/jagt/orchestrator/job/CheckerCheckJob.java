@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -75,9 +76,21 @@ public class CheckerCheckJob implements TaskJob {
         records.put(taskId, digest, sha, outcomes.apply(taskId, task, verdict));
     }
 
-    /** The deployment where a check may open: QA on, an environment named, the pipelines green and the change live. */
-    private static Optional<Deployment> openFor(TaskState task, RoleConfig qa) {
-        return Optional.ofNullable(task.deployment()).filter(deployment -> qa.enabledOrDefault()
-                && !qa.environmentsOrEmpty().isEmpty() && deployment.live() && deployment.askedDigest() != null);
+    /** The deployment where a check may open: the role is on and every predicate its trigger names holds. */
+    private Optional<Deployment> openFor(TaskState task, RoleConfig config) {
+        List<String> trigger = settings.role().trigger();
+        return Optional.ofNullable(task.deployment()).filter(deployment -> config.enabledOrDefault()
+                && deployment.askedDigest() != null
+                && trigger.stream().allMatch(predicate -> holds(predicate, task, deployment, config)));
+    }
+
+    private static boolean holds(String predicate, TaskState task, Deployment deployment, RoleConfig config) {
+        return switch (predicate) {
+            case "deployed" -> deployment.live();
+            case "pipelines-green" -> deployment.askedDigest() != null;
+            case "environment-named" -> !config.environmentsOrEmpty().isEmpty();
+            case "tracker-open" -> FlowRules.checkedWhereItLanded(task.status());
+            default -> false;
+        };
     }
 }

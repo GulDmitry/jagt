@@ -27,7 +27,7 @@ public class CheckerPrompts {
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nCheck it on:\n" + environments;
         return new CheckerReader.Run(brief.text(), brief.section(step) + "\n\n" + facts, Path.of(worktree), sha,
-                qa.modelOrDefault(), reachable(qa), role.answer().json(), role.id());
+                qa.modelOr(role.model()), reachable(qa), role.answer().json(), role.id());
     }
 
     /** The round QA sent back and the reason the session gave for changing nothing, read against fresh evidence. */
@@ -37,7 +37,7 @@ public class CheckerPrompts {
         String facts = taskId + " is deployed at " + sha + ".\nThe rows you found not met:\n" + rows
                 + "\nThe session changed nothing, and says:\n" + reason + "\nCheck on:\n" + environments;
         return new CheckerReader.Run(brief.text(), brief.section(QaVerdict.DECLINE) + "\n\n" + facts, Path.of(worktree), sha,
-                qa.modelOrDefault(), reachable(qa), role.decline().json(), role.id());
+                qa.modelOr(role.model()), reachable(qa), role.decline().json(), role.id());
     }
 
     private static List<String> reachable(RoleConfig qa) {
