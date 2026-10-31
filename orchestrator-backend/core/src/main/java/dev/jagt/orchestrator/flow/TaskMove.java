@@ -77,4 +77,8 @@ sealed interface TaskMove {
 
     record Signed(SessionSign sign) implements TaskMove {
     }
+
+    /** A session started over: nothing the old one signed speaks for the new one. */
+    record SessionStartedOver() implements TaskMove {
+    }
 }

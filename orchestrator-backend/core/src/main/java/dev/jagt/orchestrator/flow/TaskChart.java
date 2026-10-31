@@ -259,6 +259,7 @@ final class TaskChart {
         EnumSet<SessionPhase> turnsEnd = EnumSet.of(SessionPhase.NONE, SessionPhase.WORKING, SessionPhase.IDLE,
                 SessionPhase.QUIET);
         for (SessionPhase from : SessionPhase.values()) {
+            startedOver(chart, from);
             chart.onMatching(SESSION, from, "work started clearing a stamped permission",
                             move -> move instanceof TaskMove.Signed signed
                                     && signed.sign() instanceof SessionSign.WorkStarted)
@@ -288,6 +289,16 @@ final class TaskChart {
             if (turnsEnd.contains(from) || from == SessionPhase.FAILED) {
                 signed(chart, from, "turn failed", SessionPhase.FAILED, SessionSign.TurnFailed.class);
             }
+        }
+    }
+
+    private static void startedOver(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from) {
+        EdgeBuilder<TaskMove, Boolean, TaskEffect, SessionPhase> over = chart.onMatching(SESSION, from, "started over",
+                new TaskMove.SessionStartedOver()::equals).emit(new TaskEffect.RestartsSession());
+        if (from == SessionPhase.NONE) {
+            over.stay();
+        } else {
+            over.to(SessionPhase.NONE);
         }
     }
 

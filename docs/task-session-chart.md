@@ -10,6 +10,7 @@ stateDiagram-v2
         state "FAILED" as session_FAILED
         state "GONE" as session_GONE
         [*] --> session_NONE
+        session_NONE --> session_NONE : started over
         session_NONE --> session_WORKING : work started clearing a stamped permission
         session_NONE --> session_WORKING : work started
         session_NONE --> session_NONE : asked
@@ -23,6 +24,7 @@ stateDiagram-v2
         session_NONE --> session_IDLE : restarted
         session_NONE --> session_IDLE : turn ended
         session_NONE --> session_FAILED : turn failed
+        session_WORKING --> session_NONE : started over
         session_WORKING --> session_WORKING : work started clearing a stamped permission
         session_WORKING --> session_WORKING : work started
         session_WORKING --> session_WORKING : asked
@@ -36,6 +38,7 @@ stateDiagram-v2
         session_WORKING --> session_IDLE : restarted
         session_WORKING --> session_IDLE : turn ended
         session_WORKING --> session_FAILED : turn failed
+        session_IDLE --> session_NONE : started over
         session_IDLE --> session_WORKING : work started clearing a stamped permission
         session_IDLE --> session_WORKING : work started
         session_IDLE --> session_IDLE : asked
@@ -49,6 +52,7 @@ stateDiagram-v2
         session_IDLE --> session_IDLE : restarted
         session_IDLE --> session_IDLE : turn ended
         session_IDLE --> session_FAILED : turn failed
+        session_QUIET --> session_NONE : started over
         session_QUIET --> session_WORKING : work started clearing a stamped permission
         session_QUIET --> session_WORKING : work started
         session_QUIET --> session_QUIET : asked
@@ -62,6 +66,7 @@ stateDiagram-v2
         session_QUIET --> session_IDLE : restarted
         session_QUIET --> session_IDLE : turn ended
         session_QUIET --> session_FAILED : turn failed
+        session_FAILED --> session_NONE : started over
         session_FAILED --> session_WORKING : work started clearing a stamped permission
         session_FAILED --> session_WORKING : work started
         session_FAILED --> session_FAILED : asked
@@ -74,6 +79,7 @@ stateDiagram-v2
         session_FAILED --> session_GONE : ended
         session_FAILED --> session_IDLE : restarted
         session_FAILED --> session_FAILED : turn failed
+        session_GONE --> session_NONE : started over
         session_GONE --> session_WORKING : work started clearing a stamped permission
         session_GONE --> session_WORKING : work started
         session_GONE --> session_GONE : asked

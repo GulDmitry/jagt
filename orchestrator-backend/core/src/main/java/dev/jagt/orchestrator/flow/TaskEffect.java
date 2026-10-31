@@ -38,4 +38,7 @@ sealed interface TaskEffect {
 
     record Signs(SessionSign sign) implements TaskEffect {
     }
+
+    record RestartsSession() implements TaskEffect {
+    }
 }

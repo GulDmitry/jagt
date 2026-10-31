@@ -125,7 +125,7 @@ public final class TaskReducer {
 
     /** {@code task} whose session starts over: nothing the old one signed speaks for the new one. */
     public static TaskState sessionStartedOver(TaskState task) {
-        return task.withSession(Session.startedOver());
+        return step(task, new TaskMove.SessionStartedOver(), 0);
     }
 
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
@@ -155,6 +155,7 @@ public final class TaskReducer {
             case TaskEffect.RestoresTurn restores -> task.withTurn(restores.before());
             case TaskEffect.Deploys deploys -> task.withDeployment(deploys.step()
                     .applyTo(task.deployment() == null ? Deployment.defaults() : task.deployment(), now));
+            case TaskEffect.RestartsSession restarts -> task.withSession(Session.startedOver());
             case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }
