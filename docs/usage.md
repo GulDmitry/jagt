@@ -24,7 +24,7 @@ tab's title counts what waits on you, and its icon wears a dot — red when some
 **The header** says only what needs a look: how many tasks wait on you, a failed job (press it for the jobs, each
 runnable now), the Master while it presses your buttons, review polling when it is off. **Reports** holds every
 report; **New task** holds the form, with **+ add a project**, which reads a repository path and writes its entry
-into `jagt.yml`.
+into `jagt.yml`; `project edit <key>` opens it filled to change one.
 
 **Filtering.** Type in the filter box (`/` focuses it, `Esc` clears) to match an alias, ticket number or title. The
 page never polls; the backend pushes changes, and a tab left open across a restart loads the new board itself.

@@ -849,4 +849,25 @@ class ProjectSetupTest {
                 .hasMessageStartingWith("Cannot change ");
         assertThat(Files.readString(configFile)).isEqualTo(before);
     }
+
+    @Test
+    void entryServesOneProjectsManagedKeysAndRefusesAKeyJagtYmlDoesNotHold() throws Exception {
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
+                orchestrator:
+                  projects:
+                    billing:
+                      path: /srv/billing
+                      baseBranch: origin/main
+                      deployBranch: dev
+                      about: the invoicing backend
+                """);
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+                paths, mock(Processes.class));
+
+        assertThat(setup.entry("billing")).isEqualTo(new ProjectSetup.Entry("billing", "/srv/billing", "origin/main",
+                "dev", null, "the invoicing backend"));
+        assertThatThrownBy(() -> setup.entry("web")).isInstanceOf(IllegalArgumentException.class);
+    }
 }

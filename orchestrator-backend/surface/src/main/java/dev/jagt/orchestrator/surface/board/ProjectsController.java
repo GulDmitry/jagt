@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.ProjectRemoval;
 import dev.jagt.orchestrator.service.ProjectSetup;
 import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,8 +29,15 @@ public class ProjectsController {
 
     /** A GET: reading a path writes nothing. */
     @GetMapping("/check")
-    public ProjectSetup.Reading check(@RequestParam("path") String path) {
-        return setup.read(path);
+    public ProjectSetup.Reading check(@RequestParam("path") String path,
+                                      @RequestParam(value = "own", required = false) @Nullable String own) {
+        return setup.read(path, own);
+    }
+
+    /** A GET: the entry the edit form starts from. */
+    @GetMapping("/{key}")
+    public ProjectSetup.Entry entry(@PathVariable("key") String key) {
+        return setup.entry(key);
     }
 
     /** A GET: listing folders writes nothing. */

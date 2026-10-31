@@ -1,5 +1,4 @@
-// The form that adds a project: the path is read as it is typed, and what the reading suggests fills the fields
-// a human has not touched. Writing is the server's; this page only asks.
+// Adds or edits a project: the path is read as typed and fills the fields untouched.
 
 import {render} from 'preact';
 import {api, refusal} from '../core/api.js';
@@ -7,38 +6,64 @@ import {html} from '../components/html.js';
 import {ProjectChecks} from '../components/ProjectChecks.js';
 import {sending} from './submit.js';
 
-const dialog = document.getElementById('project-dialog');
-const form = document.getElementById('project-form');
-const path = document.getElementById('project-path');
-const checks = document.getElementById('project-checks');
+const $ = (id) => document.getElementById(id);
+const dialog = $('project-dialog');
+const form = $('project-form');
+const path = $('project-path');
+const checks = $('project-checks');
 const suggested = {key: 'project-key', baseBranch: 'project-base', deployBranch: 'project-deploy'};
-const folders = document.getElementById('project-folders');
-const branches = document.getElementById('project-branches');
+const folders = $('project-folders');
+const branches = $('project-branches');
 const SETTLE = 400;
 const LISTING = 150;
-let due = 0;
-let listing = 0;
-let asked = 0;
-let listed = 0;
+let due = 0, listing = 0, asked = 0, listed = 0;
+
+let editing = null;
+
+const reset = (key = null) => {
+  form.reset();
+  form.querySelectorAll('[data-typed]').forEach((field) => delete field.dataset.typed);
+  render(null, checks);
+  editing = key;
+  $('project-title').textContent = key ? `Edit ${key}` : 'Add a project';
+  form.querySelector('button[type=submit]').textContent = key ? 'Save to jagt.yml' : 'Add to jagt.yml';
+  $('project-key').readOnly = !!key;
+};
 
 export const open = () => {
   if (!dialog.open) dialog.showModal();
   path.focus();
 };
 
-// A field the human typed into is theirs; only an untouched one takes what the reading suggests.
+async function edit(key) {
+  const entry = await api(`/api/projects/${encodeURIComponent(key)}`);
+  reset(key);
+  Object.entries({...entry, verify: (entry.verifyCommand || []).join(' ')}).forEach(([name, value]) => {
+    if (form.elements[name]) Object.assign(form.elements[name], {value: value || ''}).dataset.typed = 'true';
+  });
+  open();
+  read();
+}
+
+export async function argued(argument) {
+  const named = /^edit\s+(\S+)$/.exec(argument.trim());
+  if (named) await edit(named[1]);
+  return !!named;
+}
+
+// A field typed into is the human's; the reading fills only the rest.
 form.addEventListener('input', (event) => {
   if (event.target !== path) event.target.dataset.typed = 'true';
 });
 
 const fill = (id, value) => {
-  const field = document.getElementById(id);
+  const field = $(id);
   if (!field.dataset.typed) field.value = value || '';
 };
 
 const option = (value, label) => Object.assign(document.createElement('option'), {value, label});
 
-// The server lists what lies under the last complete folder; an option completes the typed path to it.
+// Each folder under the last typed one completes the path.
 async function offerFolders() {
   const mine = ++listed;
   const typed = path.value;
@@ -65,7 +90,7 @@ async function read() {
     return;
   }
   try {
-    const reading = await api(`/api/projects/check?path=${encodeURIComponent(path.value.trim())}`);
+    const reading = await api(`/api/projects/check?path=${encodeURIComponent(path.value.trim())}${editing ? `&own=${encodeURIComponent(editing)}` : ''}`);
     if (mine !== asked) return;
     render(html`<${ProjectChecks} lines=${reading.lines}/>`, checks);
     Object.entries(suggested).forEach(([key, id]) => fill(id, reading[key]));
@@ -83,30 +108,27 @@ path.addEventListener('input', () => {
   due = setTimeout(read, SETTLE);
 });
 
-document.getElementById('close-project').onclick = () => dialog.close();
+$('close-project').onclick = () => dialog.close();
+dialog.addEventListener('close', () => reset());
+
+const said = (name) => form.elements[name].value.trim();
 
 form.onsubmit = (event) => {
   event.preventDefault();
-  const verify = document.getElementById('project-verify').value.trim();
   return sending(form, {
-    waiting: 'adding…',
-    send: () => api('/api/projects', {
-      method: 'POST',
+    waiting: editing ? 'saving…' : 'adding…',
+    send: () => api(editing ? `/api/projects/${encodeURIComponent(editing)}` : '/api/projects', {
+      method: editing ? 'PUT' : 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        key: document.getElementById('project-key').value.trim(),
-        path: path.value.trim(),
-        baseBranch: document.getElementById('project-base').value.trim(),
-        deployBranch: document.getElementById('project-deploy').value.trim() || null,
-        verifyCommand: verify ? verify.split(/\s+/) : null,
-        about: document.getElementById('project-about').value.trim() || null,
+        key: said('key'),
+        path: said('path'),
+        baseBranch: said('baseBranch'),
+        deployBranch: said('deployBranch') || null,
+        verifyCommand: said('verify') ? said('verify').split(/\s+/) : null,
+        about: said('about') || null,
       }),
     }),
-    done: () => {
-      form.reset();
-      form.querySelectorAll('[data-typed]').forEach((field) => delete field.dataset.typed);
-      render(null, checks);
-      dialog.close();
-    },
+    done: () => dialog.close(),
   });
 };

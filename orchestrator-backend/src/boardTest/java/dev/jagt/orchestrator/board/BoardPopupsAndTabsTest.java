@@ -108,6 +108,24 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    void theProjectVerbWithEditAndAKeyOpensTheFormFilledWithThatProject() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("project edit beta");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#project-dialog")).isVisible();
+        assertThat(page.locator("#project-title")).hasText("Edit beta");
+        assertThat(page.locator("#project-key")).hasValue("beta");
+        assertThat(page.locator("#project-path")).hasValue(root.resolve("beta").toString());
+        assertThat(page.locator("#project-deploy")).hasValue("dev");
+        assertThat(page.locator("#project-form button[type=submit]")).hasText("Save to jagt.yml");
+    }
+
+    @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void aFailedJobOpensFromTheHeaderAsATableWhoseRowRunsItNow() {
         breakable.breakIt();

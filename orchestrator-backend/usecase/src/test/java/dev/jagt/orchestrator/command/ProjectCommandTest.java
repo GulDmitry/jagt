@@ -22,7 +22,8 @@ class ProjectCommandTest {
     @Test
     void handsTypedAloneOverToTheAddAProjectForm() {
         assertThat(command.part()).isEqualTo("project");
-        assertThat(command.usage()).containsExactly("project", "project <path>", "project remove <key>");
+        assertThat(command.usage()).containsExactly("project", "project <path>", "project edit <key>",
+                "project remove <key>");
     }
 
     @Test
@@ -57,5 +58,11 @@ class ProjectCommandTest {
         when(removal.remove("billing")).thenReturn("Removed billing from jagt.yml");
 
         assertThat(command.run("remove billing")).isEqualTo("Removed billing from jagt.yml");
+    }
+
+    @Test
+    void refusesEditOnItsOwnBecauseTheFormIsTheBoardsToOpen() {
+        assertThatThrownBy(() -> command.run("edit billing")).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("opens the form on the board");
     }
 }

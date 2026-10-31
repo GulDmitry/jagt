@@ -80,6 +80,7 @@ async function runParsed(parsed) {
     part.focus();
     return HANDLED;
   }
+  if (argument && await part.argued?.(argument)) return HANDLED;
   const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
   const result = await api(`/api/commands/${encodeURIComponent(verb.id)}${narrowed}`, {method: 'POST'});
   toast(result.message);

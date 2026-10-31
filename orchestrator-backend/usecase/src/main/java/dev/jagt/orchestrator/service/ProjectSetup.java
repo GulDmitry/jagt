@@ -66,7 +66,8 @@ public class ProjectSetup {
         return read(rawPath, null);
     }
 
-    private Reading read(String rawPath, @Nullable String own) {
+    /** The same for the project {@code own}, which does not count as another one pointing at the path. */
+    public Reading read(String rawPath, @Nullable String own) {
         Path path = Path.of(expand(rawPath)).toAbsolutePath().normalize();
         String key = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
         Optional<String> notARepositoryRoot = problemWith(path);
@@ -168,6 +169,18 @@ public class ProjectSetup {
         check(entry);
         return rewrite(entry.key(), file -> ProjectBlocks.inserted(file, entry, normalized(entry)),
                 "Added " + entry.key() + " to jagt.yml");
+    }
+
+    /** What jagt.yml holds for one project, as the edit form starts from it. */
+    public Entry entry(String key) {
+        ProjectConfig project = configService.load().projects().get(key);
+        if (project == null) {
+            throw new IllegalArgumentException("No project " + key + " in jagt.yml");
+        }
+        return new Entry(key, project.path(), project.baseBranch(),
+                project.deployBranch() == null || project.deployBranch().isBlank() ? null : project.deployBranch(),
+                project.verifyCommand() == null || project.verifyCommand().isEmpty() ? null : project.verifyCommand(),
+                project.about());
     }
 
     /** Rewrites the managed keys of a project's block, leaving its other keys, comments and every other line. */

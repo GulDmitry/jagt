@@ -26,12 +26,12 @@ public class ProjectCommand implements GlobalCommand {
 
     @Override
     public String hint() {
-        return "add a repository to jagt.yml as a project, its entry read from the repository, or remove one";
+        return "add a repository to jagt.yml as a project, its entry read from the repository, change one or remove one";
     }
 
     @Override
     public List<String> usage() {
-        return List.of("project", "project <path>", "project remove <key>");
+        return List.of("project", "project <path>", "project edit <key>", "project remove <key>");
     }
 
     @Override
@@ -44,6 +44,9 @@ public class ProjectCommand implements GlobalCommand {
         String path = tail.strip();
         if (path.isEmpty()) {
             throw new IllegalArgumentException("usage: project <path> — typed alone, `project` opens the form");
+        }
+        if (path.startsWith("edit ")) {
+            throw new IllegalArgumentException("project edit <key> opens the form on the board, prefilled");
         }
         if (path.startsWith("remove ")) {
             return removal.remove(path.substring("remove ".length()).strip());
