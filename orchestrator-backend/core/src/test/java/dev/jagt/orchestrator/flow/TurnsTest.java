@@ -35,22 +35,22 @@ class TurnsTest {
     }
 
     static Stream<Arguments> everyTurnNoMasterHolds() {
-        return everyTurn().filter(row -> Turns.next((TaskStatus) row.get()[0], (AgentReport) row.get()[1], false, CheckerPhase.NONE,
-                PROFILES.get((String) row.get()[2])) != Holder.MASTER);
+        return everyTurn().filter(row -> Turns.next((TaskStatus) row.get()[0], (AgentReport) row.get()[1], false, Map.of(),
+                PROFILES.get((String) row.get()[2])) != Holder.ARBITER);
     }
 
     @ParameterizedTest
     @MethodSource("everyTurn")
     void namesExactlyOneHolderForEveryStatusReportAndProfile(TaskStatus status, AgentReport report, String profile) {
-        Holder holder = Turns.next(status, report, false, CheckerPhase.NONE, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
-        assertThat(holder).isIn((Object[]) Holder.values());
+        assertThat(holder).isNotNull();
     }
 
     @ParameterizedTest
     @MethodSource("everyTurnNoMasterHolds")
     void theBoardShowsTheHolderWhereNoMasterHoldsTheTurn(TaskStatus status, AgentReport report, String profile) {
-        Holder holder = Turns.next(status, report, false, CheckerPhase.NONE, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
         Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
                 RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
@@ -80,8 +80,8 @@ class TurnsTest {
             "REVIEW_PENDING, PLAIN, judge, HUMAN",
             "DONE, PLAIN, act, NOBODY"})
     void aTaskJagtStoppedIsTheHumansWhereverTheMasterStands(TaskStatus status, AgentReport report, String profile,
-                                                           Holder expected) {
-        Holder holder = Turns.next(status, report, true, CheckerPhase.NONE, PROFILES.get(profile));
+                                                           Holder.Fixed expected) {
+        Holder holder = Turns.next(status, report, true, Map.of(), PROFILES.get(profile));
 
         assertThat(holder).isEqualTo(expected);
     }
@@ -94,29 +94,29 @@ class TurnsTest {
             "REVIEW_PENDING, NO_CHANGES, judge"})
     void aRoundTheMasterReadsIsItsTurnAndTheBoardSaysMasterReview(TaskStatus status, AgentReport report,
                                                                   String profile) {
-        Holder holder = Turns.next(status, report, false, CheckerPhase.NONE, PROFILES.get(profile));
+        Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
         Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
                 RoundState.of(report, false).withMasterReading(true), false);
 
-        assertThat(holder).isEqualTo(Holder.MASTER);
+        assertThat(holder).isEqualTo(Holder.ARBITER);
         assertThat(move.owner()).isEqualTo(Owner.AGENT);
     }
 
     @ParameterizedTest
     @CsvSource({
-            "IN_PROGRESS, QUESTION, act, MASTER",
-            "IN_PROGRESS, QUESTION, act-mine-plan, MASTER",
+            "IN_PROGRESS, QUESTION, act, ARBITER",
+            "IN_PROGRESS, QUESTION, act-mine-plan, ARBITER",
             "IN_PROGRESS, QUESTION, judge, HUMAN",
             "IN_PROGRESS, PERMISSION, act, HUMAN",
-            "PLAN_PENDING, QUESTION, judge, MASTER",
-            "REVIEWED, PLAIN, act, MASTER",
-            "APPROVED, PLAIN, act-mine-plan, MASTER",
+            "PLAN_PENDING, QUESTION, judge, ARBITER",
+            "REVIEWED, PLAIN, act, ARBITER",
+            "APPROVED, PLAIN, act-mine-plan, ARBITER",
             "APPROVED, PLAIN, judge, HUMAN",
             "DONE, QUESTION, act, NOBODY"})
     void theMasterHoldsTheTurnOnlyWhereItStandsInForTheHuman(TaskStatus status, AgentReport report, String profile,
-                                                            Holder expected) {
-        Holder holder = Turns.next(status, report, false, CheckerPhase.NONE, PROFILES.get(profile));
+                                                            Holder.Fixed expected) {
+        Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
         assertThat(holder).isEqualTo(expected);
     }
@@ -124,7 +124,7 @@ class TurnsTest {
     @ParameterizedTest
     @CsvSource({"off", "judge", "act"})
     void aSessionWaitingOnADependencyKeepsItsTurnWhateverTheMasterDoes(String profile) {
-        Holder holder = Turns.next(TaskStatus.IN_PROGRESS, AgentReport.WAIT, false, CheckerPhase.NONE, PROFILES.get(profile));
+        Holder holder = Turns.next(TaskStatus.IN_PROGRESS, AgentReport.WAIT, false, Map.of(), PROFILES.get(profile));
 
         assertThat(holder).isEqualTo(Holder.SESSION);
     }
@@ -132,25 +132,25 @@ class TurnsTest {
     @ParameterizedTest
     @CsvSource({"off", "judge", "act"})
     void qaHoldsTheDeployedTurnWhileItsCheckReadsAndTheBoardShowsTheAgentAtWork(String profile) {
-        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, CheckerPhase.READING, PROFILES.get(profile));
+        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, Map.of("qa", CheckerPhase.READING), PROFILES.get(profile));
 
         Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withHasReviewRequest(true),
-                RoundState.of(AgentReport.PLAIN, false).withQa(CheckerPhase.READING).withMaster(PROFILES.get(profile)), false);
+                RoundState.of(AgentReport.PLAIN, false).withCheckers(Map.of("qa", CheckerPhase.READING)).withMaster(PROFILES.get(profile)), false);
 
-        assertThat(holder).isEqualTo(Holder.QA);
+        assertThat(holder).isEqualTo(new Holder.Role("qa"));
         assertThat(move.owner()).isEqualTo(Owner.AGENT);
     }
 
     @Test
     void nobodyHoldsADeployedTaskWhoseCheckIsNotReading() {
-        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, CheckerPhase.NONE, PROFILES.get("act"));
+        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, Map.of(), PROFILES.get("act"));
 
         assertThat(holder).isEqualTo(Holder.NOBODY);
     }
 
     @Test
     void aStoppedTaskIsTheHumansEvenWhereQaReads() {
-        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, true, CheckerPhase.READING, PROFILES.get("act"));
+        Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, true, Map.of("qa", CheckerPhase.READING), PROFILES.get("act"));
 
         assertThat(holder).isEqualTo(Holder.HUMAN);
     }
@@ -160,10 +160,10 @@ class TurnsTest {
         TaskState sealed = TaskReducer.masterVerdictGone(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0)).build());
 
-        Holder holder = Turns.next(sealed.status(), sealed.report(), sealed.stopped(), CheckerPhase.of(sealed, Checkers.QA),
+        Holder holder = Turns.next(sealed.status(), sealed.report(), sealed.stopped(), Checkers.of(sealed),
                 new Turns.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
 
-        assertThat(holder).isEqualTo(Holder.MASTER);
+        assertThat(holder).isEqualTo(Holder.ARBITER);
     }
 
     static Stream<Arguments> everyStatusReportStoppedAndQaPhase() {
@@ -176,9 +176,9 @@ class TurnsTest {
     @MethodSource("everyStatusReportStoppedAndQaPhase")
     void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman(TaskStatus status, AgentReport report, boolean stopped,
                                                           CheckerPhase qa) {
-        Holder holder = Turns.next(status, report, stopped, qa,
+        Holder holder = Turns.next(status, report, stopped, Map.of("qa", qa),
                 new Turns.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT));
 
-        assertThat(holder).isNotEqualTo(Holder.MASTER);
+        assertThat(holder).isNotEqualTo(Holder.ARBITER);
     }
 }

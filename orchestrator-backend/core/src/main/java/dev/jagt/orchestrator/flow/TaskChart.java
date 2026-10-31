@@ -94,6 +94,10 @@ final class TaskChart {
         return CHART;
     }
 
+    static List<String> installedCheckers() {
+        return INSTALLED.checkers();
+    }
+
     static Chart<TaskMove, ChartFacts, TaskEffect> of(Composition composition) {
         return build(composition);
     }

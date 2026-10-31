@@ -61,7 +61,7 @@ class HumanWaitsTest {
     void opensNothingWhileAnotherHoldsTheTurn() {
         TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
-        TaskState noted = HumanWaits.noted(working, Holder.MASTER, false, 5);
+        TaskState noted = HumanWaits.noted(working, Holder.ARBITER, false, 5);
 
         assertThat(noted).isSameAs(working);
     }

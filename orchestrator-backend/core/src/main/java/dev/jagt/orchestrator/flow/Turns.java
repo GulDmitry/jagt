@@ -8,6 +8,8 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn.Holder;
 
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -42,26 +44,27 @@ public final class Turns {
     private Turns() {
     }
 
-    /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check QA reads holds it. */
-    public static Holder next(TaskStatus status, AgentReport report, boolean stopped, CheckerPhase qa,
-                              Profile profile) {
+    /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check a checker reads holds it. */
+    public static Holder next(TaskStatus status, AgentReport report, boolean stopped,
+                              Map<String, CheckerPhase> checkers, Profile profile) {
         if (FlowRules.closed(status)) {
             return Holder.NOBODY;
         }
         if (stopped) {
             return Holder.HUMAN;
         }
-        if (qa == CheckerPhase.READING) {
-            return Holder.QA;
+        Optional<String> reading = Checkers.reading(checkers);
+        if (reading.isPresent()) {
+            return new Holder.Role(reading.get());
         }
         if (FlowRules.readByTheMaster(status) && profile.running()) {
-            return Holder.MASTER;
+            return Holder.ARBITER;
         }
         if (report.asks()) {
             return asked(report, profile);
         }
         if (FlowRules.deployedByTheMaster(status) && profile.may(MasterRight.DEPLOY)) {
-            return Holder.MASTER;
+            return Holder.ARBITER;
         }
         if (status == TaskStatus.REVIEW_PENDING && report == AgentReport.NO_CHANGES) {
             return Holder.CI;
@@ -70,7 +73,7 @@ public final class Turns {
     }
 
     private static Holder asked(AgentReport report, Profile profile) {
-        return report == AgentReport.QUESTION && profile.may(MasterRight.ANSWER) ? Holder.MASTER : Holder.HUMAN;
+        return report == AgentReport.QUESTION && profile.may(MasterRight.ANSWER) ? Holder.ARBITER : Holder.HUMAN;
     }
 
     private static Holder of(TaskStatus status) {

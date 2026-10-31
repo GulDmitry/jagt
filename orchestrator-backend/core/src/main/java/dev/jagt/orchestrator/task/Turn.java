@@ -31,14 +31,27 @@ public record Turn(String step, long id, String digest, long since,
 
     private static final String ANSWERS = ":answers";
 
-    public enum Holder {
-        SESSION,
-        MASTER,
-        HUMAN,
-        QA,
-        /** The code host: a pipeline or a reviewer. */
-        CI,
-        NOBODY
+    public sealed interface Holder {
+
+        Holder SESSION = Fixed.SESSION;
+        Holder ARBITER = Fixed.ARBITER;
+        Holder HUMAN = Fixed.HUMAN;
+        Holder CI = Fixed.CI;
+        Holder NOBODY = Fixed.NOBODY;
+
+        enum Fixed implements Holder {
+            SESSION,
+            /** The one role that acts where the human stands. */
+            ARBITER,
+            HUMAN,
+            /** The code host: a pipeline or a reviewer. */
+            CI,
+            NOBODY
+        }
+
+        /** A checker whose read is running holds the turn. */
+        record Role(String id) implements Holder {
+        }
     }
 
     public Turn {

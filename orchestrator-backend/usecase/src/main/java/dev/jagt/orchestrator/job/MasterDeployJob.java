@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -56,7 +55,7 @@ public class MasterDeployJob implements TaskJob {
         String arrival = String.valueOf(task.statusSince());
         // Once per arrival, kept on the task: a refused deploy is not pressed again, nor after a restart.
         if (!profile.may(MasterRight.DEPLOY)
-                || Turns.next(task.status(), task.report(), task.stopped(), CheckerPhase.of(task, Checkers.QA), profile) != Turn.Holder.MASTER
+                || Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task), profile) != Turn.Holder.ARBITER
                 || task.masterOrNone().pressedDeploy().equals(arrival)) {
             return;
         }

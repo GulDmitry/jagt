@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.HumanWaits;
-import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.task.HumanWait;
 import dev.jagt.orchestrator.task.TaskState;
@@ -57,6 +56,6 @@ public class HumanWaitRecorder {
     }
 
     private Holder holder(TaskState task) {
-        return Turns.next(task.status(), task.report(), task.stopped(), CheckerPhase.of(task, Checkers.QA), rounds.of(task).master());
+        return Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task), rounds.of(task).master());
     }
 }

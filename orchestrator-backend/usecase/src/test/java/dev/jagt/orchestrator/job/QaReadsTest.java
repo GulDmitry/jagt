@@ -53,7 +53,7 @@ class QaReadsTest {
         QaReader reader = mock(QaReader.class);
         when(reader.read(any())).thenAnswer(call -> {
             TaskState task = state.task("ABC-42").orElseThrow();
-            whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), CheckerPhase.of(task, Checkers.QA),
+            whileReading.add(Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task),
                     Turns.Profile.OFF));
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         });
@@ -61,8 +61,8 @@ class QaReadsTest {
         new QaReads(reader, new TaskTurns(state, Clock.systemUTC())).check("ABC-42", QaVerdict.ACCEPT, "digest", RUN);
 
         TaskState after = state.task("ABC-42").orElseThrow();
-        assertThat(whileReading).containsExactly(Turn.Holder.QA);
-        assertThat(Turns.next(after.status(), after.report(), after.stopped(), CheckerPhase.of(after, Checkers.QA), Turns.Profile.OFF))
+        assertThat(whileReading).containsExactly(new Turn.Holder.Role("qa"));
+        assertThat(Turns.next(after.status(), after.report(), after.stopped(), Checkers.of(after), Turns.Profile.OFF))
                 .isEqualTo(Turn.Holder.NOBODY);
     }
 }
