@@ -166,9 +166,17 @@ class TurnsTest {
         assertThat(holder).isEqualTo(Holder.MASTER);
     }
 
-    @Test
-    void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman() {
-        Holder holder = Turns.next(TaskStatus.REVIEW_PENDING, AgentReport.PLAIN, false, QaPhase.NONE,
+    static Stream<Arguments> everyStatusReportStoppedAndQaPhase() {
+        return Arrays.stream(TaskStatus.values()).flatMap(status -> Arrays.stream(AgentReport.values())
+                .flatMap(report -> Stream.of(false, true).flatMap(stopped -> Arrays.stream(QaPhase.values())
+                        .map(qa -> Arguments.of(status, report, stopped, qa)))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("everyStatusReportStoppedAndQaPhase")
+    void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman(TaskStatus status, AgentReport report, boolean stopped,
+                                                          QaPhase qa) {
+        Holder holder = Turns.next(status, report, stopped, qa,
                 new Turns.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT));
 
         assertThat(holder).isNotEqualTo(Holder.MASTER);
