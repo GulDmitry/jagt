@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.EnvironmentProbe;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
 import dev.jagt.orchestrator.task.QaEnding;
 import dev.jagt.orchestrator.task.TaskState;
@@ -20,15 +20,15 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class QaWaitJob implements TaskJob {
+public class CheckerWaitJob implements TaskJob {
 
-    private final ConfigService config;
-    private final QaRecords records;
+    private final RoleSettings settings;
+    private final CheckerRecords records;
     private final EnvironmentProbe probe;
 
     @Override
     public String id() {
-        return "qa-wait";
+        return settings.role().id() + "-wait";
     }
 
     @Override
@@ -53,7 +53,7 @@ public class QaWaitJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        List<QaEnvironment> environments = config.load().qa().environmentsOrEmpty();
+        List<QaEnvironment> environments = settings.load().environmentsOrEmpty();
         records.latest(taskId).filter(record -> record.ending() == QaEnding.WAITING).ifPresent(record -> {
             if (!environments.isEmpty() && environments.stream().allMatch(this::answers)) {
                 records.released(taskId, record.digest());

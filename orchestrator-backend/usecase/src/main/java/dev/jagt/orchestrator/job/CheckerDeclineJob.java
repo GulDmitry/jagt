@@ -1,12 +1,11 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
@@ -26,17 +25,17 @@ import java.util.Optional;
  */
 @Service
 @RequiredArgsConstructor
-public class QaDeclineJob implements TaskJob {
+public class CheckerDeclineJob implements TaskJob {
 
-    private final ConfigService config;
-    private final QaPrompts prompts;
-    private final QaReads reads;
-    private final QaRecords records;
-    private final QaOutcomes outcomes;
+    private final RoleSettings settings;
+    private final CheckerPrompts prompts;
+    private final CheckerReads reads;
+    private final CheckerRecords records;
+    private final CheckerOutcomes outcomes;
 
     @Override
     public String id() {
-        return "qa-decline";
+        return settings.role().id() + "-decline";
     }
 
     @Override
@@ -62,14 +61,15 @@ public class QaDeclineJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        QaConfig qa = config.load().qa();
-        CheckerPhase reading = CheckerPhase.of(task, Checkers.QA);
-        Optional<QaRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, record));
+        QaConfig qa = settings.load();
+        String role = settings.role().id();
+        CheckerPhase reading = CheckerPhase.of(task, role);
+        Optional<CheckerRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, role, record));
         if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && reading != CheckerPhase.READING) {
             return;
         }
         String sha = asked.get().sha();
-        String rows = task.roleOrNone(Checkers.QA).roundRows();
+        String rows = task.roleOrNone(role).roundRows();
         String step = reading == CheckerPhase.READING ? QaVerdict.AGAIN : QaVerdict.DECLINE;
         Answer<QaDecline> answer = reads.decline(taskId, step, asked.get().digest(), prompts.decline(taskId,
                 task.worktreePath(), sha, qa, rows, String.valueOf(task.message())));
@@ -79,9 +79,9 @@ public class QaDeclineJob implements TaskJob {
     }
 
     /** A round or a first dispute of this deploy stands, and the session replied after it was put. */
-    private static boolean answered(TaskState task, QaRecords.Record record) {
+    private static boolean answered(TaskState task, String role, CheckerRecords.Record record) {
         Deployment deployment = task.deployment();
-        return deployment != null && record.digest().equals(deployment.askedDigest()) && task.roundOpen(Checkers.QA)
+        return deployment != null && record.digest().equals(deployment.askedDigest()) && task.roundOpen(role)
                 && (record.ending() == QaEnding.NOT_MET || record.ending() == QaEnding.DISPUTED)
                 && task.session().reportedAt() > record.at();
     }

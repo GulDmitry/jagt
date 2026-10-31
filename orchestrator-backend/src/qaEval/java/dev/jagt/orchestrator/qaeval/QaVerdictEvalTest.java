@@ -10,7 +10,7 @@ import dev.jagt.orchestrator.eval.QaFixtureEnvironment;
 import dev.jagt.orchestrator.eval.QaJudgement;
 import dev.jagt.orchestrator.eval.QaScore;
 import dev.jagt.orchestrator.eval.QaScoreboard;
-import dev.jagt.orchestrator.job.QaPrompts;
+import dev.jagt.orchestrator.job.CheckerPrompts;
 import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
@@ -82,7 +82,7 @@ abstract class QaVerdictEvalTest {
     @Autowired
     private QaReader reader;
     @Autowired
-    private QaPrompts prompts;
+    private CheckerPrompts prompts;
     @Autowired
     private UsageTracker usage;
 

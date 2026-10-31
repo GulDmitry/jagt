@@ -7,7 +7,7 @@ The headless acceptance check of a deployed change against its ticket, run once 
 
 ### Requirement: QA checks a deployed change against its ticket
 With `orchestrator.qa.enabled`, one headless QA run SHALL check each acceptance criterion of the ticket on the environment.
-It is read-only: `QaCheckJob` runs `orchestrator.qa.model`, sonnet by default. It answers one row per criterion, each met,
+It is read-only: `CheckerCheckJob` runs `orchestrator.qa.model`, sonnet by default. It answers one row per criterion, each met,
 not met or unprovable, and jagt writes them to `qa-report.md`. QA is a label, never a status: the card's status reads
 `qa passed` only while the passed verdict's sha is the deploy's tip. Every verdict SHALL carry the sha it checked. Spend is
 metered as `qa check`.

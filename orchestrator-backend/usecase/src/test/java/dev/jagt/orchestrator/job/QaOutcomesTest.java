@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -36,7 +37,7 @@ class QaOutcomesTest {
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.MET, "GET /me 200")), "", "");
 
-        QaEnding ending = new QaOutcomes(mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+        QaEnding ending = new CheckerOutcomes(RoleDefinition.QA, mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
                 mock(TaskStops.class), state).apply("ABC-42", task, verdict);
 
         assertThat(ending).isEqualTo(QaEnding.PASSED);
@@ -53,7 +54,7 @@ class QaOutcomesTest {
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.MET, "GET /me 200")), "", "");
 
-        QaEnding ending = new QaOutcomes(mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+        QaEnding ending = new CheckerOutcomes(RoleDefinition.QA, mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
                 mock(TaskStops.class), state).apply("ABC-42", task, verdict);
 
         assertThat(ending).isEqualTo(QaEnding.DROPPED);

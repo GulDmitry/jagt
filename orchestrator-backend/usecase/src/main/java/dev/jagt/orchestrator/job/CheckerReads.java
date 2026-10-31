@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.QaReader;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -13,8 +13,9 @@ import org.springframework.stereotype.Component;
 /** A QA read held as a turn: open while the run reads, closed before what it found is acted on. */
 @Component
 @RequiredArgsConstructor
-public class QaReads {
+public class CheckerReads {
 
+    private final RoleDefinition role;
     private final QaReader reader;
     private final TaskTurns turns;
 
@@ -23,7 +24,7 @@ public class QaReads {
         try {
             return reader.read(run);
         } finally {
-            turns.closed(taskId, Checkers.QA, step, digest);
+            turns.closed(taskId, role.id(), step, digest);
         }
     }
 
@@ -32,7 +33,7 @@ public class QaReads {
         try {
             return reader.reconsider(run);
         } finally {
-            turns.closed(taskId, Checkers.QA, step, digest);
+            turns.closed(taskId, role.id(), step, digest);
         }
     }
 }

@@ -16,12 +16,12 @@ import java.util.stream.Stream;
 /** What a QA run is told: the brief, then the facts of the deploy it checks. */
 @Component
 @RequiredArgsConstructor
-public class QaPrompts {
+public class CheckerPrompts {
 
     private final QaBrief brief;
 
     public QaReader.Run accept(String taskId, String worktree, String sha, QaConfig qa, String step) {
-        String environments = qa.environmentsOrEmpty().stream().map(QaPrompts::environment)
+        String environments = qa.environmentsOrEmpty().stream().map(CheckerPrompts::environment)
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nCheck it on:\n" + environments;
         return new QaReader.Run(brief.text(), brief.section(step) + "\n\n" + facts, Path.of(worktree), sha,
@@ -30,7 +30,7 @@ public class QaPrompts {
 
     /** The round QA sent back and the reason the session gave for changing nothing, read against fresh evidence. */
     public QaReader.Run decline(String taskId, String worktree, String sha, QaConfig qa, String rows, String reason) {
-        String environments = qa.environmentsOrEmpty().stream().map(QaPrompts::environment)
+        String environments = qa.environmentsOrEmpty().stream().map(CheckerPrompts::environment)
                 .collect(Collectors.joining("\n"));
         String facts = taskId + " is deployed at " + sha + ".\nThe rows you found not met:\n" + rows
                 + "\nThe session changed nothing, and says:\n" + reason + "\nCheck on:\n" + environments;

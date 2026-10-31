@@ -24,7 +24,7 @@ class QaPromptsTest {
                 new QaEnvironment("https://stage.example.test", null)));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-        QaReader.Run run = new QaPrompts(new QaBrief(paths)).accept("ABC-42", "/wt", "abc123", qa, QaVerdict.ACCEPT);
+        QaReader.Run run = new CheckerPrompts(new QaBrief(paths)).accept("ABC-42", "/wt", "abc123", qa, QaVerdict.ACCEPT);
 
         assertThat(run.environments()).containsExactly("https://dev.example.test",
                 "https://dev.example.test/version", "https://stage.example.test");

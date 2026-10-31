@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -58,7 +59,7 @@ class QaReadsTest {
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         });
 
-        new QaReads(reader, new TaskTurns(state, Clock.systemUTC())).check("ABC-42", QaVerdict.ACCEPT, "digest", RUN);
+        new CheckerReads(RoleDefinition.QA, reader, new TaskTurns(state, Clock.systemUTC())).check("ABC-42", QaVerdict.ACCEPT, "digest", RUN);
 
         TaskState after = state.task("ABC-42").orElseThrow();
         assertThat(whileReading).containsExactly(new Turn.Holder.Role("qa"));

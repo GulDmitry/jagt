@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DeployCheckJob implements TaskJob {
 
-    private final ConfigService configService;
+    private final CheckerGate gate;
     private final StepRelay relay;
     private final DeployPipelines pipelines;
     private final FlowReports reports;
@@ -146,7 +145,7 @@ public class DeployCheckJob implements TaskJob {
             case GREEN -> {
                 markBare(taskId, task, reading.bare());
                 reports.readDeploy(taskId, null, stamp);
-                if (configService.load().qa().enabledOrDefault()) {
+                if (gate.checking()) {
                     reports.deployAsked(taskId, Turn.digestOf(landed));
                 } else if (relay.relay(taskId, STEP, landed, relay.standing(taskId))) {
                     reports.deployAsked(taskId, Turn.digestOf(landed));
@@ -162,14 +161,14 @@ public class DeployCheckJob implements TaskJob {
     }
 
     private String deployBranches(TaskState task) {
-        Map<String, ProjectConfig> projects = configService.load().projects();
+        Map<String, ProjectConfig> projects = gate.projects();
         return task.repos().stream().map(repo -> projects.get(repo.project()))
                 .filter(project -> project != null && project.deployBranch() != null).map(ProjectConfig::deployBranch)
                 .distinct().collect(Collectors.joining(", "));
     }
 
     private Optional<String> landed(String taskId, TaskState task) {
-        Map<String, ProjectConfig> projects = configService.load().projects();
+        Map<String, ProjectConfig> projects = gate.projects();
         String landed = (task.deployment() == null ? List.<Deployment.Target>of() : task.deployment().targets())
                 .stream().filter(Deployment.Target::landed)
                 .map(target -> landed(target, projects.get(target.project())))

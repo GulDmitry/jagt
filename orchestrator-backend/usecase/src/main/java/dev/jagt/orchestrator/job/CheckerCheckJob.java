@@ -1,12 +1,11 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaConfig;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.QaVerdict;
@@ -19,22 +18,22 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The after-deploy check where {@code qa.enabled} is on: one QA run per deploy, opened once the deploy's pipelines are
+ * The after-deploy check where the role is enabled: one QA run per deploy, opened once the deploy's pipelines are
  * green. {@link DeployCheckJob} asks the session nothing then, so a deploy is never checked twice.
  */
 @Service
 @RequiredArgsConstructor
-public class QaCheckJob implements TaskJob {
+public class CheckerCheckJob implements TaskJob {
 
-    private final ConfigService config;
-    private final QaPrompts prompts;
-    private final QaReads reads;
-    private final QaRecords records;
-    private final QaOutcomes outcomes;
+    private final RoleSettings settings;
+    private final CheckerPrompts prompts;
+    private final CheckerReads reads;
+    private final CheckerRecords records;
+    private final CheckerOutcomes outcomes;
 
     @Override
     public String id() {
-        return "qa-check";
+        return settings.role().id() + "-check";
     }
 
     @Override
@@ -59,7 +58,7 @@ public class QaCheckJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        QaConfig qa = config.load().qa();
+        QaConfig qa = settings.load();
         String worktree = task.worktreePath();
         Optional<Deployment> open = openFor(task, qa);
         if (open.isEmpty() || worktree == null) {
@@ -70,7 +69,7 @@ public class QaCheckJob implements TaskJob {
             return;
         }
         String sha = open.get().tips();
-        String step = CheckerPhase.of(task, Checkers.QA) == CheckerPhase.READING ? QaVerdict.AGAIN : QaVerdict.ACCEPT;
+        String step = CheckerPhase.of(task, settings.role().id()) == CheckerPhase.READING ? QaVerdict.AGAIN : QaVerdict.ACCEPT;
         Answer<QaVerdict> answer = reads.check(taskId, step, digest, prompts.accept(taskId, worktree, sha, qa, step));
         QaVerdict verdict = answer.facts().orElse(QaVerdict.failed(sha, answer.failure()));
         records.put(taskId, digest, sha, outcomes.apply(taskId, task, verdict));

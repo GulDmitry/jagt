@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -51,16 +53,16 @@ class QaDeclineJobTest {
     @Test
     void readsTheSessionsReasonBackToQaOnceItRepliedToTheRound(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReads reader = mock(QaReads.class);
-        QaOutcomes outcomes = mock(QaOutcomes.class);
+        CheckerReads reader = mock(CheckerReads.class);
+        CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
         when(config.load()).thenReturn(ON);
         QaDecline accepted = new QaDecline("proj@0123456789abcdef", "", "");
         when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
 
-        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, outcomes)
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes)
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
         verify(outcomes).declined(eq("ABC-42"), eq(accepted), eq(false));
@@ -69,13 +71,13 @@ class QaDeclineJobTest {
     @Test
     void readsNothingBeforeTheSessionRepliedToTheRound(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReads reader = mock(QaReads.class);
+        CheckerReads reader = mock(CheckerReads.class);
         when(config.load()).thenReturn(ON);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
 
-        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, mock(QaOutcomes.class))
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, mock(CheckerOutcomes.class))
                 .run("ABC-42", declined(1));
 
         verify(reader, never()).decline(any(), any(), any(), any());
@@ -84,13 +86,13 @@ class QaDeclineJobTest {
     @Test
     void readsNothingOnceTheDisputeWentToTheHuman(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReads reader = mock(QaReads.class);
+        CheckerReads reader = mock(CheckerReads.class);
         when(config.load()).thenReturn(ON);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.ESCALATED);
 
-        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, mock(QaOutcomes.class))
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, mock(CheckerOutcomes.class))
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
         verify(reader, never()).decline(any(), any(), any(), any());
@@ -99,16 +101,16 @@ class QaDeclineJobTest {
     @Test
     void marksTheSecondReadAsAnotherDisputeWhereOneStandsAlready(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReads reader = mock(QaReads.class);
-        QaOutcomes outcomes = mock(QaOutcomes.class);
+        CheckerReads reader = mock(CheckerReads.class);
+        CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
         when(config.load()).thenReturn(ON);
         QaDecline disputed = new QaDecline("proj@0123456789abcdef", "", "still unsorted");
         when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(disputed), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.DISPUTED);
 
-        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, outcomes)
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes)
                 .run("ABC-42", declined(System.currentTimeMillis() + 1000));
 
         verify(outcomes).declined(eq("ABC-42"), eq(disputed), eq(true));
@@ -117,17 +119,17 @@ class QaDeclineJobTest {
     @Test
     void readsTheDeclineAgainAfterARestartDuringItsRead(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReads reader = mock(QaReads.class);
-        QaOutcomes outcomes = mock(QaOutcomes.class);
+        CheckerReads reader = mock(CheckerReads.class);
+        CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
         when(config.load()).thenReturn(ON);
         QaDecline accepted = new QaDecline("proj@0123456789abcdef", "", "");
         when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
         TaskState reading = TaskReducer.relayed(declined(System.currentTimeMillis() + 1000), "decline", "digest", "", 1);
 
-        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", reading);
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", reading);
 
         verify(reader).decline(eq("ABC-42"), eq(QaVerdict.AGAIN), any(), any());
     }
@@ -135,13 +137,13 @@ class QaDeclineJobTest {
     @Test
     void readsTheDeclineAgainAfterARestartOnAStateFileWithTheReadOpenAsATurn(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
-        QaReads reader = mock(QaReads.class);
-        QaOutcomes outcomes = mock(QaOutcomes.class);
+        CheckerReads reader = mock(CheckerReads.class);
+        CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
         when(config.load()).thenReturn(ON);
         QaDecline accepted = new QaDecline("proj@0123456789abcdef", "", "");
         when(reader.decline(any(), any(), any(), any())).thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.NOT_MET);
         String json = """
                 {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,"report":"NO_CHANGES",
@@ -155,7 +157,7 @@ class QaDeclineJobTest {
                         .withMerge("0123456789abcdef")), 1, "digest"))
                 .withSession(Session.startedOver(Session.defaults()).withReportedAt(System.currentTimeMillis() + 1000));
 
-        new QaDeclineJob(config, new QaPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", legacy);
+        new CheckerDeclineJob(new RoleSettings(RoleDefinition.QA, config), new CheckerPrompts(new QaBrief(paths)), reader, records, outcomes).run("ABC-42", legacy);
 
         verify(reader).decline(eq("ABC-42"), eq(QaVerdict.AGAIN), any(), any());
     }

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.EnvironmentProbe;
@@ -31,10 +33,10 @@ class QaWaitJobTest {
         when(config.load()).thenReturn(ON);
         when(probe.answers("https://stage.example.com/health")).thenReturn(false);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.WAITING);
 
-        new QaWaitJob(config, records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        new CheckerWaitJob(new RoleSettings(RoleDefinition.QA, config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
         assertThat(records.settled("ABC-42", "digest")).isTrue();
     }
@@ -46,10 +48,10 @@ class QaWaitJobTest {
         when(config.load()).thenReturn(ON);
         when(probe.answers("https://stage.example.com/health")).thenReturn(true);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.WAITING);
 
-        new QaWaitJob(config, records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        new CheckerWaitJob(new RoleSettings(RoleDefinition.QA, config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
         assertThat(records.settled("ABC-42", "digest")).isFalse();
     }
@@ -61,10 +63,10 @@ class QaWaitJobTest {
         when(config.load()).thenReturn(ON);
         when(probe.answers("https://stage.example.com/health")).thenReturn(true);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        QaRecords records = new QaRecords(paths, Clock.systemUTC());
+        CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
         records.put("ABC-42", "digest", "proj@0123456789abcdef", QaEnding.PASSED);
 
-        new QaWaitJob(config, records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        new CheckerWaitJob(new RoleSettings(RoleDefinition.QA, config), records, probe).run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
         assertThat(records.settled("ABC-42", "digest")).isTrue();
     }

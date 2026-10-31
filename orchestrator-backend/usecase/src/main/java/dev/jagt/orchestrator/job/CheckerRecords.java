@@ -18,7 +18,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class QaRecords {
+public class CheckerRecords {
 
     private static final String TAB = "\t";
 

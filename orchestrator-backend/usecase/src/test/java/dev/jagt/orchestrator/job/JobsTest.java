@@ -388,6 +388,7 @@ class JobsTest {
     }
 
     private static List<TaskState> reachedBy(TaskJob job, Map<String, TaskState> tasks) {
+        doReturn("job").when(job).id();
         doNothing().when(job).run(any(String.class), any(TaskState.class));
         StateService state = mock(StateService.class);
         when(state.tasks()).thenReturn(tasks);
