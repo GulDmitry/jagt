@@ -42,6 +42,20 @@ class BoardConnectionTest extends BoardPageContext {
     }
 
     @Test
+    void theManifestTheBoardPageLinksIsServedAsAManifest() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        String href = (String) page.locator("link[rel=manifest]").evaluate("link => link.href");
+
+        APIResponse manifest = session.request().get(href);
+
+        org.assertj.core.api.Assertions.assertThat(href).isEqualTo("http://localhost:" + port + "/manifest.webmanifest");
+        org.assertj.core.api.Assertions.assertThat(manifest.status()).isEqualTo(200);
+        org.assertj.core.api.Assertions.assertThat(manifest.headers().get("content-type"))
+                .startsWith("application/manifest+json");
+    }
+
+    @Test
     void aStateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");

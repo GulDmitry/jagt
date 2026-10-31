@@ -4,6 +4,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +41,38 @@ class BoardAssetsTest {
         String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
 
         assertThat(digest).isEqualTo(sha256);
+    }
+
+    @Test
+    void theBoardInstallsAsAStandaloneAppStartingAtItsOwnRoot() throws IOException {
+        JsonNode manifest = JsonMapper.builder().build().readTree(STATIC.resolve("manifest.webmanifest").toFile());
+
+        assertThat(manifest.path("name").asString()).isEqualTo("jagt");
+        assertThat(manifest.path("start_url").asString()).isEqualTo("/");
+        assertThat(manifest.path("display").asString()).isEqualTo("standalone");
+        assertThat(manifest.path("background_color").asString()).isEqualTo("#f6f7f9");
+        assertThat(manifest.path("theme_color").asString()).isEqualTo("#1d4ed8");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"icon-192.png, 192", "icon-512.png, 512"})
+    void theManifestNamesAnIconOfTheSizeItDeclares(String file, int side) throws IOException {
+        JsonNode manifest = JsonMapper.builder().build().readTree(STATIC.resolve("manifest.webmanifest").toFile());
+        BufferedImage icon = ImageIO.read(STATIC.resolve(file).toFile());
+
+        assertThat(manifest.path("icons").valueStream().map(entry -> entry.path("src").asString())).contains(file);
+        assertThat(manifest.path("icons").valueStream()
+                .filter(entry -> file.equals(entry.path("src").asString()))
+                .map(entry -> entry.path("sizes").asString())).containsExactly(side + "x" + side);
+        assertThat(icon.getWidth()).isEqualTo(side);
+        assertThat(icon.getHeight()).isEqualTo(side);
+    }
+
+    @Test
+    void theBoardsPageLinksItsManifest() throws IOException {
+        String index = Files.readString(STATIC.resolve("index.html"));
+
+        assertThat(index).contains("<link rel=\"manifest\" href=\"manifest.webmanifest\">");
     }
 
     @Test

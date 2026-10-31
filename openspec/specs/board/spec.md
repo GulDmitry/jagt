@@ -153,15 +153,16 @@ highlighted button says what to do. A badge is the human's move; a quiet "you ca
 ### Requirement: Components ship as the files that run
 The board SHALL render Preact components written with `htm`, served from `static/vendor/` byte for byte as the npm
 registry published them. The page's import map resolves them. A page SHALL load nothing from outside the jar, and
-the board's code and styles SHALL weigh under 160 KB (`BoardAssetsTest`).
+the board's code and styles SHALL weigh under 160 KB (`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons,
+served from the jar, make it installable as an app from the URL the banner prints.
 
-#### Scenario: A vendored file is edited
+#### Scenario: A shipped file is not what ships
 - **WHEN** `vendor/preact.mjs` differs from the published 11.0.1 by one byte
 - **THEN** `BoardAssetsTest` fails naming the file
-
-#### Scenario: A page reaches for a CDN
 - **WHEN** a page under `static/` loads a script or a stylesheet from `https://`
 - **THEN** `BoardAssetsTest` fails
+- **WHEN** a human installs the board from Chrome or Safari
+- **THEN** it opens in its own window at `/`, and `GET /manifest.webmanifest` answers `application/manifest+json`
 
 ### Requirement: The styleguide draws every state
 `styleguide.html` SHALL render each component in each state its `styleguide/` fixtures name, with the modules the
@@ -181,11 +182,9 @@ at most 50 presses, and is refused whole when one press breaks the shape.
 - **WHEN** the human presses Focus on an agent's working task
 - **THEN** a line holds `action:focus` and `IN_PROGRESS`, and nothing naming the task
 
-#### Scenario: A malformed press
+#### Scenario: A press refused or switched off
 - **WHEN** a batch carries a control with a space, a status in lower case, or a date a day away
 - **THEN** it is refused with a sentence, and nothing of it is written
-
-#### Scenario: Switched off
 - **WHEN** `interactionLog: false`
 - **THEN** a batch is checked and nothing is written
 

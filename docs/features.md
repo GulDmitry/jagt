@@ -28,7 +28,7 @@
   [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
   [spec](../openspec/specs/board/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
-- **Local only** — The board answers locally only and refuses foreign writes. [spec](../openspec/specs/board/spec.md#requirement-loopback-only)
+- **Local, installable** — Answers locally only, refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)
 
