@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -50,5 +51,14 @@ sealed interface TaskEffect {
     }
 
     record JoinsGit(GitTrust added) implements TaskEffect {
+    }
+
+    record AsksRepo(String project) implements TaskEffect {
+    }
+
+    record DropsRepoRequest() implements TaskEffect {
+    }
+
+    record AttachesRepo(TaskRepo repo) implements TaskEffect {
     }
 }

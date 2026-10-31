@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -92,8 +93,7 @@ class TaskReducerProperties {
     void aMoveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
         moves.stream().reduce(start, (task, move) -> {
             TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
-            Optional.of(TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
-                    TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), SessionPhase.of(task.session()), GitPhase.of(task.gitTrust()), task.session().stampedAsk(), move))
+            Optional.of(TaskChart.effects(Phases.of(task), move))
                     .filter(List::isEmpty).ifPresent(none -> {
                         assertThat(next.status()).isEqualTo(task.status());
                         assertThat(next.deployment()).isEqualTo(task.deployment());
@@ -183,6 +183,9 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.TurnClosed()),
                 Arbitraries.just(new TaskMove.GitTrusted(GitTrust.of(Map.of("b", "2")))),
                 Arbitraries.just(new TaskMove.GitChanged("b changed")),
+                Arbitraries.just(new TaskMove.RepoAsked("registry")),
+                Arbitraries.just(new TaskMove.RepoUnasked()),
+                Arbitraries.just(new TaskMove.RepoAttached(TaskRepo.of("registry", "/wt-registry"))),
                 Arbitraries.just(new TaskMove.GitRepoJoined(GitTrust.of(Map.of("c", "3")))),
                 Arbitraries.of("", "d").map(digest -> new TaskMove.TurnRestored(
                         new Turn("ship", 2, digest, 500, null, null))));

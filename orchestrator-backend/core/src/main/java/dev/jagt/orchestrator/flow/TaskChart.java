@@ -41,6 +41,8 @@ final class TaskChart {
 
     private static final RegionId<GitPhase> GIT = new RegionId<>("git", GitPhase.class);
 
+    private static final RegionId<RepoPhase> REPO = new RegionId<>("repo", RepoPhase.class);
+
     private static final RegionId<AskStamp> ASK = new RegionId<>("ask", AskStamp.class);
 
     private static final Condition<TaskMove> ALWAYS = (others, move) -> true;
@@ -79,19 +81,19 @@ final class TaskChart {
         return CHART;
     }
 
-    /** What {@code move} does to a task at {@code from} under {@code stop}, {@code plan}, {@code report} and {@code turn}, in order; empty where no edge takes it. */
-    static List<TaskEffect> effects(TaskStatus from, StopKind stop, PlanGate plan, AgentReport report,
-                                TurnKind turn, DeployPhase deploy, SessionPhase session, GitPhase git, boolean stampedAsk,
-                                TaskMove move) {
-        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), from.name(), STOP.name(), stop.name(),
-                PLAN.name(), plan.name(), REPORT.name(), report.name(), TURN.name(), turn.name(),
-                DEPLOY.name(), deploy.name(), SESSION.name(), session.name(), GIT.name(), git.name())), stampedAsk, move).effects();
+    /** What {@code move} does to a task standing at {@code phases}, in order; empty where no edge takes it. */
+    static List<TaskEffect> effects(Phases phases, TaskMove move) {
+        return CHART.step(CHART.configuration(Map.of(LIFECYCLE.name(), phases.lifecycle().name(),
+                STOP.name(), phases.stop().name(), PLAN.name(), phases.plan().name(),
+                REPORT.name(), phases.report().name(), TURN.name(), phases.turn().name(),
+                DEPLOY.name(), phases.deploy().name(), SESSION.name(), phases.session().name(),
+                GIT.name(), phases.git().name(), REPO.name(), phases.repo().name())), phases.stampedAsk(), move)
+                .effects();
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */
     static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
-        return effects(from, StopKind.NONE, PlanGate.OPEN, AgentReport.PLAIN, TurnKind.CLOSED,
-                DeployPhase.NONE, SessionPhase.NONE, GitPhase.UNREAD, false, move).stream().filter(TaskEffect.Lands.class::isInstance)
+        return effects(Phases.at(from), move).stream().filter(TaskEffect.Lands.class::isInstance)
                 .map(effect -> ((TaskEffect.Lands) effect).to()).findFirst();
     }
 
@@ -146,6 +148,7 @@ final class TaskChart {
         turns(chart);
         deploys(chart);
         gits(chart);
+        repos(chart);
         sessions(chart);
         ran(chart);
         reports(chart);
@@ -317,6 +320,22 @@ final class TaskChart {
             chart.onMatching(GIT, from, "repository joined", move -> move instanceof TaskMove.GitRepoJoined)
                     .emitFor(move -> new TaskEffect.JoinsGit(((TaskMove.GitRepoJoined) move).added())).stay();
         }
+    }
+
+    private static void repos(ChartBuilder<TaskMove, Boolean, TaskEffect> chart) {
+        chart.region(REPO, RepoPhase.NONE);
+        chart.onMatching(REPO, RepoPhase.NONE, "asked", move -> move instanceof TaskMove.RepoAsked)
+                .emitFor(move -> new TaskEffect.AsksRepo(((TaskMove.RepoAsked) move).project()))
+                .to(RepoPhase.ASKED);
+        chart.onMatching(REPO, RepoPhase.ASKED, "asked again", move -> move instanceof TaskMove.RepoAsked)
+                .emitFor(move -> new TaskEffect.AsksRepo(((TaskMove.RepoAsked) move).project())).stay();
+        chart.onMatching(REPO, RepoPhase.ASKED, "asked no more", new TaskMove.RepoUnasked()::equals)
+                .emit(new TaskEffect.DropsRepoRequest()).to(RepoPhase.NONE);
+        chart.onMatching(REPO, RepoPhase.ASKED, "attached", move -> move instanceof TaskMove.RepoAttached)
+                .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo()))
+                .to(RepoPhase.NONE);
+        chart.onMatching(REPO, RepoPhase.NONE, "attached unasked", move -> move instanceof TaskMove.RepoAttached)
+                .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo())).stay();
     }
 
     private static void startedOver(ChartBuilder<TaskMove, Boolean, TaskEffect> chart, SessionPhase from) {

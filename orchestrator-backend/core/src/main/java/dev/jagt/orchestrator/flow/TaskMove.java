@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.GitTrust;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
@@ -93,5 +94,17 @@ sealed interface TaskMove {
 
     /** An added repository's entries joining what was trusted. */
     record GitRepoJoined(GitTrust added) implements TaskMove {
+    }
+
+    /** A report naming the repository the session needs. */
+    record RepoAsked(String project) implements TaskMove {
+    }
+
+    /** A report that needs no repository. */
+    record RepoUnasked() implements TaskMove {
+    }
+
+    /** A repository added to the task, which ends any request. */
+    record RepoAttached(TaskRepo repo) implements TaskMove {
     }
 }

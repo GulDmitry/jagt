@@ -179,7 +179,7 @@ public class NewTaskWorktrees {
         try {
             worktreeSetup.attach(request, added, Stream.concat(held.stream(), Stream.of(added)).toList());
             GitTrust addedTrust = trust(List.of(added));
-            stateService.updateTask(taskId, registered -> trusted(registered.withRepo(added.registered()), addedTrust));
+            stateService.updateTask(taskId, registered -> trusted(TaskReducer.repoAttached(registered, added.registered()), addedTrust));
         } catch (RuntimeException e) {
             // A worktree jagt did not cut holds work jagt never saw: it stays.
             if (standing.isEmpty()) {

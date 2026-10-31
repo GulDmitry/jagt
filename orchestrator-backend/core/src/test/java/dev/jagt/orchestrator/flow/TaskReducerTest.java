@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.RoundTrail;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -505,5 +506,25 @@ class TaskReducerTest {
         TaskState second = TaskReducer.gitChanged(first, "a changed; b added");
 
         assertThat(second.gitTrust().changed()).isEqualTo("a changed; b added");
+    }
+
+    @Test
+    void aRepositoryAttachedEndsTheRequestForOne() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState asked = TaskReducer.repoAsked(task, "registry");
+
+        TaskState attached = TaskReducer.repoAttached(asked, TaskRepo.of("registry", "/wt-registry"));
+
+        assertThat(attached.asksForARepository()).isFalse();
+        assertThat(attached.repos()).extracting(TaskRepo::project).contains("registry");
+    }
+
+    @Test
+    void aReportNeedingNoRepositoryEndsTheRequestForOne() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).repoRequest("registry").build();
+
+        TaskState reported = TaskReducer.repoAsked(task, null);
+
+        assertThat(reported.asksForARepository()).isFalse();
     }
 }

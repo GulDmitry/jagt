@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.Session;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
@@ -12,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
-/** The one place a task's status, stop, plan gate, report, turn, deployment, session and git trust are written: the chart's step, every effect applied in order. */
+/** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust and repository request are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
 
     private TaskReducer() {
@@ -145,9 +146,18 @@ public final class TaskReducer {
         return step(task, new TaskMove.GitRepoJoined(added), 0);
     }
 
+    /** {@code task} with the repository its session needs, or none where the report names none. */
+    public static TaskState repoAsked(TaskState task, @Nullable String project) {
+        return step(task, project == null ? new TaskMove.RepoUnasked() : new TaskMove.RepoAsked(project), 0);
+    }
+
+    /** {@code task} with {@code repo} added, which ends the request for one. */
+    public static TaskState repoAttached(TaskState task, TaskRepo repo) {
+        return step(task, new TaskMove.RepoAttached(repo), 0);
+    }
+
     private static List<TaskEffect> effectsOf(TaskState task, TaskMove move) {
-        return TaskChart.effects(task.status(), StopKind.of(task.stop()), task.planGate(), task.report(),
-                TurnKind.of(task.turnOrNone()), DeployPhase.of(task.deployment()), SessionPhase.of(task.session()), GitPhase.of(task.gitTrust()), task.session().stampedAsk(), move);
+        return TaskChart.effects(Phases.of(task), move);
     }
 
     private static TaskState step(TaskState task, TaskMove move, long now) {
@@ -176,6 +186,9 @@ public final class TaskReducer {
             case TaskEffect.TrustsGit trusts -> task.withGitTrust(trusts.trust());
             case TaskEffect.ParksGit parks -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).withChanged(parks.changed()));
             case TaskEffect.JoinsGit joins -> task.withGitTrust(Objects.requireNonNull(task.gitTrust()).including(joins.added()));
+            case TaskEffect.AsksRepo asks -> task.withRepoRequest(asks.project());
+            case TaskEffect.DropsRepoRequest drops -> task.withRepoRequest(null);
+            case TaskEffect.AttachesRepo attaches -> task.withRepo(attaches.repo());
             case TaskEffect.Signs signs -> task.withSession(signs.sign().applyTo(task.session(), now));
         };
     }

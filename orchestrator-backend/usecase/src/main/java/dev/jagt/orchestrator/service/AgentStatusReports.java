@@ -112,9 +112,8 @@ public class AgentStatusReports {
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
         FlowReports.Landed written = flow.report(taskId, newStatus, means, shortMessage,
-                (was, next) -> closed(signed(planned(was, linked(was, next, url, requestsByProject))
-                        .withRepoRequest(said.needsProject())
-                        .judged(said.switches())), closesTurn), verificationOwed)
+                (was, next) -> closed(signed(TaskReducer.repoAsked(planned(was, linked(was, next, url, requestsByProject)),
+                        said.needsProject()).judged(said.switches())), closesTurn), verificationOwed)
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (url != null && FlowRules.outForReview(written.now())) {
             stateService.task(taskId).map(handBack::pushedTips)
