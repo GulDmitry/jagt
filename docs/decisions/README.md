@@ -132,3 +132,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0113 The deployment record is the only deploy store](0113-the-deployment-record-is-the-only-deploy-store.md)
 - [0114 A revert conflict goes to the session](0114-a-revert-conflict-goes-to-the-session.md)
 - [0115 A session is one stored record, read from typed signs](0115-a-session-is-one-stored-record-read-from-typed-signs.md)
+- [0116 QA is a turn holder of its own](0116-qa-is-a-turn-holder-of-its-own.md)
