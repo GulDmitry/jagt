@@ -43,11 +43,10 @@ public class MasterReview {
     }
 
     Optional<Review> stored(TaskState task) {
-        String worktree = task.worktreePath();
-        if (worktree == null || worktree.isBlank()) {
+        Path file = storedFile(task);
+        if (file == null) {
             return Optional.empty();
         }
-        Path file = JagtJson.in(worktree, STORED);
         return JagtJson.bytes(file).flatMap(bytes -> {
             if (JagtJson.fingerprint(bytes).equals(task.masterOrNone().seal())) {
                 return JagtJson.parse(file, bytes, Review.class);
@@ -79,14 +78,34 @@ public class MasterReview {
         return stored(task).map(review -> store(taskId, task, review.withRound(task.turnOrNone().id()))).orElse(false);
     }
 
-    /** Tells the master region what the verdict file says now: the round it answers, or that it is gone or not jagt's. */
+    /**
+     * Tells the master region what the verdict file says now: the round it answers, or that it is gone or not
+     * jagt's. A file that could not be read says nothing, so the seal stands.
+     */
     public synchronized void settle(String taskId, TaskState task) {
+        Path file = storedFile(task);
+        if (file == null || !Files.isRegularFile(file)) {
+            clearSeal(taskId, task);
+            return;
+        }
+        JagtJson.bytes(file).ifPresent(bytes -> reconcile(taskId, task, file, bytes));
+    }
+
+    private void reconcile(String taskId, TaskState task, Path file, byte[] bytes) {
+        String fingerprint = JagtJson.fingerprint(bytes);
         Master sealed = task.masterOrNone();
-        Optional<Review> read = stored(task);
-        if (read.isEmpty() && !sealed.seal().isEmpty()) {
+        if (!fingerprint.equals(sealed.seal())) {
+            clearSeal(taskId, task);
+            return;
+        }
+        JagtJson.parse(file, bytes, Review.class).filter(read -> read.round() != sealed.sealedRound())
+                .ifPresent(read -> state.updateTask(taskId,
+                        current -> TaskReducer.masterSealed(current, fingerprint, read.round())));
+    }
+
+    private void clearSeal(String taskId, TaskState task) {
+        if (!task.masterOrNone().seal().isEmpty()) {
             state.updateTask(taskId, TaskReducer::masterVerdictGone);
-        } else if (read.isPresent() && read.get().round() != sealed.sealedRound()) {
-            state.updateTask(taskId, current -> TaskReducer.masterSealed(current, sealed.seal(), read.get().round()));
         }
     }
 
@@ -97,6 +116,11 @@ public class MasterReview {
             state.updateTask(taskId, current -> TaskReducer.masterSealed(current, fingerprint, review.round()));
             return JagtJson.write(JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
         }).orElse(false);
+    }
+
+    private static @Nullable Path storedFile(TaskState task) {
+        String worktree = task.worktreePath();
+        return worktree == null || worktree.isBlank() ? null : JagtJson.in(worktree, STORED);
     }
 
     private static @Nullable Path file(TaskState task) {

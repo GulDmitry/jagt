@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -135,6 +136,40 @@ class MasterReviewTest {
         reviews.settle("a1", state.task("a1").orElseThrow());
 
         assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.STANDS_IN);
+    }
+
+    @Test
+    void theMasterKeepsReadingTheRoundWhereTheVerdictFileCouldNotBeRead(@TempDir Path worktree) throws Exception {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+        state.putTask("a1", task);
+        reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+        Files.setPosixFilePermissions(worktree.resolve(".jagt").resolve(MasterReview.STORED), Set.of());
+
+        reviews.settle("a1", state.task("a1").orElseThrow());
+
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.READ);
+    }
+
+    @Test
+    void theMasterKeepsReadingTheRoundWhereTheVerdictFileItSealedDoesNotParse(@TempDir Path worktree) throws Exception {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(worktree.toString()).withStateFile(worktree.resolve("state.json").toString())));
+        MasterReview reviews = new MasterReview(state);
+        Files.createDirectories(worktree.resolve(".jagt"));
+        Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), "not json");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
+                .build().withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()))
+                .withMaster(Master.defaults().withSeal(
+                        JagtJson.fingerprint("not json".getBytes(java.nio.charset.StandardCharsets.UTF_8)), 5));
+        state.putTask("a1", task);
+
+        reviews.settle("a1", state.task("a1").orElseThrow());
+
+        assertThat(MasterPhase.of(state.task("a1").orElseThrow())).isEqualTo(MasterPhase.READ);
     }
 
     @Test
