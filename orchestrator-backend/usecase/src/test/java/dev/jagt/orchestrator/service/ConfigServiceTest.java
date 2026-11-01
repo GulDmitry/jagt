@@ -399,7 +399,7 @@ class ConfigServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"null,null,240", "null,300,300", "null,30,240", "null,100,100", "100,300,300"}, nullValues = "null")
+    @CsvSource(value = {"null,null,240", "null,300,300", "null,30,240", "null,100,100", "100,300,300", "100,100,100"}, nullValues = "null")
     void resolvesTheLongestWaitOnARequestOnlyAReviewerMovesNeverBelowTheLongestPoll(Integer max, Integer waiting, int expected) {
         ConfigFile.AutoReviewConfig review = ConfigFile.AutoReviewConfig.defaults().withMaxIntervalMinutes(max)
                 .withWaitingMaxIntervalMinutes(waiting);
@@ -566,5 +566,33 @@ class ConfigServiceTest {
     @CsvSource({",PT30M", "10m,PT10M", "0,PT0S"})
     void resolvesHowStaleTheNotesMayGetAtATurnEnd(String written, Duration expected) {
         assertThat(AgentConfig.defaults().withNotesEvery(written).notesEveryOrDefault()).isEqualTo(expected);
+    }
+
+    @Test
+    void readsTheStopThatStandsOnTheMaster(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
+        Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
+
+        ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops);
+
+        assertThat(config.actStop()).isPresent();
+    }
+
+    @Test
+    void namesTheRolesTheHumanWroteThatNoInstalledRoleAnswers(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  roles:\n    foo:\n      enabled: true\n    qa:\n      enabled: true\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        List<String> unknown = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().unknownRoles(List.of("qa"));
+
+        assertThat(unknown).containsExactly("foo");
     }
 }

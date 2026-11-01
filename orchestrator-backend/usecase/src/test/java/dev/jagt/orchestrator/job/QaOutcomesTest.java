@@ -74,4 +74,66 @@ class QaOutcomesTest {
         assertThat(task.passedBy(Checkers.QA)).isTrue();
         assertThat(later.passedBy(Checkers.QA)).isFalse();
     }
+
+    @Test
+    void recordsNoRoundSentWhereTheSessionWasNotHandedTheRows(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build().withDeployment(new Deployment(1,
+                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, "digest"));
+        state.putTask("ABC-42", task);
+        QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
+                new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me 500")), "", "");
+
+        QaEnding ending = new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+                mock(TaskStops.class), state).apply("ABC-42", task, verdict);
+
+        assertThat(ending).isEqualTo(QaEnding.NOT_MET);
+        assertThat(state.task("ABC-42").orElseThrow()).isEqualTo(task);
+    }
+
+    @Test
+    void asksTheQuestionQaPutWhereItSentOneAndNotTheRows(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build().withDeployment(new Deployment(1,
+                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, "digest"));
+        state.putTask("ABC-42", task);
+        QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")), "which user?", "");
+
+        new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+                mock(TaskStops.class), state).apply("ABC-42", task, verdict);
+
+        assertThat(state.task("ABC-42").orElseThrow().message()).endsWith(":\nwhich user?");
+    }
+
+    @Test
+    void asksOnlyTheRowsNotMetWhereQaSentNoQuestion(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build().withDeployment(new Deployment(1,
+                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, "digest"));
+        state.putTask("ABC-42", task);
+        QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(new QaVerdict.Row("page opens", QaVerdict.Status.MET, "200"), new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")), "", "");
+
+        new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+                mock(TaskStops.class), state).apply("ABC-42", task, verdict);
+
+        assertThat(state.task("ABC-42").orElseThrow().message()).endsWith(":\n- login works — unprovable: no login");
+    }
+
+    @Test
+    void namesNoCriterionWhereQaProvedNothingAndSentNoRowOrQuestion(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build().withDeployment(new Deployment(1,
+                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, "digest"));
+        state.putTask("ABC-42", task);
+        QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(), "", "");
+
+        new CheckerOutcomes(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), mock(StepRelay.class), new FlowReports(state, Clock.systemUTC()),
+                mock(TaskStops.class), state).apply("ABC-42", task, verdict);
+
+        assertThat(state.task("ABC-42").orElseThrow().message()).endsWith(":\nthe check named no criterion");
+    }
 }

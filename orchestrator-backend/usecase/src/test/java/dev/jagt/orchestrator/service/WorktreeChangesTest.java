@@ -276,4 +276,17 @@ class WorktreeChangesTest {
 
         assertThat(new WorktreeChanges(configService, inspection).agentFileLinesAdded(task)).contains(3);
     }
+
+    @Test
+    void namesThePushedTipOfOnlyTheRepositoriesCarryingARequest() {
+        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+        when(configService.project("web")).thenReturn(new ProjectConfig("/web", "origin/main", "dev", List.of()));
+        when(inspection.pushedTip(Path.of("/web"), Path.of("/wt-web"))).thenReturn(Optional.of("b2"));
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("demo", "/wt"),
+                TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2")), TaskStatus.REVIEW_PENDING).build();
+
+        String tips = new WorktreeChanges(configService, inspection).pushedTips(task);
+
+        assertThat(tips).isEqualTo("web=b2");
+    }
 }

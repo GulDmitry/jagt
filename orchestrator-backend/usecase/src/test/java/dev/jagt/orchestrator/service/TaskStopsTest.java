@@ -15,7 +15,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -26,6 +28,9 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -411,5 +416,113 @@ class TaskStopsTest {
         stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/B");
 
         assertThat(stops.stopped("ABC-42")).isTrue();
+    }
+
+    @Test
+    void stopsATaskWhoseUnattendedMovesFillTheHourBeforeARoundIsDue(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).history(
+                IntStream.range(0, 20)
+                        .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 99_000_000 + i, ActionOrigin.MASTER)).toList()).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        boolean due = stops.roundDue("ABC-42", "review");
+
+        assertThat(due).isFalse();
+        assertThat(state.task("ABC-42").orElseThrow().stop())
+                .extracting(TaskStop::trigger).isEqualTo(TaskStop.Trigger.PACE);
+    }
+
+    @ParameterizedTest
+    @MethodSource("endsOnTheConditionThatEndsTheTrigger")
+    void returnsTheStopAnEndingConditionEnded(TaskStop.Trigger trigger, Function<TaskStops, Optional<TaskStop>> ending,
+                                              @TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+        stops.stop("ABC-42", trigger, "down");
+
+        Optional<TaskStop> ended = ending.apply(stops);
+
+        assertThat(ended).map(TaskStop::trigger).contains(trigger);
+        assertThat(stops.stopped("ABC-42")).isFalse();
+    }
+
+    static Stream<Arguments> endsOnTheConditionThatEndsTheTrigger() {
+        return Stream.of(
+                Arguments.of(TaskStop.Trigger.DEPLOY_UNREAD, (Function<TaskStops, Optional<TaskStop>>) stops -> stops.endOnDeployRead("ABC-42")),
+                Arguments.of(TaskStop.Trigger.UNDELIVERED, (Function<TaskStops, Optional<TaskStop>>) stops -> stops.endOnSessionAlive("ABC-42")),
+                Arguments.of(TaskStop.Trigger.WAIT, (Function<TaskStops, Optional<TaskStop>>) stops -> stops.endOnReport("ABC-42")),
+                Arguments.of(TaskStop.Trigger.INFRA, (Function<TaskStops, Optional<TaskStop>>) stops -> stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "")));
+    }
+
+    @Test
+    void answersWhetherAStopOfTheTriggerStandsOnTheTask(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .stop(new TaskStop(TaskStop.Trigger.INFRA, 2, "down")).build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        assertThat(stops.standing("ABC-1", TaskStop.Trigger.INFRA)).isTrue();
+        assertThat(stops.standing("ABC-1", TaskStop.Trigger.CHECKS)).isFalse();
+        assertThat(stops.standing("ABC-2", TaskStop.Trigger.INFRA)).isFalse();
+        assertThat(stops.standing("ABC-9", TaskStop.Trigger.INFRA)).isFalse();
+    }
+
+    @Test
+    void answersWhetherTheAgentsQuestionStandsOnTheTask(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).report(AgentReport.QUESTION).build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        assertThat(stops.asking("ABC-1")).isTrue();
+        assertThat(stops.asking("ABC-2")).isFalse();
+        assertThat(stops.asking("ABC-9")).isFalse();
+    }
+
+    @Test
+    void relaysARoundWithOpenThreadsAndNoNoteWhateverTheBriefsWording(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false, false);
+        stops.round("ABC-42", round, "brief 1", "");
+
+        TaskStops.Relay again = stops.round("ABC-42", round, "brief 2", "");
+
+        assertThat(again).isEqualTo(TaskStops.Relay.RELAY);
+    }
+
+    @Test
+    void relaysARoundWithNoThreadsAndGreenChecksWhateverTheBriefsWording(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false);
+        stops.round("ABC-42", round, "brief 1", "");
+
+        TaskStops.Relay again = stops.round("ABC-42", round, "brief 2", "");
+
+        assertThat(again).isEqualTo(TaskStops.Relay.RELAY);
     }
 }
