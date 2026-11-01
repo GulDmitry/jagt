@@ -145,11 +145,11 @@ jobs:
       - name: install what the suites shell out to
         run: sudo scripts/linux-test-deps.sh
       # Playwright's own Chromium is cached between runs; the suite installs it when the cache is cold. The
-      # restore key keeps an unrelated build.gradle edit from paying for the browser again.
+      # restore key keeps an unrelated build edit from paying for the browser again.
       - uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('orchestrator-backend/build.gradle') }}
+          key: playwright-${{ hashFiles('orchestrator-backend/build-logic/src/main/groovy/jagt.suites.gradle') }}
           restore-keys: playwright-
       - run: ./gradlew --no-daemon boardTest
       - uses: actions/upload-artifact@v7
