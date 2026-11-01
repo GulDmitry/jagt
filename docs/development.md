@@ -60,8 +60,9 @@ and the MCP servers its reads need.
 1. Bump `version` in `orchestrator-backend/build.gradle`.
 2. Commit that bump — the tag must point at it, or the `jar` job reads the old version and attaches the
    previous jar to the release with the pipeline green.
-3. Tag the bump commit: `git tag vX.Y.Z`.
-4. Push the tag: `git push origin vX.Y.Z`.
+3. Push `main` alone and wait until CI on that commit is green; a red run is fixed on `main` first.
+4. Tag the bump commit: `git tag -a vX.Y.Z -m "Release X.Y.Z"`.
+5. Push the tag: `git push origin vX.Y.Z`.
 
 The `jar` job builds `jagt-X.Y.Z.jar`; the `release` job attaches it to that tag's GitHub release only once every
 suite is green.
