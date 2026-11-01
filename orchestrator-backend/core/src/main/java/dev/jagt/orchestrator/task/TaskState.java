@@ -422,6 +422,11 @@ public record TaskState(
         return withLastChange(step -> step.because(why));
     }
 
+    /** The tree a ship was pressed on, stamped on the step just taken where that step is the ship. */
+    public TaskState withLastShipTree(String tree) {
+        return withLastChange(step -> step.status() == TaskStatus.SHIPPING ? step.on(tree) : step);
+    }
+
     private TaskState withLastChange(UnaryOperator<StatusChange> stamp) {
         if (history.isEmpty()) {
             return this;

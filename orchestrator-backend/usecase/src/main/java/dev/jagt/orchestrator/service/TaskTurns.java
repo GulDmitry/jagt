@@ -13,6 +13,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
@@ -105,6 +109,20 @@ public class TaskTurns {
 
     public void mark(String taskId, String step, String value) {
         stateService.updateTask(stateService.canonicalTaskId(taskId), task -> task.withMark(step, value));
+    }
+
+    /** The tree a ship was pressed on, kept on the ship's own step as a digest. */
+    public void shippedOn(String taskId, String tree) {
+        String digest = HexFormat.of().formatHex(sha256(tree));
+        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> task.withLastShipTree(digest));
+    }
+
+    private static byte[] sha256(String text) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is part of every JVM", e);
+        }
     }
 
     public void unmark(String taskId, String step) {

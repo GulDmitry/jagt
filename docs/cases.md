@@ -79,9 +79,8 @@ Families:
 | E1 | a session ends its turn or stops on any cause → the board says which ending and whose move; a turn end is a sign, not a verdict; a call from its worktree ends any stop | 08d79079, 22a485f5, 2f4c6b0f, c094da30, 206bade4, fcc7e89f | `TurnEndsTest`, `MoveTest`, `SessionReportsTest`, `SessionSignsTest`, `WatchdogServiceTest`, `TaskReducerTest` |
 | E2 | a usage window runs out → a typed stop, one resume line at reset, paid spend told once | 16ef94eb, 62bc22d8 | `SessionWakeJobTest`, `UsageLimitsJobTest` |
 | E3 | a read fails or cannot be reached → the cause rides the answer; it is never "missing", nor logged where nobody reads | 1cf4251d, 350f42e3, b5a7c196, 2c74c5c5, 4f874409, c6b562e4, 90470aab | `HeadlessClaudeTest`, `McpHealthProbeTest`, `ReviewReaderTest` |
-| E4 | a pipeline is red or the checks unreadable → the board and session hear it; a true red is never erased | 2fc9616d, e34d2bf7 | `ReviewSweepServiceTest`, `TaskStateTest` |
+| E4 | a pipeline is red or the checks unreadable → the board and session hear it; a true red is never erased; a measured verdict the flow turns aside → an ERROR, never a silent hold at VERIFYING | 2fc9616d, e34d2bf7, f5e047fc | `ReviewSweepServiceTest`, `TaskStateTest`, `AgentStatusReportsTest` |
 | E5 | a command times out or jagt stops → it dies with its descendants and tells its caller it was stopped | f2bb237f, a8b569f4, 9c990ef6 | `ProcessRunnerTest` |
-| E6 | a measured verdict is turned aside by the flow → an ERROR, never a silent hold at VERIFYING | f5e047fc | `AgentStatusReportsTest` |
 | E8 | an agent process dies at any open status, at launch before any hook included → an ended session with its last lines, the log's cause never null; ship, the session-alive stop and the restart ask read its window, an unreadable one never alive nor dead; a window running an agent again ends the GONE it or a hook set | seen 2026-10-24: noticed 10 min later, no cause | `LaunchExitsTest`, `TmuxSessionHostTest`, `SessionProbeTest`, `WatchdogServiceTest`, `SessionPresenceTest`, `TaskReducerTest` |
 | E9 | jagt starts with the machine checks off → its own case file is still checked; an empty book never starts | seen 2026-10-24 on the stand: 451 misses in 15 min | `StartupValidationTest` |
 | E10 | a read cannot list a task's pipelines → three running since the lift stop the task with the reads' causes | seen 2026-10-24 on the stand: 8 unknown reads in 15 min, nobody told | `ChecksUnreadTest`, `RoundRecordTest`, `RoundOutcomeTest` |
@@ -123,6 +122,7 @@ Families:
 | F15 | a round's note fingerprint is blank (note ids unknown) → it is never a repeat: no stalled run, no futile ship counted | seen 2026-10-27: three blank-fingerprint rounds stalled a task and a SHIPS stop read "ships without a new note in 24h: 4" | `LoopBreakerTest`, `MasterVerdictsTest`, `RoundKeyTest`, `ReviewFactsTest` |
 | F16 | a session stays silent across several stale windows → one alert at the silence's start; only a new silence alerts again | seen 2026-10-28: one 35-minute silence logged 7 alerts | `WatchdogServiceTest` |
 | F17 | a not-ready plan is returned after each rework → only rounds answering one unchanged report count toward `loopBreaker.rounds` | seen 2026-10-29: three reworked plans in 24h stopped a task as a loop | `LoopBreakerTest`, `MasterVerdictsTest` |
+| F18 | a Master ship answers no recorded round (first ship, a CI fix, a human's edit) → it counts toward `loopBreaker.ships` only on the tree of the ship before; new work never trips it | seen 2026-10-30: four ships of new work stopped a task as SHIPS | `LoopBreakerTest`, `ShipRecordTest` |
 ## G — prose routing
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

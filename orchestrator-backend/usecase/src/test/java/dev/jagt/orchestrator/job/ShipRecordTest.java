@@ -26,6 +26,7 @@ class ShipRecordTest {
         new ShipRecord(turns, changes).pressedOn("ABC-1", task);
 
         verify(turns).mark("ABC-1", TaskTurns.PRESSED_SHIP, "tree-1;");
+        verify(turns).shippedOn("ABC-1", "tree-1;");
     }
 
     @Test

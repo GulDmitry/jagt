@@ -335,7 +335,7 @@ class StateServiceTest {
                 .withRoot(root.toString()).withStateFile(stateFile.toString())));
 
         assertThat(state.task("ABC-1").orElseThrow().history())
-                .containsExactly(new StatusChange(TaskStatus.NEW, 1000, ActionOrigin.BOARD, null));
+                .containsExactly(new StatusChange(TaskStatus.NEW, 1000, ActionOrigin.BOARD));
     }
 
     @Test

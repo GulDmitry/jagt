@@ -6,11 +6,12 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that brought no new note
  * and left the same job failing, a ship asked past {@code ships} within {@code window} that answered a round
- * bringing no new note, a round of one step past {@code rounds} sent running that answered one unchanged report, or
+ * bringing no new note or, answering none, was pressed on the tree of the ship before, a round of one step past {@code rounds} sent running that answered one unchanged report, or
  * more than {@code perHour} moves in an hour that nobody asked for.
  */
 public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour, Duration window) {
@@ -74,16 +75,31 @@ public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour,
 
     private long shipped(RoundTrail trail, List<StatusChange> history, long now) {
         long from = Math.max(trail.since(), now - window.toMillis());
-        return history.stream().filter(step -> step.status() == TaskStatus.SHIPPING && step.at() > from)
-                .filter(step -> !broughtNewNote(trail.rounds(), step.at())).count();
+        List<StatusChange> ships = history.stream().filter(step -> step.status() == TaskStatus.SHIPPING).toList();
+        return IntStream.range(0, ships.size()).filter(i -> ships.get(i).at() > from)
+                .filter(i -> !broughtNewNote(trail.rounds(), ships.get(i).at())
+                        && !newWork(trail.rounds(), ships, i)).count();
     }
 
-    private static boolean broughtNewNote(List<RoundTrail.Round> rounds, long shipAt) {
+    private static int answered(List<RoundTrail.Round> rounds, long shipAt) {
         int answered = -1;
         for (int i = 0; i < rounds.size() && rounds.get(i).at() <= shipAt; i++) {
             answered = i;
         }
+        return answered;
+    }
+
+    private static boolean broughtNewNote(List<RoundTrail.Round> rounds, long shipAt) {
+        int answered = answered(rounds, shipAt);
         return answered > 0 && !rounds.get(answered).repeats(rounds.get(answered - 1).notes());
+    }
+
+    private static boolean newWork(List<RoundTrail.Round> rounds, List<StatusChange> ships, int index) {
+        String tree = ships.get(index).tree();
+        if (answered(rounds, ships.get(index).at()) > 0 || tree == null) {
+            return false;
+        }
+        return index == 0 || (ships.get(index - 1).tree() != null && !tree.equals(ships.get(index - 1).tree()));
     }
 
     private String evidence(RoundTrail trail, List<StatusChange> history, long now) {

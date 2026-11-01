@@ -28,9 +28,14 @@ round bringing no new note; a failed verification or probe, a not-ready plan or 
 #### Scenario: Ships going round
 - **WHEN** ABC-42 shipped four times today and no round before a ship brought a new note, and the Master would ship again
 - **THEN** it presses nothing and the hover says `ships without a new note in 24h: 4`
-- **AND** a ship counts unless the round it answered carries a fingerprint other than the round before it; the first round counts
+- **AND** a ship counts unless the round it answered carries a fingerprint other than the round before it
+- **AND** a ship answering no round counts only when pressed on the tree of the ship before; a first ship or a changed tree is new work
 - **AND** nothing is pressed on the tree the last ship was pressed on, untracked paths included; a changed or unreadable one is due
 - **AND** after three such ships, once !571 merged, a fourth is refused with no step recorded, so it never counts and nothing stops
+
+#### Scenario: Ships of new work
+- **WHEN** ABC-42 shipped four times today, each on a tree other than the ship before, and no round answered any of them
+- **THEN** the Master ships again and nothing stops
 
 #### Scenario: Red rounds running
 - **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth

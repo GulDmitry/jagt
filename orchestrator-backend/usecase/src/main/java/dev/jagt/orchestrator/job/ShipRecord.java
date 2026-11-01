@@ -15,6 +15,9 @@ class ShipRecord {
     private final WorktreeChanges changes;
 
     void pressedOn(String taskId, TaskState task) {
-        changes.state(task).ifPresent(tree -> turns.mark(taskId, TaskTurns.PRESSED_SHIP, tree));
+        changes.state(task).ifPresent(tree -> {
+            turns.mark(taskId, TaskTurns.PRESSED_SHIP, tree);
+            turns.shippedOn(taskId, tree);
+        });
     }
 }

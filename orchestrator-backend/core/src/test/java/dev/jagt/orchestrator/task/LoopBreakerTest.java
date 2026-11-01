@@ -125,6 +125,32 @@ class LoopBreakerTest {
     }
 
     @Test
+    void shipsOfNewWorkAnsweringNoRoundNeverTripTheCeiling() {
+        List<StatusChange> history = List.of(
+                new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER, null, "tree-1"),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER, null, "tree-2"),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER, null, "tree-3"),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER, null, "tree-4"));
+
+        assertThat(breaker.beforeShip(RoundTrail.none(), history, 5_000)).isEmpty();
+    }
+
+    @Test
+    void shipsOfOneUnchangedTreeAnsweringNoRoundTripTheCeiling() {
+        List<StatusChange> history = List.of(
+                new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER, null, "tree-1"),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER, null, "tree-1"),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER, null, "tree-1"),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER, null, "tree-1"),
+                new StatusChange(TaskStatus.SHIPPING, 4_500, ActionOrigin.MASTER, null, "tree-1"));
+
+        var stop = breaker.beforeShip(RoundTrail.none(), history, 5_000);
+
+        assertThat(stop).hasValueSatisfying(it -> assertThat(it.evidence())
+                .contains("ships without a new note in 24h: 4"));
+    }
+
+    @Test
     void countsNoShipFromBeforeTheHumanLiftedTheLastStop() {
         List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
                 new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
