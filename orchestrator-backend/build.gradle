@@ -164,6 +164,8 @@ configure(allprojects - project(':')) {
         targetTests = ['dev.jagt.*']
         if (project.path == ':usecase') {
             excludedClasses = usecaseGitClasses.collectMany { [it, it + '$*'] }
+            // Most of `:core` is exercised only through `:usecase`, so its mutants are judged against both modules' tests.
+            additionalMutableCodePaths = project(':core').sourceSets.main.output.classesDirs.files
         }
         if (project.path == ':adapter') {
             additionalMutableCodePaths = project(':usecase').sourceSets.main.output.classesDirs.files
