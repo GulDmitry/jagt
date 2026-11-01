@@ -46,6 +46,16 @@ class SessionReportsTest {
     }
 
     @Test
+    void leavesANotificationNamingWhatThisCliSaysWhileBlockedAloneWhileTheSessionIsStillWorking() {
+        when(runtime.blockingNotification()).thenReturn("needs your permission");
+
+        new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.WORKING,
+                SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
+
+        verify(signs, never()).asked(any(), any());
+    }
+
+    @Test
     void recordsASessionClearedOrResumedAsIdleBecauseANewStartFollows() {
         when(runtime.continuingEnds()).thenReturn(Set.of("clear", "resume"));
 

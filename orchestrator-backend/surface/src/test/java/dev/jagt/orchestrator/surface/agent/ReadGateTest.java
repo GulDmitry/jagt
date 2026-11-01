@@ -60,6 +60,22 @@ class ReadGateTest {
         assertThat(ReadGate.refusal(scope, "WebFetch", Map.of("url", url), "/tmp")).isEmpty();
     }
 
+    @Test
+    void letsAWebFetchReachEveryPathBelowAnEnvironmentTheRoundNamedWithATrailingSlash() {
+        ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000/api/"));
+
+        assertThat(ReadGate.refusal(scope, "WebFetch", Map.of("url", "http://127.0.0.1:5000/api/v2/quotes"), "/tmp"))
+                .isEmpty();
+    }
+
+    @Test
+    void refusesAWebFetchOutsideAnEnvironmentTheRoundNamedWithATrailingSlash() {
+        ReadScope scope = new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000/api/"));
+
+        assertThat(ReadGate.refusal(scope, "WebFetch", Map.of("url", "https://example.org/api/v2"), "/tmp"))
+                .isPresent();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"http://127.0.0.1:5001/health", "http://127.0.0.1:5000.evil.test/", "https://example.org/",
             "http://127.0.0.1:5000@evil.test/"})
@@ -177,6 +193,15 @@ class ReadGateTest {
         assertThat(ReadGate.refusal(scope, "Bash",
                 Map.of("command", "git -C sub/a diff --no-ext-diff --no-textconv ../a/x"), worktree.toString()))
                 .isEmpty();
+    }
+
+    @Test
+    void readsAGitPathThatIsALinkOutOfTheWorktreeAsTheLinkItselfNotWhereItLeads() throws Exception {
+        Files.createSymbolicLink(worktree.resolve("shared"), Files.createTempDirectory("outside"));
+        ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
+
+        assertThat(ReadGate.refusal(scope, "Bash",
+                Map.of("command", "git diff --no-ext-diff --no-textconv shared"), worktree.toString())).isEmpty();
     }
 
     @Test

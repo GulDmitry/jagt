@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.service.TaskRetarget;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -214,6 +215,19 @@ class McpToolScopeTest {
         String answered = handler.call(new JsonMapper().readTree("{\"mode\":\"" + mode + "\"}"), "MINE-1");
 
         assertThat(answered).isEqualTo("opened MINE-1");
+    }
+
+    @Test
+    void retargetsAnAgentsOwnTaskOntoTheBaseItNamed() {
+        TaskRetarget retarget = mock(TaskRetarget.class);
+        Registered registered = new Registered();
+        new BranchTools(retarget, new CallerScope(mock(StateService.class))).declare(registered);
+        ToolHandler handler = registered.handlers.get("retarget_task");
+        when(retarget.retarget("MINE-1", "ABC-41")).thenReturn("retargeted MINE-1");
+
+        String answered = handler.call(new JsonMapper().readTree("{\"branch\":\"ABC-41\"}"), "MINE-1");
+
+        assertThat(answered).isEqualTo("retargeted MINE-1");
     }
 
     @Test

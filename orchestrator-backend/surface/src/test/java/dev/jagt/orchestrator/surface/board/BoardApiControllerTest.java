@@ -125,6 +125,18 @@ class BoardApiControllerTest {
     }
 
     @Test
+    void tellsTheBoardHowManyJobsTheBackendRuns() {
+        Job poll = mock(Job.class);
+        when(poll.id()).thenReturn("poll-reviews");
+        when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240), List.of(), null, "off"));
+        BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(poll), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
+
+        assertThat(board.tasks().jobs().count()).isEqualTo(1);
+    }
+
+    @Test
     void handsTheBrowserTheStreamTheEventSourceOpened() {
         TaskEventStream stream = mock(TaskEventStream.class);
         SseEmitter browser = new SseEmitter(0L);

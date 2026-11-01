@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.ui;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.mock.env.MockEnvironment;
 
 import java.io.IOException;
@@ -41,5 +42,10 @@ class PortGuardTest {
                 .withProperty("server.port", String.valueOf(freePort)));
 
         assertThat(refusal).isEmpty();
+    }
+
+    @Test
+    void runsBeforeTheLoggingIsConfigured() {
+        assertThat(new PortGuard().getOrder()).isLessThan(LoggingApplicationListener.DEFAULT_ORDER);
     }
 }

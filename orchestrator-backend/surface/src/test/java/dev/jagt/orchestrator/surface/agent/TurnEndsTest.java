@@ -94,6 +94,20 @@ class TurnEndsTest {
     }
 
     @Test
+    void tellsTheHumanARoundHandedBackIsWithTheMasterEvenWhenTheTurnWasAlreadySentOn() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(runtime.toldTheHuman("→ with the Master for review · its verdict arrives here"))
+                .thenReturn("{\"systemMessage\": \"with the Master\"}");
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
+                .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L)).build();
+
+        String answered = new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, true, false);
+
+        assertThat(answered).isEqualTo("{\"systemMessage\": \"with the Master\"}");
+    }
+
+    @Test
     void saysNothingAtAHandedBackRoundNoMasterReads() {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
