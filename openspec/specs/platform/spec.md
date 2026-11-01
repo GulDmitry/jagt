@@ -48,3 +48,15 @@ It opens each viewer as a tab attached to tmux in the window whose tab carries t
 #### Scenario: a reveal finds no window
 - **WHEN** no Ghostty window holds a tab with the viewer title
 - **THEN** the reveal answers `NOT_RUNNING` and Ghostty is not launched
+
+### Requirement: The editor is a launcher
+jagt SHALL open a worktree and a diff only through `editorCommand` and the optional `editorDiffCommand`, naming no editor.
+IDE service folders present in the base repository SHALL be copied into a fresh worktree. A file the worktree already holds SHALL stay as it is.
+
+#### Scenario: IDE service folders, or no diff command
+- **WHEN** the base repository holds `.idea/runConfigurations` or `.vscode/launch.json`
+- **THEN** a fresh worktree holds the same run configurations or file
+- **WHEN** the base repository holds no IDE service folder
+- **THEN** nothing is copied
+- **WHEN** `editorDiffCommand` is unset and the human presses diff
+- **THEN** it is refused, naming the key and an example; jagt still starts

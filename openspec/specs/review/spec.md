@@ -30,16 +30,7 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 `update_agent_status` SHALL take `outcome` (`question` | `no_changes` | `progress`) and `reviewRequestUrl`, the brief ending
 all three at REVIEW_PENDING. What a report means SHALL be the task's `task/AgentReport`, never a marker read out of its
 line; an outcome typed into the message is words. A `state.json` from before SHALL read it once from the line's marker.
-Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeChanges`, one `git status` per report);
-NO_CHANGES SHALL highlight nothing.
-
-#### Scenario: Clean round, nobody approved
-- **WHEN** a round comes back clean, unapproved
-- **THEN** REVIEWED, nothing asked of you
-
-#### Scenario: An approval arrives
-- **WHEN** an approval arrives
-- **THEN** you are tapped, the one time: it is yours to deploy
+Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeChanges`, one `git status` per report).
 
 #### Scenario: A marker typed into the message
 - **WHEN** a session reports `outcome=question: which branch?` as its message and no `outcome`
@@ -48,6 +39,12 @@ NO_CHANGES SHALL highlight nothing.
 #### Scenario: A question from before the field
 - **WHEN** jagt starts on a `state.json` whose line reads `awaiting: which database`
 - **THEN** the card reads `NEEDS INPUT: which database`
+
+#### Scenario: A round comes back clean or approved
+- **WHEN** a round comes back clean, unapproved
+- **THEN** REVIEWED, nothing asked of you
+- **WHEN** an approval arrives
+- **THEN** you are tapped, the one time: it is yours to deploy
 
 #### Scenario: Claimed no change, files changed
 - **WHEN** the agent says it changed nothing but files changed
@@ -180,8 +177,7 @@ A GitHub request with no review required SHALL count as approved once someone ap
 `TaskStops.round` SHALL keep a digest of the last round relayed into a task: the failing job and the pushed branch tip from git while the checks are
 red, and each open thread's link and newest note id. A round equal to it SHALL NOT be relayed again, whatever the brief's wording; where git cannot
 name the tip, or a job or note id is unknown, the brief is digested. Neither SHALL open threads with the last notes while the checks are red in
-neither. A `lift` SHALL forget both. Threads and checks are two tracks, each judged on its own. While the last report asks the
-human, a sweep SHALL hold the checks and every thread it carried; a thread with a new newest note is relayed alone.
+neither. A `lift` SHALL forget both.
 
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
@@ -194,6 +190,10 @@ human, a sweep SHALL hold the checks and every thread it carried; a thread with 
 #### Scenario: The same failure in other words
 - **WHEN** the same job fails on the same pushed tip
 - **THEN** the round is not sent again, whatever the brief's wording
+
+### Requirement: Threads and checks are judged on their own
+Threads and checks SHALL be two tracks, each judged on its own. While the last report asks the
+human, a sweep SHALL hold the checks and every thread it carried; a thread with a new newest note is relayed alone.
 
 #### Scenario: A new note over a question about the checks
 - **WHEN** ABC-42's session asked about a failing job and a reviewer then adds a note to a thread

@@ -20,8 +20,7 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 `GitDeploy` (`HEAD:<target>`) and `GitWorktrees` (`refs/heads/x:refs/heads/x`) SHALL push **one** branch, never
 `--force` or `-u`; no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6). The one exception:
 a rebase of the task's own branch onto its request's target. The resume or the session pushes it under
-`--force-with-lease` when the target moved on. `detachUpstream` unsets the inherited `origin/<baseBranch>` at creation. Each
-git call locks its repository (shared checkout). A task named after a base or deploy branch MUST be refused.
+`--force-with-lease` when the target moved on.
 
 #### Scenario: Release request
 - **WHEN** resuming a `dev` → `main` request
@@ -30,6 +29,14 @@ git call locks its repository (shared checkout). A task named after a base or de
 #### Scenario: Target moved on
 - **WHEN** the target gained commits after the branch was cut, or the session ships
 - **THEN** it rebases onto the target and lease-pushes before the request is updated, so the request lists only the task's commits
+
+### Requirement: A task never shares a branch with its base
+`detachUpstream` SHALL unset the inherited `origin/<baseBranch>` at creation. Each
+git call locks its repository (shared checkout). A task named after a base or deploy branch MUST be refused.
+
+#### Scenario: A task named after the base branch
+- **WHEN** a task is named after the base or a deploy branch
+- **THEN** it is refused
 
 ### Requirement: No verdict gates deploy
 `FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, PLAN_PENDING, IN_PROGRESS, VERIFYING, SHIPPING, REVERTED and DONE
@@ -83,13 +90,19 @@ agent's. A ship approves ONE commit: only the next relay replaces `task_context.
 its target): commit, push, open or update a request against its own target, every link in one `update_agent_status`
 (`reviewRequests`). jagt calls no host and writes no git; the task waits in SHIPPING.
 Nothing to ship or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened.
-A request is merged when the host says so in a review read, which stands: git alone never sees a squash. Otherwise git decides: a merge commit of the
-target took the branch tip in (`mergedIntoTarget`, after a fetch; a failed fetch is no answer). `MergedReadJob` asks again every 5 minutes.
 
 #### Scenario: Ship
 - **WHEN** `ship ABC-42`
 - **THEN** a commit, push and request per repository onto its base
-- **AND** with !571 merged, nothing is shipped and no SHIPPING step is recorded; a squash counts by the host's word, a never-diverged branch not
+
+### Requirement: A request is merged when the host says so
+A request SHALL count as merged when the host says so in a review read, which stands: git alone never sees a squash.
+Otherwise git decides: a merge commit of the target took the branch tip in (`mergedIntoTarget`, after a fetch; a failed fetch is no answer).
+`MergedReadJob` asks again every 5 minutes.
+
+#### Scenario: A merged request
+- **WHEN** `ship ABC-42` and !571 is merged
+- **THEN** nothing is shipped and no SHIPPING step is recorded; a squash counts by the host's word, a never-diverged branch not
 - **AND** once git no longer finds !571's tip in the target and the host never said it merged, `ship` is allowed and auto-review polls again
 
 ### Requirement: A new base is reported by the session

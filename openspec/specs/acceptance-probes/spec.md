@@ -23,8 +23,6 @@ A plan's acceptance criteria, tagged, and its acceptance checks, declared as typ
 `- [elsewhere: <part>] <text>` or `- [wrong: <why>] <text>`; `, own` inside the brackets marks one the session wrote itself
 (`protocol/PlanCriteria`). The criteria SHALL come from the ticket, read with every field, since a tracker may keep them in a
 custom field; where it has none the session writes them. A criterion of a part this task does not build is `elsewhere`.
-jagt SHALL refuse a PLAN_PENDING report whose `plan.md` is missing, lacks the section or holds an item without a valid tag, as `validation`.
-The Master's plan read SHALL flag a criterion the ticket names that the plan dropped or mis-tagged.
 
 #### Scenario: Criteria in a custom field
 - **WHEN** ABC-42 keeps its acceptance criteria in a custom field the tracker's default read omits
@@ -37,6 +35,10 @@ The Master's plan read SHALL flag a criterion the ticket names that the plan dro
 #### Scenario: A criterion for another part
 - **WHEN** a criterion of ABC-42 describes the frontend and the task builds the backend
 - **THEN** the plan keeps it as `- [elsewhere: frontend] <text>`
+
+### Requirement: A plan without valid criteria is refused
+jagt SHALL refuse a PLAN_PENDING report whose `plan.md` is missing, lacks the section or holds an item without a valid tag, as `validation`.
+The Master's plan read SHALL flag a criterion the ticket names that the plan dropped or mis-tagged.
 
 #### Scenario: A plan without the section
 - **WHEN** a session reports PLAN_PENDING and `plan.md` has no `## Acceptance criteria` section, or no `plan.md` exists

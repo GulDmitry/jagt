@@ -128,15 +128,20 @@ The payload adds the session's log (else derived from the worktree), which gives
 ### Requirement: What jagt answers a hook, the harness reads
 The hook SHALL print jagt's answer. Three hooks are answered: `gate=PreToolUse`, scoped to the shell tool and the file-writing tools (it holds
 writes while a plan waits, [task-flow](../task-flow/spec.md)); `turn-end=Stop`; and `prompt-gate=UserPromptSubmit`, answered by
-[cold-prompts](../cold-prompts/spec.md). A session is never launched in its CLI's own plan mode. `turn-end` refuses once a turn that leaves the
-agent's move unreported (`Move.endsUnreported`); reported means `update_agent_status` since the turn began, recorded on the task,
-so a read call is none and a restart changes nothing. It also refuses once a turn that changed the tree and reported nothing
-(`TurnTree`), at every status but REVERTED, DEPLOY_CONFLICT and DONE.
+[cold-prompts](../cold-prompts/spec.md). A session is never launched in its CLI's own plan mode.
 It shows the human alone a round handed to the Master (`AgentRuntime.toldTheHuman`).
 
 #### Scenario: A hook is unanswered, or a turn ends
 - **WHEN** `gate`, `turn-end` or `prompt-gate` cannot reach jagt
 - **THEN** none refuses anything
+
+### Requirement: A turn end refuses what it leaves unreported
+`turn-end` SHALL refuse once a turn that leaves the
+agent's move unreported (`Move.endsUnreported`); reported means `update_agent_status` since the turn began, recorded on the task,
+so a read call is none and a restart changes nothing. It SHALL also refuse once a turn that changed the tree and reported nothing
+(`TurnTree`), at every status but REVERTED, DEPLOY_CONFLICT and DONE.
+
+#### Scenario: A turn ends
 - **WHEN** a turn at DEPLOYED ends with the tree changed and nothing reported
 - **THEN** the end is refused once, and the second end on the same tree passes
 - **WHEN** a turn at DEPLOYED ends with the tree as the last end left it
@@ -179,18 +184,6 @@ wait is interrupted and when jagt stops. A detached launch SHALL be left running
 - **THEN** the command and the child are both killed
 - **WHEN** jagt stops while it waits on a command
 - **THEN** the command is killed, and its caller is told it was stopped (`Processes.Stopped`), never an exit code to judge
-
-### Requirement: The editor is a launcher
-jagt SHALL open a worktree and a diff only through `editorCommand` and the optional `editorDiffCommand`, naming no editor.
-IDE service folders present in the base repository SHALL be copied into a fresh worktree. A file the worktree already holds SHALL stay as it is.
-
-#### Scenario: IDE service folders, or no diff command
-- **WHEN** the base repository holds `.idea/runConfigurations` or `.vscode/launch.json`
-- **THEN** a fresh worktree holds the same run configurations or file
-- **WHEN** the base repository holds no IDE service folder
-- **THEN** nothing is copied
-- **WHEN** `editorDiffCommand` is unset and the human presses diff
-- **THEN** it is refused, naming the key and an example; jagt still starts
 
 ### Requirement: A session's servers can be pinned
 With `orchestrator.claude.mcpConfig` set, a session SHALL start and revive with jagt's and that file's servers alone.

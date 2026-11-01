@@ -62,22 +62,6 @@ watchdog off that silence.
 - **WHEN** a hand-back is `VERIFYING` and the Master runs
 - **THEN** you and the session hear: verification first, then the Master
 
-### Requirement: Every deploy is checked where it landed
-With `orchestrator.roles.qa.enabled` off, `DeployCheckJob` SHALL ask the session once per deploy commit, keyed on the task's turn.
-Neither another relay nor a restart asks again; what it asks is the brief's `deploy` step.
-Green MUST report nothing, the task staying `DEPLOYED`; red is the session's `IN_PROGRESS`, the round running again:
-reviewed, deployed, checked. It SHALL ask only once the pipeline on each deploy commit is green
-([infra-wait](../infra-wait/spec.md#requirement-a-deploy-stands-on-the-pipeline-jagt-reads-on-its-commit)).
-With it on, QA checks the deploy ([qa](../qa/spec.md)) and `DeployCheckJob` MUST ask the session nothing; never both on one deploy.
-
-#### Scenario: A deployed change fails its check
-- **WHEN** the check fails
-- **THEN** the task is `IN_PROGRESS`
-
-#### Scenario: QA checks the deploy
-- **WHEN** a deploy lands with `orchestrator.roles.qa.enabled` on
-- **THEN** `deploy` is never sent to the session and QA's check runs
-
 ### Requirement: In act a deploy conflict is the session's
 `DeployConflictJob` SHALL hand the session the conflict's worktree once per press, its own in its brief and its CLI (`AgentRuntime.admit`);
 staged in full it MUST finish the press, `deploy` or `revert` ([0013](../../../docs/decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
@@ -97,17 +81,26 @@ across a restart (its `Conflict`, [0063](../../../docs/decisions/0063-a-stalled-
 ### Requirement: Statuses a report cannot move
 A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT` until deployed: refusing errors every
 call of that session. Its card SHALL keep the status's line (`FlowRules.holdsItsLine`), the report's logged; a question alone reaches it, until the
-next report. A round read MUST move only a task waiting on the host or red (`FlowRules.readLands`). It leaves every other status in place, its checks
-alone updated: shipped work never goes back to approval, a session's work is never overwritten. It MUST leave a `QUESTION` or `PERMISSION` standing
-(`FlowRules.standsThroughARead`): only the session's next report or a human answers it.
+next report.
 
 #### Scenario: A report at a held status
 - **WHEN** a `DEPLOY_CONFLICT` task's agent reports `no changes`
 - **THEN** the task stays and its card keeps the conflict, the report's line logged
-- **AND** a poll reading `APPROVED` past `DEPLOYED` leaves the task there
-- **AND** a poll reading ABC-42 green leaves its `QUESTION` asking, the question on the card
-- **AND** a poll reading ABC-42 approved at `IN_PROGRESS` leaves it there, its checks and approval recorded
-- **AND** a poll reading a re-run `CI_FAILED` task green with nothing unresolved moves it on as a `CI_POLLING` one, no session needed
+
+### Requirement: A round read moves only a task waiting on the host or red
+A round read MUST move only a task waiting on the host or red (`FlowRules.readLands`). It leaves every other status in place, its checks
+alone updated: shipped work never goes back to approval, a session's work is never overwritten. It MUST leave a `QUESTION` or `PERMISSION` standing
+(`FlowRules.standsThroughARead`): only the session's next report or a human answers it.
+
+#### Scenario: A round read at another status
+- **WHEN** a poll reads `APPROVED` past `DEPLOYED`
+- **THEN** the task stays there
+- **WHEN** a poll reads ABC-42 green
+- **THEN** its `QUESTION` keeps asking, the question on the card
+- **WHEN** a poll reads ABC-42 approved at `IN_PROGRESS`
+- **THEN** it stays there, its checks and approval recorded
+- **WHEN** a poll reads a re-run `CI_FAILED` task green with nothing unresolved
+- **THEN** it moves on as a `CI_POLLING` one, no session needed
 
 ### Requirement: A follow-up request after a merged one
 A task needing more work after its request merged SHALL go back to `IN_PROGRESS`; its next ship's request replaces the merged one.

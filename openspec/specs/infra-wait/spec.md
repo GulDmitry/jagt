@@ -9,12 +9,7 @@ What jagt waits out instead of asking about: a pipeline the host says died on in
 ### Requirement: Infrastructure failures are waited out
 A pipeline the host says failed with every failed job on infrastructure (`runner_system_failure`, `stuck_or_timeout_failure`, `api_failure`,
 `scheduler_failure`, `data_integrity_failure`; `startup_failure` of a run) SHALL be re-run by jagt after each wait of `infraWait.backoff`
-(default 5m, 15m, 45m), never told to the session. The reasons SHALL be read from the host by its own CLI, not by a model. Any other reason, a
-mix, or none SHALL be the code's, and the round goes to the session ([review](../review/spec.md)). A pipeline red for infrastructure keeps the
-task's status. `infraWait.backoff: []` SHALL turn this off.
-A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the task's checks not red.
-`StopReadJob` makes that read every 5 minutes while the stop stands, whatever auto-review says; it relays, ships and presses nothing.
-A step that never landed (`UNDELIVERED`) SHALL end when `SessionAliveJob` finds the session's window running again, which it looks for every minute.
+(default 5m, 15m, 45m), never told to the session. The reasons SHALL be read from the host by its own CLI, not by a model.
 
 #### Scenario: Red on infrastructure is retried
 - **WHEN** ABC-42's pipeline went red because the runner died and nothing else
@@ -25,38 +20,14 @@ A step that never landed (`UNDELIVERED`) SHALL end when `SessionAliveJob` finds 
 - **WHEN** the re-run goes green
 - **THEN** the round reads as any green round, and the retries are forgotten
 
-#### Scenario: Red for the code
-- **WHEN** one failed job failed its script, or the host gives a reason outside the list
-- **THEN** the round goes to the session as before and the retries are forgotten
-
 #### Scenario: Retries run out
 - **WHEN** 3 retries were sent since the last lift and the pipeline is red on infrastructure again
 - **THEN** the task lands `CI_FAILED` and stops as `INFRA`, the evidence naming the job, its reason and `3 retries`
-
-#### Scenario: The failed jobs cannot be read
-- **WHEN** the CLI is missing, not logged in, or the host refuses to list ABC-42's failed jobs
-- **THEN** the red is the code's and the round goes to the session as before, one warning naming the cause
 
 #### Scenario: The re-run is refused
 - **WHEN** the host or the CLI refuses to re-run jobs already read as infrastructure, or cannot list them at the retry
 - **THEN** the task stops as `INFRA` at once, the evidence being the CLI's or the host's own words
 - **AND** the stop ends on a read, as below
-
-#### Scenario: Infrastructure comes back
-- **WHEN** a task stopped as `INFRA` or `CHECKS` and a later read lists its checks, not red
-- **THEN** the stop is voided and the log says `stop voided by read` once, with the task, the trigger and the pipeline
-- **AND** a deploy conflict resolved while it stood finishes on the next tick
-
-#### Scenario: The probe records what it read
-- **WHEN** a task stopped as `INFRA` is read green after the outage
-- **THEN** the task's checks and approval read that green, not the pre-outage word
-- **AND** the read writes nothing else: no relay, no status move, no message to the session
-
-#### Scenario: The request is gone
-- **WHEN** a task stopped as `INFRA` or `CHECKS` and the host says a request it was counted on no longer exists or was closed
-- **THEN** the stop is voided and the log says `stop voided by read` once, with `request=gone`
-- **AND** a request the stop was not counted on that is gone leaves the stop standing
-- **AND** a read refused because the host or CLI cannot answer leaves the stop standing
 
 #### Scenario: The request is unlinked
 - **WHEN** a task stopped as `INFRA` or `CHECKS` has no request linked any more
@@ -85,71 +56,45 @@ A step that never landed (`UNDELIVERED`) SHALL end when `SessionAliveJob` finds 
 - **THEN** a read that is not red on infrastructure forgets the armed retry
 - **AND** a due one is dropped where the task is closed, stopped or no longer red
 
-### Requirement: A deploy stands on the pipeline jagt reads on its commit
-A deploy SHALL stand only once the host's pipeline on each target's recorded tip, its last fix else its merge, is green.
-`DeployCheckJob` reads it every minute through the host's own CLI, not a model, until the deploy is asked about
-([0109](../../../docs/decisions/0109-a-deploys-outcome-is-the-pipeline-jagt-reads-on-its-commit.md)).
-A pipeline running, not started, unknown or unreadable keeps the deploy open, and the task's line says `waiting on its pipeline`.
-A deploy SHALL stand with no pipeline where none can come: the host lists none for `NO_PIPELINE_AFTER` (10 minutes) after the repository's
-recorded push, or the repository has no code-host address. A target that stood on the first SHALL be read on while `DEPLOYED`.
-A host that does not answer keeps the deploy open. Three reads running that cannot list a pipeline SHALL stop it as `DEPLOY_UNREAD`.
-The first read listing every pipeline, run while that stop stands, SHALL end it.
-A pipeline red on infrastructure SHALL be retried and counted as a request's is, and stops the task as `INFRA` after the last retry.
-A pipeline red on the code SHALL hand the deploy worktree to the session as a deploy conflict is handed
-([task-flow](../task-flow/spec.md#requirement-in-act-a-deploy-conflict-is-the-sessions)): `DEPLOY_CONFLICT`, cut from the deploy branch as it stands.
-A fix staged there SHALL be committed and pushed by the next `deploy`, never by the session; the pipeline is then read on the commit it pushed.
+### Requirement: A red the code owns goes to the session
+Any other reason, a
+mix, or none SHALL be the code's, and the round goes to the session ([review](../review/spec.md)). A pipeline red for infrastructure keeps the
+task's status. `infraWait.backoff: []` SHALL turn this off.
 
-#### Scenario: The deploy pipeline is not green yet
-- **WHEN** ABC-42 is `DEPLOYED` and the pipeline on its deploy commit is running, not started or cannot be read
-- **THEN** its session is not asked and the task stays `DEPLOYED`
-- **AND** its line reads `deployed to dev — waiting on its pipeline: proj 01234567: pipeline running`
-- **AND** a third read running that cannot list it stops ABC-42 as `DEPLOY_UNREAD`; the first read listing it ends the stop
+#### Scenario: Red for the code
+- **WHEN** one failed job failed its script, or the host gives a reason outside the list
+- **THEN** the round goes to the session as before and the retries are forgotten
 
-#### Scenario: The deploy pipeline goes green
-- **WHEN** the pipeline on every deploy commit of ABC-42 reads green
-- **THEN** its session is asked once, and the host is read no more for that deploy
+#### Scenario: The failed jobs cannot be read
+- **WHEN** the CLI is missing, not logged in, or the host refuses to list ABC-42's failed jobs
+- **THEN** the red is the code's and the round goes to the session as before, one warning naming the cause
 
-#### Scenario: No pipeline will come
-- **WHEN** the host lists no pipeline for ABC-42's deploy commit 10 minutes after its recorded push, or its repository's remote is a local path
-- **THEN** the deploy stands and its session is asked once; within the 10 minutes the line says the pipeline is not started
-- **AND** one INFO says `deploy settled without a pipeline`, naming the cause
-- **AND** a pipeline the host lists later is read while ABC-42 is `DEPLOYED`; red on the code makes it `DEPLOY_CONFLICT`
+### Requirement: A stop set by an outside condition ends on a read
+A stop this sets (`INFRA`, `CHECKS`) SHALL end on the first read listing the task's checks not red.
+`StopReadJob` makes that read every 5 minutes while the stop stands, whatever auto-review says; it relays, ships and presses nothing.
+A step that never landed (`UNDELIVERED`) SHALL end when `SessionAliveJob` finds the session's window running again, which it looks for every minute.
 
-#### Scenario: The deploy pipeline dies on infrastructure
-- **WHEN** the pipeline on ABC-42's deploy commit went red with every failed job on infrastructure
-- **THEN** the deploy stays open and its line names the retry
-- **AND** after the last retry the task stops as `INFRA`
+#### Scenario: Infrastructure comes back
+- **WHEN** a task stopped as `INFRA` or `CHECKS` and a later read lists its checks, not red
+- **THEN** the stop is voided and the log says `stop voided by read` once, with the task, the trigger and the pipeline
+- **AND** a deploy conflict resolved while it stood finishes on the next tick
 
-#### Scenario: The deploy pipeline is red on the code
-- **WHEN** a failed job of the pipeline on ABC-42's deploy commit failed its script
-- **THEN** ABC-42 is `DEPLOY_CONFLICT`, its line reads `red pipeline on the deploy commit: proj 01234567`, and its deploy worktree is cut from `dev`
-- **AND** where the Master acts the session is handed that worktree once; in `judge` the card says NEEDS YOU and nothing is pressed
+#### Scenario: The probe records what it read
+- **WHEN** a task stopped as `INFRA` is read green after the outage
+- **THEN** the task's checks and approval read that green, not the pre-outage word
+- **AND** the read writes nothing else: no relay, no status move, no message to the session
 
-#### Scenario: The session fixes the merge result
-- **WHEN** the session stages its fix in full in the deploy worktree
-- **THEN** jagt commits it and pushes it to `dev` through `deploy`, and ABC-42 is `DEPLOYED` on the new commit
-- **AND** the pipeline on that commit is read, and the session is asked once it is green
-
-#### Scenario: A press before the fix
-- **WHEN** a `deploy` is pressed on ABC-42 while nothing is staged in its fix worktree
-- **THEN** it is refused, saying the deploy waits on the session's fix in that worktree
-- **AND** the worktree and the status stay
-
-#### Scenario: The deploy worktree cannot be opened
-- **WHEN** the pipeline is red on the code and the worktree path holds a checkout jagt did not cut
-- **THEN** the deploy stays open, its line says why, and the next read tries again
+#### Scenario: The request is gone
+- **WHEN** a task stopped as `INFRA` or `CHECKS` and the host says a request it was counted on no longer exists or was closed
+- **THEN** the stop is voided and the log says `stop voided by read` once, with `request=gone`
+- **AND** a request the stop was not counted on that is gone leaves the stop standing
+- **AND** a read refused because the host or CLI cannot answer leaves the stop standing
 
 ### Requirement: A pipeline that died on infrastructure is re-run
 `InfraRetryJob` (every minute) SHALL re-run a pipeline whose armed retry is due. The task MUST be open and not stopped, its checks still
 red, and the host's failed jobs still all infrastructure. The armed retry and those sent SHALL live on the task, so a restart
 keeps them; an overdue one fires on the first tick. A sent retry SHALL be a history step by `jagt`, counted toward the hour's ceiling.
 A due retry the ceiling refuses stops the task as `PACE`.
-A checks read or approval SHALL be kept with the pushed commit it was read on; read on any other commit than the
-request's current one it reads as unknown, and a push disarms the retry armed for the commit before.
-
-#### Scenario: The session pushes while a retry is armed
-- **WHEN** a red read is recorded on commit A and the task's head moves to B
-- **THEN** its checks read unknown, no retry is due, and the next read on B records afresh
 
 #### Scenario: A restart mid-wait
 - **WHEN** jagt restarts with a retry armed and overdue
@@ -159,13 +104,18 @@ request's current one it reads as unknown, and a push disarms the retry armed fo
 - **WHEN** ABC-42 is done before its retry is due
 - **THEN** the job drops the entry and sends nothing
 
+### Requirement: A checks read is kept with the commit it was read on
+A checks read or approval SHALL be kept with the pushed commit it was read on; read on any other commit than the
+request's current one it reads as unknown, and a push disarms the retry armed for the commit before.
+
+#### Scenario: The session pushes while a retry is armed
+- **WHEN** a red read is recorded on commit A and the task's head moves to B
+- **THEN** its checks read unknown, no retry is due, and the next read on B records afresh
+
 ### Requirement: A session waits out a dependency that is down
 A session whose dependency is down SHALL report IN_PROGRESS with `outcome=wait`, its message naming what is down and how to probe it.
 The turn SHALL stay the session's and nothing SHALL ask the human. After each wait of `infraWait.backoff` jagt SHALL say `wait-over`.
 Once the session answered `wait-over` with a wait as many times as there are waits, the task SHALL stop as `WAIT`.
-A task stopped as `WAIT` SHALL be told `wait-over` again after the last wait of `infraWait.backoff`, each time the session waits again.
-A report of the session that is no wait SHALL end the stop.
-`outcome=wait` SHALL be refused where `infraWait.backoff` is `[]`.
 
 #### Scenario: A session waits
 - **WHEN** ABC-42's session reports `outcome=wait`, "ledger db down: ping ledger.internal"
@@ -176,6 +126,19 @@ A report of the session that is no wait SHALL end the stop.
 - **WHEN** the session answered `wait-over` with a wait 3 times
 - **THEN** the task stops as `WAIT` with the session's last message as evidence
 
+#### Scenario: Somebody else speaks first
+- **WHEN** you type to the session, or a relay or an answer opens a new turn, before the wait is over
+- **THEN** the wake of the old turn is never due
+
+#### Scenario: A restart mid-wait
+- **WHEN** jagt restarts while a wake is pending
+- **THEN** the wake stands, and a `restarted` answered with a wait counts nothing
+
+### Requirement: A stopped wait is woken again
+A task stopped as `WAIT` SHALL be told `wait-over` again after the last wait of `infraWait.backoff`, each time the session waits again.
+A report of the session that is no wait SHALL end the stop.
+`outcome=wait` SHALL be refused where `infraWait.backoff` is `[]`.
+
 #### Scenario: The wait stop keeps asking
 - **WHEN** a task stopped as `WAIT` reaches the last wait of `infraWait.backoff`
 - **THEN** jagt says `wait-over` once, though the task is stopped
@@ -184,11 +147,3 @@ A report of the session that is no wait SHALL end the stop.
 #### Scenario: The session goes on
 - **WHEN** a task stopped as `WAIT` has its session report `IN_PROGRESS` with no wait
 - **THEN** the stop is voided and the log says `stop voided by read` once, with the task, the trigger and `read=session report`
-
-#### Scenario: Somebody else speaks first
-- **WHEN** you type to the session, or a relay or an answer opens a new turn, before the wait is over
-- **THEN** the wake of the old turn is never due
-
-#### Scenario: A restart mid-wait
-- **WHEN** jagt restarts while a wake is pending
-- **THEN** the wake stands, and a `restarted` answered with a wait counts nothing

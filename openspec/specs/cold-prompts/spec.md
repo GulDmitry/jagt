@@ -9,15 +9,28 @@ jagt sends it to a fresh session and keeps that session's notes current.
 ### Requirement: A cold prompt starts fresh
 A session may stand idle for `orchestrator.agent.cacheLifetime` (default `1h`, `0` never). A prompt typed after that
 SHALL be written under the brief in `task_context.md` and start a fresh session (`AgentSessions.relayUnderCold`).
-Only then SHALL it be blocked, with one line saying where it went. Idle counts from `Session.idleSince`, the later
-of the session's halt and last sign, never while its turn is open or where it has signed nothing.
-The record is persisted, so a restart of jagt never reads a cold session as warm.
-Starting a fresh session starts the record over, so nothing the old session signed speaks for the new one.
-The first read after the start stamps its start.
+Only then SHALL it be blocked, with one line saying where it went.
 
 #### Scenario: An idle session gets a prompt
 - **WHEN** a prompt comes after the cache lifetime
 - **THEN** a fresh session holds it, and the prompt is blocked
+
+#### Scenario: jagt cannot relay
+- **WHEN** the relay or the fresh start fails, or jagt is down
+- **THEN** the prompt reaches the old session and a warning with its cause is logged
+
+#### Scenario: The prompt passes
+- **WHEN** the session was working, is within the cache lifetime, or no task owns it
+- **THEN** the prompt passes
+- **WHEN** it starts with `/` or holds a pasted image
+- **THEN** it passes whatever the idle time
+
+### Requirement: A session's idle time is its last sign
+Idle SHALL count from `Session.idleSince`, the later of the session's halt and last sign.
+It never counts while the turn is open or where the session has signed nothing.
+The record is persisted, so a restart of jagt never reads a cold session as warm.
+Starting a fresh session starts the record over, so nothing the old session signed speaks for the new one.
+The first read after the start stamps its start.
 
 #### Scenario: jagt restarted while the session idled
 - **WHEN** jagt restarted while the session idled past the lifetime
@@ -30,16 +43,6 @@ The first read after the start stamps its start.
 - **THEN** it passes, the old session's idle stamp being gone
 - **WHEN** no hook has landed within the stale limit of the first read after the start, however old the previous transcript
 - **THEN** the fresh session is not QUIET, and no stopped banner is raised for it
-
-#### Scenario: jagt cannot relay
-- **WHEN** the relay or the fresh start fails, or jagt is down
-- **THEN** the prompt reaches the old session and a warning with its cause is logged
-
-#### Scenario: The prompt passes
-- **WHEN** the session was working, is within the cache lifetime, or no task owns it
-- **THEN** the prompt passes
-- **WHEN** it starts with `/` or holds a pasted image
-- **THEN** it passes whatever the idle time
 
 ### Requirement: A cold prompt carries what the old session knew
 Beneath the prompt, `task_context.md` SHALL carry, gathered without a model: the last report or open question, the commits

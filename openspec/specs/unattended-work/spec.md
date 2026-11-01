@@ -9,13 +9,20 @@ What jagt does unasked: the auto-review poll, its cadence, and every other job i
 ### Requirement: The auto-review poll only reads and drafts
 The poll (`AutoReviewScheduler` → `ReviewSweepService`) SHALL only read and draft: threads relayed, the agent fixing locally into
 `review_replies.md`, nothing posted without a human `ship`, the diff and drafts left for `ide <alias>`. Code review is never fully automated.
-Rounds: [review](../review/spec.md). Detection SHALL be deterministic (a cadence, a status, an open request), a new trigger's too.
-The one write to a code host is the re-run of a pipeline the host says died on infrastructure: [infra-wait](../infra-wait/spec.md).
+Rounds: [review](../review/spec.md).
 
 #### Scenario: Sweep by hand
 - **WHEN** you type `review <task>`
 - **THEN** it runs the sweep
 - **AND** a round that answered every comment and changed no code is not your move: the open threads are the reviewer's
+
+### Requirement: Detection is deterministic and the one host write is a re-run
+Detection SHALL be deterministic (a cadence, a status, an open request), a new trigger's too.
+The one write to a code host is the re-run of a pipeline the host says died on infrastructure: [infra-wait](../infra-wait/spec.md).
+
+#### Scenario: A new trigger
+- **WHEN** a trigger is added to the poll
+- **THEN** it detects by a cadence, a status or an open request, never by a model's word
 
 ### Requirement: An open request is what the poller watches
 `AutoReviewCadence.polls` SHALL watch an open request, never a status: an unmerged one exists and the task is not DONE. At `REVIEWED`, `APPROVED` or
@@ -112,20 +119,27 @@ When a written rule leaves `memory/routing.md` at its ceiling, one read of the w
 - **THEN** the dropped one's count joins the kept one's, and it stays as a dated line
 - **AND** two rules placing in different projects both stand
 
-### Requirement: Jobs that keep the machine tidy and read the tracker
-Each of these jobs SHALL do its one thing unasked: - `jarwatch`: each minute, tells you the jar this process runs from was rebuilt underneath it. -
-`orphanscan`: at startup, deletes jagt's own worktree residue and warns about leftovers holding work or secrets. - `ticket-prefetch`: reads each
-working task's ticket once, for the Master's next review of it. - `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready
-for one, and tells you once of one it cannot. - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
+### Requirement: Jobs that keep the machine tidy
+Each of these jobs SHALL do its one thing unasked:
+- `jarwatch`: each minute, tells you the jar this process runs from was rebuilt underneath it.
+- `orphanscan`: at startup, deletes jagt's own worktree residue and warns about leftovers holding work or secrets.
 `run <job>` SHALL make one job due at once instead of at its interval.
 
 #### Scenario: A husk of a worktree, work that landed
 - **WHEN** a worktree directory jagt cut has lost its checkout and holds only the editor's files
 - **THEN** `orphanscan` deletes it at startup
-- **WHEN** an item reaches `doneStatus` under `tracker.mode: close`
-- **THEN** `ticket-close` closes its task
 - **WHEN** you run `run orphanscan`
 - **THEN** it runs at once; a job already running, or one nobody declared, is refused
+
+### Requirement: Jobs that read the tracker
+Each of these jobs SHALL do its one thing unasked:
+- `ticket-prefetch`: reads each working task's ticket once, for the Master's next review of it.
+- `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready for one, and tells you once of one it cannot.
+- `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
+
+#### Scenario: A finished item
+- **WHEN** an item reaches `doneStatus` under `tracker.mode: close`
+- **THEN** `ticket-close` closes its task
 
 ### Requirement: A task has a ceiling of unattended moves an hour
 jagt SHALL count, per task, its unasked moves in the last hour since its last `lift`: history steps by the Master, auto-review, the tracker or a
@@ -136,65 +150,3 @@ auto-review poll or round SHALL NOT be made. The task SHALL stop, its status kep
 - **WHEN** ABC-42 made 20 unattended moves in the last hour
 - **THEN** the next is not made and the card asks `lift the stop`
 - **AND** with some of the 20 over an hour old, or before the last lift, the next is made
-
-### Requirement: jagt stops a task it suspects it is looping
-`TaskStops` SHALL stop a task, its status kept, on any trigger since the last `lift`: `loopBreaker.stalledRounds` (3) relayed rounds running that
-each brought no new note and left the same job failing; a Master ship past `loopBreaker.ships` (4) within `autoReview.windowHours` that answered a
-round bringing no new note; a failed verification or probe, a not-ready plan or round, or a review round, sent back past
-`loopBreaker.rounds` (3) running in 24h. A round counts only while it answers the session report the one before answered.
-Every stop SHALL append a line `{at, task, alias, trigger, status, evidence}` to `stops.jsonl` beside
-`state.json` (rolled at 1 MB), which `lift` leaves.
-
-#### Scenario: Reworked plans are work
-- **WHEN** ABC-42's plan is returned a fourth time and each of the three before answered a different plan
-- **THEN** it is relayed and nothing stops
-
-#### Scenario: Rounds that resolve nothing
-- **WHEN** ABC-42 gets a fourth relayed round with the same newest notes and `unit-tests` failing, as the three before
-- **THEN** nothing is relayed, the card asks `lift the stop`, and one notification names the rounds
-
-#### Scenario: A new note resets the count
-- **WHEN** ABC-42 shipped five times today, every round before a ship bringing a new note, and the Master would ship again
-- **THEN** it ships, and nothing stops it
-- **AND** a new thread or note, by anyone, restarts the `stalledRounds` count: two idle rounds, a note, two idle rounds count two
-
-#### Scenario: Ships going round
-- **WHEN** ABC-42 shipped four times today and no round before a ship brought a new note, and the Master would ship again
-- **THEN** it presses nothing and the hover says `ships without a new note in 24h: 4`
-- **AND** a ship counts unless the round it answered carries a fingerprint other than the round before it; the first round counts
-- **AND** nothing is pressed on the tree the last ship was pressed on, untracked paths included; a changed or unreadable one is due
-- **AND** after three such ships, once !571 merged, a fourth is refused with no step recorded, so it never counts and nothing stops
-
-#### Scenario: Red rounds running
-- **WHEN** ABC-42's verification fails a fourth time with no other step sent between, or the Master returns it a fourth
-- **THEN** nothing is sent, nobody is asked, it stops where it is, and the hover says `verify sent 3 rounds running in 24h`
-
-#### Scenario: A result outlives its round
-- **WHEN** ABC-42's probes finish failed after you shipped it
-- **THEN** nothing is relayed, reported, recorded or stopped, and the log says `verification outdated`; one on its own round is relayed as before
-
-### Requirement: A stopped task waits for your lift
-Nothing unattended SHALL poll, relay into, read, answer, ship or deploy a stopped task (`StopGuard`). A job's `Watch` admits one only where it
-names the stop kind it ends. The board SHALL ring it `jagt stopped`, its move line `lift the stop` followed by the stop's short reason. That
-line's hover SHALL carry the evidence, the trigger's advice and the stop's time in UTC. A human's `lift` or `deploy` SHALL clear it, and a new
-request replacing the one the stop was counted on SHALL too. The count starts anew. A stop an outside condition set (`CHECKS`, `INFRA`) SHALL also
-end on a read listing the task's checks not red ([infra-wait](../infra-wait/spec.md)). Only SHIPS, STALLED, CHECKS, UNCHANGED_FAILURE and INFRA
-stops are counted on a request; the others SHALL stand.
-
-#### Scenario: A stopped task says why
-- **WHEN** ABC-42 is stopped on SHIPS
-- **THEN** its card reads `lift the stop — ships with no new note`
-- **AND** the hover shows the evidence, its trigger's advice, and when it stopped
-
-#### Scenario: A nudge is left unsent while a task is stopped
-- **WHEN** ABC-42 stands stopped with jagt's nudge unsent in its window
-- **THEN** nothing presses Enter until the lift; the merged-request and ticket reads still run
-
-#### Scenario: You press a verb on a stopped task
-- **WHEN** you press `ship` or `deploy` on a stopped task
-- **THEN** it runs, and the stop stands until you press `lift`, but a `deploy` lifts it once `DEPLOYED`
-- **AND** a deploy any other origin presses is refused and lifts nothing
-
-#### Scenario: A new request replaces the one the stop was counted on
-- **WHEN** ABC-42 was stopped on !571 and opens !573
-- **THEN** the stop lifts, the count restarts, the sweep reads !573, and the log says `stop lifted` with `cause=new request`

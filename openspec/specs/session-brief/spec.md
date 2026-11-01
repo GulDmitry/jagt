@@ -35,10 +35,21 @@ The first line of its `plan.md` SHALL name autoplan, the key and the criterion. 
 
 ### Requirement: Visualize
 With `orchestrator.agent.visualize.enabled` on, a session SHALL judge, while analysing its task, whether the task is worth a
-picture; a new or changed table, or a call between servers, services or a database, always is. When it is, the session SHALL
+picture; a new or changed table, or a call between servers, services or a database, always is. The default SHALL be off.
+
+#### Scenario: A two-line fix
+- **WHEN** ABC-42 is a two-line bug fix and visualize is on
+- **THEN** the session writes no `task_visual.md`
+
+#### Scenario: Turned off
+- **WHEN** `visualize.enabled` is `false` or unset
+- **THEN** the brief says nothing of a picture and the session works as before
+
+### Requirement: A task worth a picture gets task_visual.md before its first edit
+When it is, the session SHALL
 write `task_visual.md` in its worktree before its first edit: a frontend change as an ASCII sketch of each screen, one fenced
 block per screen; a backend change as Mermaid and markdown tables, an ER diagram drawing every reference between the tables,
-a sequence diagram every call. jagt draws and stores nothing. The default SHALL be off.
+a sequence diagram every call. jagt draws and stores nothing.
 
 #### Scenario: A task worth a picture
 - **WHEN** ABC-42 changes a screen and visualize is on
@@ -51,14 +62,6 @@ a sequence diagram every call. jagt draws and stores nothing. The default SHALL 
 #### Scenario: A call between services
 - **WHEN** ABC-42 makes one service call another and visualize is on
 - **THEN** `task_visual.md` holds a sequence diagram of that call
-
-#### Scenario: A two-line fix
-- **WHEN** ABC-42 is a two-line bug fix and visualize is on
-- **THEN** the session writes no `task_visual.md`
-
-#### Scenario: Turned off
-- **WHEN** `visualize.enabled` is `false` or unset
-- **THEN** the brief says nothing of a picture and the session works as before
 
 ### Requirement: Diagnose
 With `orchestrator.agent.diagnose.enabled` on, a session SHALL diagnose a bug from facts before code: gather the report's
@@ -81,8 +84,7 @@ A repro SHALL count only when it shows the report's signal. The default SHALL be
 A session SHALL answer each of `autoplan`, `visualize` and `diagnose` that is on as `yes — <why>` or `no — <why>`.
 The answers go in `switches` (`protocol/SwitchJudgements`) of its first `update_agent_status` report, whatever status it reports.
 jagt SHALL refuse that report as `validation`, naming the switch and the form, when one is missing, lacks its why or is
-unknown; reports after the first need none and a later answer replaces an earlier. The answers SHALL be kept on the task.
-The card's hover and the Artifacts tab SHALL show them, as `visualize: no — <why>`.
+unknown; reports after the first need none and a later answer replaces an earlier.
 
 #### Scenario: A switch left unanswered
 - **WHEN** `visualize` is on and the first report of ABC-42 carries no `switches` answer for it
@@ -91,6 +93,10 @@ The card's hover and the Artifacts tab SHALL show them, as `visualize: no — <w
 #### Scenario: A switch that is off
 - **WHEN** `visualize` is off and the first report of ABC-42 carries no answer for it
 - **THEN** the report is accepted
+
+### Requirement: The switch answers are kept and shown
+The answers SHALL be kept on the task.
+The card's hover and the Artifacts tab SHALL show them, as `visualize: no — <why>`.
 
 #### Scenario: A no with its why
 - **WHEN** a session reports `switches: {"visualize": "no — config-only change"}`

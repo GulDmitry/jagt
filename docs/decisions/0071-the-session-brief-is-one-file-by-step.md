@@ -1,7 +1,7 @@
 # 0071 — The session brief is one file, a section per step
 
 [← decisions](README.md) · rule: [`session-brief`](../../openspec/specs/session-brief/spec.md),
-[`task-flow`](../../openspec/specs/task-flow/spec.md#requirement-every-deploy-is-checked-where-it-landed)
+[`deploy-check`](../../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed)
 
 ## Status
 

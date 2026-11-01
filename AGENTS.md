@@ -39,8 +39,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 | the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md), [`board-workspace`](openspec/specs/board-workspace/spec.md) |
 | a colour, a mark, the colour palette, the legend | [`docs/rules/design.md`](docs/rules/design.md) |
 | whose move it is, a badge, an owner, a clock | [`attention`](openspec/specs/attention/spec.md) |
-| git, `ship`, `deploy`, `revert`, worktrees, multi-repo, a guard | [`git`](openspec/specs/git/spec.md), [`guards`](docs/rules/guards.md) |
-| a review round, auto-review, jobs | [`review`](openspec/specs/review/spec.md), [`unattended-work`](openspec/specs/unattended-work/spec.md) |
+| git, `ship`, `deploy`, `revert`, worktrees, multi-repo, a guard | [`git`](openspec/specs/git/spec.md), [`deploy-check`](openspec/specs/deploy-check/spec.md), [`guards`](docs/rules/guards.md) |
+| a review round, auto-review, jobs | [`review`](openspec/specs/review/spec.md), [`unattended-work`](openspec/specs/unattended-work/spec.md), [`task-stops`](openspec/specs/task-stops/spec.md) |
 | a terminal, tmux, a spawned process | [`runtime`](openspec/specs/runtime/spec.md), [`master`](openspec/specs/master/spec.md) |
 | a seam (agent, terminal, editor, OS), the assistant | [`docs/rules/seams.md`](docs/rules/seams.md) |
 | a message from a session or a read, a schema, a validation | [`protocol`](openspec/specs/protocol/spec.md) |

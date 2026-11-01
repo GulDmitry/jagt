@@ -131,7 +131,7 @@
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
   [spec](../openspec/specs/session-brief/spec.md#requirement-a-restart-asks-for-the-report-it-may-have-lost)
 - **Cold prompts** — Past the cache lifetime, a typed prompt starts fresh. [spec](../openspec/specs/cold-prompts/spec.md)
-- **Open in your editor** — Open a worktree or diff in your editor. [spec](../openspec/specs/runtime/spec.md#requirement-the-editor-is-a-launcher)
+- **Open in your editor** — Open a worktree or diff in your editor. [spec](../openspec/specs/platform/spec.md#requirement-the-editor-is-a-launcher)
 - **Pinned servers** — A session loads jagt's MCP server and the ones you pin, none of yours. Key: `orchestrator.claude.mcpConfig`.
   [spec](../openspec/specs/runtime/spec.md#requirement-a-sessions-servers-can-be-pinned)
 
@@ -170,7 +170,7 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
 - **Deploy check** — A deploy is checked where it landed — by its session, or by QA when `roles.qa.enabled`.
   A green pipeline stands it, a red one goes back to the session in the deploy worktree. Key: `orchestrator.roles.qa.enabled`.
-  [spec](../openspec/specs/task-flow/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [QA](../openspec/specs/qa/spec.md)
+  [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [QA](../openspec/specs/qa/spec.md)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
@@ -187,7 +187,7 @@
 - **Brakes** — `act` stops after bad endings, an hourly ceiling bounds a task's unasked moves, a looping or case-less task waits for your lift.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
   [spec](../openspec/specs/unattended-work/spec.md#requirement-a-task-has-a-ceiling-of-unattended-moves-an-hour)
-  [spec](../openspec/specs/unattended-work/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
+  [spec](../openspec/specs/task-stops/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
   [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)

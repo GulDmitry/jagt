@@ -8,9 +8,9 @@ A repository becomes a project from the board: read as its path is typed, writte
 ### Requirement: A project is added from the board
 Add a project SHALL read a repository path as it is typed: a repository, its origin, the branch tasks are cut
 from, the remote's other branches as last fetched, a key no project holds. It fills the fields the human has not typed.
-The path field offers the folders under what is typed, repositories first. It writes one entry under `projects:` in
+It writes one entry under `projects:` in
 `jagt.yml`, leaving every other line as it was. A path that is not ready is refused and nothing is written.
-Nothing is fetched. The verb `project` reaches it from `help` and the palette: typed alone it opens the form.
+Nothing is fetched.
 
 #### Scenario: A folder that is no repository
 - **WHEN** the human types the path of a plain folder and adds it
@@ -23,6 +23,10 @@ Nothing is fetched. The verb `project` reaches it from `help` and the palette: t
 #### Scenario: A verify command the repository carries
 - **WHEN** the repository holds `mvnw`, or a `Makefile` with a `test:` target and no wrapper script
 - **THEN** the verify field is `./mvnw test`, or `make test`; a `Makefile` without a `test:` target suggests nothing
+
+### Requirement: The path field and the verb reach the form
+The path field SHALL offer the folders under what is typed, repositories first.
+The verb `project` SHALL reach it from `help` and the palette: typed alone it opens the form.
 
 #### Scenario: Typing a folder prefix
 - **WHEN** the human types `~/www/bi` and `~/www` holds the repository `billing`, a folder `bills` and a hidden `.cache`
