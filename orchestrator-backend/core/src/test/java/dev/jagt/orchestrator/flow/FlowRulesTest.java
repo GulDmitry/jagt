@@ -478,4 +478,16 @@ class FlowRulesTest {
     void leavesAStatusAHumanOwnsWhereItIsWhenARepositoryIsAdded(TaskStatus status) {
         assertThat(FlowRules.next(status, TaskAction.ADD_REPO, Outcome.Kind.RELAYED)).isEmpty();
     }
+
+    @Test
+    void awaitsTheApprovalNotWhileTheAgentStillWorks() {
+        assertThat(FlowRules.awaitsApproval(TaskStatus.IN_PROGRESS)).isFalse();
+    }
+
+    @Test
+    void movesADeployReadOnlyOnARedTheCodeOwnsAndOnlyOnADeployedTask() {
+        assertThat(FlowRules.deployReadLands(TaskStatus.DEPLOYED, true)).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(FlowRules.deployReadLands(TaskStatus.DEPLOYED, false)).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(FlowRules.deployReadLands(TaskStatus.IN_PROGRESS, true)).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
 }

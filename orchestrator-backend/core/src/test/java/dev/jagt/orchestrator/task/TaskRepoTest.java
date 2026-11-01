@@ -24,4 +24,14 @@ class TaskRepoTest {
     void holdsAReviewRequestOnlyWhereALinkWasWritten(String mrUrl, boolean holds) {
         assertThat(TaskRepo.of("proj", "/w").withMrUrl(mrUrl).hasReviewRequest()).isEqualTo(holds);
     }
+
+    @Test
+    void keepsTheMergedMarksWhereTheRequestLinkIsTheSameAndDropsThemWhereItChanged() {
+        TaskRepo merged = new TaskRepo("proj", "/w", null, "https://host.invalid/mr/1", true, true);
+
+        assertThat(merged.withMrUrl("https://host.invalid/mr/1").wasMerged()).isTrue();
+        assertThat(merged.withMrUrl("https://host.invalid/mr/1").wasHostMerged()).isTrue();
+        assertThat(merged.withMrUrl("https://host.invalid/mr/2").wasMerged()).isFalse();
+        assertThat(merged.withMrUrl("https://host.invalid/mr/2").wasHostMerged()).isFalse();
+    }
 }

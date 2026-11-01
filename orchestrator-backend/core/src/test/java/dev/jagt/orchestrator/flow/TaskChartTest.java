@@ -5,7 +5,10 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.Session;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.statechart.ChartStep;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -300,5 +303,53 @@ class TaskChartTest {
                 new TaskMove.Checked.RoundDeclined("qa", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS));
 
         assertThat(stepped.configuration().toPlain()).containsEntry("lifecycle", "DEPLOYED");
+    }
+
+    static Stream<Arguments> regionEdges() {
+        TaskStop checksStop = new TaskStop(TaskStop.Trigger.CHECKS, 1, "e");
+        Turn closed = Turn.none();
+        TaskRepo merged = new TaskRepo("p", "/w", null, "u", true, null);
+        return Stream.of(
+                arguments("report", "QUESTION", "IN_PROGRESS", new TaskMove.Verified(true), "PLAIN",
+                        List.of(new TaskEffect.Reports(AgentReport.PLAIN))),
+                arguments("report", "WAIT", "IN_PROGRESS", new TaskMove.Read(TaskStatus.IN_PROGRESS), "PLAIN",
+                        List.of(new TaskEffect.Reports(AgentReport.PLAIN))),
+                arguments("report", "QUESTION", "REVERTED", new TaskMove.Said(AgentReport.WAIT), "PLAIN",
+                        List.of(new TaskEffect.Reports(AgentReport.PLAIN))),
+                arguments("report", "QUESTION", "DEPLOYED", new TaskMove.DeployRead(true), "PLAIN",
+                        List.of(new TaskEffect.Reports(AgentReport.PLAIN))),
+                arguments("report", "QUESTION", "DEPLOYED", new TaskMove.DeployRead(false), "QUESTION", List.of()),
+                arguments("repo", "ASKED", "IN_PROGRESS", new TaskMove.RepoAsked("p"), "ASKED",
+                        List.of(new TaskEffect.AsksRepo("p"))),
+                arguments("request", "NONE", "IN_PROGRESS", new TaskMove.RequestLinked(Map.of(), "u", false, false, false),
+                        "NONE", List.of(new TaskEffect.LinksRequests(Map.of(), "u", false))),
+                arguments("request", "MERGED", "IN_PROGRESS", new TaskMove.RepoAttached(merged), "MERGED", List.of()),
+                arguments("checks", "NONE", "IN_PROGRESS", new TaskMove.ChecksRead("ok", "t", false), "STALE",
+                        List.of(new TaskEffect.ReadsChecks("ok", "t"))),
+                arguments("checks", "NONE", "IN_PROGRESS", new TaskMove.HeadSeen("t", false, false, InfraPhase.NONE),
+                        "NONE", List.of(new TaskEffect.SeesHead("t"))),
+                arguments("checks", "STALE", "IN_PROGRESS", new TaskMove.HeadSeen("t", false, false, InfraPhase.NONE),
+                        "READ", List.of(new TaskEffect.SeesHead("t"))),
+                arguments("approval", "UNREAD", "IN_PROGRESS", new TaskMove.ApprovalRead(false), "WITHHELD",
+                        List.of(new TaskEffect.ReadsApproval(false))),
+                arguments("stop", "NONE", "IN_PROGRESS", new TaskMove.StopSet(checksStop), "HOST_READ",
+                        List.of(new TaskEffect.Stops(checksStop))),
+                arguments("turn", "OPEN", "IN_PROGRESS", new TaskMove.TurnRestored(closed), "CLOSED",
+                        List.of(new TaskEffect.RestoresTurn(closed))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("regionEdges")
+    void movesARegionOnlyAlongTheMovesItsPhaseTakes(String region, String from, String lifecycle, TaskMove move,
+                                                    String to, List<TaskEffect> effects) {
+        Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
+        plain.put("lifecycle", lifecycle);
+        plain.put(region, from);
+
+        ChartStep<TaskEffect> stepped = TaskChart.chart().step(TaskChart.chart().configuration(plain),
+                new ChartFacts(false, Map.of(), Facts.defaults()), move);
+
+        assertThat(stepped.configuration().toPlain()).containsEntry(region, to);
+        assertThat(stepped.effects()).containsAll(effects);
     }
 }

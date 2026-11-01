@@ -50,4 +50,14 @@ class InfraRetryTest {
 
         assertThat(stop).isEmpty();
     }
+
+    @Test
+    void countsNoRetrySentAtTheInstantOfTheLift() {
+        List<InfraRetry> retries = List.of(
+                new InfraRetry(1_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
+                new InfraRetry(2_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 2, 3));
+
+        assertThat(InfraRetry.sentSince(retries, RoundTrail.liftedAt(1_000))).extracting(InfraRetry::at)
+                .containsExactly(2_000L);
+    }
 }

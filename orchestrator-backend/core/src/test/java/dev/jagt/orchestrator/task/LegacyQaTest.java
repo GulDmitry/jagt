@@ -44,4 +44,19 @@ class LegacyQaTest {
 
         assertThat(task.roleOrNone("qa").passed()).isEqualTo("proj@abc");
     }
+
+    @Test
+    void leavesATurnWithoutQaMarksAsItIs() {
+        Turn turn = new Turn("ship", 3, "", 4, java.util.Map.of("press:ship", "tree"), java.util.List.of());
+
+        assertThat(LegacyQa.withoutMarks(turn)).isSameAs(turn);
+    }
+
+    @Test
+    void dropsAnyOneOfTheQaMarksFromATurn() {
+        Turn turn = new Turn("ship", 3, "", 4, java.util.Map.of("qa:rows", "- row", "press:ship", "tree"),
+                java.util.List.of());
+
+        assertThat(LegacyQa.withoutMarks(turn).marks()).containsOnlyKeys("press:ship");
+    }
 }

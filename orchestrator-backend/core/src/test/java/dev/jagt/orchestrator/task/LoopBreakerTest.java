@@ -313,4 +313,37 @@ class LoopBreakerTest {
 
         assertThat(stop).isEmpty();
     }
+
+    @Test
+    void stopsTheShipPressedOnTheTreeOfEveryShipBefore() {
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER).on("t1"),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER).on("t1"),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER).on("t1"),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER).on("t1"),
+                new StatusChange(TaskStatus.SHIPPING, 5_000, ActionOrigin.MASTER).on("t1"));
+
+        var stop = breaker.beforeShip(RoundTrail.none(), history, 6_000);
+
+        assertThat(stop).hasValueSatisfying(it -> assertThat(it.evidence()).contains("ships without a new note in 24h: 4"));
+    }
+
+    @Test
+    void countsNoShipPressedOnATreeOtherThanTheShipBefore() {
+        RoundTrail watch = new RoundTrail(List.of(new RoundTrail.Round(500, 5, "", "a", "t1 note_1")), 0);
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER).on("t1"),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER).on("t2"),
+                new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER).on("t3"),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER).on("t4"),
+                new StatusChange(TaskStatus.SHIPPING, 5_000, ActionOrigin.MASTER).on("t5"));
+
+        assertThat(breaker.beforeShip(watch, history, 6_000)).isEmpty();
+    }
+
+    @Test
+    void allowsTheMoveWhereTheTwentyMovesLandedAtTheInstantTheHourBegan() {
+        List<StatusChange> history = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 3_000_000, ActionOrigin.MASTER)).toList();
+
+        assertThat(breaker.beforeMove(history, RoundTrail.none(), 6_600_000)).isEmpty();
+    }
 }

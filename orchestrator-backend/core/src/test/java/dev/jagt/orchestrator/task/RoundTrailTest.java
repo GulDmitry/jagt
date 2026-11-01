@@ -41,4 +41,24 @@ class RoundTrailTest {
     void relaysNothingBeforeTheFirstRound() {
         assertThat(RoundTrail.none().relayed("")).isFalse();
     }
+
+    @Test
+    void holdsNoNewNoteOnlyWhereTheLastRoundCarriedThemAndNoChecksWereRedThenOrNow() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a", "t1 note_1"));
+        RoundTrail redBefore = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "unit-tests", "a", "t1 note_1"));
+
+        assertThat(trail.noNewNote("t1 note_1", "")).isTrue();
+        assertThat(trail.noNewNote("t1 note_1", "unit-tests")).isFalse();
+        assertThat(redBefore.noNewNote("t1 note_1", "")).isFalse();
+    }
+
+    @Test
+    void holdsNewNotesWhereTheyAreKnownAndTheLastRoundDidNotCarryThem() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a", "t1 note_1"));
+
+        assertThat(trail.newNotes("t1 note_2")).isTrue();
+        assertThat(trail.newNotes("t1 note_1")).isFalse();
+        assertThat(RoundTrail.none().newNotes("t1 note_2")).isTrue();
+        assertThat(RoundTrail.none().newNotes("")).isFalse();
+    }
 }
