@@ -110,7 +110,7 @@ orchestrator:
   assistant:
     model: haiku                        # blank inherits your own; the reads are mechanical
     settingSources: user,project,local  # NOT `project` alone: the call runs from a temp dir, which has none
-    maxCostUsd: 1.75                    # a headless call stops at this spend and its read fails naming it
+    maxCostUsd: 2.55                    # a headless call stops at this spend and its read fails naming it
     breakerFailures: 3                  # consecutive model-provider failures (5xx, overloaded, network; never a usage limit) that stop every headless read
     breakerCooldown: 5m                 # how long reads stay stopped; then one probe read closes the breaker on success, re-opens it on failure
     # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # a bare server gives a read its get*/list*/search*/

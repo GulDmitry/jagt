@@ -16,7 +16,7 @@ public record AssistantProperties(String settingSources, @Nullable String model,
                                   Map<AssistantCallKind, String> mcpConfigByKind, double maxCostUsd,
                                   int breakerFailures, Duration breakerCooldown) {
 
-    public static final double DEFAULT_MAX_COST_USD = 1.75;
+    public static final double DEFAULT_MAX_COST_USD = 2.55;
     public static final int DEFAULT_BREAKER_FAILURES = 3;
     public static final Duration DEFAULT_BREAKER_COOLDOWN = Duration.ofMinutes(5);
 
