@@ -44,9 +44,8 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 - An external binary is configured by **bare name**; `adapter/Executables` resolves it against PATH, install
   directories (Homebrew included), per-user script dirs, then **inside application bundles**. An absolute
   default fails every task on Linux; `editor-command` defaults to bare `idea`.
-- **Do not weaken the resolver**: an IDE needs the bundle step
-  (`/Applications/<App>.app/Contents/MacOS/<name>`). The agent CLI is **not** resolved: it runs under the
-  human's PATH in its tmux window.
+- **Do not weaken the resolver**: an IDE needs the bundle step (`/Applications/<App>.app/Contents/MacOS/<name>`).
+  The agent CLI is **not** resolved: it runs under the human's PATH in its tmux window.
 - `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, the arguments stay the
   human's; a launcher found nowhere fails naming the config **key**.
 - JUnit parallel, methods **and** classes: no `@BeforeAll`, no mutable statics, every file under a `@TempDir`;
@@ -54,6 +53,8 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
   `@Execution(SAME_THREAD)`). Only this suite is parallel; it runs in English and UTC, as production does.
 - **A test that asserts on a log line takes `@ResourceLock(Resources.GLOBAL)`**: else its appender captures a
   concurrent test's events and the `Logger` cast races SLF4J's start-up.
+- **A flaky test is a defect, fixed when first seen**: a red a rerun turns green is never waved through. Its cause is
+  found before the next commit (a race gets a fix and a `docs/cases.md` row); never a longer wait, a retry or `@Disabled`.
 
 ### The board is tested in a browser
 
@@ -63,8 +64,7 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
   command), never by evaluating page JS. Its `@MockitoBean`s stub whole-app seams, never a class's
   collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`, `EditorDriver`,
   a `ReviewRepliesReport` spy; e2e's stub only ports.
-- Shared browser libraries are one list (`scripts/linux-test-deps.sh`). Assert geometry as an element inside the
-  viewport at a set size, never a screenshot.
+- Browser libraries are one list (`scripts/linux-test-deps.sh`); geometry is an element in a sized viewport, never a screenshot.
 
 ### The e2e matrix and the model evals
 
