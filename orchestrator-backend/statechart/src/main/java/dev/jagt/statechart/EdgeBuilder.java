@@ -56,8 +56,12 @@ public final class EdgeBuilder<E, X, F, S extends Enum<S>> {
         return chart;
     }
 
-    ChartBuilder<E, X, F> leadsTo(S target) {
-        return from == target ? stay() : to(target);
+    void leadsTo(S target) {
+        if (from == target) {
+            stay();
+        } else {
+            to(target);
+        }
     }
 
     /** An internal transition: the edge's effects and raises run, the state is neither exited nor entered. */

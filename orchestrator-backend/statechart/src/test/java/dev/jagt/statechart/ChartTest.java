@@ -2,6 +2,7 @@ package dev.jagt.statechart;
 
 import dev.jagt.statechart.Lamp.Event;
 import dev.jagt.statechart.Lamp.Facts;
+import dev.jagt.statechart.Lamp.Gear;
 import dev.jagt.statechart.Lamp.Hit;
 import dev.jagt.statechart.Lamp.Mode;
 import dev.jagt.statechart.Lamp.Power;
@@ -60,6 +61,41 @@ class ChartTest {
     }
 
     @Test
+    void aDerivedRegionDeclaredTwiceIsReported() {
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+                .derived(Lamp.LEVEL, Facts::level)
+                .derived(Lamp.LEVEL, Facts::level)
+                .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON);
+
+        assertThatThrownBy(builder::build).isInstanceOfSatisfying(ChartInvalid.class,
+                invalid -> assertThat(invalid.problems()).containsExactly("region level is declared more than once"));
+    }
+
+    @Test
+    void aRegionIsJudgedByItsOwnEdgesAlone() {
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
+                .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
+                .region(Lamp.GLOW, Mode.DIM, Set.of(Mode.BRIGHT))
+                .on(Lamp.MODE, Mode.DIM, Tick.class).to(Mode.BRIGHT);
+
+        assertThatThrownBy(builder::build).isInstanceOfSatisfying(ChartInvalid.class,
+                invalid -> assertThat(invalid.problems()).containsExactly("state glow.DIM has no way out",
+                        "state glow.BRIGHT is unreachable"));
+    }
+
+    @Test
+    void aStateOnlyAnUnreachableStateLeadsToIsUnreachable() {
+        ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
+                .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.LOW, Stage.HIGH))
+                .on(Lamp.STAGE, Stage.MID, Press.class).to(Stage.HIGH);
+
+        assertThatThrownBy(builder::build).isInstanceOfSatisfying(ChartInvalid.class,
+                invalid -> assertThat(invalid.problems()).containsExactly("state stage.MID is unreachable",
+                        "state stage.HIGH is unreachable"));
+    }
+
+    @Test
     void everyProblemIsReportedAtOnce() {
         ChartBuilder<Event, Facts, String> builder = Chart.<Event, Facts, String>builder()
                 .region(Lamp.STAGE, Stage.LOW, Set.of())
@@ -83,7 +119,7 @@ class ChartTest {
         Configuration restored = chart.configuration(moved.toPlain());
 
         assertThat(moved.toPlain()).containsEntry("power", "OFF").containsEntry("mode", "BRIGHT");
-        assertThat(restored).isEqualTo(moved);
+        assertThat(restored).isEqualTo(moved).hasSameHashCodeAs(moved).isNotEqualTo(chart.initial());
     }
 
     @Test
@@ -94,7 +130,9 @@ class ChartTest {
                 .build();
         Map<String, String> plain = Map.of("power", "BROKEN");
 
-        assertThatThrownBy(() -> chart.configuration(plain)).isInstanceOf(InvalidConfiguration.class);
+        assertThatThrownBy(() -> chart.configuration(plain)).isInstanceOfSatisfying(InvalidConfiguration.class,
+                invalid -> assertThat(invalid.problems())
+                        .containsExactly("region power has no known state, got BROKEN"));
     }
 
     @Test
@@ -105,7 +143,19 @@ class ChartTest {
                 .build();
         Map<String, String> plain = Map.of("power", "OFF", "mode", "DIM");
 
-        assertThatThrownBy(() -> chart.configuration(plain)).isInstanceOf(InvalidConfiguration.class);
+        assertThatThrownBy(() -> chart.configuration(plain)).isInstanceOfSatisfying(InvalidConfiguration.class,
+                invalid -> assertThat(invalid.problems()).containsExactly("no stored region mode"));
+    }
+
+    @Test
+    void aConfigurationCannotBeAskedForARegionTheChartDoesNotStore() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+                .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
+                .build();
+        Configuration start = chart.initial();
+
+        assertThatThrownBy(() -> start.get(Lamp.MODE)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -115,6 +165,7 @@ class ChartTest {
                 .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
                 .derived(Lamp.LEVEL, Facts::level)
                 .on(Lamp.POWER, Power.OFF, Press.class).to(Power.ON)
+                .on(Lamp.POWER, Power.ON, Press.class).to(Power.OFF)
                 .on(Lamp.MODE, Mode.DIM, Tick.class).to(Mode.BRIGHT)
                 .build();
 
@@ -125,6 +176,7 @@ class ChartTest {
                         state "ON" as power_ON
                         [*] --> power_OFF
                         power_OFF --> power_ON : Press
+                        power_ON --> power_OFF : Press
                         power_ON --> [*]
                     }
                     --
@@ -159,6 +211,55 @@ class ChartTest {
                         state "all but HIGH" as stage_from_1
                         stage_from_1 --> stage_HIGH : tick
                         stage_HIGH --> stage_LOW : hit
+                    }
+                """);
+    }
+
+    @Test
+    void anEdgeDeclaredFromAFewOfManyStatesNamesThoseStates() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.GEAR, Gear.P, Set.of(Gear.D))
+                .on(Lamp.GEAR, Gear.P, Press.class).to(Gear.R)
+                .onMatching(Lamp.GEAR, Set.of(Gear.P, Gear.R), "tick", Tick.class::isInstance).to(Gear.N)
+                .on(Lamp.GEAR, Gear.N, Hit.class).to(Gear.D)
+                .build();
+
+        assertThat(chart.render()).isEqualTo("""
+                stateDiagram-v2
+                    state gear {
+                        state "P" as gear_P
+                        state "R" as gear_R
+                        state "N" as gear_N
+                        state "D" as gear_D
+                        [*] --> gear_P
+                        gear_P --> gear_R : Press
+                        state "P, R" as gear_from_1
+                        gear_from_1 --> gear_N : tick
+                        gear_N --> gear_D : Hit
+                        gear_D --> [*]
+                    }
+                """);
+    }
+
+    @Test
+    void anEdgeDeclaredFromEveryStateIsDrawnOnce() {
+        Chart<Event, Facts, String> chart = Chart.<Event, Facts, String>builder()
+                .region(Lamp.STAGE, Stage.LOW)
+                .on(Lamp.STAGE, Stage.LOW, Press.class).to(Stage.MID)
+                .onMatching(Lamp.STAGE, Set.of(Stage.LOW, Stage.MID, Stage.HIGH), "tick", Tick.class::isInstance)
+                .to(Stage.HIGH)
+                .build();
+
+        assertThat(chart.render()).isEqualTo("""
+                stateDiagram-v2
+                    state stage {
+                        state "LOW" as stage_LOW
+                        state "MID" as stage_MID
+                        state "HIGH" as stage_HIGH
+                        [*] --> stage_LOW
+                        stage_LOW --> stage_MID : Press
+                        state "all" as stage_from_1
+                        stage_from_1 --> stage_HIGH : tick
                     }
                 """);
     }
