@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.ui.Console;
 import dev.jagt.orchestrator.surface.ui.LogFileRoll;
+import dev.jagt.orchestrator.surface.ui.PortGuard;
 import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -46,7 +47,7 @@ public class OrchestratorApplication {
     // Visible for a test: the REGISTRATION is what breaks while the listener itself works.
     static SpringApplication application() {
         SpringApplication application = new SpringApplication(OrchestratorApplication.class);
-        application.addListeners(new LogFileRoll());
+        application.addListeners(new PortGuard(), new LogFileRoll());
         return application;
     }
 }

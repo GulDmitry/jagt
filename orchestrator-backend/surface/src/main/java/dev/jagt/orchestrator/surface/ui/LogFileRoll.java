@@ -6,9 +6,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -37,25 +34,11 @@ public class LogFileRoll implements ApplicationListener<ApplicationEnvironmentPr
             return false;
         }
         // Another jagt already holds the file open: moving it leaves that appender writing to the archive.
-        if (portTaken(environment.getProperty("server.port", "8290"))) {
+        if (BoardPort.taken(BoardPort.configured(environment))) {
             return false;
         }
         configured.forEach(name -> start(Path.of(name)));
         return true;
-    }
-
-    private static boolean portTaken(String port) {
-        try {
-            int number = Integer.parseInt(port.trim());
-            try (ServerSocket probe = new ServerSocket()) {
-                probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), number));
-                return false;
-            }
-        } catch (IOException e) {
-            return true;
-        } catch (RuntimeException e) {
-            return false;
-        }
     }
 
     /** Best-effort: a log that cannot be rolled is not a reason to refuse to start. */

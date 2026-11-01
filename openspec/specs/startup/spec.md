@@ -28,6 +28,10 @@ those of jagt's own files.
 - **WHEN** you start jagt with the checks off and no case file in its root
 - **THEN** it is refused, naming the steps no case sends
 
+#### Scenario: The board port is held
+- **WHEN** another jagt or process listens on the board port, and you start jagt
+- **THEN** it exits at once with one line naming the port, and logs no ERROR and no stack
+
 #### Scenario: Linux with the platform unset
 - **WHEN** you start jagt on Linux with the platform left unset
 - **THEN** it is refused: unset means macOS

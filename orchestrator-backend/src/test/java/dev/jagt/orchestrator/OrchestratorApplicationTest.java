@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.surface.mcp.McpController;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.surface.ui.LogFileRoll;
+import dev.jagt.orchestrator.surface.ui.PortGuard;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -70,5 +71,11 @@ class OrchestratorApplicationTest {
     void launchesWithTheLogFileRollListenerRegistered() {
         assertThat(OrchestratorApplication.application().getListeners())
                 .hasAtLeastOneElementOfType(LogFileRoll.class);
+    }
+
+    @Test
+    void launchesWithThePortGuardListenerRegistered() {
+        assertThat(OrchestratorApplication.application().getListeners())
+                .hasAtLeastOneElementOfType(PortGuard.class);
     }
 }
