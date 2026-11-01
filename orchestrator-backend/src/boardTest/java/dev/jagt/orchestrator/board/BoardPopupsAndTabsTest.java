@@ -359,8 +359,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         long now = System.currentTimeMillis();
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.REVIEW_PENDING).alias("a1").lastActiveTimestamp(now).history(List.of(
-                        new StatusChange(TaskStatus.REVIEW_PENDING, now - 60_000, null,
-                                "work done, tests green, ready for review"))).build());
+                        new StatusChange(TaskStatus.REVIEW_PENDING, now - 60_000, null)
+                                .because("work done, tests green, ready for review"))).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
 
