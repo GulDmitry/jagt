@@ -172,6 +172,28 @@ class WorktreeInspectionTest {
     }
 
     @Test
+    void listsTheCommitsAndFilesTheTaskAddedSinceTheBase(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("a.txt"), "base\n");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Files.writeString(repo.resolve("a.txt"), "committed\n");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qam", "ABC-42 Widen the column"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.commitsSince(repo, repo, "main")).contains("ABC-42 Widen the column").doesNotContain("init");
+        assertThat(git.statSince(repo, repo, "main")).contains("a.txt");
+    }
+
+    @Test
     void namesEveryChangedPathCommittedUncommittedNewAndBothSidesOfARenameButNotJagtsOwn(@TempDir Path dir)
             throws Exception {
         Processes runner = new ProcessRunner();

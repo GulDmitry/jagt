@@ -491,6 +491,8 @@ class GitDeployTest {
                 .hasMessageContaining("still unresolved");
 
         assertThat(deployWorktree.resolve("f.txt")).hasContent("resolved by hand");
+        assertThat(git.deployProgress(repo, "ABC-1")).extracting(Conflict.Progress::unmerged, Conflict.Progress::staged)
+                .containsExactly(1, 1);
     }
 
     @Test
@@ -1384,6 +1386,81 @@ class GitDeployTest {
         assertThat(git.isFix(repo, merge)).isFalse();
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-e", "origin/dev:feature.txt")).exitCode())
                 .isNotZero();
+    }
+
+    @Test
+    void onlyTheRepositoryThatCutTheRevertWorktreeClaimsItWhenASiblingDerivesTheSamePath(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path api = dir.resolve("api");
+        Path web = dir.resolve("web");
+        runner.run(dir, t, List.of("git", "init", "-q", "-b", "main", api.toString()));
+        runner.run(dir, t, List.of("git", "init", "-q", "-b", "main", web.toString()));
+        runner.run(web, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "base"));
+        runner.run(web, t, List.of("git", "worktree", "add", "-q", "-b", "jagt-revert-ABC-1",
+                GitDeploy.revertWorktreePath(web, "ABC-1").toString()));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThat(git.hasRevertWorktree(web, "ABC-1")).isTrue();
+        assertThat(git.hasRevertWorktree(api, "ABC-1")).isFalse();
+    }
+
+    @Test
+    void cutsTheDeployBranchAgainAfterTheFixWorktreeDirectoryWasDeletedByHand(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "worktree", "add", "-q", "-B", "jagt-deploy-ABC-1",
+                deployWorktree.toString(), "origin/dev"));
+        runner.run(dir, t, List.of("rm", "-rf", deployWorktree.toString()));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        git.openFixWorktree(repo, "ABC-1", "dev");
+
+        assertThat(deployWorktree.resolve("base.txt")).hasContent("base");
+    }
+
+    @Test
+    void refusesARevertGitRejectedWithNoConflictAndNamesItAsAnErrorNotAConflict(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("base.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "_dev", "main"));
+        Files.writeString(repo.resolve("same.txt"), "same");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
+        Files.writeString(repo.resolve("same.txt"), "same");
+        runner.run(repo, t, List.of("git", "add", "-A"));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
+                .isExactlyInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no conflict is waiting for you");
     }
 
     @ParameterizedTest
