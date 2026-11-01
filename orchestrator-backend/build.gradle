@@ -162,6 +162,7 @@ configure(allprojects - project(':')) {
         junit5PluginVersion = '1.2.3'
         targetClasses = pitestTargets.orElse(ownTargets)
         targetTests = ['dev.jagt.*']
+        excludedMethods = ['toString', 'hashCode']
         if (project.path == ':usecase') {
             excludedClasses = usecaseGitClasses.collectMany { [it, it + '$*'] }
             // Most of `:core` is exercised only through `:usecase`, so its mutants are judged against both modules' tests.
