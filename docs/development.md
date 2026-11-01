@@ -23,6 +23,9 @@ project rule into a vendor-named file.
 | `./gradlew promptEval` | the assistant's CLI, and tokens | whether an operator's own words still map onto one command |
 | `./gradlew roleEval -Prole=master` | the assistant's CLI, tokens, minutes, and `.master-eval/root` trusted once | whether the shipped Master brief still reaches a human's verdict |
 
+Timed 2026-11-01, `--rerun-tasks`, 10 CPUs: `test` 80 s, `e2eTest` 309 s, `boardTest` 82 s, `standTest -Pmodelfree` 42 s,
+`roleEval -Prole=qa` 4–7 min, `-Prole=master` about 5 min; the next refresh compares against these.
+
 Only `test` is in `check`; the rest are asked for by name, each needing something a hermetic run must not
 depend on. `roleEval -Prole=master` starts a real session in `.master-eval/root`, and an agent CLI will not work in a
 directory nobody has trusted: run `claude` there once and accept. The suite checks that and refuses with the
