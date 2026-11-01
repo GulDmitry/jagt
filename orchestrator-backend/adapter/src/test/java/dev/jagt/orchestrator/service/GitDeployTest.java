@@ -940,6 +940,8 @@ class GitDeployTest {
         assertThat(Files.readString(revertWorktree.resolve("feature.txt"))).isEqualTo("someone edited the deployed feature");
         assertThat(git.hasRevertWorktree(repo, "ABC-1")).isTrue();
         assertThat(git.revertUnmerged(repo, "ABC-1")).isEqualTo("feature.txt");
+        assertThat(git.revertProgress(repo, "ABC-1").unmerged()).isEqualTo(1);
+        assertThat(git.revertResolved(repo, "ABC-1")).isFalse();
     }
 
     @Test
@@ -1385,7 +1387,7 @@ class GitDeployTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"0123456789abcdef,01234567", "abc1234,abc1234", "NIL,null"}, nullValues = "NIL")
+    @CsvSource(value = {"0123456789abcdef,01234567", "abcdef12,abcdef12", "abc1234,abc1234", "NIL,null"}, nullValues = "NIL")
     void showsAShaAsItsFirstEightCharactersAndAMissingOneAsNull(String sha, String shown) {
         assertThat(GitDeploy.shortSha(sha)).isEqualTo(shown);
     }

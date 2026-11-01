@@ -17,8 +17,14 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -769,5 +775,92 @@ class ClaudeAgentRuntimeTest {
                 .blockedPrompt("went to a fresh session");
 
         assertThat(blocked).isEqualTo("{\"decision\": \"block\", \"reason\": \"went to a fresh session\"}");
+    }
+
+    @Test
+    void namesItselfAndTheModelsItOffersAndReadsWhatTheHumanTyped() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        assertThat(runtime.displayName()).isEqualTo("Claude");
+        assertThat(runtime.models()).containsExactly("fable", "opus", "sonnet", "haiku");
+        assertThat(runtime.readsWhatTheHumanTyped()).isTrue();
+    }
+
+    @Test
+    void declaresTheFilesItGeneratesAndTheOnesTheStatusLeavesOut() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        assertThat(runtime.generatedFiles()).containsExactly(".mcp.json", ".claude/settings.local.json");
+        assertThat(runtime.projectAgentFiles()).containsExactly("AGENTS.md", "CLAUDE.md");
+        assertThat(runtime.statusExclusions()).containsExactly(".mcp.json", ".claude/", "CLAUDE.md", "CLAUDE.local.md");
+    }
+
+    @Test
+    void declaresWhatTheCliSaysAtACompactionAUsageLimitAndAnEndThatIsFollowedByAStart() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        assertThat(runtime.compactedStart()).isEqualTo("compact");
+        assertThat(runtime.rateLimitError()).isEqualTo("rate_limit");
+        assertThat(runtime.continuingEnds()).containsExactlyInAnyOrder("clear", "resume");
+        assertThat(runtime.blockingNotification()).isNotBlank();
+    }
+
+    @Test
+    void isNotPastTheCacheLifetimeAtTheMomentItsLastActivityExactlyFillsIt() {
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+
+        assertThat(runtime.pastCacheLifetime(0L, Duration.ofMillis(1_000L))).isFalse();
+        assertThat(runtime.pastCacheLifetime(0L, Duration.ofMillis(999L))).isTrue();
+    }
+
+    @Test
+    void grantsTheSameDirectoryOnlyOnceHoweverOftenItIsAdmitted(@TempDir Path root) throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
+        Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+        runtime.provisionWorktree(AgentWorktree.of(worktree, root));
+
+        runtime.admit(worktree, deploy);
+        runtime.admit(worktree, deploy);
+
+        var allow = new JsonMapper().readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+                .path("permissions").path("allow");
+        List<String> reads = new ArrayList<>();
+        allow.forEach(n -> reads.add(n.asString("")));
+        assertThat(reads).filteredOn(rule -> rule.startsWith("Read(/")).hasSize(1);
+    }
+
+    @Test
+    void readsTheConversationSessionLogAndActivityOfAWorktreeFromWhereTheCliKeepsThem(@TempDir Path worktree)
+            throws Exception {
+        Path logs = Files.createDirectories(ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+        Path log = Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"fix the login"}}
+                """);
+        Files.setLastModifiedTime(log, java.nio.file.attribute.FileTime.fromMillis(1_700_000_000_000L));
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        assertThat(runtime.conversationTail(worktree, 16_000)).contains("human: fix the login");
+        assertThat(runtime.sessionLogOf(worktree)).contains(log);
+        assertThat(runtime.lastSessionActivity(worktree)).isEqualTo(OptionalLong.of(1_700_000_000_000L));
+        assertThat(runtime.humanSaid(worktree, Set.of())).contains(List.of("fix the login"));
     }
 }

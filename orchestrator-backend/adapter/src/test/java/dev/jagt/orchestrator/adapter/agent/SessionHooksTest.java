@@ -48,4 +48,9 @@ class SessionHooksTest {
         assertThat(SessionHooks.promptGate("claude")).contains("UserPromptSubmit");
         assertThat(SessionHooks.of("claude")).doesNotContainKey("UserPromptSubmit");
     }
+
+    @Test
+    void declaresNoTrustDialogPhraseForARuntimeThatShipsNoHooks() {
+        assertThat(SessionHooks.trustDialog("a-cli-that-ships-no-hooks")).isEmpty();
+    }
 }

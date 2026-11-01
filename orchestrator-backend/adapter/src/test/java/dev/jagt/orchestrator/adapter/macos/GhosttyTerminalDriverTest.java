@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -143,5 +144,55 @@ class GhosttyTerminalDriverTest {
                 Clock.systemUTC());
 
         assertThat(driver.problems()).isEmpty();
+    }
+
+    @Test
+    void opensAnotherViewerOnceTheAttachGraceOfTheFirstHasExactlyPassed() {
+        OsaScript osaScript = mock(OsaScript.class);
+        Clock clock = mock(Clock.class);
+        when(clock.millis()).thenReturn(100_000L, 160_000L);
+        var driver = new GhosttyTerminalDriver(
+                OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
+                osaScript, mock(Host.class), clock);
+
+        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+
+        verify(osaScript, times(2)).run(anyString());
+    }
+
+    @Test
+    void reportsNotRunningWhereGhosttyRefusesTheRevealScript() {
+        OsaScript osaScript = mock(OsaScript.class);
+        when(osaScript.answer(anyString())).thenThrow(new IllegalStateException("osascript failed"));
+        var driver = new GhosttyTerminalDriver(OrchestratorProperties.defaults(), osaScript, mock(Host.class),
+                Clock.systemUTC());
+
+        assertThat(driver.reveal("agents")).isEqualTo(TerminalDriver.Revealed.NOT_RUNNING);
+    }
+
+    @Test
+    void looksTheTabUpByItsTitleBeforeRevealingIt() {
+        OsaScript osaScript = mock(OsaScript.class);
+        when(osaScript.answer(anyString())).thenReturn("window");
+        var driver = new GhosttyTerminalDriver(OrchestratorProperties.defaults(), osaScript, mock(Host.class),
+                Clock.systemUTC());
+
+        driver.reveal("agents");
+
+        ArgumentCaptor<String> script = ArgumentCaptor.captor();
+        verify(osaScript).answer(script.capture());
+        assertThat(script.getValue()).contains("repeat with w in windows").contains("select tab hostTab");
+    }
+
+    @Test
+    void bringsGhosttyToTheFront() {
+        OsaScript osaScript = mock(OsaScript.class);
+        var driver = new GhosttyTerminalDriver(OrchestratorProperties.defaults(), osaScript, mock(Host.class),
+                Clock.systemUTC());
+
+        driver.bringToFront();
+
+        verify(osaScript).run("tell application \"Ghostty\" to activate");
     }
 }

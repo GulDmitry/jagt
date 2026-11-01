@@ -161,4 +161,17 @@ class OpenSpecTest {
         assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42")).get().asString()
                 .contains("openspec/changes/abc-42-2 does not validate");
     }
+
+    @Test
+    void saysItCouldNotReadTheChangesDirectoryWhereItsPermissionsRefuseTheListing(@TempDir Path worktree)
+            throws IOException {
+        Path changes = Files.createDirectories(worktree.resolve("openspec/changes"));
+        OpenSpec specs = new OpenSpec(mock(Processes.class), host);
+        Files.setPosixFilePermissions(changes, java.util.Set.of());
+        try {
+            assertThat(specs.owed(worktree, "ABC-42")).get().asString().startsWith("could not read openspec/changes");
+        } finally {
+            Files.setPosixFilePermissions(changes, java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"));
+        }
+    }
 }

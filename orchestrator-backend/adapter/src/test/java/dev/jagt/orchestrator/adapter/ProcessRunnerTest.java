@@ -242,4 +242,28 @@ class ProcessRunnerTest {
 
         assertThat(stillInterrupted).isTrue();
     }
+
+    @Test
+    void namesTheLaunchWhoseWrapperExitedNonZeroAtOnce() {
+        assertThatThrownBy(() -> new ProcessRunner().runDetached(null, List.of("sh", "-c", "exit 3")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("(exit 3)");
+    }
+
+    @Test
+    void handsBackALauncherThatHandedOffToARunningInstanceAndExitedZero() {
+        Process launched = new ProcessRunner().runDetached(null, List.of("/bin/sh", "-c", "exit 0"));
+
+        assertThat(launched).isNotNull();
+    }
+
+    @Test
+    void keepsTheCallersInterruptSetWhenItIsInterruptedWhileLaunching() {
+        Thread.currentThread().interrupt();
+
+        Throwable thrown = catchThrowable(() -> new ProcessRunner().runDetached(null, List.of("sleep", "1")));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class).hasMessageContaining("Interrupted while launching");
+        assertThat(Thread.interrupted()).isTrue();
+    }
 }

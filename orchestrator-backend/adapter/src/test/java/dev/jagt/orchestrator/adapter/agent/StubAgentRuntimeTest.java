@@ -53,4 +53,9 @@ class StubAgentRuntimeTest {
         assertThat(runtime.systemKnowledgeFile(Path.of("/w/does-not-exist")).getParent())
                 .isEqualTo(Path.of("/w/does-not-exist"));
     }
+
+    @Test
+    void namesItselfStub() {
+        assertThat(new StubAgentRuntime(StubAgentProperties.defaults()).displayName()).isEqualTo("Stub");
+    }
 }

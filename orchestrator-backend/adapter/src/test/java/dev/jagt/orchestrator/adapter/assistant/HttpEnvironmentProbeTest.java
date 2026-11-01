@@ -50,4 +50,29 @@ class HttpEnvironmentProbeTest {
 
         assertThat(probe.answers("http://127.0.0.1:" + port + "/")).isFalse();
     }
+
+    @Test
+    void doesNotAnswerWhereTheEnvironmentRespondsWithTheFirstServerFaultStatus() throws IOException {
+        HttpServer server = answering(500);
+        try {
+            assertThat(probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/")).isFalse();
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void doesNotAnswerAndKeepsItsInterruptWhereTheProbingThreadWasInterrupted() throws IOException {
+        HttpServer server = answering(200);
+        try {
+            Thread.currentThread().interrupt();
+
+            boolean answered = probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/");
+
+            assertThat(answered).isFalse();
+            assertThat(Thread.interrupted()).isTrue();
+        } finally {
+            server.stop(0);
+        }
+    }
 }

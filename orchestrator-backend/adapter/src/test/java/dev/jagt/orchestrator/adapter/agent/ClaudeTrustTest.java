@@ -209,4 +209,23 @@ class ClaudeTrustTest {
 
         assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage).contains("trust flag kept being lost");
     }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsWhenTheConfigCannotBeReadSoTheTrustFlagCannotBeConfirmed(@TempDir Path home) throws Exception {
+        Path config = home.resolve(".claude.json");
+        Files.writeString(config, "{broken");
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(ClaudeTrust.class)).addAppender(log);
+
+        ClaudeTrust.reaccept(config, home);
+
+        assertThat(List.copyOf(log.list)).extracting(ILoggingEvent::getMessage).contains("trust flag kept being lost");
+    }
+
+    @Test
+    void forgetsNothingWhereTheConfigHoldsNoProjects() {
+        assertThat(ClaudeTrust.forgotten("{}", "/wt/ABC-42")).isNull();
+    }
 }

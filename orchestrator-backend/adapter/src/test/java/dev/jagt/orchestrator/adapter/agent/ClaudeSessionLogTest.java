@@ -269,4 +269,18 @@ class ClaudeSessionLogTest {
         assertThat(spent.usage().total()).isEqualTo(10);
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
     }
+
+    @Test
+    void countsALastLineThatCarriesUsageButCannotBeRead(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"usage":{"input_tokens":5,"output_tokens":10}}}
+                {"type":"assistant","message":{"usage":{"input_tok
+                """);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0));
+        assertThat(spent.upTo()).isEqualTo(Files.size(log));
+    }
 }

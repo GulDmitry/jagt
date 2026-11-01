@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.UserNotifier;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -39,5 +40,10 @@ class DesktopNotifierTest {
 
         verify(os).notify("jagt · p3 · ABC-42 · agent stopped", "silent for 6 min",
                 "http://localhost:8290/?task=ABC-42");
+    }
+
+    @Test
+    void isTheNotifierTheConfigNamesDesktop() {
+        assertThat(new DesktopNotifier(mock(UserNotifier.class), "8290").id()).isEqualTo("desktop");
     }
 }

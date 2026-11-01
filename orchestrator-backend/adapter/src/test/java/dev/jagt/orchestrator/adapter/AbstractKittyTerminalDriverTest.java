@@ -87,4 +87,29 @@ class AbstractKittyTerminalDriverTest {
         assertThat(commands.getAllValues()).anySatisfy(command -> assertThat(command)
                 .containsSequence("@", "--to", socket, "launch", "--type=tab"));
     }
+
+    @Test
+    void opensAnotherTabOnceTheAttachGraceOfTheFirstHasExactlyPassed() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(isNull(), any(Duration.class), any())).thenReturn(new Processes.Result(0, "", ""));
+        Clock clock = mock(Clock.class);
+        when(clock.millis()).thenReturn(100_000L, 160_000L);
+        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true).withTmuxCommand("tmux"), new KittyOptions("kitty", ""), clock) {
+            @Override
+            protected List<String> platformOptions() {
+                return List.of();
+            }
+
+            @Override
+            public void bringToFront() {
+            }
+        };
+
+        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(runner, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).filteredOn(command -> command.contains("--type=tab")).hasSize(2);
+    }
 }

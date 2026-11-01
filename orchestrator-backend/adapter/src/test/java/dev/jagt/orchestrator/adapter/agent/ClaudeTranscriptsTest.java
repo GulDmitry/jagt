@@ -189,4 +189,30 @@ class ClaudeTranscriptsTest {
     void tailsNothingWhereTheSessionKeepsNoLog(@TempDir Path root) {
         assertThat(ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000)).isEmpty();
     }
+
+    @Test
+    void keepsNoEmptyLineWhenTheCapIsFilledExactlyByTheNewestWords(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("session.jsonl"), """
+                {"type":"assistant","message":{"content":[{"type":"text","text":"aa"}]}}
+                {"type":"assistant","message":{"content":[{"type":"text","text":"bb"}]}}
+                """);
+
+        String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 14).orElseThrow();
+
+        assertThat(tail).isEqualTo("assistant: bb");
+    }
+
+    @Test
+    void tailsNoPromptTheHumanLeftBlank(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("session.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"  "}}
+                {"type":"assistant","message":{"content":[{"type":"text","text":"Fixed."}]}}
+                """);
+
+        String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000).orElseThrow();
+
+        assertThat(tail).isEqualTo("assistant: Fixed.");
+    }
 }

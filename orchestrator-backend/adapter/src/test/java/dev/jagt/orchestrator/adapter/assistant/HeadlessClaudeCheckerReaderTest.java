@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -78,11 +79,12 @@ class HeadlessClaudeCheckerReaderTest {
                 "{\"structured_output\":{\"failure\":\"\",\"rows\":[{\"criterion\":\"page opens\","
                         + "\"status\":\"met\",\"evidence\":\"GET answered 200\"}]}}", ""));
 
-        reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
+        var answer = reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
                 RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa"));
 
         assertThat(Files.readString(worktree.resolve("qa-report.md")))
                 .contains("abc123", "page opens", "GET answered 200");
+        assertThat(answer.facts().orElseThrow().rows()).extracting(row -> row.criterion()).containsExactly("page opens");
     }
 
     @Test
@@ -95,5 +97,62 @@ class HeadlessClaudeCheckerReaderTest {
                 .orElseThrow();
 
         assertThat(decline).isEqualTo(new QaDecline("abc123", "", "GET /list is unsorted"));
+    }
+
+    @Test
+    void passesTheSharedPromptAndTheModelAndPinsNoMcpServerWhereNoneIsListed() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+
+        reader.read(new CheckerReader.Run("be brief", "check ABC-42", worktree, "abc123", "opus", List.of(),
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa"));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--append-system-prompt", "be brief")
+                .containsSequence("--model", "opus")
+                .containsSequence("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}");
+    }
+
+    @Test
+    void passesNeitherASharedPromptNorAModelWhereTheRunNamesNone() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+
+        reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa"));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).doesNotContain("--append-system-prompt", "--model");
+    }
+
+    @Test
+    void refusesARunOfARoleNoInstalledDefinitionNames() {
+        var run = new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(), "{}", "nope");
+
+        assertThatThrownBy(() -> reader.read(run)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void failsTheVerdictNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(1, "", "boom"));
+
+        var verdict = reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa")).facts()
+                .orElseThrow();
+
+        assertThat(verdict.failure()).startsWith("the check failed");
+    }
+
+    @Test
+    void failsTheDeclineNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(1, "", "boom"));
+
+        QaDecline decline = reader.reconsider(new CheckerReader.Run("", "decide", worktree, "abc123", "", List.of(),
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).decline().json(), "qa")).facts()
+                .orElseThrow();
+
+        assertThat(decline.failure()).startsWith("the check failed");
     }
 }

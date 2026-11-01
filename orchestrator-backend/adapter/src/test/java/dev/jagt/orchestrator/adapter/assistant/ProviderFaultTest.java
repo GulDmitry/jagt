@@ -124,4 +124,12 @@ class ProviderFaultTest {
 
         assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.UNKNOWN);
     }
+
+    @Test
+    void aClientErrorOfTheProviderSaysNothingAboutItsHealth() {
+        var reading = ProviderFault.of(new Processes.Result(1,
+                "{\"is_error\":true,\"terminal_reason\":\"api_error\",\"api_error_status\":401,\"result\":\"bad key\"}", ""));
+
+        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.UNKNOWN);
+    }
 }

@@ -162,4 +162,63 @@ class CliPipelineRetryTest {
         assertThat(answer.facts().orElseThrow().hosted()).isFalse();
         verifyNoInteractions(processes);
     }
+
+    @Test
+    void aFailedJobListIsRefusedForAnAddressThatIsNoPipelineWithoutRunningAnything() {
+        Answer<List<FailedJob>> answer = retry.failedJobs("https://git.example.invalid/shop/web/-/merge_requests/4");
+
+        assertThat(answer.failure()).startsWith("not the address of a pipeline");
+        verifyNoInteractions(processes);
+    }
+
+    @Test
+    void aCliThatExitsNonZeroIsReportedWithItsExitCodeAndWhatItSaid() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(2, "", "boom"));
+
+        Answer<String> answer = retry.retryFailed("https://git.example.invalid/shop/web/-/pipelines/77");
+
+        assertThat(answer.failure()).isEqualTo("glab exited 2: boom");
+    }
+
+    @Test
+    void aCliThatExitsNonZeroSayingNothingIsReportedWithItsExitCodeAlone() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(2, "", ""));
+
+        Answer<String> answer = retry.retryFailed("https://git.example.invalid/shop/web/-/pipelines/77");
+
+        assertThat(answer.failure()).isEqualTo("glab exited 2");
+    }
+
+    @Test
+    void aCommitWhoseHostAnswersWithSomethingThatIsNotJsonSaysSo() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "<html>", ""));
+
+        Answer<CommitPipeline> answer = retry.onCommit("https://git.example.invalid/shop/web.git", "0123abc");
+
+        assertThat(answer.failure()).isEqualTo("glab gave output that is not JSON");
+    }
+
+    @Test
+    void aGitHubCommitWithOneSuccessfulRunReadsAsSuccess() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0,
+                "[{\"status\":\"completed\",\"conclusion\":\"success\",\"url\":\"https://github.example.invalid/acme/shop/actions/runs/1\"}]", ""));
+
+        Answer<CommitPipeline> answer = retry.onCommit("https://github.example.invalid/acme/shop.git", "0123abc");
+
+        assertThat(answer.facts()).contains(new CommitPipeline("success",
+                "https://github.example.invalid/acme/shop/actions/runs/1"));
+    }
+
+    @Test
+    void aGitHubCommitWithTwoRunsEquallyBadReadsAsTheFirst() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0,
+                "[{\"status\":\"completed\",\"conclusion\":\"failure\",\"url\":\"https://github.example.invalid/acme/shop/actions/runs/1\"},"
+                        + "{\"status\":\"completed\",\"conclusion\":\"failure\",\"url\":\"https://github.example.invalid/acme/shop/actions/runs/2\"}]", ""));
+
+        Answer<CommitPipeline> answer = retry.onCommit("https://github.example.invalid/acme/shop.git", "0123abc");
+
+        assertThat(answer.facts()).contains(new CommitPipeline("failure",
+                "https://github.example.invalid/acme/shop/actions/runs/1"));
+    }
 }

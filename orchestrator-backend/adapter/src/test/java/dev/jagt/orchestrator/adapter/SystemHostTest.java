@@ -65,4 +65,14 @@ class SystemHostTest {
     void findsNoJarWhenTheClassPathNamesNoFile(String classPath) {
         assertThat(SystemHost.jarFromClassPath(classPath, Files::isRegularFile)).isNull();
     }
+
+    @Test
+    void worksInTheDirectoryTheProcessWasStartedIn() {
+        assertThat(new SystemHost().workingDir()).isEqualTo(Path.of(System.getProperty("user.dir")));
+    }
+
+    @Test
+    void looksForApplicationsInTheSystemApplicationsDirectory() {
+        assertThat(new SystemHost().applicationDirs()).contains(Path.of("/Applications"));
+    }
 }
