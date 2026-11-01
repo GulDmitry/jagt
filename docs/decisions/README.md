@@ -138,3 +138,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0122 A role is a module the chart composes](0122-a-role-is-a-module-the-chart-composes.md)
 - [0123 Config layered, every place configured](0123-configuration-is-layered-outside-the-project.md)
 - [0124 QA brief keeps measured rules](0124-the-qa-brief-keeps-the-rules-that-measured.md)
+- [0125 Mutants judged on the diff](0125-mutants-are-judged-on-the-diff-at-each-commit.md)

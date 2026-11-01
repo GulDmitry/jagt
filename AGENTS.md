@@ -46,6 +46,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 | a message from a session or a read, a schema, a validation | [`protocol`](openspec/specs/protocol/spec.md) |
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
 | a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
+| a Gradle file, `build-logic/` | [`ARCHITECTURE.md`](ARCHITECTURE.md#the-build) |
 | a comment, a doc, a prompt, the shape of a class | [`docs/rules/style.md`](docs/rules/style.md) |
 | a **kind** of thing no rule covers | [`ARCHITECTURE.md`](ARCHITECTURE.md) — if it fits no kind, add a kind |
 
@@ -64,7 +65,8 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.
   Permission to commit is standing, to push is not.
-- **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)).
+- **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)),
+  and its mutants on the diff when `main` changed ([`testing`](docs/rules/testing.md)).
   **A rejected finding keeps its why where the next review meets it**: a site comment or a Rejected row.
 - No review skill to run: read the diff yourself, say so in one line, commit anyway.
 

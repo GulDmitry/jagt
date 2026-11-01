@@ -1,3 +1,7 @@
+pluginManagement {
+    includeBuild 'build-logic'
+}
+
 rootProject.name = 'orchestrator-backend'
 
 // One module per ring, so the dependency rule is the compiler's: `:core` sees nothing of jagt's, `:usecase` sees
