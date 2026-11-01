@@ -172,6 +172,16 @@ class LoopBreakerTest {
     }
 
     @Test
+    void countsOnlyTheShipsAmongTheStepsTaken() {
+        List<StatusChange> history = List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.IN_PROGRESS, 3_000, ActionOrigin.MASTER),
+                new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
+
+        assertThat(breaker.beforeShip(RoundTrail.none(), history, 5_000)).isEmpty();
+    }
+
+    @Test
     void sendsARoundAgainOnceTheHumanLiftedTheStopItsRunTripped() {
         Turn turn = Turn.none().relayed("verify", "a", "", 1).relayed("verify", "b", "", 2).relayed("verify", "c", "", 3);
 

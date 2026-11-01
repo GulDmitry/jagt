@@ -90,6 +90,26 @@ class TaskStateTest {
     }
 
     @Test
+    void stampsTheShippedTreeOnTheShipJustTaken() {
+        TaskState shipping = TaskState.builder("proj", "/wt", TaskStatus.SHIPPING)
+                .history(List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, null))).build();
+
+        TaskState stamped = shipping.withLastShipTree("t1");
+
+        assertThat(stamped.history().getLast().tree()).isEqualTo("t1");
+    }
+
+    @Test
+    void stampsNoTreeOnAStepThatIsNotAShip() {
+        TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000, null))).build();
+
+        TaskState stamped = working.withLastShipTree("t1");
+
+        assertThat(stamped.history().getLast().tree()).isNull();
+    }
+
+    @Test
     void recordsSomethingDoneToTheTaskEvenWhenItsStatusDoesNotChange() {
         TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .history(List.of(new StatusChange(TaskStatus.CI_POLLING, 1_000, null))).build();

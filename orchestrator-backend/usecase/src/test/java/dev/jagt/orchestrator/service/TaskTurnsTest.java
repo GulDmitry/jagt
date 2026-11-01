@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Master;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -112,6 +113,19 @@ class TaskTurnsTest {
 
         assertThat(MasterPhase.of(pressed)).isEqualTo(MasterPhase.LEFT);
         assertThat(MasterPhase.of(deployed)).isEqualTo(MasterPhase.STANDS_IN);
+    }
+
+    @Test
+    void keepsTheShippedTreeOnTheShipAsItsDigest(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING)
+                .history(List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, null))).build());
+
+        new TaskTurns(state, Clock.systemUTC()).shippedOn("ABC-42", "tree-1;");
+
+        assertThat(state.task("ABC-42").orElseThrow().history().getLast().tree())
+                .isEqualTo("23189593ac33d3bc37d365b9805c4c248103ce3d9980acdee9801672208b9a44");
     }
 
     @Test
