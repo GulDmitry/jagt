@@ -210,6 +210,7 @@ class MasterModeFlowTest {
         shipsTheRoundTheMasterShipped();
         E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
         act("sweep");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
         awaitTold("did not deploy");
 
@@ -218,6 +219,7 @@ class MasterModeFlowTest {
                 .anySatisfy(line -> assertThat(line).contains("Also yours", resolveIn.toString()));
         Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
         E2eWorkspace.git(resolveIn, "add", "widget.txt");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
 
         assertThat(awaitTask(task -> task.status() == TaskStatus.DEPLOYED).status()).isEqualTo(TaskStatus.DEPLOYED);
         assertThat(E2eWorkspace.git(workspace.resolve("origin.git"), "log", "-1", "--format=%s", "dev"))
@@ -232,6 +234,7 @@ class MasterModeFlowTest {
         shipsTheRoundTheMasterShipped();
         E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
         act("sweep");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
         awaitTold("did not deploy");
         judges(new Judgement("", "ready",
@@ -243,6 +246,7 @@ class MasterModeFlowTest {
                             "arguments": {"status": "IN_PROGRESS", "message": "keep both lines?", "why": "a conflict needs a call",
                                           "outcome": "question"}}}""",
                 Map.of("X-Working-Directory", worktree().toString()));
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
 
         awaitTold("keep both lines");
         assertThat(Files.readString(worktree().resolve("task_context.md"))).contains("did not deploy");
@@ -313,6 +317,7 @@ class MasterModeFlowTest {
         shipsTheRoundTheMasterShipped();
         E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
         act("sweep");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
         awaitTold("did not deploy");
 
@@ -384,6 +389,7 @@ class MasterModeFlowTest {
     }
 
     private void shipsTheRoundTheMasterShipped() throws Exception {
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-review");
         awaitTask(task -> task.status() == TaskStatus.SHIPPING);
         E2eWorkspace.git(worktree(), "add", "widget.txt");
         E2eWorkspace.git(worktree(), "commit", "-m", TASK + " fix the widget");
