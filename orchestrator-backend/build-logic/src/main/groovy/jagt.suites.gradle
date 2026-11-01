@@ -1,0 +1,147 @@
+// Needs git + tmux on the machine, so it stays out of `test`/`check`, which must remain hermetic.
+sourceSets {
+    e2e {
+        java.srcDirs = ['src/e2e/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+// Spends model tokens on a local stand, so it is asked for by name. NOT in `check`.
+sourceSets {
+    stand {
+        java.srcDirs = ['src/stand/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+// Shared by the model evals and their unit test, kept out of src/test so no eval's Spring scan meets a test class.
+sourceSets {
+    evalSupport {
+        java.srcDirs = ['src/evalSupport/java']
+        compileClasspath += configurations.testCompileClasspath
+        runtimeClasspath += configurations.testRuntimeClasspath
+    }
+    test {
+        compileClasspath += sourceSets.evalSupport.output
+        runtimeClasspath += sourceSets.evalSupport.output
+    }
+}
+
+// Spends tokens through the assistant's own CLI, so it is asked for by name. NOT in `check`.
+sourceSets {
+    promptEval {
+        java.srcDirs = ['src/promptEval/java']
+        compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
+    }
+}
+
+// Needs Linux binaries and a display, which `scripts/linux-suite.sh` provides in a container. NOT in `check`.
+sourceSets {
+    linuxTest {
+        java.srcDirs = ['src/linuxTest/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+// Needs a browser, so it stays out of `check`, which must remain hermetic.
+sourceSets {
+    masterEval {
+        java.srcDirs = ['src/masterEval/java']
+        compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
+    }
+}
+
+sourceSets {
+    qaEval {
+        java.srcDirs = ['src/qaEval/java']
+        compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
+    }
+}
+
+sourceSets {
+    boardTest {
+        java.srcDirs = ['src/boardTest/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+dependencies {
+    // Playwright brings its OWN Chromium, downloaded on first run: the suite asks the host for no browser, so
+    // a Mac and a runner execute the same thing. The shared libraries it links against come from
+    // scripts/linux-test-deps.sh.
+    boardTestImplementation 'com.microsoft.playwright:playwright:1.63.0'
+}
+
+tasks.register('playwrightChromium', JavaExec) {
+    description = 'Installs the Chromium the board suite drives (a no-op once it is in the local cache).'
+    group = 'verification'
+    classpath = sourceSets.boardTest.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args 'install', 'chromium'
+}
+
+tasks.register('boardTest', Test) {
+    description = 'Drives the web board in a headless Chromium.'
+    group = 'verification'
+    testClassesDirs = sourceSets.boardTest.output.classesDirs
+    classpath = sourceSets.boardTest.runtimeClasspath
+    useJUnitPlatform()
+    dependsOn tasks.named('playwrightChromium')
+    // Left to itself the client installs every browser it supports — a quarter of a gigabyte for a suite that
+    // drives one.
+    environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.register('linuxDriverTest', Test) {
+    description = 'Exercises the Linux platform drivers against real notify-send/kitty (container only).'
+    group = 'verification'
+    testClassesDirs = sourceSets.linuxTest.output.classesDirs
+    classpath = sourceSets.linuxTest.runtimeClasspath
+    useJUnitPlatform()
+    // Gated on CAPABILITY, never on which harness is running it, and it names what is missing.
+    onlyIf { task ->
+        List<String> missing = []
+        if (!System.getProperty('os.name').toLowerCase().contains('linux')) {
+            missing << 'Linux'
+        }
+        ['notify-send', 'kitty', 'dbus-monitor', 'pgrep'].each { binary ->
+            if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                    .any { dir -> dir && new File(dir, binary).canExecute() }) {
+                missing << binary
+            }
+        }
+        if (!System.getenv('DISPLAY')) {
+            missing << 'DISPLAY (start it with scripts/with-linux-desktop.sh)'
+        }
+        if (missing) {
+            task.logger.lifecycle("Skipping linuxDriverTest — missing: ${missing.join(', ')}."
+                    + " On a Mac: scripts/linux-suite.sh runs it in a container.")
+        }
+        missing.isEmpty()
+    }
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.register('e2eTest', Test) {
+    description = 'Runs the end-to-end task-flow matrix (needs git + tmux; creates and removes throwaway worktrees).'
+    group = 'verification'
+    testClassesDirs = sourceSets.e2e.output.classesDirs
+    classpath = sourceSets.e2e.runtimeClasspath
+    useJUnitPlatform()
+    // A run killed mid-suite skips its @TempDir cleanup: its leftovers land here, and the next run wipes them.
+    def scratch = temporaryDir
+    systemProperty 'java.io.tmpdir', scratch.absolutePath
+    doFirst {
+        scratch.deleteDir()
+        scratch.mkdirs()
+    }
+    shouldRunAfter tasks.named('test')
+}

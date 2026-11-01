@@ -1,0 +1,21 @@
+import org.gradle.api.tasks.PathSensitivity
+
+// TextBudgetTest and ConfigReferenceTest read files that live outside every source set: without declaring it
+// the task stays UP-TO-DATE while a document grows past its budget, and the suite is green over a breach.
+tasks.named('test') {
+    inputs.files(fileTree(projectDir.parentFile) {
+        include '*.md'
+        include 'docs/**/*.md'
+        include 'openspec/specs/**/*.md'
+        include 'orchestrator-backend/*/src/main/resources/prompts/*.md'
+        include '.claude/rules/*.md'
+        include 'orchestrator-backend/*/src/main/java/**/*.java'
+        include 'orchestrator-backend/src/main/java/**/*.java'
+        include 'jagt.yml.dist'
+        include 'master-brief.md.dist'
+        include 'session-brief.md.dist'
+        include 'roles/**/*.dist'
+    }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
+    // Outside the tree above: a file tree drops `.gitignore` by default.
+    inputs.file(new File(projectDir.parentFile, '.gitignore')).withPropertyName('gitignore')
+}

@@ -1,0 +1,37 @@
+tasks.register('printVersion') {
+    def version = project.version.toString()
+    doLast {
+        println version
+    }
+}
+
+// `build` rewrites jagt.jar in place (same inode), and a JVM running from that path then fails on the next
+// class it loads. A new file per build, pointed at by a symlink, is never the inode a running process holds.
+tasks.register('stageJar') {
+    description = 'Stages build/libs/jagt-run-<stamp>.jar and points jagt-run.jar at it — run THAT.'
+    group = 'application'
+    dependsOn tasks.named('bootJar')
+    def libsDir = layout.buildDirectory.dir('libs')
+    doLast {
+        def libs = libsDir.get().asFile.toPath()
+        def built = libs.resolve('jagt.jar')
+        def stamp = new java.text.SimpleDateFormat('yyyyMMdd-HHmmss').format(new Date())
+        def staged = libs.resolve("jagt-run-${stamp}.jar")
+        java.nio.file.Files.copy(built, staged, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        def link = libs.resolve('jagt-run.jar')
+        java.nio.file.Files.deleteIfExists(link)
+        java.nio.file.Files.createSymbolicLink(link, staged.fileName)
+        // Deleting a staged jar a running JVM holds is harmless — the inode outlives the name.
+        libs.toFile().listFiles({ f -> f.name ==~ /jagt-run-.*\.jar/ } as java.io.FileFilter)
+                .sort { it.name }
+                .reverse()
+                .drop(3)
+                .each { it.delete() }
+        logger.lifecycle("staged ${staged.fileName} — run: java -jar build/libs/jagt-run.jar")
+    }
+}
+
+// Version-independent archive name, so the documented run command survives every release.
+tasks.named('bootJar') {
+    archiveFileName = 'jagt.jar'
+}

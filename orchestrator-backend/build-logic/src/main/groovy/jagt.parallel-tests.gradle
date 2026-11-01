@@ -1,0 +1,22 @@
+// Only the hermetic suite: the others are order-dependent by construction. Every module's, not just this
+// project's — `:adapter`'s alone is most of the gate, and it spends its wall clock waiting on git.
+allprojects {
+    tasks.named('test') {
+        systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
+        systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
+        systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
+        systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
+        // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
+        systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
+        // The gate never reaches the developer's own terminal: a booted context finds no tmux and no kitty to run.
+        systemProperty 'orchestrator.tmux-command', 'jagt-test-no-tmux'
+        systemProperty 'orchestrator.kitty-command', 'jagt-test-no-kitty'
+        environment.remove('KITTY_LISTEN_ON')
+        environment.remove('KITTY_WINDOW_ID')
+    }
+    tasks.withType(Test).configureEach {
+        systemProperty 'user.language', 'en'
+        systemProperty 'user.country', 'US'
+        systemProperty 'user.timezone', 'UTC'
+    }
+}

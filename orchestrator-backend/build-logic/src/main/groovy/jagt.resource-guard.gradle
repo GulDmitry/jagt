@@ -1,0 +1,4 @@
+// A local tool's state left under static/ would otherwise be served from the jar.
+processResources {
+    exclude '**/.omc/**'
+}

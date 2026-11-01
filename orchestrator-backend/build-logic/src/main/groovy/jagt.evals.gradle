@@ -1,0 +1,124 @@
+// One harness per kind of role: a checker reads its brief against the deploys of `roles/<id>/eval/*.yml`, the arbiter
+// against the rounds of `MasterCase`. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
+// model against the same cases, to compare cost.
+def evalRole = (project.findProperty('role') ?: 'qa').toString()
+def evalIsArbiter = evalRole == 'master'
+tasks.register('roleEval', Test) {
+    description = 'Reads a role\'s shipped brief against cases whose verdict is known, -Prole=<id> (spends tokens, minutes).'
+    group = 'verification'
+    testClassesDirs = evalIsArbiter ? sourceSets.masterEval.output.classesDirs : sourceSets.qaEval.output.classesDirs
+    classpath = evalIsArbiter ? sourceSets.masterEval.runtimeClasspath : sourceSets.qaEval.runtimeClasspath
+    useJUnitPlatform()
+    String harness = evalIsArbiter ? 'master' : 'qa'
+    String testClass = evalIsArbiter ? 'MasterVerdictEvalShard' : 'QaVerdictEvalShard'
+    // A review is one task per tick, so cases go in parallel only across JVMs: one per shard class, each a full context.
+    int shards = (project.findProperty('evalShards') ?: '3') as int
+    if (shards < 1 || shards > 6) {
+        throw new GradleException("-PevalShards ${shards} must be between 1 and 6, the shard classes there are.")
+    }
+    maxParallelForks = shards
+    forkEvery = 1
+    systemProperty "${harness}Eval.shards", shards
+    systemProperty 'eval.role', evalRole
+    if (!evalIsArbiter) {
+        testLogging.showStandardStreams = true
+    }
+    testLogging.exceptionFormat = 'full'
+    reports.junitXml.outputLocation = layout.buildDirectory.dir("test-results/roleEval-${evalRole}")
+    reports.html.outputLocation = layout.buildDirectory.dir("reports/tests/roleEval-${evalRole}")
+    filter {
+        (0..<shards).each { includeTestsMatching "*${testClass}${it}Test" }
+    }
+    ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
+        if (project.hasProperty(property)) {
+            systemProperty key, project.property(property)
+        }
+    }
+    def brief = file(evalIsArbiter ? '../master-brief.md.dist' : "../roles/${evalRole}/brief.md.dist")
+    systemProperty "${harness}Eval.brief", project.findProperty('roleBrief') ?: brief.path
+    if (project.hasProperty('roleModel')) {
+        systemProperty "${harness}Eval.model", project.property('roleModel')
+    }
+    Map<String, String> retired = ['masterBrief': '-Prole=master -ProleBrief', 'masterModel': '-Prole=master -ProleModel',
+                                   'qaBrief': '-Prole=qa -ProleBrief', 'qaModel': '-Prole=qa -ProleModel',
+                                   'masterShards': '-PevalShards', 'qaShards': '-PevalShards'].findAll { name, use ->
+        project.hasProperty(name)
+    }
+    boolean roleNamed = project.hasProperty('role')
+    File evalCases = file("../roles/${evalRole}/eval")
+    doFirst {
+        if (retired) {
+            throw new GradleException("roleEval no longer reads ${retired.keySet().collect { '-P' + it }.join(', ')}: use "
+                    + retired.values().unique().join(', ') + '.')
+        }
+        if (!roleNamed) {
+            throw new GradleException('roleEval needs -Prole=<id>: master, or a checker with roles/<id>/eval/*.yml.')
+        }
+        if (!evalIsArbiter && !evalCases.isDirectory()) {
+            throw new GradleException("roles/${evalRole}/eval holds no cases: a checker is evaluated over its eval/*.yml.")
+        }
+    }
+    // Gated on CAPABILITY, and it names what is missing rather than failing every case on it.
+    onlyIf { task ->
+        List<String> missing = []
+        (evalIsArbiter ? ['claude', 'tmux', 'git'] : ['claude', 'git']).each { binary ->
+            if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                    .any { dir -> dir && new File(dir, binary).canExecute() }) {
+                missing << binary
+            }
+        }
+        if (!brief.exists()) {
+            missing << brief.name
+        }
+        if (missing) {
+            task.logger.lifecycle("Skipping roleEval -Prole=${evalRole} — missing: ${missing.join(', ')}.")
+        }
+        missing.isEmpty()
+    }
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.register('promptEval', Test) {
+    description = 'Maps operator phrasings onto the grammar through the real assistant (spends tokens).'
+    group = 'verification'
+    testClassesDirs = sourceSets.promptEval.output.classesDirs
+    classpath = sourceSets.promptEval.runtimeClasspath
+    useJUnitPlatform()
+    // The rows are independent calls of the assistant's CLI, so they run side by side; -PevalParallelism sizes the pool.
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
+    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
+    systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'fixed'
+    systemProperty 'junit.jupiter.execution.parallel.config.fixed.parallelism', project.findProperty('evalParallelism') ?: '6'
+    ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
+        if (project.hasProperty(property)) {
+            systemProperty key, project.property(property)
+        }
+    }
+    // Gated on the binary that answers, and it names what is missing rather than failing every row on it.
+    onlyIf { task ->
+        boolean present = (System.getenv('PATH') ?: '').split(File.pathSeparator)
+                .any { dir -> dir && new File(dir, 'claude').canExecute() }
+        if (!present) {
+            task.logger.lifecycle('Skipping promptEval — no `claude` on PATH; the rows are answered by the'
+                    + ' assistant configured in jagt.yml, through its own CLI.')
+        }
+        present
+    }
+    shouldRunAfter tasks.named('test')
+}
+
+// Each case of a model eval appends its outcome to one gitignored file a later run reads; nothing else reads it.
+tasks.named('promptEval') {
+    systemProperty 'eval.suite', 'promptEval'
+    systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
+    systemProperty 'eval.model', 'default'
+    systemProperty 'eval.brief.file', file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path
+}
+// The suite names stay `masterEval` and `qaEval`, so the trend a later run reads continues across the rename.
+tasks.named('roleEval') {
+    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : 'qaEval'
+    systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
+    systemProperty 'eval.model', project.findProperty('roleModel') ?: 'default'
+    systemProperty 'eval.brief.file', project.findProperty('roleBrief')
+            ?: (evalIsArbiter ? file('../master-brief.md.dist').path : file("../roles/${evalRole}/brief.md.dist").path)
+}

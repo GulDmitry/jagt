@@ -1,0 +1,8 @@
+// What these prove is the MACHINE — or a model — and no such state is in a cache key: a restored result would
+// come back green without anything having run.
+['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval', 'roleEval'].each { name ->
+    tasks.named(name) {
+        outputs.cacheIf { false }
+        outputs.upToDateWhen { false }
+    }
+}

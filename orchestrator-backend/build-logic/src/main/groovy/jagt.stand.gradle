@@ -1,0 +1,54 @@
+def standBase = System.getProperty('java.io.tmpdir')
+def standReport = layout.buildDirectory.file('stand/report.txt').get().asFile
+
+tasks.register('standTest', Test) {
+    description = 'Blood Games: real sessions and the Master try to break into jagt on a local stand (spends tokens).'
+    group = 'verification'
+    testClassesDirs = sourceSets.stand.output.classesDirs
+    classpath = sourceSets.stand.runtimeClasspath
+    useJUnitPlatform {
+        if (project.hasProperty('modelfree')) {
+            excludeTags 'model'
+        }
+    }
+    // Each run owns its root, port and tmux server, so runs go side by side: StandSlots caps the live runs at
+    // -PstandParallelism=N (6), since 37 processes at once broke startup; the JUnit pool is wide so containers never starve runs.
+    def standParallelism = (project.findProperty('standParallelism') ?: '6').toString()
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
+    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
+    systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
+    systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
+    systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '8'
+    systemProperty 'stand.parallelism', standParallelism
+    systemProperty 'stand.base', standBase
+    // -PstandRuns=N repeats each run; -Pscenario=, -Pmodes= and -Pmutations= select by comma list; -Pseed= picks a mutation.
+    systemProperty 'stand.runs', project.findProperty('standRuns') ?: '1'
+    ['scenario', 'modes', 'mutations', 'seed'].each { key -> systemProperty "stand.${key}", project.findProperty(key) ?: '' }
+    systemProperty 'stand.report', standReport.absolutePath
+    // A run starts the staged jar, so a replay checks the frame as built now.
+    dependsOn 'stageJar'
+    doFirst { standReport.delete() }
+    testLogging { showStandardStreams = true }
+    outputs.upToDateWhen { false }
+    finalizedBy 'standCleanup', 'standReport'
+}
+
+tasks.register('standReport', JavaExec) {
+    description = 'Prints the pass rate of the last standTest per scenario and mode.'
+    group = 'verification'
+    classpath = sourceSets.stand.runtimeClasspath
+    mainClass = 'dev.jagt.orchestrator.stand.StandReport'
+    args(standReport.absolutePath)
+}
+
+// Whatever the outcome: stops what dead stand runs left, keeps a failed run's evidence under build/stand/failed, and removes
+// their roots, their trust entries in the human's Claude config and their transcript directories.
+['standCleanup', 'standClean'].each { name ->
+    tasks.register(name, JavaExec) {
+        description = 'Removes what finished stand runs left: roots, Claude trust entries and transcripts.'
+        group = 'verification'
+        classpath = sourceSets.stand.runtimeClasspath
+        mainClass = 'dev.jagt.orchestrator.stand.StandCleanup'
+        args(standBase, layout.buildDirectory.dir('stand/failed').get().asFile.absolutePath)
+    }
+}
