@@ -52,6 +52,13 @@ class SessionPhaseTest {
     }
 
     @Test
+    void isIdleSinceItsLastReadSignWhereNoHookEverStampedIt() {
+        Session session = Session.defaults().withQuietSince(7_000);
+
+        assertThat(SessionPhase.idleSince(session)).isEqualTo(7_000);
+    }
+
+    @Test
     void isNotIdleWhileItsTurnIsOpen() {
         assertThat(SessionPhase.idleSince(Session.defaults().withMovedAt(7_000))).isZero();
     }

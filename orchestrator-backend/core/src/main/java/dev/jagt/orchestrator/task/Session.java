@@ -47,9 +47,9 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
         return window.state() == Window.State.RUNNING;
     }
 
-    /** When it last signed life or stopped, the later of the two; 0 where it has signed nothing. */
+    /** When it last signed life, stopped or was last seen by a read, the latest of the three; 0 where it has signed nothing. */
     public long idleSince() {
-        return Math.max(movedAt, halt == null ? 0 : halt.at());
+        return Math.max(Math.max(movedAt, quietSince), halt == null ? 0 : halt.at());
     }
 
     /** How a session stopped, when, and why in the words a human reads. */
