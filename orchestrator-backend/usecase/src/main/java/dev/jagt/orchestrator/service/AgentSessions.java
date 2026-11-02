@@ -33,7 +33,6 @@ public class AgentSessions {
 
     private static final Duration DRAFT_POLL = Duration.ofSeconds(1);
     private static final Duration SUBMIT_WAIT = Duration.ofMillis(700);
-    private static final Duration HUMAN_SETTLE = Duration.ofSeconds(2);
     private static final int RESUBMITS = 3;
 
     /** The one line jagt types into a session; whatever else arrives there is the human's. */
@@ -47,7 +46,7 @@ public class AgentSessions {
     /** Never pruned: a lock dropped while a relay holds it lets a second writer in, and an entry costs bytes. */
     private final ConcurrentHashMap<String, Object> relayLocks = new ConcurrentHashMap<>();
     private final Set<String> draftWaits = ConcurrentHashMap.newKeySet();
-    private final Set<String> freshWaits = ConcurrentHashMap.newKeySet();
+    private final ConcurrentHashMap<String, FreshWait> freshWaits = new ConcurrentHashMap<>();
 
     public void startAgent(String taskId, @Nullable String alias, Path worktreePath, boolean planMode) {
         openTab(taskId, alias, worktreePath, configService.load(), planMode);
@@ -407,7 +406,7 @@ public class AgentSessions {
             startFresh(taskId, task, config, cause);
             return true;
         }
-        freshStartWaits(session, taskId, task.alias(), cause);
+        freshStartWaits(taskId, task.alias(), cause);
         return false;
     }
 
@@ -424,36 +423,56 @@ public class AgentSessions {
     }
 
     /** The instructions are on disk already; what ends the wait is the human leaving, the window dying or the task going. */
-    private void freshStartWaits(String session, String taskId, @Nullable String alias, String cause) {
-        if (!freshWaits.add(taskId)) {
+    private void freshStartWaits(String taskId, @Nullable String alias, String cause) {
+        if (freshWaits.putIfAbsent(taskId, new FreshWait(alias, cause, false)) != null) {
             return;
         }
         log.atInfo().setMessage("fresh start waits").addKeyValue("task", taskId).addKeyValue("alias", alias)
                 .addKeyValue("cause", "the human has unsent input or an open exchange in the agent's window")
                 .addKeyValue("start", cause).log();
-        Thread.startVirtualThread(() -> {
-            try {
-                do {
-                    while (humanHolds(session, taskId)) {
-                        Thread.sleep(DRAFT_POLL);
-                    }
-                    Thread.sleep(HUMAN_SETTLE);
-                } while (humanHolds(session, taskId));
-                stateService.task(taskId).ifPresent(task -> {
-                    log.atInfo().setMessage("fresh start proceeds").addKeyValue("task", taskId)
-                            .addKeyValue("alias", alias).addKeyValue("cause", "the human left the agent's window")
-                            .log();
-                    startFresh(taskId, task, configService.load(), cause);
-                });
-            } catch (InterruptedException stopped) {
-                Thread.currentThread().interrupt();
-            } catch (RuntimeException failed) {
-                log.atWarn().setMessage("fresh start wait failed").addKeyValue("task", taskId)
-                        .addKeyValue("cause", failed.toString()).log();
-            } finally {
-                freshWaits.remove(taskId);
-            }
-        });
+    }
+
+    /** One read of a standing wait: the human must be seen gone twice running before the fresh session starts. */
+    public void startWaitingFreshWhenFree(String taskId) {
+        FreshWait wait = freshWaits.get(taskId);
+        if (wait == null) {
+            return;
+        }
+        Optional<TaskState> task = stateService.task(taskId);
+        if (task.isEmpty()) {
+            freshWaits.remove(taskId, wait);
+            log.atInfo().setMessage("fresh start dropped").addKeyValue("task", taskId)
+                    .addKeyValue("alias", wait.alias()).addKeyValue("cause", "the task is gone").log();
+            return;
+        }
+        ConfigService.ConfigFile config = configService.load();
+        Optional<Boolean> holds = humanHoldsRead(agentSession(config, taskId), taskId);
+        if (holds.isEmpty()) {
+            return;
+        }
+        if (holds.get() || !wait.free()) {
+            freshWaits.replace(taskId, wait, wait.seen(!holds.get()));
+        } else if (freshWaits.remove(taskId, wait)) {
+            log.atInfo().setMessage("fresh start proceeds").addKeyValue("task", taskId)
+                    .addKeyValue("alias", wait.alias()).addKeyValue("cause", "the human left the agent's window").log();
+            startFresh(taskId, task.get(), config, wait.cause());
+        }
+    }
+
+    private Optional<Boolean> humanHoldsRead(String session, String taskId) {
+        try {
+            return Optional.of(humanHolds(session, taskId));
+        } catch (RuntimeException unread) {
+            log.atDebug().setMessage("fresh start wait unread").addKeyValue("task", taskId)
+                    .addKeyValue("cause", unread.toString()).log();
+            return Optional.empty();
+        }
+    }
+
+    private record FreshWait(@Nullable String alias, String cause, boolean free) {
+        FreshWait seen(boolean nowFree) {
+            return new FreshWait(alias, cause, nowFree);
+        }
     }
 
     private void startFresh(String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {

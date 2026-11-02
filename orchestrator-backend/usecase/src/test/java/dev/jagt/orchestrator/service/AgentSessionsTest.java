@@ -951,9 +951,12 @@ class AgentSessionsTest {
         String answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
         assertThat(answer).contains("starts when they are done");
-        verify(tmux, after(2_500).never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(),
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(),
                 anyBoolean(), anyString());
-        verify(tmux, timeout(6000)).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 
     @Test
@@ -967,8 +970,12 @@ class AgentSessionsTest {
 
         sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
-        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
-        verify(tmux, timeout(6000)).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(),
+                anyBoolean(), anyString());
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 
     @Test
@@ -982,8 +989,13 @@ class AgentSessionsTest {
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
 
         sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(),
+                anyBoolean(), anyString());
+        sessions.startWaitingFreshWhenFree("ABC-1");
 
-        verify(tmux, timeout(6000)).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 
     @Test
@@ -1013,9 +1025,57 @@ class AgentSessionsTest {
 
         sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
-        verify(tmux, after(4_500).never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(),
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(),
                 anyBoolean(), anyString());
-        verify(tmux, timeout(9_000)).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void aFreshStartAnnouncesItsWaitOncePerTask() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
+        when(agentRuntime.holdsDraft("typed")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
+        sessionsLog.addAppender(log);
+
+        sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+        int afterFirst = (int) List.copyOf(log.list).stream()
+                .filter(event -> "fresh start waits".equals(event.getMessage())).count();
+        sessions.relayFresh("ABC-1", "Review round for http://mr/2.");
+
+        assertThat(afterFirst).isEqualTo(1);
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "fresh start waits".equals(event.getMessage())).hasSize(1);
+        sessionsLog.detachAppender(log);
+    }
+
+    @Test
+    void aFreshStartKeepsWaitingThroughAReadThatFails() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING)
+                .thenThrow(new SessionHost.WindowsUnreadable("tmux list-windows jagt failed (exit 1): server timed out"))
+                .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
+        when(agentRuntime.holdsDraft("typed")).thenReturn(true, false);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+        sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+        sessions.startWaitingFreshWhenFree("ABC-1");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 
     @Test
