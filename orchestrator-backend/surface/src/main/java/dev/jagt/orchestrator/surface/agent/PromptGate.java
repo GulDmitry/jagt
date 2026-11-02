@@ -37,7 +37,7 @@ public class PromptGate {
             return "";
         }
         try {
-            coldPrompts.relay(taskId, task, prompt);
+            coldPrompts.relay(taskId, prompt);
         } catch (RuntimeException e) {
             log.atWarn().setMessage("cold prompt not relayed").addKeyValue("task", taskId)
                     .addKeyValue("cause", OneLine.clipped(e.toString())).log();

@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +33,7 @@ public class AgentSessions {
 
     private static final Duration DRAFT_POLL = Duration.ofSeconds(1);
     private static final Duration SUBMIT_WAIT = Duration.ofMillis(700);
+    private static final Duration HUMAN_SETTLE = Duration.ofSeconds(2);
     private static final int RESUBMITS = 3;
 
     /** The one line jagt types into a session; whatever else arrives there is the human's. */
@@ -42,11 +42,12 @@ public class AgentSessions {
     private final ConfigService configService;
     private final StateService stateService;
     private final SessionHost sessions;
-    private final TerminalDriver terminalDriver;
     private final AgentRuntime agentRuntime;
+    private final CarriedBlock carried;
     /** Never pruned: a lock dropped while a relay holds it lets a second writer in, and an entry costs bytes. */
     private final ConcurrentHashMap<String, Object> relayLocks = new ConcurrentHashMap<>();
     private final Set<String> draftWaits = ConcurrentHashMap.newKeySet();
+    private final Set<String> freshWaits = ConcurrentHashMap.newKeySet();
 
     public void startAgent(String taskId, @Nullable String alias, Path worktreePath, boolean planMode) {
         openTab(taskId, alias, worktreePath, configService.load(), planMode);
@@ -62,13 +63,12 @@ public class AgentSessions {
     }
 
     /** Reserving the viewer is the default: one placed by hand should survive task cycles. */
-    public boolean closeViewerIfNoTasksLeft() {
+    public Optional<String> viewerToClose() {
         ConfigService.ConfigFile config = configService.load();
         if (!stateService.tasks().isEmpty() || config.viewer().keepViewerOrDefault()) {
-            return false;
+            return Optional.empty();
         }
-        terminalDriver.closeViewerWindow(sessions.sessionName(config.viewer().session()));
-        return true;
+        return Optional.of(sessions.sessionName(config.viewer().session()));
     }
 
     /** A session that cannot list its windows throws: unknown is never missing. */
@@ -134,7 +134,7 @@ public class AgentSessions {
     }
 
     /** A session that is gone or dead is re-entered first: focus must always land on a live agent. */
-    public String focusTask(String taskId) {
+    public Focused focusTask(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         ConfigService.ConfigFile config = configService.load();
@@ -151,19 +151,11 @@ public class AgentSessions {
         } catch (SessionHost.WindowsUnreadable unread) {
             throw Refusal.byState("Nothing was focused: " + unread.getMessage());
         }
-        return "Focused tab '" + taskId + "'" + viewer(terminalDriver.reveal(dedicatedTitle))
-                + (revived ? "; the session was down, re-entered its " + agentRuntime.displayName()
-                        + " session" : "");
+        return new Focused(taskId, dedicatedTitle, revived ? agentRuntime.displayName() : null);
     }
 
-    /** What is left for the human to do about the viewer, which only the terminal can say. */
-    private static String viewer(TerminalDriver.Revealed revealed) {
-        return switch (revealed) {
-            case WINDOW -> " and raised the agents window";
-            case UNREACHABLE_TAB -> " — the agents viewer is a tab this terminal cannot select; click it"
-                    + " yourself";
-            case NOT_RUNNING -> " — no agents viewer is open; the session is there, nothing is showing it";
-        };
+    /** {@code revivedAs} names the agent re-entered because the session was down; null where it ran. */
+    public record Focused(String taskId, String viewerTitle, @Nullable String revivedAs) {
     }
 
     public AgentRuntime.Admission admit(String taskId, Path directory) {
@@ -214,7 +206,7 @@ public class AgentSessions {
         String id = stateService.canonicalTaskId(taskId);
         Path contextFile = Path.of(requireTask(id).worktreePath()).resolve(Artifact.CONTEXT.fileName());
         synchronized (relayLock(id)) {
-            String standing = WorktreeFiles.read(contextFile).map(held -> held.contains(UNDER)
+            String standing = WorktreeFiles.read(contextFile).map(CarriedBlock::without).map(held -> held.contains(UNDER)
                     ? held.substring(0, held.indexOf(UNDER)) : held).orElse("");
             return relay(id, standing.isBlank() ? addition : standing + UNDER + addition, freshBecause);
         }
@@ -242,10 +234,7 @@ public class AgentSessions {
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
         if (freshBecause != null || cold(task, config)) {
-            startFresh(taskId, task, config, freshBecause != null ? freshBecause
-                    : "conversation idle past its cache lifetime");
-            return "Instructions written to task_context.md; a fresh session was started to read them with"
-                    + " task_notes.md.";
+            return relayFreshStart(taskId, task, config, freshBecause);
         }
         if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING) {
             Optional<String> screen = shown(session, taskId);
@@ -273,6 +262,17 @@ public class AgentSessions {
                 task.alias(), Path.of(task.worktreePath()));
         return "Instructions written to task_context.md; the agent session was down, so it was re-entered"
                 + " to read and follow them.";
+    }
+
+    private String relayFreshStart(String taskId, TaskState task, ConfigService.ConfigFile config,
+                                   @Nullable String freshBecause) {
+        boolean started = startFreshWhenFree(taskId, task, config,
+                freshBecause != null ? freshBecause : "conversation idle past its cache lifetime");
+        return started
+                ? "Instructions written to task_context.md; a fresh session was started to read them with"
+                        + " task_notes.md."
+                : "Instructions written to task_context.md; the human is in the agent's window, so the fresh"
+                        + " session starts when they are done.";
     }
 
     private boolean running(String session, String taskId) {
@@ -333,7 +333,7 @@ public class AgentSessions {
                 stateService.task(taskId).ifPresent(task -> {
                     ConfigService.ConfigFile config = configService.load();
                     if (cold(task, config)) {
-                        startFresh(taskId, task, config, "conversation idle past its cache lifetime");
+                        startFreshWhenFree(taskId, task, config, "conversation idle past its cache lifetime");
                     } else if (running(session, taskId) && sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
                         undelivered(session, taskId, NUDGE);
                     }
@@ -400,9 +400,69 @@ public class AgentSessions {
         return NUDGE.startsWith(draft) && draft.length() >= NUDGE.length() / 2;
     }
 
+    private boolean startFreshWhenFree(String taskId, TaskState task, ConfigService.ConfigFile config,
+                                       String cause) {
+        String session = agentSession(config, taskId);
+        if (!humanHolds(session, taskId)) {
+            startFresh(taskId, task, config, cause);
+            return true;
+        }
+        freshStartWaits(session, taskId, task.alias(), cause);
+        return false;
+    }
+
+    /** A window that is not running, or a task that is gone, holds nobody. */
+    private boolean humanHolds(String session, String taskId) {
+        return running(session, taskId) && stateService.task(taskId).isPresent()
+                && (composing(session, taskId) || humanTurnOpen(taskId));
+    }
+
+    private boolean humanTurnOpen(String taskId) {
+        return stateService.task(taskId).filter(task -> SessionPhase.of(task.session()) == SessionPhase.WORKING)
+                .filter(task -> agentRuntime.newestPromptIsHumans(Path.of(task.worktreePath()), Set.of(NUDGE)))
+                .isPresent();
+    }
+
+    /** The instructions are on disk already; what ends the wait is the human leaving, the window dying or the task going. */
+    private void freshStartWaits(String session, String taskId, @Nullable String alias, String cause) {
+        if (!freshWaits.add(taskId)) {
+            return;
+        }
+        log.atInfo().setMessage("fresh start waits").addKeyValue("task", taskId).addKeyValue("alias", alias)
+                .addKeyValue("cause", "the human has unsent input or an open exchange in the agent's window")
+                .addKeyValue("start", cause).log();
+        Thread.startVirtualThread(() -> {
+            try {
+                do {
+                    while (humanHolds(session, taskId)) {
+                        Thread.sleep(DRAFT_POLL);
+                    }
+                    Thread.sleep(HUMAN_SETTLE);
+                } while (humanHolds(session, taskId));
+                stateService.task(taskId).ifPresent(task -> {
+                    log.atInfo().setMessage("fresh start proceeds").addKeyValue("task", taskId)
+                            .addKeyValue("alias", alias).addKeyValue("cause", "the human left the agent's window")
+                            .log();
+                    startFresh(taskId, task, configService.load(), cause);
+                });
+            } catch (InterruptedException stopped) {
+                Thread.currentThread().interrupt();
+            } catch (RuntimeException failed) {
+                log.atWarn().setMessage("fresh start wait failed").addKeyValue("task", taskId)
+                        .addKeyValue("cause", failed.toString()).log();
+            } finally {
+                freshWaits.remove(taskId);
+            }
+        });
+    }
+
     private void startFresh(String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
         log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias()).addKeyValue("cause", cause).log();
+        Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
+        synchronized (relayLock(taskId)) {
+            WorktreeFiles.read(contextFile).ifPresent(held -> WorktreeFiles.write(contextFile, carried.after(held, task)));
+        }
         openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
     }
 

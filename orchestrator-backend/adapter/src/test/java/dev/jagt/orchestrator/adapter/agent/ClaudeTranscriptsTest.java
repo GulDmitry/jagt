@@ -215,4 +215,39 @@ class ClaudeTranscriptsTest {
 
         assertThat(tail).isEqualTo("assistant: Fixed.");
     }
+
+    @Test
+    void readsTheNewestPromptAsTheHumansWhenItIsNotWhatJagtTyped(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"Re-read the file."}}
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
+                """);
+
+        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of("Re-read the file."))).isTrue();
+    }
+
+    @Test
+    void readsTheNewestPromptAsJagtsWhenItIsWhatJagtTypedAfterTheHumansLast(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"Re-read the file."}}
+                """);
+
+        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of("Re-read the file."))).isFalse();
+    }
+
+    @Test
+    void readsNoHumanPromptWhereTheSessionKeptNoRecord(@TempDir Path root) {
+        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
+    }
+
+    @Test
+    void readsNoHumanPromptFromARecordItCannotRead(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.createDirectory(logs.resolve("s.jsonl"));
+
+        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
+    }
 }

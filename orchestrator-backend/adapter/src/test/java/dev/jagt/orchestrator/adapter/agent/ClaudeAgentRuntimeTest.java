@@ -881,4 +881,32 @@ class ClaudeAgentRuntimeTest {
         assertThat(runtime.lastSessionActivity(worktree)).isEqualTo(OptionalLong.of(1_700_000_000_000L));
         assertThat(runtime.humanSaid(worktree, Set.of())).contains(List.of("fix the login"));
     }
+
+    @Test
+    void readsTheHumansQuestionAsTheNewestPromptOfAWorktree(@TempDir Path worktree) throws Exception {
+        Path logs = Files.createDirectories(ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
+                """);
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        assertThat(runtime.newestPromptIsHumans(worktree, Set.of("Re-read the file."))).isTrue();
+    }
+
+    @Test
+    void readsALineJagtTypedAsNoHumanPromptOfAWorktree(@TempDir Path worktree) throws Exception {
+        Path logs = Files.createDirectories(ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"Re-read the file."}}
+                """);
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        assertThat(runtime.newestPromptIsHumans(worktree, Set.of("Re-read the file."))).isFalse();
+    }
 }

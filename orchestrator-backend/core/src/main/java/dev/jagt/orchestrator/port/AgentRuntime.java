@@ -72,6 +72,11 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
+    /** Whether the newest prompt in the session's record in {@code worktree} is a human's, not one of {@code typedByJagt}. */
+    default boolean newestPromptIsHumans(Path worktree, Set<String> typedByJagt) {
+        return false;
+    }
+
     /** Whether {@link #humanSaid} can answer at all. */
     default boolean readsWhatTheHumanTyped() {
         return false;

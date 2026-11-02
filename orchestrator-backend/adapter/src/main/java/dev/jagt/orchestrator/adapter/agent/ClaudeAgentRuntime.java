@@ -153,6 +153,14 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public boolean newestPromptIsHumans(Path worktree, Set<String> typedByJagt) {
+        Set<String> cut = new HashSet<>(typedByJagt);
+        cut.add(brief.line(Step.START));
+        cut.add(brief.line(Step.REVIVE));
+        return ClaudeTranscripts.newestPromptIsHumans(ClaudeTranscripts.projectsDir(), worktree, cut);
+    }
+
+    @Override
     public boolean readsWhatTheHumanTyped() {
         return true;
     }

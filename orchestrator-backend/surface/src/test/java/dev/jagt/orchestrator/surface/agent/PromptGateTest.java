@@ -46,7 +46,7 @@ class PromptGateTest {
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
         InOrder order = inOrder(coldPrompts, runtime);
-        order.verify(coldPrompts).relay("ABC-1", idle, "now handle empty files");
+        order.verify(coldPrompts).relay("ABC-1", "now handle empty files");
         order.verify(runtime).blockedPrompt(anyString());
     }
 
@@ -57,7 +57,7 @@ class PromptGateTest {
         String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
 
         assertThat(answered).isEmpty();
-        verify(coldPrompts, never()).relay(anyString(), any(), anyString());
+        verify(coldPrompts, never()).relay(anyString(), anyString());
     }
 
     @Test
@@ -68,7 +68,7 @@ class PromptGateTest {
         String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", working, "go on");
 
         assertThat(answered).isEmpty();
-        verify(coldPrompts, never()).relay(anyString(), any(), anyString());
+        verify(coldPrompts, never()).relay(anyString(), anyString());
     }
 
     @Test
@@ -79,13 +79,13 @@ class PromptGateTest {
         String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", unsigned, "go on");
 
         assertThat(answered).isEmpty();
-        verify(coldPrompts, never()).relay(anyString(), any(), anyString());
+        verify(coldPrompts, never()).relay(anyString(), anyString());
     }
 
     @Test
     void letsAColdPromptThroughWhenItCouldNotBeRelayed() {
         when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
-        doThrow(new IllegalStateException("tmux down")).when(coldPrompts).relay("ABC-1", idle, "go on");
+        doThrow(new IllegalStateException("tmux down")).when(coldPrompts).relay("ABC-1", "go on");
 
         String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
 
@@ -98,7 +98,7 @@ class PromptGateTest {
         String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", null, "go on");
 
         assertThat(answered).isEmpty();
-        verify(coldPrompts, never()).relay(anyString(), any(), anyString());
+        verify(coldPrompts, never()).relay(anyString(), anyString());
     }
 
     @Test
@@ -108,7 +108,7 @@ class PromptGateTest {
         String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
 
         assertThat(answered).isEmpty();
-        verify(coldPrompts, never()).relay(anyString(), any(), anyString());
+        verify(coldPrompts, never()).relay(anyString(), anyString());
     }
 
     @ParameterizedTest
@@ -119,6 +119,6 @@ class PromptGateTest {
         String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, typed);
 
         assertThat(answered).isEmpty();
-        verify(coldPrompts, never()).relay(anyString(), any(), anyString());
+        verify(coldPrompts, never()).relay(anyString(), anyString());
     }
 }

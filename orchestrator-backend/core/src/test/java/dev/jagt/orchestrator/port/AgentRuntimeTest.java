@@ -77,4 +77,9 @@ class AgentRuntimeTest {
         assertThat(runtime.humanSaid(Path.of("/wt"), java.util.Set.of())).isEmpty();
         assertThat(runtime.holdsDraft("> half a sent")).isFalse();
     }
+
+    @Test
+    void holdsNoPromptToBeTheHumansWhereItCannotReadTheRecord() {
+        assertThat(new Minimal().newestPromptIsHumans(Path.of("/wt"), java.util.Set.of())).isFalse();
+    }
 }

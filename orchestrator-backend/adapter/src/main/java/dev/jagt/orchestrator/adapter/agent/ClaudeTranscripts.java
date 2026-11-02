@@ -111,6 +111,23 @@ final class ClaudeTranscripts {
         }
     }
 
+    /** A record that cannot be read answers no: a human is never assumed from a failed read. */
+    static boolean newestPromptIsHumans(Path projectsDir, Path sessionDirectory, Set<String> typedByJagt) {
+        Optional<Path> newest = newestLog(projectsDir, sessionDirectory);
+        if (newest.isEmpty()) {
+            return false;
+        }
+        try (Stream<String> lines = Files.lines(newest.get())) {
+            return lines.map(ClaudeTranscripts::typed).flatMap(Optional::stream)
+                    .map(text -> cut(text, typedByJagt)).reduce((older, newer) -> newer)
+                    .filter(text -> !text.isEmpty()).isPresent();
+        } catch (IOException | RuntimeException unreadable) {
+            log.atWarn().setMessage("session record unreadable").addKeyValue("path", newest.get())
+                    .addKeyValue("cause", unreadable.toString()).log();
+            return false;
+        }
+    }
+
     /** The newest conversation's last human prompts and model text, oldest first; the oldest is cut to fit. */
     static Optional<String> tail(Path projectsDir, Path sessionDirectory, int maxChars) {
         Optional<Path> newest = newestLog(projectsDir, sessionDirectory);
