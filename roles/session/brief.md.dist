@@ -1,7 +1,7 @@
 # The session's brief
 
 What jagt tells a task's session at each step, one `## <step>` section per step. Copy this file to
-`session-brief.md` beside `jagt.yml` and edit a section to change what your sessions are told; a section your
+`roles/session/brief.md` and edit a section to change what your sessions are told; a section your
 copy lacks is read from here, and at a step left empty the session hears jagt's facts alone.
 
 ## deploy

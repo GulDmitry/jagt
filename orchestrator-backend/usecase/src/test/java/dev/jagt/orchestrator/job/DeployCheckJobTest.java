@@ -205,7 +205,8 @@ class DeployCheckJobTest {
         DeployPipelines pipelines = mock(DeployPipelines.class);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Path worktree = Files.createDirectories(root.resolve("ABC-42"));
         new StateService(new JsonMapper(), paths).putTask("ABC-42", TaskState.builder("proj", worktree.toString(),
                 TaskStatus.DEPLOYED).build().withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));

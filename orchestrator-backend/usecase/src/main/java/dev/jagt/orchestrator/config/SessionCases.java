@@ -1,18 +1,20 @@
 package dev.jagt.orchestrator.config;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /** A case the human's copy lacks is read from the shipped file. */
 @Component
-@RequiredArgsConstructor
 public class SessionCases {
 
-    public static final String FILE = "session-cases.md";
+    public static final String FILE = "roles/session/cases.md";
 
-    private final OrchestratorPaths paths;
+    private final RoleFiles files;
+
+    public SessionCases(OrchestratorPaths paths) {
+        this.files = new RoleFiles(paths, "session");
+    }
 
     public CaseBook book() {
-        return HumanCopy.stepCases(paths.root(), FILE);
+        return files.book();
     }
 }

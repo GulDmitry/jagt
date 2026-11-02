@@ -18,7 +18,7 @@ class StepsWithinCasesTest {
     private static final Instant MOVED = Instant.parse("2026-10-25T10:22:53.991Z");
 
     private static List<Violation> check(Path dir, String logLine) throws Exception {
-        CaseBook book = CaseBook.parse("session-cases.md.dist", Files.readString(Path.of("../session-cases.md.dist")));
+        CaseBook book = CaseBook.parse("roles/session/cases.md.dist", Files.readString(Path.of("../roles/session/cases.md.dist")));
         Path log = dir.resolve("jagt-backend.log");
         Files.writeString(log, logLine + "\n");
         RunRecord run = new RunRecord(

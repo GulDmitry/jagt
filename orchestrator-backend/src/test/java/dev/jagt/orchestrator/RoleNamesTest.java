@@ -50,7 +50,7 @@ class RoleNamesTest {
 
     private static Stream<String> roleFolderIds() {
         try (Stream<Path> folders = Files.list(Path.of("..", "roles"))) {
-            return folders.filter(Files::isDirectory)
+            return folders.filter(Files::isDirectory).filter(folder -> !folder.getFileName().toString().equals("session"))
                     .map(folder -> folder.getFileName().toString()).toList().stream();
         } catch (IOException unread) {
             throw new UncheckedIOException(unread);

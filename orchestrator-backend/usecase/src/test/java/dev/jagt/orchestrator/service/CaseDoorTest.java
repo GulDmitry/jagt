@@ -117,7 +117,8 @@ class CaseDoorTest {
     void takesNoChangesFromAShipTheMasterPressedOnACleanPushedTree(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .turn(Turn.none().relayed("ship", "d1", "", 100)).build());

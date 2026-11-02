@@ -103,13 +103,13 @@ The card's hover and the Artifacts tab SHALL show them, as `visualize: no — <w
 - **THEN** the card's hover and the Artifacts tab of ABC-42 read `visualize: no — config-only change`
 
 ### Requirement: The brief is a file you may copy
-What jagt tells a session at a step SHALL be that step's facts, then its `## <step>` section of `session-brief.md`
-beside `jagt.yml`, copied from `session-brief.md.dist`; a section the copy lacks SHALL be read from the `.dist`, and
+What jagt tells a session at a step SHALL be that step's facts, then its `## <step>` section of `roles/session/brief.md`,
+copied from `roles/session/brief.md.dist`; a section the copy lacks SHALL be read from the `.dist`, and
 at one left empty the session SHALL hear the facts alone (`StepRelay`).
 
 #### Scenario: Nothing copied
-- **WHEN** no `session-brief.md` exists
-- **THEN** every step says what `session-brief.md.dist` says
+- **WHEN** no `roles/session/brief.md` exists
+- **THEN** every step says what `roles/session/brief.md.dist` says
 
 #### Scenario: A step left empty
 - **WHEN** your copy holds `## plan` with nothing under it

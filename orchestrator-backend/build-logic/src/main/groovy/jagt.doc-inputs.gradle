@@ -12,7 +12,6 @@ tasks.named('test') {
         include 'orchestrator-backend/*/src/main/java/**/*.java'
         include 'orchestrator-backend/src/main/java/**/*.java'
         include 'jagt.yml.dist'
-        include 'session-brief.md.dist'
         include 'roles/**/*.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
     // Outside the tree above: a file tree drops `.gitignore` by default.

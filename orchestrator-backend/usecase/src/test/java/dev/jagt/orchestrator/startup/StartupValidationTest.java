@@ -57,7 +57,7 @@ class StartupValidationTest {
         StartupValidation validation = new StartupValidation(List.of(new StartupCheck() {
             @Override
             public List<Problem> problems() {
-                return List.of(new Problem("session-cases.md", "no case sends step ship"));
+                return List.of(new Problem("roles/session/cases.md", "no case sends step ship"));
             }
 
             @Override

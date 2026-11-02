@@ -111,8 +111,8 @@ Every other key has a default, described in `jagt.yml.dist`.
 
 It judges by `roles/master/brief.md.dist` until you copy it to `roles/master/brief.md` —
 [what each mode gives](#with-the-master-and-without).
-Sessions are told each step by `session-brief.md.dist` until you copy it to `session-brief.md`,
-and sent each one where `session-cases.md.dist` has a case for it until you copy that to `session-cases.md`.
+Sessions are told each step by `roles/session/brief.md.dist` until you copy it to `roles/session/brief.md`,
+and sent each one where `roles/session/cases.md.dist` has a case for it until you copy that to `roles/session/cases.md`.
 The Master presses a verb only where `roles/master/cases.md.dist` has a case, until you copy that to `roles/master/cases.md`.
 
 ### 4 — build, and run

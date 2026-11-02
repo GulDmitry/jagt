@@ -13,8 +13,9 @@ class SessionBriefTest {
 
     @Test
     void readsTheHumansCopyOfAStepUpToTheNextStep(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "# Brief\n\n## deploy\n\ncheck it in a browser\n\n## verify\n\nrun it\n");
-        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "# Brief\n\n## deploy\n\ncheck it in a browser\n\n## verify\n\nrun it\n");
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         assertThat(brief.section(Step.DEPLOY)).contains("check it in a browser");
@@ -22,7 +23,8 @@ class SessionBriefTest {
 
     @Test
     void theShipStepRebasesOntoTheMovedTargetBeforeItPushes(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         String ship = brief.section(Step.SHIP).orElseThrow();
@@ -34,8 +36,9 @@ class SessionBriefTest {
 
     @Test
     void readsTheShippedStepTheHumansCopyLacks(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## verify\n\nrun it\n");
-        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## verify\n\nrun it\n");
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
@@ -43,7 +46,8 @@ class SessionBriefTest {
 
     @Test
     void readsTheShippedBriefWhereNoneWasCopied(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
@@ -51,8 +55,9 @@ class SessionBriefTest {
 
     @Test
     void keepsAStepTheHumanEmptiedEmpty(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n\n## verify\n\nrun it\n");
-        Files.writeString(root.resolve("session-brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n\n## verify\n\nrun it\n");
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         assertThat(brief.section(Step.DEPLOY)).contains("");
@@ -60,7 +65,8 @@ class SessionBriefTest {
 
     @Test
     void keepsAHeadingThatNamesNoStepInsideItsStep(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## ship\n\nshape:\n## <thread link>\nFIXED\n\n## verify\n\nrun it\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## ship\n\nshape:\n## <thread link>\nFIXED\n\n## verify\n\nrun it\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         assertThat(brief.section(Step.SHIP)).contains("shape:\n## <thread link>\nFIXED");
@@ -68,7 +74,8 @@ class SessionBriefTest {
 
     @Test
     void readsAStepAsOneLineForACommandLine(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\nRead the notes,\n  then work.\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nRead the notes,\n  then work.\n");
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         assertThat(brief.line(Step.START)).isEqualTo("Read the notes, then work.");
@@ -76,7 +83,8 @@ class SessionBriefTest {
 
     @Test
     void aCarriedTaskKeepsItsBoardStatusUntilAChangeBegins(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         SessionBrief brief = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
         assertThat(brief.line(Step.START))

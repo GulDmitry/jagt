@@ -45,8 +45,9 @@ class OrchestratorApplicationTest {
     @DynamicPropertySource
     static void keepConfigAndStateOutOfTheDevelopersOwnFilesEvenWhereTheyExportedThemOverTheRoot(
             DynamicPropertyRegistry registry) throws IOException {
-        Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
-        Files.copy(Path.of("../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+        Files.copy(Path.of("../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/qa"));
         Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
         registry.add("orchestrator.root", () -> root.toString());

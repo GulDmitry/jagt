@@ -121,9 +121,13 @@ abstract class BoardPageContext {
                 Files.copy(file, root.resolve(file.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        Files.createDirectories(root.resolve("roles/qa"));
-        Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        try (var shipped = Files.walk(Path.of("..", "roles"))) {
+            for (Path file : shipped.filter(path -> path.toString().endsWith(".dist")).toList()) {
+                Path target = root.resolve(Path.of("..").relativize(file));
+                Files.createDirectories(target.getParent());
+                Files.copy(file, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
         Files.writeString(root.resolve("jagt.yml"), """
                 orchestrator:
                   projects:

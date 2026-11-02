@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.config;
 
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.task.Step;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,19 +10,18 @@ import java.util.Set;
 
 /** A section the human's copy lacks is read from the shipped file. */
 @Component
-@RequiredArgsConstructor
 public class SessionBrief {
 
-    public static final String FILE = "session-brief.md";
+    public static final String FILE = "roles/session/brief.md";
 
-    private final OrchestratorPaths paths;
+    private final RoleFiles files;
+
+    public SessionBrief(OrchestratorPaths paths) {
+        this.files = new RoleFiles(paths, "session");
+    }
 
     public Optional<String> section(Step step) {
-        return HumanCopy.read(paths.root(), FILE).stream()
-                .flatMap(file -> Sections.of(file.text()).stream().filter(section -> section.id().equals(step.id()))
-                        .findFirst().stream())
-                .map(Sections.Section::body)
-                .findFirst();
+        return files.find(step.id());
     }
 
     /** For a command line or a window that takes one line; empty where the brief has no such step. */
@@ -32,11 +30,11 @@ public class SessionBrief {
     }
 
     public List<Problem> unreadable() {
-        return HumanCopy.unreadable(paths.root(), FILE);
+        return files.unreadable();
     }
 
     /** Every step either file holds a section for. */
     public Set<String> steps() {
-        return HumanCopy.sectionIds(paths.root(), FILE);
+        return files.steps();
     }
 }

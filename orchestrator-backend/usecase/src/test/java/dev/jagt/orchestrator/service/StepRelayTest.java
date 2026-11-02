@@ -46,7 +46,8 @@ class StepRelayTest {
 
     @Test
     void tellsTheSessionTheStepsFactsThenWhatTheBriefAsks(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n\nopen it in a browser\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n\nopen it in a browser\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         CaseDoor door = mock(CaseDoor.class);
@@ -117,7 +118,8 @@ class StepRelayTest {
 
     @Test
     void typesTheStepAsOneLine(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## wake\n\nContinue where\nyou stopped.\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## wake\n\nContinue where\nyou stopped.\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         CaseDoor door = mock(CaseDoor.class);
@@ -133,7 +135,8 @@ class StepRelayTest {
 
     @Test
     void tellsTheFactsAloneAtAStepTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         CaseDoor door = mock(CaseDoor.class);
@@ -223,7 +226,8 @@ class StepRelayTest {
     void relaysAStepACaseSendsAtTheTasksStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -241,7 +245,8 @@ class StepRelayTest {
     void sendsNothingAndRecordsAMissWhereNoCaseSendsTheStepAtTheTasksStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -262,7 +267,8 @@ class StepRelayTest {
     void sendsNothingAndRecordsAMissWhereTheStepWasSetOffBySomeoneItsCaseDoesNotName(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -283,7 +289,8 @@ class StepRelayTest {
     void relaysAStepASessionsOwnCallSetsOffAsJagtsAnswerToIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -301,7 +308,8 @@ class StepRelayTest {
     void stopsTheTaskForTheHumanWhereNoCaseSendsTheStepAtItsStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\nreplies: any; plain\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -321,7 +329,8 @@ class StepRelayTest {
     void stopsTheTaskInsteadOfSendingAFourthRedVerificationRunning(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## verify\n\nstep: verify\nat: VERIFYING\nby: jagt\nreplies: any; plain\nThe command failed.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
@@ -371,7 +380,8 @@ class StepRelayTest {
     void sendsAThirdRedVerificationRunning(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## verify\n\nstep: verify\nat: VERIFYING\nby: jagt\nreplies: any; plain\nThe command failed.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
@@ -392,7 +402,8 @@ class StepRelayTest {
     void relaysTheMastersAnswerWhereItsSessionCaseSendsIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"),
                 "## answered\n\nstep: answered\nat: IN_PROGRESS\nby: master\nreplies: any; plain\nThe Master answers.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -408,7 +419,8 @@ class StepRelayTest {
 
     @Test
     void sendsTheTextWrittenWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -426,7 +438,8 @@ class StepRelayTest {
 
     @Test
     void leavesTheTextWrittenUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -444,7 +457,8 @@ class StepRelayTest {
 
     @Test
     void sendsTheLineTypedWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -462,7 +476,8 @@ class StepRelayTest {
 
     @Test
     void leavesTheLineTypedUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -480,7 +495,8 @@ class StepRelayTest {
 
     @Test
     void sendsBelowAPendingInstructionWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -498,7 +514,8 @@ class StepRelayTest {
 
     @Test
     void leavesBelowAPendingInstructionUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## deploy\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());

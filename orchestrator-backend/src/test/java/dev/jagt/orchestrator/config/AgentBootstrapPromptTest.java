@@ -13,7 +13,8 @@ class AgentBootstrapPromptTest {
 
     @Test
     void theShippedBootstrapPromptLeavesCommittingToTheBriefsOwnRule(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
 
         String bootstrap = new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))).line(Step.START);

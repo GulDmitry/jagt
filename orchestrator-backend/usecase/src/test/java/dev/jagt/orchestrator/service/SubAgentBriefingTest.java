@@ -19,7 +19,8 @@ class SubAgentBriefingTest {
 
     @Test
     void pointsTheAgentAtTheRequestTheTaskWasOpenedWithSinceLaterInstructionsReplaceTheContext(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -56,8 +57,10 @@ class SubAgentBriefingTest {
     void addsNothingForAContextSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
         Path blank = Files.createDirectories(root.resolve("blank"));
         Path absent = Files.createDirectories(root.resolve("absent"));
-        Files.writeString(blank.resolve("session-brief.md"), "## context\n");
-        Files.writeString(absent.resolve("session-brief.md"), "## other\nText.\n");
+        Files.createDirectories(blank.resolve("roles/session"));
+        Files.writeString(blank.resolve("roles/session/brief.md"), "## context\n");
+        Files.createDirectories(absent.resolve("roles/session"));
+        Files.writeString(absent.resolve("roles/session/brief.md"), "## other\nText.\n");
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -80,7 +83,8 @@ class SubAgentBriefingTest {
 
     @Test
     void namesTheDeployBranchAsJagtsAloneSoTheAgentNeverMergesIntoIt(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -97,7 +101,8 @@ class SubAgentBriefingTest {
 
     @Test
     void listsTheDeployWorktreeAConflictIsHandedOverInAsTheSessionsOwn(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -114,7 +119,8 @@ class SubAgentBriefingTest {
 
     @Test
     void namesTheDeployBranchOfEveryRepositoryOfTheTask(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -134,7 +140,8 @@ class SubAgentBriefingTest {
 
     @Test
     void namesTheBaseBranchOfEveryRepositoryOfTheTaskReadOnly(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -154,7 +161,8 @@ class SubAgentBriefingTest {
 
     @Test
     void saysNothingOfADeployBranchWhenTheTaskHasNone(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", null, List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -171,7 +179,8 @@ class SubAgentBriefingTest {
 
     @Test
     void asksForAPlanFirstWhenAutoplanIsOnNamingTheFileCount(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -189,7 +198,8 @@ class SubAgentBriefingTest {
 
     @Test
     void tellsTheSessionToPlanFirstWhenTheTaskWasOpenedInPlanMode(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -206,7 +216,8 @@ class SubAgentBriefingTest {
 
     @Test
     void saysNothingOfPlanningFirstWhenTheTaskWasOpenedInAutoMode(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -223,7 +234,8 @@ class SubAgentBriefingTest {
 
     @Test
     void saysNothingOfAutoplanWhenItIsLeftAtItsDefault(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -240,7 +252,8 @@ class SubAgentBriefingTest {
 
     @Test
     void namesTheOtherWorktreesOfATaskAndNotTheOneTheAgentRunsIn(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -262,7 +275,8 @@ class SubAgentBriefingTest {
 
     @Test
     void saysATaskWorksInOneRepositoryOnlyWhereItHasNoOther(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -279,7 +293,8 @@ class SubAgentBriefingTest {
 
     @Test
     void asksForTaskVisualMdWhenVisualizeIsOn(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -297,7 +312,8 @@ class SubAgentBriefingTest {
 
     @Test
     void tablesAndCallsBetweenServersAreAlwaysWorthAPictureWhenVisualizeIsOn(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -315,7 +331,8 @@ class SubAgentBriefingTest {
 
     @Test
     void warnsThatASemicolonEndsAMermaidStatementWhenVisualizeIsOn(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -332,7 +349,8 @@ class SubAgentBriefingTest {
 
     @Test
     void saysNothingOfAPictureWhenVisualizeIsLeftAtItsDefault(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -349,7 +367,8 @@ class SubAgentBriefingTest {
 
     @Test
     void asksForFactsAndAControlBeforeACauseWhenDiagnoseIsOn(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -367,7 +386,8 @@ class SubAgentBriefingTest {
 
     @Test
     void saysNothingOfDiagnosingWhenDiagnoseIsLeftAtItsDefault(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -384,7 +404,8 @@ class SubAgentBriefingTest {
 
     @Test
     void keepsTheBranchRuleWhereTheHumansCopyDropsIt(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## context\n\n<rules>\n1. Work.\n</rules>\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## context\n\n<rules>\n1. Work.\n</rules>\n");
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -400,7 +421,8 @@ class SubAgentBriefingTest {
 
     @Test
     void asksForTheJudgementOfEverySwitchThatIsOnInTheFirstReport(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);

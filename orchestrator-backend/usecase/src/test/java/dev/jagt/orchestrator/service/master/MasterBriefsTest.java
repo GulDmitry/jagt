@@ -67,7 +67,8 @@ class MasterBriefsTest {
 
     @Test
     void handsOverTheBriefTheSessionWorksTo(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md.dist"), "## context\n\nnever commit unasked\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## context\n\nnever commit unasked\n");
         MasterBriefs briefs = new MasterBriefs(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString())),
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));

@@ -7,7 +7,7 @@ made: it is written to `misses.jsonl` beside `state.json` instead, and the task 
 
 Each case: `move:` a verb the Master presses · `at:` the task's statuses, `any` or `any but <statuses>` ·
 `by: master` · one line saying what the case is. A step the Master sends the session is a case `by: master` in
-`session-cases.md`.
+`roles/session/cases.md`.
 
 ## ship
 

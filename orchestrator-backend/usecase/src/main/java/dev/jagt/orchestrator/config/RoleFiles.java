@@ -38,9 +38,13 @@ public final class RoleFiles {
     }
 
     public String section(String step) {
+        return find(step).orElse("");
+    }
+
+    public Optional<String> find(String step) {
         return HumanCopy.read(root, brief).stream()
                 .flatMap(file -> Sections.of(file.text()).stream().filter(section -> section.id().equals(step)))
-                .map(Sections.Section::body).findFirst().orElse("");
+                .map(Sections.Section::body).findFirst();
     }
 
     public CaseBook book() {

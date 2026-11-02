@@ -14,17 +14,17 @@ class CaseBookTest {
 
     @Test
     void readsACaseAsItsStepStatusesWhoSetsItOffAndTheRepliesItTakes() {
-        CaseBook book = CaseBook.parse("session-cases.md", "# Cases\n\n## plan-by-human\n\nstep: plan\nat: PLAN_PENDING\n"
+        CaseBook book = CaseBook.parse("roles/session/cases.md", "# Cases\n\n## plan-by-human\n\nstep: plan\nat: PLAN_PENDING\n"
                 + "by: human\nreplies: IN_PROGRESS, REVIEW_PENDING; plain, question\nYou approved the plan.\n");
 
-        assertThat(book.cases()).containsExactly(new CaseBook.Case("session-cases.md", "plan-by-human", "plan",
+        assertThat(book.cases()).containsExactly(new CaseBook.Case("roles/session/cases.md", "plan-by-human", "plan",
                 Set.of(TaskStatus.PLAN_PENDING), CaseBook.By.HUMAN, new CaseBook.Replies(
                 Set.of(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING), Set.of(AgentReport.PLAIN, AgentReport.QUESTION))));
     }
 
     @Test
     void readsQaAsWhoSetsAStepOff() {
-        CaseBook book = CaseBook.parse("session-cases.md", "## qa-round-by-qa\n\nstep: qa-round\nat: DEPLOYED\n"
+        CaseBook book = CaseBook.parse("roles/session/cases.md", "## qa-round-by-qa\n\nstep: qa-round\nat: DEPLOYED\n"
                 + "by: qa\nreplies: IN_PROGRESS; plain, wait\nQA sends its rows back.\n");
 
         assertThat(book.faults()).isEmpty();
@@ -34,7 +34,7 @@ class CaseBookTest {
 
     @Test
     void refusesAByNamingNoPartyAndNoInstalledChecker() {
-        CaseBook book = CaseBook.parse("session-cases.md", "## qa-round-by-lint\n\nstep: qa-round\nat: DEPLOYED\n"
+        CaseBook book = CaseBook.parse("roles/session/cases.md", "## qa-round-by-lint\n\nstep: qa-round\nat: DEPLOYED\n"
                 + "by: lint\nreplies: IN_PROGRESS; plain\nNobody installed.\n");
 
         assertThat(book.cases()).isEmpty();
@@ -43,7 +43,7 @@ class CaseBookTest {
 
     @Test
     void readsAnyButAsEveryStatusOutsideTheList() {
-        CaseBook book = CaseBook.parse("session-cases.md",
+        CaseBook book = CaseBook.parse("roles/session/cases.md",
                 "## wake\n\nstep: wake\nat: any but DONE\nby: jagt\nreplies: any; plain\nA limit reset.\n");
 
         assertThat(book.sends("wake", TaskStatus.DEPLOYED)).isTrue();
@@ -52,17 +52,17 @@ class CaseBookTest {
 
     @Test
     void refusesACaseWrittenTwice() {
-        CaseBook book = CaseBook.parse("session-cases.md", "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n\n"
+        CaseBook book = CaseBook.parse("roles/session/cases.md", "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n\n"
                 + "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n");
 
         assertThat(book.faults()).singleElement()
-                .satisfies(fault -> assertThat(fault.text()).isEqualTo("session-cases.md: case wake is written twice"));
+                .satisfies(fault -> assertThat(fault.text()).isEqualTo("roles/session/cases.md: case wake is written twice"));
     }
 
     @Test
     void takesTheCopysCaseOverTheShippedOneOfTheSameId() {
-        CaseBook shipped = CaseBook.parse("session-cases.md.dist", "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n");
-        CaseBook copy = CaseBook.parse("session-cases.md", "## wake\n\nstep: wake\nat: IN_PROGRESS\nby: jagt\nreplies: any; plain\nA reset.\n");
+        CaseBook shipped = CaseBook.parse("roles/session/cases.md.dist", "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n");
+        CaseBook copy = CaseBook.parse("roles/session/cases.md", "## wake\n\nstep: wake\nat: IN_PROGRESS\nby: jagt\nreplies: any; plain\nA reset.\n");
 
         CaseBook book = copy.over(shipped);
 
@@ -77,16 +77,16 @@ class CaseBookTest {
             "WAITING; plain"
     })
     void refusesACaseWhoseRepliesAreMissingOrNameNoStatusOrKind(String replies) {
-        CaseBook book = CaseBook.parse("session-cases.md",
+        CaseBook book = CaseBook.parse("roles/session/cases.md",
                 "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: " + replies + "\nA reset.\n");
 
         assertThat(book.faults()).singleElement().satisfies(fault -> assertThat(fault.text())
-                .startsWith("session-cases.md: case wake has replies: '" + replies + "'"));
+                .startsWith("roles/session/cases.md: case wake has replies: '" + replies + "'"));
     }
 
     @Test
     void takesForAJoinedStepWhatAnyCaseOfItsStepsTakes() {
-        CaseBook book = CaseBook.parse("session-cases.md",
+        CaseBook book = CaseBook.parse("roles/session/cases.md",
                 "## round-threads\n\nstep: round-threads\nat: any\nby: jagt\nreplies: IN_PROGRESS; plain\nThreads.\n\n"
                         + "## round-threads-done\n\nstep: round-threads-done\nat: any\nby: jagt\n"
                         + "replies: REVIEW_PENDING; no_changes\nThe round ends.\n");

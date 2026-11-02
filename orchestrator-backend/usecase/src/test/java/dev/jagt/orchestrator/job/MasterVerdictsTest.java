@@ -73,7 +73,8 @@ class MasterVerdictsTest {
     void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -99,7 +100,8 @@ class MasterVerdictsTest {
     void dropsAVerdictOfATaskTheHumanShippedWhileTheMasterRead(MasterReview.Kind kind, @TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -128,7 +130,8 @@ class MasterVerdictsTest {
     void dropsTheAnswerToAQuestionTheSessionMovedOnFromWhileTheMasterRead(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -153,7 +156,8 @@ class MasterVerdictsTest {
     void putsTheTaskBackAndStopsItWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -181,7 +185,8 @@ class MasterVerdictsTest {
     void leavesATaskThatMovedOnWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -213,7 +218,8 @@ class MasterVerdictsTest {
     void countsNoRoundForAVerdictDroppedBecauseTheTaskMovedOn(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -240,7 +246,8 @@ class MasterVerdictsTest {
     void relaysNothingOfAPlanTheHumanMovedWhileTheMasterRead(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -268,7 +275,8 @@ class MasterVerdictsTest {
     void writesNoStateWhileTheSessionIsBeingTold(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -296,7 +304,8 @@ class MasterVerdictsTest {
     void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -321,7 +330,8 @@ class MasterVerdictsTest {
     void signsTheMoveItsVerdictTookAsTheMasters(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -345,7 +355,8 @@ class MasterVerdictsTest {
     void recordsAMissItsVerdictSetOffAsTheMasters(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -370,7 +381,8 @@ class MasterVerdictsTest {
     void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -395,7 +407,8 @@ class MasterVerdictsTest {
     void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -418,7 +431,8 @@ class MasterVerdictsTest {
     void keepsTheSessionOfAStageCheckAnsweredAgainOverTheSameTree(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -441,7 +455,8 @@ class MasterVerdictsTest {
     void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -465,7 +480,8 @@ class MasterVerdictsTest {
     void relaysAFindingAnEarlierRoundMadeMarkedAsARepeat(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -491,7 +507,8 @@ class MasterVerdictsTest {
     void returnsASecondRoundOfRepeatsToTheSessionInsteadOfAskingAnyone(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -519,7 +536,8 @@ class MasterVerdictsTest {
     void stopsTheTaskOnAFourthRoundRunningThatOnlyRepeatsTheFirst(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -554,7 +572,8 @@ class MasterVerdictsTest {
     void relaysAFourthReturnWhereEachSessionReportItAnsweredWasReworked(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -592,7 +611,8 @@ class MasterVerdictsTest {
     void stopsTheTaskOnAFourthReturnWhereTheSessionReportedTheSameEachTime(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -630,7 +650,8 @@ class MasterVerdictsTest {
     void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -655,7 +676,8 @@ class MasterVerdictsTest {
     void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -682,7 +704,8 @@ class MasterVerdictsTest {
     void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -707,7 +730,8 @@ class MasterVerdictsTest {
     void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -732,7 +756,8 @@ class MasterVerdictsTest {
     void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -760,7 +785,8 @@ class MasterVerdictsTest {
     void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -784,7 +810,8 @@ class MasterVerdictsTest {
     void leavesAPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -812,7 +839,8 @@ class MasterVerdictsTest {
     void keepsThePlanGateClosedWhenTheMasterSendsThePlanBack(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -838,7 +866,8 @@ class MasterVerdictsTest {
     void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -863,7 +892,8 @@ class MasterVerdictsTest {
     void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -889,10 +919,11 @@ class MasterVerdictsTest {
 
     @Test
     void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md.dist"), "## plan-not-ready\n\nrework the plan\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## plan-not-ready\n\nrework the plan\n");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -917,7 +948,8 @@ class MasterVerdictsTest {
     void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -946,7 +978,8 @@ class MasterVerdictsTest {
     void asksTheSameQuestionOnce(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -973,7 +1006,8 @@ class MasterVerdictsTest {
     void recordsWhatTheMasterDecidedSoALaterRoundDoesNotReopenIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -996,7 +1030,8 @@ class MasterVerdictsTest {
     void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1021,7 +1056,8 @@ class MasterVerdictsTest {
     void opensNoTaskWhenTheMastersAnswerHoldsADoLine(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1044,7 +1080,8 @@ class MasterVerdictsTest {
     void reportsAnAnswerCountOverTheTreeAsTheDecisionsHoldIt(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1066,7 +1103,8 @@ class MasterVerdictsTest {
     void movesNothingOfATaskThatIsGoneFromTheState(MasterReview.Kind kind, TaskStatus status, @TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1090,7 +1128,8 @@ class MasterVerdictsTest {
     void movesNothingOfAnAnsweredTaskThatIsGoneFromTheState(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1111,7 +1150,8 @@ class MasterVerdictsTest {
     void movesNothingWhenTheShipWasNotOpened(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1135,7 +1175,8 @@ class MasterVerdictsTest {
     void startsNothingOnAPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1160,7 +1201,8 @@ class MasterVerdictsTest {
     void stopsTheTaskInsteadOfReturningAFourthRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1195,7 +1237,8 @@ class MasterVerdictsTest {
     void returnsAThirdRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -1225,7 +1268,8 @@ class MasterVerdictsTest {
     void startsNoSessionOnAPlanWhereNoMasterCaseAllowsTheApproval(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);

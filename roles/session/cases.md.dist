@@ -1,6 +1,6 @@
 # Session cases
 
-When jagt may send a session each step of `session-brief.md.dist`. Copy this file to `session-cases.md` to edit a
+When jagt may send a session each step of `roles/session/brief.md.dist`. Copy this file to `roles/session/cases.md` to edit a
 case; a case your copy lacks is read from here. A step at a status no case names is not sent: it is written to
 `misses.jsonl` beside `state.json` instead.
 

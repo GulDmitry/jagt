@@ -18,7 +18,7 @@ class TextBudgetTest {
 
     private static final Pattern NOT_PROSE = Pattern.compile("^(```|\\||#|<|>)");
     private static final Pattern LIST_ITEM = Pattern.compile("^([-*]|\\d+\\.)\\s+");
-    private static final Path SESSION_BRIEF = Path.of("../session-brief.md.dist");
+    private static final Path SESSION_BRIEF = Path.of("../roles/session/brief.md.dist");
     private static final Pattern STEP = Pattern.compile("(?m)^## [a-z][a-z0-9-]*$");
     private static final Path MAP_FILE = Path.of("../ARCHITECTURE.md");
     private static final int RECORD = 50;

@@ -111,7 +111,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval`,
   `roleEval -Prole=<id>` and `pitest` are asked for by name. **A cached green is not a run**: `--rerun-tasks` at a batch's end
   and before a push; a commit inside a batch runs the tests of what it touched and the rule tests.
-- **A change to `session-brief.md.dist` runs `promptEval` and `roleEval -Prole=master`** before its commit.
+- **A change to `roles/session/brief.md.dist` runs `promptEval` and `roleEval -Prole=master`** before its commit.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. It adds its row to
   [`docs/cases.md`](docs/cases.md) and a `Defect-family: <A–M>` trailer.

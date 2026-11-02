@@ -54,7 +54,8 @@ class QaRoundFlowTest {
             throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -91,7 +92,8 @@ class QaRoundFlowTest {
             throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);

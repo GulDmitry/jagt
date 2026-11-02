@@ -7,19 +7,19 @@ a human reads and extends; what no case takes is a miss.
 ## Requirements
 
 ### Requirement: The cases are files you may copy
-A step jagt relays SHALL reach a session only where a case of `session-cases.md` beside `jagt.yml` names it at the
-task's status; a verb the Master presses, or the replies on its ship, only where a case of the `master` role's
-`cases.md` does: `roles/master/cases.md`, `roles/master/cases.md.dist`.
+A step jagt relays SHALL reach a session only where a case of `roles/session/cases.md`, else
+`roles/session/cases.md.dist`, names it at the task's status; a verb the Master presses, or the replies on its ship,
+only where a case of the `master` role's `cases.md` does: `roles/master/cases.md`, `roles/master/cases.md.dist`.
 A step the Master relays SHALL take its statuses from its session case `by: master` alone.
 A case a copy lacks SHALL be read from its `.dist`. A case is a `## <id>` section holding
 one line saying what it is and the keys its `.dist` describes.
 
 #### Scenario: Nothing copied
-- **WHEN** no copy of `session-cases.md` or of the Master's `cases.md` exists
+- **WHEN** no copy of `roles/session/cases.md` or of the Master's `cases.md` exists
 - **THEN** every step is sent and every move made where the `.dist` says
 
 #### Scenario: An old copy beside jagt.yml
-- **WHEN** `master-cases.md` sits beside `jagt.yml`
+- **WHEN** `master-cases.md` or `session-cases.md` sits beside `jagt.yml`
 - **THEN** it is not read
 
 #### Scenario: A copy narrows a case
@@ -32,7 +32,7 @@ one line saying what it is and the keys its `.dist` describes.
 - **AND** a Master case holds `move:`, `at:` and `by: master`
 
 #### Scenario: A step the Master relays
-- **WHEN** your `session-cases.md` sends `answered` by master at IN_PROGRESS and ABC-42 is IN_PROGRESS
+- **WHEN** your `roles/session/cases.md` sends `answered` by master at IN_PROGRESS and ABC-42 is IN_PROGRESS
 - **THEN** the Master's answer reaches the session, whatever the Master's `cases.md` holds
 
 ### Requirement: Startup checks the cases against the code both ways
@@ -42,11 +42,11 @@ It SHALL refuse a case missing `replies:` or the line saying what it is, and an 
 
 #### Scenario: A case naming a missing step
 - **WHEN** a case says `step: woke` and the brief has no `## woke`
-- **THEN** jagt does not start and names `session-cases.md` and that case
+- **THEN** jagt does not start and names `roles/session/cases.md` and that case
 
 #### Scenario: A case naming no replies
 - **WHEN** the `wake` case has no `replies:` line, or one naming the kind `maybe`
-- **THEN** jagt does not start and names `session-cases.md` and that case
+- **THEN** jagt does not start and names `roles/session/cases.md` and that case
 
 #### Scenario: A revert
 - **WHEN** a case names `move: revert`
@@ -63,18 +63,18 @@ It SHALL refuse a file it cannot read. Each refusal names the file and the case 
 
 #### Scenario: A step jagt sends with no case
 - **WHEN** jagt can send `deploy` and no case names it
-- **THEN** jagt does not start and names `session-cases.md` and the step
+- **THEN** jagt does not start and names `roles/session/cases.md` and the step
 
 #### Scenario: A step jagt sends with no brief section
 - **WHEN** jagt can send `deploy` and neither brief file holds `## deploy`
-- **THEN** jagt does not start and names `session-brief.md` and the step
+- **THEN** jagt does not start and names `roles/session/brief.md` and the step
 
 #### Scenario: A brief step no case sends
 - **WHEN** the brief has `## deploy` and no case names it
 - **THEN** jagt does not start and names the step
 
 #### Scenario: A file that cannot be read
-- **WHEN** your copy of `session-cases.md` exists and cannot be read
+- **WHEN** your copy of `roles/session/cases.md` exists and cannot be read
 - **THEN** jagt does not start and names the file and the cause, and the `.dist` does not stand in for it
 
 #### Scenario: A move no case names
@@ -83,7 +83,7 @@ It SHALL refuse a file it cannot read. Each refusal names the file and the case 
 
 #### Scenario: A relayed step no session case sets off by the Master
 - **WHEN** no session case names `answered-under` with `by: master`
-- **THEN** jagt does not start and names `session-cases.md` and `answered-under`
+- **THEN** jagt does not start and names `roles/session/cases.md` and `answered-under`
 
 ### Requirement: The turn is a fact on the task
 `flow/Turns.next` SHALL alone answer who holds a task's turn from its status, report, stop and the Master's mode and

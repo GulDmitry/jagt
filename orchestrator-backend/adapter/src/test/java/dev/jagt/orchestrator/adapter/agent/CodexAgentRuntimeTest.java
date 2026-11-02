@@ -21,7 +21,8 @@ class CodexAgentRuntimeTest {
 
     @Test
     void launchesTheCodexCliAgainstTheWorktreesOwnCodexHome(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\nRead AGENTS.md and work\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
         var runtime = new CodexAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 CodexProperties.defaults(),
@@ -34,7 +35,8 @@ class CodexAgentRuntimeTest {
 
     @Test
     void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
         var runtime = new CodexAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 CodexProperties.defaults(),

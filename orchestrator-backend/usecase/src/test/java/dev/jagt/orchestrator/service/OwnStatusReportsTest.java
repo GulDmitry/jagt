@@ -130,7 +130,8 @@ class OwnStatusReportsTest {
     void appliesAReplyACaseOfTheOpenTurnsStepTakes(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
@@ -153,7 +154,8 @@ class OwnStatusReportsTest {
     void refusesAReplyNoCaseOfTheOpenTurnsStepTakesAndAppliesNothing(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
@@ -176,7 +178,8 @@ class OwnStatusReportsTest {
     void recordsARefusedReplyWithTheStepWhatCameAndWhatTheCasesTake(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
@@ -201,7 +204,8 @@ class OwnStatusReportsTest {
     void stopsTheTaskForTheHumanOnAReplyNoCaseTakes(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("session-cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/cases.md"), "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
                 + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());

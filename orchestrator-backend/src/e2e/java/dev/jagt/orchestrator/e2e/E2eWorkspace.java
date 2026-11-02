@@ -70,9 +70,10 @@ final class E2eWorkspace {
     static void createRootMarker(Path root) throws IOException {
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// e2e placeholder proxy\n");
-        Files.copy(Path.of("../session-brief.md.dist"), root.resolve("session-brief.md.dist"),
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"),
                 StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(Path.of("../session-cases.md.dist"), root.resolve("session-cases.md.dist"),
+        Files.copy(Path.of("../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"),
                 StandardCopyOption.REPLACE_EXISTING);
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"),

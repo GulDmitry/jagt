@@ -18,7 +18,8 @@ class ContextRelaysTest {
 
     @Test
     void namesEveryBriefStepARelayedTextCarries() throws Exception {
-        Files.writeString(root.resolve("session-brief.md.dist"), """
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), """
                 ## ship
                 Commit and push.
 
@@ -39,7 +40,8 @@ class ContextRelaysTest {
 
     @Test
     void reportsNothingWhileTheContextFileHoldsWhatItHeldBefore() throws Exception {
-        Files.writeString(root.resolve("session-brief.md.dist"), "## ship\nCommit and push.\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## ship\nCommit and push.\n");
         Files.createDirectories(root.resolve("abc-42"));
         Files.writeString(root.resolve("abc-42/task_context.md"), "Shipped.\n\nCommit and push.");
         JsonNode task = JsonMapper.builder().build().readTree("{\"repos\":[{\"worktreePath\":\"" + root.resolve("abc-42") + "\"}]}");

@@ -48,7 +48,8 @@ class ConflictHandOffTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
@@ -129,7 +130,8 @@ class ConflictHandOffTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
@@ -149,7 +151,8 @@ class ConflictHandOffTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,

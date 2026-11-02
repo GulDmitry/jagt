@@ -137,7 +137,7 @@
 
 ## Session brief · [spec](../openspec/specs/session-brief/spec.md)
 
-- **Your own brief** — What jagt tells a session at each step is a section of `session-brief.md.dist`; copy it to edit one.
+- **Your own brief** — What jagt tells a session at each step is a section of `roles/session/brief.md.dist`; copy it to edit one.
   [spec](../openspec/specs/session-brief/spec.md#requirement-the-brief-is-a-file-you-may-copy)
 - **Autoplan** — A session plans first, unasked, when its task is large or unclear. Key: `orchestrator.agent.autoplan.enabled`, off by default.
   [spec](../openspec/specs/session-brief/spec.md#requirement-autoplan)

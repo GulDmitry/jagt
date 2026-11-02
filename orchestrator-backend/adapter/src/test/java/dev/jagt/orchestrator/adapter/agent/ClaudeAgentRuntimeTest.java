@@ -33,7 +33,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void launchesTheClaudeCliWithTheBootstrapPromptQuoted(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\nRead AGENTS.md and work\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", ""),
@@ -46,7 +47,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void startsNoCliPlanModeWhenThePlanIsAskedFirstBecauseTheBoardApprovesIt(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
@@ -58,7 +60,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void continuesTheWorktreesNewestConversationWhenJagtReEntersASessionItDidNotEnd(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
@@ -70,7 +73,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void keepsAPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\nit's fine\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nit's fine\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
@@ -601,7 +605,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void pinsTheModelAskedForAsOneShellArgument(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
@@ -613,7 +618,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void leavesTheModelToTheCliWhenNoneIsAskedFor(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
@@ -625,7 +631,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void startsWithJagtsServerAndThePinnedOnesAloneWhenServersArePinned(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## start\n\ngo\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", "/stand/servers.json"), new McpEndpoint("http://localhost:8290/mcp"),
@@ -638,7 +645,8 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void revivesWithThePinnedServersAloneWhenServersArePinned(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("session-brief.md"), "## revive\n\ngo on\n");
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## revive\n\ngo on\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", "/stand/servers.json"), new McpEndpoint("http://localhost:8290/mcp"),

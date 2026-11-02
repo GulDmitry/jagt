@@ -15,7 +15,7 @@ class InvariantCheckerTest {
 
     @Test
     void findsNothingInARunThatKeptTheFrameAndRecordedAMiss() throws Exception {
-        CaseBook book = CaseBook.parse("session-cases.md.dist", Files.readString(Path.of("../session-cases.md.dist")));
+        CaseBook book = CaseBook.parse("roles/session/cases.md.dist", Files.readString(Path.of("../roles/session/cases.md.dist")));
         Path root = Path.of(InvariantCheckerTest.class.getResource("/runs/clean").toURI());
 
         List<Violation> violations = new InvariantChecker(book, (commit, from) -> true).check(RunRecord.read(root));
@@ -35,7 +35,7 @@ class InvariantCheckerTest {
     })
     void namesTheInvariantTheTimeAndTheEvidenceOfARunThatBrokeIt(String run, String invariant, Instant at,
                                                                   String evidence) throws Exception {
-        CaseBook book = CaseBook.parse("session-cases.md.dist", Files.readString(Path.of("../session-cases.md.dist")));
+        CaseBook book = CaseBook.parse("roles/session/cases.md.dist", Files.readString(Path.of("../roles/session/cases.md.dist")));
         Path root = Path.of(InvariantCheckerTest.class.getResource("/runs/" + run).toURI());
 
         List<Violation> violations = new InvariantChecker(book, (commit, from) -> !commit.startsWith("bad"))

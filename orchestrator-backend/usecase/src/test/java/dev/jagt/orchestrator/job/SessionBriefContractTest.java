@@ -55,7 +55,8 @@ class SessionBriefContractTest {
     @Test
     void aDeployConflictIsHandedOnlyInAWorktreeTheBriefGrantsAsTheSessionsWithItsMergeExcepted(@TempDir Path root)
             throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -68,7 +69,7 @@ class SessionBriefContractTest {
 
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
@@ -91,7 +92,8 @@ class SessionBriefContractTest {
 
     @Test
     void aShipNamesOnlyWorktreesTheBriefListsAsTheSessionsAndPushesOnlyItsBranch(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
@@ -105,7 +107,7 @@ class SessionBriefContractTest {
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.REVIEW_PENDING).title("Widget")
                 .repos(List.of(TaskRepo.of("web", "/w/ABC-42"), TaskRepo.of("api", "/w/ABC-42-api"))).build());
@@ -138,7 +140,8 @@ class SessionBriefContractTest {
 
     @Test
     void aResumeAsksForTheOneRewriteTheBriefExceptsOnItsOwnBranch(@TempDir Path root) throws Exception {
-        Files.copy(Path.of("../../session-brief.md.dist"), root.resolve("session-brief.md.dist"));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
                 Path.of("/repo/web"), Path.of("/w/widget-fix"), Path.of("/repo/web/.git"), "origin/main",
                 "git@host:g/web.git", true);
