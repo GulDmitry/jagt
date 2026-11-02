@@ -1,4 +1,4 @@
-// A report asked for by name, read by a human: never in `test`, `check` or `build`, and no threshold.
+// No threshold: a survivor is judged by the one who wrote its line.
 def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'GitStates', 'GitCommands', 'WorktreeHooks', 'DiffCheckouts']
     .collect { "dev.jagt.orchestrator.service.${it}" }
 
@@ -31,64 +31,74 @@ subprojects {
     tasks.named('pitest') { forkedTestEnv(it) }
 }
 
-// `-PpitestDiff[=<base>]`: mutates only the main classes changed against <base> (default HEAD, the tree included)
-// and lists the survivors standing on a changed line; nothing else is judged.
-def diffBase = providers.gradleProperty('pitestDiff').map { it ?: 'HEAD' }
-if (diffBase.present) {
-    def base = diffBase.get()
-    def diff = providers.exec {
-        workingDir rootDir
-        commandLine 'git', 'diff', '-U0', base, '--', '*/src/main/java/*.java'
-    }.standardOutput.asText.get()
-    def changedLines = [:].withDefault { [] as Set }
-    def file = null
-    diff.eachLine { line ->
-        def path = line =~ /^\+\+\+ b\/(.+)$/
-        def hunk = line =~ /^@@ .* \+(\d+)(?:,(\d+))? @@/
-        if (path) {
-            file = path[0][1]
-        } else if (hunk && file) {
-            def from = hunk[0][1] as int
-            def count = (hunk[0][2] ?: '1') as int
-            (from..<(from + count)).each { changedLines[file] << it }
-        }
+// Every `test` ends in `pitestDiff` (0127): pitest on the main classes changed against `-PpitestDiff=<base>` (default
+// HEAD, the tree included), listing the survivors standing on a changed line; nothing else is judged.
+def base = providers.gradleProperty('pitestDiff').map { it ?: 'HEAD' }.getOrElse('HEAD')
+def diff = providers.exec {
+    workingDir rootDir
+    commandLine 'git', 'diff', '-U0', base, '--', '*/src/main/java/*.java'
+}.standardOutput.asText.get()
+def changedLines = [:].withDefault { [] as Set }
+def file = null
+diff.eachLine { line ->
+    def path = line =~ /^\+\+\+ b\/(.+)$/
+    def hunk = line =~ /^@@ .* \+(\d+)(?:,(\d+))? @@/
+    if (path) {
+        file = path[0][1]
+    } else if (hunk && file) {
+        def from = hunk[0][1] as int
+        def count = (hunk[0][2] ?: '1') as int
+        (from..<(from + count)).each { changedLines[file] << it }
     }
-    def classOf = { String path -> path.replaceFirst('^.*?src/main/java/', '').replace('.java', '').replace('/', '.') }
-    def moduleOf = { String path -> ':' + path.replaceFirst('^orchestrator-backend/', '').tokenize('/')[0] }
-    def targets = [:].withDefault { [] }
-    changedLines.keySet().each { path ->
-        def type = classOf(path)
-        def owner = moduleOf(path)
-        if (owner == ':usecase' && type in usecaseGitClasses) {
-            owner = ':adapter'
-        }
-        targets[owner] << type
-        if (owner == ':core') {
-            targets[':usecase'] << type
-        }
+}
+def classOf = { String path -> path.replaceFirst('^.*?src/main/java/', '').replace('.java', '').replace('/', '.') }
+def moduleOf = { String path -> ':' + path.replaceFirst('^orchestrator-backend/', '').tokenize('/')[0] }
+// The root project's own main classes carry no pitest.
+changedLines.keySet().removeAll { !findProject(moduleOf(it)) }
+def targets = [:].withDefault { [] }
+changedLines.keySet().each { path ->
+    def type = classOf(path)
+    def owner = moduleOf(path)
+    if (owner == ':usecase' && type in usecaseGitClasses) {
+        owner = ':adapter'
     }
-    targets.each { module, types ->
-        project(module).pitest.targetClasses = types.collectMany { [it, it + '$*'] }
+    targets[owner] << type
+    if (owner == ':core') {
+        targets[':usecase'] << type
     }
-    tasks.register('pitestDiff') {
-        dependsOn targets.keySet().collect { "$it:pitest" }
-        def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile }
-        def lines = changedLines.collectEntries { path, numbers -> [(path.replaceFirst('^.*?src/main/java/', '')): numbers] }
-        doLast {
-            // A `:core` mutant is mutated by `:usecase` too; it stands only if no report killed it.
-            def outcomes = [:].withDefault { [] as Set }
-            reports.findAll { it.exists() }.each { report ->
-                new groovy.xml.XmlSlurper().parse(report).mutation.each {
-                    def source = it.mutatedClass.text().replaceFirst('\\.[^.]+$', '').replace('.', '/') + '/' + it.sourceFile.text()
-                    def number = it.lineNumber.text() as int
-                    if (lines[source]?.contains(number)) {
-                        def mutant = "${source}:${number} ${it.mutatedMethod.text()} ${it.description.text()} ${it.indexes.text()}".toString()
-                        outcomes[mutant] << it.@status.text()
-                    }
+}
+targets.each { module, types ->
+    project(module).pitest.targetClasses = types.collectMany { [it, it + '$*'] }
+}
+tasks.register('pitestDiff') {
+    dependsOn targets.keySet().collect { "$it:pitest" }
+    def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile }
+    def lines = changedLines.collectEntries { path, numbers -> [(path.replaceFirst('^.*?src/main/java/', '')): numbers] }
+    doLast {
+        if (!lines) {
+            println "pitestDiff: no main line changed against ${base}"
+            return
+        }
+        // A `:core` mutant is mutated by `:usecase` too; it stands only if no report killed it.
+        def outcomes = [:].withDefault { [] as Set }
+        reports.findAll { it.exists() }.each { report ->
+            new groovy.xml.XmlSlurper().parse(report).mutation.each {
+                def source = it.mutatedClass.text().replaceFirst('\\.[^.]+$', '').replace('.', '/') + '/' + it.sourceFile.text()
+                def number = it.lineNumber.text() as int
+                if (lines[source]?.contains(number)) {
+                    def mutant = "${source}:${number} ${it.mutatedMethod.text()} ${it.description.text()} ${it.indexes.text()}".toString()
+                    outcomes[mutant] << it.@status.text()
                 }
             }
-            def standing = outcomes.findAll { mutant, statuses -> statuses.every { it in ['SURVIVED', 'NO_COVERAGE'] } }.keySet()
-            println standing ? standing.sort().join('\n') : 'no mutant survives on a changed line'
         }
+        def standing = outcomes.findAll { mutant, statuses -> statuses.every { it in ['SURVIVED', 'NO_COVERAGE'] } }.keySet()
+        println standing ? "pitestDiff: judge each before the commit\n" + standing.sort().join('\n')
+                : 'pitestDiff: no mutant survives on a changed line'
     }
+}
+
+def gateTests = allprojects.collect { it == rootProject ? ':test' : "${it.path}:test" }
+allprojects {
+    tasks.matching { it.name == 'test' }.configureEach { finalizedBy ':pitestDiff' }
+    tasks.matching { it.name == 'pitest' }.configureEach { mustRunAfter gateTests }
 }

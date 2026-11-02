@@ -140,3 +140,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0124 QA brief keeps measured rules](0124-the-qa-brief-keeps-the-rules-that-measured.md)
 - [0125 Mutants judged on the diff](0125-mutants-are-judged-on-the-diff-at-each-commit.md)
 - [0126 A role is a folder](0126-a-role-is-a-folder.md)
+- [0127 Mutants run with every test](0127-mutants-run-with-every-test.md)
