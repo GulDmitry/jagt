@@ -250,6 +250,8 @@ file it reads its instructions from.
   meets it too. Nothing goes into the repository ([`git`](openspec/specs/git/spec.md)).
 - **The one-shot assistant is a separate port**: an install may run a local model for text-to-command and a vendor CLI
   for the sessions. It is the only place jagt spends money, so it is metered.
+- **Cloud and local models alike** ([0128](docs/decisions/0128-cloud-and-local-models-alike.md)): the model behind a
+  session is the CLI's own setting; a feature built on a cloud trait (cache, limits, spend) works without it.
 
 ## Assembly validation
 
