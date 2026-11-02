@@ -35,11 +35,17 @@ The first line of its `plan.md` SHALL name autoplan, the key and the criterion. 
 
 ### Requirement: Visualize
 With `orchestrator.agent.visualize.enabled` on, a session SHALL judge, while analysing its task, whether the task is worth a
-picture; a new or changed table, or a call between servers, services or a database, always is. The default SHALL be off.
+picture. A new or changed table, or a call between servers, services or a database, always is.
+So is logic hard to follow from its code, such as rules that combine or rows and columns that shift each other.
+The default SHALL be off.
 
 #### Scenario: A two-line fix
 - **WHEN** ABC-42 is a two-line bug fix and visualize is on
 - **THEN** the session writes no `task_visual.md`
+
+#### Scenario: Hard-to-follow logic
+- **WHEN** ABC-42 changes how overlapping row and column ranges expand and visualize is on
+- **THEN** `task_visual.md` holds a worked example, its input and its outcome
 
 #### Scenario: Turned off
 - **WHEN** `visualize.enabled` is `false` or unset
@@ -49,7 +55,7 @@ picture; a new or changed table, or a call between servers, services or a databa
 When it is, the session SHALL
 write `task_visual.md` in its worktree before its first edit: a frontend change as an ASCII sketch of each screen, one fenced
 block per screen; a backend change as Mermaid and markdown tables, an ER diagram drawing every reference between the tables,
-a sequence diagram every call. jagt draws and stores nothing.
+a sequence diagram every call; logic as a worked example, its input and its outcome. jagt draws and stores nothing.
 
 #### Scenario: A task worth a picture
 - **WHEN** ABC-42 changes a screen and visualize is on

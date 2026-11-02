@@ -94,7 +94,9 @@ public class SubAgentBriefing {
         return visualize.enabledOrDefault()
                 ? " VISUALIZE is on: while analysing the task, where you decide whether to plan first, judge whether"
                 + " it is worth a picture. A two-line bug fix is not. A new or changed table, or a call between servers,"
-                + " services or a database, always is. If it is, write `" + Artifact.VISUAL.fileName()
+                + " services or a database, always is, and so is logic hard to follow from its code, such as rules that"
+                + " combine or rows and columns that shift each other: draw a worked example, its input and its outcome."
+                + " If it is, write `" + Artifact.VISUAL.fileName()
                 + "` in the worktree as part of the plan when you plan first, else before your first edit. A frontend"
                 + " change gets an ASCII sketch of each screen, one fenced block per screen. A backend change gets Mermaid (class, sequence or ER diagram, in a"
                 + " mermaid fence) and markdown tables: an ER diagram draws every reference between the tables, a sequence"
