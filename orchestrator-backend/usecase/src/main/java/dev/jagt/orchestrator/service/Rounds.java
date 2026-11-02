@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.port.RequestlessShip;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class Rounds {
 
     private final ConfigService configService;
+    private final RequestlessShip requestless;
 
     public RoundState of(TaskState task) {
         return of(task, configService.load());
@@ -33,6 +35,7 @@ public class Rounds {
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
                 .withMaster(master)
                 .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
-                .withCheckers(Checkers.of(task));
+                .withCheckers(Checkers.of(task))
+                .withRequestless(requestless.stands(task));
     }
 }

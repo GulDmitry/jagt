@@ -91,8 +91,8 @@ agent's. A ship approves ONE commit: only the next relay replaces `task_context.
 its target): commit, push, open or update a request against its own target, every link in one `update_agent_status`
 (`reviewRequests`). jagt calls no host and writes no git; the task waits in SHIPPING.
 A repository whose `codeHost` is `none` is asked for the push alone and no request, one with no `remote` for neither.
-Where every repository is so, the session reports REVIEW_PENDING, the deploy is offered and no sweep waits.
-Further work clears that mark; a later request replaces it.
+Where every repository is so and none holds unpublished work, REVIEW_PENDING offers the deploy, read from the
+configuration and the worktrees each time. A sweep never asks such a repository for a request.
 Nothing to ship or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened.
 
 #### Scenario: Ship

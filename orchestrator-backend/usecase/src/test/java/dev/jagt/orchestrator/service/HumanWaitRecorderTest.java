@@ -42,7 +42,7 @@ class HumanWaitRecorderTest {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
         ((Logger) LoggerFactory.getLogger(HumanWaitRecorder.class)).addAppender(log);
-        new HumanWaitRecorder(state, new Rounds(config),
+        new HumanWaitRecorder(state, new Rounds(config, ignored -> false),
                 Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC)).follow();
 
         state.updateTask("ABC-77", task -> task.withReport(AgentReport.QUESTION));
@@ -65,7 +65,7 @@ class HumanWaitRecorderTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).report(AgentReport.QUESTION)
                 .waits(List.of(new HumanWait(1_000, 0, Why.QUESTION))).build());
 
-        new HumanWaitRecorder(state, new Rounds(config),
+        new HumanWaitRecorder(state, new Rounds(config, ignored -> false),
                 Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC)).follow();
 
         assertThat(state.task("ABC-42").orElseThrow().waits()).containsExactly(new HumanWait(1_000, 0, Why.QUESTION));
@@ -80,7 +80,7 @@ class HumanWaitRecorderTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .waits(List.of(new HumanWait(1_000, 0, Why.QUESTION))).build());
 
-        new HumanWaitRecorder(state, new Rounds(config),
+        new HumanWaitRecorder(state, new Rounds(config, ignored -> false),
                 Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC)).follow();
 
         assertThat(state.task("ABC-42").orElseThrow().waits()).containsExactly(new HumanWait(1_000, 9_000, Why.QUESTION));

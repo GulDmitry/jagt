@@ -242,29 +242,6 @@ class ShipServiceTest {
     }
 
     @Test
-    void leavesARepositoryWithACodeHostToItsRequest() {
-        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
-        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
-
-        new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
-
-        assertThat(stateService.task("ABC-42").orElseThrow().shippedWithoutRequest()).isFalse();
-    }
-
-    @Test
-    void marksTheRepositoryOfAShipWithNoCodeHostAsShippedWithNoRequestToWaitOn() {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withCodeHost("none").withProjects(
-                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-        when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
-        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
-
-        Outcome outcome = new ShipService(stateService, configService, relay, changes, door).ship("ABC-42");
-
-        assertThat(outcome.message()).contains("SHIPPING until it reports the push");
-        assertThat(stateService.task("ABC-42").orElseThrow().shippedWithoutRequest()).isTrue();
-    }
-
-    @Test
     void tellsTheAgentWhichRepositoryOfATwoRepoTaskIsARoundBehind() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
                 List.of(new ShipService.Target("demo", "/wt", "dev", true, true, true),

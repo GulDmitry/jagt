@@ -71,7 +71,7 @@ public class YourMoveJob implements Job {
 
     private void watch(String taskId, TaskState task) {
         RoundState round = handBack.round(task);
-        Move move = Move.forTask(task.status(), Facts.projected(task), round, false);
+        Move move = Move.forTask(task.status(), Facts.projected(task).withShippedWithoutRequest(round.requestless()), round, false);
         Optional<String> yours = move.owner() == Owner.YOU ? Optional.of(move.hint()) : Optional.empty();
         Instant now = clock.instant();
         Standing before = seen.get(taskId);

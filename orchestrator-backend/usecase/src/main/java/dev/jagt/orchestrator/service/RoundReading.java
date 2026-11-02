@@ -43,9 +43,8 @@ public class RoundReading {
     private final MergedRequests mergedRequests;
 
     /** A repository with no request is work nobody is reviewing, so the round cannot be called clean. */
-    private static Optional<Refused> unshipped(String taskId, List<TaskRepo> repos) {
-        List<String> unshipped = repos.stream().filter(repo -> !repo.hasReviewRequest() && !repo.wasPushedOnly())
-                .map(TaskRepo::project).toList();
+    private Optional<Refused> unshipped(String taskId, List<TaskRepo> repos) {
+        List<String> unshipped = mergedRequests.owingARequest(repos);
         return unshipped.isEmpty() ? Optional.empty()
                 : Optional.of(new Refused(new SweepResult(SweepResult.Kind.PENDING, "sweep " + taskId + ": no request in "
                         + String.join(", ", unshipped) + " — `ship` again")));

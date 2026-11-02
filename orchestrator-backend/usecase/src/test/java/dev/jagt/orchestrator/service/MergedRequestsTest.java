@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -63,5 +64,21 @@ class MergedRequestsTest {
         boolean none = new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection)).refresh("ABC-42");
 
         assertThat(none).isTrue();
+    }
+
+    @Test
+    void owesARequestToAHostedRepositoryWithNoneAndNotToOneWithNoCodeHost() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(java.util.Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "main", "dev", List.of(), List.of(),
+                        null, null, "none", null, null, null, null, null),
+                "docs", new ProjectConfig("/docs", "origin/main", "dev", List.of()))));
+        MergedRequests requests = new MergedRequests(mock(StateService.class), config, inspection,
+                new WorktreeChanges(config, inspection));
+
+        List<String> owing = requests.owingARequest(List.of(TaskRepo.of("api", "/wt-api"),
+                TaskRepo.of("web", "/wt-web"), new TaskRepo("docs", "/wt-docs", null, "http://mr/docs")));
+
+        assertThat(owing).containsExactly("api");
     }
 }

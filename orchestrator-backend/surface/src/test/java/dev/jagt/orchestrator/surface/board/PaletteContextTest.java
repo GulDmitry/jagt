@@ -32,7 +32,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config), Clock.systemUTC()));
+                new TaskViews(state, config, new Rounds(config, ignored -> false), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 
@@ -51,7 +51,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config), Clock.systemUTC()));
+                new TaskViews(state, config, new Rounds(config, ignored -> false), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 
@@ -99,7 +99,7 @@ class PaletteContextTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         PaletteContext board = new PaletteContext(state,
-                new TaskViews(state, config, new Rounds(config), Clock.systemUTC()));
+                new TaskViews(state, config, new Rounds(config, ignored -> false), Clock.systemUTC()));
 
         CommandAssistant.Menu menu = board.menu();
 

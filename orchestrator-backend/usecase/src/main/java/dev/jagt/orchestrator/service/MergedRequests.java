@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -60,6 +61,14 @@ public class MergedRequests {
     /** The commit each request's branch last had pushed, one per repository; blank where the repository cannot name every one. */
     public String pushedTips(String taskId) {
         return stateService.task(taskId).map(worktreeChanges::pushedTips).orElse("");
+    }
+
+    /** The projects among these repositories with no request though one is owed: a repository with no code host is owed none. */
+    public List<String> owingARequest(List<TaskRepo> repos) {
+        ConfigService.ConfigFile config = configService.load();
+        return repos.stream()
+                .filter(repo -> !repo.hasReviewRequest() && !config.hasNoCodeHost(Objects.requireNonNull(repo.project())))
+                .map(TaskRepo::project).toList();
     }
 
     private Path projectPath(String project) {

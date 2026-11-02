@@ -40,7 +40,6 @@ public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplie
                 .withStopped(task.stopped())
                 .withRepoRequested(task.asksForARepository())
                 .withRequestMerged(task.requestsMerged())
-                .withRevertConflict(revertConflicted(task))
-                .withShippedWithoutRequest(task.shippedWithoutRequest());
+                .withRevertConflict(revertConflicted(task));
     }
 }

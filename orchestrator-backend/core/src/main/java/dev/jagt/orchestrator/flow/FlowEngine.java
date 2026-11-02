@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.port.RequestlessShip;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class FlowEngine {
     private final Capabilities capabilities;
     private final AgentPresence agents;
     private final Clock clock;
+    private final RequestlessShip requestless;
 
     /** Runs {@code action} on the task and returns what to show the human. */
     public String run(String taskIdOrAlias, TaskAction action) {
@@ -29,7 +31,7 @@ public class FlowEngine {
         if (!FlowRules.allows(task.status(), action, facts(task, taskId))) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "
-                    + Move.forTask(task.status(), Facts.projected(task),
+                    + Move.forTask(task.status(), Facts.projected(task).withShippedWithoutRequest(requestless.stands(task)),
                             dev.jagt.orchestrator.flow.RoundState.of(task.report(), false),
                             SessionPhase.silent(task)).hint() + ")");
         }
@@ -88,6 +90,6 @@ public class FlowEngine {
                 .withRepoRequested(task.asksForARepository())
                 .withRequestMerged(task.requestsMerged())
                 .withRevertConflict(Facts.revertConflicted(task))
-                .withShippedWithoutRequest(task.shippedWithoutRequest());
+                .withShippedWithoutRequest(requestless.stands(task));
     }
 }

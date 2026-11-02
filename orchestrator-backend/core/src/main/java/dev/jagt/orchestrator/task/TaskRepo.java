@@ -19,17 +19,11 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record TaskRepo(@Nullable String project, @Nullable String worktreePath, @With @Nullable String remoteUrl,
-                       @Nullable String mrUrl, @Nullable Boolean merged, @Nullable Boolean hostMerged,
-                       @Nullable Boolean pushedOnly) {
+                       @Nullable String mrUrl, @Nullable Boolean merged, @Nullable Boolean hostMerged) {
 
     public TaskRepo(@Nullable String project, @Nullable String worktreePath, @Nullable String remoteUrl,
                     @Nullable String mrUrl) {
-        this(project, worktreePath, remoteUrl, mrUrl, null, null, null);
-    }
-
-    public TaskRepo(@Nullable String project, @Nullable String worktreePath, @Nullable String remoteUrl,
-                    @Nullable String mrUrl, @Nullable Boolean merged, @Nullable Boolean hostMerged) {
-        this(project, worktreePath, remoteUrl, mrUrl, merged, hostMerged, null);
+        this(project, worktreePath, remoteUrl, mrUrl, null, null);
     }
 
     /** A state file written before the remote was stripped still carries the credential; `/state` serves it. */
@@ -44,37 +38,17 @@ public record TaskRepo(@Nullable String project, @Nullable String worktreePath, 
 
     public TaskRepo withMrUrl(@Nullable String mrUrl) {
         boolean same = Objects.equals(this.mrUrl, mrUrl);
-        return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, wasMerged() && same, wasHostMerged() && same, pushedOnly);
+        return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, wasMerged() && same, wasHostMerged() && same);
     }
 
     /** Git's answer; the host's word, once given, stands. */
     public TaskRepo withMerged(boolean merged) {
         return wasHostMerged() ? this
-                : new TaskRepo(project, worktreePath, remoteUrl, mrUrl, merged ? Boolean.TRUE : null, null, pushedOnly);
+                : new TaskRepo(project, worktreePath, remoteUrl, mrUrl, merged ? Boolean.TRUE : null, null);
     }
 
     public TaskRepo withMergedByHost() {
-        return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, Boolean.TRUE, Boolean.TRUE, pushedOnly);
-    }
-
-    /** Its work was shipped to where no request is opened: the branch is pushed and nothing waits on a review. */
-    public TaskRepo withPushedOnly() {
-        return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, merged, hostMerged, Boolean.TRUE);
-    }
-
-    /** Pushed and no request opened on it, which stands until work resumes. */
-    @JsonIgnore
-    public boolean shippedWithoutRequest() {
-        return wasPushedOnly() && !hasReviewRequest();
-    }
-
-    public TaskRepo withoutPushedOnly() {
-        return wasPushedOnly() ? new TaskRepo(project, worktreePath, remoteUrl, mrUrl, merged, hostMerged, null) : this;
-    }
-
-    @JsonIgnore
-    public boolean wasPushedOnly() {
-        return Boolean.TRUE.equals(pushedOnly);
+        return new TaskRepo(project, worktreePath, remoteUrl, mrUrl, Boolean.TRUE, Boolean.TRUE);
     }
 
     @JsonIgnore

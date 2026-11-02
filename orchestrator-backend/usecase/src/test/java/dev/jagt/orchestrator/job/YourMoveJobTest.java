@@ -77,7 +77,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         job.run();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -95,7 +95,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("step 2").build());
         job.run();
@@ -115,7 +115,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         job.run();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -135,7 +135,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("step 1").build());
         job.run();
@@ -155,7 +155,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
         job.run();
@@ -171,7 +171,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         job.run();
         state.removeTask("ABC-1");
@@ -191,7 +191,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         job.run();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -209,7 +209,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
         job.run();
@@ -229,7 +229,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
         job.run();
@@ -249,7 +249,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
         String worktree = root.resolve("wt").toString();
@@ -273,7 +273,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.PLAN_PENDING).alias("a1").build());
@@ -298,7 +298,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -319,7 +319,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -346,7 +346,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -370,7 +370,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("reply"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.PLAN_PENDING).alias("a1").build());
@@ -396,7 +396,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("answer"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
@@ -417,7 +417,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
@@ -440,7 +440,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
@@ -460,7 +460,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").message("step 2").build());
@@ -482,7 +482,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("deploy", "revert"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build());
@@ -503,7 +503,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build());
@@ -526,7 +526,7 @@ class YourMoveJobTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("reply", "ship"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         Files.createDirectories(root.resolve("wt"));
         String worktree = root.resolve("wt").toString();
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
@@ -549,7 +549,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("repo"), null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("step 1").build());
         job.run();
@@ -571,7 +571,7 @@ class YourMoveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         YourMoveJob job = new YourMoveJob(state, notifications,
-                new HandBack(worktreeChanges, new Rounds(configService), configService), clock);
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("step 1").build());
         job.run();

@@ -73,7 +73,7 @@ class QaRoundFlowTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, new Notifications(List.of(), state, Runnable::run), flow,
-                new HandBack(mock(WorktreeChanges.class), new Rounds(config), config), config);
+                new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false), config), config);
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
 
@@ -112,7 +112,7 @@ class QaRoundFlowTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(state, new Notifications(List.of(), state, Runnable::run), flow,
-                new HandBack(mock(WorktreeChanges.class), new Rounds(config), config), config);
+                new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false), config), config);
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
 

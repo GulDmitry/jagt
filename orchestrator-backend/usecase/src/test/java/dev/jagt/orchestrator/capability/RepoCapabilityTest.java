@@ -56,7 +56,7 @@ class RepoCapabilityTest {
                 .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build());
         when(attachment.attach("ABC-7")).thenThrow(new IllegalStateException("git: fetch failed"));
         FlowEngine engine = new FlowEngine(state, new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
-                mock(AgentPresence.class), Clock.systemUTC());
+                mock(AgentPresence.class), Clock.systemUTC(), ignored -> false);
 
         assertThatThrownBy(() -> engine.run("ABC-7", TaskAction.ADD_REPO)).isInstanceOf(IllegalStateException.class);
 
@@ -75,7 +75,7 @@ class RepoCapabilityTest {
                 .message("needs the registry").report(AgentReport.QUESTION).repoRequest("registry").build());
         when(attachment.attach("ABC-7")).thenReturn("add-repo ABC-7: registry is at /wt2; the session was told");
         FlowEngine engine = new FlowEngine(state, new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
-                mock(AgentPresence.class), Clock.systemUTC());
+                mock(AgentPresence.class), Clock.systemUTC(), ignored -> false);
 
         engine.run("ABC-7", TaskAction.ADD_REPO);
 

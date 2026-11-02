@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -20,7 +21,8 @@ class RoundReadingTest {
 
     private final StateService stateService = mock(StateService.class);
     private final ReviewReader reviewReader = mock(ReviewReader.class);
-    private final RoundReading reading = new RoundReading(stateService, reviewReader, mock(MergedRequests.class));
+    private final MergedRequests mergedRequests = mock(MergedRequests.class);
+    private final RoundReading reading = new RoundReading(stateService, reviewReader, mergedRequests);
 
     @Test
     void saysThereIsNoRequestToReadWithoutTouchingTheCodeHost() {
@@ -40,6 +42,7 @@ class RoundReadingTest {
                 new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
+        when(mergedRequests.owingARequest(any())).thenReturn(List.of("web"));
 
         var read = reading.read("ABC-1");
 
@@ -51,11 +54,12 @@ class RoundReadingTest {
     }
 
     @Test
-    void waitsOnNoRequestFromARepositoryShippedWithNoCodeHost() {
+    void waitsOnNoRequestFromARepositoryWithNoCodeHostWhateverRoundCameAfterItsPush() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
                 new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
-                new TaskRepo("web", "/web-wt", null, null).withPushedOnly()),
+                new TaskRepo("web", "/web-wt", null, null)),
                 TaskStatus.CI_POLLING).alias("a1").build()));
+        when(mergedRequests.owingARequest(any())).thenReturn(List.of());
         when(reviewReader.read("ABC-1", "http://mr/api")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
         var read = reading.read("ABC-1");

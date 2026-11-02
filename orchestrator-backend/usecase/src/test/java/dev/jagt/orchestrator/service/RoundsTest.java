@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 class RoundsTest {
 
     private final ConfigService configService = mock(ConfigService.class);
-    private final Rounds rounds = new Rounds(configService);
+    private final Rounds rounds = new Rounds(configService, ignored -> false);
 
     @Test
     void theMasterReadsAHandBackItHasNotReadYetWhileItRuns() {
@@ -66,5 +66,14 @@ class RoundsTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
         assertThat(rounds.judged(task)).isFalse();
+    }
+
+    @Test
+    void offersTheDeployWhereTheWorkStandsPushedWithNoRequest() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
+
+        var round = new Rounds(configService, standing -> standing == task).of(task, ConfigService.ConfigFile.defaults());
+
+        assertThat(round.requestless()).isTrue();
     }
 }

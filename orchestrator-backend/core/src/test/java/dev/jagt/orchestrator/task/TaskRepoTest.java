@@ -34,22 +34,4 @@ class TaskRepoTest {
         assertThat(merged.withMrUrl("https://host.invalid/mr/2").wasMerged()).isFalse();
         assertThat(merged.withMrUrl("https://host.invalid/mr/2").wasHostMerged()).isFalse();
     }
-
-    @Test
-    void isNoLongerShippedWithoutARequestOnceARequestIsLinked() {
-        TaskRepo shipped = TaskRepo.of("proj", "/w").withPushedOnly();
-
-        assertThat(shipped.withMrUrl("https://host.invalid/mr/1").shippedWithoutRequest()).isFalse();
-    }
-
-    @Test
-    void isNoLongerShippedWithoutARequestOnceTheAgentWorksOnItAgain() {
-        TaskState shipped = TaskState.builder("proj", "/w", TaskStatus.REVIEW_PENDING).build()
-                .withPushedOnly(java.util.Set.of("proj"));
-
-        TaskState resumed = shipped.withStatus(TaskStatus.IN_PROGRESS, "more work", 1L);
-
-        assertThat(shipped.shippedWithoutRequest()).isTrue();
-        assertThat(resumed.shippedWithoutRequest()).isFalse();
-    }
 }

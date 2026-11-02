@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.flow.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
+import dev.jagt.orchestrator.port.RequestlessShip;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.capability.DeployLiftsStop;
 import dev.jagt.orchestrator.capability.StopGuard;
@@ -70,8 +71,9 @@ public class FlowWiring {
     }
 
     @Bean
-    public FlowEngine flowEngine(TaskStore tasks, Capabilities capabilities, AgentPresence agents, Clock clock) {
-        return new FlowEngine(tasks, capabilities, agents, clock);
+    public FlowEngine flowEngine(TaskStore tasks, Capabilities capabilities, AgentPresence agents, Clock clock,
+                                 RequestlessShip requestless) {
+        return new FlowEngine(tasks, capabilities, agents, clock, requestless);
     }
 
     @Bean

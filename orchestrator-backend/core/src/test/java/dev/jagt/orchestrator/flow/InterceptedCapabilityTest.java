@@ -73,7 +73,7 @@ class InterceptedCapabilityTest {
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
         FlowEngine engine = new FlowEngine(tasks,
-                new Capabilities(List.of(new Ships(log)), List.of(new Announces(log, 2), new Announces(log, 1))), agents, Clock.systemUTC());
+                new Capabilities(List.of(new Ships(log)), List.of(new Announces(log, 2), new Announces(log, 1))), agents, Clock.systemUTC(), ignored -> false);
 
         engine.run("ABC-1", TaskAction.SHIP);
 
@@ -86,7 +86,7 @@ class InterceptedCapabilityTest {
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
         FlowEngine engine = new FlowEngine(tasks,
-                new Capabilities(List.of(new Ships(log)), List.of(new Refuses())), agents, Clock.systemUTC());
+                new Capabilities(List.of(new Ships(log)), List.of(new Refuses())), agents, Clock.systemUTC(), ignored -> false);
 
         assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
                 .isInstanceOf(IllegalStateException.class)
@@ -100,7 +100,7 @@ class InterceptedCapabilityTest {
         when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
         when(tasks.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
-        FlowEngine engine = new FlowEngine(tasks, new Capabilities(List.of(new Ships(log)), List.of()), agents, Clock.systemUTC());
+        FlowEngine engine = new FlowEngine(tasks, new Capabilities(List.of(new Ships(log)), List.of()), agents, Clock.systemUTC(), ignored -> false);
 
         assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: done");
         assertThat(log).containsExactly("shipped");

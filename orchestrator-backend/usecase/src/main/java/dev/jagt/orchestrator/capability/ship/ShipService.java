@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * {@code ship} — the human's approval, executed. The work is the agent's, in every repository holding work or
@@ -73,11 +72,6 @@ public class ShipService {
                 Standing.of(task))) {
             return Outcome.nothing("ship " + taskId + ": no case sends ship at " + task.status()
                     + ", so the session was not told; see misses.jsonl");
-        }
-        Set<String> unhosted = targets.stream().filter(target -> !target.hosted()).map(Target::project)
-                .collect(Collectors.toSet());
-        if (!unhosted.isEmpty()) {
-            stateService.updateTask(taskId, current -> current.withPushedOnly(unhosted));
         }
         boolean requests = carrying.stream().anyMatch(Target::hosted);
         return Outcome.relayed("ship " + taskId + ": relayed to the agent; SHIPPING until it reports the"
