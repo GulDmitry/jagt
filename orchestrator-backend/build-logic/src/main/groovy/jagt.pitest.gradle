@@ -82,11 +82,13 @@ tasks.register('pitestDiff') {
         }
         // A `:core` mutant is mutated by `:usecase` too; it stands only if no report killed it.
         def outcomes = [:].withDefault { [] as Set }
+        def mutated = [] as Set
         reports.findAll { it.exists() }.each { report ->
             new groovy.xml.XmlSlurper().parse(report).mutation.each {
                 def source = it.mutatedClass.text().replaceFirst('\\.[^.]+$', '').replace('.', '/') + '/' + it.sourceFile.text()
                 def number = it.lineNumber.text() as int
                 if (lines[source]?.contains(number)) {
+                    mutated << source
                     def mutant = "${source}:${number} ${it.mutatedMethod.text()} ${it.description.text()} ${it.indexes.text()}".toString()
                     outcomes[mutant] << it.@status.text()
                 }
@@ -95,6 +97,8 @@ tasks.register('pitestDiff') {
         def standing = outcomes.findAll { mutant, statuses -> statuses.every { it in ['SURVIVED', 'NO_COVERAGE'] } }.keySet()
         println standing ? "pitestDiff: judge each before the commit\n" + standing.sort().join('\n')
                 : 'pitestDiff: no mutant survives on a changed line'
+        // A changed file with no mutant on its changed lines is unjudged, which "no mutant survives" must not read as killed.
+        (lines.keySet() - mutated).sort().each { println "pitestDiff: no mutant generated on ${it}" }
     }
 }
 

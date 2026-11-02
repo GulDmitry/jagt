@@ -18,6 +18,7 @@ Accepted 2026-11-02 by the owner's order.
 - Every `test` task is finalized by `pitestDiff`: pitest on the `main` classes changed against `HEAD`, the tree
   included, listing the survivors on a changed line. `-PpitestDiff=<base>` names another base.
 - No changed `main` line: it prints so and mutates nothing. A committed tree has none.
+- A changed `main` file with no mutant on its changed lines is named, so it cannot read as all killed.
 - A survivor fails nothing: its writer judges it before the commit (0125), as an equivalent mutant has no
   suppression to clear it.
 
