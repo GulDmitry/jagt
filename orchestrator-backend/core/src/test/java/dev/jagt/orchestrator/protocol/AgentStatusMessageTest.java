@@ -322,6 +322,14 @@ class AgentStatusMessageTest {
     }
 
     @Test
+    void refusesAQuestionThatAsksNothing() {
+        var said = new AgentStatusMessage("REVIEW_PENDING", null, "question", null, Map.of());
+
+        assertThat(said.reportViolations(MessageContext.NONE)).singleElement()
+                .satisfies(violation -> assertThat(violation.field()).isEqualTo("message"));
+    }
+
+    @Test
     void refusesAWaitFromAnyStatusButInProgress() {
         var said = new AgentStatusMessage("REVIEW_PENDING", "db down: ping db.internal", "wait", null, Map.of());
 

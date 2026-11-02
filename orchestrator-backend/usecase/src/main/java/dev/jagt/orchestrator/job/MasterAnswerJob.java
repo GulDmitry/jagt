@@ -84,6 +84,9 @@ public class MasterAnswerJob implements Job {
         if (task.report() == AgentReport.PERMISSION) {
             return Optional.of("a permission only the human grants");
         }
+        if (task.message() == null) {
+            return Optional.of("a question with no text");
+        }
         if (task.asksForARepository()) {
             return Optional.of("a repository jagt attaches");
         }

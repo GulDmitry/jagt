@@ -128,6 +128,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         if (outcome != null && !OUTCOMES.contains(normalised(outcome))) {
             found.add(new Violation("outcome", "one of " + OUTCOMES + ", or left out"));
         }
+        emptyQuestion().ifPresent(found::add);
         if (noPlan() && context.planRequired()) {
             found.add(new Violation("outcome", "not no_plan: this task was opened in plan mode, so its plan comes first"));
         }
@@ -165,6 +166,12 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             found.add(new Violation("message", "required with wait: what is down and how to probe it"));
         }
         return found;
+    }
+
+    private Optional<Violation> emptyQuestion() {
+        return claimed() == AgentReport.QUESTION && message == null
+                ? Optional.of(new Violation("message", "required with question: the question itself"))
+                : Optional.empty();
     }
 
     private Optional<Violation> needsProjectViolation(MessageContext context) {

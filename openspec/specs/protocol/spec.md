@@ -38,13 +38,13 @@ misspelling a field the call left out is refused.
 - **THEN** it is refused naming `taskId`, never run on the caller's own task
 
 ### Requirement: Field and consistency rules, one report
-Field rules SHALL catch a value out of its enum, a missing required field, a link nobody can open. Consistency rules
-catch two fields that cannot both hold: `reviewRequests` beside `reviewRequestUrl`, CI_POLLING with no request, a
-request filed under a project the task does not have.
+Field rules SHALL catch a value out of its enum, a missing required field, a link nobody can open, a question with no
+message. Consistency rules catch two fields that cannot both hold: `reviewRequests` beside `reviewRequestUrl`,
+CI_POLLING with no request, a request filed under a project the task does not have.
 
-#### Scenario: CI_POLLING without a request
-- **WHEN** a message reports CI_POLLING without one
-- **THEN** it is refused as inconsistent
+#### Scenario: CI_POLLING without a request, a question without a message
+- **WHEN** a message reports CI_POLLING without one, or `outcome=question` with no message
+- **THEN** it is refused, naming `reviewRequestUrl` or `message`, and nothing reaches the board or the Master
 
 ### Requirement: A session may declare that no plan comes first
 `update_agent_status` SHALL take `outcome=no_plan` with status `IN_PROGRESS`, its message the reason; the report opens the
