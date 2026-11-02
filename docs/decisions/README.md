@@ -142,3 +142,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0126 A role is a folder](0126-a-role-is-a-folder.md)
 - [0127 Mutants run with every test](0127-mutants-run-with-every-test.md)
 - [0128 Cloud and local models alike](0128-cloud-and-local-models-alike.md)
+- [0129 CI reports the mutants of a push](0129-ci-reports-the-mutants-of-a-push.md)

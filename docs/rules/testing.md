@@ -6,8 +6,9 @@
 `./gradlew test --rerun-tasks`. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest` needs git +
 tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`);
 `promptEval` the assistant's CLI and tokens; `roleEval -Prole=<id>` those plus minutes. **Every `test` run ends in
-`pitestDiff`**, mutants on the `main` lines changed against `HEAD`; before the commit its writer judges each survivor
-([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md)).
+`pitestDiff`**, mutants on the `main` lines changed against `HEAD`, on CI against the push's base; the writer judges
+each survivor before the commit ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md),
+[0127](../decisions/0127-mutants-run-with-every-test.md), [0129](../decisions/0129-ci-reports-the-mutants-of-a-push.md)).
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix. Its
 `docs/cases.md` row and `Defect-family:` trailer make defects countable per family. **Every new install requirement goes in
@@ -91,8 +92,7 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
   (`docker/linux-suite.Dockerfile`), the only place the Linux drivers meet real binaries:
   the notifier asserted off the session bus with `dbus-monitor`, kitty under Xvfb.
 - What a container cannot host — IntelliJ, the AppleScript raise, the real `claude` — stays **named as
-  uncovered**, never faked; raising and closing the viewer stay `@Disabled`
-  (`LinuxKittyTerminalDriverLinuxTest`).
+  uncovered**, never faked; raising and closing the viewer stay `@Disabled` (`LinuxKittyTerminalDriverLinuxTest`).
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts**
   (`scripts/linux-test-deps.sh` the package list, `scripts/with-linux-desktop.sh` Xvfb + session bus +
   notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.** `linuxDriverTest` is
