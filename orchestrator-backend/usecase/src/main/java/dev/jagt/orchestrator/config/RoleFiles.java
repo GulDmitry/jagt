@@ -7,10 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * The brief and the cases of one role: the human's old {@code <id>-brief.md} first, then their copy under
- * {@code roles/<id>/}, then the shipped {@code .dist} there.
- */
+/** The brief and the cases of one role: the human's copy under {@code roles/<id>/}, then the shipped {@code .dist} there. */
 public final class RoleFiles {
 
     private final Path root;
@@ -23,17 +20,9 @@ public final class RoleFiles {
         this.cases = names(id, "cases");
     }
 
-    public static String oldBriefCopy(String id) {
-        return id + "-brief.md";
-    }
-
-    public static String oldCasesCopy(String id) {
-        return id + "-cases.md";
-    }
-
     private static List<String> names(String id, String kind) {
         String own = "roles/" + id + "/" + kind + ".md";
-        return List.of(id + "-" + kind + ".md", own, own + ".dist");
+        return List.of(own, own + ".dist");
     }
 
     public List<Problem> unreadable() {

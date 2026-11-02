@@ -85,7 +85,8 @@ class CommandServiceTest {
     void refusesRecordsAndStopsAMasterPressNoMasterCaseAllows(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("master-cases.md"),
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md"),
                 "## deploy\n\nmove: deploy\nat: APPROVED\nby: master\nGreen and approved, the Master deploys it.\n");
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());

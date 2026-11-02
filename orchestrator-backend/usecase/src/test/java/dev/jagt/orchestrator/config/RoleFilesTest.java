@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RoleFilesTest {
 
     @Test
-    void aHumansOldQaBriefStillOverridesTheShippedOne(@TempDir Path root) throws Exception {
+    void aHumansQaBriefInItsRoleFolderOverridesTheShippedOne(@TempDir Path root) throws Exception {
         Files.createDirectories(root.resolve("roles/qa"));
         Files.writeString(root.resolve("roles/qa/brief.md.dist"), "shipped\n\n## accept\n\nshipped accept\n");
-        Files.writeString(root.resolve("qa-brief.md"), "mine\n\n## accept\n\nmy accept\n");
+        Files.writeString(root.resolve("roles/qa/brief.md"), "mine\n\n## accept\n\nmy accept\n");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
         RoleFiles files = new RoleFiles(paths, "qa");

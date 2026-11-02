@@ -77,11 +77,12 @@ abstract class MasterVerdictEvalTest {
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// master eval placeholder proxy\n");
         ShippedRoot.copyInto(root);
+        Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of(System.getProperty("masterEval.brief", "../roles/master/brief.md.dist")),
-                root.resolve("master-brief.md"),
+                root.resolve("roles/master/brief.md"),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         MasterEvalWorkspace.writeConfig(root.resolve("jagt.yml"), root.resolve("placeholder"),
-                "master-brief.md");
+                "roles/master/brief.md");
         registry.add("orchestrator.root", () -> root.toString());
         registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
@@ -113,7 +114,7 @@ abstract class MasterVerdictEvalTest {
                 .log();
         try {
             MasterEvalWorkspace.writeConfig(MasterEvalWorkspace.root().resolve("jagt.yml"),
-                    MasterEvalWorkspace.root().resolve("placeholder"), "master-brief.md", "off");
+                    MasterEvalWorkspace.root().resolve("placeholder"), "roles/master/brief.md", "off");
         } finally {
             MasterEvalWorkspace.release();
         }

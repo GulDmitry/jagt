@@ -314,7 +314,8 @@ class ShipServiceTest {
     @Test
     void leavesTheRepliesOfAMasterShipToTheSessionWhereAMasterCaseAllowsThem() throws Exception {
         when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class))).thenReturn(true);
-        Files.writeString(root.resolve("master-cases.md"),
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md"),
                 "## reply\n\nmove: reply\nat: REVIEW_PENDING\nby: master\nThe Master lets the session reply.\n");
         stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t").build());

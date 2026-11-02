@@ -19,5 +19,5 @@ Input: the exchange (what the agent wrote, what the human said) and the human's 
    `./gradlew roleEval -Prole=master -ProleBrief=<that file>`: the new round fails. Green there means the brief was not what
    missed it — the role's model, or the author's `<self_review>` — say so and stop.
 5. **GREEN on the new brief.** `./gradlew roleEval -Prole=master`: every round passes, the old ones included.
-6. **Copy the pattern line into the local `master-brief.md`**, gitignored, so this install judges by it.
+6. **Copy the pattern line into the local `roles/master/brief.md`**, gitignored, so this install judges by it.
 7. Commit `roles/master/brief.md.dist` and `MasterCase.java` together; the subject names the class that slipped through.

@@ -43,12 +43,12 @@ class MasterCaseCheckTest {
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.writeString(root.resolve("master-cases.md"),
+        Files.writeString(root.resolve("roles/master/cases.md"),
                 "## " + move + "\n\nmove: " + move + "\nat: DEPLOYED\nby: master\nThe Master moves.\n");
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
 
         assertThat(new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config, paths).problems()).containsExactly(
-                new Problem("master-cases.md", "master-cases.md: case " + move + " names move '" + move
+                new Problem("roles/master/cases.md", "roles/master/cases.md: case " + move + " names move '" + move
                         + "', which is no verb the Master presses"));
     }
 
@@ -89,13 +89,13 @@ class MasterCaseCheckTest {
                 .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        Files.writeString(root.resolve("master-cases.md"),
+        Files.writeString(root.resolve("roles/master/cases.md"),
                 "## ship\n\nmove: ship\nat: REVIEW_PENDING\nby: human\nYou ship it.\n");
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
 
         assertThat(new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config, paths).problems()).containsExactly(
-                new Problem("master-cases.md", "master-cases.md: case ship has by: 'human', which is not master"));
+                new Problem("roles/master/cases.md", "roles/master/cases.md: case ship has by: 'human', which is not master"));
     }
 
     @Test
@@ -114,11 +114,11 @@ class MasterCaseCheckTest {
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.createDirectory(root.resolve("master-cases.md"));
+        Files.createDirectory(root.resolve("roles/master/cases.md"));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
 
         assertThat(new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config, paths).problems())
                 .extracting(Problem::text).containsExactly(
-                        "master-cases.md: cannot be read — java.io.IOException: Is a directory");
+                        "roles/master/cases.md: cannot be read — java.io.IOException: Is a directory");
     }
 }

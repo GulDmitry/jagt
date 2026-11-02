@@ -70,7 +70,8 @@ class MasterCheckTest {
     @Test
     void refusesAMasterThatShipsWhileEveryDraftedReplyStillWaitsForYouToPostIt(@TempDir Path root)
             throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act"))
                 .withCodeReview(new CodeReviewConfig(null, false, null)));
@@ -84,7 +85,8 @@ class MasterCheckTest {
 
     @Test
     void refusesTheRetiredNameRatherThanSilentlyGivingTheMasterEveryStep(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act").withWithhold(List.of("reply"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
@@ -98,7 +100,8 @@ class MasterCheckTest {
 
     @Test
     void refusesKeepingTheDeployWhileLeavingItsUndoToTheMaster(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("reply", "deploy"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
@@ -112,7 +115,8 @@ class MasterCheckTest {
 
     @Test
     void refusesKeepingTheRevertWhileLeavingItsDoToTheMaster(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("reply", "revert"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
@@ -127,7 +131,8 @@ class MasterCheckTest {
     @Test
     void findsNothingWrongWithShippingUnattendedWhileRepliesAndTheSharedBranchStayYours(@TempDir Path root)
             throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("reply", "deploy", "revert"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
@@ -140,7 +145,8 @@ class MasterCheckTest {
 
     @Test
     void refusesKeepingEveryStepWhereSayingJudgeMeansTheSame(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("ship", "deploy", "revert", "reply", "answer", "plan", "repo"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
@@ -194,7 +200,8 @@ class MasterCheckTest {
 
     @Test
     void refusesAModelTheRuntimeRunningTheSessionsCannotBeTold(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
         when(agentRuntime.displayName()).thenReturn("Codex");
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge").withModel("fable")));
@@ -209,7 +216,8 @@ class MasterCheckTest {
 
     @Test
     void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
@@ -239,7 +247,8 @@ class MasterCheckTest {
 
     @Test
     void acceptsKeepingTheAttachingOfARepositoryForYourself(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
                 .withMine(List.of("plan", "repo"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(

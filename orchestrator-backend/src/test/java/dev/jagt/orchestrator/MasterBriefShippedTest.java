@@ -22,6 +22,6 @@ class MasterBriefShippedTest {
     @Test
     void keepsAHumansOwnBriefOutOfTheRepository() throws Exception {
         assertThat(Files.readString(Path.of("../.gitignore")))
-                .contains("\nroles/*/*\n", "\nmaster-brief.md\n");
+                .contains("\nroles/*/*\n", "\n!roles/*/*.dist\n");
     }
 }

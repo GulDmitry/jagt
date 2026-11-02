@@ -67,7 +67,8 @@ class CaseDoorTest {
     void letsTheMasterPressAVerbACaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("master-cases.md"), SHIP_CASE);
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
         CaseDoor door = doorOver(paths, state);
@@ -84,7 +85,8 @@ class CaseDoorTest {
     void stopsTheTaskWhereNoMasterCaseAllowsTheVerbAtItsStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("master-cases.md"), SHIP_CASE);
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         CaseDoor door = doorOver(paths, state);
@@ -100,7 +102,8 @@ class CaseDoorTest {
     void refusesTheMasterAMoveNoCaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.writeString(root.resolve("master-cases.md"), SHIP_CASE);
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
         CaseDoor door = doorOver(paths, state);

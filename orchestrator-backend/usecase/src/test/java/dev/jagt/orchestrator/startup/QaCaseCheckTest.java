@@ -20,7 +20,8 @@ class QaCaseCheckTest {
     @Test
     void readsNothingWhereQaIsOff(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  qa:\n    enabled: false\n");
-        Files.writeString(root.resolve("qa-cases.md"), "## broken\n\nnot a case\n");
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.writeString(root.resolve("roles/qa/cases.md"), "## broken\n\nnot a case\n");
 
         assertThat(check(root).problems()).isEmpty();
     }
@@ -39,9 +40,10 @@ class QaCaseCheckTest {
     @Test
     void namesACaseWhoseStepNoBriefSectionHolds(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  qa:\n    enabled: true\n");
-        Files.writeString(root.resolve("qa-cases.md"), "## accept\n\nstep: accept\nat: DEPLOYED\nby: jagt\n"
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.writeString(root.resolve("roles/qa/cases.md"), "## accept\n\nstep: accept\nat: DEPLOYED\nby: jagt\n"
                 + "replies: DEPLOYED; plain\nChecks.\n");
-        Files.writeString(root.resolve("qa-brief.md"), "## other\n\ntext\n");
+        Files.writeString(root.resolve("roles/qa/brief.md"), "## other\n\ntext\n");
 
         assertThat(check(root).problems()).hasSize(2);
     }

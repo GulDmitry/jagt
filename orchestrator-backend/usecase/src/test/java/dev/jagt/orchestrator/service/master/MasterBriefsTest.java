@@ -16,7 +16,8 @@ class MasterBriefsTest {
 
     @Test
     void readsTheBriefTheHumanCopiedBesideTheConfig(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md"), "judge hard");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "judge hard");
         MasterBriefs briefs = new MasterBriefs(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString())),
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
@@ -33,6 +34,16 @@ class MasterBriefsTest {
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
 
         assertThat(briefs.master("ABC-1", MasterConfig.defaults())).contains("judge by default");
+    }
+
+    @Test
+    void readsNoBriefLeftBesideTheConfig(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md"), "judge hard");
+        MasterBriefs briefs = new MasterBriefs(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
+
+        assertThat(briefs.master("ABC-1", MasterConfig.defaults())).isEmpty();
     }
 
     @Test

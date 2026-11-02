@@ -34,14 +34,10 @@ orchestrator-backend/bin/
 orchestrator-backend/*/bin/
 CLAUDE.local.md
 
-# The Master session brief, copied from roles/master/brief.md.dist
-master-brief.md
 # The session brief, copied from session-brief.md.dist
 session-brief.md
 # The session cases, copied from session-cases.md.dist
 session-cases.md
-# The Master cases, copied from roles/master/cases.md.dist
-master-cases.md
 # Steps no case sends, written beside state.json
 misses.jsonl
 misses.jsonl.1

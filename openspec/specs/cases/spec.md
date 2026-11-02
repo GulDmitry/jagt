@@ -9,7 +9,7 @@ a human reads and extends; what no case takes is a miss.
 ### Requirement: The cases are files you may copy
 A step jagt relays SHALL reach a session only where a case of `session-cases.md` beside `jagt.yml` names it at the
 task's status; a verb the Master presses, or the replies on its ship, only where a case of the `master` role's
-`cases.md` does: `master-cases.md` beside `jagt.yml`, `roles/master/cases.md`, `roles/master/cases.md.dist`.
+`cases.md` does: `roles/master/cases.md`, `roles/master/cases.md.dist`.
 A step the Master relays SHALL take its statuses from its session case `by: master` alone.
 A case a copy lacks SHALL be read from its `.dist`. A case is a `## <id>` section holding
 one line saying what it is and the keys its `.dist` describes.
@@ -19,8 +19,8 @@ one line saying what it is and the keys its `.dist` describes.
 - **THEN** every step is sent and every move made where the `.dist` says
 
 #### Scenario: An old copy beside jagt.yml
-- **WHEN** `master-cases.md` sits beside `jagt.yml` and `roles/master/cases.md` exists too
-- **THEN** a case `master-cases.md` holds is read from it
+- **WHEN** `master-cases.md` sits beside `jagt.yml`
+- **THEN** it is not read
 
 #### Scenario: A copy narrows a case
 - **WHEN** your copy's `wake` case says `at: IN_PROGRESS`
@@ -54,7 +54,7 @@ It SHALL refuse a case missing `replies:` or the line saying what it is, and an 
 
 #### Scenario: A relayed step in the Master's cases
 - **WHEN** a Master case names `move: answered`
-- **THEN** jagt does not start and names `master-cases.md` and that case
+- **THEN** jagt does not start and names `roles/master/cases.md` and that case
 
 ### Requirement: Startup refuses a step no case names
 It SHALL refuse a brief step or Master verb no case names, and a relayed Master step no `by: master` case names.
@@ -79,7 +79,7 @@ It SHALL refuse a file it cannot read. Each refusal names the file and the case 
 
 #### Scenario: A move no case names
 - **WHEN** no Master case names `add-repo`
-- **THEN** jagt does not start and names `master-cases.md` and `add-repo`
+- **THEN** jagt does not start and names `roles/master/cases.md` and `add-repo`
 
 #### Scenario: A relayed step no session case sets off by the Master
 - **WHEN** no session case names `answered-under` with `by: master`
