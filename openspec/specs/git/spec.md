@@ -11,6 +11,7 @@ Shared-branch writes, commits, ships, worktree hooks and multi-repo tasks.
 (`revertMergeAndPush`); Master-only (`Audience.MASTER`). `do <ticket> from <branch>` (`TaskState.baseBranch`) moves
 the cut and the request's **target**, never the merge destination (`baseBranchOr`). A `deployBranch` naming
 `baseBranch`, however spelled, MUST be refused.
+With `remote: none` both fast-forward the checkout holding the target, which git refuses a push to, else push within the repository.
 
 #### Scenario: Diff base
 - **WHEN** `ide <task> diff` shows files the task never touched

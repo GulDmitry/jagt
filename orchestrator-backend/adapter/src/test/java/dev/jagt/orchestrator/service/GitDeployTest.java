@@ -1492,4 +1492,28 @@ class GitDeployTest {
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "dev:g.txt")).stdout()).contains("task");
         assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
     }
+
+    @Test
+    void deploysIntoALocalTargetThatTheRepositoryHasCheckedOut(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "branch", "dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("g.txt"), "task");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "dev"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL)));
+
+        git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        assertThat(repo.resolve("g.txt")).hasContent("task");
+        assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    }
 }

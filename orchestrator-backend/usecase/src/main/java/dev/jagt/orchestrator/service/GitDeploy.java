@@ -248,8 +248,7 @@ public class GitDeploy {
      *  Returns the pushed merge commit — what `revert` undoes, and knowable only before the worktree is gone. */
     private String pushAndRemoveDeploy(Remote remote, Path projectPath, Path deployWorktree, String deployBranch,
                                        String sourceBranch, String targetBranch) {
-        var push = git.run(deployWorktree,
-                List.of("git", "push", remote.pushTarget(), "HEAD:" + targetBranch));
+        var push = git.publish(remote, deployWorktree, targetBranch);
         if (push.exitCode() != 0) {
             if (nothingLeftToPush(remote, deployWorktree, targetBranch)) {
                 git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
@@ -353,7 +352,7 @@ public class GitDeploy {
         }
         fixesNewestFirst.forEach(fix -> revertOnce(revertWorktree, targetBranch, fix, resuming, List.of()));
         revertOnce(revertWorktree, targetBranch, mergeCommit, resuming, List.of("-m", "1"));
-        var push = git.run(revertWorktree, List.of("git", "push", remote.pushTarget(), "HEAD:" + targetBranch));
+        var push = git.publish(remote, revertWorktree, targetBranch);
         if (push.exitCode() != 0) {
             String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
             throw new IllegalStateException("Revert push to " + targetBranch + " was rejected — it moved while the"

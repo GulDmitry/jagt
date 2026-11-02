@@ -53,6 +53,30 @@ public class GitCommands {
                 "+refs/heads/" + branch + ":" + remote.trackingRef(branch)));
     }
 
+    /** Pushes the worktree's HEAD to the target; where nothing is shared, a checked-out target takes it where it stands. */
+    Processes.Result publish(Remote remote, Path worktree, String target) {
+        Optional<Path> holder = remote.local() ? checkoutOf(worktree, target) : Optional.empty();
+        if (holder.isEmpty()) {
+            return run(worktree, List.of("git", "push", remote.pushTarget(), "HEAD:" + target));
+        }
+        String head = run(worktree, List.of("git", "rev-parse", "HEAD"))
+                .expectSuccess("git rev-parse HEAD in " + worktree).stdout().trim();
+        return run(holder.get(), List.of("git", "merge", "--ff-only", head));
+    }
+
+    private Optional<Path> checkoutOf(Path worktree, String branch) {
+        Processes.Result listing = run(worktree, List.of("git", "worktree", "list", "--porcelain"));
+        Path holder = null;
+        for (String line : listing.stdout().split("\n")) {
+            if (line.startsWith("worktree ")) {
+                holder = Path.of(line.substring("worktree ".length()));
+            } else if (line.equals("branch refs/heads/" + branch)) {
+                return Optional.ofNullable(holder);
+            }
+        }
+        return Optional.empty();
+    }
+
     Processes.Result run(Path workingDir, List<String> command) {
         return processRunner.run(workingDir, GIT_TIMEOUT, command);
     }
