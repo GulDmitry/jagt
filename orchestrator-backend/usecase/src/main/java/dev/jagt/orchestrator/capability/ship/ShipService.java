@@ -68,7 +68,7 @@ public class ShipService {
         }
         List<String> idle = targets.stream().filter(target -> !carrying.contains(target))
                 .map(Target::project).toList();
-        if (!relay.write(taskId, Step.SHIP, shipFacts(title, taskId, carrying, repliesStep(taskId, config)),
+        if (!relay.write(taskId, Step.SHIP, shipFacts(title, taskId, carrying, targets.size() > 1, repliesStep(taskId, config)),
                 Standing.of(task))) {
             return Outcome.nothing("ship " + taskId + ": no case sends ship at " + task.status()
                     + ", so the session was not told; see misses.jsonl");
@@ -127,7 +127,8 @@ public class ShipService {
 
     private static final String THREADS = " Resolve threads exactly as your `<review_replies>` rules say.\n";
 
-    static String shipFacts(String title, String taskId, List<Target> targets, String repliesStep) {
+    static String shipFacts(String title, String taskId, List<Target> targets, boolean spansRepositories,
+                            String repliesStep) {
         boolean requests = targets.stream().anyMatch(Target::hosted);
         boolean pushes = targets.stream().anyMatch(Target::pushes);
         return "Ship " + taskId + ". " + (pushes ? "Push branch " + taskId + "." : "Push nothing: no repository of this"
@@ -141,7 +142,7 @@ public class ShipService {
                         : "The task's repository, and what it still needs:\n" + listed(targets))
                 + (requests ? "Replies: " + repliesStep : "")
                 + "Report: update_agent_status " + (requests ? "CI_POLLING" : "REVIEW_PENDING") + " and "
-                + reportField(targets) + ".";
+                + reportField(targets, spansRepositories) + ".";
     }
 
     private static String listed(List<Target> targets) {
@@ -162,12 +163,12 @@ public class ShipService {
     }
 
     /** One round however many requests it names, so every link is reported in ONE call. */
-    private static String reportField(List<Target> targets) {
+    private static String reportField(List<Target> targets, boolean spansRepositories) {
         List<Target> hosted = targets.stream().filter(Target::hosted).toList();
         if (hosted.isEmpty()) {
             return "no request URL";
         }
-        if (targets.size() == 1) {
+        if (!spansRepositories) {
             return "reviewRequestUrl=<the url>";
         }
         return "reviewRequests={" + hosted.stream()

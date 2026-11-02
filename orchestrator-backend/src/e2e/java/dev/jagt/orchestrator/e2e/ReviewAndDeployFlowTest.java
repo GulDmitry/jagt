@@ -265,7 +265,7 @@ class ReviewAndDeployFlowTest {
         assertThat(shipped).contains("nothing to ship in web");
         assertThat(Files.readString(worktree().resolve("task_context.md")))
                 .contains("proj: " + worktree() + ", merges into main")
-                .contains("reviewRequestUrl=<the url>")
+                .contains("reviewRequests={\"proj\": \"<its url>\"}")
                 .doesNotContain("web: " + webWorktree());
     }
 
