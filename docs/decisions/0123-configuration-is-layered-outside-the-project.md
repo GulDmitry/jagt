@@ -6,6 +6,7 @@
 ## Status
 
 Proposed 2026-10-31 by the owner's direction (jagt grows towards an IDE). Not scheduled: 0122's roles live in jagt's root until it lands.
+Superseded by [0126](0126-a-role-is-a-folder.md): roles first, the location map only when an install needs it.
 
 ## Context
 
