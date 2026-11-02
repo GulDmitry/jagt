@@ -393,6 +393,16 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void deniesTheQuestionDialogSoAnAnswerRelayedToTheSessionIsNotHeldBehindIt() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+
+        List<String> deny = new ArrayList<>();
+        new JsonMapper().readTree(json).path("permissions").path("deny").forEach(n -> deny.add(n.asString("")));
+
+        assertThat(deny).containsExactly("AskUserQuestion");
+    }
+
+    @Test
     void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
         String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 

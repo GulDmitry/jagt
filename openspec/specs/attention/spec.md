@@ -7,10 +7,10 @@ Whose move it is: how a blocked session reaches the board, what interrupts, and 
 ## Requirements
 
 ### Requirement: A question is reported first
-An agent MUST report `outcome=question` before the human sees the question (rule 1 of the brief's `context` step).
-`AgentReport.QUESTION` SHALL make `Move.owner` whoever `Turns.next` names, from any status, and the `DashboardLine`
-NEEDS INPUT. `YourMoveJob` SHALL ping once the projection turns a task YOU, or changes its advice while YOU, a report
-or not. The move must have stood five seconds; a card already yours when jagt starts is not pinged.
+An agent MUST write its question, options and pick in `task_notes.md`, report `outcome=question` and end its turn (rule 1
+of the brief's `context` step); its settings deny the CLI's question dialog. `AgentReport.QUESTION` SHALL make `Move.owner`
+whoever `Turns.next` names, from any status, and the `DashboardLine` NEEDS INPUT. `YourMoveJob` SHALL ping once the
+projection turns a task YOU, or changes its advice while YOU, a report or not, after five seconds; not one already yours at start.
 
 #### Scenario: An agent stops to ask
 - **WHEN** an agent asks
@@ -18,8 +18,8 @@ or not. The move must have stood five seconds; a card already yours when jagt st
 - **AND** where the Master answers it in `act`, the card shows the Master at work and nobody is pinged until it gives up
 - **WHEN** the task breaks a code guarantee
 - **THEN** the agent asks before the code picks a side; "the ticket wins" is yours
-
-#### Scenario: Settled unasked
+- **WHEN** a session would ask with the CLI's question dialog
+- **THEN** it is refused, and the question, options and pick are in `task_notes.md` before the report
 - **WHEN** you `focus <task>`
 - **THEN** an `OPEN QUESTIONS:` line ends its output
 

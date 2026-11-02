@@ -1,6 +1,5 @@
 # Cases
-One row per use case a defect broke; a fixed defect adds or updates its row in the same commit, with a `Defect-family:` trailer.
-Families:
+One row per use case a defect broke; a fixed defect adds or updates its row in the same commit, with a `Defect-family:` trailer. Families:
 - A text vs. text: a jagt text contradicts another, or asks what the machine refuses at that step.
 - B state overwritten: a record or dedup key is overwritten, lost on restart or kept in the wrong place.
 - C turn collision: two parties (human, Master, session, reviewer) act on one turn. D model overreach: a model decided what the machine should.
@@ -63,6 +62,7 @@ Families:
 | C10 | a step is relayed and jagt dies while the session is told → the turn and its digest are recorded before the send, so a press again tells it nothing twice; a failed send puts the turn back and stops the task for the human | seen 2026-10-25 on the stand (run -8): relayed 11:10:48, turn opened 11:10:49 | `StepRelayTest` |
 | C11 | the session asked the human and the checks are still red → the sweep relays nothing and starts no session until the human answers | seen 2026-10-28: a fresh session ended the one holding the question, three times in 24h, and the ceiling stopped the task | `RoundRelayTest` |
 | C12 | a step is decided on a read and the task moves before it is relayed (a verification outlasting its round, the human shipping, a deploy check, a wake) → every relay carries the task's standing as read and is dropped where it no longer stands there, never relayed, reported or stopped on; usage, polls and silence drop none | seen 2026-10-28: 2.5-minute probes failed after a ship, the case door refused the relay and the task stopped; 2026-10-30: ship, verify and deploy-check told the session on a stale read | `VerifyJobTest`, `StepRelayTest`, `StandingTest` |
+| C13 | a session reports a question and opens the CLI's question dialog → the dialog is denied in its settings and the question, options and pick are in `task_notes.md`, so the Master's or the human's answer reaches the session | seen 2026-11-02: the Master's answer to a session's question was relayed at 09:24:55Z and held (`nudge waits, the human is typing`) behind the dialog | `ClaudeAgentRuntimeTest` |
 ## D — model overreach
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

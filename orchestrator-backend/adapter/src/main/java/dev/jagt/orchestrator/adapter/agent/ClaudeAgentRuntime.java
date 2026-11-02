@@ -267,7 +267,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                   "autoMemoryEnabled": false,
                   "idleCompaction": false,
                   "permissions": {
-                    "allow": [%s]
+                    "allow": [%s],
+                    "deny": ["AskUserQuestion"]
                   }
                 }
                 """.formatted(styleLine, pluginsLine, sections == null ? "" : sections, COMPACT_AT_TOKENS,
