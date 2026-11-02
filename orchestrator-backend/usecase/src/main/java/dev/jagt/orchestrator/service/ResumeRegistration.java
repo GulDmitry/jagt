@@ -48,7 +48,7 @@ public class ResumeRegistration {
                 + " review request " + mrUrl + " is open — there is NOTHING to build or commit right now."
                 + " FIRST run `git status`: a rebase onto " + targetBranch + " in progress is jagt's, and it"
                 + " conflicted — resolve the conflicts, `git rebase --continue`, then `git push"
-                + " --force-with-lease origin " + taskId + "` (this brief is the permission, for THIS branch"
+                + " --force-with-lease " + provisioning.remoteOf(project).pushTarget() + " " + taskId + "` (this brief is the permission, for THIS branch"
                 + " only), and report `question` where a resolution was not obvious. Otherwise do NOT"
                 + " re-implement and"
                 + " do NOT call update_agent_status: the Master has already set your status (CI_POLLING). Stay"

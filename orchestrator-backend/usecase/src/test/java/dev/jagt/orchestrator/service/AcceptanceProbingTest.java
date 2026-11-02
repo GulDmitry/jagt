@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.Probe;
+import dev.jagt.orchestrator.task.Remote;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,7 +30,7 @@ class AcceptanceProbingTest {
         when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./scripts/finds-nothing"))))
                 .thenReturn(new Processes.Result(1, "", ""));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/finds-nothing"), 1)));
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(true);
@@ -40,7 +41,7 @@ class AcceptanceProbingTest {
         when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
                 .thenReturn(new Processes.Result(1, "line 1\n" + "noise\n".repeat(30) + "BUILD FAILED", ""));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
 
         assertThat(probed).singleElement().satisfies(probe -> {
@@ -51,7 +52,7 @@ class AcceptanceProbingTest {
 
     @Test
     void neverRunsACommandTheSessionsOwnGuardRefuses(@TempDir Path worktree) {
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.COMMAND, List.of("git", "push", "origin", "main"), 0)));
 
         assertThat(probed).singleElement().satisfies(probe -> {
@@ -66,7 +67,7 @@ class AcceptanceProbingTest {
         Files.createDirectories(worktree.resolve(".jagt/hooks"));
         when(processes.run(any(), any(), anyMap(), any())).thenReturn(new Processes.Result(0, "", ""));
 
-        new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
 
         verify(processes).run(eq(worktree), any(), eq(Map.of("GIT_CONFIG_COUNT", "1",
@@ -79,7 +80,7 @@ class AcceptanceProbingTest {
         when(processes.run(any(), any(), anyMap(), any()))
                 .thenThrow(new IllegalStateException("Command timed out after PT5M: ./gradlew test"));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
 
         assertThat(probed).singleElement().satisfies(probe -> {
@@ -94,7 +95,7 @@ class AcceptanceProbingTest {
                 eq(List.of("git", "rev-parse", "--verify", "--quiet", "refs/tags/v1"))))
                 .thenReturn(new Processes.Result(0, "", ""));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.REF, List.of("refs/tags/v1"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(true);
@@ -105,7 +106,7 @@ class AcceptanceProbingTest {
         Files.createDirectories(worktree.resolve("docs"));
         Files.writeString(worktree.resolve("docs/guide.md"), "x");
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/guide.md"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(true);
@@ -117,7 +118,7 @@ class AcceptanceProbingTest {
         when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
                 .thenReturn(new Processes.Result(1, "a" + "b".repeat(2_000), ""));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("exit 1\n" + "b".repeat(2_000));
@@ -128,7 +129,7 @@ class AcceptanceProbingTest {
         when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
                 .thenReturn(new Processes.Result(1, "", ""));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("exit 1");
@@ -136,7 +137,7 @@ class AcceptanceProbingTest {
 
     @Test
     void failsAFileTheWorktreeDoesNotHold(@TempDir Path worktree) {
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/guide.md"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("no such file");
@@ -148,7 +149,7 @@ class AcceptanceProbingTest {
         Files.writeString(root.resolve("outside.md"), "x");
         Files.createSymbolicLink(worktree.resolve("inside.md"), root.resolve("outside.md"));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.ARTIFACT, List.of("inside.md"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(false);
@@ -159,7 +160,7 @@ class AcceptanceProbingTest {
     void failsAFileThatCannotBeResolvedSayingJagtCouldNotReadIt(@TempDir Path worktree) throws IOException {
         Files.createSymbolicLink(worktree.resolve("loop.md"), worktree.resolve("loop.md"));
 
-        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree,
+        List<Probe> probed = new AcceptanceProbing(processes, 8290).probed("ABC-42", worktree, Remote.ORIGIN,
                 List.of(Probe.specified(Probe.Kind.ARTIFACT, List.of("loop.md"), 0)));
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(false);

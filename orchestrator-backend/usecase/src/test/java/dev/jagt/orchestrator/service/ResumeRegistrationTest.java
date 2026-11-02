@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.Remote;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -17,6 +19,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ResumeRegistrationTest {
+
+    @BeforeEach
+    void theProjectSharesItsBranchesThroughOrigin() {
+        when(provisioning.remoteOf("proj")).thenReturn(Remote.ORIGIN);
+    }
 
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
     private final TicketReader tickets = mock(TicketReader.class);
@@ -128,5 +135,17 @@ class ResumeRegistrationTest {
         untracked.register("ABC-42", "proj", "https://host/mr/455", "Widget layout is off", "main");
 
         verifyNoInteractions(tickets);
+    }
+
+    @Test
+    void tellsTheSessionToPushItsBranchToTheRemoteTheProjectSharesThrough() {
+        when(provisioning.remoteOf("proj")).thenReturn(new Remote("upstream"));
+
+        registration.register("widget-fix", "proj", "https://host/mr/455", "Widget layout is off", "main");
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue().instructions()).contains("--force-with-lease upstream widget-fix")
+                .doesNotContain("origin");
     }
 }

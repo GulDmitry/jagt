@@ -130,13 +130,31 @@ class VerificationTest {
 
     @Test
     void runsTheProbesThePlanDeclaredAndReturnsTheirResults() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         Processes processes = mock(Processes.class);
         when(processes.run(any(), any(), anyMap(), eq(List.of("./scripts/check")))).thenReturn(new Processes.Result(0, "", ""));
 
-        List<Probe> probed = new Verification(mock(ConfigService.class), processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
+        List<Probe> probed = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
                 .probed("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
                         .probes(List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/check"), 0))).build());
 
         assertThat(probed).singleElement().extracting(Probe::passed).isEqualTo(true);
+    }
+
+    @Test
+    void namesTheProjectsOwnRemoteWhereAProbeIsRefusedForAPushThatCouldSkipItsCheck() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "upstream/main", "dev", List.of(), List.of(), null, null, null, null, null, null,
+                        null, "upstream"))));
+        Processes processes = mock(Processes.class);
+
+        List<Probe> probed = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
+                .probed("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
+                        .probes(List.of(Probe.specified(Probe.Kind.COMMAND,
+                                List.of("git", "push", "--no-verify", "upstream", "ABC-42"), 0))).build());
+
+        assertThat(probed).singleElement().extracting(Probe::excerpt).asString().contains("`git push upstream ABC-42`");
     }
 }

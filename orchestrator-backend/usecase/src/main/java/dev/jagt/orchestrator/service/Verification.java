@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +52,12 @@ public class Verification {
     /** Each probe the ratified plan declared, with its result; the task's id is its branch. */
     public List<Probe> probed(String taskId, TaskState task) {
         return task.probes().isEmpty() ? List.of()
-                : probing.probed(taskId, Path.of(task.worktreePath()), task.probes());
+                                : probing.probed(taskId, Path.of(task.worktreePath()), remoteOf(task), task.probes());
+    }
+
+    private Remote remoteOf(TaskState task) {
+        ProjectConfig project = configService.load().projects().get(task.project());
+        return project == null ? Remote.ORIGIN : project.gitRemote();
     }
 
     private Optional<String> failureOf(TaskRepo repo) {

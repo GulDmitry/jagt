@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -16,17 +17,19 @@ public class TaskRetarget {
 
     private final StateService state;
     private final GitWorktrees git;
+    private final ConfigService configService;
 
     public String retarget(String taskId, String requested) {
-        String branch = Objects.requireNonNull(NewTaskWorktrees.branchOverride(requested));
         TaskState task = state.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
+        Remote remote = configService.project(Objects.requireNonNull(task.project())).gitRemote();
+        String branch = Objects.requireNonNull(NewTaskWorktrees.branchOverride(requested, remote));
         for (TaskRepo repo : task.repos()) {
             Path worktree = Path.of(repo.worktreePath());
             if (!git.remoteBranchExists(worktree, branch)) {
-                throw Refusal.byState(repo.project() + "'s origin has no branch '" + branch + "'.");
+                throw Refusal.byState(repo.project() + "'s " + remote.name() + " has no branch '" + branch + "'.");
             }
             if (!git.standsOn(worktree, branch)) {
-                throw Refusal.byState(repo.project() + "'s HEAD does not hold origin/" + branch
+                throw Refusal.byState(repo.project() + "'s HEAD does not hold " + remote.track(branch)
                         + "; rebase onto it, then report it again.");
             }
         }

@@ -132,7 +132,7 @@ public class NewTaskWorktrees {
             requireSafeProjectKey(projectKey);
             ProjectConfig project = configured(projectKey, config);
             Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
-            String override = branchOverride(request.baseBranch());
+            String override = branchOverride(request.baseBranch(), project.gitRemote());
             if (override != null) {
                 requireOnOrigin(override, projectKey, projectPath, strategy);
             }
@@ -244,11 +244,11 @@ public class NewTaskWorktrees {
         }
     }
 
-    static @Nullable String branchOverride(@Nullable String requested) {
+    static @Nullable String branchOverride(@Nullable String requested, Remote remote) {
         if (requested == null || requested.isBlank()) {
             return null;
         }
-        String branch = requested.strip().replaceFirst("^origin/", "");
+        String branch = remote.branchOf(requested);
         String unusable = TaskName.unusableReason(branch);
         if (unusable != null) {
             throw new IllegalArgumentException("Base branch '" + branch + "' is not a branch name: " + unusable);

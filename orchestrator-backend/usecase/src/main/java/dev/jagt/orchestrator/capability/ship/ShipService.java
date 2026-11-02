@@ -95,7 +95,7 @@ public class ShipService {
     private List<Target> targets(TaskState task, ConfigService.ConfigFile config) {
         return task.repos().stream()
                 .map(repo -> new Target(Objects.requireNonNull(repo.project()), Objects.requireNonNull(repo.worktreePath()),
-                        WorktreeChanges.targetBranch(task, configService.project(Objects.requireNonNull(repo.project())).baseBranch()),
+                        WorktreeChanges.targetBranch(task, configService.project(Objects.requireNonNull(repo.project()))),
                         repo.hasReviewRequest(), !config.hasNoCodeHost(repo.project()),
                         !configService.project(repo.project()).gitRemote().local()))
                 .toList();

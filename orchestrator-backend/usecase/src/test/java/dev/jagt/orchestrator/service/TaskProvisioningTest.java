@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.Remote;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -272,5 +274,13 @@ class TaskProvisioningTest {
         provisioning.initializeTask(NewTask.builder("ABC-1", "proj").ticketUrl(given).build());
 
         assertThat(state.task("ABC-1").orElseThrow().ticketUrl()).isEqualTo(registered);
+    }
+
+    @Test
+    void namesTheRemoteAProjectSharesItsBranchesThrough() {
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "upstream/main", "dev", List.of(), List.of(),
+                null, null, null, null, null, null, null, "upstream"));
+
+        assertThat(provisioning.remoteOf("proj")).isEqualTo(new Remote("upstream"));
     }
 }

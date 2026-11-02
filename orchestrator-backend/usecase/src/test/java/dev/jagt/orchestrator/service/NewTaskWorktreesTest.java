@@ -251,6 +251,20 @@ class NewTaskWorktreesTest {
     }
 
     @Test
+    void cutsTheWorktreeFromTheBranchNamedUnderTheProjectsOwnRemote() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig(root.resolve("repo").toString(), "upstream/main", null, List.of(), List.of(),
+                        null, null, null, null, null, null, null, "upstream")));
+        when(git.remoteBranchExists(any(), eq("feature/parent"))).thenReturn(true);
+
+        worktrees.cut(NewTask.builder("ABC-3", "proj").baseBranch("upstream/feature/parent").build(), configured,
+                BranchStrategy.FRESH);
+
+        verify(git).createWorktree(root.resolve("repo"), root.resolve("ABC-3-proj"), "ABC-3", "feature/parent",
+                BranchStrategy.FRESH);
+    }
+
+    @Test
     void refusesABaseBranchOriginDoesNotHaveBeforeCreatingAnything() {
         ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig(root.resolve("repo").toString(), "origin/main", null, List.of())));

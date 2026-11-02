@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Remote;
 import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +68,8 @@ public final class ToolGate {
     }
 
     /** Why the line is refused, or empty when it is allowed. */
-    public static Optional<String> refusal(@Nullable String line, @Nullable String taskBranch, int boardPort) {
+    public static Optional<String> refusal(@Nullable String line, @Nullable String taskBranch, int boardPort,
+                                           Remote remote) {
         if (line == null || taskBranch == null || taskBranch.isBlank()) {
             return Optional.empty();
         }
@@ -76,9 +78,9 @@ public final class ToolGate {
         String branch = taskBranch;
         return Stream.<Supplier<Optional<String>>>of(
                         () -> reachesBoard(unquotedLine, boardPort),
-                        () -> writesToHost(command, unquotedLine, branch),
+                        () -> writesToHost(command, unquotedLine, branch, remote),
                         () -> readsUnquoted(line, unquotedLine),
-                        () -> skipsPrePush(command, branch),
+                        () -> skipsPrePush(command, branch, remote),
                         () -> cutsAWorktree(command),
                         () -> pushRefusal(line, command, branch))
                 .map(Supplier::get).flatMap(Optional::stream).findFirst();
@@ -92,12 +94,13 @@ public final class ToolGate {
         return Optional.empty();
     }
 
-    private static Optional<String> writesToHost(String command, String unquotedLine, String taskBranch) {
+    private static Optional<String> writesToHost(String command, String unquotedLine, String taskBranch,
+                                                 Remote remote) {
         if (PLUMBING.matcher(unquotedLine).find()
                 || Stream.of(SEPARATORS.split(command)).anyMatch(HostCliLine::writes) || HostCliLine.writes(command)) {
             return Optional.of("jagt refuses writing to the code host from here: gh and glab only read ("
                     + HostCliLine.readsAllowed() + "). Push " + taskBranch
-                    + " with a plain `git push origin " + taskBranch + "`.");
+                    + " with a plain `git push " + remote.pushTarget() + " " + taskBranch + "`.");
         }
         return Optional.empty();
     }
@@ -109,11 +112,11 @@ public final class ToolGate {
         return Optional.empty();
     }
 
-    private static Optional<String> skipsPrePush(String command, String taskBranch) {
+    private static Optional<String> skipsPrePush(String command, String taskBranch, Remote remote) {
         if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
                 || Stream.of(SEPARATORS.split(command)).anyMatch(ToolGate::configuresAPush))) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
-                    + " with a plain `git push origin " + taskBranch + "`.");
+                    + " with a plain `git push " + remote.pushTarget() + " " + taskBranch + "`.");
         }
         return Optional.empty();
     }

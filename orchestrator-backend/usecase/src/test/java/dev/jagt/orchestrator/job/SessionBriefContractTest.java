@@ -152,6 +152,7 @@ class SessionBriefContractTest {
                 repo, List.of(repo), ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         TaskProvisioning provisioning = mock(TaskProvisioning.class);
+        when(provisioning.remoteOf("web")).thenReturn(dev.jagt.orchestrator.task.Remote.ORIGIN);
 
         new ResumeRegistration(provisioning, mock(AgentStatusReports.class), mock(TicketReader.class),
                 new NoTracker())

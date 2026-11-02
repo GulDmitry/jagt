@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,11 @@ public class TaskProvisioning {
     private final AgentSessions agentSessions;
     private final Clock clock;
 
+    /** The git remote a project's branches are shared through. */
+    public Remote remoteOf(String projectKey) {
+        return configService.project(projectKey).gitRemote();
+    }
+
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
         ConfigService.ConfigFile config = configService.load();
@@ -48,7 +54,7 @@ public class TaskProvisioning {
                         .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank()
                                 ? null : request.ticketUrl())
                         // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
-                        .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
+                        .baseBranch(request.baseBranch() == null || request.baseBranch().isBlank() ? null : repos.get(0).baseBranch())
                         .autoReview(config.autoReview().enabledOrDefault())
                         .gitTrust(worktrees.trust(repos))
                         .build();

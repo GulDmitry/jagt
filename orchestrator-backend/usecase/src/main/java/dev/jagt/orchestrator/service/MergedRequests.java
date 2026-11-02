@@ -81,7 +81,7 @@ public class MergedRequests {
             return Optional.of(inspection.mergedIntoTarget(
                     projectPath(project),
                     Path.of(Objects.requireNonNull(repo.worktreePath())),
-                    WorktreeChanges.targetBranch(task, configService.project(project).baseBranch())));
+                    WorktreeChanges.targetBranch(task, configService.project(project))));
         } catch (RuntimeException e) {
             log.atWarn().setMessage("merged read failed").addKeyValue("task", taskId)
                     .addKeyValue("project", project).addKeyValue("cause", e.toString()).log();

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.Probe;
+import dev.jagt.orchestrator.task.Remote;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,13 +30,13 @@ public class AcceptanceProbing {
     @Value("${server.port:8290}")
     private final int boardPort;
 
-    public List<Probe> probed(String taskBranch, Path worktree, List<Probe> probes) {
-        return probes.stream().map(probe -> probe(taskBranch, worktree, probe)).toList();
+    public List<Probe> probed(String taskBranch, Path worktree, Remote remote, List<Probe> probes) {
+        return probes.stream().map(probe -> probe(taskBranch, worktree, remote, probe)).toList();
     }
 
-    private Probe probe(String taskBranch, Path worktree, Probe probe) {
+    private Probe probe(String taskBranch, Path worktree, Remote remote, Probe probe) {
         return switch (probe.kind()) {
-            case COMMAND -> ToolGate.refusal(String.join(" ", probe.words()), taskBranch, boardPort)
+            case COMMAND -> ToolGate.refusal(String.join(" ", probe.words()), taskBranch, boardPort, remote)
                     .map(refused -> probe.probed(false, refused))
                     .orElseGet(() -> run(worktree, probe, probe.words()));
             case REF -> run(worktree, probe, List.of("git", "rev-parse", "--verify", "--quiet",

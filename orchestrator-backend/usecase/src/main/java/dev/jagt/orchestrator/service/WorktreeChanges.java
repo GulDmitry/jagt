@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -133,9 +134,8 @@ public class WorktreeChanges {
     }
 
     /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */
-    public static String targetBranch(TaskState task, String configuredBase) {
-        String base = task.baseBranchOr(configuredBase);
-        return base == null ? "" : base.replaceFirst("^origin/", "");
+    public static String targetBranch(TaskState task, ProjectConfig project) {
+        return project.gitRemote().branchOf(task.baseBranchOr(project.baseBranch()));
     }
 
     /** Each repository's changes since its base, or why they could not be read; blank past what a prompt quotes. */

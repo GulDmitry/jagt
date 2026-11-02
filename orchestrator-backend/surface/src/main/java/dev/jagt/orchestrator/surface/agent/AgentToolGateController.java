@@ -5,10 +5,13 @@ import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.KeepAlive;
 import dev.jagt.orchestrator.service.PlanFirst;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Guard;
+import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.service.ToolGate;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +55,7 @@ public class AgentToolGateController {
 
     private final StateService stateService;
     private final Clock clock;
+    private final ConfigService configService;
 
     /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,7 +75,8 @@ public class AgentToolGateController {
         }
         // A directory no task owns has no branch a push could be refused against.
         String taskBranch = stateService.findByWorktree(cwd).map(Map.Entry::getKey).orElse(null);
-        return ToolGate.refusal(call.command(), taskBranch, request.getLocalPort())
+        Remote remote = stateService.findByWorktree(cwd).map(owner -> remoteOf(owner.getValue())).orElse(Remote.ORIGIN);
+        return ToolGate.refusal(call.command(), taskBranch, request.getLocalPort(), remote)
                 .map(reason -> {
                     stateService.updateTask(Objects.requireNonNull(taskBranch),
                             task -> task.refused(Guard.SESSION_LINE));
@@ -79,6 +84,14 @@ public class AgentToolGateController {
                     return ResponseEntity.ok(denied(reason));
                 })
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    private Remote remoteOf(TaskState task) {
+        try {
+            return configService.project(Objects.requireNonNull(task.project())).gitRemote();
+        } catch (IllegalArgumentException unknownProject) {
+            return Remote.ORIGIN;
+        }
     }
 
     private ResponseEntity<Map<String, Object>> planFirst(@Nullable String cwd, ToolCall call) {

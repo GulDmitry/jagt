@@ -99,6 +99,7 @@ A project with no remote is passed over.
 `none` SHALL mean a repository kept on this machine: worktrees are cut from the local base branch, nothing is fetched or pushed, and a
 deploy merges into the local deploy branch. Startup MUST refuse a remote `git remote` does not list, and `none` beside a `codeHost`
 that is not `none`, each naming its keys; it reads no network.
+A base branch is read with that remote's prefix dropped, and the briefs and refusals that name a push name that remote.
 
 #### Scenario: A repository kept on this machine
 - **WHEN** `remote` is `none` and ABC-42 starts
