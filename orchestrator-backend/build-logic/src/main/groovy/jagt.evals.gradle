@@ -34,7 +34,7 @@ tasks.register('roleEval', Test) {
             systemProperty key, project.property(property)
         }
     }
-    def brief = file(evalIsArbiter ? '../master-brief.md.dist' : "../roles/${evalRole}/brief.md.dist")
+    def brief = file("../roles/${evalRole}/brief.md.dist")
     systemProperty "${harness}Eval.brief", project.findProperty('roleBrief') ?: brief.path
     if (project.hasProperty('roleModel')) {
         systemProperty "${harness}Eval.model", project.property('roleModel')
@@ -120,5 +120,5 @@ tasks.named('roleEval') {
     systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
     systemProperty 'eval.model', project.findProperty('roleModel') ?: 'default'
     systemProperty 'eval.brief.file', project.findProperty('roleBrief')
-            ?: (evalIsArbiter ? file('../master-brief.md.dist').path : file("../roles/${evalRole}/brief.md.dist").path)
+            ?: file("../roles/${evalRole}/brief.md.dist").path
 }

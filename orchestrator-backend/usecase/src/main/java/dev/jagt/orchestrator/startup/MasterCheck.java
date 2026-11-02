@@ -61,7 +61,7 @@ public class MasterCheck implements StartupCheck {
         Path brief = briefs.file(master);
         if (!Files.isRegularFile(brief)) {
             problems.add(new Problem("orchestrator.roles.master.brief", "orchestrator.roles.master.brief: no file at " + brief
-                    + " — copy master-brief.md.dist to it and edit it until it reads like you"));
+                    + " — copy roles/master/brief.md.dist to it and edit it until it reads like you"));
         }
         return List.copyOf(problems);
     }

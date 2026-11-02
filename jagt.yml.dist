@@ -88,7 +88,7 @@ orchestrator:
 
   # What a session is told at each step jagt sends it: session-brief.md.dist; copy it to session-brief.md to edit a step.
   # When jagt may send each step: session-cases.md.dist; copy it to session-cases.md to edit a case.
-  # When the Master may press a verb: master-cases.md.dist; copy it to master-cases.md to edit a case.
+  # When the Master may press a verb: roles/master/cases.md.dist; copy it to roles/master/cases.md to edit a case.
 
   watchdog:
     staleAfter: 5m        # silence before an "agent stopped" alert; a hook report needs no wait
@@ -132,7 +132,7 @@ orchestrator:
       # mode: judge            # off | judge (reads and writes what it found) | act (also presses the button).
                                # Unset: judge where the agent CLI lets jagt read what you typed (Claude), else off.
                                # Three tasks in a row act moved ending badly stop it until you press `act stopped`.
-      # brief: master-brief.md # what it judges by: copy master-brief.md.dist to this name and edit it. Relative
+      # brief: roles/master/brief.md # what it judges by: copy roles/master/brief.md.dist to this name and edit it. Relative
                                # to this file. Unset and not copied, the shipped .dist; named and missing, refused
       # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
                                # blank inherits the agent CLI's. One run per role of the brief, per round;

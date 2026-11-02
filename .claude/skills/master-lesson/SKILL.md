@@ -9,15 +9,15 @@ Input: the exchange (what the agent wrote, what the human said) and the human's 
 
 1. **Name the class, not the case.** The rule the unit broke, in two to four words — `leaked abstraction`, not
    "ack-mode comment". Never a project, class, framework or vendor from the case.
-2. **Sharpen before adding.** Read `## Patterns that stop a round` in `master-brief.md.dist`: a pattern already
+2. **Sharpen before adding.** Read `## Patterns that stop a round` in `roles/master/brief.md.dist`: a pattern already
    covering it gets its line sharpened; only a new class gets a new line. One line per pattern: what a unit must
    not do, and one clause of why; it states one fact a reader answers yes or no on the diff, no scale or taste word.
 3. **One round in `MasterCase.matrix()`.** Invented names, smallest diff carrying the pattern and nothing else that
    blocks. `names`: the offending file plus the file proving the premise, so it cannot pass on another finding.
    A row never reuses a scenario the brief shows.
-4. **RED on the old brief.** `git show HEAD:master-brief.md.dist` into the scratchpad, then
+4. **RED on the old brief.** `git show HEAD:roles/master/brief.md.dist` into the scratchpad, then
    `./gradlew roleEval -Prole=master -ProleBrief=<that file>`: the new round fails. Green there means the brief was not what
    missed it — the role's model, or the author's `<self_review>` — say so and stop.
 5. **GREEN on the new brief.** `./gradlew roleEval -Prole=master`: every round passes, the old ones included.
 6. **Copy the pattern line into the local `master-brief.md`**, gitignored, so this install judges by it.
-7. Commit `master-brief.md.dist` and `MasterCase.java` together; the subject names the class that slipped through.
+7. Commit `roles/master/brief.md.dist` and `MasterCase.java` together; the subject names the class that slipped through.

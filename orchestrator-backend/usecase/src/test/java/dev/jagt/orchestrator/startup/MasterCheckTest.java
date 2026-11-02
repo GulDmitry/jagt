@@ -28,7 +28,8 @@ class MasterCheckTest {
 
     @Test
     void findsNothingWrongWithTheSettingEveryInstallShipsWith(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md.dist"), "the shipped standards");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults()));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())),
@@ -166,7 +167,8 @@ class MasterCheckTest {
 
     @Test
     void judgesByTheShippedBriefWhereNoneWasCopied(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md.dist"), "the shipped standards");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge")));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
@@ -220,7 +222,8 @@ class MasterCheckTest {
 
     @Test
     void refusesAStepKeptForYourselfThatNamesNoStepTheMasterHolds(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("master-brief.md.dist"), "the shipped standards");
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(new MasterConfig("judge", null, null, List.of("ship", "teleport"), null)));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(

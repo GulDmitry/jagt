@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,6 @@ public class MasterBriefs {
     private final OrchestratorPaths paths;
     private final SessionBrief sessionBrief;
 
-    private static final String SHIPPED = ".dist";
-
     public Optional<String> master(String taskId, ConfigService.ConfigFile.MasterConfig config) {
         try {
             return Optional.of(Files.readString(file(config)));
@@ -36,11 +35,11 @@ public class MasterBriefs {
         }
     }
 
-    /** Where none was named or copied, the shipped one: judging by default asks for no setup. */
+    /** Where none was named, the first copy that exists, the shipped one last: judging by default asks for no setup. */
     public Path file(ConfigService.ConfigFile.MasterConfig config) {
-        Path named = paths.root().resolve(config.briefOrDefault());
         boolean unnamed = config.brief() == null || config.brief().isBlank();
-        return unnamed && !Files.exists(named) ? paths.root().resolve(config.briefOrDefault() + SHIPPED) : named;
+        Path named = paths.root().resolve(config.briefOrDefault());
+        return unnamed ? new RoleFiles(paths, "master").briefFile().orElse(named) : named;
     }
 
     public String author() {

@@ -10,18 +10,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MasterBriefShippedTest {
 
-    private static final Path SHIPPED = Path.of("../master-brief.md.dist");
+    private static final Path SHIPPED = Path.of("../roles/master/brief.md.dist");
 
     @Test
     void shipsTheBriefUnderTheNameTheRefusalTellsAHumanToCopy() {
         assertThat(Files.isRegularFile(SHIPPED)).describedAs("%s", SHIPPED).isTrue();
-        assertThat(SHIPPED.getFileName().toString())
+        assertThat(Path.of("..").relativize(SHIPPED).toString())
                 .isEqualTo(MasterConfig.defaults().briefOrDefault() + ".dist");
     }
 
     @Test
     void keepsAHumansOwnBriefOutOfTheRepository() throws Exception {
         assertThat(Files.readString(Path.of("../.gitignore")))
-                .contains(MasterConfig.defaults().briefOrDefault());
+                .contains("\nroles/*/*\n", "\nmaster-brief.md\n");
     }
 }

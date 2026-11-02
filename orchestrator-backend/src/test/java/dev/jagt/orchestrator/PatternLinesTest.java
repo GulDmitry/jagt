@@ -13,7 +13,7 @@ class PatternLinesTest {
 
     @Test
     void aPatternTheMasterStopsOnUsesNoScaleOrTasteWord() throws Exception {
-        String brief = Files.readString(Path.of("../master-brief.md.dist"));
+        String brief = Files.readString(Path.of("../roles/master/brief.md.dist"));
         Matcher section = Pattern.compile("(?s)## Patterns that stop a round\\n(.*?)\\n## ").matcher(brief);
         Pattern scaleOrTaste = Pattern.compile("\\b(appropriate|appropriately|properly|reasonable|reasonably|roughly"
                 + "|approximately|clean|nice|good|polite|helpful|professional|expected)\\b", Pattern.CASE_INSENSITIVE);

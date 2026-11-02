@@ -35,7 +35,7 @@ public enum MasterMove {
         return Step.of(id);
     }
 
-    /** The verbs, held to {@code master-cases.md}; a step relayed is held to its session case alone. */
+    /** The verbs, held to {@code roles/master/cases.md}; a step relayed is held to its session case alone. */
     public static Set<String> pressed() {
         return ids(false);
     }

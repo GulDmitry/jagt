@@ -45,11 +45,24 @@ final class HumanCopy {
     }
 
     static CaseBook stepCases(Path root, List<String> names) {
+        return cases(root, names, CaseBook.Shape.STEPS);
+    }
+
+    static CaseBook moveCases(Path root, List<String> names) {
+        return cases(root, names, CaseBook.Shape.MOVES);
+    }
+
+    private static CaseBook cases(Path root, List<String> names, CaseBook.Shape shape) {
         return read(root, names).stream()
-                .map(file -> CaseBook.parse(file.file(), file.text()))
+                .map(file -> shape == CaseBook.Shape.STEPS ? CaseBook.parse(file.file(), file.text())
+                        : CaseBook.parseMoves(file.file(), file.text()))
                 .reduce(CaseBook::over)
-                .orElseGet(() -> CaseBook.empty(CaseBook.Shape.STEPS))
+                .orElseGet(() -> CaseBook.empty(shape))
                 .failing(unreadable(root, names));
+    }
+
+    static Optional<Path> firstExisting(Path root, List<String> names) {
+        return names.stream().map(root::resolve).filter(Files::exists).findFirst();
     }
 
     static Set<String> sectionIds(Path root, String copy) {

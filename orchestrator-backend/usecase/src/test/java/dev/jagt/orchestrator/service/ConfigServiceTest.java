@@ -493,7 +493,7 @@ class ConfigServiceTest {
     @Test
     void judgesByTheBriefTheHumanNamedAndOtherwiseByTheShippedOne() {
         assertThat(MasterConfig.defaults().withBrief("my-brief.md").briefOrDefault()).isEqualTo("my-brief.md");
-        assertThat(MasterConfig.defaults().withBrief(" ").briefOrDefault()).isEqualTo("master-brief.md");
+        assertThat(MasterConfig.defaults().withBrief(" ").briefOrDefault()).isEqualTo("roles/master/brief.md");
     }
 
     @Test

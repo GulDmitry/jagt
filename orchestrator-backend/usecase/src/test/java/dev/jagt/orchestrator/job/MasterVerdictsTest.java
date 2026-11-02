@@ -74,7 +74,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -99,7 +100,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", read);
@@ -127,7 +129,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", read);
@@ -151,7 +154,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -178,7 +182,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -209,7 +214,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", read);
@@ -235,7 +241,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", read);
@@ -262,7 +269,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -289,7 +297,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -313,7 +322,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -336,7 +346,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -360,7 +371,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -384,7 +396,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
         state.putTask("ABC-42", task);
@@ -406,7 +419,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -428,7 +442,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -451,7 +466,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -476,7 +492,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -503,7 +520,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -537,7 +555,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -574,7 +593,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -611,7 +631,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -635,7 +656,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -661,7 +683,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -685,7 +708,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -709,7 +733,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
@@ -736,7 +761,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.CLOSED).build();
@@ -759,7 +785,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build();
@@ -786,7 +813,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .planGate(PlanGate.REQUIRED).build();
@@ -811,7 +839,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
@@ -835,7 +864,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
                 .message("admins only or every user?").report(AgentReport.QUESTION).build();
@@ -863,7 +893,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
@@ -887,7 +918,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -915,7 +947,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -941,7 +974,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -963,7 +997,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -987,7 +1022,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -1009,7 +1045,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -1030,7 +1067,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -1053,7 +1091,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
@@ -1073,7 +1112,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         state.putTask("ABC-1", task);
@@ -1096,7 +1136,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
         state.putTask("ABC-1", planned);
@@ -1120,7 +1161,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -1154,7 +1196,8 @@ class MasterVerdictsTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);

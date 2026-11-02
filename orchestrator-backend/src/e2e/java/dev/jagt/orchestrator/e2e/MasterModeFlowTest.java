@@ -116,7 +116,7 @@ class MasterModeFlowTest {
     @BeforeAll
     static void createTheThrowawayOutsideWorld() throws Exception {
         E2eWorkspace.createRootMarker(workspace.resolve("root"));
-        Files.copy(Path.of("../master-brief.md.dist"), workspace.resolve("root/master-brief.md.dist"));
+        Files.copy(Path.of("../roles/master/brief.md.dist"), workspace.resolve("root/roles/master/brief.md.dist"));
         E2eWorkspace.createRepositoryWithOrigin(workspace.resolve("origin.git"), workspace.resolve("proj"));
     }
 

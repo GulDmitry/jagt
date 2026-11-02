@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.MasterMode;
@@ -15,6 +16,7 @@ public class MasterCommand implements GlobalCommand {
     private final ConfigService configService;
     private final UsageTracker usage;
     private final MasterRecord record;
+    private final MasterBriefs briefs;
 
     @Override
     public String id() {
@@ -46,7 +48,7 @@ public class MasterCommand implements GlobalCommand {
         return "master: " + mode.id() + (mode == MasterMode.JUDGE
                 ? " — it reads and writes what it found; it presses nothing."
                 : " — it also presses the button you would have.")
-                + "\n  judges by: " + config.briefOrDefault()
+                + "\n  judges by: " + briefs.file(config)
                 + "\n  model:     " + (config.modelOrInherited().isEmpty()
                         ? "inherited from the agent CLI" : config.modelOrInherited())
                 + "\n  yours:     " + (config.mineOrDefault().isEmpty()

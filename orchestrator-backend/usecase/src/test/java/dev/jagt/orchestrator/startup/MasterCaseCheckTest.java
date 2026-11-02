@@ -27,7 +27,8 @@ class MasterCaseCheckTest {
     void passesTheShippedCasesAgainstTheMastersMoves(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
 
@@ -39,7 +40,8 @@ class MasterCaseCheckTest {
     void refusesAMasterCaseNamingAnythingButAVerbTheMasterPresses(String move, @TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         Files.writeString(root.resolve("master-cases.md"),
                 "## " + move + "\n\nmove: " + move + "\nat: DEPLOYED\nby: master\nThe Master moves.\n");
@@ -54,13 +56,14 @@ class MasterCaseCheckTest {
     void refusesAVerbNoMasterCaseNames(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
-        Files.writeString(root.resolve("master-cases.md.dist"),
-                Files.readString(Path.of("../../master-cases.md.dist")).replace("move: add-repo", "move: ship"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md.dist"),
+                Files.readString(Path.of("../../roles/master/cases.md.dist")).replace("move: add-repo", "move: ship"));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
 
         assertThat(new MasterCaseCheck(new MasterCases(paths), new SessionCases(paths), config, paths).problems()).containsExactly(
-                new Problem("master-cases.md", "master-cases.md: no case names the Master's move 'add-repo' — add"
+                new Problem("roles/master/cases.md", "roles/master/cases.md: no case names the Master's move 'add-repo' — add"
                         + " one, or the Master never makes it"));
     }
 
@@ -68,7 +71,8 @@ class MasterCaseCheckTest {
     void refusesAStepTheMasterRelaysNoSessionCaseSetsOffByTheMaster(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         Files.writeString(root.resolve("session-cases.md"), "## answered-under\n\nstep: answered-under\n"
                 + "at: SHIPPING\nby: human\nreplies: any; plain\nYou answer below the instruction.\n");
@@ -83,7 +87,8 @@ class MasterCaseCheckTest {
     void refusesAMasterCaseSetOffByAnyoneButTheMaster(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         Files.writeString(root.resolve("master-cases.md"),
                 "## ship\n\nmove: ship\nat: REVIEW_PENDING\nby: human\nYou ship it.\n");
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
@@ -106,7 +111,8 @@ class MasterCaseCheckTest {
     void refusesToStartWhenTheHumansMasterCasesCannotBeRead(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(Files.writeString(root.resolve("jagt.yml"), "orchestrator: {}\n").toString()));
-        Files.copy(Path.of("../../master-cases.md.dist"), root.resolve("master-cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
         Files.copy(Path.of("../../session-cases.md.dist"), root.resolve("session-cases.md.dist"));
         Files.createDirectory(root.resolve("master-cases.md"));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));

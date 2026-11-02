@@ -40,7 +40,7 @@ SHALL NOT fail the run; refusing is the gate's work.
 - **THEN** the run is judged on its verdict alone
 
 ### Requirement: A pattern the Master stops on is one yes-or-no fact
-A pattern line in `master-brief.md.dist` SHALL state one fact a reader answers yes or no on the diff, with no scale
+A pattern line in `roles/master/brief.md.dist` SHALL state one fact a reader answers yes or no on the diff, with no scale
 or taste word (`PatternLinesTest`).
 
 #### Scenario: A taste word

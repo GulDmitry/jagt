@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Problem;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -55,6 +56,14 @@ public final class RoleFiles {
 
     public CaseBook book() {
         return HumanCopy.stepCases(root, cases);
+    }
+
+    public CaseBook moves() {
+        return HumanCopy.moveCases(root, cases);
+    }
+
+    public Optional<Path> briefFile() {
+        return HumanCopy.firstExisting(root, brief);
     }
 
     public String casesFile() {

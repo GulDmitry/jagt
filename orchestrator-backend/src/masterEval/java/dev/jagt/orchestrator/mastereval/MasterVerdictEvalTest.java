@@ -77,7 +77,7 @@ abstract class MasterVerdictEvalTest {
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// master eval placeholder proxy\n");
         ShippedRoot.copyInto(root);
-        Files.copy(Path.of(System.getProperty("masterEval.brief", "../master-brief.md.dist")),
+        Files.copy(Path.of(System.getProperty("masterEval.brief", "../roles/master/brief.md.dist")),
                 root.resolve("master-brief.md"),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         MasterEvalWorkspace.writeConfig(root.resolve("jagt.yml"), root.resolve("placeholder"),

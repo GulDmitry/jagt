@@ -375,8 +375,8 @@ public class ConfigService implements LoopBreaker.Current {
         public record MasterConfig(@Nullable String mode, @Nullable String brief, @Nullable String model,
                                    @Nullable List<String> mine, @Nullable List<String> withhold) {
 
-            /** Copied from `master-brief.md.dist`, beside `jagt.yml`, and not versioned. */
-            private static final String BRIEF = "master-brief.md";
+            /** Copied from `roles/master/brief.md.dist`, and not versioned. */
+            private static final String BRIEF = "roles/master/brief.md";
 
             public static MasterConfig defaults() {
                 return new MasterConfig(null, null, null, null, null);

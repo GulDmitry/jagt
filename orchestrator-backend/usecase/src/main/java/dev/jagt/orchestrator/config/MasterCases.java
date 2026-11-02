@@ -1,22 +1,20 @@
 package dev.jagt.orchestrator.config;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /** A case the human's copy lacks is read from the shipped file. */
 @Component
-@RequiredArgsConstructor
 public class MasterCases {
 
-    public static final String FILE = "master-cases.md";
+    public static final String FILE = "roles/master/cases.md";
 
-    private final OrchestratorPaths paths;
+    private final RoleFiles files;
+
+    public MasterCases(OrchestratorPaths paths) {
+        this.files = new RoleFiles(paths, "master");
+    }
 
     public CaseBook book() {
-        return HumanCopy.read(paths.root(), FILE).stream()
-                .map(file -> CaseBook.parseMoves(file.file(), file.text()))
-                .reduce(CaseBook::over)
-                .orElseGet(() -> CaseBook.empty(CaseBook.Shape.MOVES))
-                .failing(HumanCopy.unreadable(paths.root(), FILE));
+        return files.moves();
     }
 }
