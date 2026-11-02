@@ -46,6 +46,7 @@ public final class StandConfig {
     private static String jagtYml(Path repo, Path servers, String tmuxSession, StandMode mode, @Nullable Path replay) {
         return """
                 orchestrator:
+                  %s
                   projects:
                     proj: { path: "%s", baseBranch: origin/main, deployBranch: dev, verifyCommand: ["./check.sh"] }
                   startupChecks: false
@@ -67,7 +68,7 @@ public final class StandConfig {
                   autoReview: { enabled: true, minIntervalMinutes: 1, maxIntervalMinutes: 2 }
                   tracker: { mode: "off" }
                   replay: { file: "%s" }
-                """.formatted(repo, tmuxSession, replay == null ? "claude" : "replay", servers, servers, mode.id(),
+                """.formatted(replay == null ? "" : "codeHost: replay", repo, tmuxSession, replay == null ? "claude" : "replay", servers, servers, mode.id(),
                 replay == null ? "" : replay);
     }
 }

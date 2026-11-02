@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.List;
 
 /** The selected code host's CLI or command is there; whether it is signed in is read when a pipeline is. */
 @Component
-@ConditionalOnExpression("'${orchestrator.agent.cli:claude}' != 'replay'")
 @RequiredArgsConstructor
 public class CodeHostCheck implements StartupCheck {
 

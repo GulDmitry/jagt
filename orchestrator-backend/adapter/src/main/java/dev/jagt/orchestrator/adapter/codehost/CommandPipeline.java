@@ -11,7 +11,6 @@ import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -23,7 +22,6 @@ import java.util.Set;
 
 /** Any provider: the project's own command prints the state of a commit's pipeline and holds whatever credential it needs. */
 @Component
-@ConditionalOnExpression("'${orchestrator.agent.cli:claude}' != 'replay'")
 @RequiredArgsConstructor
 public class CommandPipeline implements CodeHostDriver {
 

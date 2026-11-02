@@ -42,6 +42,15 @@ public class RoundReading {
     private final ReviewReader reviewReader;
     private final MergedRequests mergedRequests;
 
+    /** A repository with no request is work nobody is reviewing, so the round cannot be called clean. */
+    private static Optional<Refused> unshipped(String taskId, List<TaskRepo> repos) {
+        List<String> unshipped = repos.stream().filter(repo -> !repo.hasReviewRequest() && !repo.wasPushedOnly())
+                .map(TaskRepo::project).toList();
+        return unshipped.isEmpty() ? Optional.empty()
+                : Optional.of(new Refused(new SweepResult(SweepResult.Kind.PENDING, "sweep " + taskId + ": no request in "
+                        + String.join(", ", unshipped) + " — `ship` again")));
+    }
+
     public Read read(String taskId) {
         mergedRequests.refresh(taskId);
         List<TaskRepo> repos = stateService.task(taskId).map(TaskState::repos).orElse(List.of());
@@ -50,12 +59,9 @@ public class RoundReading {
             return new Refused(new SweepResult(SweepResult.Kind.NO_MR,
                     "error: no request linked to " + taskId + " — `ship` first"));
         }
-        // A repository with no request is work nobody is reviewing, so the round cannot be called clean.
-        List<String> unshipped = repos.stream().filter(repo -> !repo.hasReviewRequest())
-                .map(TaskRepo::project).toList();
-        if (!unshipped.isEmpty()) {
-            return new Refused(new SweepResult(SweepResult.Kind.PENDING, "sweep " + taskId + ": no request in "
-                    + String.join(", ", unshipped) + " — `ship` again"));
+        Optional<Refused> unshipped = unshipped(taskId, repos);
+        if (unshipped.isPresent()) {
+            return unshipped.get();
         }
         // One unreadable request fails the WHOLE sweep: half a task's repositories cannot say "green".
         // Taken before the host is asked: a push between the two leaves the read under the older commit, which only hides it.

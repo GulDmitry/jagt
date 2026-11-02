@@ -649,4 +649,15 @@ class ConfigServiceTest {
 
         assertThat(unknown).containsExactly("qa");
     }
+
+    @ParameterizedTest
+    @CsvSource(nullValues = "NULL", value = {"NULL, none, true", "gitlab, none, true", "none, github, false",
+            "none, NULL, true", "none, ' ', true", "NULL, NULL, false", "gitlab, NULL, false"})
+    void hasNoCodeHostWhereTheProjectsOwnKeyOrElseTheOrchestratorsSaysNone(String root, String own, boolean none) {
+        ConfigFile config = ConfigFile.defaults().withCodeHost(root).withProjects(java.util.Map.of(
+                "demo", new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of(),
+                        null, null, own, null, null, null, null)));
+
+        assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
+    }
 }

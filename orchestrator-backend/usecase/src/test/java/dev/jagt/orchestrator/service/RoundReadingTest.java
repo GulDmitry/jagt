@@ -51,6 +51,20 @@ class RoundReadingTest {
     }
 
     @Test
+    void waitsOnNoRequestFromARepositoryShippedWithNoCodeHost() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", null, null).withPushedOnly()),
+                TaskStatus.CI_POLLING).alias("a1").build()));
+        when(reviewReader.read("ABC-1", "http://mr/api")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
+
+        var read = reading.read("ABC-1");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Refused.class, refused -> assertThat(
+                refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE));
+    }
+
+    @Test
     void reportsAnUnreadableReviewInsteadOfTreatingItAsClean() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));

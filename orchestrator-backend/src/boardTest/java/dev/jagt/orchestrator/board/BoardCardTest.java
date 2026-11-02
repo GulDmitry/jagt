@@ -68,7 +68,7 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        assertThat(page.locator("article .mr-age")).hasText("MR 8h");
+        assertThat(page.locator("article .mr-age")).hasText("request 8h");
     }
 
     @Test
@@ -83,7 +83,7 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        assertThat(page.locator("article .mr-age")).hasText("MR");
+        assertThat(page.locator("article .mr-age")).hasText("request");
     }
 
     @Test
@@ -658,11 +658,11 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
+        assertThat(page.locator("article .meta a.mr-age")).hasText("request");
         assertThat(page.locator("article .meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("not approved yet"));
         page.locator("#tasks .row:has-text(\"a2\") .pick").click();
-        assertThat(page.locator("article .meta a.mr-age.approved")).hasText("MR \u2713");
+        assertThat(page.locator("article .meta a.mr-age.approved")).hasText("request \u2713");
     }
 
     @Test
@@ -677,7 +677,7 @@ class BoardCardTest extends BoardPageContext {
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        assertThat(page.locator("article .meta a.mr-age.approved")).hasText("MR \u2713");
+        assertThat(page.locator("article .meta a.mr-age.approved")).hasText("request \u2713");
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
     }
 
@@ -729,7 +729,7 @@ class BoardCardTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .meta .checks")).hasCount(0);
-        assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
+        assertThat(page.locator("article .meta a.mr-age")).hasText("request");
         assertThat(page.locator("article .meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("checks: nothing has read them yet"));
     }

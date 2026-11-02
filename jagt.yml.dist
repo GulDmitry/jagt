@@ -24,7 +24,8 @@ orchestrator:
 
   # ── The code host ──────────────────────────────────────────────────────────────────────────────────────────
   # What jagt reads a deploy's pipeline through; never guessed from a host name. The CLI or command holds the credential.
-  # codeHost: github        # github (default) | gitlab | command | none. Under a project, `codeHost` wins over this one.
+  # codeHost: github        # github (default) | gitlab | command | none | replay. Under a project, `codeHost` wins over this one.
+  #                          # `none`: ship pushes the branch alone, opens no request, and the deploy is next. `replay`: beside `agent.cli: replay`.
   #                         # none: no pipeline is read, a deploy settles without one
   # Per project, beside `path`:
   #   codeHostName: git.example.com           # the host, where the remote does not name it (a self-hosted GitLab, GitHub Enterprise)

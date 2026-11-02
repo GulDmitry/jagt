@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,6 +26,28 @@ class RequestProjectTest {
                 "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()),
                 "web", new ProjectConfig("/srv/web", "origin/main", "dev", List.of())))));
         when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
+        when(worktrees.remoteUrl(Path.of("/srv/web"))).thenReturn("git@host.test:group/web.git");
+
+        assertThat(projects.of("https://host.test/group/web/-/merge_requests/4")).isEqualTo("web");
+    }
+
+    @Test
+    void doesNotGiveARequestToTheProjectWhosePathIsOnlyAPrefixOfItsRepository() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
+                "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()),
+                "shop", new ProjectConfig("/srv/shop", "origin/main", "dev", List.of())))));
+        when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
+        when(worktrees.remoteUrl(Path.of("/srv/shop"))).thenReturn("git@host.test:group/api-shop.git");
+
+        assertThat(projects.of("https://host.test/group/api-shop/-/merge_requests/4")).isEqualTo("shop");
+    }
+
+    @Test
+    void skipsAProjectWithNoRemoteWhenNamingTheOwnerOfARequest() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
+                "local", new ProjectConfig("/srv/local", "main", "dev", List.of()),
+                "web", new ProjectConfig("/srv/web", "origin/main", "dev", List.of())))));
+        when(worktrees.remoteUrl(Path.of("/srv/local"))).thenThrow(new IllegalStateException("no such remote"));
         when(worktrees.remoteUrl(Path.of("/srv/web"))).thenReturn("git@host.test:group/web.git");
 
         assertThat(projects.of("https://host.test/group/web/-/merge_requests/4")).isEqualTo("web");

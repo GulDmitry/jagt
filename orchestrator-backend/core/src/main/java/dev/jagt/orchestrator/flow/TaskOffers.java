@@ -36,6 +36,8 @@ final class TaskOffers {
 
     private static final RegionId<Fact> REQUEST_MERGED = new RegionId<>("request merged", Fact.class);
 
+    private static final RegionId<Fact> SHIPPED_WITHOUT_REQUEST = new RegionId<>("shipped without request", Fact.class);
+
     private static final RegionId<Fact> REVERT_CONFLICT = new RegionId<>("revert conflict", Fact.class);
 
     private record Need(RegionId<Fact> region, Fact is) {
@@ -55,6 +57,8 @@ final class TaskOffers {
 
     private static final Set<TaskStatus> DEPLOY_ON_A_REQUEST = difference(DEPLOY_FROM, EnumSet.of(DEPLOY_CONFLICT));
 
+    private static final Set<TaskStatus> DEPLOY_WITHOUT_A_REQUEST = EnumSet.of(REVIEW_PENDING);
+
     private static final Set<TaskStatus> REVERT_ON_A_LIVE_DEPLOY = difference(ANY, EnumSet.of(DEPLOYED,
             DEPLOY_CONFLICT));
 
@@ -68,6 +72,8 @@ final class TaskOffers {
             offer(TaskAction.DEPLOY, EnumSet.of(DEPLOY_CONFLICT), no(GIT_CHANGED), no(REVERT_CONFLICT)),
             offer(TaskAction.DEPLOY, DEPLOY_ON_A_REQUEST, no(GIT_CHANGED), no(REVERT_CONFLICT),
                     yes(REVIEW_REQUEST)),
+            offer(TaskAction.DEPLOY, DEPLOY_WITHOUT_A_REQUEST, no(GIT_CHANGED), no(REVERT_CONFLICT),
+                    yes(SHIPPED_WITHOUT_REQUEST)),
             offer(TaskAction.REVERT, EnumSet.of(DEPLOYED, DEPLOY_CONFLICT), no(GIT_CHANGED)),
             offer(TaskAction.REVERT, REVERT_ON_A_LIVE_DEPLOY, no(GIT_CHANGED), yes(LIVE_DEPLOY)),
             offer(TaskAction.TRUST, ANY, yes(GIT_CHANGED)),
@@ -93,6 +99,7 @@ final class TaskOffers {
         chart.derived(STOPPED, facts -> Fact.of(facts.facts().stopped()));
         chart.derived(REPO_REQUESTED, facts -> Fact.of(facts.facts().repoRequested()));
         chart.derived(REQUEST_MERGED, facts -> Fact.of(facts.facts().requestMerged()));
+        chart.derived(SHIPPED_WITHOUT_REQUEST, facts -> Fact.of(facts.facts().shippedWithoutRequest()));
         chart.derived(REVERT_CONFLICT, facts -> Fact.of(facts.facts().revertConflict()));
         for (Offer offer : OFFERS) {
             chart.onMatching(lifecycle, offer.from(), "offers " + offer.action().id(),

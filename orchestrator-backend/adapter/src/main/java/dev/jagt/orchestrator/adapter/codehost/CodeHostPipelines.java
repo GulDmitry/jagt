@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.function.BiFunction;
 
 /** Asks the driver of the code host the project's {@code jagt.yml} chose, read on every call. */
 @Component
-@ConditionalOnExpression("'${orchestrator.agent.cli:claude}' != 'replay'")
 @RequiredArgsConstructor
 public class CodeHostPipelines implements PipelineRetry {
 

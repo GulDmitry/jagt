@@ -156,7 +156,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
-| `PipelineRetry` | `adapter/codehost/CodeHostPipelines` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`) by `codeHost`; `ReplayPipelineRetry` — jagt's one code-host write |
+| `PipelineRetry` | `adapter/codehost/CodeHostPipelines` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline is jagt's one code-host write |
 | `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer`, `ReplayRoundReviewer` (a stand recording played back) |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login` |

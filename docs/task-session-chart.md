@@ -101,5 +101,6 @@ stateDiagram-v2
     %% derived stopped
     %% derived repo requested
     %% derived request merged
+    %% derived shipped without request
     %% derived revert conflict
 ```

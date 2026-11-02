@@ -16,10 +16,10 @@ import java.util.function.BooleanSupplier;
 @With
 public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive,
                     boolean gitStateChanged, boolean stopped, boolean repoRequested,
-                    boolean requestMerged, boolean revertConflict) {
+                    boolean requestMerged, boolean revertConflict, boolean shippedWithoutRequest) {
 
     public static Facts defaults() {
-        return new Facts(false, false, () -> false, false, false, false, false, false);
+        return new Facts(false, false, () -> false, false, false, false, false, false, false);
     }
 
     /** A recorded merge is one no revert has taken out yet. */
@@ -40,6 +40,7 @@ public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplie
                 .withStopped(task.stopped())
                 .withRepoRequested(task.asksForARepository())
                 .withRequestMerged(task.requestsMerged())
-                .withRevertConflict(revertConflicted(task));
+                .withRevertConflict(revertConflicted(task))
+                .withShippedWithoutRequest(task.shippedWithoutRequest());
     }
 }

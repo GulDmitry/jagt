@@ -23,6 +23,7 @@ final class HostCli {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
     private static final Set<String> NOT_SIGNED_IN = Set.of("401", "403", "not logged in", "auth login");
+    private static final String RATE_LIMITED = "rate limit";
     private static final Set<String> UNREACHABLE = Set.of("no such host", "could not resolve", "connection refused",
             "network is unreachable", "dial tcp");
 
@@ -104,7 +105,7 @@ final class HostCli {
     private Answer<String> refusal(String hostname, Processes.Result result) {
         String said = OneLine.clipped(result.stderr().isBlank() ? result.stdout() : result.stderr());
         String lower = said == null ? "" : said.toLowerCase(Locale.ROOT);
-        if (NOT_SIGNED_IN.stream().anyMatch(lower::contains)) {
+        if (NOT_SIGNED_IN.stream().anyMatch(lower::contains) && !lower.contains(RATE_LIMITED)) {
             return signedOut(hostname);
         }
         if (UNREACHABLE.stream().anyMatch(lower::contains)) {

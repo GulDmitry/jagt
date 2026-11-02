@@ -87,6 +87,7 @@ public class FlowEngine {
                 .withStopped(task.stopped())
                 .withRepoRequested(task.asksForARepository())
                 .withRequestMerged(task.requestsMerged())
-                .withRevertConflict(Facts.revertConflicted(task));
+                .withRevertConflict(Facts.revertConflicted(task))
+                .withShippedWithoutRequest(task.shippedWithoutRequest());
     }
 }

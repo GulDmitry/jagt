@@ -535,6 +535,14 @@ public class ConfigService implements LoopBreaker.Current {
             }
         }
 
+        /** The project's own {@code codeHost} over the orchestrator's: whether it names no host at all. */
+        public boolean hasNoCodeHost(String project) {
+            ProjectConfig declared = projects.get(project);
+            String own = declared == null ? null : declared.codeHost();
+            String kind = own == null || own.isBlank() ? codeHost : own;
+            return kind != null && ProjectConfig.NO_CODE_HOST.equalsIgnoreCase(kind.strip());
+        }
+
         public static ConfigFile defaults() {
             return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null, null, null);
         }

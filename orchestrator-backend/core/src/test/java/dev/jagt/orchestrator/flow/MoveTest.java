@@ -634,4 +634,20 @@ class MoveTest {
         assertThat(move.ask()).isEqualTo("you can close the task");
         assertThat(move.primary()).isEqualTo(TaskAction.DONE);
     }
+
+    @Test
+    void advisesTheDeployOfATaskShippedWithoutARequestSinceNoReviewIsOpenOnIt() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withShippedWithoutRequest(true),
+                RoundState.NONE, false);
+
+        assertThat(move.primary()).isEqualTo(TaskAction.DEPLOY);
+        assertThat(move.actions()).contains(TaskAction.DEPLOY);
+    }
+
+    @Test
+    void offersNoDeployToATaskAtReviewPendingThatWasNeitherShippedNorRequested() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults(), RoundState.NONE, false);
+
+        assertThat(move.actions()).doesNotContain(TaskAction.DEPLOY);
+    }
 }

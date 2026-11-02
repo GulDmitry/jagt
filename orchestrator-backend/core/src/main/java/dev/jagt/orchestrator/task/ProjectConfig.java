@@ -25,6 +25,9 @@ public record ProjectConfig(
         @Nullable List<String> loginCommand
 ) {
 
+    /** The {@code codeHost} value of a repository with no host to open a request on or read a pipeline from. */
+    public static final String NO_CODE_HOST = "none";
+
     private static final Pattern REF_PREFIX = Pattern.compile("^\\+?(refs/heads/|refs/remotes/origin/|origin/)?");
 
     /** A project declaring no command of its own: the four keys every install has always had. */

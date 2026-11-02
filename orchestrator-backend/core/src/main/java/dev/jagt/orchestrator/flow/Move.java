@@ -44,6 +44,11 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                     FlowRules.allowed(status, facts), TaskAction.DONE,
                     "every request is merged: nothing is left to approve or deploy; done closes the task");
         }
+        if (status == TaskStatus.REVIEW_PENDING && facts.shippedWithoutRequest() && !asking(status, round)) {
+            return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "deploy it",
+                    FlowRules.allowed(status, facts), TaskAction.DEPLOY,
+                    "shipped without a request, so no review is open: deploy it, or ship again after more work");
+        }
         boolean hasReviewRequest = facts.hasReviewRequest();
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());

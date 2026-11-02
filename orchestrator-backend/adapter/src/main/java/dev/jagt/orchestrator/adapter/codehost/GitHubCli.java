@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.Reach;
 import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.TokenUsage;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -20,7 +19,6 @@ import java.util.Set;
 
 /** Reads and re-runs a pipeline through {@code gh}; every call names the host, so an Enterprise host answers for itself. */
 @Component
-@ConditionalOnExpression("'${orchestrator.agent.cli:claude}' != 'replay'")
 public class GitHubCli implements CodeHostDriver {
 
     static final String ID = "github";

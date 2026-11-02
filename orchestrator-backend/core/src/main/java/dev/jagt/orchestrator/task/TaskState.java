@@ -262,6 +262,17 @@ public record TaskState(
         return repos.stream().allMatch(repo -> repo.hasReviewRequest() && repo.wasMerged());
     }
 
+    /** Every repository's work was shipped without a request, so nothing is left to review and the deploy is next. */
+    @JsonIgnore
+    public boolean shippedWithoutRequest() {
+        return !repos.isEmpty() && repos.stream().allMatch(TaskRepo::shippedWithoutRequest);
+    }
+
+    public TaskState withPushedOnly(java.util.Set<String> projects) {
+        return toBuilder().repos(repos.stream().map(repo -> repo.project() != null && projects.contains(repo.project()) ? repo.withPushedOnly() : repo)
+                .toList()).build();
+    }
+
     /** A status move — the ONE place history grows. A new line says nothing about the report. */
     public TaskState withStatus(TaskStatus status, @Nullable String message, long now) {
         return withStatus(status, message, false, now);
@@ -275,6 +286,7 @@ public record TaskState(
         List<StatusChange> known = seededHistory(now);
         boolean record = event || status != this.status;
         return toBuilder().status(status).lastActiveTimestamp(now).message(message)
+                .repos(status == TaskStatus.IN_PROGRESS ? repos.stream().map(TaskRepo::withoutPushedOnly).toList() : repos)
                 .session(session.withQuietSince(0).withHalt(session.halt() != null && session.halt().kind() == Session.Halt.Kind.IDLE
                         ? session.halt() : null))
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)

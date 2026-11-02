@@ -115,7 +115,8 @@ With it on, QA checks the deploy ([qa](../qa/spec.md)) and `DeployCheckJob` MUST
 
 ### Requirement: The code host is chosen
 jagt SHALL read a deploy's pipeline through the driver `codeHost` names, a project's key over `orchestrator.codeHost` over `github`.
-The drivers are `github` (`gh`), `gitlab` (`glab`), `command` and `none`. jagt MUST NOT guess the kind from a host name or an address.
+The drivers are `github` (`gh`), `gitlab` (`glab`), `command`, `none` and `replay`. jagt MUST NOT guess the kind from a host name or an
+address, and the agent chosen by `agent.cli` selects none. `replay` reads every commit green and re-runs nothing.
 `codeHostName` names the host where the remote does not. `gh` is told the host with `-R <host>/<owner>/<repo>`.
 `glab` keeps a port the remote has in `--hostname`. A CLI or command holds the credential, jagt none.
 

@@ -67,6 +67,17 @@ class HostCliTest {
     }
 
     @Test
+    void aHostRefusingARequestOnItsRateLimitIsAFailedReadNotLostReach() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(1, "", "HTTP 403: API rate limit exceeded"));
+
+        Answer<String> answer = cli.run("git.example.invalid", List.of("api"));
+
+        assertThat(answer.reach()).isEmpty();
+        assertThat(reach.standing()).isEmpty();
+    }
+
+    @Test
     void aHostThatCannotBeReachedIsLostReachWithNoCommandToFixIt() {
         when(processes.run(isNull(), any(Duration.class), anyList()))
                 .thenReturn(new Processes.Result(1, "", "dial tcp: lookup git.example.invalid: no such host"));

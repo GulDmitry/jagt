@@ -84,7 +84,7 @@ export const cardRows = () => [
     'the state and its age \u00b7 green: already on a shared branch'],
   [[deployedButton()],
     'already deployed \u2014 press again for what came after'],
-  [[requestChip('id', 'ABC-42'), requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age', 'MR 2d')],
+  [[requestChip('id', 'ABC-42'), requestChip('mr-age approved', 'request 5d \u2713'), requestChip('mr-age', 'request 2d')],
     'the ticket \u00b7 the request and how long it has been open \u00b7 green \u2713: approved'],
   [[span('checks red', ''), span('checks green', ''), span('checks running', '')],
     'its checks: failed \u00b7 passed \u00b7 still running, or a retry pending. No dot: no pipeline, or nothing read it'],
@@ -95,7 +95,7 @@ export const cardRows = () => [
   [[blockHead(), span('quote', '> the row count is wrong')],
     'in a round\u2019s replies: the verdict \u2014 green fixed \u00b7 amber a question \u00b7 grey pushed back '
     + '\u2014 and the comment it answers'],
-  [[requestChip('mr-age stalled', 'MR 9d'), stalledStatusChip(), span('chip stalled', 'act stopped')],
+  [[requestChip('mr-age stalled', 'request 9d'), stalledStatusChip(), span('chip stalled', 'act stopped')],
     'stopped, yours to restart: nothing will look at this round again on its own, the state wearing it where no '
     + 'request is linked · in the header, the Master only judges until you press it'],
   [[detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],
