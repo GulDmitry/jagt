@@ -160,7 +160,7 @@ public class Jobs {
         run.startedAt = clock.millis();
         try {
             runOnce(job);
-            run.lastError = null;
+            recovered(job.id(), run);
         } catch (SessionHost.WindowsUnreadable unknown) {
             // Already logged where it was read: this round decides nothing and the next one asks again.
         } catch (Throwable t) {
@@ -178,11 +178,22 @@ public class Jobs {
         }
     }
 
+    /** A cause already reported is repeated at DEBUG: a job failing on every tick would bury the log in one line. */
     private static void fail(String id, Run run, Throwable t) {
-        run.lastError = t.toString();
-        log.atError().setMessage("job failed")
+        String cause = t.toString();
+        boolean reported = cause.equals(run.lastError);
+        run.lastError = cause;
+        (reported ? log.atDebug() : log.atError()).setMessage("job failed")
                 .addKeyValue("job", id)
-                .addKeyValue("cause", t.toString())
+                .addKeyValue("cause", cause)
                 .log();
+    }
+
+    private static void recovered(String id, Run run) {
+        String previous = run.lastError;
+        run.lastError = null;
+        if (previous != null) {
+            log.atInfo().setMessage("job recovered").addKeyValue("job", id).addKeyValue("previous", previous).log();
+        }
     }
 }

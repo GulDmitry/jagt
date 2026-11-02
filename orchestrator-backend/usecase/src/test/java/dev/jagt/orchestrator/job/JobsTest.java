@@ -1,5 +1,10 @@
 package dev.jagt.orchestrator.job;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.slf4j.LoggerFactory;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -164,6 +169,53 @@ class JobsTest {
         assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::lastError)
                 .containsExactly(tuple("archive-logs", "java.lang.IllegalStateException: disk full"),
                         tuple("poll-reviews", null));
+    }
+
+    @Test
+    void logsAJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
+        Job failing = mock(Job.class);
+        when(failing.id()).thenReturn("feed-every-tick");
+        doThrow(new IllegalStateException("no tmux server")).when(failing).run();
+        TaskScheduler scheduler = mock(TaskScheduler.class);
+        Jobs jobs = new Jobs(List.of(failing), scheduler, Clock.systemUTC(), mock(StateService.class));
+        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+        jobs.start();
+        verify(scheduler).schedule(work.capture(), any(Trigger.class));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
+        jobsLog.addAppender(log);
+
+        work.getValue().run();
+        work.getValue().run();
+        work.getValue().run();
+
+        jobsLog.detachAppender(log);
+        assertThat(List.copyOf(log.list)).filteredOn(event -> event.getKeyValuePairs().toString().contains("feed-every-tick"))
+                .filteredOn(event -> event.getLevel() == Level.ERROR).hasSize(1);
+    }
+
+    @Test
+    void reportsAFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
+        Job flaky = mock(Job.class);
+        when(flaky.id()).thenReturn("feed-recovering");
+        doThrow(new IllegalStateException("no tmux server")).doNothing().when(flaky).run();
+        TaskScheduler scheduler = mock(TaskScheduler.class);
+        Jobs jobs = new Jobs(List.of(flaky), scheduler, Clock.systemUTC(), mock(StateService.class));
+        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+        jobs.start();
+        verify(scheduler).schedule(work.capture(), any(Trigger.class));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
+        jobsLog.addAppender(log);
+
+        work.getValue().run();
+        work.getValue().run();
+
+        jobsLog.detachAppender(log);
+        assertThat(List.copyOf(log.list)).filteredOn(event -> event.getKeyValuePairs().toString().contains("feed-recovering"))
+                .extracting(ILoggingEvent::getMessage).containsExactly("job failed", "job recovered");
     }
 
     @ParameterizedTest
