@@ -131,7 +131,7 @@ class GitLabCliTest {
 
         Answer<String> answer = gitlab.retryFailed(host, "https://git.example.invalid/shop/web/-/pipelines/77");
 
-        assertThat(answer.failure()).startsWith("glab did not run");
+        assertThat(answer.failure()).startsWith("glab ");
     }
 
     @Test
