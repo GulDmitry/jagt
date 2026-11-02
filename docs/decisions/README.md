@@ -143,3 +143,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0127 Mutants run with every test](0127-mutants-run-with-every-test.md)
 - [0128 Cloud and local models alike](0128-cloud-and-local-models-alike.md)
 - [0129 CI reports the mutants of a push](0129-ci-reports-the-mutants-of-a-push.md)
+- [0130 Every third party is a configured seam](0130-every-third-party-is-a-configured-seam.md)

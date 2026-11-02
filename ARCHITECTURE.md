@@ -173,6 +173,10 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
 | `AgentWorktree`, `Notification`, `Answer` | nothing: value **records** the ports pass |
 
+- **Every third party jagt talks to is a row here**, its driver chosen by a `jagt.yml` key with a default; a vendor
+  guessed from a name, a URL or a host is a defect ([0130](docs/decisions/0130-every-third-party-is-a-configured-seam.md)).
+- **A driver that cannot reach its party fails jagt, not a task**: the board's head carries it, never a card's stop.
+
 ## Where a new thing goes
 
 | you want to | do this |

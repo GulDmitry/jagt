@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-08-24 (`7e9e35a`), recorded retroactively 2026-10-02.
+Accepted 2026-08-24 (`7e9e35a`), recorded retroactively 2026-10-02. Superseded in part by
+[0130](0130-every-third-party-is-a-configured-seam.md): jagt reads the deploy pipeline through a configured code host seam.
 
 ## Context
 
