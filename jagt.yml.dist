@@ -22,6 +22,15 @@ orchestrator:
       # humanPaths: ["**/auth/**", "**/*secret*"]   # in `roles.master.mode: act`, a task changing a path these globs
       #                             # name is shipped and deployed by you alone; the master window names the path
 
+  # ── The code host ──────────────────────────────────────────────────────────────────────────────────────────
+  # What jagt reads a deploy's pipeline through; never guessed from a host name. The CLI or command holds the credential.
+  # codeHost: github        # github (default) | gitlab | command | none. Under a project, `codeHost` wins over this one.
+  #                         # none: no pipeline is read, a deploy settles without one
+  # Per project, beside `path`:
+  #   codeHostName: git.example.com           # the host, where the remote does not name it (a self-hosted GitLab, GitHub Enterprise)
+  #   pipelineCommand: ["ci-state", "{sha}"]  # codeHost command: run in the project's directory, prints success | failed | running | none | unknown
+  #   retryCommand: ["ci-rerun", "{pipeline}"]  # optional: re-runs a pipeline that died on infrastructure
+
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
   archive:

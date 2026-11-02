@@ -46,12 +46,12 @@ public class RedCauses {
         if (facts.pipelineUrl().isBlank() || !retries.applies(taskId)) {
             return Verdict.CODE;
         }
-        return judgeRed(taskId, facts.pipelineUrl());
+        return judgeRed(taskId, retries.projectOf(taskId, facts.pipelineUrl()), facts.pipelineUrl());
     }
 
     /** The same ask of the pipeline a deploy commit ran, which no round of the review request carries. */
-    public Verdict judgeDeploy(String taskId, String pipelineUrl) {
-        return pipelineUrl.isBlank() ? Verdict.CODE : judgeRed(taskId, pipelineUrl);
+    public Verdict judgeDeploy(String taskId, String project, String pipelineUrl) {
+        return pipelineUrl.isBlank() ? Verdict.CODE : judgeRed(taskId, project, pipelineUrl);
     }
 
     /** The deploy's pipeline went green: no retry is owed for it. */
@@ -59,11 +59,11 @@ public class RedCauses {
         retries.clear(taskId, true);
     }
 
-    private Verdict judgeRed(String taskId, String pipelineUrl) {
+    private Verdict judgeRed(String taskId, String project, String pipelineUrl) {
         if (!properties.waits()) {
             return Verdict.CODE;
         }
-        Answer<List<FailedJob>> failed = pipelines.failedJobs(pipelineUrl);
+        Answer<List<FailedJob>> failed = pipelines.failedJobs(project, pipelineUrl);
         if (failed.facts().isEmpty()) {
             log.atWarn().setMessage("failed jobs unreadable").addKeyValue("task", taskId)
                     .addKeyValue("cause", failed.failure()).log();

@@ -39,7 +39,7 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStandsOnceThePipelineOnItsCommitIsGreen() {
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
                 new CommitPipeline("success", "https://git.example.invalid/shop/web/-/pipelines/7")), TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
@@ -50,7 +50,7 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStaysOpenWhileThePipelineOnItsCommitIsRunning() {
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
                 new CommitPipeline("running", "https://git.example.invalid/shop/web/-/pipelines/7")), TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
@@ -61,7 +61,7 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStaysOpenWhereTheHostCannotBeRead() {
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "glab not logged in to git.example.invalid"));
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "glab not logged in to git.example.invalid"));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
 
@@ -72,9 +72,9 @@ class DeployPipelinesTest {
     @Test
     void aDeployWhosePipelineIsRedOnTheCodeReadsRedWithThePipelineToFix() {
         String url = "https://git.example.invalid/shop/web/-/pipelines/7";
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
                 TokenUsage.NONE));
-        when(causes.judgeDeploy("ABC-42", url)).thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
+        when(causes.judgeDeploy("ABC-42", "shop", url)).thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
 
@@ -86,9 +86,9 @@ class DeployPipelinesTest {
     @Test
     void aDeployStaysOpenWhenTheWorktreeOfItsFixCannotBeOpened() {
         String url = "https://git.example.invalid/shop/web/-/pipelines/7";
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
                 TokenUsage.NONE));
-        when(causes.judgeDeploy("ABC-42", url)).thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
+        when(causes.judgeDeploy("ABC-42", "shop", url)).thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
         doThrow(new IllegalStateException("the path holds another checkout")).when(fixes).open(deployed, "ABC-42", "shop");
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
@@ -100,9 +100,9 @@ class DeployPipelinesTest {
     @Test
     void aDeployWhosePipelineDiedOnInfrastructureWaitsForItsRetry() {
         String url = "https://git.example.invalid/shop/web/-/pipelines/7";
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
                 TokenUsage.NONE));
-        when(causes.judgeDeploy("ABC-42", url)).thenReturn(new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true,
+        when(causes.judgeDeploy("ABC-42", "shop", url)).thenReturn(new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true,
                 "runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC", Optional.empty()));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
@@ -115,7 +115,7 @@ class DeployPipelinesTest {
     @Test
     void aDeployIsReadOnTheFixPushedAfterItsMergeNotOnTheMerge() {
         TaskState fixed = deployed.withDeployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA).withFix("f1x0123456789")), 1, null));
-        when(pipelines.onCommit(REMOTE, "f1x0123456789")).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.onCommit("shop", REMOTE, "f1x0123456789")).thenReturn(new Answer<>(Optional.of(
                 new CommitPipeline("success", "")), TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", fixed);
@@ -128,7 +128,7 @@ class DeployPipelinesTest {
         TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
                 TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
                 .withPushedAt(NOW.minusSeconds(9 * 60).toEpochMilli())), 1, null)).build();
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
@@ -142,7 +142,7 @@ class DeployPipelinesTest {
         TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
                 TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
                 .withPushedAt(NOW.minusSeconds(10 * 60).toEpochMilli())), 1, null)).build();
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
@@ -155,7 +155,7 @@ class DeployPipelinesTest {
         TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
                 TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
                 .withPushedAt(NOW.minusSeconds(10 * 60).toEpochMilli())), 1, null)).build();
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
@@ -169,7 +169,7 @@ class DeployPipelinesTest {
                 Deployment.Target.of("shop", "dev").withMerge(SHA).withPushedAt(NOW.minusSeconds(11 * 60).toEpochMilli())));
         TaskState pushed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
                 TaskStatus.DEPLOYED).lastActiveTimestamp(NOW.minusSeconds(60).toEpochMilli()).deployment(recorded).build();
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("none", "")),
                 TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", pushed);
@@ -179,7 +179,7 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStandsWhereTheRepositoryHasNoCodeHostAddress() {
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(CommitPipeline.unhosted()),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(CommitPipeline.unhosted()),
                 TokenUsage.NONE));
 
         DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
@@ -199,7 +199,7 @@ class DeployPipelinesTest {
 
     @Test
     void aDeployStaysOpenWhileTheHostDoesNotAnswerAndStandsOnceItDoes() {
-        when(pipelines.onCommit(REMOTE, SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1"),
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1"),
                 new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE));
 
         DeployPipelines.Reading unanswered = deploys.read("ABC-42", deployed);

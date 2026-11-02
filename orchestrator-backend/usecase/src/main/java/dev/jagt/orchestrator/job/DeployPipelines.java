@@ -101,7 +101,7 @@ public class DeployPipelines {
         if (remoteUrl == null || remoteUrl.isBlank()) {
             return withoutPipeline(taskId, label, "no remote recorded");
         }
-        Answer<CommitPipeline> read = pipelines.onCommit(remoteUrl, commit);
+        Answer<CommitPipeline> read = pipelines.onCommit(project, remoteUrl, commit);
         if (read.facts().isEmpty()) {
             log.atWarn().setMessage("deploy pipeline unreadable").addKeyValue("project", project)
                     .addKeyValue("commit", GitDeploy.shortSha(commit)).addKeyValue("cause", read.failure())
@@ -140,7 +140,7 @@ public class DeployPipelines {
     }
 
     private Reading red(String taskId, TaskState task, String label, String project, String at, String url) {
-        RedCauses.Verdict verdict = causes.judgeDeploy(taskId, url);
+        RedCauses.Verdict verdict = causes.judgeDeploy(taskId, project, url);
         if (verdict.cause() == RedCause.INFRASTRUCTURE) {
             return Reading.waiting(at + "red on infrastructure, " + verdict.waiting());
         }

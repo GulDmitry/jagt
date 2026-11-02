@@ -14,20 +14,20 @@ class ReplayPipelineRetryTest {
 
     @Test
     void aReplayedFailureReadsAsTheCodesSoTheSessionHearsOfIt() {
-        Answer<List<FailedJob>> answer = replay.failedJobs("https://git.example.invalid/shop/web/-/pipelines/77");
+        Answer<List<FailedJob>> answer = replay.failedJobs("proj", "https://git.example.invalid/shop/web/-/pipelines/77");
 
         assertThat(answer.facts()).contains(List.of());
     }
 
     @Test
     void aReplayedRunSendsNothingToAHost() {
-        Answer<String> answer = replay.retryFailed("https://git.example.invalid/shop/web/-/pipelines/77");
+        Answer<String> answer = replay.retryFailed("proj", "https://git.example.invalid/shop/web/-/pipelines/77");
 
         assertThat(answer.facts()).isEmpty();
     }
 
     @Test
     void aReplayedRunReadsEveryCommitAsGreenSoItsDeploysAreChecked() {
-        assertThat(replay.onCommit("/tmp/shop.git", "0123abc").facts().orElseThrow().status()).isEqualTo("success");
+        assertThat(replay.onCommit("proj", "/tmp/shop.git", "0123abc").facts().orElseThrow().status()).isEqualTo("success");
     }
 }

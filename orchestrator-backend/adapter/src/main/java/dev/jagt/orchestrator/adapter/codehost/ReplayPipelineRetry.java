@@ -17,17 +17,17 @@ import java.util.Optional;
 public class ReplayPipelineRetry implements PipelineRetry {
 
     @Override
-    public Answer<List<FailedJob>> failedJobs(String pipelineUrl) {
+    public Answer<List<FailedJob>> failedJobs(String project, String pipelineUrl) {
         return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
     }
 
     @Override
-    public Answer<String> retryFailed(String pipelineUrl) {
+    public Answer<String> retryFailed(String project, String pipelineUrl) {
         return Answer.failed(TokenUsage.NONE, "a replayed run sends nothing to a host");
     }
 
     @Override
-    public Answer<CommitPipeline> onCommit(String remoteUrl, String sha) {
+    public Answer<CommitPipeline> onCommit(String project, String remoteUrl, String sha) {
         return new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE);
     }
 }

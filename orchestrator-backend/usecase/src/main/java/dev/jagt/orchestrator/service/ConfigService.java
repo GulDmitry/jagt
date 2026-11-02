@@ -66,7 +66,8 @@ public class ConfigService implements LoopBreaker.Current {
                              @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
                              @Nullable LoopBreakerConfig loopBreaker,
                              @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive,
-                             @Nullable QaConfig qa, @Nullable Map<String, RoleConfig> roles) {
+                             @Nullable QaConfig qa, @Nullable Map<String, RoleConfig> roles,
+                             @Nullable String codeHost) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -535,7 +536,7 @@ public class ConfigService implements LoopBreaker.Current {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         public Duration conflictStallOrDefault() {

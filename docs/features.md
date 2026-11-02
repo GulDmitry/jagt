@@ -168,9 +168,9 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-one-table-owns-the-life-of-a-task)
 - **Verify before hand-back** — jagt runs the project's check command and sends a red run back to the session.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
-- **Deploy check** — A deploy is checked where it landed — by its session, or by a read-only QA run when `roles.qa.enabled` (off).
-  A green pipeline stands it, a red one goes back to the session in the deploy worktree. Key: `orchestrator.roles.qa.enabled`.
+- **Deploy check** — Checked where it landed, by its session or a QA run; green stands it, red goes back. Keys: `roles.qa.enabled`, `codeHost`.
   [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [QA](../openspec/specs/qa/spec.md)
+  · [host](../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.

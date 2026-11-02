@@ -77,9 +77,9 @@ round it SHALL post nothing, and a draft SHALL go only where the answered note's
 - **THEN** replies are posted only now; a fixed thread is resolved, a disputed one left for the reviewer
 
 ### Requirement: Pipeline status keeps the host's wording
-`TaskState.pipelineStatus` SHALL keep the host's own wording, `flow/Pipeline` its one parser → GREEN, RED, RUNNING, NONE (no
-pipeline), UNKNOWN (nobody read one). A round reading no listing SHALL write nothing, the last word standing flagged. The
-third such round running since the `lift` SHALL stop the task, its evidence the reads' words for why; a listing counts anew.
+`TaskState.pipelineStatus` SHALL be one of jagt's five words: `success`, `failed`, `running`, `none`, `unknown`; `flow/Pipeline` parses it.
+A round reading no listing SHALL write nothing, the last word standing flagged. The third such round running since the `lift`
+SHALL stop the task, its evidence the reads' words for why; a listing counts anew.
 
 #### Scenario: No checks dot while the host shows a failed run
 - **WHEN** no checks dot shows while the host shows a failed run

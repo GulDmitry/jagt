@@ -29,6 +29,11 @@ public class InfraRetries {
     private final InfraWaitProperties properties;
     private final Clock clock;
 
+    /** The project whose code host answers for {@code pipelineUrl}, blank where the task is gone. */
+    public String projectOf(String taskId, String pipelineUrl) {
+        return stateService.task(taskId).map(task -> PipelineProject.of(task, pipelineUrl)).orElse("");
+    }
+
     /** The retry waiting for {@code pipelineUrl}: the one already armed, or a new one; empty once every wait was spent. */
     public Optional<InfraRetry> arm(String taskId, String pipelineUrl, String jobs, String reason) {
         AtomicReference<Optional<InfraRetry>> armed = new AtomicReference<>(Optional.empty());

@@ -10,16 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PipelineTest {
 
     @ParameterizedTest
-    @CsvSource({"success,GREEN", "failed,RED", "canceled,RED", "running,RUNNING", "pending,RUNNING"})
-    void readsGitLabsOwnWordingAsAVerdict(String hostStatus, Pipeline verdict) {
-        assertThat(Pipeline.of(hostStatus)).isEqualTo(verdict);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"SUCCESS,GREEN", "FAILURE,RED", "ERROR,RED", "TIMED_OUT,RED", "ACTION_REQUIRED,RED",
-            "IN_PROGRESS,RUNNING", "QUEUED,RUNNING"})
-    void readsGitHubsOwnWordingAsAVerdict(String hostStatus, Pipeline verdict) {
-        assertThat(Pipeline.of(hostStatus)).isEqualTo(verdict);
+    @CsvSource({"success,GREEN", "failed,RED", "running,RUNNING", "none,NONE", "unknown,UNKNOWN"})
+    void readsJagtsFiveWordsAsAVerdict(String said, Pipeline verdict) {
+        assertThat(Pipeline.of(said)).isEqualTo(verdict);
     }
 
     @Test
@@ -36,8 +29,8 @@ class PipelineTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"Success,GREEN", "FaIlEd,RED", "Running,RUNNING", "Canceled,RED", "In_Progress,RUNNING"})
-    void reachesTheSameVerdictHoweverTheHostCapitalisesIt(String hostStatus, Pipeline verdict) {
+    @CsvSource({"Success,GREEN", "FaIlEd,RED", "Running,RUNNING"})
+    void reachesTheSameVerdictHoweverItIsCapitalised(String hostStatus, Pipeline verdict) {
         assertThat(Pipeline.of(hostStatus)).isEqualTo(verdict);
     }
 
@@ -48,8 +41,8 @@ class PipelineTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"wobbly", "sideways", "moonwalk"})
-    void reportsTheChecksUnreadRatherThanGuessingAtAWordNoHostUses(String hostStatus) {
+    @CsvSource({"wobbly", "sideways", "canceled", "in_progress"})
+    void reportsTheChecksUnreadRatherThanGuessingAtAWordOutsideTheFive(String hostStatus) {
         assertThat(Pipeline.of(hostStatus)).isEqualTo(Pipeline.UNKNOWN);
     }
 

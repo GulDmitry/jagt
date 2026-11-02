@@ -6,13 +6,13 @@ import org.jspecify.annotations.Nullable;
 import java.util.Locale;
 
 /**
- * What the code host last said about the checks, as a verdict rather than as its own wording: every host spells
- * this differently, and anything matching on the words would agree with the next reader only by luck.
+ * What the code host last said about the checks, as a verdict. Each driver and each read says it in jagt's own five
+ * words, {@code success}, {@code failed}, {@code running}, {@code none}, {@code unknown}; a host's own words stop at its driver.
  */
 @RequiredArgsConstructor
 public enum Pipeline {
 
-    /** Failed, errored, cancelled, timed out, or waiting on a human — nothing green will come of this run. */
+    /** Failed, cancelled or timed out — nothing green will come of this run. */
     RED(0),
     /** Still going, or queued: the answer is not in yet. */
     RUNNING(1),
@@ -32,29 +32,21 @@ public enum Pipeline {
         return severity;
     }
 
-    public static Pipeline of(@Nullable String hostStatus) {
-        if (hostStatus == null || hostStatus.isBlank()) {
+    public static Pipeline of(@Nullable String said) {
+        if (said == null || said.isBlank()) {
             return UNKNOWN;
         }
-        String said = hostStatus.toLowerCase(Locale.ROOT);
-        if (said.contains("fail") || said.contains("error") || said.contains("cancel")
-                || said.contains("timed_out") || said.contains("timeout")
-                || said.contains("action_required")) {
+        String word = said.toLowerCase(Locale.ROOT);
+        if (word.contains("fail")) {
             return RED;
         }
-        // `completed` is deliberately absent: on some hosts it says only that a run FINISHED, and the verdict is
-        // reported separately — reading it as green would advance a task on a failed build.
-        if (said.contains("success") || said.contains("passed")) {
+        // `completed` is deliberately absent: it says only that a run FINISHED, never that it passed.
+        if (word.contains("success")) {
             return GREEN;
         }
-        if (said.contains("running") || said.contains("pending") || said.contains("queued")
-                || said.contains("progress") || said.contains("created") || said.contains("waiting")) {
+        if (word.contains("running")) {
             return RUNNING;
         }
-        // No host words it: "none" is jagt's own spelling of an empty pipeline list.
-        if (said.contains("none")) {
-            return NONE;
-        }
-        return UNKNOWN;
+        return word.contains("none") ? NONE : UNKNOWN;
     }
 }

@@ -1,6 +1,9 @@
 package dev.jagt.orchestrator.port;
 
-/** What the host says about the checks of one commit, in its own word, {@code none} where it ran none; {@code url} is blank then. */
+/**
+ * What the code host says about the checks of one commit, in jagt's own five words: {@code success}, {@code failed},
+ * {@code running}, {@code none} where it ran none, {@code unknown}. {@code url} is blank where none ran.
+ */
 public record CommitPipeline(String status, String url) {
 
     private static final String UNHOSTED = "unhosted";

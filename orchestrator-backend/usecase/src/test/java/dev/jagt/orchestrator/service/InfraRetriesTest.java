@@ -36,6 +36,16 @@ class InfraRetriesTest {
     }
 
     @Test
+    void aPipelineBelongsToTheProjectOfTheTaskThatArmedIt(@TempDir Path dir) {
+        StateService state = state(dir);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+
+        String project = retries(state).projectOf("ABC-42", "https://host.invalid/p/1");
+
+        assertThat(project).isEqualTo("proj");
+    }
+
+    @Test
     void armsTheFirstRetryFiveMinutesOut(@TempDir Path dir) {
         StateService state = state(dir);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
