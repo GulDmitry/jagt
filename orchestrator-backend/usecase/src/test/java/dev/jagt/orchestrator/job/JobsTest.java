@@ -14,6 +14,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.mockito.ArgumentCaptor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
@@ -172,6 +174,7 @@ class JobsTest {
     }
 
     @Test
+    @ResourceLock(Resources.GLOBAL)
     void logsAJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
         Job failing = mock(Job.class);
         when(failing.id()).thenReturn("feed-every-tick");
@@ -191,11 +194,11 @@ class JobsTest {
         work.getValue().run();
 
         jobsLog.detachAppender(log);
-        assertThat(List.copyOf(log.list)).filteredOn(event -> event.getKeyValuePairs().toString().contains("feed-every-tick"))
-                .filteredOn(event -> event.getLevel() == Level.ERROR).hasSize(1);
+        assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).hasSize(1);
     }
 
     @Test
+    @ResourceLock(Resources.GLOBAL)
     void reportsAFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
         Job flaky = mock(Job.class);
         when(flaky.id()).thenReturn("feed-recovering");
@@ -214,8 +217,7 @@ class JobsTest {
         work.getValue().run();
 
         jobsLog.detachAppender(log);
-        assertThat(List.copyOf(log.list)).filteredOn(event -> event.getKeyValuePairs().toString().contains("feed-recovering"))
-                .extracting(ILoggingEvent::getMessage).containsExactly("job failed", "job recovered");
+        assertThat(log.list).extracting(ILoggingEvent::getMessage).containsExactly("job failed", "job recovered");
     }
 
     @ParameterizedTest
