@@ -4,6 +4,7 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import dev.jagt.orchestrator.flow.Arbiter;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -32,9 +33,9 @@ class RoleNamesTest {
     @Test
     void noClassOutsideARolesModuleNamesIt() {
         Map<String, List<String>> modules = new LinkedHashMap<>();
-        modules.put("master", RoleModules.ARBITER);
         modules.put("arbiter", RoleModules.ARBITER);
-        installedIds().forEach(id -> modules.put(id.toLowerCase(Locale.ROOT), RoleModules.CHECKERS.getOrDefault(id, List.of())));
+        roleFolderIds().forEach(id -> modules.put(id.toLowerCase(Locale.ROOT),
+                id.equals(Arbiter.ID) ? RoleModules.ARBITER : RoleModules.CHECKERS.getOrDefault(id, List.of())));
 
         assertThat(CODE.stream().filter(type -> modules.entrySet().stream()
                         .anyMatch(role -> type.getSimpleName().toLowerCase(Locale.ROOT).startsWith(role.getKey())
@@ -47,9 +48,9 @@ class RoleNamesTest {
         assertThat(ALLOWED.keySet().stream().filter(name -> CODE.stream().noneMatch(type -> type.getName().equals(name)))).isEmpty();
     }
 
-    private static Stream<String> installedIds() {
+    private static Stream<String> roleFolderIds() {
         try (Stream<Path> folders = Files.list(Path.of("..", "roles"))) {
-            return folders.filter(folder -> Files.exists(folder.resolve("role.yml.dist")))
+            return folders.filter(Files::isDirectory)
                     .map(folder -> folder.getFileName().toString()).toList().stream();
         } catch (IOException unread) {
             throw new UncheckedIOException(unread);
