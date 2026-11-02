@@ -48,7 +48,7 @@ class GitRemoteTest {
         "https://example.com/group-a/backend.git, https://example.com/group-a/backend/pull/4",
         "ssh://git@example.com:2222/group-a/backend.git, https://EXAMPLE.com/group-a/backend/pull/4"
     })
-    void holdsAnAddressOnItsHostUnderItsExactPath(String remote, String address) {
+    void holdsAnAddressUnderItsExactPath(String remote, String address) {
         assertThat(GitRemote.holds(remote, address)).isTrue();
     }
 
@@ -56,10 +56,9 @@ class GitRemoteTest {
     @CsvSource({
         "git@example.com:group-a/backend.git, https://example.com/group-a/backend-shop/pull/4",
         "git@example.com:group-a/backend.git, https://example.com/other/group-a/backend/pull/4",
-        "git@example.com:group-a/backend.git, https://other.example.com/group-a/backend/pull/4",
         "git@example.com:group-a/backend.git, not an address"
     })
-    void holdsNoAddressOnAnotherHostOrAnotherPath(String remote, String address) {
+    void holdsNoAddressUnderAnotherPath(String remote, String address) {
         assertThat(GitRemote.holds(remote, address)).isFalse();
     }
 
@@ -67,5 +66,30 @@ class GitRemoteTest {
     void holdsAnAddressUnderTheExactPathOfAFileRemoteWhichNamesNoHost() {
         assertThat(GitRemote.holds("file:///srv/git/shop.git", "https://code.example/srv/git/shop/-/merge_requests/1")).isTrue();
         assertThat(GitRemote.holds("file:///srv/git/shop.git", "https://code.example/srv/git/shop-web/-/merge_requests/1")).isFalse();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "git@github-work:group-a/backend.git, https://github.com/group-a/backend/pull/4",
+        "git@ssh.gitlab.corp:group-a/backend.git, https://gitlab.corp/group-a/backend/-/merge_requests/4",
+        "ssh://git@altssh.gitlab.com:443/group-a/backend.git, https://gitlab.com/group-a/backend/-/merge_requests/4",
+        "git@git_host:group-a/backend.git, https://git_host/group-a/backend/-/merge_requests/4"
+    })
+    void holdsAnAddressWhereTheRemoteReachesTheHostByAnotherName(String remote, String address) {
+        assertThat(GitRemote.holds(remote, address)).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "git@example.com:group-a/backend.git, https://EXAMPLE.com/group-a/backend/pull/4, true",
+        "git@example.com:group-a/backend.git, https://other.example.com/group-a/backend/pull/4, false",
+        "git@git_host:group-a/backend.git, https://git_host:8443/group-a/backend/pull/4, true",
+        "https://example.com/group-a/backend.git, https://example.com/group-a/backend, true",
+        "https://example.com/group-a/backend.git, https://other.example.com/group-a/backend, false",
+        "ssh://git@example.com:2222/group-a/backend.git, https://example.com/group-a/backend, true",
+        "file:///srv/git/shop.git, https://code.example/srv/git/shop, false"
+    })
+    void tellsWhetherTheRemoteNamesTheHostOfTheAddress(String remote, String address, boolean same) {
+        assertThat(GitRemote.onHostOf(remote, address)).isEqualTo(same);
     }
 }

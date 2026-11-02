@@ -63,4 +63,35 @@ class RequestProjectTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("no configured project matches request url: https://host.test/group/web/-/merge_requests/4");
     }
+
+    @Test
+    void namesTheProjectWhoseRemoteReachesTheHostByAnSshAlias() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
+        when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@github-work:group/api.git");
+
+        assertThat(projects.of("https://github.com/group/api/pull/4")).isEqualTo("api");
+    }
+
+    @Test
+    void breaksATieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
+                "mirror", new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
+                "origin", new ProjectConfig("/srv/origin", "origin/main", "dev", List.of())))));
+        when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
+        when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
+
+        assertThat(projects.of("https://host.test/group/api/-/merge_requests/4")).isEqualTo("origin");
+    }
+
+    @Test
+    void namesTheFirstProjectOfOnePathWhenNoneIsOnTheHostTheRequestIsOn() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
+                "mirror", new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
+                "origin", new ProjectConfig("/srv/origin", "origin/main", "dev", List.of())))));
+        when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
+        when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
+
+        assertThat(projects.of("https://web.test/group/api/-/merge_requests/4")).isEqualTo("mirror");
+    }
 }

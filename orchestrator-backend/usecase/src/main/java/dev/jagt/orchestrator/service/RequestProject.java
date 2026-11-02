@@ -7,8 +7,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-/** Which configured project a review request belongs to, matched on the repository path its own remote names. */
+/** Which configured project a review request belongs to: the one whose remote names its repository path, the host breaking a tie. */
 @Component
 @RequiredArgsConstructor
 public class RequestProject {
@@ -17,12 +19,16 @@ public class RequestProject {
     private final GitWorktrees gitWorktrees;
 
     public String of(String mrUrl) {
-        for (var project : configService.load().projects().entrySet()) {
-            if (GitRemote.holds(remoteOf(project.getValue()), mrUrl)) {
-                return project.getKey();
+        Map<String, String> owners = new LinkedHashMap<>();
+        configService.load().projects().forEach((name, project) -> {
+            String remote = remoteOf(project);
+            if (GitRemote.holds(remote, mrUrl)) {
+                owners.put(name, remote);
             }
-        }
-        throw new IllegalArgumentException("no configured project matches request url: " + mrUrl);
+        });
+        return owners.entrySet().stream().filter(owner -> owners.size() == 1 || GitRemote.onHostOf(owner.getValue(), mrUrl))
+                .findFirst().or(() -> owners.entrySet().stream().findFirst()).map(Map.Entry::getKey)
+                .orElseThrow(() -> new IllegalArgumentException("no configured project matches request url: " + mrUrl));
     }
 
     private @Nullable String remoteOf(ProjectConfig project) {

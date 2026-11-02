@@ -31,18 +31,28 @@ public final class GitRemote {
         return colon < 0 ? null : s.substring(colon + 1);
     }
 
-    /** Whether {@code address} is on the remote's host, a {@code file://} remote naming none, and under exactly its path, segment by segment. */
+    /** Whether {@code address} is under exactly the remote's path, segment by segment; the host is no part of it, since a remote may reach it by an alias. */
     public static boolean holds(@Nullable String remoteUrl, String address) {
         String path = projectPath(remoteUrl);
-        String host = host(remoteUrl);
         URI uri = uriOf(address);
-        if (path == null || uri == null || uri.getHost() == null || uri.getPath() == null
-                || host != null && !host.equalsIgnoreCase(uri.getHost())) {
+        if (path == null || uri == null || uri.getAuthority() == null || uri.getPath() == null) {
             return false;
         }
         List<String> wanted = segments(path);
         List<String> given = segments(uri.getPath());
         return given.size() >= wanted.size() && given.subList(0, wanted.size()).equals(wanted);
+    }
+
+    /** Whether the remote names the very host the address is on; a remote naming none is on no host. */
+    public static boolean onHostOf(@Nullable String remoteUrl, String address) {
+        String host = host(remoteUrl);
+        URI uri = uriOf(address);
+        return host != null && uri != null && uri.getAuthority() != null && host.equalsIgnoreCase(hostOf(uri));
+    }
+
+    private static String hostOf(URI uri) {
+        return uri.getHost() != null ? uri.getHost()
+                : uri.getAuthority().replaceFirst("^.*@", "").replaceFirst(":\\d+$", "");
     }
 
     private static @Nullable String host(@Nullable String remoteUrl) {
@@ -52,7 +62,7 @@ public final class GitRemote {
         }
         if (s.contains("://")) {
             URI uri = uriOf(s);
-            return uri == null ? null : uri.getHost();
+            return uri == null || uri.getAuthority() == null ? null : hostOf(uri);
         }
         int colon = s.indexOf(':');
         return colon < 0 ? null : s.substring(s.indexOf('@') + 1, colon).toLowerCase(Locale.ROOT);
