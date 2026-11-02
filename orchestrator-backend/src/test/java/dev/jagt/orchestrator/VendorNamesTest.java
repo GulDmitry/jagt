@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -20,47 +21,67 @@ class VendorNamesTest {
             + "iterm2?|wezterm|ghostty|warp|intellij|osascript|gitlab|github|glab|gh|bitbucket|gitea|jira|gradle|gradlew|"
             + "maven|mvn|npm|fable|opus|sonnet|haiku)\\b");
 
-    private static final Map<String, String> ALLOWED = Map.of(
-            "usecase/src/main/java/dev/jagt/orchestrator/job/RunningJarWatch.java", "names jagt's own build tool; iteration 2",
-            "usecase/src/main/java/dev/jagt/orchestrator/service/WorktreeSandbox.java", "build tools' cache directories; iteration 2",
-            "usecase/src/main/java/dev/jagt/orchestrator/service/WorktreeNoise.java", "a build tool's directory; iteration 2",
-            "usecase/src/main/java/dev/jagt/orchestrator/service/ProjectSetup.java", "build tool detection; iteration 2",
-            "usecase/src/main/java/dev/jagt/orchestrator/service/ConfigService.java", "a model alias as a default; iteration 3",
-            "usecase/src/main/java/dev/jagt/orchestrator/service/ToolGate.java", "the tool-gate names the host CLIs; iteration 3",
-            "usecase/src/main/java/dev/jagt/orchestrator/service/HostCliLine.java", "the tool-gate names the host CLIs; iteration 3");
+    private static final String JOB = "usecase/src/main/java/dev/jagt/orchestrator/job/";
+    private static final String SERVICE = "usecase/src/main/java/dev/jagt/orchestrator/service/";
+
+    private static final Map<String, String> ALLOWED = Map.ofEntries(
+            Map.entry(JOB + "RunningJarWatch.java gradlew", "names jagt's own build tool; iteration 2"),
+            Map.entry(SERVICE + "WorktreeSandbox.java gradle", "build tools' cache directories; iteration 2"),
+            Map.entry(SERVICE + "WorktreeSandbox.java npm", "build tools' cache directories; iteration 2"),
+            Map.entry(SERVICE + "WorktreeNoise.java gradle", "a build tool's directory; iteration 2"),
+            Map.entry(SERVICE + "ProjectSetup.java gradlew", "build tool detection; iteration 2"),
+            Map.entry(SERVICE + "ProjectSetup.java npm", "build tool detection; iteration 2"),
+            Map.entry(SERVICE + "ConfigService.java sonnet", "a model alias as a default; iteration 3"),
+            Map.entry(SERVICE + "ToolGate.java gh", "the tool-gate names the host CLIs; iteration 3"),
+            Map.entry(SERVICE + "ToolGate.java glab", "the tool-gate names the host CLIs; iteration 3"),
+            Map.entry(SERVICE + "HostCliLine.java gh", "the tool-gate names the host CLIs; iteration 3"),
+            Map.entry(SERVICE + "HostCliLine.java glab", "the tool-gate names the host CLIs; iteration 3"));
 
     @Test
     void namesNoVendorOfAnAgentTerminalEditorCodeHostTrackerBuildToolOrModelInCodeOutsideTheAdapters() {
-        List<String> named = namingFiles()
-                .filter(file -> !ALLOWED.containsKey(file.toString()))
-                .flatMap(file -> {
-                    List<String> lines = lines(file);
-                    return IntStream.range(0, lines.size())
-                            .filter(i -> names(lines.get(i)))
-                            .mapToObj(i -> file + ":" + (i + 1));
-                })
+        List<String> named = namings()
+                .filter(naming -> !ALLOWED.containsKey(naming.key()))
+                .map(Naming::where)
                 .toList();
 
         assertThat(named).isEmpty();
     }
 
     @Test
-    void keepsNoAllowedFileThatNoLongerNamesAVendor() {
-        List<String> naming = namingFiles().map(Path::toString).toList();
+    void keepsNoAllowedNamingThatTheFileNoLongerHolds() {
+        List<String> held = namings().map(Naming::key).distinct().toList();
 
-        assertThat(ALLOWED.keySet()).isSubsetOf(naming);
+        assertThat(ALLOWED.keySet()).isSubsetOf(held);
     }
 
-    private static Stream<Path> namingFiles() {
+    private record Naming(Path file, int line, String word) {
+
+        String key() {
+            return file + " " + word;
+        }
+
+        String where() {
+            return file + ":" + line + " " + word;
+        }
+    }
+
+    private static Stream<Naming> namings() {
         return Stream.of("core", "usecase", "surface")
                 .map(module -> Path.of(module, "src/main/java"))
                 .flatMap(VendorNamesTest::javaFilesUnder)
-                .filter(file -> lines(file).stream().anyMatch(VendorNamesTest::names));
+                .flatMap(file -> {
+                    List<String> lines = lines(file);
+                    return IntStream.range(0, lines.size()).boxed()
+                            .flatMap(i -> words(lines.get(i)).map(word -> new Naming(file, i + 1, word)));
+                });
     }
 
-    private static boolean names(String line) {
-        return !line.strip().startsWith("*") && !line.strip().startsWith("/*")
-                && VENDOR.matcher(line.replaceAll("//.*$", "")).find();
+    private static Stream<String> words(String line) {
+        if (line.strip().startsWith("*") || line.strip().startsWith("/*")) {
+            return Stream.empty();
+        }
+        return VENDOR.matcher(line.replaceAll("//.*$", "")).results()
+                .map(match -> match.group().toLowerCase(Locale.ROOT));
     }
 
     private static Stream<Path> javaFilesUnder(Path root) {
