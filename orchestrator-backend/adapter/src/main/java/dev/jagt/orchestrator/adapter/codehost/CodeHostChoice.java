@@ -23,7 +23,7 @@ record CodeHostChoice(String kind, HostSettings host) {
             kind = config.codeHost();
         }
         if (kind == null || kind.isBlank()) {
-            kind = DEFAULT;
+            kind = declared.gitRemote().local() ? ProjectConfig.NO_CODE_HOST : DEFAULT;
         }
         return new CodeHostChoice(kind.strip().toLowerCase(Locale.ROOT), new HostSettings(project, selectedBy,
                 declared.codeHostName(), Path.of(String.valueOf(declared.path())),

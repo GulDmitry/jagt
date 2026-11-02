@@ -37,6 +37,7 @@ orchestrator:
 | `deployBranch` | target of `deploy`; omit to disable deploy here. Equal to `baseBranch` is refused |
 | `labels` | ticket labels placing an item in this project where `do` names none; a label naming two projects goes to the router |
 | `about` | one line saying what this repository is, for placing an item its labels do not |
+| `remote` | the git remote every fetch, push and tracking ref uses: `origin` (default), another name, or `none` for a repository kept on this machine; `none` needs `codeHost: none` |
 | `codeHost` | `github` (default), `gitlab`, `command`, `none` or `replay`: what jagt reads this project's deploy pipeline through, `none` also shipping with a push and no request; wins over the top-level `codeHost` |
 | `codeHostName` | the code host's name where the remote does not give it, such as a self-hosted GitLab or GitHub Enterprise |
 | `pipelineCommand`, `retryCommand`, `loginCommand` | `codeHost: command` only: a command printing `success`, `failed`, `running`, `none` or `unknown` for `{sha}`; one re-running `{pipeline}`; one the board's `login` opens when either exits 77 (signed out) |

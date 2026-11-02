@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.Remote;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -63,24 +64,25 @@ public class WorktreeInspection {
 
     /**
      * Whether this worktree's branch carries commits its target does not hold. Read in the worktree against the
-     * {@code origin/} ref the repository already has: a ship asks what is here, not what the host has since gained.
+     * remote-tracking ref the repository already has: a ship asks what is here, not what the host has since gained.
      */
     public boolean aheadOfTarget(Path projectPath, Path worktree, String targetBranch) {
+        Remote remote = git.remote(projectPath);
         return git.locked(projectPath, () -> !"0".equals(git.run(worktree,
-                        List.of("git", "rev-list", "--count", "origin/" + targetBranch + "..HEAD"))
+                        List.of("git", "rev-list", "--count", remote.track(targetBranch) + "..HEAD"))
                 .expectSuccess("git rev-list count in " + worktree).stdout().trim()));
     }
 
     /**
-     * Whether a merge commit of {@code origin/<target>}, fetched now, took this worktree's HEAD in as a parent: a
+     * Whether a merge commit of the remote's target, fetched now, took this worktree's HEAD in as a parent: a
      * branch cut from the target and never committed to is inside it too, and a squash or fast-forward leaves no
      * such parent. A fetch that fails throws: the answer is unknown, not "not merged".
      */
     public boolean mergedIntoTarget(Path projectPath, Path worktree, String targetBranch) {
+        Remote remote = git.remote(projectPath);
         return git.locked(projectPath, () -> {
-            String target = "origin/" + targetBranch;
-            git.run(worktree, List.of("git", "fetch", "origin", "+refs/heads/" + targetBranch + ":refs/remotes/" + target))
-                    .expectSuccess("git fetch " + target + " in " + worktree);
+            String target = remote.track(targetBranch);
+            git.fetchBranch(remote, worktree, targetBranch).expectSuccess("git fetch " + target + " in " + worktree);
             String head = git.run(worktree, List.of("git", "rev-parse", "HEAD"))
                     .expectSuccess("git rev-parse in " + worktree).stdout().strip();
             return git.run(worktree, List.of("git", "rev-list", "--merges", "--parents", "--ancestry-path",
@@ -89,33 +91,35 @@ public class WorktreeInspection {
         });
     }
 
-    /** Whether HEAD is not what {@code origin/<branch>} holds; a branch never pushed has no such ref and counts as new. */
+    /** Whether HEAD is not what the remote holds; a branch never pushed has no such ref and counts as new. */
     public boolean unpublished(Path projectPath, Path worktree) {
-        return git.locked(projectPath, () -> {
+        Remote remote = git.remote(projectPath);
+        return !remote.local() && git.locked(projectPath, () -> {
             String head = git.run(worktree, List.of("git", "rev-parse", "HEAD"))
                     .expectSuccess("git rev-parse in " + worktree).stdout().strip();
-            return pushedTipIn(worktree).filter(head::equals).isEmpty();
+            return pushedTipIn(remote, worktree).filter(head::equals).isEmpty();
         });
     }
 
-    /** The commit {@code origin/<branch>} holds for this worktree's branch, empty for a branch never pushed. */
+    /** The commit the remote holds for this worktree's branch, empty for a branch never pushed. */
     public Optional<String> pushedTip(Path projectPath, Path worktree) {
-        return git.locked(projectPath, () -> pushedTipIn(worktree));
+        Remote remote = git.remote(projectPath);
+        return remote.local() ? Optional.empty() : git.locked(projectPath, () -> pushedTipIn(remote, worktree));
     }
 
-    private Optional<String> pushedTipIn(Path worktree) {
+    private Optional<String> pushedTipIn(Remote remote, Path worktree) {
         String branch = git.run(worktree, List.of("git", "rev-parse", "--abbrev-ref", "HEAD"))
                 .expectSuccess("git rev-parse branch in " + worktree).stdout().strip();
-        var remote = git.run(worktree, List.of("git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/" + branch));
-        return remote.exitCode() == 0 ? Optional.of(remote.stdout().strip()) : Optional.empty();
+        var pushed = git.run(worktree, List.of("git", "rev-parse", "--verify", "--quiet", remote.trackingRef(branch)));
+        return pushed.exitCode() == 0 ? Optional.of(pushed.stdout().strip()) : Optional.empty();
     }
 
-    /** Everything the worktree changed since it left its base at origin, committed and not; new files by name. */
+    /** Everything the worktree changed since it left its base, committed and not; new files by name. */
     public String changesSince(Path projectPath, Path worktree, String baseBranch) {
         List<String> generated = WorktreeFiles.generated(agentRuntime);
         return git.locked(projectPath, () -> {
             String diff = git.run(worktree,
-                            List.of("git", "diff", "--no-color", "--no-ext-diff", mergeBase(worktree, baseBranch)))
+                            List.of("git", "diff", "--no-color", "--no-ext-diff", mergeBase(projectPath, worktree, baseBranch)))
                     .expectSuccess("git diff in " + worktree).stdout();
             List<String> added = branchNames(git.run(worktree,
                             List.of("git", "ls-files", "--others", "--exclude-standard"))
@@ -128,14 +132,14 @@ public class WorktreeInspection {
     /** The commits since the worktree left its base at origin, one line each, newest first. */
     public String commitsSince(Path projectPath, Path worktree, String baseBranch) {
         return git.locked(projectPath, () -> git.run(worktree,
-                        List.of("git", "log", "--oneline", "--no-color", mergeBase(worktree, baseBranch) + "..HEAD"))
+                        List.of("git", "log", "--oneline", "--no-color", mergeBase(projectPath, worktree, baseBranch) + "..HEAD"))
                 .expectSuccess("git log in " + worktree).stdout());
     }
 
     /** Which files differ from the base, committed and not, with their line counts. */
     public String statSince(Path projectPath, Path worktree, String baseBranch) {
         return git.locked(projectPath, () -> git.run(worktree,
-                        List.of("git", "diff", "--stat", "--no-color", mergeBase(worktree, baseBranch)))
+                        List.of("git", "diff", "--stat", "--no-color", mergeBase(projectPath, worktree, baseBranch)))
                 .expectSuccess("git diff --stat in " + worktree).stdout());
     }
 
@@ -151,7 +155,7 @@ public class WorktreeInspection {
                 return Optional.empty();
             }
             String diff = git.run(worktree, List.of("git", "diff", "--no-color", "--no-ext-diff", "--no-textconv",
-                            "--no-renames", "-U0", mergeBase(worktree, baseBranch)))
+                            "--no-renames", "-U0", mergeBase(projectPath, worktree, baseBranch)))
                     .expectSuccess("git diff in " + worktree).stdout();
             String stable = diff.lines().filter(line -> !line.startsWith("index "))
                     .map(line -> line.startsWith("@@") ? "@@" : line).collect(Collectors.joining("\n"));
@@ -167,11 +171,11 @@ public class WorktreeInspection {
         }
     }
 
-    /** Every path the worktree changed since it left its base at origin, committed and not, a rename as both. */
+    /** Every path the worktree changed since it left its base, committed and not, a rename as both. */
     public List<String> changedPaths(Path projectPath, Path worktree, String baseBranch) {
         List<String> generated = WorktreeFiles.generated(agentRuntime);
         return git.locked(projectPath, () -> Stream.of(
-                        List.of("git", "diff", "--name-only", "--no-renames", "-z", mergeBase(worktree, baseBranch)),
+                        List.of("git", "diff", "--name-only", "--no-renames", "-z", mergeBase(projectPath, worktree, baseBranch)),
                         List.of("git", "ls-files", "--others", "--exclude-standard", "-z"))
                 .flatMap(command -> Arrays.stream(git.run(worktree, command)
                         .expectSuccess(command.get(1) + " in " + worktree).stdout().split("\0")))
@@ -182,7 +186,7 @@ public class WorktreeInspection {
     public int agentFileLinesAdded(Path projectPath, Path worktree, String baseBranch) {
         return git.locked(projectPath, () -> {
             List<String> command = new ArrayList<>(List.of("git", "diff", "--numstat",
-                    mergeBase(worktree, baseBranch), "--"));
+                    mergeBase(projectPath, worktree, baseBranch), "--"));
             command.addAll(agentRuntime.projectAgentFiles());
             return git.run(worktree, command)
                     .expectSuccess("git diff --numstat in " + worktree).stdout().lines()
@@ -192,9 +196,9 @@ public class WorktreeInspection {
         });
     }
 
-    private String mergeBase(Path worktree, String baseBranch) {
-        return git.run(worktree,
-                        List.of("git", "merge-base", "origin/" + baseBranch.replaceFirst("^origin/", ""), "HEAD"))
+    private String mergeBase(Path projectPath, Path worktree, String baseBranch) {
+        Remote remote = git.remote(projectPath);
+        return git.run(worktree, List.of("git", "merge-base", remote.track(remote.branchOf(baseBranch)), "HEAD"))
                 .expectSuccess("git merge-base in " + worktree).stdout().strip();
     }
 

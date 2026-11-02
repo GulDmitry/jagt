@@ -52,6 +52,8 @@
   [spec](../openspec/specs/revert/spec.md#requirement-revert-refuses-rather-than-guess)
 - **Ship** — Ship has the session commit, push and open or update its review request against the base it reported; with no code host, push alone.
   [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)
+- **A repository kept on this machine** — `remote: none` cuts worktrees from the local base, pushes nothing and deploys into the local branch.
+  [spec](../openspec/specs/task-start/spec.md#requirement-a-project-names-the-remote-its-branches-are-shared-through)
 - **Push guard** — A session cannot push off its task's branch, force, delete or skip hooks.
   [spec](../openspec/specs/git/spec.md#requirement-push-guard-lives-in-the-worktree)
 - **Several repositories** — One task spans several repositories, a worktree in each; `add-repo` attaches one a session asks for.

@@ -30,7 +30,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "init"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         Files.writeString(repo.resolve("task_context.md"), "the round brief");
         assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
@@ -50,7 +50,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "init"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
         Files.writeString(repo.resolve("A.java"), "class A { int x; }");
         String answered = git.treeState(repo, repo);
 
@@ -78,7 +78,7 @@ class WorktreeInspectionTest {
         program.toFile().setExecutable(true);
         runner.run(repo, timeout, List.of("git", "config", "diff.external", program.toString()));
         Files.writeString(repo.resolve("A.java"), "class A { int x; }");
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.treeState(repo, repo);
 
@@ -107,7 +107,7 @@ class WorktreeInspectionTest {
         Files.writeString(repo.resolve("b.txt"), "uncommitted\n");
         Files.writeString(repo.resolve("new.txt"), "fresh\n");
         Files.writeString(repo.resolve("task_context.md"), "the round brief");
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         String changes = git.changesSince(repo, repo, baseBranch);
 
@@ -132,7 +132,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "work"));
         Files.writeString(repo.resolve("a.txt"), "1\n2\n3\n4\n5\n6\n7 changed\n8\n");
         runner.run(repo, timeout, commit);
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
         String before = git.ownDiffId(repo, repo, "main").orElseThrow();
 
@@ -165,7 +165,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "init"));
         Files.writeString(repo.resolve("New.java"), "class New {}");
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.ownDiffId(repo, repo, "main")).isEmpty();
@@ -187,7 +187,7 @@ class WorktreeInspectionTest {
         Files.writeString(repo.resolve("a.txt"), "committed\n");
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qam", "ABC-42 Widen the column"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.commitsSince(repo, repo, "main")).contains("ABC-42 Widen the column").doesNotContain("init");
         assertThat(git.statSince(repo, repo, "main")).contains("a.txt");
@@ -215,7 +215,7 @@ class WorktreeInspectionTest {
         Files.writeString(repo.resolve("b.txt"), "uncommitted\n");
         Files.writeString(repo.resolve("new ü.txt"), "fresh\n");
         Files.writeString(repo.resolve("task_context.md"), "the round brief");
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         List<String> paths = git.changedPaths(repo, repo, "main");
 
@@ -240,7 +240,7 @@ class WorktreeInspectionTest {
                 "commit", "-qam", "ABC-42 Name the registry"));
         Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nregistry: local\ninfra: its own repo\n");
         Files.writeString(repo.resolve("other.md"), "not the agent file\n");
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         int added = git.agentFileLinesAdded(repo, repo, "main");
 
@@ -261,7 +261,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.aheadOfTarget(repo, repo, "main")).isFalse();
 
@@ -286,7 +286,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.unpublished(repo, repo)).isTrue();
 
@@ -314,7 +314,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)), new StubAgentRuntime(StubAgentProperties.defaults()));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()), new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.pushedTip(repo, repo)).isEmpty();
 
@@ -344,7 +344,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         Files.writeString(repo.resolve("task_context.md"), "the round brief");
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.ownDiffId(repo, repo, "main")).isPresent();
@@ -363,7 +363,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         Files.write(repo.resolve("AGENTS.md"), new byte[] {0, 1, 2, 0});
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         int added = git.agentFileLinesAdded(repo, repo, "main");
@@ -383,7 +383,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "mv", "brief.md", "task_context.md"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
@@ -410,7 +410,7 @@ class WorktreeInspectionTest {
                 "-m", "Merge ABC-42", "ABC-42"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "ABC-42"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.mergedIntoTarget(repo, repo, "main")).isTrue();
@@ -432,7 +432,7 @@ class WorktreeInspectionTest {
         Files.writeString(repo.resolve("g.txt"), "work");
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
@@ -457,7 +457,7 @@ class WorktreeInspectionTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "later"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "ABC-42"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
@@ -472,9 +472,33 @@ class WorktreeInspectionTest {
         Files.writeString(repo.resolve("f.txt"), "base");
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergedIntoTarget(repo, repo, "main")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void readsAWorktreeAheadOfItsTargetAndNeverUnpublishedWhereTheRepositoryHasNoRemote(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        Files.createDirectories(repo);
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        Files.writeString(repo.resolve("A.java"), "class A {}");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "branch", "dev"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("B.java"), "class B {}");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        WorktreeInspection git = new WorktreeInspection(new GitCommands(runner, new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL)),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.aheadOfTarget(repo, repo, "dev")).isTrue();
+        assertThat(git.unpublished(repo, repo)).isFalse();
     }
 }

@@ -94,14 +94,16 @@ public class ShipService {
     }
 
     /** {@code hasRequest} is asked of THAT repository: one of them can be a round behind after an unfinished ship. */
-    public record Target(String project, String worktreePath, String targetBranch, boolean hasRequest, boolean hosted) {
+    public record Target(String project, String worktreePath, String targetBranch, boolean hasRequest, boolean hosted,
+                         boolean pushes) {
     }
 
     private List<Target> targets(TaskState task, ConfigService.ConfigFile config) {
         return task.repos().stream()
                 .map(repo -> new Target(Objects.requireNonNull(repo.project()), Objects.requireNonNull(repo.worktreePath()),
                         WorktreeChanges.targetBranch(task, configService.project(Objects.requireNonNull(repo.project())).baseBranch()),
-                        repo.hasReviewRequest(), !config.hasNoCodeHost(repo.project())))
+                        repo.hasReviewRequest(), !config.hasNoCodeHost(repo.project()),
+                        !configService.project(repo.project()).gitRemote().local()))
                 .toList();
     }
 
@@ -133,7 +135,9 @@ public class ShipService {
 
     static String shipFacts(String title, String taskId, List<Target> targets, String repliesStep) {
         boolean requests = targets.stream().anyMatch(Target::hosted);
-        return "Ship " + taskId + ". Push branch " + taskId + ".\n"
+        boolean pushes = targets.stream().anyMatch(Target::pushes);
+        return "Ship " + taskId + ". " + (pushes ? "Push branch " + taskId + "." : "Push nothing: no repository of this"
+                + " task has a remote.") + "\n"
                 + (requests ? "The request's title is EXACTLY \"" + title + "\"; a later round's commit message STARTS with \""
                         + taskId + "\".\n" : "No request is opened: no repository of this task has a code host.\n")
                 + (targets.size() > 1
@@ -157,7 +161,8 @@ public class ShipService {
 
     private static String requestLine(Target target) {
         if (!target.hosted()) {
-            return " — it has no code host: push the branch and open NO request";
+            return target.pushes() ? " — it has no code host: push the branch and open NO request"
+                    : " — it has no remote: push nothing and open NO request";
         }
         return target.hasRequest() ? " — its request is already open" : " — NO request yet, open one";
     }

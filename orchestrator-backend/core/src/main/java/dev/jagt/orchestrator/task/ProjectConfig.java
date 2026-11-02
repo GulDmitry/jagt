@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProjectConfig(
@@ -22,17 +21,17 @@ public record ProjectConfig(
         @Nullable String codeHostName,
         @Nullable List<String> pipelineCommand,
         @Nullable List<String> retryCommand,
-        @Nullable List<String> loginCommand
+        @Nullable List<String> loginCommand,
+        // The git remote branches are shared through; blank is origin, none a repository kept on this machine.
+        @Nullable String remote
 ) {
 
     /** The {@code codeHost} value of a repository with no host to open a request on or read a pipeline from. */
     public static final String NO_CODE_HOST = "none";
 
-    private static final Pattern REF_PREFIX = Pattern.compile("^\\+?(refs/heads/|refs/remotes/origin/|origin/)?");
-
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
-        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null, null);
+        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null, null, null);
     }
 
     /** What a router is told this repository is; its path where nobody wrote a line, the name carrying most. */
@@ -45,19 +44,18 @@ public record ProjectConfig(
         return humanPaths == null ? List.of() : humanPaths;
     }
 
+    public Remote gitRemote() {
+        return Remote.of(remote);
+    }
+
     /** The base branch as a LOCAL name, which is the form every other branch here is written in. */
     public String baseBranchName() {
-        return baseBranch == null ? "" : baseBranch.replaceFirst("^origin/", "");
+        return gitRemote().branchOf(baseBranch);
     }
 
     /** A deploy would merge into the branch tasks are cut from, which is the one write jagt must never make. */
     public boolean deploysIntoTheBaseBranch() {
-        String deploy = localName(deployBranch);
-        return !deploy.isEmpty() && deploy.equals(localName(baseBranch));
-    }
-
-    /** The branch a ref names, however spelled: {@code +refs/heads/main} and {@code origin/main} are {@code main}. */
-    public static String localName(String ref) {
-        return ref == null ? "" : REF_PREFIX.matcher(ref.strip()).replaceFirst("");
+        String deploy = gitRemote().branchOf(deployBranch);
+        return !deploy.isEmpty() && deploy.equals(baseBranchName());
     }
 }

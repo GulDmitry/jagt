@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import org.springframework.util.FileSystemUtils;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
+import dev.jagt.orchestrator.task.Remote;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,28 @@ public class GitCommands {
     private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
     private final Processes processRunner;
     private final WorktreeProcesses worktreeProcesses;
+    private final Remotes remotes;
+
+    /** The remote of the configured project this repository or checkout belongs to; origin where none is configured. */
+    Remote remote(Path repository) {
+        return remotes.of(repository).or(() -> worktreeOwner(repository).flatMap(remotes::of)).orElse(Remote.ORIGIN);
+    }
+
+    /** A repository kept on this machine has nothing to fetch, which is no failure. */
+    Processes.Result fetchPruning(Remote remote, Path workingDir) {
+        if (remote.local()) {
+            return new Processes.Result(0, "", "");
+        }
+        return run(workingDir, List.of("git", "fetch", "--prune", remote.name()));
+    }
+
+    Processes.Result fetchBranch(Remote remote, Path workingDir, String branch) {
+        if (remote.local()) {
+            return new Processes.Result(0, "", "");
+        }
+        return run(workingDir, List.of("git", "fetch", remote.name(),
+                "+refs/heads/" + branch + ":" + remote.trackingRef(branch)));
+    }
 
     Processes.Result run(Path workingDir, List<String> command) {
         return processRunner.run(workingDir, GIT_TIMEOUT, command);

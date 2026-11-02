@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitRemote;
+import dev.jagt.orchestrator.task.Remote;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -30,13 +31,14 @@ public class GitWorktrees {
 
     public void createWorktree(Path projectPath, Path worktreePath, String branch, String baseBranch,
                                BranchStrategy strategy) {
-        // The REMOTE-TRACKING ref, always: a fetch refreshes origin/<base> but never fast-forwards a
+        // The REMOTE-TRACKING ref, always: a fetch refreshes <remote>/<base> but never fast-forwards a
         // checkout-less local branch, so cutting from a local `main` inherits stale history.
-        String base = "origin/" + baseBranch.replaceFirst("^origin/", "");
+        Remote remote = git.remote(projectPath);
+        String base = remote.track(remote.branchOf(baseBranch));
         git.locked(projectPath, () -> {
-            fetchAndClearStale(projectPath, worktreePath);
+            fetchAndClearStale(remote, projectPath, worktreePath);
             if (!branchPresent(projectPath, branch)) {
-                cutNew(projectPath, worktreePath, branch, base, strategy);
+                cutNew(remote, projectPath, worktreePath, branch, base, strategy);
                 return;
             }
             switch (strategy) {
@@ -47,14 +49,13 @@ public class GitWorktrees {
                         + " branchStrategy: 'recreate' (old work merged/obsolete -> delete branch, start fresh"
                         + " from " + base + ") or 'resume' (continue the existing branch and its commits).");
                 case RECREATE -> recreate(projectPath, worktreePath, branch, base);
-                case RESUME -> resumeExisting(projectPath, worktreePath, branch, base);
+                case RESUME -> resumeExisting(remote, projectPath, worktreePath, branch, base);
             }
         });
     }
 
-    private void fetchAndClearStale(Path projectPath, Path worktreePath) {
-        git.run(projectPath, List.of("git", "fetch", "--prune"))
-                .expectSuccess("git fetch in " + projectPath);
+    private void fetchAndClearStale(Remote remote, Path projectPath, Path worktreePath) {
+        git.fetchPruning(remote, projectPath).expectSuccess("git fetch in " + projectPath);
         // An unregistered worktree whose directory is still on disk makes `git worktree add` fail.
         if (Files.exists(worktreePath)) {
             log.atWarn().setMessage("stale worktree directory cleared")
@@ -82,30 +83,31 @@ public class GitWorktrees {
         });
     }
 
-    private void resumeExisting(Path projectPath, Path worktreePath, String branch, String base) {
+    private void resumeExisting(Remote remote, Path projectPath, Path worktreePath, String branch, String base) {
         Runnable restore = freeCheckout(projectPath, branch);
         run(restore, () -> {
-            Counts counts = countsAgainstOrigin(projectPath, branch);
+            Counts counts = countsAgainst(remote, projectPath, branch);
             git.run(projectPath,
                             List.of("git", "worktree", "add", worktreePath.toString(), branch))
                     .expectSuccess("git worktree add (resume) " + worktreePath);
             run(() -> git.clearWorktreePath(projectPath, worktreePath), () -> {
                 detachUpstream(projectPath, branch);
-                fastForward(worktreePath, branch, counts.behind());
+                fastForward(worktreePath, remote, branch, counts.behind());
                 // A branch holding commits origin has never seen is not jagt's to publish.
                 if (counts.tracked() && counts.ahead() == 0) {
-                    rebaseOntoTarget(worktreePath, branch, base);
+                    rebaseOntoTarget(remote, worktreePath, branch, base);
                 }
             });
         });
     }
 
-    private void cutNew(Path projectPath, Path worktreePath, String branch, String base, BranchStrategy strategy) {
+    private void cutNew(Remote remote, Path projectPath, Path worktreePath, String branch, String base,
+                        BranchStrategy strategy) {
         boolean resume = strategy == BranchStrategy.RESUME;
-        cutFrom(projectPath, worktreePath, branch, resume ? resumeBase(projectPath, branch, base) : base);
+        cutFrom(projectPath, worktreePath, branch, resume ? resumeBase(remote, projectPath, branch, base) : base);
         if (resume) {
             run(() -> git.removeWorktreeAndBranch(projectPath, worktreePath, branch),
-                    () -> rebaseOntoTarget(worktreePath, branch, base));
+                    () -> rebaseOntoTarget(remote, worktreePath, branch, base));
         }
     }
 
@@ -198,7 +200,7 @@ public class GitWorktrees {
         }
     }
 
-    /** What separates a branch from origin's copy of it: {@code tracked} is false where origin has none. */
+    /** What separates a branch from the remote's copy of it: {@code tracked} is false where the remote has none. */
     private record Counts(boolean tracked, long behind, long ahead) {
     }
 
@@ -206,18 +208,18 @@ public class GitWorktrees {
      * Refuses outright where both sides carry commits: a branch rewritten on the host is the human's to reconcile,
      * and moving over what only this machine has would lose it.
      */
-    private Counts countsAgainstOrigin(Path projectPath, String branch) {
-        if (!remoteRefExists(projectPath, branch)) {
+    private Counts countsAgainst(Remote remote, Path projectPath, String branch) {
+        if (!remoteRefExists(remote, projectPath, branch)) {
             return new Counts(false, 0, 0);
         }
         String[] counted = git.run(projectPath, List.of("git", "rev-list", "--left-right",
-                        "--count", "origin/" + branch + "..." + branch))
+                        "--count", remote.track(branch) + "..." + branch))
                 .expectSuccess("git rev-list --count " + branch).stdout().strip().split("\\s+");
         long behind = Long.parseLong(counted[0]);
         long ahead = Long.parseLong(counted[1]);
         if (behind > 0 && ahead > 0) {
-            throw new IllegalStateException("Branch '" + branch + "' and origin/" + branch + " have diverged ("
-                    + ahead + " commit(s) only here, " + behind + " only on origin) — it was rewritten on the"
+            throw new IllegalStateException("Branch '" + branch + "' and " + remote.track(branch) + " have diverged ("
+                    + ahead + " commit(s) only here, " + behind + " only on " + remote.name() + ") — it was rewritten on the"
                     + " host. Reconcile it yourself, then resume.");
         }
         return new Counts(true, behind, ahead);
@@ -228,12 +230,12 @@ public class GitWorktrees {
      * target restage every commit the request already carries. Run inside the worktree, the branch being checked
      * out there: moving the ref from the repository is refused by git.
      */
-    private void fastForward(Path worktreePath, String branch, long behind) {
+    private void fastForward(Path worktreePath, Remote remote, String branch, long behind) {
         if (behind == 0) {
             return;
         }
-        git.run(worktreePath, List.of("git", "merge", "--ff-only", "origin/" + branch))
-                .expectSuccess("git merge --ff-only origin/" + branch);
+        git.run(worktreePath, List.of("git", "merge", "--ff-only", remote.track(branch)))
+                .expectSuccess("git merge --ff-only " + remote.track(branch));
         log.atInfo().setMessage("resumed branch fast-forwarded")
                 .addKeyValue("branch", branch)
                 .addKeyValue("commits", behind)
@@ -246,7 +248,7 @@ public class GitWorktrees {
      * left standing in the worktree: resolving it is the session's first job. A push the lease refuses undoes the
      * rebase, so the branch never sits rewritten here and whole on origin.
      */
-    private void rebaseOntoTarget(Path worktreePath, String branch, String target) {
+    private void rebaseOntoTarget(Remote remote, Path worktreePath, String branch, String target) {
         // The request outliving its target is an ordinary case: there is then nothing to replay onto.
         if (git.run(worktreePath,
                 List.of("git", "rev-parse", "--verify", "--quiet", target)).exitCode() != 0) {
@@ -268,11 +270,11 @@ public class GitWorktrees {
                     .log();
             return;
         }
-        if (before.equals(headOf(worktreePath))) {
+        if (before.equals(headOf(worktreePath)) || remote.local()) {
             return;
         }
         var pushed = git.run(worktreePath, List.of("git", "push", "--force-with-lease",
-                "origin", "refs/heads/" + branch + ":refs/heads/" + branch));
+                remote.name(), "refs/heads/" + branch + ":refs/heads/" + branch));
         if (pushed.exitCode() != 0) {
             // The push's own words are the diagnosis, so a failed undo rides along rather than replacing them.
             var undone = git.run(worktreePath, List.of("git", "reset", "--hard", before));
@@ -301,14 +303,14 @@ public class GitWorktrees {
     }
 
     /** A resumed branch this machine never had comes from the REQUEST's branch; its target holds none of the work. */
-    private String resumeBase(Path projectPath, String branch, String base) {
-        return remoteRefExists(projectPath, branch) ? "origin/" + branch : base;
+    private String resumeBase(Remote remote, Path projectPath, String branch, String base) {
+        return remoteRefExists(remote, projectPath, branch) ? remote.track(branch) : base;
     }
 
-    /** The just-fetched remote-tracking ref, asked of refs rather than over the network. */
-    private boolean remoteRefExists(Path projectPath, String branch) {
-        return git.run(projectPath,
-                List.of("git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/" + branch))
+    /** The just-fetched remote-tracking ref, asked of refs rather than over the network; a local repository has none. */
+    private boolean remoteRefExists(Remote remote, Path projectPath, String branch) {
+        return !remote.local() && git.run(projectPath,
+                List.of("git", "rev-parse", "--verify", "--quiet", remote.trackingRef(branch)))
                 .exitCode() == 0;
     }
 
@@ -353,32 +355,35 @@ public class GitWorktrees {
                 List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0);
     }
 
-    /** Commits on the branch, or on its copy at origin, that the base does not hold: work a recreate would lose. */
+    /** Commits on the branch, or on its copy at the remote, that the base does not hold: work a recreate would lose. */
     public boolean holdsOwnCommits(Path projectPath, String branch, String baseBranch) {
-        String base = "origin/" + baseBranch.replaceFirst("^origin/", "");
+        Remote remote = git.remote(projectPath);
+        String base = remote.track(remote.branchOf(baseBranch));
         return git.locked(projectPath, () -> {
             List<String> command = new ArrayList<>(List.of("git", "rev-list", "--count", "^" + base,
                     "refs/heads/" + branch));
-            if (remoteRefExists(projectPath, branch)) {
-                command.add("refs/remotes/origin/" + branch);
+            if (remoteRefExists(remote, projectPath, branch)) {
+                command.add(remote.trackingRef(branch));
             }
             return !git.run(projectPath, command)
                     .expectSuccess("git rev-list --count " + branch).stdout().strip().equals("0");
         });
     }
 
-    /** Whether HEAD holds the branch as origin has it now: fetched first, since a branch stacked on moves. */
+    /** Whether HEAD holds the branch as the remote has it now: fetched first, since a branch stacked on moves. */
     public boolean standsOn(Path worktreePath, String branch) {
-        return git.locked(worktreePath, () -> git.run(worktreePath, List.of("git", "fetch", "origin",
-                "+refs/heads/" + branch + ":refs/remotes/origin/" + branch)).exitCode() == 0
-                && git.run(worktreePath, List.of("git", "merge-base", "--is-ancestor", "origin/" + branch, "HEAD"))
+        Remote remote = git.remote(worktreePath);
+        return git.locked(worktreePath, () -> git.fetchBranch(remote, worktreePath, branch).exitCode() == 0
+                && git.run(worktreePath, List.of("git", "merge-base", "--is-ancestor", remote.track(branch), "HEAD"))
                 .exitCode() == 0);
     }
 
     /** Asked over the network, not of {@code refs/remotes}: a just-pushed branch is absent until the next fetch. */
     public boolean remoteBranchExists(Path projectPath, String branch) {
-        return git.locked(projectPath, () -> git.run(projectPath,
-                List.of("git", "ls-remote", "--exit-code", "--heads", "origin", branch)).exitCode() == 0);
+        Remote remote = git.remote(projectPath);
+        return git.locked(projectPath, () -> remote.local() ? branchExists(projectPath, branch)
+                : git.run(projectPath, List.of("git", "ls-remote", "--exit-code", "--heads", remote.name(), branch))
+                .exitCode() == 0);
     }
 
     /**
@@ -440,10 +445,15 @@ public class GitWorktrees {
         DiffCheckouts.diffWorktreePaths(taskId, project).forEach(git::forceDeleteDir);
     }
 
+    /** The remote's address; blank for a repository kept on this machine. */
     public String remoteUrl(Path projectPath) {
+        Remote remote = git.remote(projectPath);
+        if (remote.local()) {
+            return "";
+        }
         return git.locked(projectPath, () -> GitRemote.withoutCredentials(
-                git.run(projectPath, List.of("git", "remote", "get-url", "origin"))
-                        .expectSuccess("git remote get-url origin in " + projectPath)
+                git.run(projectPath, List.of("git", "remote", "get-url", remote.name()))
+                        .expectSuccess("git remote get-url " + remote.name() + " in " + projectPath)
                         .stdout()
                         .trim()));
     }

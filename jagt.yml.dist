@@ -28,6 +28,8 @@ orchestrator:
   #                          # `none`: ship pushes the branch alone, opens no request, and the deploy is next. `replay`: beside `agent.cli: replay`.
   #                         # none: no pipeline is read, a deploy settles without one
   # Per project, beside `path`:
+  #   remote: origin                          # the git remote branches are shared through; none: a repository kept on this machine
+  #                                           # (worktrees cut from the local base, nothing fetched or pushed; codeHost must be none)
   #   codeHostName: git.example.com           # the host, where the remote does not name it (a self-hosted GitLab, GitHub Enterprise)
   #   pipelineCommand: ["ci-state", "{sha}"]  # codeHost command: run in the project's directory, prints success | failed | running | none | unknown
   #   retryCommand: ["ci-rerun", "{pipeline}"]  # optional: re-runs a pipeline that died on infrastructure

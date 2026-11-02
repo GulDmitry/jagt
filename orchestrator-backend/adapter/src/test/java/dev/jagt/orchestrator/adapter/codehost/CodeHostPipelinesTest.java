@@ -35,7 +35,7 @@ class CodeHostPipelinesTest {
 
     private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
         return new ProjectConfig("/repo/shop", "origin/main", "dev", List.of(), List.of(), null, null, codeHost, null,
-                pipelineCommand, null, null);
+                pipelineCommand, null, null, null);
     }
 
     private String firstWordOfTheCommandRun() {
@@ -124,5 +124,16 @@ class CodeHostPipelinesTest {
         Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
         assertThat(answer.failure()).startsWith("orchestrator.projects.shop.codeHost: 'bitbucket'");
+    }
+
+    @Test
+    void settlesADeployWithNoPipelineForAProjectWithNoRemoteAndNoCodeHostKey() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("shop",
+                new ProjectConfig("/repo/shop", "main", "dev", List.of(), List.of(), null, null, null, null, null,
+                        null, null, "none"))));
+
+        Answer<CommitPipeline> answer = pipelines.onCommit("shop", "", "0123abc");
+
+        assertThat(answer.facts().orElseThrow().hosted()).isFalse();
     }
 }

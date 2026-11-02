@@ -41,7 +41,7 @@ class GitCommandsTest {
         Files.setPosixFilePermissions(dir, PosixFilePermissions.fromString("r-xr-xr-x"));
         assumeFalse(Files.isWritable(dir));
         WorktreeProcesses reaper = mock(WorktreeProcesses.class);
-        GitCommands git = new GitCommands(mock(Processes.class), reaper);
+        GitCommands git = new GitCommands(mock(Processes.class), reaper, path -> java.util.Optional.empty());
 
         git.forceDeleteDir(dir);
 
@@ -50,7 +50,7 @@ class GitCommandsTest {
 
     @Test
     void letsASecondCallerIntoARepositoryOnceTheFirstActionReturned(@TempDir Path repo) throws Exception {
-        GitCommands git = new GitCommands(mock(Processes.class), mock(WorktreeProcesses.class));
+        GitCommands git = new GitCommands(mock(Processes.class), mock(WorktreeProcesses.class), path -> java.util.Optional.empty());
         CompletableFuture<String> first = new CompletableFuture<>();
         Thread.startVirtualThread(() -> first.complete(git.locked(repo, () -> "first")));
         first.get(5, TimeUnit.SECONDS);

@@ -27,7 +27,7 @@ class DiffCheckoutsTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner));
+        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
         GitWorktrees git = new GitWorktrees(commands);
         DiffCheckouts diffs = new DiffCheckouts(commands);
         Path wt = dir.resolve("wt");
@@ -61,7 +61,7 @@ class DiffCheckoutsTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner));
+        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
         GitWorktrees git = new GitWorktrees(commands);
         DiffCheckouts diffs = new DiffCheckouts(commands);
         Path base = diffs.checkoutBaseForDiff(repo, "origin/main", "ABC-8", "proj");
@@ -85,7 +85,7 @@ class DiffCheckoutsTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner));
+        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
         GitWorktrees git = new GitWorktrees(commands);
         DiffCheckouts diffs = new DiffCheckouts(commands);
         Path wt = dir.resolve("wt");
@@ -119,7 +119,7 @@ class DiffCheckoutsTest {
         runner.run(web, timeout, List.of("git", "add", "."));
         runner.run(web, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(web, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner));
+        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
         GitWorktrees git = new GitWorktrees(commands);
         DiffCheckouts diffs = new DiffCheckouts(commands);
 
@@ -146,7 +146,7 @@ class DiffCheckoutsTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner));
+        GitCommands commands = new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
         GitWorktrees git = new GitWorktrees(commands);
         DiffCheckouts diffs = new DiffCheckouts(commands);
         Path wt = dir.resolve("wt");

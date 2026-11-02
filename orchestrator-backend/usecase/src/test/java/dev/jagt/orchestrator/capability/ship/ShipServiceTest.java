@@ -206,7 +206,7 @@ class ShipServiceTest {
     @Test
     void namesTheExactTitleAndTheRepositoryWhoseRequestIsStillMissing() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
-                List.of(new ShipService.Target("demo", "/wt", "dev", false, true)), "");
+                List.of(new ShipService.Target("demo", "/wt", "dev", false, true, true)), "");
 
         assertThat(instruction).contains("EXACTLY \"ABC-42 Widget layout is off\"")
                 .contains("demo: /wt, merges into dev — NO request yet, open one");
@@ -215,7 +215,7 @@ class ShipServiceTest {
     @Test
     void asksForARoundMessageAndNoNewRequestWhereOneIsAlreadyOpen() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
-                List.of(new ShipService.Target("demo", "/wt", "dev", true, true)), "");
+                List.of(new ShipService.Target("demo", "/wt", "dev", true, true, true)), "");
 
         assertThat(instruction).contains("demo: /wt, merges into dev — its request is already open")
                 .contains("STARTS with \"ABC-42\"");
@@ -224,7 +224,7 @@ class ShipServiceTest {
     @Test
     void asksForNoRequestAndOnlyAPushFromARepositoryWithNoCodeHost() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
-                List.of(new ShipService.Target("demo", "/wt", "dev", false, false)), "");
+                List.of(new ShipService.Target("demo", "/wt", "dev", false, false, true)), "");
 
         assertThat(instruction).contains("demo: /wt, merges into dev — it has no code host: push the branch and open NO request")
                 .contains("REVIEW_PENDING and no request URL")
@@ -234,8 +234,8 @@ class ShipServiceTest {
     @Test
     void asksForTheLinkOfTheHostedRepositoryAloneWhereTheOtherHasNoCodeHost() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
-                List.of(new ShipService.Target("demo", "/wt", "dev", false, true),
-                        new ShipService.Target("web", "/wt-web", "dev", false, false)), "");
+                List.of(new ShipService.Target("demo", "/wt", "dev", false, true, true),
+                        new ShipService.Target("web", "/wt-web", "dev", false, false, true)), "");
 
         assertThat(instruction).contains("reviewRequests={\"demo\": \"<its url>\"}")
                 .contains("web: /wt-web, merges into dev — it has no code host");
@@ -267,8 +267,8 @@ class ShipServiceTest {
     @Test
     void tellsTheAgentWhichRepositoryOfATwoRepoTaskIsARoundBehind() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
-                List.of(new ShipService.Target("demo", "/wt", "dev", true, true),
-                        new ShipService.Target("web", "/wt-web", "dev", false, true)), "");
+                List.of(new ShipService.Target("demo", "/wt", "dev", true, true, true),
+                        new ShipService.Target("web", "/wt-web", "dev", false, true, true)), "");
 
         assertThat(instruction).contains("demo: /wt, merges into dev — its request is already open")
                 .contains("web: /wt-web, merges into dev — NO request yet, open one");
@@ -277,7 +277,7 @@ class ShipServiceTest {
     @Test
     void asksForOneLinkBackFromATaskWithASingleRepository() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
-                List.of(new ShipService.Target("demo", "/wt", "dev", false, true)), "");
+                List.of(new ShipService.Target("demo", "/wt", "dev", false, true, true)), "");
 
         assertThat(instruction).contains("CI_POLLING and reviewRequestUrl=<the url>")
                 .doesNotContain("half-shipped");
@@ -286,8 +286,8 @@ class ShipServiceTest {
     @Test
     void asksForOneLinkPerProjectFromATaskSpanningRepositories() {
         String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
-                List.of(new ShipService.Target("demo", "/wt", "dev", false, true),
-                        new ShipService.Target("web", "/wt-web", "dev", false, true)), "");
+                List.of(new ShipService.Target("demo", "/wt", "dev", false, true, true),
+                        new ShipService.Target("web", "/wt-web", "dev", false, true, true)), "");
 
         assertThat(instruction)
                 .contains("reviewRequests={\"demo\": \"<its url>\", \"web\": \"<its url>\"}");
@@ -370,5 +370,15 @@ class ShipServiceTest {
                 () -> new ShipService(stateService, configService, relay, changes, door).ship("ABC-42"));
 
         verify(relay).write(eq("ABC-42"), eq(Step.SHIP), contains("post each drafted reply"), any(Standing.class));
+    }
+
+    @Test
+    void asksForNoPushAndNoRequestFromARepositoryWithNoRemote() {
+        String instruction = ShipService.shipFacts("ABC-42 Widget layout is off", "ABC-42",
+                List.of(new ShipService.Target("demo", "/wt", "dev", false, false, false)), "");
+
+        assertThat(instruction).contains("Push nothing: no repository of this task has a remote.")
+                .contains("demo: /wt, merges into dev — it has no remote: push nothing and open NO request")
+                .doesNotContain("Push branch");
     }
 }

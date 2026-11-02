@@ -24,7 +24,8 @@ A pipeline running, not started, unknown or unreadable keeps the deploy open, an
 ### Requirement: A deploy stands with no pipeline where none can come
 A deploy SHALL stand with no pipeline where none can come.
 That is: the host lists none for `NO_PIPELINE_AFTER` (10 minutes) after the repository's recorded push, the repository has no
-code-host address, or its `codeHost` is `none`. A target that stood on the first SHALL be read on while `DEPLOYED`.
+code-host address, or its `codeHost` is `none`. A `remote` of `none` implies that last one.
+A target that stood on the first SHALL be read on while `DEPLOYED`.
 
 #### Scenario: No pipeline will come
 - **WHEN** the host lists no pipeline for ABC-42's deploy commit 10 minutes after its recorded push

@@ -656,8 +656,17 @@ class ConfigServiceTest {
     void hasNoCodeHostWhereTheProjectsOwnKeyOrElseTheOrchestratorsSaysNone(String root, String own, boolean none) {
         ConfigFile config = ConfigFile.defaults().withCodeHost(root).withProjects(java.util.Map.of(
                 "demo", new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of(),
-                        null, null, own, null, null, null, null)));
+                        null, null, own, null, null, null, null, null)));
 
         assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
+    }
+
+    @Test
+    void hasNoCodeHostWhereTheProjectHasNoRemote() {
+        ConfigFile config = ConfigFile.defaults().withCodeHost("gitlab").withProjects(java.util.Map.of(
+                "demo", new dev.jagt.orchestrator.task.ProjectConfig("/repo", "main", "dev", List.of(), List.of(),
+                        null, null, null, null, null, null, null, "none")));
+
+        assertThat(config.hasNoCodeHost("demo")).isTrue();
     }
 }

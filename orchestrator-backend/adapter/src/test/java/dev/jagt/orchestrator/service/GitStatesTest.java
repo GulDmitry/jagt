@@ -30,7 +30,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         Map<String, String> trusted = git.gitState(List.of(worktree));
         runner.run(worktree, timeout, List.of("git", "config", "core.fsmonitor", "/tmp/watch"));
 
@@ -50,7 +50,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         Map<String, String> trusted = git.gitState(List.of(worktree));
         runner.run(worktree, timeout, List.of("git", "config", "branch.ABC-42.remote", "origin"));
         runner.run(worktree, timeout, List.of("git", "config", "branch.ABC-42.merge", "refs/heads/ABC-42"));
@@ -71,7 +71,7 @@ class GitStatesTest {
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "config", "extensions.worktreeConfig", "true"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         Map<String, String> trusted = git.gitState(List.of(worktree));
         runner.run(worktree, timeout, List.of("git", "config", "--worktree", "gpg.program", "/tmp/sign"));
 
@@ -93,7 +93,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
         Path hook = repo.resolve(".git/hooks/post-merge");
         Files.writeString(hook, "#!/bin/sh\n");
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         Map<String, String> trusted = git.gitState(List.of(worktree));
         Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
 
@@ -113,7 +113,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         runner.run(worktree, timeout, List.of("git", "config", "core.fsmonitor", "/tmp/watch"));
         Map<String, String> trusted = git.gitState(List.of(worktree));
         runner.run(worktree, timeout, List.of("git", "config", "core.fsmonitor", "/tmp/other"));
@@ -134,7 +134,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         runner.run(worktree, timeout, List.of("git", "config", "core.hooksPath", "custom-hooks"));
         Files.createDirectories(repo.resolve("custom-hooks"));
         Files.writeString(repo.resolve("custom-hooks/pre-push"), "#!/bin/sh\n");
@@ -154,7 +154,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         Path hook = repo.resolve(".git/hooks/pre-push");
         Files.writeString(hook, "#!/bin/sh\n");
         Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
@@ -175,7 +175,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         Files.writeString(repo.resolve(".git/hooks/pre-commit.sample"), "#!/bin/sh\n");
         Files.createDirectories(repo.resolve(".git/hooks/vendored"));
 
@@ -194,7 +194,7 @@ class GitStatesTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
                 "--allow-empty", "-m", "init"));
         runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
         Files.writeString(repo.resolve(".git/config"), "[core]\n\trepositoryformatversion = 0\n[x]\n"
                 + IntStream.range(0, 511).mapToObj(i -> "\tk" + i + " = v\n").collect(Collectors.joining()));
 

@@ -25,7 +25,7 @@ class HumanPathsTest {
     void namesTheFirstChangedPathTheProjectKeepsForTheHuman() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                null, null, List.of("**/auth/**"), null, null, null, null, null));
+                null, null, List.of("**/auth/**"), null, null, null, null, null, null));
         when(changes.paths(task)).thenReturn(Optional.of(Map.of("demo", List.of("README.md", "src/auth/Login.java"))));
 
         Optional<String> touched = new HumanPaths(configService, changes).touched(task);
@@ -37,7 +37,7 @@ class HumanPathsTest {
     void namesNothingWhereNoChangedPathIsKept() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                null, null, List.of("**/auth/**"), null, null, null, null, null));
+                null, null, List.of("**/auth/**"), null, null, null, null, null, null));
         when(changes.paths(task)).thenReturn(Optional.of(Map.of("demo", List.of("README.md"))));
 
         Optional<String> touched = new HumanPaths(configService, changes).touched(task);
@@ -49,7 +49,7 @@ class HumanPathsTest {
     void keepsTheStepWithTheHumanWhereTheChangedPathsCouldNotBeRead() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                null, null, List.of("**/auth/**"), null, null, null, null, null));
+                null, null, List.of("**/auth/**"), null, null, null, null, null, null));
         when(changes.paths(task)).thenReturn(Optional.empty());
 
         Optional<String> touched = new HumanPaths(configService, changes).touched(task);

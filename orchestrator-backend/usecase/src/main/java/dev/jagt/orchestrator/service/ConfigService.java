@@ -535,12 +535,19 @@ public class ConfigService implements LoopBreaker.Current {
             }
         }
 
-        /** The project's own {@code codeHost} over the orchestrator's: whether it names no host at all. */
+        /** Whether the project has no code host: it has no remote, or its {@code codeHost} says none. */
         public boolean hasNoCodeHost(String project) {
+            ProjectConfig declared = projects.get(project);
+            return declared != null && declared.gitRemote().local()
+                    || codeHostNamed(project).filter(ProjectConfig.NO_CODE_HOST::equalsIgnoreCase).isPresent();
+        }
+
+        /** The kind the project's own {@code codeHost} names, else the orchestrator's; empty where neither does. */
+        public Optional<String> codeHostNamed(String project) {
             ProjectConfig declared = projects.get(project);
             String own = declared == null ? null : declared.codeHost();
             String kind = own == null || own.isBlank() ? codeHost : own;
-            return kind != null && ProjectConfig.NO_CODE_HOST.equalsIgnoreCase(kind.strip());
+            return kind == null || kind.isBlank() ? Optional.empty() : Optional.of(kind.strip());
         }
 
         public static ConfigFile defaults() {

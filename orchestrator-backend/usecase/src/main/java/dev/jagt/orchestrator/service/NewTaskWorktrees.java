@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -257,11 +258,10 @@ public class NewTaskWorktrees {
 
     /** A task's branch is rebased and force-pushed, so it must not be one other work lands on. */
     private static void requireOwnBranch(String taskId, @Nullable String baseOverride, ConfigService.ConfigFile config) {
-        String task = ProjectConfig.localName(taskId);
-        Stream.concat(config.projects().values().stream()
-                                .flatMap(project -> Stream.of(project.baseBranch(), project.deployBranch())),
-                        Stream.of(baseOverride))
-                .map(ProjectConfig::localName)
+        String task = Remote.ORIGIN.branchOf(taskId);
+        Stream.concat(config.projects().values().stream().flatMap(project -> Stream.of(project.baseBranchName(),
+                                project.gitRemote().branchOf(project.deployBranch()))),
+                        Stream.of(Remote.ORIGIN.branchOf(baseOverride)))
                 .filter(task::equalsIgnoreCase)
                 .findFirst()
                 .ifPresent(shared -> {

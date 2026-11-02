@@ -44,7 +44,7 @@ class IdeDiff {
             throw new IllegalStateException("Project " + repo.project() + " has no baseBranch in jagt.yml,"
                     + " so a diff of " + taskId + " has nothing to read against");
         }
-        String diffBase = "origin/" + configured.replaceFirst("^origin/", "");
+        String diffBase = project.gitRemote().track(project.gitRemote().branchOf(configured));
         Path base = diffCheckouts.checkoutBaseForDiff(projectPath, diffBase, taskId, Objects.requireNonNull(repo.project()));
         Path clean = diffCheckouts.checkoutWorktreeCleanForDiff(Path.of(repo.worktreePath()), projectPath,
                 diffBase, taskId, Objects.requireNonNull(repo.project()));
