@@ -174,9 +174,9 @@
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
-  [spec](../openspec/specs/task-flow/spec.md#requirement-starting-a-task)
+  [spec](../openspec/specs/task-start/spec.md#requirement-starting-a-task)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
-  [spec](../openspec/specs/task-flow/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
+  [spec](../openspec/specs/task-start/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
 
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 

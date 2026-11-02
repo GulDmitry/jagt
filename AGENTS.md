@@ -35,7 +35,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 
 | about to touch | read first |
 |----------------|------------|
-| `flow/`, a status, a capability, an outcome | [`task-flow`](openspec/specs/task-flow/spec.md) |
+| `flow/`, a status, a capability, an outcome, a task's start | [`task-flow`](openspec/specs/task-flow/spec.md), [`task-start`](openspec/specs/task-start/spec.md) |
 | the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md), [`board-workspace`](openspec/specs/board-workspace/spec.md) |
 | a colour, a mark, the colour palette, the legend | [`docs/rules/design.md`](docs/rules/design.md) |
 | whose move it is, a badge, an owner, a clock | [`attention`](openspec/specs/attention/spec.md) |
