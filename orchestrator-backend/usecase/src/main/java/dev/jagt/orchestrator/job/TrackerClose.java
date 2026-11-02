@@ -26,6 +26,11 @@ public class TrackerClose {
     private final TrackerWorkflow workflow;
     private final WorktreeChanges changes;
 
+    /** Whether the task is named after an item the tracker holds. */
+    public boolean watches(String taskId) {
+        return workflow.isItemKey(taskId);
+    }
+
     public boolean closes(String taskId, TaskState task) {
         Answer<TicketFacts> read = tickets.read(taskId);
         tickets.charge(taskId, read.usage());

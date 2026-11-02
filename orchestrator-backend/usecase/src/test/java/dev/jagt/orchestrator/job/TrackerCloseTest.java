@@ -93,4 +93,12 @@ class TrackerCloseTest {
         assertThat(close.closes("ABC-42", task)).isFalse();
         verify(changes, never()).uncommitted(any());
     }
+
+    @Test
+    void watchesATaskNamedAfterAnItemTheWorkflowKnowsAndNoOther() {
+        when(workflow.isItemKey("ABC-42")).thenReturn(true);
+
+        assertThat(close.watches("ABC-42")).isTrue();
+        assertThat(close.watches("feature/widget")).isFalse();
+    }
 }

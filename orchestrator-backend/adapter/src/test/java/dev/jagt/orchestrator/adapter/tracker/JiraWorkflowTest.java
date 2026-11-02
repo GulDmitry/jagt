@@ -90,4 +90,10 @@ class JiraWorkflowTest {
     void namesItselfJiraSoTheInstallCanSelectIt() {
         assertThat(workflow.id()).isEqualTo("jira");
     }
+
+    @ParameterizedTest
+    @CsvSource({"ABC-42,true", "a1-7,true", "ABC42,false", "ABC-,false", "42-ABC,false", "https://tracker/ABC-42,false"})
+    void takesABareIssueKeyForAnItemAndNothingParsedOutOfAUrl(String name, boolean item) {
+        assertThat(workflow.isItemKey(name)).isEqualTo(item);
+    }
 }

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.tracker;
 
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.task.TicketFacts;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,11 @@ public class NoTrackerWorkflow implements TrackerWorkflow {
     @Override
     public String id() {
         return "none";
+    }
+
+    @Override
+    public boolean isItemKey(@Nullable String name) {
+        return false;
     }
 
     @Override

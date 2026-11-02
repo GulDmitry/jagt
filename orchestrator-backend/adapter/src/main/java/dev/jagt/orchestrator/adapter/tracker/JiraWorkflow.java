@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -23,11 +24,18 @@ public class JiraWorkflow implements TrackerWorkflow {
 
     static final String ID = "jira";
 
+    private static final Pattern ITEM_KEY = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
+
     private final ConfigService configService;
 
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isItemKey(@Nullable String name) {
+        return name != null && ITEM_KEY.matcher(name).matches();
     }
 
     @Override

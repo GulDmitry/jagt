@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,7 +113,7 @@ public class TicketCloseJob implements Job {
     private Map<String, TaskState> handedOver() {
         Map<String, TaskState> waiting = new LinkedHashMap<>();
         stateService.tasks().forEach((taskId, task) -> {
-            if (FlowRules.handedOver(task.status()) && TaskName.isTicketKey(taskId)) {
+            if (FlowRules.handedOver(task.status()) && close.watches(taskId)) {
                 waiting.put(taskId, task);
             }
         });

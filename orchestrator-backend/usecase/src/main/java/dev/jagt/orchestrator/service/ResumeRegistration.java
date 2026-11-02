@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
-import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +20,14 @@ public class ResumeRegistration {
     private final TaskProvisioning provisioning;
     private final AgentStatusReports statusReports;
     private final TicketReader tickets;
+    private final TrackerWorkflow workflow;
 
     public Launched register(String taskId, String project, String mrUrl, String title, String targetBranch) {
         // Stored bare: the pattern already prefixed the ticket, and a later ship expands it again.
         String bare = ReviewRequestTitle.stripTicketPrefix(title, taskId);
         boolean untitled = bare == null || bare.isBlank();
         // No request carries the ticket's LINK, so a ticket-keyed branch is read like `do` reads one.
-        boolean asksTheTracker = TaskName.isTicketKey(taskId);
+        boolean asksTheTracker = workflow.isItemKey(taskId);
         Answer<TicketFacts> ticket = asksTheTracker ? tickets.read(taskId) : Answer.unavailable();
         // An answer about another item titles another card: the branch already fixed which one this is.
         TicketFacts named = ticket.facts().filter(TicketFacts::usable)

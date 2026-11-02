@@ -95,6 +95,7 @@ class IntakeCandidatesTest {
 
     @Test
     void offersTheItemTheWorkflowSaysAMachineMayStart() {
+        when(workflow.isItemKey("ABC-42")).thenReturn(true);
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42")
                 .withTrackerStatus("In Progress").withAssignee("jdoe");

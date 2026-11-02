@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
-import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +53,7 @@ public class IntakeCandidates {
             if (held.contains(key)) {
                 continue;
             }
-            if (!TaskName.isTicketKey(key)) {
+            if (!workflow.isItemKey(key)) {
                 log.atWarn().setMessage("intake search answered with a non-key")
                         .addKeyValue("ref", key)
                         .addKeyValue("effect", "key skipped")

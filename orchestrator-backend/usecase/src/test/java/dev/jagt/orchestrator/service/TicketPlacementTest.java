@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -20,7 +21,8 @@ class TicketPlacementTest {
 
     private final TicketReader tickets = mock(TicketReader.class);
     private final ProjectRouting routing = mock(ProjectRouting.class);
-    private final TicketPlacement placement = new TicketPlacement(tickets, routing);
+    private final TrackerWorkflow workflow = mock(TrackerWorkflow.class);
+    private final TicketPlacement placement = new TicketPlacement(tickets, routing, workflow);
 
     @Test
     void refusesAnItemTheRouterCouldNotPlaceRatherThanPickingARepository() {
@@ -85,6 +87,8 @@ class TicketPlacementTest {
 
     @Test
     void refusesWhenTheReadAnsweredAboutADifferentItem() {
+        when(workflow.isItemKey("ABC-99")).thenReturn(true);
+        when(workflow.isItemKey("ABC-42")).thenReturn(true);
         TicketFacts other = TicketFacts.defaults().withExists(true).withKey("ABC-99").withTitle("Widget layout is off")
                 .withTrackerProject("ABC").withUrl("https://tracker/ABC-99");
 
@@ -134,5 +138,13 @@ class TicketPlacementTest {
 
         assertThat(outcome).isEqualTo(new TicketPlacement.Refused(
                 "error: read incomplete: ABC-42 (no key, title or url) — no task created"));
+    }
+
+    @Test
+    void namesAnItemOnlyWhereTheWorkflowKnowsItsKey() {
+        when(workflow.isItemKey("ABC-42")).thenReturn(true);
+
+        assertThat(placement.namesAnItem("ABC-42")).isTrue();
+        assertThat(placement.namesAnItem("feature/widget")).isFalse();
     }
 }

@@ -97,12 +97,13 @@ class TaskLaunchesTest {
 
     @Test
     void warnsAboutALeftoverBranchWithoutSpendingATicketRead() {
+        when(placement.namesAnItem("ABC-9")).thenReturn(true);
         when(worktrees.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
         String out = launches.ticket(LaunchRequest.of("ABC-9"), null).message();
 
         assertThat(out).contains("already exists in group-a", "recreate", "resume");
-        verifyNoInteractions(placement);
+        verify(placement, never()).read(any());
         verify(provisioning, never()).initializeTask(any());
     }
 
@@ -123,6 +124,7 @@ class TaskLaunchesTest {
 
     @Test
     void warnsAboutALeftoverBranchWhenTheHumanAskedForAFreshOne() {
+        when(placement.namesAnItem("ABC-9")).thenReturn(true);
         when(worktrees.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
         String out = launches.ticket(LaunchRequest.of("ABC-9").withStrategy("fresh"), null).message();
@@ -234,7 +236,7 @@ class TaskLaunchesTest {
                 .extracting(NewTask::taskId, NewTask::title, NewTask::instructions, NewTask::ticketUrl)
                 .containsExactly("split-the-invoice-mailer", "Split the invoice mailer",
                         "Split the invoice mailer", null);
-        verifyNoInteractions(placement);
+        verify(placement, never()).read(any());
     }
 
     @Test
@@ -288,6 +290,7 @@ class TaskLaunchesTest {
 
     @Test
     void asksOnlyTheProjectsTheCallerChoseWhetherALeftoverBranchExists() {
+        when(placement.namesAnItem("ABC-9")).thenReturn(true);
         when(worktrees.existingBranchProject("ABC-9", List.of("api"))).thenReturn("api");
 
         String out = launches.ticket(LaunchRequest.of("ABC-9"), List.of("api")).message();

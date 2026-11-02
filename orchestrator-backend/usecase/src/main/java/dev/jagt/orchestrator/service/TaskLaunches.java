@@ -68,7 +68,7 @@ public class TaskLaunches {
     private Optional<Launched> refusedForExistingBranch(LaunchRequest request,
                                                                @Nullable List<String> chosen) {
         String ref = request.ref();
-        if (!TaskName.isTicketKey(ref) || BranchStrategy.of(request.strategy()) != BranchStrategy.FRESH) {
+        if (!placement.namesAnItem(ref) || BranchStrategy.of(request.strategy()) != BranchStrategy.FRESH) {
             return Optional.empty();
         }
         String existing = worktrees.existingBranchProject(Objects.requireNonNull(ref), chosen == null ? List.of() : chosen);

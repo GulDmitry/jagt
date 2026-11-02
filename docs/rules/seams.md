@@ -21,7 +21,7 @@ implementation plus a config value, never `if claude` or `if macos`.
 - **The code host is a seam for jagt's own reads** (`codeHost`: `github` default, `gitlab`, `command`, `none`, `replay`), the
   CLI or command holding the credential. A model reads the tracker and the request through the MCP of whoever
   runs it, jagt holding no credential. Its WORKFLOW is one — `TrackerWorkflow` by
-  `orchestrator.tracker.workflow` names the start and close stages, and reads nothing itself.
+  `orchestrator.tracker.workflow` names the start and close stages and what an item key is, and reads nothing itself.
 - `AbstractAgentRuntime` templates `provisionWorktree`, each agent its hook.
 - `mcp_client.js` is a **standard, agent-agnostic** stdio↔HTTP proxy; only the config declaring it differs
   (Claude `.mcp.json` + `.claude/settings.local.json`; Codex `.jagt/codex/config.toml`, `CODEX_HOME` pointed

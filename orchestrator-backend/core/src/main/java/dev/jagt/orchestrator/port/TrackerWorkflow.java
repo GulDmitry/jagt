@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.port;
 
 import dev.jagt.orchestrator.task.TicketFacts;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Which stages of a tracker's workflow jagt acts on: what it may start unasked, and what closes the task working
@@ -11,6 +12,9 @@ public interface TrackerWorkflow {
 
     /** The {@code orchestrator.tracker.workflow} value selecting this one. */
     String id();
+
+    /** Whether a name is the key this tracker gives an item, as opposed to a url or a branch named after anything else. */
+    boolean isItemKey(@Nullable String name);
 
     /** What the assistant is asked to find, phrased the way THIS tracker is searched. */
     String candidateQuery();

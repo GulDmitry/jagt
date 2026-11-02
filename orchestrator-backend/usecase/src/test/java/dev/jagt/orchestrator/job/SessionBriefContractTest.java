@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.service.NoTracker;
 import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -152,7 +153,8 @@ class SessionBriefContractTest {
                 ConfigService.ConfigFile.VisualizeConfig.defaults(), ConfigService.ConfigFile.DiagnoseConfig.defaults());
         TaskProvisioning provisioning = mock(TaskProvisioning.class);
 
-        new ResumeRegistration(provisioning, mock(AgentStatusReports.class), mock(TicketReader.class))
+        new ResumeRegistration(provisioning, mock(AgentStatusReports.class), mock(TicketReader.class),
+                new NoTracker())
                 .register("widget-fix", "web", "https://host/mr/7", "Widget", "origin/main");
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);

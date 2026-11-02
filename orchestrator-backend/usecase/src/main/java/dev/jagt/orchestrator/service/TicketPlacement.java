@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +17,7 @@ public class TicketPlacement {
 
     private final TicketReader tickets;
     private final ProjectRouting routing;
+    private final TrackerWorkflow workflow;
 
     public sealed interface Outcome permits Refused, Placed {
     }
@@ -29,6 +30,10 @@ public class TicketPlacement {
 
     public Answer<TicketFacts> read(String ref) {
         return tickets.read(ref);
+    }
+
+    public boolean namesAnItem(@Nullable String ref) {
+        return workflow.isItemKey(ref);
     }
 
     /** {@code chosen} is null where no human named a project. */
@@ -46,7 +51,7 @@ public class TicketPlacement {
             return new Refused("error: read incomplete: " + ref + " (no key, title or url) — no task created");
         }
         TicketFacts f = facts.get();
-        if (TaskName.isTicketKey(ref) && !ref.equalsIgnoreCase(f.key())) {
+        if (workflow.isItemKey(ref) && !ref.equalsIgnoreCase(f.key())) {
             return new Refused("error: asked for " + ref + " and got " + f.key() + " back — no task"
                     + " created. Launch it under the key the tracker itself reports.");
         }

@@ -75,12 +75,6 @@ class TaskNameTest {
         assertThat(TaskName.from("!!! ???")).isNull();
     }
 
-    @ParameterizedTest
-    @CsvSource({"ABC-42,true", "a1-7,true", "ABC42,false", "ABC-,false", "42-ABC,false", "https://tracker/ABC-42,false"})
-    void takesABareIssueKeyForATicketAndNothingParsedOutOfAUrl(String name, boolean ticket) {
-        assertThat(TaskName.isTicketKey(name)).isEqualTo(ticket);
-    }
-
     @Test
     void keepsAnOpeningLineOfExactlyTheWrittenLengthWhole() {
         assertThat(TaskName.from("abcdefgh abcdefgh abcdefgh abcdefgh abcd"))

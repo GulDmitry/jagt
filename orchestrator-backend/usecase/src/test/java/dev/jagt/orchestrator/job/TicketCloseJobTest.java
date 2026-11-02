@@ -64,6 +64,7 @@ class TicketCloseJobTest {
 
     @Test
     void closesTheTaskTheTrackerSaysIsFinishedWith(@TempDir Path root) {
+        when(close.watches("ABC-42")).thenReturn(true);
         StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
@@ -80,6 +81,12 @@ class TicketCloseJobTest {
 
     @Test
     void reachesTheTaskPastTheReadsOnePollCanAffordOnTheNextPoll(@TempDir Path root) {
+        when(close.watches("ABC-1")).thenReturn(true);
+        when(close.watches("ABC-2")).thenReturn(true);
+        when(close.watches("ABC-3")).thenReturn(true);
+        when(close.watches("ABC-4")).thenReturn(true);
+        when(close.watches("ABC-5")).thenReturn(true);
+        when(close.watches("ABC-6")).thenReturn(true);
         StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
@@ -101,6 +108,7 @@ class TicketCloseJobTest {
 
     @Test
     void buysNoSecondReadAboutATaskThatHasNotMovedSinceItWasAsked(@TempDir Path root) {
+        when(close.watches("ABC-42")).thenReturn(true);
         StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
@@ -119,6 +127,7 @@ class TicketCloseJobTest {
 
     @Test
     void asksAgainTheMomentTheTaskItselfHasMoved(@TempDir Path root) {
+        when(close.watches("ABC-42")).thenReturn(true);
         StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState stood = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
@@ -176,6 +185,7 @@ class TicketCloseJobTest {
 
     @Test
     void asksAMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLongThenAfterFourTimes(@TempDir Path root) {
+        when(close.watches("ABC-42")).thenReturn(true);
         StateService stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")

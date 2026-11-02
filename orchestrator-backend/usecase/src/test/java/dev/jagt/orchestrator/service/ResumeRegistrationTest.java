@@ -21,7 +21,7 @@ class ResumeRegistrationTest {
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
     private final TicketReader tickets = mock(TicketReader.class);
     private final ResumeRegistration registration = new ResumeRegistration(provisioning,
-            mock(AgentStatusReports.class), tickets);
+            mock(AgentStatusReports.class), tickets, new KeyedTracker("ABC-42", "ABC-43"));
 
     @Test
     void storesTheRequestsTitleBareAndItsTargetAsTheTasksBase() {
@@ -118,5 +118,15 @@ class ResumeRegistrationTest {
 
         assertThat(launched).isEqualTo(Launched.created("feature/widget-layout", "Resumed feature/widget-layout on its"
                 + " existing branch, linked https://host/mr/455; CI_POLLING — `sweep` or `deploy`."));
+    }
+
+    @Test
+    void asksNoTrackerForAKeyShapedBranchWhereTheInstallsTrackerDoesNotKnowItAsAnItem() {
+        ResumeRegistration untracked = new ResumeRegistration(provisioning, mock(AgentStatusReports.class), tickets,
+                new NoTracker());
+
+        untracked.register("ABC-42", "proj", "https://host/mr/455", "Widget layout is off", "main");
+
+        verifyNoInteractions(tickets);
     }
 }

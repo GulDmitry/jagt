@@ -30,4 +30,9 @@ class NoTrackerWorkflowTest {
     void namesItselfNoneSoTheInstallCanSelectIt() {
         assertThat(workflow.id()).isEqualTo("none");
     }
+
+    @Test
+    void takesNoNameForAnItemSinceThereIsNoTrackerToAsk() {
+        assertThat(workflow.isItemKey("ABC-42")).isFalse();
+    }
 }
