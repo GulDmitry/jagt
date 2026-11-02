@@ -140,7 +140,7 @@ public class FlowReports {
             if (!standing.test(task)) {
                 return task;
             }
-            Optional<String> why = FlowRules.refusedReport(task.status(), status);
+            Optional<String> why = FlowRules.refusedReport(task.status(), status, means);
             if (why.isPresent()) {
                 refused.set(why.get());
                 return task.refused(Guard.STATUS_REPORT);

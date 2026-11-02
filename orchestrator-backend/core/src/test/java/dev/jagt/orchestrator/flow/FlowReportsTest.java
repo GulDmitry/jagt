@@ -241,6 +241,34 @@ class FlowReportsTest {
                 .hasMessageContaining("already REVIEW_PENDING");
     }
 
+    @ParameterizedTest
+    @EnumSource(value = AgentReport.class, names = {"QUESTION", "PERMISSION"})
+    void refusesAQuestionThatParksAtCiPolling(AgentReport asked) {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            write.apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+            return true;
+        });
+
+        assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.CI_POLLING, asked, "which one?"))
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("report REVIEW_PENDING with your question");
+    }
+
+    @Test
+    void landsAQuestionReportedAtReviewPendingFromCiPolling() {
+        AtomicReference<TaskState> written = new AtomicReference<>();
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            UnaryOperator<TaskState> write = call.getArgument(1);
+            written.set(write.apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
+            return true;
+        });
+
+        reports.report("ABC-1", TaskStatus.REVIEW_PENDING, AgentReport.QUESTION, "which one?");
+
+        assertThat(written.get().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    }
+
     @Test
     void answersWhatARoundReadFoundAndLeftWhenItMovedTheTask() {
         when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {

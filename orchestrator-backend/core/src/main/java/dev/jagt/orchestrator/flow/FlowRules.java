@@ -79,6 +79,15 @@ public final class FlowRules {
                 + " — that would take it backwards and start polling finished work");
     }
 
+    /** As {@link #refusedReport(TaskStatus, TaskStatus)}, for what the report means: a question ends the round. */
+    public static Optional<String> refusedReport(TaskStatus from, TaskStatus to, AgentReport means) {
+        if (from == TaskStatus.CI_POLLING && to == TaskStatus.CI_POLLING && means.asks()) {
+            return Optional.of("a question cannot be reported while the task stands at CI_POLLING"
+                    + " — report REVIEW_PENDING with your question");
+        }
+        return refusedReport(from, to);
+    }
+
     /**
      * The status a report actually lands on. A task at REVERTED KEEPS it: what came back out of a shared branch is
      * a human's to move on from; one at DEPLOY_CONFLICT keeps it until the deploy finishes. The report is ACCEPTED
