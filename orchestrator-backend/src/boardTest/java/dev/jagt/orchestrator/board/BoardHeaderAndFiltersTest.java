@@ -125,6 +125,20 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
+    void aRowTitleTooLongForItsRowShowsWholeOnHover() {
+        String whole = "A ticket whose first paragraph was pasted into its title".repeat(4);
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").title(whole).lastActiveTimestamp(System.currentTimeMillis())
+                        .build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#tasks .row-title").hover();
+
+        assertThat(page.locator("#tip")).hasText(whole);
+    }
+
+    @Test
     void theOpenTaskShowsItsWholeLine() {
         String reason = "a merge conflict in a file whose path runs on ".repeat(4);
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),

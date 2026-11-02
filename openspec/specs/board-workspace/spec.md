@@ -24,6 +24,10 @@ Each task SHALL be one row of at most two lines: alias, title, badge and the one
 the status with its age and the checks dot. A row whose poll stopped rings its status; in the band on top a row
 names its project where projects are several.
 
+#### Scenario: A title too long for its row
+- **WHEN** a1's title is wider than its row
+- **THEN** the row clips it, and hovering the title shows it whole
+
 #### Scenario: A poll stops on a closed task
 - **WHEN** a1's poll stops while a2 is open
 - **THEN** a1's row rings its status
