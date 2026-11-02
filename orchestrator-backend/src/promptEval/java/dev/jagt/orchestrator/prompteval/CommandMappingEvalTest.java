@@ -52,6 +52,13 @@ class CommandMappingEvalTest {
         registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + port + "/api/agent");
         java.nio.file.Files.createDirectories(workspace.resolve("root"));
         ShippedRoot.copyInto(workspace.resolve("root"));
+        java.nio.file.Files.createDirectories(workspace.resolve("shop"));
+        java.nio.file.Files.writeString(workspace.resolve("root/jagt.yml"), """
+                orchestrator:
+                  codeHost: replay
+                  projects:
+                    shop: { path: "%s", baseBranch: main }
+                """.formatted(workspace.resolve("shop")));
         registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
         registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
