@@ -3,6 +3,7 @@
   --bg: #f6f7f9; --panel: #fff; --line: #d9dde3; --text: #1c2024; --muted: #5f6672;
   --you: #b45309; --you-bg: #fef3c7; --agent: #1d4ed8; --ci: #6d28d9;
   --accent: #1d4ed8; --danger: #b42318; --ok: #15803d; --chip-bg: #eceef1;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,11 +41,11 @@ header .chip, header .waiting { font-size: 13px; }
 #reports button .muted { display: block; font-size: 12px; }
 /* The key is drawn, not written: a verb's name stays its own words for whoever reads or names it. */
 button[data-key]::after {
-  content: " " attr(data-key); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+  content: " " attr(data-key); font-family: var(--mono); font-size: 11px;
   font-weight: 400;
 }
 kbd {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; opacity: .7; font-weight: 400;
+  font-family: var(--mono); font-size: 11px; opacity: .7; font-weight: 400;
 }
 button.link { border: 0; padding: 0; background: none; color: var(--accent); cursor: pointer; }
 .field > button.link { align-self: flex-start; }
@@ -73,7 +74,7 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
 .screen {
   margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--chip-bg); white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; max-height: 50vh; overflow: auto;
+  font-family: var(--mono); font-size: 12px; max-height: 50vh; overflow: auto;
 }
 .doc-names { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .doc-names button[aria-pressed="true"] { border-color: var(--accent); }
@@ -81,7 +82,7 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .doc pre { padding: 10px 12px; border-radius: 8px; background: var(--chip-bg); overflow: auto; font-size: 12px; }
 .doc table { border-collapse: collapse; }
 .doc th, .doc td { border: 1px solid var(--line); padding: 3px 8px; }
-.doc .mermaid { margin: 8px 0; white-space: pre; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.doc .mermaid { margin: 8px 0; white-space: pre; font-family: var(--mono); }
 .say { display: flex; gap: 8px; margin-top: 8px; }
 .say input { flex: 1; }
 .session p, .round p { margin: 0 0 6px; font-size: 12px; }
@@ -93,7 +94,7 @@ table.jobs td:nth-child(5) { width: 96px; }
 table.jobs caption { text-align: left; }
 table.jobs td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: top; }
 table.jobs tr.failed { background: var(--chip-bg); }
-table.jobs .job-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+table.jobs .job-id { font-family: var(--mono); white-space: nowrap; }
 #report-section:has(.jobs-table) + #report-body { display: none; }
 h1 { font-size: 15px; margin: 0; letter-spacing: .12em; text-transform: uppercase; }
 .grow { flex: 1; }
@@ -147,7 +148,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
    only a word longer than the dialog is broken, so a path stays one thing you can copy. */
 #report-body {
   margin: 0; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: break-word;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45;
+  font-family: var(--mono); font-size: 12px; line-height: 1.45;
 }
 
 /* The two facts a round's replies carry, in weight and colour only: no report grows a separator or a box. */
@@ -157,7 +158,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 .verdict.muted, .quote { color: var(--muted); }
 /* The legend renders these outside the report, where the report's own font does not reach them. */
 .legend-key .block, .legend-key .quote {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  font-family: var(--mono); font-size: 12px;
 }
 /* Thin on purpose: one line, no button — Enter sends it, and the round above is what it is about. */
 #report-line {
@@ -228,7 +229,7 @@ main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-i
 .row-verb:not(.primary) { background: none; }
 .row-verb {
   width: 44px; flex-shrink: 0; border: 0; border-left: 1px solid var(--line); border-radius: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  font-family: var(--mono); font-size: 12px;
 }
 main#board { padding-bottom: 56px; }
 main#board:empty { padding: 0; }
@@ -246,7 +247,7 @@ main#board:empty { padding: 0; }
 #pane article .actions.tool > button:first-child { margin-left: 12px; }
 #pane article .actions > button.apart { order: 3; }
 .history ol { margin: 0; padding: 0 10px 8px 28px; font-size: 12px; }
-.history .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+.history .age { font-family: var(--mono); color: var(--muted); }
 #pane .back { display: none; align-self: start; }
 @media (max-width: 1199px) {
   main#board { grid-template-columns: minmax(0, 1fr); }
@@ -266,9 +267,9 @@ article.ci { border-left-color: var(--ci); }
    pill, which is the one place a line break has nowhere to go. */
 .card-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .alias {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: var(--text);
+  font-family: var(--mono); font-weight: 700; color: var(--text);
 }
-.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.id { font-family: var(--mono); }
 .heading { display: flex; gap: 6px; align-items: baseline; margin: 6px 0; }
 .title { overflow-wrap: anywhere; }
 /* Shape alone says flagged: every colour on the board already means something else. */
@@ -283,14 +284,14 @@ button.flag:hover:not(:disabled) { color: var(--accent); }
    wait wearing the same chip as a status. */
 .badge.required { background: var(--you-bg); color: var(--you); }
 .badge.optional { background: var(--chip-bg); color: var(--muted); font-weight: 400; }
-.mr-age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.mr-age { font-family: var(--mono); font-size: 11px; }
 /* Not a flex container: a flex box drops the space between two words, leaving the text legible only for as
    long as a stylesheet says so. */
 .status {
   padding: 1px 7px; border-radius: 999px;
   background: var(--chip-bg); color: var(--text); font-size: 11px; font-weight: 600;
 }
-.status .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 400; opacity: .7; }
+.status .age { font-family: var(--mono); font-weight: 400; opacity: .7; }
 /* Where no verb on the card is the deploy, the state says the work is live instead — same colour, so it is
    one mark a human learns rather than two. */
 .status.live { color: var(--ok); }
@@ -378,7 +379,7 @@ button.primary.again { box-shadow: 0 0 0 2px var(--ok); }
 .history .age { display: inline-block; min-width: 110px; }
 .badge.problem { background: var(--chip-bg); color: var(--danger); }
 #tasks .keys { margin: 0; padding: 6px 10px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  font-family: var(--mono); }
 .row .pick:focus-visible, .row-verb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .row-verb { display: flex; align-items: center; justify-content: center; }
 table.jobs th { text-align: left; font-weight: 400; color: var(--muted); font-size: 11px; padding: 2px 6px; }

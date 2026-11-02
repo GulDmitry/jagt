@@ -19,8 +19,6 @@ export function hideTip() {
   tip.hidden = true;
 }
 
-export const tipped = () => (tip.hidden ? null : shownFor);
-
 // A repaint keeps an open tip, in its node's new words, on the node or on the one rebuilt in its place.
 export function hideStaleTip(rebuilt) {
   if (!shownFor?.isConnected && rebuilt) shownFor = rebuilt;
