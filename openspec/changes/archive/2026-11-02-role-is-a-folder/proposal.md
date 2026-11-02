@@ -5,14 +5,13 @@ folder. A role added or switched off should be one folder ([0126](../../../docs/
 
 ## What Changes
 
-- The Master's and the session's brief and cases ship in `roles/master/` and `roles/session/`, read through one loader.
-- An old copy beside `jagt.yml` (`master-brief.md`, `session-brief.md`, `*-cases.md`) is still read first.
+- The Master's brief and cases ship in `roles/master/`, read through `RoleFiles`; the session follows in a later change.
+- An old copy beside `jagt.yml` (`master-brief.md`, `master-cases.md`) is still read first.
 - `roles.master.brief` defaults to `roles/master/brief.md`.
 
 ## Capabilities
 
 ### Modified Capabilities
 
-- `cases`: a role's `cases.md` is read from its folder, an old copy first.
-- `session-brief`: the session's brief is read from `roles/session/`, an old copy first.
+- `cases`: the Master's `cases.md` is read from its folder, an old copy first.
 - `master`: the Master's brief is read from `roles/master/`, an old copy first.
