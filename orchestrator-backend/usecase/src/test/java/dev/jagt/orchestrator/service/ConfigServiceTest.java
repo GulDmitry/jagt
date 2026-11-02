@@ -595,4 +595,58 @@ class ConfigServiceTest {
 
         assertThat(unknown).containsExactly("foo");
     }
+
+    @Test
+    void theMasterWrittenTwiceIsNoUnknownRole(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        List<String> unknown = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().unknownRoles(List.of("qa"));
+
+        assertThat(unknown).isEmpty();
+    }
+
+    @Test
+    void theOldQaKeyAloneNamesNoRoleUnderRoles(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        ConfigService.ConfigFile config = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class),
+                mock(ActStops.class)).load();
+
+        assertThat(config.unknownRoles(List.of())).isEmpty();
+        assertThat(config.role("qa").enabledOrDefault()).isTrue();
+    }
+
+    @Test
+    void aKeyLeftBlankUnderRolesKeepsWhatTheOldKeyWrote(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  qa:\n    model: opus\n  roles:\n    qa:\n      model:\n      enabled: true\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        ConfigService.ConfigFile.RoleConfig qa = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class),
+                mock(ActStops.class)).load().role("qa");
+
+        assertThat(qa.modelOr("sonnet")).isEqualTo("opus");
+        assertThat(qa.enabledOrDefault()).isTrue();
+    }
+
+    @Test
+    void aQaWrittenUnderRolesIsUnknownWhereNoQaRoleIsInstalled(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n  roles:\n    qa:\n      model: haiku\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        List<String> unknown = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().unknownRoles(List.of());
+
+        assertThat(unknown).containsExactly("qa");
+    }
 }

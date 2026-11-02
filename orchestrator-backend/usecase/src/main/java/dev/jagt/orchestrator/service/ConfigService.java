@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Reads {@code jagt.yml} on every access, so edits are picked up without restarting — which is why this parses the
@@ -342,11 +343,6 @@ public class ConfigService implements LoopBreaker.Current {
                 return new RoleConfig(legacy.enabled(), legacy.model(), legacy.environments());
             }
 
-            RoleConfig over(RoleConfig fallback) {
-                return new RoleConfig(enabled != null ? enabled : fallback.enabled, model != null ? model : fallback.model,
-                        environments != null ? environments : fallback.environments);
-            }
-
             public boolean enabledOrDefault() {
                 return enabled != null && enabled;
             }
@@ -606,11 +602,10 @@ public class ConfigService implements LoopBreaker.Current {
         /** The role as {@code roles.<id>} writes it; where it names none, QA falls back to the old {@code qa} key. */
         public RoleConfig role(String id) {
             RoleConfig written = roles == null ? null : roles.get(id);
-            RoleConfig legacy = Checkers.QA.equals(id) && qa != null ? RoleConfig.of(qa) : null;
-            if (written == null) {
-                return legacy == null ? RoleConfig.defaults() : legacy;
+            if (written != null) {
+                return written;
             }
-            return legacy == null ? written : written.over(legacy);
+            return Checkers.QA.equals(id) && qa != null ? RoleConfig.of(qa) : RoleConfig.defaults();
         }
 
         @Override
@@ -627,6 +622,8 @@ public class ConfigService implements LoopBreaker.Current {
 
     private static final String MASTER = Arbiter.ID;
 
+    private static final List<String> LEGACY_ROLE_KEYS = List.of(MASTER, LEGACY_QA);
+
     private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;
     private final AgentRuntime agentRuntime;
@@ -641,29 +638,41 @@ public class ConfigService implements LoopBreaker.Current {
         if (section == null) {
             return masterByDefault(ConfigFile.defaults());
         }
-        ConfigFile config = mapper.convertValue(masterUnderItsKey(section), ConfigFile.class);
+        ConfigFile config = mapper.convertValue(layered(section), ConfigFile.class);
         return masterByDefault(config.projects() == null ? config.withProjects(Map.of()) : config);
     }
 
-    /** {@code roles.master} wins field by field over the old {@code master}, which fills what it leaves unwritten. */
-    private static Object masterUnderItsKey(Object section) {
-        if (!(section instanceof Map<?, ?> keys) || !(keys.get("roles") instanceof Map<?, ?> roles) || !roles.containsKey(MASTER)) {
+    /** Per role, key by key, {@code roles.<id>} wins over the old top-level key, which fills what it leaves unwritten. */
+    private static Object layered(Object section) {
+        if (!(section instanceof Map<?, ?> keys)) {
             return section;
         }
-        Map<Object, Object> moved = new java.util.LinkedHashMap<>(keys);
-        Map<Object, Object> others = new java.util.LinkedHashMap<>(roles);
-        Object written = others.remove(MASTER);
-        if (written != null) {
-            moved.put(MASTER, keys.get(MASTER) instanceof Map<?, ?> old && written instanceof Map<?, ?> over
-                    ? fieldByField(old, over) : written);
+        Map<Object, Object> layered = new java.util.LinkedHashMap<>(keys);
+        Map<Object, Object> roles = new java.util.LinkedHashMap<>(
+                keys.get("roles") instanceof Map<?, ?> written ? written : Map.of());
+        for (String id : LEGACY_ROLE_KEYS) {
+            Map<Object, Object> merged = merge(keys.get(id), roles.get(id));
+            if (!merged.isEmpty()) {
+                layered.put(id, merged);
+            }
+            if (roles.remove(id) != null && !MASTER.equals(id)) {
+                roles.put(id, merged);
+            }
         }
-        moved.put("roles", others);
-        return moved;
+        if (keys.containsKey("roles")) {
+            layered.put("roles", roles);
+        }
+        return layered;
     }
 
-    private static Map<Object, Object> fieldByField(Map<?, ?> old, Map<?, ?> over) {
-        Map<Object, Object> merged = new java.util.LinkedHashMap<>(old);
-        merged.putAll(over);
+    private static Map<Object, Object> merge(@Nullable Object... layers) {
+        Map<Object, Object> merged = new java.util.LinkedHashMap<>();
+        Stream.of(layers).filter(Map.class::isInstance).map(Map.class::cast)
+                .forEach(layer -> layer.forEach((key, value) -> {
+                    if (value != null) {
+                        merged.put(key, value);
+                    }
+                }));
         return merged;
     }
 
