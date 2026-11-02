@@ -5,6 +5,16 @@ document.body.append(tip);
 
 let shownFor = null;
 
+// Text the stylesheet cuts with an ellipsis is its own tip, whole, wherever it is cut.
+const clipped = (node) => {
+  for (let at = node; at instanceof Element; at = at.parentElement) {
+    if (getComputedStyle(at).textOverflow === 'ellipsis') return at.scrollWidth > at.clientWidth ? at : null;
+  }
+  return null;
+};
+
+const said = (node) => node.dataset.tip || (clipped(node) === node ? node.textContent : '');
+
 export function hideTip() {
   tip.hidden = true;
 }
@@ -14,15 +24,15 @@ export const tipped = () => (tip.hidden ? null : shownFor);
 // A repaint keeps an open tip, in its node's new words, on the node or on the one rebuilt in its place.
 export function hideStaleTip(rebuilt) {
   if (!shownFor?.isConnected && rebuilt) shownFor = rebuilt;
-  if (!shownFor?.isConnected || !shownFor.dataset.tip) hideTip();
-  else if (!tip.hidden && shownFor.dataset.tip !== tip.textContent) showTip(shownFor);
+  if (!shownFor?.isConnected || !said(shownFor)) hideTip();
+  else if (!tip.hidden && said(shownFor) !== tip.textContent) showTip(shownFor);
 }
 
 function showTip(target) {
   // A modal dialog renders in the top layer, above every z-index: a tip under it hides behind the backdrop.
   (target.closest('dialog[open]') || document.body).append(tip);
   shownFor = target;
-  tip.textContent = target.dataset.tip;
+  tip.textContent = said(target);
   tip.hidden = false;
   tip.scrollTop = 0;
   // Past its cap a tip is READ, not glanced at: it takes the pointer to scroll, and leaves no gap to cross.
@@ -40,8 +50,8 @@ function showTip(target) {
 for (const event of ['pointerover', 'focusin']) {
   document.addEventListener(event, (moved) => {
     if (moved.target.closest?.('#tip')) return;
-    const target = moved.target.closest?.('[data-tip]');
-    if (target && target.dataset.tip) showTip(target);
+    const target = moved.target.closest?.('[data-tip]') || clipped(moved.target);
+    if (target && said(target)) showTip(target);
     else hideTip();
   });
 }

@@ -26,7 +26,7 @@ names its project where projects are several.
 
 #### Scenario: A title too long for its row
 - **WHEN** a1's title is wider than its row
-- **THEN** the row clips it, and hovering the title shows it whole
+- **THEN** the row ends it in `…`, and hovering the title shows it whole; a title that fits shows no tip
 
 #### Scenario: A poll stops on a closed task
 - **WHEN** a1's poll stops while a2 is open

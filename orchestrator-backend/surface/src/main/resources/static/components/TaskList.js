@@ -19,8 +19,7 @@ const Row = ({task, selected, changed, project, now}) => {
           stopped, changed && 'changed since you looked'].filter(Boolean).join(', ')}>
       <span class="row-line">
         <span class="alias">${task.alias || '-'}</span>
-        <span class=${changed ? 'row-title changed' : 'row-title'} data-tip=${task.title || task.id}
-          >${task.title || task.id}</span>
+        <span class=${changed ? 'row-title changed' : 'row-title'}>${task.title || task.id}</span>
         ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}${task.detailKind === 'PROBLEM' ? ' problem' : ''}`}>${task.ask}</span>` : ''}
       </span>
       <span class="row-line row-facts">
