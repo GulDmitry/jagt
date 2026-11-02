@@ -1,5 +1,5 @@
 # Cases
-One row per use case a defect broke; a fixed defect adds or updates its row in the same commit, with a `Defect-family:` trailer. Families:
+One row per use case a defect broke, kept by its fix with a `Defect-family:` trailer; "pinned by": the test classes it touched. Families:
 - A text vs. text: a jagt text contradicts another, or asks what the machine refuses at that step.
 - B state overwritten: a record or dedup key is overwritten, lost on restart or kept in the wrong place.
 - C turn collision: two parties (human, Master, session, reviewer) act on one turn. D model overreach: a model decided what the machine should.
@@ -7,7 +7,6 @@ One row per use case a defect broke; a fixed defect adds or updates its row in t
 - F unbounded loop: a repeat, a store or a spend has no ceiling. G prose routing: jagt decided by reading text.
 - H a guard refuses what it should allow, or allows what it should refuse. I a vendor CLI behaves otherwise. J git, worktrees,
   several repositories. K the board. L the tests themselves. M anything else. H–M are counted by trailer and get rows here as their defects recur.
-"pinned by": the fix commits' subjects name almost no test, so it lists the test classes the fix commits touched; `none` = no test touched.
 ## A — text vs. text
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -153,6 +152,7 @@ One row per use case a defect broke; a fixed defect adds or updates its row in t
 | I4 | a session sits idle past its cache, the CLI compacts it unasked → the compaction's start does not read as work, so the next prompt goes to a fresh session | seen 2026-10-27: compacted 54 min after the turn, a prompt 21 min later passed the gate into the old conversation | `ClaudeAgentRuntimeTest` |
 | I5 | a session idles past its cache and jagt restarts or loses the hook's mark → a prompt still goes to a fresh session, idle read from the session record's `idleSince`, the stamp the relay reads, a read's last sign included where no hook stamped the record | seen 2026-10-27: turn ended 13:16Z, a prompt at 18:06Z passed the gate as warm; seen 2026-11-02: a turn ended before the record existed, a prompt 63 h later passed | `PromptGateTest`, `AgentSessionsTest`, `SessionPhaseTest` |
 | I6 | a prompt is typed into the fresh session a cold prompt went to → it is judged by the record, where its turn is open, so it is never relayed again, and where no hook has landed yet the record started over with the fresh session, its start stamped by the first read, so the old transcript's age never calls it quiet | seen 2026-10-28 08:02Z: the newest log in the directory was the old session's, an endless restart every ~2.5 s | `PromptGateTest`, `AgentSessionsTest`, `TaskReducerTest` |
+| I7 | the code host CLI is signed out and the host hides a private project behind 404 → the read says the CLI is not logged in to the host, never that the project is not found | seen 2026-11-02: two deploys stopped on "404 Project Not Found", glab had no login for the host | `CliPipelineRetryTest` |
 ## J — git, worktrees, several repositories
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

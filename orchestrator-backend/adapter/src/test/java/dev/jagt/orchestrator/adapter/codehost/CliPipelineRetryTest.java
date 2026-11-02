@@ -156,6 +156,17 @@ class CliPipelineRetryTest {
     }
 
     @Test
+    void aProjectTheHostHidesFromACliSignedOutSaysNotLoggedIn() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(1, "", "glab: 404 Project Not Found (HTTP 404)"))
+                .thenReturn(new Processes.Result(1, "", "git.example.invalid has not been authenticated with glab"));
+
+        Answer<CommitPipeline> answer = retry.onCommit("https://git.example.invalid/shop/web.git", "0123abc");
+
+        assertThat(answer.failure()).isEqualTo("glab not logged in to git.example.invalid");
+    }
+
+    @Test
     void aLocalPathRemoteHasNoHostToAsk() {
         Answer<CommitPipeline> answer = retry.onCommit("/srv/git/shop.git", "0123abc");
 

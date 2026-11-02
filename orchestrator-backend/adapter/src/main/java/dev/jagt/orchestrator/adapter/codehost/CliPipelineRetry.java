@@ -81,10 +81,19 @@ public class CliPipelineRetry implements PipelineRetry {
                 return new Answer<>(Optional.of(result.stdout().isBlank() ? result.stderr() : result.stdout()),
                         TokenUsage.NONE);
             }
+            if (result.stderr().contains("404") && !signedIn(cli, address.hostname())) {
+                return Answer.failed(TokenUsage.NONE, cli + " not logged in to " + address.hostname());
+            }
             return Answer.failed(TokenUsage.NONE, refusal(cli, address.hostname(), result));
         } catch (IllegalStateException e) {
             return Answer.failed(TokenUsage.NONE, cli + " did not run: " + OneLine.clipped(e.getMessage()));
         }
+    }
+
+    // A host hides a private project from a CLI signed out of it behind the same 404 as one that does not exist.
+    private boolean signedIn(String cli, String hostname) {
+        return processes.run(null, TIMEOUT, List.of(Executables.resolve(cli), "auth", "status", "--hostname", hostname))
+                .exitCode() == 0;
     }
 
     private static String refusal(String cli, String hostname, Processes.Result result) {
