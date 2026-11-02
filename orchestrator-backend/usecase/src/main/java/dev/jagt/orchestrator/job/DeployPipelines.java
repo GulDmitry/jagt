@@ -31,7 +31,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class DeployPipelines {
 
-    public enum Kind { GREEN, WAITING, UNREAD, RED }
+    /** Declared in the order a read still open outranks another: a read that reached the host and failed outranks one that never reached it. */
+    public enum Kind { GREEN, WAITING, UNREACHED, UNREAD, RED }
 
     /**
      * {@code said} names the repository, the commit and what the pipeline did; {@code url} is the pipeline's, blank
@@ -79,12 +80,12 @@ public class DeployPipelines {
         return new Reading(Kind.GREEN, "", "", "", List.copyOf(bare));
     }
 
-    /** The first repository still open, a read that could not list its pipeline before one merely waiting. */
+    /** The first repository still open, by {@link Kind} order. */
     private static @Nullable Reading stillOpen(@Nullable Reading open, Reading one) {
         if (one.kind() == Kind.GREEN) {
             return open;
         }
-        return open == null || open.kind() == Kind.WAITING && one.kind() == Kind.UNREAD ? one : open;
+        return open == null || one.kind().compareTo(open.kind()) > 0 ? one : open;
     }
 
     private static List<Deployment.Target> landedTargets(TaskState task) {
@@ -102,6 +103,9 @@ public class DeployPipelines {
             return withoutPipeline(taskId, label, "no remote recorded");
         }
         Answer<CommitPipeline> read = pipelines.onCommit(project, remoteUrl, commit);
+        if (read.facts().isEmpty() && read.reach().isPresent()) {
+            return new Reading(Kind.UNREACHED, at + "unreached, " + read.failure(), project, "", List.of());
+        }
         if (read.facts().isEmpty()) {
             log.atWarn().setMessage("deploy pipeline unreadable").addKeyValue("project", project)
                     .addKeyValue("commit", GitDeploy.shortSha(commit)).addKeyValue("cause", read.failure())

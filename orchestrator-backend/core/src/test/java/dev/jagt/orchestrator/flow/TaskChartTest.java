@@ -131,8 +131,8 @@ class TaskChartTest {
     }
 
     static Stream<Arguments> infraEdges() {
-        InfraRetry first = new InfraRetry(1, "p", "j", "r", false, 1, 3);
-        InfraRetry last = new InfraRetry(1, "p", "j", "r", true, 3, 3);
+        InfraRetry first = new InfraRetry(1, "shop", "p", "j", "r", false, 1, 3);
+        InfraRetry last = new InfraRetry(1, "shop", "p", "j", "r", true, 3, 3);
         return Stream.of(
                 arguments("SENT", new TaskMove.RequestLinked(Map.of(), "u", true, false, false), "NONE",
                         List.of(new TaskEffect.ResetsInfra())),

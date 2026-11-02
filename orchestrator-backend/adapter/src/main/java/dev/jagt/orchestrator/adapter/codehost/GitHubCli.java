@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.Reach;
 import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -33,8 +34,9 @@ public class GitHubCli implements CodeHostDriver {
 
     private final HostCli cli;
 
-    public GitHubCli(Processes processes) {
-        this.cli = new HostCli(processes, "gh");
+    public GitHubCli(Processes processes, Reach reach) {
+        this.cli = new HostCli(processes, reach, "gh",
+                hostname -> List.of("auth", "login", "--hostname", hostname, "--web"));
     }
 
     @Override

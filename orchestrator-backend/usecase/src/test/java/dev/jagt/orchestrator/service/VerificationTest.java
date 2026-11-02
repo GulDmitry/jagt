@@ -42,7 +42,7 @@ class VerificationTest {
     void namesTheProjectTheCommandAndTheExitOfAFailedRunWithTheTailOfItsErrors() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null))));
+                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null))));
         Processes processes = mock(Processes.class);
         String errors = IntStream.rangeClosed(1, 45).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
@@ -59,7 +59,7 @@ class VerificationTest {
     void keepsAnErrorTailOfExactlyFortyLinesWhole() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null))));
+                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null))));
         Processes processes = mock(Processes.class);
         String errors = IntStream.rangeClosed(1, 40).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
@@ -75,7 +75,7 @@ class VerificationTest {
     void relaysTheStandardOutputOfAFailedRunThatSaidNothingOnTheErrorStream() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null))));
+                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null))));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
                 .thenReturn(new Processes.Result(2, "2 tests failed", ""));
@@ -90,7 +90,7 @@ class VerificationTest {
     void reportsNoFailureWhereTheCommandPassed() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null))));
+                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null))));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
                 .thenReturn(new Processes.Result(0, "ok", ""));
@@ -105,8 +105,8 @@ class VerificationTest {
     void reportsOnlyTheFirstOfTwoFailingRepositories() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
-                "proj", new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null),
-                "web", new ProjectConfig("/web", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null))));
+                "proj", new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null))));
         Processes processes = mock(Processes.class);
         when(processes.run(any(), any(), eq(List.of("npm", "test")))).thenReturn(new Processes.Result(1, "", "red"));
 

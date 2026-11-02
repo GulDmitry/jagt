@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.board;
 
 import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.port.Reach;
+import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -9,14 +11,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 class BoardHeaderAndFiltersTest extends BoardPageContext {
 
     @Autowired
     Jobs jobs;
+
+    @Autowired
+    Reach reach;
 
     @Test
     void aPollRunningAsItShouldIsNotNewsWhileItsNextLookStaysOnTheRequest() {
@@ -303,6 +313,24 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("#jobs-pulse")).isHidden();
+    }
+
+    @Test
+    void saysOnceInTheHeaderThatJagtLostItsReachAndLogsInFromThere() {
+        reach.lost(new ReachLost("glab", "git.example.invalid",
+                List.of("glab", "auth", "login", "--hostname", "git.example.invalid"),
+                "glab not logged in to git.example.invalid"));
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#reach-lost")).hasText("glab not logged in to git.example.invalid");
+        assertThat(page.locator("#reach-lost")).hasAttribute("data-tip",
+                Pattern.compile("fix: glab auth login --hostname git.example.invalid"));
+        page.locator("#reach-lost").click();
+
+        verify(sessionHost, timeout(5_000)).openCommandWindow(any(), any(), eq("login"),
+                eq(List.of("glab", "auth", "login", "--hostname", "git.example.invalid")));
+        reach.reached("glab", "git.example.invalid");
     }
 
     @Test

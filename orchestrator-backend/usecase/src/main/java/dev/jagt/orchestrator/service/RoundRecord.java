@@ -32,7 +32,7 @@ public class RoundRecord {
     private final Clock clock;
     private final RedCauses causes;
 
-    public Recorded record(String taskId, ReviewFacts facts, String tip) {
+    public Recorded record(String taskId, String project, ReviewFacts facts, String tip) {
         if (gotNoListing(facts.pipelineStatus())) {
             long now = clock.millis();
             stateService.updateTask(taskId, task -> TaskReducer.headSeen(TaskReducer.approvalRead(
@@ -42,7 +42,7 @@ public class RoundRecord {
                     RedCauses.Verdict.CODE);
         }
         recordListed(taskId, facts, tip);
-        return new Recorded(Optional.empty(), causes.judge(taskId, facts, Pipeline.of(orUnknown(facts.pipelineStatus()))));
+        return new Recorded(Optional.empty(), causes.judge(taskId, project, facts, Pipeline.of(orUnknown(facts.pipelineStatus()))));
     }
 
     /** Writes what a read that listed the checks said on {@code tip} and nothing else; a read that listed none writes nothing. */

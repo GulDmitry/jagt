@@ -179,6 +179,23 @@ class RoundReadingTest {
     }
 
     @Test
+    void carriesTheProjectWhosePipelineTheRoundsChecksAre() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
+                TaskStatus.CI_POLLING).alias("a1").build()));
+        when(reviewReader.read("ABC-1", "http://mr/api"))
+                .thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
+        when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(true, false,
+                "failed", "lint", List.of(), 0, List.of(), List.of(), "http://pipe/web", false, false)), TokenUsage.NONE));
+
+        var read = reading.read("ABC-1");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Round.class, round ->
+                assertThat(round.project()).isEqualTo("web"));
+    }
+
+    @Test
     void reportsTheOldestRequestOfAMultiRepoTaskAsHowLongTheReviewHasBeenWaiting() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder(List.of(TaskRepo.of("api", "/wt-api").withMrUrl("http://mr/1"),

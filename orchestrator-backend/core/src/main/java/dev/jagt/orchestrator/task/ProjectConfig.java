@@ -21,14 +21,15 @@ public record ProjectConfig(
         @Nullable String codeHost,
         @Nullable String codeHostName,
         @Nullable List<String> pipelineCommand,
-        @Nullable List<String> retryCommand
+        @Nullable List<String> retryCommand,
+        @Nullable List<String> loginCommand
 ) {
 
     private static final Pattern REF_PREFIX = Pattern.compile("^\\+?(refs/heads/|refs/remotes/origin/|origin/)?");
 
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
-        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null);
+        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null, null);
     }
 
     /** What a router is told this repository is; its path where nobody wrote a line, the name carrying most. */

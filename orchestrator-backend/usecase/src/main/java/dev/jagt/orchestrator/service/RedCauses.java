@@ -36,7 +36,7 @@ public class RedCauses {
     private final InfraRetries retries;
     private final InfraWaitProperties properties;
 
-    public Verdict judge(String taskId, ReviewFacts facts, Pipeline checks) {
+    public Verdict judge(String taskId, String project, ReviewFacts facts, Pipeline checks) {
         if (checks != Pipeline.RED) {
             if (retries.applies(taskId)) {
                 retries.clear(taskId, checks == Pipeline.GREEN);
@@ -46,7 +46,7 @@ public class RedCauses {
         if (facts.pipelineUrl().isBlank() || !retries.applies(taskId)) {
             return Verdict.CODE;
         }
-        return judgeRed(taskId, retries.projectOf(taskId, facts.pipelineUrl()), facts.pipelineUrl());
+        return judgeRed(taskId, project, facts.pipelineUrl());
     }
 
     /** The same ask of the pipeline a deploy commit ran, which no round of the review request carries. */
@@ -73,13 +73,13 @@ public class RedCauses {
             retries.clear(taskId, true);
             return Verdict.CODE;
         }
-        return waitOut(taskId, pipelineUrl, failed.facts().get());
+        return waitOut(taskId, project, pipelineUrl, failed.facts().get());
     }
 
-    private Verdict waitOut(String taskId, String pipelineUrl, List<FailedJob> failed) {
+    private Verdict waitOut(String taskId, String project, String pipelineUrl, List<FailedJob> failed) {
         String jobs = failed.stream().map(FailedJob::name).collect(Collectors.joining(", "));
         String reasons = failed.stream().map(FailedJob::reason).distinct().collect(Collectors.joining(", "));
-        Optional<InfraRetry> armed = retries.arm(taskId, pipelineUrl, jobs, reasons);
+        Optional<InfraRetry> armed = retries.arm(taskId, project, pipelineUrl, jobs, reasons);
         return armed.isPresent()
                 ? new Verdict(RedCause.INFRASTRUCTURE, true, retries.reading(taskId), Optional.empty())
                 : stopped(retries.exhausted(taskId));

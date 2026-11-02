@@ -159,10 +159,11 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `PipelineRetry` | `adapter/codehost/CodeHostPipelines` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`) by `codeHost`; `ReplayPipelineRetry` — jagt's one code-host write |
 | `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer`, `ReplayRoundReviewer` (a stand recording played back) |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
+| `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login` |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
-| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam |
+| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
 | `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |

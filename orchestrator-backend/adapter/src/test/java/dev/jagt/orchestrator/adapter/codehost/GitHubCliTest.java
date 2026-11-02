@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.task.FailedJob;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,9 +25,10 @@ import static org.mockito.Mockito.when;
 class GitHubCliTest {
 
     private final Processes processes = mock(Processes.class);
-    private final GitHubCli github = new GitHubCli(processes);
+    private final ReachLedger reach = new ReachLedger();
+    private final GitHubCli github = new GitHubCli(processes, reach);
     private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of());
+            List.of(), List.of(), List.of());
 
     @Test
     void aRunReRunsOnlyItsFailedJobsOnTheHostItLivesOn() {
@@ -109,6 +111,16 @@ class GitHubCliTest {
 
         assertThat(answer.facts()).contains(new CommitPipeline("failed",
                 "https://github.example.invalid/acme/shop/actions/runs/1"));
+    }
+
+    @Test
+    void aSignedOutGhNamesItsWebLoginOnTheHostAsTheFix() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "HTTP 401"));
+
+        Answer<String> answer = github.retryFailed(host, "https://github.example.invalid/acme/shop/actions/runs/5");
+
+        assertThat(answer.reach().orElseThrow().fix())
+                .containsExactly("gh", "auth", "login", "--hostname", "github.example.invalid", "--web");
     }
 
     @Test

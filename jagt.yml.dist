@@ -30,6 +30,7 @@ orchestrator:
   #   codeHostName: git.example.com           # the host, where the remote does not name it (a self-hosted GitLab, GitHub Enterprise)
   #   pipelineCommand: ["ci-state", "{sha}"]  # codeHost command: run in the project's directory, prints success | failed | running | none | unknown
   #   retryCommand: ["ci-rerun", "{pipeline}"]  # optional: re-runs a pipeline that died on infrastructure
+  #   loginCommand: ["ci-login", "--web"]       # optional: what the board's `login` opens when pipelineCommand exits 77 (signed out)
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports

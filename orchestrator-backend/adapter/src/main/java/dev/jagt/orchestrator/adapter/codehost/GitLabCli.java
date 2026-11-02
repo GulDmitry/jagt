@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.Reach;
 import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -35,8 +36,9 @@ public class GitLabCli implements CodeHostDriver {
 
     private final HostCli cli;
 
-    public GitLabCli(Processes processes) {
-        this.cli = new HostCli(processes, "glab");
+    public GitLabCli(Processes processes, Reach reach) {
+        this.cli = new HostCli(processes, reach, "glab",
+                hostname -> List.of("auth", "login", "--hostname", hostname));
     }
 
     @Override

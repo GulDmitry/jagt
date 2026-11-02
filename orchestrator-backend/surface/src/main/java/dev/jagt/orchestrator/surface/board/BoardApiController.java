@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.AssistantHealth;
+import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.service.ActStop;
 import dev.jagt.orchestrator.service.TaskViews;
@@ -32,7 +33,7 @@ public class BoardApiController {
 
     public record Board(List<TaskView> tasks, List<String> projects, String autoReview,
                         boolean autoReviewEnabled, Jobs.Summary jobs, @Nullable ActStop actStop,
-                        AssistantHealth.@Nullable Outage assistant,
+                        AssistantHealth.@Nullable Outage assistant, List<ReachLost> reach,
                         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases,
                         Map<String, List<String>> offers, String masterMode) {
     }
@@ -47,7 +48,7 @@ public class BoardApiController {
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                header.summary(), snapshot.actStop(), header.assistantOutage().orElse(null), BranchStrategy.choices(),
+                header.summary(), snapshot.actStop(), header.assistantOutage().orElse(null), header.reachLost(), BranchStrategy.choices(),
                 Phase.choices(),
                 offers(snapshot.tasks()), snapshot.masterMode());
     }

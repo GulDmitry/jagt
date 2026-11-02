@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.task.FailedJob;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,9 +26,10 @@ import static org.mockito.Mockito.when;
 class GitLabCliTest {
 
     private final Processes processes = mock(Processes.class);
-    private final GitLabCli gitlab = new GitLabCli(processes);
+    private final ReachLedger reach = new ReachLedger();
+    private final GitLabCli gitlab = new GitLabCli(processes, reach);
     private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of());
+            List.of(), List.of(), List.of());
 
     @Test
     void aPipelineIsRetriedThroughItsRetryEndpoint() {
@@ -57,7 +59,7 @@ class GitLabCliTest {
     @Test
     void theConfiguredHostNameAnswersInPlaceOfTheOneAnSshRemoteNames() {
         HostSettings named = new HostSettings("shop", "orchestrator.codeHost", "gitlab.corp.invalid", Path.of("/repo"),
-                List.of(), List.of());
+                List.of(), List.of(), List.of());
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
 
         gitlab.onCommit(named, "git@work-alias:shop/web.git", "0123abc");
@@ -110,6 +112,16 @@ class GitLabCliTest {
         Answer<CommitPipeline> answer = gitlab.onCommit(host, "https://git.example.invalid/shop/web.git", "0123abc");
 
         assertThat(answer.failure()).isEqualTo("glab not logged in to git.example.invalid");
+    }
+
+    @Test
+    void aSignedOutGlabNamesItsLoginOnTheHostAsTheFix() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "HTTP 401"));
+
+        Answer<CommitPipeline> answer = gitlab.onCommit(host, "https://git.example.invalid/shop/web.git", "0123abc");
+
+        assertThat(answer.reach().orElseThrow().fix())
+                .containsExactly("glab", "auth", "login", "--hostname", "git.example.invalid");
     }
 
     @Test

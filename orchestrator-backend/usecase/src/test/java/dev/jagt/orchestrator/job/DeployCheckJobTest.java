@@ -129,6 +129,33 @@ class DeployCheckJobTest {
     }
 
     @Test
+    void stopsNoTaskAndKeepsItsUnreadCountWhileJagtCannotReachTheHost(@TempDir Path root) {
+        ConfigService config = mock(ConfigService.class);
+        StepRelay relay = mock(StepRelay.class);
+        DeployPipelines pipelines = mock(DeployPipelines.class);
+        StateService state = state(root);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")
+                        .withUnread(true).withUnread(true)), 1, null)));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.UNREACHED,
+                "proj 01234567: pipeline unreached, glab not logged in", "proj", "", List.of()));
+        DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC()));
+        job.runOn(state.tasks());
+        job.runOn(state.tasks());
+
+        job.runOn(state.tasks());
+
+        TaskState task = state.task("ABC-42").orElseThrow();
+        assertThat(task.stopped()).isFalse();
+        assertThat(task.deployment().targets().getFirst().unreadReads()).isEqualTo(2);
+    }
+
+    @Test
     void endsTheUnreadDeployStopOnTheFirstReadThatListsThePipeline(@TempDir Path root) {
         ConfigService config = mock(ConfigService.class);
         StepRelay relay = mock(StepRelay.class);
@@ -393,6 +420,29 @@ class DeployCheckJobTest {
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.UNREAD,
                 "proj 01234567: pipeline unread, glab not logged in", "proj", "", List.of()));
+
+        new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                Clock.systemUTC())).runOn(state.tasks());
+
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
+    }
+
+    @Test
+    void keepsTheUnreadDeployStopWhileJagtCannotReachTheHost(@TempDir Path root) {
+        ConfigService config = mock(ConfigService.class);
+        StepRelay relay = mock(StepRelay.class);
+        DeployPipelines pipelines = mock(DeployPipelines.class);
+        StateService state = state(root);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+                .stop(new TaskStop(TaskStop.Trigger.DEPLOY_UNREAD, 1_000, "3 reads running could not list it")).build()
+                .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")
+                        .withUnread(true)), 1, null)));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.UNREACHED,
+                "proj 01234567: pipeline unreached, glab not logged in", "proj", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,

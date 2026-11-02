@@ -39,7 +39,7 @@ orchestrator:
 | `about` | one line saying what this repository is, for placing an item its labels do not |
 | `codeHost` | `github` (default), `gitlab`, `command` or `none`: what jagt reads this project's deploy pipeline through; wins over the top-level `codeHost` |
 | `codeHostName` | the code host's name where the remote does not give it, such as a self-hosted GitLab or GitHub Enterprise |
-| `pipelineCommand`, `retryCommand` | `codeHost: command` only: a command printing `success`, `failed`, `running`, `none` or `unknown` for `{sha}`; one re-running `{pipeline}` |
+| `pipelineCommand`, `retryCommand`, `loginCommand` | `codeHost: command` only: a command printing `success`, `failed`, `running`, `none` or `unknown` for `{sha}`; one re-running `{pipeline}`; one the board's `login` opens when either exits 77 (signed out) |
 
 ## What a key does not say for itself
 

@@ -229,8 +229,8 @@ class TaskReducerProperties {
                 List.of(new TaskRepo("api", "/wt", null, "https://host.example/1", true, null)),
                 List.of(new TaskRepo("api", "/wt", null, "https://host.example/1", null, null)));
         Arbitrary<List<InfraRetry>> retries = Arbitraries.of(List.of(),
-                List.of(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3)),
-                List.of(new InfraRetry(8_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true,
+                List.of(InfraRetry.armed(9_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3)),
+                List.of(new InfraRetry(8_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true,
                         3, 3)));
         return Combinators.combine(Arbitraries.of(TaskStatus.class), deployment, stop, Arbitraries.of(PlanGate.class),
                         Arbitraries.of(AgentReport.class), turn, trust, repos)
@@ -276,10 +276,10 @@ class TaskReducerProperties {
                 Arbitraries.just(new TaskMove.RepoUnasked()),
                 Arbitraries.of("t1", "t2").map(tip -> new TaskMove.HeadSeen(tip, true, false, InfraPhase.NONE)),
                 Arbitraries.of("t1", "t2").map(tip -> new TaskMove.ChecksRead("failed", tip, false)),
-                Arbitraries.just(new TaskMove.InfraArmed(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests",
+                Arbitraries.just(new TaskMove.InfraArmed(InfraRetry.armed(9_000, "shop", "https://host.invalid/p/1", "unit-tests",
                         "runner_system_failure", 1, 3))),
                 flag.map(all -> new TaskMove.InfraCleared(all, InfraPhase.NONE)),
-                Arbitraries.just(new TaskMove.InfraSent(new InfraRetry(9_500, "https://host.invalid/p/1", "unit-tests",
+                Arbitraries.just(new TaskMove.InfraSent(new InfraRetry(9_500, "shop", "https://host.invalid/p/1", "unit-tests",
                         "runner_system_failure", true, 1, 3))),
                 Arbitraries.just(new TaskMove.ChecksUnread(new ChecksUnread(500, "no listing"))),
                 flag.map(TaskMove.ApprovalRead::new),

@@ -561,7 +561,7 @@ class TaskReducerTest {
 
     @Test
     void disarmsTheInfraRetryArmedForTheCommitBeforeWhenTheHeadMoves() {
-        InfraRetry armed = InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
+        InfraRetry armed = InfraRetry.armed(9_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
         TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).headTip("aaa")
                 .infraRetries(List.of(armed)).build();
 
@@ -573,7 +573,7 @@ class TaskReducerTest {
 
     @Test
     void keepsTheInfraRetryArmedWhenTheSameHeadIsSeenAgain() {
-        InfraRetry armed = InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
+        InfraRetry armed = InfraRetry.armed(9_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
         TaskState read = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).headTip("aaa")
                 .infraRetries(List.of(armed)).build();
 
@@ -598,7 +598,7 @@ class TaskReducerTest {
     @Test
     void forgetsTheInfraRetriesOfARoundWhenANewRoundIsShipped() {
         TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("https://host/mr/9")
-                .infraRetries(List.of(InfraRetry.armed(5_000, "https://host/p/1", "unit-tests",
+                .infraRetries(List.of(InfraRetry.armed(5_000, "shop", "https://host/p/1", "unit-tests",
                         "runner_system_failure", 1, 3))).build();
 
         TaskState round = TaskReducer.requestLinked(polling, Map.of(), "https://host/mr/9", true, 2_000L);

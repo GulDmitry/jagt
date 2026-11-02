@@ -32,7 +32,8 @@ public class RoundReading {
         }
     }
 
-    public record Round(String mrUrl, ReviewFacts facts, String tip) implements Read {
+    /** {@code project} is the repository whose pipeline the round's checks and failed jobs are. */
+    public record Round(String project, String mrUrl, ReviewFacts facts, String tip) implements Read {
     }
 
     private static final int CAUSE_LIMIT = 200;
@@ -76,7 +77,11 @@ public class RoundReading {
             }
             rounds.add(reviewed.size() == 1 ? read.get() : named(Objects.requireNonNull(repo.project()), read.get()));
         }
-        return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds), tip);
+        return new Round(checkedProject(reviewed, rounds), reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds), tip);
+    }
+
+    private static String checkedProject(List<TaskRepo> reviewed, List<ReviewFacts> rounds) {
+        return Objects.toString(reviewed.get(rounds.indexOf(worstChecks(rounds))).project(), "");
     }
 
     static String cause(String failure) {

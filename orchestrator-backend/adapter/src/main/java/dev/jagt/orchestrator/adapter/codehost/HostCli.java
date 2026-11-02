@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.Reach;
+import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.TokenUsage;
 import tools.jackson.core.JacksonException;
@@ -20,14 +22,21 @@ import java.util.function.Function;
 final class HostCli {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
-    private static final Set<String> NOT_SIGNED_IN = Set.of("401", "not logged in", "auth login");
+    private static final Set<String> NOT_SIGNED_IN = Set.of("401", "403", "not logged in", "auth login");
+    private static final Set<String> UNREACHABLE = Set.of("no such host", "could not resolve", "connection refused",
+            "network is unreachable", "dial tcp");
 
     private final Processes processes;
+    private final Reach reach;
     private final String cli;
+    private final Function<String, List<String>> login;
 
-    HostCli(Processes processes, String cli) {
+    /** {@code login} gives the arguments of the CLI's own interactive login on a host. */
+    HostCli(Processes processes, Reach reach, String cli, Function<String, List<String>> login) {
         this.processes = processes;
+        this.reach = reach;
         this.cli = cli;
+        this.login = login;
     }
 
     Answer<String> run(String hostname, List<String> arguments) {
@@ -36,21 +45,25 @@ final class HostCli {
         try {
             Processes.Result result = processes.run(null, TIMEOUT, command);
             if (result.exitCode() == 0) {
+                reach.reached(cli, hostname);
                 return new Answer<>(Optional.of(result.stdout().isBlank() ? result.stderr() : result.stdout()),
                         TokenUsage.NONE);
             }
             if (result.stderr().contains("404") && !signedIn(hostname)) {
-                return Answer.failed(TokenUsage.NONE, cli + " not logged in to " + hostname);
+                return signedOut(hostname);
             }
-            return Answer.failed(TokenUsage.NONE, refusal(hostname, result));
+            return refusal(hostname, result);
         } catch (IllegalStateException e) {
+            if (Executables.unresolved(Executables.resolve(cli))) {
+                return unreached(hostname, List.of(), cli + " is not installed");
+            }
             return Answer.failed(TokenUsage.NONE, cli + " did not run: " + OneLine.clipped(e.getMessage()));
         }
     }
 
     <T> Answer<T> parsed(Answer<String> output, Function<String, T> reader) {
         if (output.facts().isEmpty()) {
-            return Answer.failed(TokenUsage.NONE, output.failure());
+            return new Answer<>(Optional.empty(), TokenUsage.NONE, output.failure(), false, output.reach());
         }
         try {
             return new Answer<>(Optional.of(reader.apply(output.facts().get())), TokenUsage.NONE);
@@ -76,12 +89,28 @@ final class HostCli {
                 .exitCode() == 0;
     }
 
-    private String refusal(String hostname, Processes.Result result) {
+    private <T> Answer<T> signedOut(String hostname) {
+        List<String> fix = new ArrayList<>(List.of(cli));
+        fix.addAll(login.apply(hostname));
+        return unreached(hostname, fix, cli + " not logged in to " + hostname);
+    }
+
+    private <T> Answer<T> unreached(String hostname, List<String> fix, String said) {
+        ReachLost lost = new ReachLost(cli, hostname, fix, said);
+        reach.lost(lost);
+        return Answer.unreached(lost);
+    }
+
+    private Answer<String> refusal(String hostname, Processes.Result result) {
         String said = OneLine.clipped(result.stderr().isBlank() ? result.stdout() : result.stderr());
         String lower = said == null ? "" : said.toLowerCase(Locale.ROOT);
         if (NOT_SIGNED_IN.stream().anyMatch(lower::contains)) {
-            return cli + " not logged in to " + hostname;
+            return signedOut(hostname);
         }
-        return cli + " exited " + result.exitCode() + (lower.isEmpty() ? "" : ": " + said);
+        if (UNREACHABLE.stream().anyMatch(lower::contains)) {
+            return unreached(hostname, List.of(), cli + " cannot reach " + hostname + ": " + said);
+        }
+        reach.reached(cli, hostname);
+        return Answer.failed(TokenUsage.NONE, cli + " exited " + result.exitCode() + (lower.isEmpty() ? "" : ": " + said));
     }
 }

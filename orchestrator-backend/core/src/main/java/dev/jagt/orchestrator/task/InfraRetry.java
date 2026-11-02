@@ -5,18 +5,22 @@ import java.util.Optional;
 
 /**
  * A re-run of a pipeline that died on infrastructure: due at {@code at} while not {@code sent}, the moment it was
- * sent after. {@code jobs} and {@code reason} are what the host said failed; it is retry {@code attempt} of {@code of}.
+ * sent after. {@code project} is the repository whose pipeline it is. {@code jobs} and {@code reason} are what
+ * the host said failed; it is retry {@code attempt} of {@code of}.
  */
-public record InfraRetry(long at, String pipelineUrl, String jobs, String reason, boolean sent, int attempt, int of) {
+public record InfraRetry(long at, String project, String pipelineUrl, String jobs, String reason, boolean sent,
+                         int attempt, int of) {
 
     public InfraRetry {
+        project = project == null ? "" : project;
         pipelineUrl = pipelineUrl == null ? "" : pipelineUrl;
         jobs = jobs == null ? "" : jobs;
         reason = reason == null ? "" : reason;
     }
 
-    public static InfraRetry armed(long at, String pipelineUrl, String jobs, String reason, int attempt, int of) {
-        return new InfraRetry(at, pipelineUrl, jobs, reason, false, attempt, of);
+    public static InfraRetry armed(long at, String project, String pipelineUrl, String jobs, String reason,
+                                int attempt, int of) {
+        return new InfraRetry(at, project, pipelineUrl, jobs, reason, false, attempt, of);
     }
 
     /** The one retry still waiting for its time. */
@@ -31,7 +35,7 @@ public record InfraRetry(long at, String pipelineUrl, String jobs, String reason
     }
 
     public InfraRetry sentAt(long now) {
-        return new InfraRetry(now, pipelineUrl, jobs, reason, true, attempt, of);
+        return new InfraRetry(now, project, pipelineUrl, jobs, reason, true, attempt, of);
     }
 
     /** The retries sent after the last lift, oldest first. */

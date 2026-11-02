@@ -29,13 +29,8 @@ public class InfraRetries {
     private final InfraWaitProperties properties;
     private final Clock clock;
 
-    /** The project whose code host answers for {@code pipelineUrl}, blank where the task is gone. */
-    public String projectOf(String taskId, String pipelineUrl) {
-        return stateService.task(taskId).map(task -> PipelineProject.of(task, pipelineUrl)).orElse("");
-    }
-
     /** The retry waiting for {@code pipelineUrl}: the one already armed, or a new one; empty once every wait was spent. */
-    public Optional<InfraRetry> arm(String taskId, String pipelineUrl, String jobs, String reason) {
+    public Optional<InfraRetry> arm(String taskId, String project, String pipelineUrl, String jobs, String reason) {
         AtomicReference<Optional<InfraRetry>> armed = new AtomicReference<>(Optional.empty());
         stateService.updateTask(taskId, task -> {
             Optional<InfraRetry> pending = InfraRetry.pending(task.infraRetries())
@@ -46,8 +41,8 @@ public class InfraRetries {
             }
             List<InfraRetry> sent = InfraRetry.sentSince(task.infraRetries(), task.trailOrNone());
             Optional<InfraRetry> next = properties.before(sent.size())
-                    .map(wait -> InfraRetry.armed(clock.millis() + wait.toMillis(), pipelineUrl, jobs, reason,
-                            sent.size() + 1, properties.backoff().size()));
+                    .map(wait -> InfraRetry.armed(clock.millis() + wait.toMillis(), project, pipelineUrl, jobs,
+                            reason, sent.size() + 1, properties.backoff().size()));
             armed.set(next);
             return next.map(retry -> TaskReducer.infraArmed(task, retry)).orElse(task);
         });

@@ -67,8 +67,11 @@ public class InfraRetryJob implements Job {
             retries.clear(taskId, false);
             return;
         }
-        String project = retries.projectOf(taskId, armed.pipelineUrl());
+        String project = armed.project();
         Answer<List<FailedJob>> failed = pipelines.failedJobs(project, armed.pipelineUrl());
+        if (failed.reach().isPresent()) {
+            return;
+        }
         if (failed.facts().isEmpty()) {
             retries.refused(taskId, failed.failure());
         } else if (RedCause.of(failed.facts().get()) == RedCause.INFRASTRUCTURE) {
@@ -84,7 +87,7 @@ public class InfraRetryJob implements Job {
             retries.sent(taskId, armed);
             log.atInfo().setMessage("pipeline retried").addKeyValue("task", taskId)
                     .addKeyValue("url", armed.pipelineUrl()).addKeyValue("reason", armed.reason()).log();
-        } else {
+        } else if (sent.reach().isEmpty()) {
             retries.refused(taskId, sent.failure());
         }
     }

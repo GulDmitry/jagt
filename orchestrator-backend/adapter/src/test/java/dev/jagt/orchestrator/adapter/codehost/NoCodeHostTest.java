@@ -13,7 +13,7 @@ class NoCodeHostTest {
 
     private final NoCodeHost none = new NoCodeHost();
     private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of());
+            List.of(), List.of(), List.of());
 
     @Test
     void noPipelineIsReadAndTheDeploySettlesOnTheAddressNoHostHas() {

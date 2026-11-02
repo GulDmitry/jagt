@@ -24,6 +24,7 @@ export async function refresh() {
       jobs: data.jobs,
       actStop: data.actStop,
       assistant: data.assistant,
+      reach: data.reach || [],
       masterMode: data.masterMode,
       offers: data.offers || {},
     });

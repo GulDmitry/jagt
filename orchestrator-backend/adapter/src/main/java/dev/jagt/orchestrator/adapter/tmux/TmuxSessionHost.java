@@ -18,9 +18,11 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -104,6 +106,21 @@ public class TmuxSessionHost implements SessionHost {
             } catch (WindowsUnreadable unread) {
                 // Already logged where it was read; a window that may exist is never opened again.
             }
+        }
+    }
+
+    @Override
+    public void openCommandWindow(String session, String dedicatedTitle, String name, List<String> command) {
+        List<String> resolved = new ArrayList<>(command);
+        resolved.set(0, Executables.resolve(command.getFirst()));
+        String line = resolved.stream().map(part -> "'" + part.replace("'", "'\\''") + "'")
+                .collect(Collectors.joining(" "));
+        synchronized (lock) {
+            ensureSession(session);
+            killTaskWindows(session, name);
+            String windowId = newWindow(session, name, VIEWER_CWD, line);
+            processRunner.run(null, TIMEOUT, List.of(tmux(), "select-window", "-t", windowId));
+            ensureViewer(session, dedicatedTitle);
         }
     }
 

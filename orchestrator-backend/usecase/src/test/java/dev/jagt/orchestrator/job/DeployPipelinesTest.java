@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -67,6 +68,49 @@ class DeployPipelinesTest {
 
         assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.UNREAD);
         assertThat(reading.said()).isEqualTo("shop 01234567: pipeline unread, glab not logged in to git.example.invalid");
+    }
+
+    @Test
+    void aDeployWaitsWithoutBeingUnreadWhereJagtCannotReachTheHost() {
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(Answer.unreached(new ReachLost("glab",
+                "git.example.invalid", List.of("glab", "auth", "login", "--hostname", "git.example.invalid"),
+                "glab not logged in to git.example.invalid")));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.UNREACHED);
+    }
+
+    @Test
+    void theFirstOfTwoRepositoriesStillRunningIsTheOneTheLineNames() {
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("running", "")), TokenUsage.NONE));
+        when(pipelines.onCommit("api", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("running", "")), TokenUsage.NONE));
+        TaskState inTwo = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null),
+                new TaskRepo("api", "/wt2", REMOTE, null)), TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(
+                Deployment.Target.of("shop", "dev").withMerge(SHA), Deployment.Target.of("api", "dev").withMerge(SHA)),
+                1, null)).build();
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", inTwo);
+
+        assertThat(reading.said()).startsWith("shop ");
+    }
+
+    @Test
+    void aReadThatReachedTheHostOutranksOneThatDidNotWhenTwoRepositoriesAreOpen() {
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(Answer.unreached(new ReachLost("glab",
+                "git.example.invalid", List.of(), "glab not logged in to git.example.invalid")));
+        when(pipelines.onCommit("api", REMOTE, SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1: 500"));
+
+        TaskState inTwo = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null),
+                new TaskRepo("api", "/wt2", REMOTE, null)), TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(
+                Deployment.Target.of("shop", "dev").withMerge(SHA), Deployment.Target.of("api", "dev").withMerge(SHA)),
+                1, null)).build();
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", inTwo);
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.UNREAD);
     }
 
     @Test

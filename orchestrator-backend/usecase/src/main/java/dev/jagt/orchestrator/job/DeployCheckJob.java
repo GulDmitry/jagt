@@ -96,8 +96,11 @@ public class DeployCheckJob implements TaskJob {
         }
     }
 
-    /** The reads running that could not list a pipeline; at the ceiling the task stops for the human. */
+    /** The reads running that could not list a pipeline; at the ceiling the task stops for the human. A read that never reached the host is no read of it, so it neither counts nor resets. */
     private int counted(String taskId, TaskState task, DeployPipelines.Reading reading) {
+        if (reading.kind() == DeployPipelines.Kind.UNREACHED) {
+            return unreadOf(task);
+        }
         boolean unread = reading.kind() == DeployPipelines.Kind.UNREAD;
         if (!unread && unreadOf(task) == 0) {
             return 0;
@@ -122,7 +125,7 @@ public class DeployCheckJob implements TaskJob {
         switch (reading.kind()) {
             case RED -> reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
             case GREEN -> markBare(taskId, task, reading.bare());
-            case WAITING, UNREAD -> {
+            case WAITING, UNREACHED, UNREAD -> {
             }
         }
     }
@@ -152,7 +155,7 @@ public class DeployCheckJob implements TaskJob {
                     reports.deployAsked(taskId, Turn.digestOf(landed));
                 }
             }
-            case WAITING, UNREAD -> reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
+            case WAITING, UNREACHED, UNREAD -> reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
             case RED -> reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
         }
     }

@@ -37,7 +37,7 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class), new GlobalCommands(List.of(
                     new Declared("stats", "what the calls cost", true, 100),
                     new Declared("do", "start a task", false, 40))),
-            new HeaderState(new dev.jagt.orchestrator.job.Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
+            new HeaderState(new dev.jagt.orchestrator.job.Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
 
     @Test
     void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
@@ -109,9 +109,24 @@ class BoardApiControllerTest {
                 new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240), List.of(), null, "off"));
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
                 new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-                health, Clock.systemUTC()));
+                health, new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
 
         assertThat(board.tasks().assistant()).isEqualTo(outage);
+    }
+
+    @Test
+    void tellsTheBoardWhereJagtLostItsReach() {
+        var reach = new dev.jagt.orchestrator.service.ReachLedger();
+        var lost = new dev.jagt.orchestrator.port.ReachLost("glab", "git.example.invalid",
+                List.of("glab", "auth", "login"), "glab not logged in to git.example.invalid");
+        reach.lost(lost);
+        when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240), List.of(), null, "off"));
+        BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
+                org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), reach, Clock.systemUTC()));
+
+        assertThat(board.tasks().reach()).containsExactly(lost);
     }
 
     @Test
@@ -119,7 +134,7 @@ class BoardApiControllerTest {
         Job poll = mock(Job.class);
         when(poll.id()).thenReturn("poll-reviews");
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
-                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(poll), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(poll), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
 
         assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
     }
@@ -131,7 +146,7 @@ class BoardApiControllerTest {
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
                 new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240), List.of(), null, "off"));
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
-                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(poll), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
+                new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(poll), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
 
         assertThat(board.tasks().jobs().count()).isEqualTo(1);
     }
@@ -142,7 +157,7 @@ class BoardApiControllerTest {
         SseEmitter browser = new SseEmitter(0L);
         when(stream.open()).thenReturn(browser);
         BoardApiController board = new BoardApiController(taskViews, stream, new GlobalCommands(List.of()),
-                new HeaderState(new Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
+                new HeaderState(new Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
 
         assertThat(board.events()).isSameAs(browser);
     }
@@ -170,7 +185,7 @@ class BoardApiControllerTest {
             public String run(String tail) { return ""; }
         };
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
-                new GlobalCommands(List.of(drafts)), new HeaderState(new dev.jagt.orchestrator.job.Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), Clock.systemUTC()));
+                new GlobalCommands(List.of(drafts)), new HeaderState(new dev.jagt.orchestrator.job.Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
         TaskView drafted = TaskView.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
                 true, null, Map.of());
         TaskView quiet = TaskView.of("ABC-2", TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),

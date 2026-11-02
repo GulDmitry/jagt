@@ -544,6 +544,46 @@ class TmuxSessionHostTest {
     }
 
     @Test
+    void runsACommandAsTheProcessOfAWindowOfItsOwnQuotedWordByWord() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.openCommandWindow("jagt", "jagt", "login", List.of("no-such-cli", "auth", "it's"));
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).anySatisfy(command -> {
+            assertThat(command).containsSequence("new-window", "-P");
+            assertThat(command.getLast()).startsWith("'no-such-cli' 'auth' 'it'\\''s';");
+        });
+    }
+
+    @Test
+    void createsTheSessionAndShowsItToTheHumanForACommandWindow() {
+        Processes processes = mock(Processes.class);
+        TerminalDriver terminal = mock(TerminalDriver.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("has-session")))).thenReturn(new Processes.Result(1, "", "no session"));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-clients")))).thenReturn(new Processes.Result(0, "", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                terminal, mock(AgentRuntime.class));
+
+        host.openCommandWindow("jagt", "jagt-title", "login", List.of("no-such-cli"));
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).anySatisfy(command ->
+                assertThat(command).containsSequence("new-session", "-d", "-s", "jagt"));
+        verify(terminal).openViewer(eq("jagt"), eq("jagt-title"), any());
+    }
+
+    @Test
     void opensNoSecondFeedWindowWhereOneIsOpen() {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));

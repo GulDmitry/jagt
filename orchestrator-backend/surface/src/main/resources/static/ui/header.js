@@ -1,9 +1,7 @@
 // The one line above the grid: whose move it is, what the install polls, what the jobs are doing, the phase
-// counts and the order. Every count is a NUMBER in a line that never moves — a phase that owned a column would
-// have to move the card it describes, and re-finding it is the cost a human pays for the arrangement.
+// counts and the order. Every count is a number in a line that never moves: a column per phase would move cards.
 //
-// Pure rendering: each button carries its own data attribute, and the click is delegated through `onBarClick`,
-// because what narrowing or re-ordering MEANS on screen is the render's answer, not this module's.
+// Pure rendering: each button carries its own data attribute, clicks are delegated through `onBarClick`.
 
 import {span} from '../core/dom.js';
 import {countdown} from '../core/format.js';
@@ -16,6 +14,7 @@ const waitingLabel = document.getElementById('waiting');
 const autoReviewChip = document.getElementById('auto-review');
 const jobsChip = document.getElementById('jobs-pulse');
 const assistantChip = document.getElementById('assistant-down');
+const reachChip = document.getElementById('reach-lost');
 const actChip = document.getElementById('act-stopped');
 const masterChip = document.getElementById('master-mode');
 
@@ -45,9 +44,17 @@ function renderAssistant() {
   assistantChip.dataset.tip = `${down.cause}\nnext read to probe: ${due > 0 ? countdown(due) : 'due'}`;
 }
 
-// An empty board has two causes and a human cannot act on the wrong one: nothing exists yet, or everything is
-// hidden by controls they may not be looking at. Two elements rather than one message rewritten in place, so
-// neither can be left showing the other's text.
+function renderReach() {
+  const lost = store.reach();
+  reachChip.hidden = !lost.length;
+  reachChip.disabled = !lost.some((one) => one.fix.length);
+  reachChip.textContent = lost.map((one) => one.said).join(' \u00b7 ');
+  reachChip.dataset.tip = lost.map((one) => one.said + (one.fix.length ? `\nfix: ${one.fix.join(' ')}` : '')).join('\n')
+    + '\nthe next read that succeeds clears this';
+}
+
+// An empty board has two causes a human cannot act on the wrong one of: nothing exists yet, or controls hide
+// everything. Two elements, so neither can be left showing the other's text.
 function renderEmpty(held, showing) {
   document.getElementById('empty').hidden = held > 0;
   const filtered = document.getElementById('filtered');
@@ -70,6 +77,7 @@ export function render(tasks, showing) {
   masterChip.dataset.tip = 'the Master presses the buttons you would; the Master report says what it may do';
   renderJobs();
   renderAssistant();
+  renderReach();
   const stop = store.actStop();
   actChip.hidden = !stop;
   actChip.dataset.tip = {
@@ -110,7 +118,7 @@ export function render(tasks, showing) {
 }
 
 export const onVerbClick = (press) => {
-  actChip.onclick = () => press(actChip.dataset.verb);
+  [actChip, reachChip].forEach((chip) => { chip.onclick = () => press(chip.dataset.verb); });
 };
 
 export const onJobsClick = (open) => {

@@ -34,14 +34,13 @@ class RedCausesTest {
     @Test
     void waitsOutARunWhoseEveryFailedJobDiedOnInfrastructure() {
         when(retries.applies("ABC-42")).thenReturn(true);
-        when(retries.projectOf("ABC-42", "https://host.invalid/p/1")).thenReturn("proj");
-        when(pipelines.failedJobs("proj", "https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.failedJobs("shop", "https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "unit-tests", "runner_system_failure", true))), TokenUsage.NONE));
-        when(retries.arm("ABC-42", "https://host.invalid/p/1", "unit-tests", "runner_system_failure"))
-                .thenReturn(Optional.of(InfraRetry.armed(9_000, "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3)));
+        when(retries.arm("ABC-42", "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure"))
+                .thenReturn(Optional.of(InfraRetry.armed(9_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3)));
         when(retries.reading("ABC-42")).thenReturn("runner_system_failure: unit-tests · retry 1/3 at 10:05 UTC");
 
-        RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);
+        RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", red, Pipeline.RED);
 
         assertThat(verdict.cause()).isEqualTo(RedCause.INFRASTRUCTURE);
         assertThat(verdict.retryLeft()).isTrue();
@@ -51,43 +50,40 @@ class RedCausesTest {
     @Test
     void handsARunToTheSessionWhenOneFailedJobFailedItsScript() {
         when(retries.applies("ABC-42")).thenReturn(true);
-        when(retries.projectOf("ABC-42", "https://host.invalid/p/1")).thenReturn("proj");
-        when(pipelines.failedJobs("proj", "https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.failedJobs("shop", "https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "build", "runner_system_failure", true), new FailedJob("2", "unit-tests", "script_failure", false))),
                 TokenUsage.NONE));
 
-        RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);
+        RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", red, Pipeline.RED);
 
         assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
         verify(retries).clear("ABC-42", true);
-        verify(retries, never()).arm(any(), any(), any(), any());
+        verify(retries, never()).arm(any(), any(), any(), any(), any());
     }
 
     @Test
     void handsARunToTheSessionWhenItsFailedJobsCannotBeRead() {
-        when(retries.projectOf("ABC-42", "https://host.invalid/p/1")).thenReturn("proj");
-        when(pipelines.failedJobs("proj", "https://host.invalid/p/1")).thenReturn(Answer.failed(TokenUsage.NONE,
+        when(pipelines.failedJobs("shop", "https://host.invalid/p/1")).thenReturn(Answer.failed(TokenUsage.NONE,
                 "glab not logged in to host.invalid"));
 
-        RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);
+        RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", red, Pipeline.RED);
 
         assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
         assertThat(verdict.stop()).isEmpty();
-        verify(retries, never()).arm(any(), any(), any(), any());
+        verify(retries, never()).arm(any(), any(), any(), any(), any());
     }
 
     @Test
     void stopsTheTaskOnceEveryWaitWasSpent() {
         when(retries.applies("ABC-42")).thenReturn(true);
-        when(retries.projectOf("ABC-42", "https://host.invalid/p/1")).thenReturn("proj");
-        when(pipelines.failedJobs("proj", "https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.failedJobs("shop", "https://host.invalid/p/1")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "unit-tests", "runner_system_failure", true))), TokenUsage.NONE));
-        when(retries.arm("ABC-42", "https://host.invalid/p/1", "unit-tests", "runner_system_failure"))
+        when(retries.arm("ABC-42", "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure"))
                 .thenReturn(Optional.empty());
         TaskStop stop = new TaskStop(TaskStop.Trigger.INFRA, 1_000, "unit-tests: runner_system_failure, 3 retries");
         when(retries.exhausted("ABC-42")).thenReturn(Optional.of(stop));
 
-        RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);
+        RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", red, Pipeline.RED);
 
         assertThat(verdict.stop()).contains(stop);
         assertThat(verdict.retryLeft()).isFalse();
@@ -97,7 +93,7 @@ class RedCausesTest {
     void asksNothingOfTheHostWhenNoWaitIsConfigured() {
         RedCauses off = new RedCauses(pipelines, retries, new InfraWaitProperties(List.of()));
 
-        RedCauses.Verdict verdict = off.judge("ABC-42", red, Pipeline.RED);
+        RedCauses.Verdict verdict = off.judge("ABC-42", "shop", red, Pipeline.RED);
 
         assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
         verifyNoInteractions(pipelines);
@@ -108,7 +104,7 @@ class RedCausesTest {
         ReviewFacts unaddressed = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(),
                 List.of(), "", false, false);
 
-        RedCauses.Verdict verdict = causes.judge("ABC-42", unaddressed, Pipeline.RED);
+        RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", unaddressed, Pipeline.RED);
 
         assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
         verifyNoInteractions(pipelines);
@@ -118,7 +114,7 @@ class RedCausesTest {
     void forgetsEveryRetryOnceTheRunWentGreen() {
         when(retries.applies("ABC-42")).thenReturn(true);
 
-        causes.judge("ABC-42", red, Pipeline.GREEN);
+        causes.judge("ABC-42", "shop", red, Pipeline.GREEN);
 
         verify(retries).clear("ABC-42", true);
     }
@@ -127,7 +123,7 @@ class RedCausesTest {
     void forgetsOnlyTheArmedRetryWhileTheRunIsStillGoing() {
         when(retries.applies("ABC-42")).thenReturn(true);
 
-        causes.judge("ABC-42", red, Pipeline.RUNNING);
+        causes.judge("ABC-42", "shop", red, Pipeline.RUNNING);
 
         verify(retries).clear("ABC-42", false);
     }
@@ -136,12 +132,12 @@ class RedCausesTest {
     void armsNoRetryAndSetsNoStopWhereTheTaskDoesNotWaitOnItsChecks() {
         when(retries.applies("ABC-42")).thenReturn(false);
 
-        RedCauses.Verdict verdict = causes.judge("ABC-42", red, Pipeline.RED);
+        RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", red, Pipeline.RED);
 
         assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
         assertThat(verdict.stop()).isEmpty();
         verifyNoInteractions(pipelines);
-        verify(retries, never()).arm(any(), any(), any(), any());
+        verify(retries, never()).arm(any(), any(), any(), any(), any());
         verify(retries, never()).exhausted(any());
     }
 
@@ -149,19 +145,19 @@ class RedCausesTest {
     void keepsTheRetriesOfADeployWhenTheReviewRequestOfATaskPastItsReviewReadsGreen() {
         when(retries.applies("ABC-42")).thenReturn(false);
 
-        causes.judge("ABC-42", red, Pipeline.GREEN);
+        causes.judge("ABC-42", "shop", red, Pipeline.GREEN);
 
         verify(retries, never()).clear(any(), org.mockito.ArgumentMatchers.anyBoolean());
     }
 
     @Test
     void waitsOutADeployPipelineWhoseEveryFailedJobDiedOnInfrastructure() {
-        when(pipelines.failedJobs("proj", "https://host.invalid/p/9")).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.failedJobs("shop", "https://host.invalid/p/9")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("1", "unit-tests", "runner_system_failure", true))), TokenUsage.NONE));
-        when(retries.arm("ABC-42", "https://host.invalid/p/9", "unit-tests", "runner_system_failure"))
-                .thenReturn(Optional.of(InfraRetry.armed(9_000, "https://host.invalid/p/9", "unit-tests", "runner_system_failure", 1, 3)));
+        when(retries.arm("ABC-42", "shop", "https://host.invalid/p/9", "unit-tests", "runner_system_failure"))
+                .thenReturn(Optional.of(InfraRetry.armed(9_000, "shop", "https://host.invalid/p/9", "unit-tests", "runner_system_failure", 1, 3)));
 
-        RedCauses.Verdict verdict = causes.judgeDeploy("ABC-42", "proj", "https://host.invalid/p/9");
+        RedCauses.Verdict verdict = causes.judgeDeploy("ABC-42", "shop", "https://host.invalid/p/9");
 
         assertThat(verdict.cause()).isEqualTo(RedCause.INFRASTRUCTURE);
         assertThat(verdict.retryLeft()).isTrue();
@@ -169,10 +165,10 @@ class RedCausesTest {
 
     @Test
     void handsADeployPipelineToTheSessionWhenAFailedJobFailedItsScript() {
-        when(pipelines.failedJobs("proj", "https://host.invalid/p/9")).thenReturn(new Answer<>(Optional.of(
+        when(pipelines.failedJobs("shop", "https://host.invalid/p/9")).thenReturn(new Answer<>(Optional.of(
                 List.of(new FailedJob("2", "static-analysis", "script_failure", false))), TokenUsage.NONE));
 
-        RedCauses.Verdict verdict = causes.judgeDeploy("ABC-42", "proj", "https://host.invalid/p/9");
+        RedCauses.Verdict verdict = causes.judgeDeploy("ABC-42", "shop", "https://host.invalid/p/9");
 
         assertThat(verdict.cause()).isEqualTo(RedCause.CODE);
         assertThat(verdict.retryLeft()).isFalse();

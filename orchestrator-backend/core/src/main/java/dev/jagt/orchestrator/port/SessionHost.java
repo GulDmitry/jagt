@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.port;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -57,6 +58,9 @@ public interface SessionHost {
      * the session's windows cannot be listed.
      */
     void keepFeedWindow(String session, String name, Path file);
+
+    /** Runs {@code command} as the process of a window named {@code name}, replacing one of that name, and shows it to the human. */
+    void openCommandWindow(String session, String dedicatedTitle, String name, List<String> command);
 
     /** Brings the task's window to whoever is attached; false when there is no such window. */
     boolean focusTaskWindow(String session, String dedicatedTitle, String taskId);

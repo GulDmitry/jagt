@@ -144,8 +144,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
   position: sticky; top: 0; background: var(--panel);
 }
 #report-scroll { overflow: auto; min-height: 0; }
-/* Wraps rather than scrolling sideways: a line a human has to drag the view along is one they read twice, and
-   only a word longer than the dialog is broken, so a path stays one thing you can copy. */
+/* Wraps, never scrolls sideways; only a word longer than the dialog breaks, so a path stays copyable. */
 #report-body {
   margin: 0; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: break-word;
   font-family: var(--mono); font-size: 12px; line-height: 1.45;
@@ -263,8 +262,7 @@ article.you { border-left-color: var(--you); }
 article.you.optional { border-left-color: var(--line); }
 article.agent { border-left-color: var(--agent); }
 article.ci { border-left-color: var(--ci); }
-/* Wraps, because the badge is a phrase and not a word: squeezed onto one line it would break INSIDE its own
-   pill, which is the one place a line break has nowhere to go. */
+/* Wraps: the badge is a phrase, and on one line it would break inside its own pill. */
 .card-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .alias {
   font-family: var(--mono); font-weight: 700; color: var(--text);
@@ -280,20 +278,17 @@ button.flag[aria-pressed="true"] { color: var(--text); }
 button.flag:hover:not(:disabled) { color: var(--accent); }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
 .badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-/* Two tiers, and the quiet one has to LOOK quiet: an interruption filled in the owner's colour, a move that can
-   wait wearing the same chip as a status. */
+/* Two tiers: the interruption wears the owner's colour, the move that can wait must look quiet. */
 .badge.required { background: var(--you-bg); color: var(--you); }
 .badge.optional { background: var(--chip-bg); color: var(--muted); font-weight: 400; }
 .mr-age { font-family: var(--mono); font-size: 11px; }
-/* Not a flex container: a flex box drops the space between two words, leaving the text legible only for as
-   long as a stylesheet says so. */
+/* Not flex: a flex box drops the space between two words. */
 .status {
   padding: 1px 7px; border-radius: 999px;
   background: var(--chip-bg); color: var(--text); font-size: 11px; font-weight: 600;
 }
 .status .age { font-family: var(--mono); font-weight: 400; opacity: .7; }
-/* Where no verb on the card is the deploy, the state says the work is live instead — same colour, so it is
-   one mark a human learns rather than two. */
+/* Where no verb is the deploy, the state says the work is live: same colour, one mark. */
 .status.live { color: var(--ok); }
 /* Clickable without a link's colour: a whole meta row in accent would compete with the buttons. */
 a.id, a.mr-age {
@@ -313,8 +308,7 @@ a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid;
 a { color: var(--accent); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .actions button { font-size: 12px; padding: 3px 8px; }
-/* Recedes: nothing in this row writes a branch or ends a session. `:not(.primary)` matters — while the agent
-   works the primary IS `focus`, a button of this row, and the highlighted move must not shrink. */
+/* Recedes: nothing here writes a branch or ends a session. `:not(.primary)` keeps the agent-working `focus` full size. */
 .actions.tool { margin-top: 4px; gap: 4px; }
 .actions.tool button:not(.primary) { font-size: 11px; padding: 2px 7px; color: var(--muted); }
 /* A nudge to read before shipping, not an error: warm rather than red, the badge's look. */
@@ -357,8 +351,7 @@ a { color: var(--accent); }
 @keyframes checks-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .checks.running { animation: none; } }
 
-/* A verb whose last run is still live wears it itself: the meta row above is the busiest thing on a card, and
-   one more mark there would be read past. Colour only — the button neither moves nor grows. */
+/* A verb whose last run is live wears it itself: the meta row is the busiest on a card. Colour only. */
 button:not(.primary).again { border-color: var(--ok); color: var(--ok); }
 button:not(.primary).again:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
 /* The highlighted move keeps its fill and takes the mark as a ring: green ON accent is legible in neither theme. */

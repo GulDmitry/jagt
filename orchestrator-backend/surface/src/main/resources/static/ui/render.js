@@ -51,7 +51,8 @@ export function render() {
   seen.note(tasks, selection.paneShown() ? open : null);
   glance.render({waiting: tasks.filter((task) => task.attention === 'REQUIRED').length,
     broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || Boolean(store.actStop())
-      || Boolean(store.assistant())});
+      || Boolean(store.assistant())
+      || store.reach().length > 0});
   watch(tasks, Boolean(store.jobs()?.failing));
   board.classList.toggle('open', selection.isOpen());
   const rowVerb = shown.flatMap((task) => task.actions || []).find((action) => action.onRow);

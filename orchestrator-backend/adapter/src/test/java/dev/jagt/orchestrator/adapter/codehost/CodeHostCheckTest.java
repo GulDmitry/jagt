@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -18,11 +19,11 @@ class CodeHostCheckTest {
 
     private final ConfigService configService = mock(ConfigService.class);
     private final CodeHostCheck check = new CodeHostCheck(configService,
-            List.of(new CommandPipeline(mock(Processes.class)), new NoCodeHost()));
+            List.of(new CommandPipeline(mock(Processes.class), new ReachLedger()), new NoCodeHost()));
 
     private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
         return new ProjectConfig("/repo/shop", "origin/main", "dev", List.of(), List.of(), null, null, codeHost, null,
-                pipelineCommand, null);
+                pipelineCommand, null, null);
     }
 
     @Test

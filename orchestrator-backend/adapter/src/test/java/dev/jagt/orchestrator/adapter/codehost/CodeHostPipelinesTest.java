@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.codehost;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -28,12 +29,13 @@ class CodeHostPipelinesTest {
 
     private final ConfigService configService = mock(ConfigService.class);
     private final Processes processes = mock(Processes.class);
+    private final ReachLedger reach = new ReachLedger();
     private final CodeHostPipelines pipelines = new CodeHostPipelines(configService,
-            List.of(new GitHubCli(processes), new GitLabCli(processes), new CommandPipeline(processes), new NoCodeHost()));
+            List.of(new GitHubCli(processes, reach), new GitLabCli(processes, reach), new CommandPipeline(processes, reach), new NoCodeHost()));
 
     private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
         return new ProjectConfig("/repo/shop", "origin/main", "dev", List.of(), List.of(), null, null, codeHost, null,
-                pipelineCommand, null);
+                pipelineCommand, null, null);
     }
 
     private String firstWordOfTheCommandRun() {
