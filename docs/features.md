@@ -118,7 +118,7 @@
 - **Red round** — A failing pipeline goes back to its session unless the host says infrastructure, which jagt re-runs: `infraWait.backoff`, `[]` off.
   [spec](../openspec/specs/review/spec.md#requirement-a-red-round-goes-back-to-the-session)
   [spec](../openspec/specs/infra-wait/spec.md#requirement-infrastructure-failures-are-waited-out)
-  [spec](../openspec/specs/review/spec.md#requirement-pipeline-status-keeps-the-hosts-wording)
+  [spec](../openspec/specs/review/spec.md#requirement-pipeline-status-is-one-of-jagts-five-words)
 - **Session waits** — A session whose dependency is down reports `wait`; jagt says when to probe again and stops the task after the last wait.
   [spec](../openspec/specs/infra-wait/spec.md#requirement-a-session-waits-out-a-dependency-that-is-down)
 
@@ -163,12 +163,12 @@
   [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
 
 ## Task flow · [spec](../openspec/specs/task-flow/spec.md)
-
 - **One table of statuses** — One table says which action is allowed in which status and where it leads.
   [spec](../openspec/specs/task-flow/spec.md#requirement-one-table-owns-the-life-of-a-task)
 - **Verify before hand-back** — jagt runs the project's check command and sends a red run back to the session.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
-- **Deploy check** — Checked where it landed, by its session or a QA run; green stands it, red goes back. Keys: `roles.qa.enabled`, `codeHost`.
+- **Deploy check** — A deploy is checked where it landed — by its session, or by a read-only QA run when `roles.qa.enabled` (off).
+  A green pipeline stands it, a red one goes back to the session in the deploy worktree. Keys: `orchestrator.roles.qa.enabled`, `codeHost`.
   [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [QA](../openspec/specs/qa/spec.md)
   · [host](../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.

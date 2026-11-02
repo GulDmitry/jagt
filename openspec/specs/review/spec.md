@@ -76,7 +76,7 @@ round it SHALL post nothing, and a draft SHALL go only where the answered note's
 - **WHEN** you `ship`
 - **THEN** replies are posted only now; a fixed thread is resolved, a disputed one left for the reviewer
 
-### Requirement: Pipeline status keeps the host's wording
+### Requirement: Pipeline status is one of jagt's five words
 `TaskState.pipelineStatus` SHALL be one of jagt's five words: `success`, `failed`, `running`, `none`, `unknown`; `flow/Pipeline` parses it.
 A round reading no listing SHALL write nothing, the last word standing flagged. The third such round running since the `lift`
 SHALL stop the task, its evidence the reads' words for why; a listing counts anew.
