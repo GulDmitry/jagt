@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -40,26 +41,41 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         private final String unnamed;
     }
 
-    public enum By {
-        JAGT, MASTER, HUMAN, QA;
+    /** Who sets a step off: one of jagt's fixed parties, or an installed checker named by its id. */
+    public sealed interface By {
 
-        public String id() {
-            return name().toLowerCase(Locale.ROOT);
+        By JAGT = Fixed.JAGT;
+        By MASTER = Fixed.MASTER;
+        By HUMAN = Fixed.HUMAN;
+
+        String id();
+
+        enum Fixed implements By {
+            JAGT, MASTER, HUMAN;
+
+            @Override
+            public String id() {
+                return name().toLowerCase(Locale.ROOT);
+            }
+        }
+
+        record Role(String id) implements By {
         }
 
         static Optional<By> of(String id) {
-            return Arrays.stream(values()).filter(by -> by.id().equals(id)).findFirst();
+            return Stream.of(JAGT, MASTER, HUMAN).filter(by -> by.id().equals(id)).findFirst()
+                    .or(() -> Checkers.installed().stream().filter(id::equals).findFirst().<By>map(Role::new));
         }
 
         /** A call over MCP is a session's own, so what it sets off is jagt's answer to it. */
-        public static By of(@Nullable ActionOrigin origin) {
+        static By of(@Nullable ActionOrigin origin) {
             if (origin == null) {
                 return JAGT;
             }
             return switch (origin) {
                 case BOARD, PALETTE -> HUMAN;
                 case MASTER -> MASTER;
-                case QA -> QA;
+                case QA -> new Role(Checkers.QA);
                 case MCP, AUTO_REVIEW, TRACKER, JAGT -> JAGT;
             };
         }
@@ -155,7 +171,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
     }
 
     public boolean sends(String step, TaskStatus status, By by) {
-        return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status) && c.by() == by);
+        return cases.stream().anyMatch(c -> c.step().equals(step) && c.at().contains(status) && c.by().equals(by));
     }
 
     public boolean names(String step) {
@@ -164,7 +180,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
 
     /** The steps of {@code steps} no case set off {@code by} names. */
     public Set<String> unnamed(Set<String> steps, By by) {
-        return steps.stream().filter(step -> cases.stream().noneMatch(c -> c.step().equals(step) && c.by() == by))
+        return steps.stream().filter(step -> cases.stream().noneMatch(c -> c.step().equals(step) && c.by().equals(by)))
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
@@ -207,10 +223,10 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
             faults.add(fault(file, id, "has at: '" + keys.getOrDefault("at", "")
                     + "', which is not any, any but <statuses>, or a list of " + Arrays.toString(TaskStatus.values())));
         }
-        Optional<By> by = By.of(keys.getOrDefault("by", "")).filter(named -> shape == Shape.STEPS || named == By.MASTER);
+        Optional<By> by = By.of(keys.getOrDefault("by", "")).filter(named -> shape == Shape.STEPS || named.equals(By.MASTER));
         if (by.isEmpty()) {
             faults.add(fault(file, id, "has by: '" + keys.getOrDefault("by", "") + "', which is not "
-                    + (shape == Shape.STEPS ? "jagt, master, human or qa" : "master")));
+                    + (shape == Shape.STEPS ? "jagt, master, human or an installed checker" : "master")));
         }
         Optional<Replies> replies = shape == Shape.MOVES ? Optional.of(Replies.NONE)
                 : readReplies(keys.getOrDefault("replies", ""), faults, file, id);

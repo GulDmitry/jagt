@@ -75,7 +75,7 @@ public class CaseDoor {
 
     /** Whether what runs now runs as the Master: the one answer to who that is. */
     public static boolean byTheMaster() {
-        return CaseBook.By.of(OriginContext.current()) == CaseBook.By.MASTER;
+        return CaseBook.By.MASTER.equals(CaseBook.By.of(OriginContext.current()));
     }
 
     private boolean refused(String id, Step step, TaskStatus status) {

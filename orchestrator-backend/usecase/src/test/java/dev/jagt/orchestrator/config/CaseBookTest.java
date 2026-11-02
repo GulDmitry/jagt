@@ -28,8 +28,17 @@ class CaseBookTest {
                 + "by: qa\nreplies: IN_PROGRESS; plain, wait\nQA sends its rows back.\n");
 
         assertThat(book.faults()).isEmpty();
-        assertThat(book.sends("qa-round", TaskStatus.DEPLOYED, CaseBook.By.QA)).isTrue();
+        assertThat(book.sends("qa-round", TaskStatus.DEPLOYED, new CaseBook.By.Role("qa"))).isTrue();
         assertThat(book.replies("qa-round").orElseThrow().takes(TaskStatus.IN_PROGRESS, AgentReport.WAIT)).isTrue();
+    }
+
+    @Test
+    void refusesAByNamingNoPartyAndNoInstalledChecker() {
+        CaseBook book = CaseBook.parse("session-cases.md", "## qa-round-by-lint\n\nstep: qa-round\nat: DEPLOYED\n"
+                + "by: lint\nreplies: IN_PROGRESS; plain\nNobody installed.\n");
+
+        assertThat(book.cases()).isEmpty();
+        assertThat(book.faults()).hasSize(1);
     }
 
     @Test

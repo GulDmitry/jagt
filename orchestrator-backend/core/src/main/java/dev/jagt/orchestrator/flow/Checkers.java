@@ -15,6 +15,11 @@ public final class Checkers {
     private Checkers() {
     }
 
+    /** The ids of the installed checkers, in composition order. */
+    public static List<String> installed() {
+        return TaskChart.installedCheckers();
+    }
+
     /** Where each installed checker stands for the task, in composition order. */
     public static Map<String, CheckerPhase> of(TaskState task) {
         Map<String, CheckerPhase> phases = new LinkedHashMap<>();
