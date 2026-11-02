@@ -133,6 +133,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
   a decision 50, a rule 100, a page read whole 200, `ARCHITECTURE.md` 500; no line past 150 characters outside a
   table; comments ≤ 15% of main sources. Past a limit, compress first: review the text,
   cut what restates or explains. Only then split the file one level deep; never raise the number.
+  **Where no compression keeps every fact, stop and ask the owner** — never trade a fact for a line.
 - **Every log line is structured**: constant event, values as fields, `cause` on every failure, never `{}` or `+`
   in a message. Keys: [`docs/rules/style.md`](docs/rules/style.md).
 - **English only**, but for kitty's ЙЦУКЕН keymap, where the symbols are the key events.
