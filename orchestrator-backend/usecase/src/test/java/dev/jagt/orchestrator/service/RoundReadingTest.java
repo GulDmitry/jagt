@@ -14,6 +14,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -290,5 +292,57 @@ class RoundReadingTest {
             assertThat(refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.GONE);
             assertThat(refused.request()).isEqualTo("http://mr/1");
         });
+    }
+
+    @Test
+    void judgesTheRemainingRepositoriesWhereOneRequestWasClosedAndLeftTheTask() {
+        TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
+        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder(List.of(
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"), web),
+                TaskStatus.CI_POLLING).alias("a1").build()));
+        when(reviewReader.read("ABC-42", "http://mr/api")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
+                true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
+        when(reviewReader.read("ABC-42", "http://mr/web")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
+                true, false, "none", "", List.of(), 0, List.of(), List.of(), "", false, true)), TokenUsage.NONE));
+        when(mergedRequests.hostSaidClosed("ABC-42", web)).thenReturn(true);
+
+        var read = reading.read("ABC-42");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Round.class, round -> {
+            assertThat(round.project()).isEqualTo("api");
+            assertThat(round.mrUrl()).isEqualTo("http://mr/api");
+            assertThat(round.facts().approved()).isTrue();
+        });
+    }
+
+    @Test
+    void callsARequestTheHostSaysDoesNotExistGoneWhateverElseTheTaskHolds() {
+        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder(List.of(
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
+                TaskStatus.CI_POLLING).alias("a1").build()));
+        when(reviewReader.read("ABC-42", "http://mr/api")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
+                false, false, "", "", List.of(), 0, List.of(), List.of(), "", false, false)), TokenUsage.NONE));
+
+        var read = reading.read("ABC-42");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Refused.class, refused -> assertThat(
+                refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.GONE));
+        verify(mergedRequests, never()).hostSaidClosed(any(), any());
+    }
+
+    @Test
+    void refusesARoundWithNoRequestLeftWhereTheClosedOnesWereTheOnlyRequestsAndAnotherRepositoryHasNone() {
+        TaskRepo api = new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api");
+        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder(List.of(api,
+                new TaskRepo("docs", "/docs-wt", null, null)), TaskStatus.CI_POLLING).alias("a1").build()));
+        when(reviewReader.read("ABC-42", "http://mr/api")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
+                true, false, "none", "", List.of(), 0, List.of(), List.of(), "", false, true)), TokenUsage.NONE));
+        when(mergedRequests.hostSaidClosed("ABC-42", api)).thenReturn(true);
+
+        var read = reading.read("ABC-42");
+
+        assertThat(read).isInstanceOfSatisfying(RoundReading.Refused.class, refused -> assertThat(
+                refused.result().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.NO_MR));
     }
 }

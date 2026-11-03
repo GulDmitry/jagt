@@ -22,6 +22,7 @@ public class MergedRequests {
     private final ConfigService configService;
     private final WorktreeInspection inspection;
     private final WorktreeChanges worktreeChanges;
+    private final RepoDeparture departure;
 
     /**
      * Reads every request the host has not said merged, records what git says, merged or not, and answers whether
@@ -50,6 +51,20 @@ public class MergedRequests {
             log.atInfo().setMessage("request merged").addKeyValue("task", taskId)
                     .addKeyValue("project", project).addKeyValue("by", "host").log();
         }
+    }
+
+    /**
+     * The host said {@code repo}'s request was closed unmerged: where the task holds other repositories, it leaves the
+     * task and this answers true; the task's only repository stays, for the caller to refuse.
+     */
+    public boolean hostSaidClosed(String taskId, TaskRepo repo) {
+        String project = Objects.requireNonNull(repo.project());
+        boolean several = stateService.task(taskId).map(task -> task.repos().size() > 1).orElse(false);
+        if (several) {
+            stateService.updateTask(taskId, current -> TaskReducer.repoLeft(current, project));
+            departure.settle(taskId, repo, "its request was closed on the host");
+        }
+        return several;
     }
 
     private void record(String taskId, String project, boolean merged) {

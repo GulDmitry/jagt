@@ -65,6 +65,9 @@ sealed interface TaskEffect {
     record AttachesRepo(TaskRepo repo) implements TaskEffect {
     }
 
+    record LeavesRepo(String project) implements TaskEffect {
+    }
+
     record LinksRequests(Map<String, String> byProject, String url, boolean newRound) implements TaskEffect {
     }
 

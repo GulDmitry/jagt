@@ -55,6 +55,7 @@ class FlowDoorsTest {
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withRepoRequest")))
                 .orShould().callMethodWhere(target(name("withRepo")))
+                .orShould().callMethodWhere(target(name("withoutRepo")))
                 .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                         .importPackages("dev.jagt.orchestrator"));
     }

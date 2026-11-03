@@ -1,7 +1,5 @@
-package dev.jagt.orchestrator.capability.done;
+package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.GitWorktrees;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import org.junit.jupiter.api.Test;

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /** Every request of a task read into ONE round, or the reason there is no round to judge. */
 @Service
@@ -55,8 +56,7 @@ public class RoundReading {
         List<TaskRepo> repos = stateService.task(taskId).map(TaskState::repos).orElse(List.of());
         List<TaskRepo> reviewed = repos.stream().filter(TaskRepo::hasReviewRequest).toList();
         if (reviewed.isEmpty()) {
-            return new Refused(new SweepResult(SweepResult.Kind.NO_MR,
-                    "error: no request linked to " + taskId + " — `ship` first"));
+            return noRequest(taskId);
         }
         Optional<Refused> unshipped = unshipped(taskId, repos);
         if (unshipped.isPresent()) {
@@ -65,6 +65,7 @@ public class RoundReading {
         // One unreadable request fails the WHOLE sweep: half a task's repositories cannot say "green".
         // Taken before the host is asked: a push between the two leaves the read under the older commit, which only hides it.
         String tip = mergedRequests.pushedTips(taskId);
+        List<TaskRepo> kept = new ArrayList<>();
         List<ReviewFacts> rounds = new ArrayList<>();
         for (TaskRepo repo : reviewed) {
             Answer<ReviewFacts> answer = reviewReader.read(taskId, Objects.requireNonNull(repo.mrUrl()));
@@ -73,20 +74,42 @@ public class RoundReading {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
                         "error: read failed: " + repo.mrUrl() + " " + cause(answer.failure())));
             }
-            if (!read.get().exists() || read.get().closed()) {
+            if (leaves(taskId, repo, read.get())) {
+                continue;
+            }
+            if (!standing(read.get())) {
                 return new Refused(new SweepResult(SweepResult.Kind.GONE,
                         "error: no such request: " + repo.mrUrl() + " (the host says so)"), Objects.requireNonNull(repo.mrUrl()));
             }
             if (read.get().merged()) {
                 mergedRequests.hostSaidMerged(taskId, Objects.requireNonNull(repo.project()));
             }
-            rounds.add(reviewed.size() == 1 ? read.get() : named(Objects.requireNonNull(repo.project()), read.get()));
+            kept.add(repo);
+            rounds.add(read.get());
         }
-        return new Round(checkedProject(reviewed, rounds), reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds), tip);
+        return kept.isEmpty() ? noRequest(taskId) : roundOf(kept, rounds, tip);
     }
 
-    private static String checkedProject(List<TaskRepo> reviewed, List<ReviewFacts> rounds) {
-        return Objects.toString(reviewed.get(rounds.indexOf(worstChecks(rounds))).project(), "");
+    private boolean leaves(String taskId, TaskRepo repo, ReviewFacts read) {
+        return read.exists() && read.closed() && mergedRequests.hostSaidClosed(taskId, repo);
+    }
+
+    private static boolean standing(ReviewFacts read) {
+        return read.exists() && !read.closed();
+    }
+
+    private static Refused noRequest(String taskId) {
+        return new Refused(new SweepResult(SweepResult.Kind.NO_MR, "error: no request linked to " + taskId + " — `ship` first"));
+    }
+
+    private static Round roundOf(List<TaskRepo> kept, List<ReviewFacts> read, String tip) {
+        List<ReviewFacts> rounds = kept.size() == 1 ? read : IntStream.range(0, kept.size())
+                .mapToObj(i -> named(Objects.requireNonNull(kept.get(i).project()), read.get(i))).toList();
+        return new Round(checkedProject(kept, rounds), kept.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds), tip);
+    }
+
+    private static String checkedProject(List<TaskRepo> kept, List<ReviewFacts> rounds) {
+        return Objects.toString(kept.get(rounds.indexOf(worstChecks(rounds))).project(), "");
     }
 
     static String cause(String failure) {

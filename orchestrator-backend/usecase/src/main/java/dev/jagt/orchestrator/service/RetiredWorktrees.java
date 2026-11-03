@@ -1,7 +1,5 @@
-package dev.jagt.orchestrator.capability.done;
+package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.GitWorktrees;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import lombok.RequiredArgsConstructor;
@@ -13,17 +11,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Every checkout a retired task leaves, in every repository: nothing else would ever delete them. */
+/** The checkouts of repositories a task no longer has, which nothing else would ever delete. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-class RetiredWorktrees {
+public class RetiredWorktrees {
 
     private final GitWorktrees gitWorktrees;
     private final AgentSessions sessions;
 
     /** Whether a repository's project had left the configuration, its worktree then staying on disk. */
-    boolean remove(String taskId, List<TaskRepo> repos, Map<String, ProjectConfig> projects) {
+    public boolean remove(String taskId, List<TaskRepo> repos, Map<String, ProjectConfig> projects) {
         boolean anyProjectMissing = false;
         for (TaskRepo repo : repos) {
             // The agent's record of the worktree goes too, or the next session there stops at the prompt it answers.

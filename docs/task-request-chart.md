@@ -16,6 +16,15 @@ stateDiagram-v2
         request_NONE --> request_OPEN : repository added with a request
         request_MERGED --> request_MERGED : repository added with a request merged
         request_MERGED --> request_OPEN : repository added without one
+        request_NONE --> request_NONE : repository left
+        request_NONE --> request_OPEN : repository left
+        request_NONE --> request_MERGED : repository left
+        request_OPEN --> request_NONE : repository left
+        request_OPEN --> request_OPEN : repository left
+        request_OPEN --> request_MERGED : repository left
+        request_MERGED --> request_NONE : repository left
+        request_MERGED --> request_OPEN : repository left
+        request_MERGED --> request_MERGED : repository left
         request_OPEN --> request_MERGED : merged (all)
         request_OPEN --> request_OPEN : merge read (some)
         request_MERGED --> request_MERGED : merged (all)

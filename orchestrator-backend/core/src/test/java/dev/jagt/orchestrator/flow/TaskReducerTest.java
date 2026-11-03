@@ -605,4 +605,27 @@ class TaskReducerTest {
 
         assertThat(round.infraRetries()).isEmpty();
     }
+
+    @Test
+    void readsTheRequestsMergedOnceTheOnlyOpenOneLeavesTheTask() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")), TaskStatus.CI_POLLING).build()
+                .withMergedByHost("api");
+
+        TaskState left = TaskReducer.repoLeft(task, "web");
+
+        assertThat(left.projects()).containsExactly("api");
+        assertThat(left.requestsMerged()).isTrue();
+    }
+
+    @Test
+    void keepsTheOnlyRepositoryOfATaskWhoseRequestWasClosed() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api")), TaskStatus.CI_POLLING).build();
+
+        TaskState left = TaskReducer.repoLeft(task, "api");
+
+        assertThat(left.projects()).containsExactly("api");
+    }
 }

@@ -210,6 +210,11 @@ public final class TaskReducer {
         return step(task, new TaskMove.RepoAttached(repo), 0);
     }
 
+    /** {@code task} without {@code project}, whose request the host closed unmerged. */
+    public static TaskState repoLeft(TaskState task, String project) {
+        return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE)), 0);
+    }
+
     /** {@code task} with the requests a report linked, a new round where it is one; the links are stamped {@code now}. */
     public static TaskState requestLinked(TaskState task, Map<String, String> byProject, String url,
                                           boolean newRound, long now) {
@@ -277,6 +282,8 @@ public final class TaskReducer {
                     RequestPhase.of(task.withMerged(merges.project(), merges.merged())) == RequestPhase.MERGED);
             case TaskMove.MergedByHost merges -> new TaskMove.MergedByHost(merges.project(),
                     RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
+            case TaskMove.RepoLeft left -> new TaskMove.RepoLeft(left.project(),
+                    RequestPhase.of(task.withoutRepo(left.project())));
             case TaskMove.MasterNoted noted -> new TaskMove.MasterNoted(noted.note(), MasterPhase.of(
                     task.withMaster(noted.note().applyTo(task.masterOrNone()))));
             case TaskMove.Checked.Passed passed -> new TaskMove.Checked.Passed(passed.role(), passed.sha(),
@@ -348,6 +355,7 @@ public final class TaskReducer {
             case TaskEffect.AsksRepo asks -> task.withRepoRequest(asks.project());
             case TaskEffect.DropsRepoRequest _ -> task.withRepoRequest(null);
             case TaskEffect.AttachesRepo attaches -> task.withRepo(attaches.repo());
+            case TaskEffect.LeavesRepo leaves -> task.withoutRepo(leaves.project());
             case TaskEffect.LinksRequests links -> linked(task, links, now);
             case TaskEffect.MergesRequest merges -> task.withMerged(merges.project(), merges.merged());
             case TaskEffect.MergesRequestByHost merges -> task.withMergedByHost(merges.project());

@@ -622,6 +622,14 @@ public record TaskState(
         return toBuilder().repos(grown).repoRequest(null).build();
     }
 
+    /** A task never loses its last repository. */
+    public TaskState withoutRepo(String project) {
+        if (repos.size() < 2) {
+            return this;
+        }
+        return toBuilder().repos(repos.stream().filter(repo -> !project.equals(repo.project())).toList()).build();
+    }
+
     public TaskState withBaseBranch(String baseBranch) {
         return toBuilder().baseBranch(baseBranch).build();
     }

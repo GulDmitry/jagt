@@ -288,6 +288,7 @@ class TaskReducerProperties {
                 flag.map(merged -> new TaskMove.MergedByGit("api", merged, false)),
                 Arbitraries.just(new TaskMove.MergedByHost("api", false)),
                 Arbitraries.just(new TaskMove.RepoAttached(TaskRepo.of("registry", "/wt-registry"))),
+                Arbitraries.just(new TaskMove.RepoLeft("api", RequestPhase.NONE)),
                 Arbitraries.just(new TaskMove.GitRepoJoined(GitTrust.of(Map.of("c", "3")))),
                 Arbitraries.of("", "d").map(digest -> new TaskMove.TurnRestored(
                         new Turn("ship", 2, digest, 500, null, null))));

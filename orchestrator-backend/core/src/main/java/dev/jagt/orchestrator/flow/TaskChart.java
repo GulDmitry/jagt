@@ -415,6 +415,12 @@ final class TaskChart {
                 TaskChart::attachesAMergedRequest).stay();
         chart.onMatching(REQUEST, RequestPhase.MERGED, "repository added without one",
                 move -> move instanceof TaskMove.RepoAttached).to(RequestPhase.OPEN);
+        for (RequestPhase from : RequestPhase.values()) {
+            for (RequestPhase to : RequestPhase.values()) {
+                regionEdge(chart, REQUEST, from, "repository left", move -> move instanceof TaskMove.RepoLeft left
+                        && left.after() == to, move -> new TaskEffect.LeavesRepo(((TaskMove.RepoLeft) move).project()), to);
+            }
+        }
         regionEdge(chart, REQUEST, RequestPhase.OPEN, "merged (all)", TaskChart::completesMerge,
                 TaskChart::mergesRequest, RequestPhase.MERGED);
         regionEdge(chart, REQUEST, RequestPhase.OPEN, "merge read (some)", TaskChart::readsMerge,

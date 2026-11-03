@@ -15,13 +15,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class HostMergedRequestTest {
 
     private final ReviewReader reviewReader = mock(ReviewReader.class);
+    private final MergedRequests mergedRequests = mock(MergedRequests.class);
 
     @Test
     void aSquashMergedRequestIsSeenMergedByTheHostsWord(@TempDir Path root) {
@@ -30,16 +31,13 @@ class HostMergedRequestTest {
                         .withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
                 .alias("a1").mrUrl("http://mr/1").build());
-        ConfigService config = mock(ConfigService.class);
-        WorktreeInspection inspection = mock(WorktreeInspection.class);
-        RoundReading reading = new RoundReading(state, reviewReader,
-                new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection)));
+        RoundReading reading = new RoundReading(state, reviewReader, mergedRequests);
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(new Answer<>(Optional.of(
                 new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", true, false)),
                 TokenUsage.NONE));
 
         reading.read("ABC-1");
 
-        assertThat(state.task("ABC-1").orElseThrow().requestsMerged()).isTrue();
+        verify(mergedRequests).hostSaidMerged("ABC-1", "proj");
     }
 }

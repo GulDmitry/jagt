@@ -137,6 +137,10 @@ sealed interface TaskMove {
     record RepoAttached(TaskRepo repo) implements TaskMove {
     }
 
+    /** A repository whose request the host closed unmerged, taken out of the task; {@code after} is where the request region then stands. */
+    record RepoLeft(String project, RequestPhase after) implements TaskMove {
+    }
+
     /**
      * A report's request links: one per repository, or the one {@code url} on the primary where {@code byProject} is
      * empty. {@code relinks} where a repository's record then differs, {@code opens} where the requests then stand open.
