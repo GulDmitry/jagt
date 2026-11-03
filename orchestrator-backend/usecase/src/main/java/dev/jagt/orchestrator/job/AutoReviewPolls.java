@@ -69,7 +69,8 @@ class AutoReviewPolls {
                     || result.kind() == ReviewSweepService.SweepResult.Kind.GONE)
                     && stateService.task(taskId).filter(t -> t.toldOrNone().unreadable() != round).isPresent()) {
                 stateService.updateTask(taskId, t -> t.withTold(t.toldOrNone().withUnreadable(round)));
-                notifications.send(Notification.fromAgent(taskId, "auto-review", result.message()));
+                notifications.send(Notification.fromAgent(taskId, "auto-review", result.message())
+                        .withEvent(Notification.Event.AUTO_REVIEW));
             }
         } catch (RuntimeException e) {
             log.atWarn().setMessage("auto-review sweep failed")

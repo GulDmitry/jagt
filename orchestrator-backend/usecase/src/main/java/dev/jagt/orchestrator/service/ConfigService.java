@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.protocol.SwitchJudgements;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.RoundTrail;
@@ -39,6 +40,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +69,26 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
                              @Nullable LoopBreakerConfig loopBreaker,
                              @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive,
                              @Nullable QaConfig qa, @Nullable Map<String, RoleConfig> roles,
-                             @Nullable String codeHost) {
+                             @Nullable String codeHost, @Nullable NotificationsConfig notifications) {
+
+        /** Which events raise a desktop banner; unset keeps each event's own default, an unknown id is ignored. */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record NotificationsConfig(@Nullable List<String> desktop) {
+
+            public static NotificationsConfig defaults() {
+                return new NotificationsConfig(null);
+            }
+
+            public Set<Notification.Event> desktopEvents() {
+                if (desktop == null) {
+                    return Arrays.stream(Notification.Event.values()).filter(Notification.Event::onByDefault)
+                            .collect(Collectors.toUnmodifiableSet());
+                }
+                return desktop.stream().map(Notification.Event::ofId).flatMap(Optional::stream)
+                        .collect(Collectors.toUnmodifiableSet());
+            }
+        }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -556,7 +577,11 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        }
+
+        public NotificationsConfig notifications() {
+            return notifications == null ? NotificationsConfig.defaults() : notifications;
         }
 
         public Duration conflictStallOrDefault() {

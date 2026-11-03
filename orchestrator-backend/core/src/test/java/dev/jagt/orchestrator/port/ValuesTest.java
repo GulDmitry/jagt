@@ -49,7 +49,7 @@ class ValuesTest {
     void routesAnAgentNotificationOnItsTopicWithTheTaskItIsAbout() {
         Notification told = Notification.fromAgent("ABC-1", "question", "which branch?");
 
-        assertThat(told).isEqualTo(new Notification(Notification.Topic.AGENT, "ABC-1", null, "question", "which branch?"));
+        assertThat(told).isEqualTo(new Notification(Notification.Topic.AGENT, Notification.Event.YOUR_MOVE, "ABC-1", null, "question", "which branch?"));
     }
 
     @Test
@@ -60,6 +60,14 @@ class ValuesTest {
         assertThat(Notification.install("act", "x").topic()).isEqualTo(Notification.Topic.INSTALL);
         assertThat(Notification.usage("window", "x").topic()).isEqualTo(Notification.Topic.USAGE);
         assertThat(Notification.install("act", "x").taskId()).isNull();
+    }
+
+    @Test
+    void raisesAnOpenedRequestAndALandedDeployAsTheirOwnEventsOfATask() {
+        assertThat(Notification.requestOpened("ABC-1", "!7")).isEqualTo(
+                new Notification(Notification.Topic.AGENT, Notification.Event.REQUEST_OPENED, "ABC-1", null, "request opened", "!7"));
+        assertThat(Notification.deployed("ABC-1", "deployed")).isEqualTo(
+                new Notification(Notification.Topic.AGENT, Notification.Event.DEPLOYED, "ABC-1", null, "deployed", "deployed"));
     }
 
     @Test

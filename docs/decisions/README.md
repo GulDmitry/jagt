@@ -145,3 +145,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0129 CI reports the mutants of a push](0129-ci-reports-the-mutants-of-a-push.md)
 - [0130 Every third party is a configured seam](0130-every-third-party-is-a-configured-seam.md)
 - [0131 The Master's reads reach what a session writes](0131-the-masters-reads-reach-what-a-session-writes.md)
+- [0132 Banners are chosen per event](0132-banners-are-chosen-per-event.md)

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import java.time.Clock;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
@@ -77,6 +78,27 @@ class ConfigServiceTest {
         assertThat(config.qa().allows("https://stage.example.com")).isTrue();
         assertThat(config.qa().allows("https://prod.example.com")).isFalse();
         assertThat(config.qa().environmentsOrEmpty().getFirst().landed()).isEqualTo("https://stage.example.com/health");
+    }
+
+    @Test
+    void readsTheEventsTheHumanListedForDesktopBanners(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  notifications:\n    desktop: [stopped, deployed]\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        var events = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().notifications().desktopEvents();
+
+        assertThat(events).containsExactlyInAnyOrder(Notification.Event.STOPPED, Notification.Event.DEPLOYED);
+    }
+
+    @Test
+    void keepsEveryBannerButDeployedWhereTheHumanListedNone() {
+        var events = ConfigFile.defaults().notifications().desktopEvents();
+
+        assertThat(events).contains(Notification.Event.YOUR_MOVE, Notification.Event.REQUEST_OPENED)
+                .doesNotContain(Notification.Event.DEPLOYED);
     }
 
     @Test

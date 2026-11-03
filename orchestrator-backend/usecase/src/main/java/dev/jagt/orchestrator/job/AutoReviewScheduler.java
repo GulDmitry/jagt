@@ -78,7 +78,8 @@ public class AutoReviewScheduler implements Job {
                         stateService.updateTask(taskId,
                                 t -> t.withTold(t.toldOrNone().withWindowElapsed(task.mrCreatedAt())));
                         notifications.send(Notification.fromAgent(taskId, "auto-review",
-                                Objects.requireNonNull(AutoReviewWatch.windowElapsed(cadence.windowHours()).note())));
+                                Objects.requireNonNull(AutoReviewWatch.windowElapsed(cadence.windowHours()).note()))
+                                .withEvent(Notification.Event.AUTO_REVIEW));
                     }
                 }
                 case POLL -> poll(taskId, task.alias(), task.mrCreatedAt());
