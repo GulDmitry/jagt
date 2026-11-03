@@ -25,7 +25,7 @@ class TurnTreeTest {
         when(changes.state(task)).thenReturn(Optional.of("h:1"));
         when(turns.of("ABC-1")).thenReturn(Turn.none().withMark("turn-end:tree", "h:1"));
 
-        assertThat(new TurnTree(changes, turns).changedUnreported("ABC-1", task)).isFalse();
+        assertThat(new TurnTree(changes, turns).changedSinceLastEnd("ABC-1", task)).isFalse();
     }
 
     @Test
@@ -33,7 +33,7 @@ class TurnTreeTest {
         when(changes.state(task)).thenReturn(Optional.of("h:2"));
         when(turns.of("ABC-1")).thenReturn(Turn.none().withMark("turn-end:tree", "h:1"));
 
-        assertThat(new TurnTree(changes, turns).changedUnreported("ABC-1", task)).isTrue();
+        assertThat(new TurnTree(changes, turns).changedSinceLastEnd("ABC-1", task)).isTrue();
         verify(turns).mark("ABC-1", "turn-end:tree", "h:2");
     }
 
@@ -43,7 +43,7 @@ class TurnTreeTest {
         when(turns.of("ABC-1")).thenReturn(Turn.none());
         when(changes.anyUncommitted(task)).thenReturn(true);
 
-        assertThat(new TurnTree(changes, turns).changedUnreported("ABC-1", task)).isTrue();
+        assertThat(new TurnTree(changes, turns).changedSinceLastEnd("ABC-1", task)).isTrue();
         verify(turns).mark("ABC-1", "turn-end:tree", "h:1");
     }
 
@@ -52,14 +52,14 @@ class TurnTreeTest {
         when(changes.state(task)).thenReturn(Optional.of("h:1"));
         when(turns.of("ABC-1")).thenReturn(Turn.none());
 
-        assertThat(new TurnTree(changes, turns).changedUnreported("ABC-1", task)).isFalse();
+        assertThat(new TurnTree(changes, turns).changedSinceLastEnd("ABC-1", task)).isFalse();
     }
 
     @Test
     void aTreeGitCannotReadIsNotChangedAndNotMarked() {
         when(changes.state(task)).thenReturn(Optional.empty());
 
-        assertThat(new TurnTree(changes, turns).changedUnreported("ABC-1", task)).isFalse();
+        assertThat(new TurnTree(changes, turns).changedSinceLastEnd("ABC-1", task)).isFalse();
         verify(turns, never()).mark(anyString(), anyString(), anyString());
     }
 }

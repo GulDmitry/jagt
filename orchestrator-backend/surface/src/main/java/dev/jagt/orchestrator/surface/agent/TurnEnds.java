@@ -26,13 +26,16 @@ public class TurnEnds {
     private final TurnTree turnTree;
 
     public String answer(String taskId, @Nullable TaskState task, boolean sentOn, boolean pausedOnBackgroundWork) {
-        if (sentOn || pausedOnBackgroundWork || task == null) {
+        if (pausedOnBackgroundWork || task == null) {
+            return withTheMaster(task);
+        }
+        boolean treeChanged = turnTree.changedSinceLastEnd(taskId, task);
+        if (sentOn) {
             return withTheMaster(task);
         }
         Session session = task.session();
         boolean unreported = session.workStartedAt() != 0 && session.reportedAt() < session.workStartedAt();
-        if (unreported && !Move.endsUnreported(task.status()) && Move.endsOnTheTree(task.status())
-                && turnTree.changedUnreported(taskId, task)) {
+        if (unreported && !Move.endsUnreported(task.status()) && Move.endsOnTheTree(task.status()) && treeChanged) {
             return runtime.refusedTurnEnd("Your turn is ending with " + taskId + " at " + task.status()
                     + " on the board and the tree changed without a report. Call update_agent_status first:"
                     + " IN_PROGRESS to hand the change back as a round, or revert the change.");

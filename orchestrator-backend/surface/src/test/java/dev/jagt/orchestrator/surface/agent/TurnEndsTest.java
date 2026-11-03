@@ -32,7 +32,7 @@ class TurnEndsTest {
 
     private final AgentRuntime runtime = mock(AgentRuntime.class);
     private final ConfigService config = mock(ConfigService.class);
-    private final TurnTree turnTree = new TurnTree(null, null);
+    private final TurnTree turnTree = mock(TurnTree.class);
     private final NotesDue notes =new NotesDue(Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC));
 
     @Test

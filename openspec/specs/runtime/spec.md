@@ -147,6 +147,8 @@ so a read call is none and a restart changes nothing. It SHALL also refuse once 
 - **THEN** the end is refused once, and the second end on the same tree passes
 - **WHEN** a turn at DEPLOYED ends with the tree as the last end left it
 - **THEN** the turn ends
+- **WHEN** a turn edits and reports, and the next turn at PLAN_PENDING only reads
+- **THEN** the next turn ends: every end, reported or sent on, records the tree the next is measured from
 - **WHEN** a turn at IN_PROGRESS began, called `list_tasks` and ends, before or after a restart
 - **THEN** the end is refused once
 

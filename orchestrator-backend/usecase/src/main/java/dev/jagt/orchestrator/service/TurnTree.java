@@ -18,7 +18,7 @@ public class TurnTree {
     private final TaskTurns turns;
 
     /** With no end seen yet, a tree holding uncommitted work counts as changed; a tree git cannot read never does. */
-    public boolean changedUnreported(String taskId, TaskState task) {
+    public boolean changedSinceLastEnd(String taskId, TaskState task) {
         Optional<String> now = changes.state(task);
         if (now.isEmpty()) {
             return false;
