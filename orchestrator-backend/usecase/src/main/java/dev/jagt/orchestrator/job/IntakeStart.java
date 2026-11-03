@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.ProjectRouting;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
@@ -56,9 +57,9 @@ public class IntakeStart {
                     .log();
             return true;
         } catch (RuntimeException refused) {
-            log.atWarn().setMessage("intake could not start a task")
+            log.atWarn().setMessage("intake could not start a task").setCause(refused)
                     .addKeyValue("ref", item.key())
-                    .addKeyValue("cause", refused.getMessage())
+                    .addKeyValue("cause", Causes.of(refused))
                     .log();
             return false;
         }

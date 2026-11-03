@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.service.OneLine;
+import dev.jagt.orchestrator.service.Causes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -82,7 +82,7 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
         } catch (RuntimeException e) {
             log.atWarn().setMessage("ghostty tab open failed")
                     .addKeyValue("session", tmuxSession)
-                    .addKeyValue("cause", OneLine.clipped(e.getMessage()))
+                    .addKeyValue("cause", Causes.of(e))
                     .addKeyValue("fix", attach)
                     .log();
         }
@@ -100,7 +100,7 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
         } catch (RuntimeException e) {
             log.atWarn().setMessage("ghostty reveal failed")
                     .addKeyValue("title", dedicatedTitle)
-                    .addKeyValue("cause", OneLine.clipped(e.getMessage()))
+                    .addKeyValue("cause", Causes.of(e))
                     .log();
             return Revealed.NOT_RUNNING;
         }
@@ -124,7 +124,7 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
         } catch (RuntimeException e) {
             log.atWarn().setMessage("ghostty window close failed")
                     .addKeyValue("title", dedicatedTitle)
-                    .addKeyValue("cause", OneLine.clipped(e.getMessage()))
+                    .addKeyValue("cause", Causes.of(e))
                     .log();
         }
     }

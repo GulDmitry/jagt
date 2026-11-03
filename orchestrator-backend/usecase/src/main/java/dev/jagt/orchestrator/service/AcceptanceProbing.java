@@ -57,7 +57,7 @@ public class AcceptanceProbing {
             return probe.probed(passed, "exit " + result.exitCode() + excerpt(result.stdout() + "\n" + result.stderr()));
         } catch (IllegalStateException failed) {
             log.atInfo().setMessage("probe failed").addKeyValue("cmd", probe.toString())
-                    .addKeyValue("cause", failed.getMessage()).log();
+                    .addKeyValue("cause", Causes.of(failed)).log();
             return probe.probed(false, excerpt(String.valueOf(failed.getMessage())).strip());
         }
     }

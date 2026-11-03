@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -59,10 +60,10 @@ public class SessionAliveJob implements TaskJob {
             }
         } catch (AgentPresence.Unread unread) {
             log.atDebug().setMessage("session window unread").addKeyValue("task", taskId)
-                    .addKeyValue("cause", unread.getMessage()).addKeyValue("effect", "the stop stands").log();
+                    .addKeyValue("cause", Causes.of(unread)).addKeyValue("effect", "the stop stands").log();
         } catch (RuntimeException e) {
             log.atWarn().setMessage("session read failed").addKeyValue("task", taskId)
-                    .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "look again in a minute").log();
+                    .addKeyValue("cause", Causes.of(e)).addKeyValue("effect", "look again in a minute").log();
         }
     }
 }

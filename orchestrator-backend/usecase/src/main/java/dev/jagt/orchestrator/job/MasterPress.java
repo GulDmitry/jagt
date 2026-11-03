@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -56,7 +57,7 @@ class MasterPress {
             OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, action));
         } catch (IllegalArgumentException | IllegalStateException refused) {
             log.atWarn().setMessage("master press refused").addKeyValue("task", taskId)
-                    .addKeyValue("cmd", action.id()).addKeyValue("cause", refused.getMessage()).log();
+                    .addKeyValue("cmd", action.id()).addKeyValue("cause", Causes.of(refused)).log();
             return false;
         }
         return true;

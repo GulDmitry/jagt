@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.service.Causes;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,7 +36,7 @@ public class RefusedRequests {
     public ResponseEntity<Map<String, String>> malformed(Exception e, HttpServletRequest request) {
         log.atWarn().setMessage("request refused")
                 .addKeyValue("url", request.getRequestURI())
-                .addKeyValue("cause", e.getMessage())
+                .addKeyValue("cause", Causes.of(e))
                 .log();
         String said = e instanceof HttpMessageNotReadableException ? "the request body is not readable JSON"
                 : e.getMessage();

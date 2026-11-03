@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class StopReadJob implements TaskJob {
             reads.probe(taskId);
         } catch (RuntimeException e) {
             log.atWarn().setMessage("stop read failed").addKeyValue("task", taskId)
-                    .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "read again in 5 minutes").log();
+                    .addKeyValue("cause", Causes.of(e)).addKeyValue("effect", "read again in 5 minutes").log();
         }
     }
 }

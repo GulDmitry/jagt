@@ -52,7 +52,7 @@ public class HandBackDue {
             return Files.getLastModifiedTime(file).toMillis() < relayedAt;
         } catch (IOException e) {
             log.atWarn().setMessage("file stat failed").addKeyValue("path", file)
-                    .addKeyValue("cause", e.getMessage()).log();
+                    .addKeyValue("cause", Causes.of(e)).log();
             return false;
         }
     }

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
@@ -49,7 +50,7 @@ class ConflictFinish {
                     .addKeyValue("result", result).log();
         } catch (Refusal refusal) {
             log.atWarn().setMessage("master conflict finish refused").addKeyValue("task", taskId)
-                    .addKeyValue("action", action.id()).addKeyValue("cause", refusal.getMessage())
+                    .addKeyValue("action", action.id()).addKeyValue("cause", Causes.of(refusal))
                     .addKeyValue("effect", "the conflict waits").log();
         }
     }

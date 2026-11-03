@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.job;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ProjectRouting;
 import dev.jagt.orchestrator.service.TaskLauncher;
@@ -8,6 +11,9 @@ import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -63,6 +69,27 @@ class IntakeStartTest {
         boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
         assertThat(goesOn).isFalse();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void namesTheFailuresTypeAndKeepsItsStackWhereTheLaunchFailedWithoutAMessage() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
+        when(launcher.launch(any(), any())).thenThrow(new NullPointerException());
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        ((Logger) LoggerFactory.getLogger(IntakeStart.class)).addAppender(log);
+
+        starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+
+        ILoggingEvent failed = assertThat(List.copyOf(log.list))
+                .filteredOn(ILoggingEvent::getMessage, "intake could not start a task").singleElement().actual();
+        assertThat(failed.getKeyValuePairs()).anySatisfy(pair -> {
+            assertThat(pair.key).isEqualTo("cause");
+            assertThat(pair.value).isEqualTo("NullPointerException");
+        });
+        assertThat(failed.getThrowableProxy()).isNotNull();
     }
 
     @Test

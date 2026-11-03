@@ -107,7 +107,7 @@ public final class WorktreeFiles {
         } catch (IOException e) {
             log.atWarn().setMessage("local file scan failed")
                     .addKeyValue("path", projectPath)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", Causes.of(e))
                     .log();
         }
     }
@@ -143,7 +143,7 @@ public final class WorktreeFiles {
         } catch (IOException e) {
             log.atWarn().setMessage("file read failed")
                     .addKeyValue("path", file)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", Causes.of(e))
                     .log();
             return java.util.Optional.empty();
         }
@@ -179,7 +179,7 @@ public final class WorktreeFiles {
             log.atWarn().setMessage("file copy failed")
                     .addKeyValue("from", source)
                     .addKeyValue("to", worktreePath)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", Causes.of(e))
                     .log();
         }
     }
@@ -198,7 +198,7 @@ public final class WorktreeFiles {
             log.atWarn().setMessage("file copy failed")
                     .addKeyValue("from", from)
                     .addKeyValue("to", to)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", Causes.of(e))
                     .log();
         }
     }
@@ -209,7 +209,7 @@ public final class WorktreeFiles {
         } catch (IOException e) {
             log.atWarn().setMessage("directory create failed")
                     .addKeyValue("path", dir)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", Causes.of(e))
                     .log();
         }
     }

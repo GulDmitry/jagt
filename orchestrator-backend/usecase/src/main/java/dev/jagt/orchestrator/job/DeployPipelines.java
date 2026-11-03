@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.task.DeployRedLine;
@@ -155,7 +156,7 @@ public class DeployPipelines {
             fixes.open(task, taskId, project);
         } catch (RuntimeException e) {
             log.atWarn().setMessage("deploy worktree not opened").addKeyValue("task", taskId)
-                    .addKeyValue("project", project).addKeyValue("cause", e.getMessage())
+                    .addKeyValue("project", project).addKeyValue("cause", Causes.of(e))
                     .addKeyValue("effect", "the deploy stays open, tried again").log();
             return Reading.waiting(at + "red on the code, its deploy worktree not opened: " + e.getMessage());
         }

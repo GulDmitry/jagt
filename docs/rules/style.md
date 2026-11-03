@@ -32,7 +32,8 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   channel job port attempt limit tokens mcp servers status previous outcome said cause effect fix note`.
 - `ref` is what was being read, `url` an address fetched or served, `said` the sentence a surface showed a
   human. One key means one type everywhere, and a number stays a number (`secrets=102`).
-- `cause` is the failure itself (exception message, stderr, exit line; a throwable goes in `setCause(e)`),
+- `cause` is the failure itself, never null or blank (`Causes.of(e)`, stderr, exit line; a throwable also goes in
+  `setCause(e)`; `FailureCausesTest`),
   `effect` what jagt did instead, `fix` exactly one command or setting — never advice.
 - **Never** in a value: prose, sentences, em dashes, a trailing period, a capital first word (identifiers keep
   their case), two facts, or anything that explains, reassures or advises.

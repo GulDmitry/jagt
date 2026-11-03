@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.SessionWakes;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.task.Step;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,7 @@ public class SessionWakeJob implements Job {
                 relay.say(due.taskId(), due.step(), LINES.getOrDefault(due.step(), ""), due.read());
             } catch (RuntimeException e) {
                 log.atWarn().setMessage("session wake not sent").addKeyValue("task", due.taskId())
-                        .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "the session stays stopped").log();
+                        .addKeyValue("cause", Causes.of(e)).addKeyValue("effect", "the session stays stopped").log();
             }
         }
     }

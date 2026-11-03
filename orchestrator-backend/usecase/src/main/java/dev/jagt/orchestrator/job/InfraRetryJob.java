@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.InfraRetries;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -57,7 +58,7 @@ public class InfraRetryJob implements Job {
                 OriginContext.as(ActionOrigin.JAGT, () -> retry(due.getKey(), due.getValue()));
             } catch (RuntimeException e) {
                 log.atWarn().setMessage("infra retry failed").addKeyValue("task", due.getKey())
-                        .addKeyValue("cause", e.getMessage()).addKeyValue("effect", "tried again next minute").log();
+                        .addKeyValue("cause", Causes.of(e)).addKeyValue("effect", "tried again next minute").log();
             }
         }
     }
