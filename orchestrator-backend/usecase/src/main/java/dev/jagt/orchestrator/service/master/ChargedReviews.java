@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.SessionReach;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import dev.jagt.orchestrator.service.UsageTracker;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-/** One Master read, its spend charged to the task it read for, made only while its git is trusted. */
+/**
+ * One Master read, its spend charged to the task it read for, made only while its git is trusted, reaching what
+ * the session may write.
+ */
 @Service
 @RequiredArgsConstructor
 public class ChargedReviews {
@@ -17,13 +21,14 @@ public class ChargedReviews {
     private final RoundReviewer reviewer;
     private final UsageTracker usage;
     private final TrustedGitState trusted;
+    private final SessionReach reach;
 
     public Judgement review(String taskId, RoundReviewer.Round round) {
         Optional<String> distrusted = trusted.distrust(taskId);
         if (distrusted.isPresent()) {
             return Judgement.failed(distrusted.get());
         }
-        var read = reviewer.review(round);
+        var read = reviewer.review(round.reaching(reach.beside()));
         usage.chargeTask(taskId, read.usage());
         return read.facts().orElse(Judgement.failed("the review answered nothing"));
     }

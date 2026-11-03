@@ -35,20 +35,19 @@ final class WorktreeSandbox {
         });
         // A JVM opens its attach socket here, not in /tmp: denied, a test that mocks with an agent cannot start.
         writable.add(real(tempDir));
-        Stream.concat(WRITABLE.stream(), config.allowWriteOrEmpty().stream())
-                .map(entry -> real(expanded(entry, home)))
+        Stream.concat(WRITABLE.stream().map(entry -> expanded(entry, home)), config.allowWritePaths(home).stream())
+                .map(WorktreeSandbox::real)
                 .forEach(writable::add);
         return Sandbox.on(List.copyOf(writable),
                 Stream.concat(EXCLUDED.stream(), config.excludedCommandsOrEmpty().stream()).distinct().toList());
     }
 
     private static Path expanded(String entry, Path home) {
-        String path = entry.strip();
-        return path.equals("~") ? home : path.startsWith("~/") ? home.resolve(path.substring(2)) : Path.of(path);
+        return entry.startsWith("~/") ? home.resolve(entry.substring(2)) : Path.of(entry);
     }
 
     /** A sandbox matches the path a write resolves to, so a symlinked {@code /tmp} allows nothing. */
-    private static Path real(Path path) {
+    static Path real(Path path) {
         try {
             return path.toRealPath();
         } catch (IOException e) {

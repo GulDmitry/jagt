@@ -7,7 +7,7 @@ The Master: a headless reader judging each handed-back round; in `act` it stands
 ## Requirements
 
 ### Requirement: The Master is a headless run per role, not a window
-One headless run per role of the brief SHALL read each round in the task's worktrees, loading no worktree setting.
+One headless run per brief role SHALL read each round in the worktrees and present `agent.sandbox.allowWrite` dirs, loading no worktree setting.
 jagt SHALL store each answer with the hand-back it asked about (`MasterReview`), `master-review.md` only its rendering;
 a round SHALL cost one heavy read per role it applies to, charged as `master`, later roles reading the cached round.
 

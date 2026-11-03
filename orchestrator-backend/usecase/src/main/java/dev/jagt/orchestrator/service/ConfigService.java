@@ -56,7 +56,7 @@ import java.util.stream.Stream;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ConfigService implements LoopBreaker.Current {
+public class ConfigService implements LoopBreaker.Current, SessionReach {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
@@ -297,6 +297,11 @@ public class ConfigService implements LoopBreaker.Current {
 
             public List<String> allowWriteOrEmpty() {
                 return allowWrite == null ? List.of() : allowWrite;
+            }
+
+            public List<Path> allowWritePaths(Path home) {
+                return allowWriteOrEmpty().stream().map(String::strip).map(entry -> entry.equals("~") ? home
+                        : entry.startsWith("~/") ? home.resolve(entry.substring(2)) : Path.of(entry)).toList();
             }
 
             public List<String> excludedCommandsOrEmpty() {
@@ -705,6 +710,12 @@ public class ConfigService implements LoopBreaker.Current {
     @Override
     public LoopBreaker current() {
         return load().loopBreakerOrDefault();
+    }
+
+    @Override
+    public List<Path> beside() {
+        return load().agent().sandboxOrDefault().allowWritePaths(Path.of(System.getProperty("user.home"))).stream()
+                .filter(Files::isDirectory).map(WorktreeSandbox::real).toList();
     }
 
     public Optional<ActStop> actStop() {

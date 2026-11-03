@@ -82,7 +82,7 @@ orchestrator:
                           # a write beyond asks you in the session's window. Claude's sandbox then lets only its web proxy out, which
                           # a JVM build (Gradle, Maven) does not use: it cannot reach the network
       enabled: false      # off: it writes wherever the agent CLI's own rules let it. Linux needs bwrap and socat when true
-    #   allowWrite: []    # added to those, e.g. ~/www/specs
+    #   allowWrite: []    # added to those, e.g. ~/www/specs; the Master's reads read them too, sandbox on or off
     #   excludedCommands: []   # run outside it beside git's remote verbs and ssh, e.g. "~/bin/db-tunnel *"
     # autoplan:           # a session plans first, unasked, when its task is large or unclear; the plan says why
     #   enabled: false

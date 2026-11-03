@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.port;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * One reading of a review round by a fresh model, able to read and run in the task's worktrees and to write
@@ -13,9 +14,15 @@ public interface RoundReviewer {
 
     /**
      * {@code shared} is what every reader of one round is given alike, apart from {@code prompt} so a later
-     * reader finds it cached; blank where there is none. {@code model} blank inherits the agent CLI's own.
+     * reader finds it cached; blank where there is none. {@code worktrees} are read, the first is where it runs.
+     * {@code model} blank inherits the agent CLI's own.
      */
     record Round(String shared, String prompt, List<Path> worktrees, String model) {
+
+        public Round reaching(List<Path> beside) {
+            return new Round(shared, prompt, Stream.concat(worktrees.stream(), beside.stream()).distinct().toList(),
+                    model);
+        }
     }
 
     /**

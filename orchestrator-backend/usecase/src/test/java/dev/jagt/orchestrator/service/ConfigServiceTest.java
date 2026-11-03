@@ -536,6 +536,26 @@ class ConfigServiceTest {
     }
 
     @Test
+    void reachesTheDirectoriesASessionMayWriteThatExistWithTheSandboxOff(@TempDir Path root) throws Exception {
+        Path specs = Files.createDirectory(root.resolve("specs"));
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, """
+                orchestrator:
+                  agent:
+                    sandbox:
+                      enabled: false
+                      allowWrite: ["%s", "%s"]
+                """.formatted(specs, root.resolve("gone")));
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        var beside = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .beside();
+
+        assertThat(beside).containsExactly(specs.toRealPath());
+    }
+
+    @Test
     void handsTheLoopBreakerTheOwnerConfiguredAtTheMomentItIsAsked(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, """

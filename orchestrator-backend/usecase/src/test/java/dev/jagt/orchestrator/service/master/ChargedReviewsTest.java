@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +32,7 @@ class ChargedReviewsTest {
         TokenUsage spent = TokenUsage.ofCall(1_000, 0, 10, 0.01);
         when(reviewer.review(round)).thenReturn(new Answer<>(Optional.empty(), spent));
 
-        new ChargedReviews(reviewer, usage, trusted).review("ABC-1", round);
+        new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
 
         verify(usage).chargeTask("ABC-1", spent);
     }
@@ -41,7 +42,7 @@ class ChargedReviewsTest {
         RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
         when(reviewer.review(round)).thenReturn(Answer.unavailable());
 
-        Judgement judged = new ChargedReviews(reviewer, usage, trusted).review("ABC-1", round);
+        Judgement judged = new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
 
         assertThat(judged.failure()).isEqualTo("the review answered nothing");
     }
@@ -51,10 +52,22 @@ class ChargedReviewsTest {
         RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
         when(trusted.distrust("ABC-1")).thenReturn(Optional.of("core.fsmonitor in /r/.git/config added"));
 
-        Judgement judged = new ChargedReviews(reviewer, usage, trusted).review("ABC-1", round);
+        Judgement judged = new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
 
         assertThat(judged.failure()).isEqualTo("core.fsmonitor in /r/.git/config added");
         verifyNoInteractions(reviewer);
+    }
+
+    @Test
+    void readsWhatTheSessionMayWriteBesideItsWorktrees() {
+        RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(Path.of("/wt/ABC-1")), "");
+        RoundReviewer.Round reaching = new RoundReviewer.Round("", "prompt",
+                List.of(Path.of("/wt/ABC-1"), Path.of("/specs")), "");
+        when(reviewer.review(reaching)).thenReturn(Answer.unavailable());
+
+        new ChargedReviews(reviewer, usage, trusted, () -> List.of(Path.of("/specs"))).review("ABC-1", round);
+
+        verify(reviewer).review(reaching);
     }
 
     @ParameterizedTest
@@ -62,6 +75,6 @@ class ChargedReviewsTest {
     void saysWhetherTheReaderLoadsAnMcpServerAsTheReaderDoes(boolean loads) {
         when(reviewer.loadsMcpServer()).thenReturn(loads);
 
-        assertThat(new ChargedReviews(reviewer, usage, trusted).loadsMcpServer()).isEqualTo(loads);
+        assertThat(new ChargedReviews(reviewer, usage, trusted, List::of).loadsMcpServer()).isEqualTo(loads);
     }
 }
