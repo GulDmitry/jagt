@@ -108,6 +108,19 @@ class TaskLaunchesTest {
     }
 
     @Test
+    void startsAnAlreadyReadItemInEveryProjectItIsHanded() {
+        when(worktrees.strategyForExisting("ABC-7", "web")).thenReturn(BranchStrategy.FRESH);
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-7").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-7");
+        when(placement.place(eq("ABC-7"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("web", "api")));
+
+        Launched launched = launches.ticket(LaunchRequest.of("ABC-7").withProject("web,api"), List.of("web", "api"),
+                new Answer<>(Optional.of(item), TokenUsage.NONE));
+
+        assertThat(launched.created()).isTrue();
+    }
+
+    @Test
     void intakeContinuesALeftoverBranchHoldingWorkInsteadOfRefusingIt() {
         when(worktrees.strategyForExisting("ABC-9", "group-a")).thenReturn(BranchStrategy.RESUME);
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-9").withTitle("Widget layout is off")

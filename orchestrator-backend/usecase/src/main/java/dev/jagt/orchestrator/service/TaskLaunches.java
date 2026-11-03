@@ -43,9 +43,9 @@ public class TaskLaunches {
      */
     public Launched ticket(LaunchRequest request, @Nullable List<String> chosen,
                           Answer<TicketFacts> read) {
-        LaunchRequest settled = request.strategy() != null || request.project() == null ? request
+        LaunchRequest settled = request.strategy() != null || chosen == null ? request
                 : request.withStrategy(worktrees.strategyForExisting(Objects.requireNonNull(request.ref()),
-                request.project()).id());
+                chosen.getFirst()).id());
         return refusedForExistingBranch(settled, chosen).orElseGet(() -> launched(settled, read, chosen));
     }
 

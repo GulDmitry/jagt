@@ -3,8 +3,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 - A text vs. text: a text contradicts another or asks what the machine refuses. B state overwritten: a record or key overwritten, lost or misplaced.
 - C turn collision: two parties (human, Master, session, reviewer) act on one turn. D model overreach: a model decided what the machine should.
 - E missing ending: a stop, crash, error or limit goes unseen, or two endings are merged. F unbounded loop: no ceiling on a repeat, store or spend.
-- G prose routing: jagt decided by reading text. H a guard refuses what it should allow, or the reverse. I a vendor CLI behaves otherwise.
-- J git, worktrees, several repositories. K the board. L the tests themselves. M anything else. H–M are counted by trailer, rowed as defects recur.
+- G prose routing: jagt decided by reading text. H a guard refuses what it should allow, or the reverse. H–M: counted by trailer, rowed on recurrence.
 ## A — text vs. text
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -161,6 +160,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | J5 | jagt reads a task worktree with status or diff while its session commits → the read takes no optional git lock, so the commit never meets `index.lock` | seen 2026-10-30: e2e `git commit` failed on a worktree `index.lock` twice in the full suite, 0 of 17 isolated runs | `ProcessRunnerTest` |
 | J6 | the human closes one request of a task spanning several repositories unmerged → that repository leaves the task, its checkout removed and its branch kept, the session told, the others judged in the same sweep; `deploy` never merges it | seen 2026-11-03: every sweep called the closed request gone and nothing acted, then `deploy` merged all three repositories | `RoundReadingTest`, `MergedRequestsTest`, `RepoDepartureTest`, `TaskReducerTest` |
 | J7 | a deploy handed back on one repository's red pipeline, the human closes that request unmerged → the repository leaves the task and the record, the task lands `DEPLOYED` on the others | seen 2026-11-03: the task stayed `DEPLOY_CONFLICT` and the card read "the deploy conflict stopped moving", nothing reading the host while the conflict stood | `TaskReducerTest`, `ConflictRequestReadJobTest` |
+| J8 | intake places an item in two projects by its labels → the task opens in both, the branch strategy read from the first | seen 2026-11-03: `intake could not start a task cause=null`, the joined keys read as one project | `TaskLaunchesTest` |
 ## K — the board
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
