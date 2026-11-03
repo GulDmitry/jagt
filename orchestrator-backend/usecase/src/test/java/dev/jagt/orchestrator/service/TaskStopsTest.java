@@ -525,4 +525,22 @@ class TaskStopsTest {
 
         assertThat(again).isEqualTo(TaskStops.Relay.RELAY);
     }
+
+    @Test
+    void tellsARelayedRoundsThreadsFromTheLastRoundRelayed(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+        stops.round("ABC-42", new ReviewFacts(true, false, "success", "", List.of("https://host/mr/1#note_1"), 0,
+                List.of(), List.of("note_1"), "", false, false), "brief 1", "");
+        ReviewFacts next = new ReviewFacts(true, false, "success", "", List.of("https://host/mr/1#note_1"), 0,
+                List.of(), List.of("note_5"), "", false, false);
+
+        String since = stops.sinceLast("ABC-42", next);
+
+        assertThat(since).isEqualTo("Since the last round — still open, with a new note: https://host/mr/1#note_1.");
+    }
 }

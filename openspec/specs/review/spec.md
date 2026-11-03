@@ -51,10 +51,10 @@ Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeCh
 - **THEN** not believed: the round has a diff
 
 ### Requirement: The unit of a round is a thread
-`ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest one, and a thread whose
-newest note is its own waits on the reviewer. Threads SHALL be relayed while unresolved; a resolved one is never read again.
-The checks, red, green or running, SHALL never decide whether a thread is answered. After a round with threads, a hand-back
-to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
+`ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest; a thread it answered last waits on the
+reviewer. Threads SHALL be relayed while unresolved, each named new, still open with a new note, or unchanged since the last round
+(`RoundTrail.sinceLast`); a resolved one is never read again. The checks SHALL never decide whether a thread is answered. After a round with threads,
+a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
 
 #### Scenario: Red checks outside the code and a reviewer's answer
 - **WHEN** ABC-42's session hands back a question about the checks and writes no block for the thread

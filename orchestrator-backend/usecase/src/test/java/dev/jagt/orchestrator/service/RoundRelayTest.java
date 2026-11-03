@@ -118,6 +118,7 @@ class RoundRelayTest {
         Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         TaskStops stops = mock(TaskStops.class);
         when(stops.round(anyString(), any(), anyString(), anyString())).thenReturn(TaskStops.Relay.RELAY);
+        when(stops.sinceLast(anyString(), any())).thenReturn("");
         StateService state = new StateService(new JsonMapper(), paths);
 
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
@@ -140,6 +141,7 @@ class RoundRelayTest {
         Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         TaskStops stops = mock(TaskStops.class);
         when(stops.round(anyString(), any(), anyString(), anyString())).thenReturn(TaskStops.Relay.RELAY);
+        when(stops.sinceLast(anyString(), any())).thenReturn("");
         when(stops.asking("ABC-42")).thenReturn(true);
         StateService state = new StateService(new JsonMapper(), paths);
 
@@ -164,6 +166,7 @@ class RoundRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = mock(TaskStops.class);
         when(stops.round(anyString(), any(), anyString(), anyString())).thenReturn(TaskStops.Relay.RELAY);
+        when(stops.sinceLast(anyString(), any())).thenReturn("");
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
                 new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
         RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,

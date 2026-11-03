@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,5 +61,26 @@ class RoundTrailTest {
         assertThat(trail.newNotes("t1 note_1")).isFalse();
         assertThat(RoundTrail.none().newNotes("t1 note_2")).isTrue();
         assertThat(RoundTrail.none().newNotes("")).isFalse();
+    }
+
+    @Test
+    void tellsEachThreadNewReopenedOrUnchangedSinceTheLastRound() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a", "mr#note_1 11\nmr#note_2 21"));
+        ReviewFacts round = new ReviewFacts(true, false, "success", "",
+                List.of("mr#note_1\nbot: still wrong", "mr#note_2\nbot: drop it", "mr#note_3\nbot: rename"), 0,
+                List.of(), List.of("12", "21", "31"), "", false, false);
+
+        String since = trail.sinceLast(round);
+
+        assertThat(since).isEqualTo("Since the last round — still open, with a new note: mr#note_1; "
+                + "still open, unchanged: mr#note_2; new: mr#note_3.");
+    }
+
+    @Test
+    void tellsNothingOnTheFirstRound() {
+        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("mr#note_1\nbot: rename"), 0,
+                List.of(), List.of("11"), "", false, false);
+
+        assertThat(RoundTrail.none().sinceLast(round)).isEmpty();
     }
 }

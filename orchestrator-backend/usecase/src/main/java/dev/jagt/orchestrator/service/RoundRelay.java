@@ -36,7 +36,7 @@ public class RoundRelay {
             }
             checked = admission.status();
         }
-        String brief = RoundBrief.of(mrUrl, r, told, sessionBrief);
+        String brief = RoundBrief.of(mrUrl, r, told, stops.sinceLast(taskId, r), sessionBrief);
         return switch (stops.round(taskId, r, brief, tip)) {
             case STOPPED -> stopped(read, said);
             case UNCHANGED -> unchanged(read, said);

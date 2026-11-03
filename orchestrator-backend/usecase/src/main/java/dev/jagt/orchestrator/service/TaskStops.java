@@ -87,6 +87,11 @@ public class TaskStops {
         return stateService.task(taskId).filter(task -> task.report().asks()).isPresent();
     }
 
+    /** The round's threads told against the last round relayed into the task. */
+    public String sinceLast(String taskId, ReviewFacts facts) {
+        return stateService.task(taskId).map(task -> task.trailOrNone().sinceLast(facts)).orElse("");
+    }
+
     public boolean mayShip(String taskId) {
         LoopBreaker breaker = breakers.current();
         return trip(taskId, task -> task,

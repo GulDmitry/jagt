@@ -29,8 +29,8 @@ final class RoundBrief {
         return List.copyOf(steps);
     }
 
-    /** The round's facts among the brief's round sections. */
-    static String of(String mrUrl, ReviewFacts r, String said, SessionBrief sessionBrief) {
+    /** The round's facts among the brief's round sections; {@code since} tells its threads from the last round's. */
+    static String of(String mrUrl, ReviewFacts r, String said, String since, SessionBrief sessionBrief) {
         List<Step> steps = steps(r, said);
         StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
         if (steps.contains(Step.ROUND_CHECKS)) {
@@ -42,6 +42,7 @@ final class RoundBrief {
         }
         if (steps.contains(Step.ROUND_THREADS)) {
             brief.append(section(sessionBrief, Step.ROUND_THREADS))
+                    .append(since.isBlank() ? "" : since + "\n")
                     .append(Outside.fence("threads", String.join("\n\n", r.threads()))).append('\n');
         }
         brief.append(section(sessionBrief, steps.getLast()));
