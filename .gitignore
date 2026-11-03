@@ -59,6 +59,8 @@ interactions.jsonl.1
 act-stopped
 act-strikes
 intake-turned-away
+# The plan each task last had approved, written beside state.json
+plan-baselines/
 # The Master's MCP token, drawn by jagt at each start
 /.jagt/
 

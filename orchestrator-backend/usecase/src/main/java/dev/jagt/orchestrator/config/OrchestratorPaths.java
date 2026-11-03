@@ -65,6 +65,11 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("usage-alerts.properties");
     }
 
+    /** One copy of the last approved plan per task, named by the task's slug. */
+    public Path planBaselines() {
+        return stateFile.resolveSibling("plan-baselines");
+    }
+
     private Path resolve(@Nullable String override, String defaultName) {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()

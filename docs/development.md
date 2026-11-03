@@ -68,6 +68,18 @@ The `jar` job builds `jagt-X.Y.Z.jar`; the `release` job attaches it to that tag
 suite is green.
 Nothing else is published — jagt is on no package manager.
 
+## The board's icon
+
+`favicon.svg` is the source; the `.ico` and `.png` fallbacks are committed, so regenerate them after editing it:
+
+```sh
+for s in 16 32 48; do rsvg-convert -w $s -h $s favicon.svg -o /tmp/f$s.png; done
+magick /tmp/f16.png /tmp/f32.png /tmp/f48.png favicon.ico
+sed 's/ rx="7"//' favicon.svg | rsvg-convert -w 180 -h 180 -o apple-touch-icon.png
+```
+
+Strokes stay at 3 units or more: thinner turns to mush at 16px. The apple icon drops `rx` because iOS masks its own corners.
+
 ## Where things go
 
 [`ARCHITECTURE.md`](../ARCHITECTURE.md) is the map — what kinds of thing jagt has and where a new one belongs.

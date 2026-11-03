@@ -18,6 +18,7 @@ public class PlanApproval {
     private final StateService stateService;
     private final StepRelay relay;
     private final CaseDoor door;
+    private final PlanBaseline baseline;
 
     /** Whether the session was told anything new; the gate is open either way, unless no case allowed the approval. */
     public boolean approve(String taskId, String reader) {
@@ -33,6 +34,7 @@ public class PlanApproval {
         if (!door.presses(id, MasterMove.APPROVE_PLAN.id())) {
             return false;
         }
+        baseline.keep(id);
         Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
         if (claim == null) {
             stateService.updateTask(id, TaskReducer::planApproved);

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.board;
 import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.service.PlanBaseline;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
@@ -28,6 +29,9 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
     @Autowired
     Jobs jobs;
+
+    @Autowired
+    PlanBaseline planBaseline;
 
     @Test
     void theReportsMenuOpensAReportAndClosesOnEscape() {
@@ -202,6 +206,25 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
         assertThat(page.locator("#pane .doc h1")).hasText("The sketch");
         assertThat(page.locator("#pane .doc table td").first()).hasText("1");
+    }
+
+    @Test
+    void theArtifactsTabMarksAPlanLineChangedSinceItsApprovalAndStrikesOneRemoved() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
+        state.putTask("ABC-7", TaskState.builder("alpha", worktree.toString(), TaskStatus.PLAN_PENDING)
+                .alias("a7").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Files.writeString(worktree.resolve("plan.md"), "# The plan\n\nRetry the upload once\n\nShip it\n");
+        planBaseline.keep("ABC-7");
+        Files.writeString(worktree.resolve("plan.md"), "# The plan\n\nRetry the upload twice\n\nShip it\n\nAnnounce it\n");
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.locator("#pane .tabs button[data-tab=artifacts]").click();
+
+        assertThat(page.locator("#pane .doc .changed")).hasText(new String[] {"Retry the upload twice", "Announce it"});
+        assertThat(page.locator("#pane .doc .removed")).hasText("Retry the upload once");
+        assertThat(page.locator("#pane .doc .removed")).hasCSS("text-decoration-line", "line-through");
+        assertThat(page.locator("#pane .doc p:not(.changed):not(.removed)")).hasText("Ship it");
     }
 
     @Test

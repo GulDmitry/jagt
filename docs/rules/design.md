@@ -47,6 +47,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `button.flag` ⚐/⚑ — flagged important, this browser only; a flagged row leads its group.
 - `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.
 - bold `.row-title.changed` — its state moved since you last had it open; shape, since every colour is taken.
+- bold with a left bar `.doc .changed`, muted struck `.doc .removed` — a plan line new or changed, or gone, since the plan you last approved.
 - `button.row-verb`, a terminal glyph — a row's `onRow` verb, `primary` filled only where it is your move.
 - `.badge.problem` in `--danger` — what waits on you is broken.
 - `.badge.required` on `--you-bg` — the act waiting on you now; `.badge.optional` on `--chip-bg`, whenever you like.

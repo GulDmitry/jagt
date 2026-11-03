@@ -31,6 +31,13 @@ const failedLastRun = () => {
   return table;
 };
 
+const planChange = (className, text) => {
+  const line = document.createElement('div');
+  line.className = 'doc';
+  line.append(span(className, text));
+  return line;
+};
+
 const toastEdge = (className) => {
   const toast = document.createElement('div');
   toast.className = className;
@@ -50,6 +57,8 @@ export const pageRows = () => [
     'in the list: the tasks waiting on you, above the rest'],
   [[span('row-title changed', 'Login form loses focus')],
     'in the list: bold, its state moved since you last had it open'],
+  [[planChange('changed', 'Retry the upload twice'), planChange('removed', 'Retry the upload once')],
+    'in a plan: bold with a bar, new or changed since the plan you last approved \u00b7 struck through, removed since'],
   [[rowVerb('row-verb primary'), rowVerb('row-verb')],
     'on a row: its most pressed verb, without opening the task \u00b7 filled where that verb is your move'],
   [[verbButton('', 'Focus', 'f'), verbButton('apart', 'Done')],

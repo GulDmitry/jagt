@@ -1,13 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!-- A "j" that is also a branch: the stem is the line of work, the tittle and the foot are its two commit
-       nodes, and the hook is where it comes back. A letterform on purpose — the generic three-node fork glyph
-       this replaced belongs to every "share" button ever drawn, and at 16px a mark has to be jagt's own.
-       Strokes stay ≥3 units (1.5px at 16px); anything thinner turns to mush.
-       This file is the source; regenerate the fallbacks after editing it (no build step, they are committed):
-         for s in 16 32 48; do rsvg-convert -w $s -h $s favicon.svg -o /tmp/f$s.png; done
-         magick /tmp/f16.png /tmp/f32.png /tmp/f48.png favicon.ico
-         sed 's/ rx="7"//' favicon.svg | rsvg-convert -w 180 -h 180 -o apple-touch-icon.png  # iOS masks its own corners
-    -->
+       nodes, and the hook is where it comes back. Regenerating the fallbacks: docs/development.md. -->
   <style>
     .badge { fill: #1d4ed8 }
     .stem { fill: none; stroke: #fff; stroke-width: 4.2; stroke-linecap: round }

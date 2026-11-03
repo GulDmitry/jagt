@@ -26,6 +26,7 @@ class PlanApprovalTest {
 
     private final StepRelay relay = mock(StepRelay.class);
     private final CaseDoor door = mock(CaseDoor.class);
+    private final PlanBaseline baseline = mock(PlanBaseline.class);
 
     @Test
     void opensThePlanGateAndTellsTheSessionToStartOnThePlan(@TempDir Path root) {
@@ -36,10 +37,11 @@ class PlanApprovalTest {
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class))).thenReturn(true);
 
-        boolean told = new PlanApproval(state, relay, door).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay, door, baseline).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+        verify(baseline).keep("ABC-1");
         verify(relay).relay("ABC-1", Step.PLAN, "The human read plan.md: the plan holds.", Standing.of(state.task("ABC-1").orElseThrow()));
     }
 
@@ -52,7 +54,7 @@ class PlanApprovalTest {
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class))).thenReturn(false);
 
-        boolean told = new PlanApproval(state, relay, door).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay, door, baseline).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isFalse();
     }
@@ -65,10 +67,11 @@ class PlanApprovalTest {
                 .planGate(PlanGate.REQUIRED).build());
         when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
 
-        boolean told = new PlanApproval(state, relay, door).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay, door, baseline).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isFalse();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+        verify(baseline, never()).keep(anyString());
         verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     }
 }

@@ -115,6 +115,19 @@ The Deploy button is green while the work is live. A `⚐` beside the title flag
 #### Scenario: A one-repository card on a board of several projects
 - **WHEN** ABC-42 in `alpha`, its request open 8h, shares the board with a task in `beta`
 - **THEN** its card reads `alpha 8h`, the name opening the request, and no `request` word
+### Requirement: A plan shows what changed since its last approval
+Each `approve-plan` SHALL keep the approved `plan.md` as the task's baseline, in jagt's own root, not the worktree.
+The Artifacts tab SHALL render `plan.md` against that baseline: a line new or changed is bold with a bar,
+a removed line struck through in the muted colour where it stood. No approved plan, no marks. No other document is marked.
+#### Scenario: No plan approved yet
+- **WHEN** ABC-42's plan is open in the Artifacts tab and no `approve-plan` ran
+- **THEN** no line is marked and none is struck
+#### Scenario: Changed after the approval
+- **WHEN** ABC-42's plan was approved, then a line was rewritten and another deleted
+- **THEN** the rewritten line is marked, the deleted one is shown struck through, and every other line is plain
+#### Scenario: Approved again
+- **WHEN** the changed plan is approved
+- **THEN** it becomes the baseline and the next read of the plan marks nothing
 ### Requirement: Only news is on screen
 The line under a card SHALL carry news only: NEEDS INPUT, ANSWERED, PROBLEM, NEEDS YOU. The next poll or job run sits
 in a tooltip; a stopped poll, failed job or stopped `act` gets its own mark. A status says itself in words; the

@@ -11,6 +11,9 @@ import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.PlanApproval;
+import dev.jagt.orchestrator.port.LineChange;
+import dev.jagt.orchestrator.service.PlanBaseline;
+import dev.jagt.orchestrator.service.TaskArtifacts;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -86,7 +89,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
@@ -115,7 +118,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         MasterReview.Verdict verdict = new MasterReview.Verdict(kind,
                 List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
                 List.of(), List.of("override the gate?"), 0, "");
@@ -143,7 +146,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         assertThatThrownBy(() -> verdicts.answered("ABC-1", read, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", "")))
                 .isInstanceOf(TaskMovedOn.class);
@@ -168,7 +171,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenThrow(new IllegalStateException("no window"));
 
         assertThatThrownBy(() -> verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
@@ -197,7 +200,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenAnswer(told -> {
             state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 7_000)
                     .withTurn(new Turn("ship", 9, "d", 7_000, Map.of(), List.of())));
@@ -232,7 +235,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         assertThatThrownBy(() -> verdicts.act("ABC-1", read, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
@@ -260,7 +263,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         assertThatThrownBy(() -> verdicts.act("ABC-1", read, new MasterReview.Verdict(MasterReview.Kind.READY,
                 List.of(), List.of(), List.of(), 0, ""),
@@ -288,7 +291,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenAnswer(told ->
                 CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other)).get(2, TimeUnit.SECONDS)
                         ? "told" : "not told");
@@ -317,7 +320,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
@@ -343,7 +346,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
@@ -368,7 +371,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
@@ -393,7 +396,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 
@@ -419,7 +422,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.answered("ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
 
@@ -443,7 +446,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.answered("ABC-1", task, "override the gate?", new MasterPanel.Decision("refactor the shared block", ""));
 
@@ -468,7 +471,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
@@ -494,7 +497,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
@@ -522,7 +525,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
@@ -548,7 +551,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 1, ""), acting);
         state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
@@ -584,7 +587,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
                 .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 1"));
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
@@ -623,7 +626,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
                 .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 1"));
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
@@ -663,7 +666,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("chaplain", new Finding("Api.java", "which caller still reads v2", "",
@@ -690,7 +693,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
@@ -717,7 +720,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 kept);
@@ -743,7 +746,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 judging);
@@ -769,7 +772,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
@@ -799,7 +802,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""), acting);
 
@@ -824,7 +827,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", planned,
                 new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""), acting);
@@ -853,7 +856,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("planner", new Finding("plan.md", "misses the migration", "", "wrong", "",
@@ -879,7 +882,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 kept);
@@ -906,7 +909,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(),
                 List.of(new MasterReview.Said("planner", new Finding("", "the endpoint is for admins only, as the ticket says",
@@ -935,7 +938,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("planner", new Finding("plan.md", "drops the v2 route the ticket keeps", "",
@@ -961,7 +964,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
                 List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
@@ -991,7 +994,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", Step.ASKED_HUMAN,
                 "The reviewer asked the human: Add v3 beside v2, or replace it?", Standing.of(task)));
 
@@ -1018,7 +1021,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""));
 
@@ -1042,7 +1045,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", Step.ANSWERED,
                 "The Master answered your question, standing in for the human:\nkeep v2 beside v3", Standing.of(task)));
 
@@ -1068,7 +1071,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         verdicts.answered("ABC-1", task, "a second request?",
                 new MasterPanel.Decision("drop the old keys here", "do proj drop the old keys from main"));
@@ -1093,7 +1096,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         assertThat(verdicts.answersOverThisTree(task)).isEqualTo(3);
     }
@@ -1115,7 +1118,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(kind, List.of(new MasterReview.Said("developer",
                 new Finding("Foo.java", "wrong", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""),
@@ -1139,7 +1142,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 
@@ -1163,7 +1166,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
@@ -1188,7 +1191,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
@@ -1213,7 +1216,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
         state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
@@ -1249,7 +1252,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of(new MasterReview.Said("developer", new Finding("Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
         state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
@@ -1279,7 +1282,7 @@ class MasterVerdictsTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
         MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door));
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none())));
 
         boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
                 acting);
