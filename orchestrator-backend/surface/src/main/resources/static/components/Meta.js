@@ -73,9 +73,9 @@ export function Meta({task, manyProjects, now}) {
   return html`<div class="meta">
     <${StatusChip} task=${task} now=${now} stalled=${!many && !task.reviewRequestUrl && watch?.stalled ? watch : null}/>
     ${many ? html`<${Repositories} task=${task} now=${now}/>` : html`
-      ${manyProjects ? html`<span>${task.project}</span>` : ''}
-      ${task.reviewRequestUrl ? html`<${RequestChip} url=${task.reviewRequestUrl} label="request"
-        openedAt=${task.requestOpenedAt} task=${task} sole=${true} now=${now}/>` : ''}`}
+      ${task.reviewRequestUrl ? html`<${RequestChip} url=${task.reviewRequestUrl}
+        label=${manyProjects ? task.project : 'request'} openedAt=${task.requestOpenedAt} task=${task} sole=${true}
+        now=${now}/>` : manyProjects ? html`<span>${task.project}</span>` : ''}`}
     ${marked(task) ? html`<${ChecksDot} task=${task}/>` : ''}
   </div>`;
 }

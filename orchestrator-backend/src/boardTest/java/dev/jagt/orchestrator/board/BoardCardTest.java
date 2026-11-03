@@ -102,6 +102,22 @@ class BoardCardTest extends BoardPageContext {
     }
 
     @Test
+    void opensTheRequestFromItsProjectsNameWhereTheBoardNamesProjects() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .requestOpenedAt(System.currentTimeMillis() - java.time.Duration.ofHours(8).toMillis())
+                .lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("beta", root.resolve("ABC-2-beta").toString(),
+                TaskStatus.IN_PROGRESS).alias("b2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+        page.locator("#tasks .row:has-text(\"a1\")").click();
+
+        assertThat(page.locator("#pane article a.mr-age")).hasText("alpha 8h");
+    }
+
+    @Test
     void namesEachRequestByProjectAndAgesNoneWhenATaskSpansRepositories() {
         state.putTask("ABC-1", TaskState.builder(List.of(
                         new TaskRepo("alpha",
@@ -192,7 +208,7 @@ class BoardCardTest extends BoardPageContext {
 
         Locator meta = page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".meta");
         assertThat(meta.locator("a.mr-age.stalled")).hasCount(1);
-        assertThat(meta.locator("> *")).hasCount(4);
+        assertThat(meta.locator("> *")).hasCount(3);
     }
 
     @Test
