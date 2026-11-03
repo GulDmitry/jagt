@@ -212,7 +212,7 @@ public final class TaskReducer {
 
     /** {@code task} without {@code project}, whose request the host closed unmerged. */
     public static TaskState repoLeft(TaskState task, String project) {
-        return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE)), 0);
+        return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE, false)), 0);
     }
 
     /** {@code task} with the requests a report linked, a new round where it is one; the links are stamped {@code now}. */
@@ -283,7 +283,7 @@ public final class TaskReducer {
             case TaskMove.MergedByHost merges -> new TaskMove.MergedByHost(merges.project(),
                     RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
             case TaskMove.RepoLeft left -> new TaskMove.RepoLeft(left.project(),
-                    RequestPhase.of(task.withoutRepo(left.project())));
+                    RequestPhase.of(task.withoutRepo(left.project())), leavesItsConflict(task, left.project()));
             case TaskMove.MasterNoted noted -> new TaskMove.MasterNoted(noted.note(), MasterPhase.of(
                     task.withMaster(noted.note().applyTo(task.masterOrNone()))));
             case TaskMove.Checked.Passed passed -> new TaskMove.Checked.Passed(passed.role(), passed.sha(),
@@ -298,6 +298,12 @@ public final class TaskReducer {
                     !task.readsStaleOn(read.tip()));
             default -> move;
         };
+    }
+
+    private static boolean leavesItsConflict(TaskState task, String project) {
+        return task.status() == TaskStatus.DEPLOY_CONFLICT && task.repos().size() > 1 && task.deployment() != null
+                && task.deployment().conflictedTarget().filter(target -> target.project().equals(project)
+                && Objects.requireNonNull(target.conflict()).cause() == Deployment.Cause.RED_PIPELINE).isPresent();
     }
 
     private static InfraPhase unarmed(TaskState task) {

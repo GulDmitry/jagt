@@ -28,6 +28,7 @@ stateDiagram-v2
         deploy_CHECK_ASKED --> deploy_REVERTING : reverted
         deploy_HANDED --> deploy_LANDING : discarded
         deploy_HANDED --> deploy_HANDED : watched
+        deploy_HANDED --> deploy_LANDING : conflicted repository left
         deploy_HANDED --> deploy_LANDING : conflict left
         deploy_LANDING --> deploy_CHECK_ASKED : asked
         deploy_LANDING --> deploy_LANDING : settled bare

@@ -137,8 +137,11 @@ sealed interface TaskMove {
     record RepoAttached(TaskRepo repo) implements TaskMove {
     }
 
-    /** A repository whose request the host closed unmerged, taken out of the task; {@code after} is where the request region then stands. */
-    record RepoLeft(String project, RequestPhase after) implements TaskMove {
+    /**
+     * A repository whose request the host closed unmerged, taken out of the task; {@code after} is where the request
+     * region then stands, {@code endsConflict} where it was the repository a deploy handed back for its pipeline.
+     */
+    record RepoLeft(String project, RequestPhase after, boolean endsConflict) implements TaskMove {
     }
 
     /**

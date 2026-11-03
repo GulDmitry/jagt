@@ -74,6 +74,15 @@ public sealed interface DeployStep {
         }
     }
 
+    record Dropped(String project) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            List<Deployment.Target> kept = deployment.targets().stream()
+                    .filter(target -> !target.project().equals(project)).toList();
+            return deployment.withTargets(kept).withAt(kept.size());
+        }
+    }
+
     record Asked(String digest) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {
