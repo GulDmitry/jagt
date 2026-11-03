@@ -221,10 +221,11 @@ public record TaskState(
         return primary().remoteUrl();
     }
 
-    /** The primary repo's request only; a multi-repo task has one per repo. */
+    /** The primary repo's request, else the first repo's that has one; a multi-repo task has one per repo. */
     @JsonIgnore
     public @Nullable String mrUrl() {
-        return primary().mrUrl();
+        return primary().mrUrl() != null ? primary().mrUrl()
+                : repos.stream().map(TaskRepo::mrUrl).filter(Objects::nonNull).findFirst().orElse(null);
     }
 
     @JsonIgnore
@@ -296,15 +297,14 @@ public record TaskState(
 
     /**
      * One ship, however many repositories it landed in: every URL goes on its own repo, and the round is recorded
-     * ONCE, carrying the session repo's link.
+     * ONCE, on the link of the first repo it landed in, the session repo leading; a repo it missed stays unlinked.
      */
     public TaskState withReviewRound(Map<String, String> urlByProject, long now) {
-        if (urlByProject.isEmpty()) {
-            return this;
-        }
-        String primaryUrl = urlByProject.getOrDefault(primary().project(),
-                urlByProject.values().iterator().next());
-        return withMrUrls(urlByProject, now).withReviewRound(primary().project(), primaryUrl, now);
+        TaskState linked = withMrUrls(urlByProject, now);
+        return repos.stream().map(TaskRepo::project).filter(Objects::nonNull).filter(urlByProject::containsKey)
+                .findFirst()
+                .map(project -> linked.withReviewRound(project, Objects.requireNonNull(urlByProject.get(project)), now))
+                .orElse(linked);
     }
 
     /** Links each repository to its own request WITHOUT recording a round. */

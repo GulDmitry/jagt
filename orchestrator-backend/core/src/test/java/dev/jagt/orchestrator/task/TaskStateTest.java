@@ -378,6 +378,19 @@ class TaskStateTest {
     }
 
     @Test
+    void leavesTheSessionRepositoryUnlinkedWhenTheShipLandedOnlyInAnother() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
+                TaskStatus.REVIEW_PENDING).build();
+
+        TaskState shipped = task.withReviewRound(Map.of("java", "https://host/java/mr/2"), 2_000);
+
+        assertThat(shipped.repo("php").orElseThrow().mrUrl()).isNull();
+        assertThat(shipped.repo("java").orElseThrow().mrUrl()).isEqualTo("https://host/java/mr/2");
+        assertThat(shipped.mrUrl()).isEqualTo("https://host/java/mr/2");
+        assertThat(shipped.mrCreatedAt()).isEqualTo(2_000);
+    }
+
+    @Test
     void leavesTheTaskAloneWhenAShipLandedInNoRepository() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
