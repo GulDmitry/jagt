@@ -36,7 +36,7 @@ logging:
     # `${X:-default}` placeholders are logback's syntax and would be resolved by Spring first.
     # Quoted values (`%kvp` defaults to DOUBLE): most of them contain spaces, and unquoted they run into
     # the next key.
-    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%12.12t]){faint} %clr(%-40.40logger{39}){cyan}\
+    console: "%clr(%d{HH:mm:ss.SSSX, UTC}){faint} %clr(%5p) %clr([%12.12t]){faint} %clr(%-40.40logger{39}){cyan}\
       \ %clr(:){faint} %m %kvp%n%wEx"
 
 orchestrator:
