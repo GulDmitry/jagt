@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -14,6 +15,8 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -26,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -417,6 +421,23 @@ class MasterPanelTest {
     }
 
     @Test
+    void writesNoVerdictOnARoundWhoseReadStoppedWithJagt(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| role | question |\n| QA | is it tested |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(reviews.review(eq("ABC-1"), any())).thenThrow(new Processes.Stopped(List.of("claude")));
+
+        catchThrowable(() -> new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+
+        assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
+    }
+
+    @Test
     void readsTheRoundByTheAuthorsRolesWhereTheMastersBriefNamesNone() {
         String authorBrief = """
                 | role | the question it asks |
@@ -490,6 +511,16 @@ class MasterPanelTest {
         assertThat(worktree.resolve(MasterReview.FILE)).content()
                 .contains("# skipped [designer] no changed path matches static/**\n").doesNotContain("skipped [QA]")
                 .endsWith("VERDICT: ready\n");
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = ';', value = {
+            "docs/rules.md;config/app.yml;false",
+            "README.md;src/Main.java;true"})
+    void skipsARoleWhereEveryChangedPathIsOneItNeverReads(String first, String second, boolean read) {
+        MasterPanel.Role qa = new MasterPanel.Role("QA", "is it tested", "", List.of("**/*.java", "!**/*.md", "!**/*.yml"));
+
+        assertThat(qa.reads(Optional.of(List.of(first, second)))).isEqualTo(read);
     }
 
     @Test

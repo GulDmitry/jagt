@@ -371,7 +371,34 @@ record MasterCase(String name, String instructions, TaskStatus status, Map<Strin
                            annotated `@PreAuthorize(Roles.ALL_USERS)`.
                         2. Test that a signed-in user receives the CSV.
                         """,
-                        MasterReview.Kind.NOT_READY, List.of("ALL_USERS")));
+                        MasterReview.Kind.NOT_READY, List.of("ALL_USERS")),
+
+                round("a query method the ORM implements and the key it reads, untested",
+                        "Look an order up by its number, at most five seconds per query.",
+                        Map.of("src/main/java/OrderRepository.java", """
+                                import org.springframework.data.jpa.repository.JpaRepository;
+
+                                interface OrderRepository extends JpaRepository<Order, Long> {
+                                }
+                                """,
+                                "src/main/resources/application.properties", """
+                                spring.datasource.url=jdbc:postgresql://localhost/shop
+                                """),
+                        Map.of("src/main/java/OrderRepository.java", """
+                                import org.springframework.data.jpa.repository.JpaRepository;
+
+                                import java.util.Optional;
+
+                                interface OrderRepository extends JpaRepository<Order, Long> {
+
+                                    Optional<Order> findByNumber(String number);
+                                }
+                                """,
+                                "src/main/resources/application.properties", """
+                                spring.datasource.url=jdbc:postgresql://localhost/shop
+                                spring.jpa.properties.jakarta.persistence.query.timeout=5000
+                                """),
+                        MasterReview.Kind.READY, List.of()));
     }
 
     @Override

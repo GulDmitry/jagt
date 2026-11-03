@@ -131,6 +131,16 @@ class ProcessRunnerTest {
     }
 
     @Test
+    void tellsTheCallerACommandEndingWhileJagtClosesWasStoppedWithItRatherThanAnswered() {
+        ProcessRunner runner = new ProcessRunner();
+        runner.closes();
+
+        Throwable answered = catchThrowable(() -> runner.run(null, Duration.ofSeconds(5), List.of("true")));
+
+        assertThat(answered).isInstanceOf(Processes.Stopped.class);
+    }
+
+    @Test
     void leavesTheAppInterruptibleByItsOwnTooling() throws Exception {
         Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "5"));
 

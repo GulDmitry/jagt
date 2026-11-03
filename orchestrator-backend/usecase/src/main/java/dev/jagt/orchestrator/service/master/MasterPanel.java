@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -57,10 +58,17 @@ public class MasterPanel {
             return model.isBlank() ? masters : model;
         }
 
-        /** True where the changed paths are unknown. */
+        /** True where the changed paths are unknown; a {@code !} glob names paths the role never reads. */
         boolean reads(Optional<List<String>> changed) {
-            return applies.isEmpty() || changed.isEmpty()
-                    || WorktreeFiles.firstMatching(applies, changed.get()).isPresent();
+            if (applies.isEmpty() || changed.isEmpty()) {
+                return true;
+            }
+            List<String> never = applies.stream().filter(glob -> glob.startsWith("!"))
+                    .map(glob -> glob.substring(1)).toList();
+            List<String> only = applies.stream().filter(glob -> !glob.startsWith("!")).toList();
+            List<String> left = changed.get().stream()
+                    .filter(path -> WorktreeFiles.firstMatching(never, List.of(path)).isEmpty()).toList();
+            return only.isEmpty() ? !left.isEmpty() : WorktreeFiles.firstMatching(only, left).isPresent();
         }
     }
 
@@ -166,6 +174,9 @@ public class MasterPanel {
         try {
             return answer.get();
         } catch (ExecutionException thrown) {
+            if (thrown.getCause() instanceof Processes.Stopped unjudged) {
+                throw unjudged;
+            }
             return Judgement.failed("the review threw " + thrown.getCause());
         }
     }

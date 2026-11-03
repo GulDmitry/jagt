@@ -62,6 +62,35 @@ class HeadlessClaudeTest {
     }
 
     @Test
+    void aReadAnErrorEndedWithNoResultNamesWhatEndedIt() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+                {"type":"result","is_error":true,"subtype":"error_during_execution","result":""}""",
+                ""));
+
+        var answer = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(),
+                java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class))
+                .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        assertThat(answer.failure()).isEqualTo("errored: error_during_execution");
+    }
+
+    @Test
+    void aReadWhoseCommandStoppedWithJagtIsNoFailure() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenThrow(new Processes.Stopped(List.of("claude")));
+        var claude = new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(),
+                java.time.Clock.systemUTC())), ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> claude.read("Read ABC-42.",
+                TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ))
+                .isInstanceOf(Processes.Stopped.class);
+    }
+
+    @Test
     void aReadRefusedByTheBreakerFailsAsUnavailableNotAsDidNotReturn() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(1, """

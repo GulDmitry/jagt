@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * One headless {@code claude -p} question, booked the moment it returns. Hardcodes no MCP server or path:
@@ -224,8 +225,8 @@ class HeadlessClaude {
         Processes.Result result;
         try {
             result = process.run(cwd, timeout, cmd);
-        } catch (AssistantUnavailable refused) {
-            throw refused;
+        } catch (AssistantUnavailable | Processes.Stopped unjudged) {
+            throw unjudged;
         } catch (RuntimeException e) {
             // A timeout kills the CLI: no envelope, so the tokens already burned are unknowable, not zero.
             log.atWarn().setMessage("assistant call did not return")
@@ -277,13 +278,21 @@ class HeadlessClaude {
             return Reply.failed(usage, "exit " + result.exitCode());
         }
         if (envelope.path("is_error").asBoolean(false)) {
+            String cause = errorOf(envelope);
             log.atWarn().setMessage("assistant call errored")
                     .addKeyValue("ref", label)
-                    .addKeyValue("cause", oneLine(envelope.path("result").asString("")))
+                    .addKeyValue("cause", oneLine(cause))
                     .log();
-            return Reply.failed(usage, "errored");
+            return Reply.failed(usage, "errored: " + cause);
         }
         return new Reply(envelope, usage, "");
+    }
+
+    /** An error with a blank result still names its subtype and what ended its run. */
+    private static String errorOf(JsonNode envelope) {
+        String result = envelope.path("result").asString("");
+        return !result.isBlank() ? result : String.join(", ", Stream.of("subtype", "terminal_reason")
+                .map(key -> envelope.path(key).asString("")).filter(said -> !said.isBlank()).toList());
     }
 
     /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */

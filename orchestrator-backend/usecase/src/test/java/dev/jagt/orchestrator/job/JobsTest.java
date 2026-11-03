@@ -175,6 +175,28 @@ class JobsTest {
 
     @Test
     @ResourceLock(Resources.GLOBAL)
+    void logsNoErrorForARunWhoseCommandStoppedWithJagt() {
+        Job stopping = mock(Job.class);
+        when(stopping.id()).thenReturn("master-review");
+        doThrow(new dev.jagt.orchestrator.port.Processes.Stopped(List.of("claude"))).when(stopping).run();
+        TaskScheduler scheduler = mock(TaskScheduler.class);
+        Jobs jobs = new Jobs(List.of(stopping), scheduler, Clock.systemUTC(), mock(StateService.class));
+        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+        jobs.start();
+        verify(scheduler).schedule(work.capture(), any(Trigger.class));
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
+        jobsLog.addAppender(log);
+
+        work.getValue().run();
+
+        jobsLog.detachAppender(log);
+        assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).isEmpty();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
     void logsAJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
         Job failing = mock(Job.class);
         when(failing.id()).thenReturn("feed-every-tick");

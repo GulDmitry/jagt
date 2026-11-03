@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.extern.slf4j.Slf4j;
@@ -163,6 +164,9 @@ public class Jobs {
             recovered(job.id(), run);
         } catch (SessionHost.WindowsUnreadable unknown) {
             // Already logged where it was read: this round decides nothing and the next one asks again.
+        } catch (Processes.Stopped unjudged) {
+            log.atInfo().setMessage("job stopped with jagt").addKeyValue("job", job.id())
+                    .addKeyValue("effect", "nothing written, the next start asks again").log();
         } catch (Throwable t) {
             fail(job.id(), run, t);
         } finally {

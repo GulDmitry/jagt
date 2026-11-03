@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.OneLine;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
 
@@ -30,6 +32,7 @@ public class ProcessRunner implements Processes {
 
     private final Set<Process> running = ConcurrentHashMap.newKeySet();
     private final Set<Process> stopped = ConcurrentHashMap.newKeySet();
+    private volatile boolean closing;
 
     @Override
     public Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
@@ -151,7 +154,8 @@ public class ProcessRunner implements Processes {
             }
             outThread.join(2_000);
             errThread.join(2_000);
-            if (stopped.remove(process)) {
+            boolean killed = stopped.remove(process);
+            if (killed || closing) {
                 throw new Processes.Stopped(command);
             }
             return new Result(process.exitValue(), stdout.toString().trim(), stderr.toString().trim());
@@ -168,6 +172,12 @@ public class ProcessRunner implements Processes {
                 running.remove(process);
             }
         }
+    }
+
+    /** The signal stopping jagt reaches its process group first: a command ending from here on was not judged. */
+    @EventListener(ContextClosedEvent.class)
+    void closes() {
+        closing = true;
     }
 
     /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */

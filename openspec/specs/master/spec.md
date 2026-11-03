@@ -31,7 +31,7 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 - **THEN** it runs on it; blank keeps `roles.master.model`
 
 #### Scenario: A role the diff does not touch
-- **WHEN** the diff touches none of a role's `applies` globs
+- **WHEN** the diff touches none of a role's `applies` globs, or only paths its `!` globs name
 - **THEN** a `# skipped` line replaces its read; unread paths, or no role left, read every role
 
 #### Scenario: Whose roles read a round
