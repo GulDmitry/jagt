@@ -44,6 +44,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B21 | a request git found merged is no longer inside its target (the base was reset, the merge reverted) and the host never said merged → it reads not merged again within 5 minutes, `ship` is allowed and auto-review polls it; the host's word and a fetch that fails change nothing | seen 2026-10-29: found by the status × condition inventory | `MergedRequestsTest`, `MergedReadJobTest`, `WorktreeInspectionTest` |
 | B22 | a deploy conflict is handed, watched, told or held by a stop and jagt restarts → its facts live on the conflicted target of the task's deployment, so the session is handed it once per press, the human told once and "held by stop" said once per stop | seen 2026-10-30: a restart said "held by stop" again, its record an in-memory map | `ConflictFinishTest`, `ConflictStallTest`, `TaskStateTest`, `TaskReducerProperties` |
 | B23 | a ship is pressed and the next round is answered by new drafts on the same tree → the press mark keys on tree and drafts alike, so the Master ships again | seen 2026-11-04 | `ShipDueTest`, `ShipRecordTest`, `ReviewDraftsTest` |
+| B24 | a question the Master left unanswered is asked again in the same words after the session worked or the human answered → a question reported afresh clears the mark, so the Master answers it | seen 2026-11-04 | `MasterAnswerJobTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

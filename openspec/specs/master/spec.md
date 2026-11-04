@@ -85,7 +85,7 @@ a task's ship and deploy where it changes a path they name (`HumanPaths`). Closi
 
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
-- **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours
+- **THEN** the Master answers in its window, the task resumes; `mine: [answer]` keeps it yours; the same words asked again are a new question
 
 #### Scenario: A plan in act
 - **WHEN** a plan holds and `mine` is unset, or `mine: [plan]`, or the task was opened in `plan` mode

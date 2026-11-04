@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -312,5 +313,25 @@ class MasterAnswerJobTest {
         new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC())).run();
 
         verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test
+    void answersTheSameQuestionAgainWhereTheSessionWorkedSinceTheMasterLeftItUnanswered(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        FlowReports reports = new FlowReports(state, Clock.systemUTC());
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.empty());
+        MasterAnswerJob job = new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.QUESTION, "keep v2?");
+        job.run();
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.PLAIN, "worked on it");
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.QUESTION, "keep v2?");
+
+        job.run();
+
+        verify(panel, times(2)).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
 }

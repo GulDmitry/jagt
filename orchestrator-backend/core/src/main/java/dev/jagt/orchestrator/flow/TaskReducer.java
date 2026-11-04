@@ -309,6 +309,11 @@ public final class TaskReducer {
         };
     }
 
+    /** A report ends what the Master left unanswered: a question reported afresh is a new one, whatever its words. */
+    private static TaskState reported(TaskState task, AgentReport report) {
+        return task.withReport(report).withMaster(task.masterOrNone().withUnanswered(""));
+    }
+
     private static boolean leavesItsConflict(TaskState task, String project) {
         return task.status() == TaskStatus.DEPLOY_CONFLICT && task.repos().size() > 1 && task.deployment() != null
                 && task.deployment().conflictedTarget().filter(target -> target.project().equals(project)
@@ -356,7 +361,7 @@ public final class TaskReducer {
             case TaskEffect.Stops stops -> task.withStop(stops.stop().countedOn(task.requests()));
             case TaskEffect.ClearsStop _ -> task.lifted(now);
             case TaskEffect.GatesPlan gates -> task.withPlanGate(gates.gate());
-            case TaskEffect.Reports reports -> task.withReport(reports.report());
+            case TaskEffect.Reports reports -> reported(task, reports.report());
             case TaskEffect.OpensTurn opens -> task.withTurn(task.turnOrNone()
                     .relayed(opens.step(), opens.digest(), opens.answered(), now));
             case TaskEffect.ClosesTurn _ -> task.withTurn(task.turnOrNone().closed(now));
