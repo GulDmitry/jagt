@@ -63,6 +63,12 @@ list written for the inherited names stops matching. Declare instead of inherit 
 answer are plugin-scoped or need an interactive login — the command that shows which is in
 [Installation](installation.md).
 
+**`assistant.local` is opt-in**, and the server is yours to run: `brew install llama.cpp`, then
+`llama-server -hf unsloth/Qwen3.5-4B-GGUF:Q6_K --no-mmproj --jinja --reasoning-budget 0 -c 32768 --port 8080`,
+then uncomment the `local:` block in `jagt.yml`. Without `--reasoning-budget 0` the model spends its tokens
+thinking. Only a read with no tool may go local, and a local answer that fails is asked of the cloud; why the
+cloud stays the default is in [0135](decisions/0135-tool-less-reads-may-call-a-local-model-directly.md).
+
 **`CLAUDE_CONFIG_DIR` is read from jagt's own environment**, not the session's: exporting it in one shell and
 starting jagt from another loses the derived path to a session's log.
 
