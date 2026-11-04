@@ -66,7 +66,8 @@ plan-baselines/
 
 # Open ideas, collected on this machine
 TODO.md
-TODO-*.md
+QUESTIONS.md
+IDEAS.md
 TESTBED.md
 DETERMINISM.md
 
