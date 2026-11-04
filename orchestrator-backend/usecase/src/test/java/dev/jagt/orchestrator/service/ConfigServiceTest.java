@@ -208,7 +208,7 @@ class ConfigServiceTest {
 
         assertThat(qa.enabledOrDefault()).isTrue();
         assertThat(qa.environmentsOrEmpty()).hasSize(1);
-        assertThat(qa.modelOr("sonnet")).isEqualTo("haiku");
+        assertThat(qa.model()).isEqualTo("haiku");
     }
 
     @Test
@@ -675,7 +675,7 @@ class ConfigServiceTest {
         ConfigService.ConfigFile.RoleConfig qa = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class),
                 mock(ActStops.class)).load().role("qa");
 
-        assertThat(qa.modelOr("sonnet")).isEqualTo("opus");
+        assertThat(qa.model()).isEqualTo("opus");
         assertThat(qa.enabledOrDefault()).isTrue();
     }
 

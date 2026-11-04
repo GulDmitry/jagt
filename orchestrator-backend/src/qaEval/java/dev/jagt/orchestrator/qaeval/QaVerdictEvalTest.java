@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.eval.QaFixtureEnvironment;
 import dev.jagt.orchestrator.eval.QaJudgement;
 import dev.jagt.orchestrator.eval.QaScore;
 import dev.jagt.orchestrator.eval.QaScoreboard;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.job.CheckerPrompts;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.UserNotifier;
@@ -92,6 +93,8 @@ abstract class QaVerdictEvalTest {
     @Autowired
     private CheckerPrompts prompts;
     @Autowired
+    private RoleDefinition qaDefinition;
+    @Autowired
     private UsageTracker usage;
 
     @AfterAll
@@ -133,7 +136,7 @@ abstract class QaVerdictEvalTest {
         String sha = QaEvalWorkspace.head(worktree);
         String landedProbe = deployed.probe().isEmpty() ? null
                 : url + deployed.probe().substring(deployed.probe().indexOf(' ') + 1);
-        RoleConfig qa = new RoleConfig(true, System.getProperty("qaEval.model"), List.of(new QaEnvironment(url, landedProbe)));
+        RoleConfig qa = new RoleConfig(true, System.getProperty("qaEval.model", qaDefinition.model()), List.of(new QaEnvironment(url, landedProbe)));
         CheckerReader.Run run = deployed.declines()
                 ? prompts.decline(deployed.key(), worktree.toString(), sha, qa,
                         "- " + deployed.criteria().getFirst().id() + " — not met: " + deployed.decline().evidence(),

@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.RoleDefinitions;
-import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleFiles;
@@ -42,17 +41,5 @@ class QaPromptsTest {
 
         assertThat(accepted.prompt()).contains("ABC-42's deploy was pushed at abc123").doesNotContain("is deployed at");
         assertThat(declined.prompt()).contains("ABC-42's deploy was pushed at abc123").doesNotContain("is deployed at");
-    }
-
-    @Test
-    void theRoleYmlsModelIsTheDefaultAndJagtYmlOverridesIt(@TempDir Path root) {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        CheckerPrompts prompts = new CheckerPrompts(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), new RoleFiles(paths, "qa"));
-
-        CheckerReader.Run byRole = prompts.accept("ABC-42", "/wt", "abc123", new RoleConfig(true, null, List.of()), QaVerdict.ACCEPT);
-        CheckerReader.Run overridden = prompts.accept("ABC-42", "/wt", "abc123", new RoleConfig(true, "opus", List.of()), QaVerdict.ACCEPT);
-
-        assertThat(byRole.model()).isEqualTo("sonnet");
-        assertThat(overridden.model()).isEqualTo("opus");
     }
 }

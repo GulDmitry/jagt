@@ -374,8 +374,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
                 return enabled != null && enabled;
             }
 
-            public String modelOr(String roleModel) {
-                return model == null || model.isBlank() ? roleModel : model.strip();
+            public String modelOrInherited() {
+                return model == null ? "" : model.strip();
             }
 
             public List<QaEnvironment> environmentsOrEmpty() {
