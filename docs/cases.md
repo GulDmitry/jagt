@@ -47,6 +47,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B24 | a question the Master left unanswered is asked again in the same words after the session worked or the human answered → a question reported afresh clears the mark, so the Master answers it | seen 2026-11-04 | `MasterAnswerJobTest` |
 | B25 | distinct questions are answered over a tree nothing changed in → only the same question asked again counts toward the approach change and the runaway | audit 2026-11-04 | `MasterDecisionsTest` |
 | B26 | a deploy conflict is worked after the human was told, then left again → a moved worktree makes the next stall new: the card and a banner say so again | audit 2026-11-04 | `ConflictTest` |
+| B27 | intake turned an item away for a cause later fixed → the key keeps only its telling, so each poll tries the item again | audit 2026-11-04 | `IntakeHistoryTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

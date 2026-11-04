@@ -20,9 +20,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The keys intake may not take again: the tasks jagt holds, the ones it finished, and the ones it turned away.
- * A turned-away key is kept beside state.json — re-reading an item nothing can route costs the same as reading
- * one that can, every poll, forever.
+ * The keys intake may not take again: the tasks jagt holds and the ones it finished. A turned-away key is tried
+ * again every poll, since its cause may be fixed; only its telling is kept beside state.json.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,23 +32,22 @@ public class IntakeHistory {
     private final FinishedTasks finished;
     private final Notifications notifications;
     private final OrchestratorPaths paths;
-    private final Set<String> turnedAway = ConcurrentHashMap.newKeySet();
+    private final Set<String> told = ConcurrentHashMap.newKeySet();
 
     @PostConstruct
     void follow() {
-        turnedAway.addAll(kept());
+        told.addAll(kept());
     }
 
     public Set<String> held() {
         Set<String> keys = new HashSet<>(stateService.tasks().keySet());
         finished.all().stream().map(FinishedTask::id).forEach(keys::add);
-        keys.addAll(turnedAway);
         return keys;
     }
 
     /** Said once per key: a human reads it, and a second copy every poll is not a second fact. */
     public void turnAway(String key, String cause) {
-        if (!turnedAway.add(key)) {
+        if (!told.add(key)) {
             return;
         }
         keep();
@@ -73,7 +71,7 @@ public class IntakeHistory {
 
     private void keep() {
         try {
-            Files.writeString(paths.intakeTurnedAway(), String.join("\n", turnedAway) + "\n");
+            Files.writeString(paths.intakeTurnedAway(), String.join("\n", told) + "\n");
         } catch (IOException e) {
             log.atWarn().setMessage("intake turned-away keys not kept").addKeyValue("file", paths.intakeTurnedAway())
                     .addKeyValue("cause", e.toString()).addKeyValue("effect", "a restart tells them again").log();

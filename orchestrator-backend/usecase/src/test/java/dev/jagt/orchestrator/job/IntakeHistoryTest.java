@@ -52,14 +52,14 @@ class IntakeHistoryTest {
     }
 
     @Test
-    void neverReadsAnItemItAlreadyTurnedAway() {
+    void triesAgainOnTheNextPollAnItemItTurnedAway() {
         when(stateService.tasks()).thenReturn(Map.of());
         when(finished.all()).thenReturn(List.of());
 
         IntakeHistory history = history();
         history.turnAway("ABC-42", "nothing routes it");
 
-        assertThat(history.held()).containsExactly("ABC-42");
+        assertThat(history.held()).isEmpty();
     }
 
     @Test
@@ -81,15 +81,12 @@ class IntakeHistoryTest {
 
     @Test
     void doesNotTellAgainAfterARestartAboutAnItemItTurnedAway() {
-        when(stateService.tasks()).thenReturn(Map.of());
-        when(finished.all()).thenReturn(List.of());
         history().turnAway("ABC-42", "nothing routes it");
 
         IntakeHistory restarted = history();
         restarted.follow();
         restarted.turnAway("ABC-42", "nothing routes it");
 
-        assertThat(restarted.held()).containsExactly("ABC-42");
         verify(notifications, times(1)).send(any(Notification.class));
     }
 }
