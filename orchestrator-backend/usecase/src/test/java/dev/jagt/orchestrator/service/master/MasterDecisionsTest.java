@@ -34,6 +34,23 @@ class MasterDecisionsTest {
     }
 
     @Test
+    void countsOnlyTheSameQuestionOverAnUnchangedTree(@TempDir Path worktree) {
+        WorktreeChanges changes = mock(WorktreeChanges.class);
+        MasterDecisions decisions = new MasterDecisions(changes);
+        TaskState first = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).message("keep v2?").build();
+        TaskState second = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).message("rename it?").build();
+        when(changes.state(first)).thenReturn(Optional.of("abc:1;"));
+        when(changes.state(second)).thenReturn(Optional.of("abc:1;"));
+        decisions.answered(first);
+        decisions.answered(second);
+        decisions.answered(first);
+
+        int given = decisions.answersOverThisTree(second);
+
+        assertThat(given).isEqualTo(1);
+    }
+
+    @Test
     void countsNoneOnceTheTreeChanged(@TempDir Path worktree) {
         WorktreeChanges changes = mock(WorktreeChanges.class);
         MasterDecisions decisions = new MasterDecisions(changes);

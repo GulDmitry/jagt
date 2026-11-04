@@ -35,6 +35,7 @@ public class MasterDecisions {
     /** Past every count above, so folding older entries changes no answer. */
     static final int KEPT = 20;
     static final String STORED = "master-rounds.json";
+    private static final char QUESTION = '\t';
 
     private final WorktreeChanges changes;
 
@@ -43,7 +44,7 @@ public class MasterDecisions {
     record Round(long round, List<Identity> settled) {
     }
 
-    /** {@code answers}: the tree each answer was given over, oldest first. */
+    /** {@code answers}: the tree each answer was given over and its question, oldest first. */
     record Rounds(List<Round> rounds, List<String> answers) {
 
         static final Rounds NONE = new Rounds(List.of(), List.of());
@@ -78,20 +79,31 @@ public class MasterDecisions {
         changes.state(task).ifPresent(tree -> {
             Rounds before = read(task);
             write(task, new Rounds(before.rounds(),
-                    last(Stream.concat(before.answers().stream(), Stream.of(tree)).toList())));
+                    last(Stream.concat(before.answers().stream(), Stream.of(asked(tree, task))).toList())));
         });
     }
 
-    /** How many answers this tree has already had, none where it changed since the last. */
+    /** How many answers this question has already had over this tree, none where it changed since the last. */
     public int answersOverThisTree(TaskState task) {
         Optional<String> tree = changes.state(task);
+        if (tree.isEmpty()) {
+            return 0;
+        }
         List<String> answers = read(task).answers();
         int given = 0;
-        while (tree.isPresent() && given < answers.size()
-                && answers.get(answers.size() - 1 - given).equals(tree.get())) {
-            given++;
+        for (int i = answers.size() - 1; i >= 0 && treeOf(answers.get(i)).equals(tree.get()); i--) {
+            given += answers.get(i).equals(asked(tree.get(), task)) ? 1 : 0;
         }
         return given;
+    }
+
+    private static String asked(String tree, TaskState task) {
+        return tree + QUESTION + task.askedDigest();
+    }
+
+    private static String treeOf(String answer) {
+        int question = answer.lastIndexOf(QUESTION);
+        return question < 0 ? answer : answer.substring(0, question);
     }
 
     public void record(TaskState task, String decided) {

@@ -45,6 +45,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B22 | a deploy conflict is handed, watched, told or held by a stop and jagt restarts → its facts live on the conflicted target of the task's deployment, so the session is handed it once per press, the human told once and "held by stop" said once per stop | seen 2026-10-30: a restart said "held by stop" again, its record an in-memory map | `ConflictFinishTest`, `ConflictStallTest`, `TaskStateTest`, `TaskReducerProperties` |
 | B23 | a ship is pressed and the next round is answered by new drafts on the same tree → the press mark keys on tree and drafts alike, so the Master ships again | seen 2026-11-04 | `ShipDueTest`, `ShipRecordTest`, `ReviewDraftsTest` |
 | B24 | a question the Master left unanswered is asked again in the same words after the session worked or the human answered → a question reported afresh clears the mark, so the Master answers it | seen 2026-11-04 | `MasterAnswerJobTest` |
+| B25 | distinct questions are answered over a tree nothing changed in → only the same question asked again counts toward the approach change and the runaway | audit 2026-11-04 | `MasterDecisionsTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
