@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleInvalid;
+import dev.jagt.orchestrator.flow.CheckerRole;
 import dev.jagt.orchestrator.flow.Roles;
 import dev.jagt.orchestrator.port.Problem;
 import jakarta.annotation.PostConstruct;
@@ -42,7 +43,7 @@ public final class InstalledRoles {
 
     @PostConstruct
     void install() {
-        Roles.install(definitions.stream().map(RoleDefinition::id).toList());
+        Roles.install(definitions.stream().map(InstalledRoles::checker).toList());
     }
 
     private static Optional<RoleDefinition> standingIn(Path folder, List<String> refused) {
@@ -68,8 +69,12 @@ public final class InstalledRoles {
     }
 
     private static String refusal(String folder, RoleDefinition role) {
-        return folder.equals(role.id()) ? Roles.lint(role.id()).orElse("")
+        return folder.equals(role.id()) ? Roles.lint(checker(role)).orElse("")
                 : "its folder is " + folder + " but it names itself " + role.id();
+    }
+
+    private static CheckerRole checker(RoleDefinition role) {
+        return new CheckerRole(role.id(), role.checking().jobs(), role.checking().readSteps());
     }
 
     public List<RoleDefinition> definitions() {

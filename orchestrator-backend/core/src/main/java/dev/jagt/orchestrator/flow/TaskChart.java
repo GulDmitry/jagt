@@ -100,6 +100,10 @@ final class TaskChart {
         return current.chart();
     }
 
+    static Composition composition() {
+        return current.composition();
+    }
+
     static List<String> installedCheckers() {
         return current.composition().checkers();
     }

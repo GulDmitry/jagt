@@ -75,7 +75,8 @@ public final class RoleDefinitions {
         }
         return new RoleDefinition(id, text(document, "name"), text(document, "model"),
                 trigger, word(document, "oncePer", ONCE_PER), outcomes,
-                tools(map(document, "tools")), schema(document, "answer"), schema(document, "decline"));
+                tools(map(document, "tools")), schema(document, "answer"), schema(document, "decline"),
+                new RoleDefinition.Checking(Boolean.TRUE.equals(document.get("jobs")), strings(document, "readSteps")));
     }
 
     private static RoleDefinition.Tools tools(Map<?, ?> tools) {

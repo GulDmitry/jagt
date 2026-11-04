@@ -189,6 +189,17 @@ class TaskViewTest {
     }
 
     @Test
+    void namesTheCheckerThatPassedTheLiveDeployInTheStatus() {
+        TaskState passed = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("abc1234")), 1, null))
+                .build().withRole("qa", RoleRecord.defaults().withPassed("proj@abc1234"));
+
+        TaskView view = TaskView.of("ABC-1", passed, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.statusLabel()).isEqualTo("qa passed");
+    }
+
+    @Test
     void takesTheMarkOffOnceTheRevertHasForgottenTheMergeCommit() {
         TaskState reverted = TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1")
                 .deployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("abc1234")

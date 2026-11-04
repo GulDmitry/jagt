@@ -10,12 +10,12 @@ public final class Roles {
     }
 
     /** Sets, once, the roles every task is stepped on; a second call must name the same ones. */
-    public static void install(List<String> checkers) {
+    public static void install(List<CheckerRole> checkers) {
         TaskChart.install(new Composition(checkers.stream().<Role>map(CheckerRegion::new).toList()));
     }
 
     /** Why the chart refuses {@code checker} composed beside the core regions, or empty where it stands. */
-    public static Optional<String> lint(String checker) {
+    public static Optional<String> lint(CheckerRole checker) {
         try {
             TaskChart.of(new Composition(List.of(new CheckerRegion(checker))));
             return Optional.empty();

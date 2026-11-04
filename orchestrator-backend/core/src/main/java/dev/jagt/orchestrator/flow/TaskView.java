@@ -136,8 +136,9 @@ public record TaskView(
         if (round.masterReading()) {
             return "master review";
         }
-        if (task.passedBy(Checkers.QA)) {
-            return "qa passed";
+        Optional<String> passer = Checkers.installed().stream().filter(task::passedBy).findFirst();
+        if (passer.isPresent()) {
+            return passer.get() + " passed";
         }
         return task.requestsMerged() && FlowRules.awaitsApproval(task.status()) ? "merged" : task.status().label();
     }

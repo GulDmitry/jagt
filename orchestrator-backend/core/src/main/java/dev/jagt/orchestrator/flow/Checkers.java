@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 
 import java.util.LinkedHashMap;
@@ -27,19 +26,14 @@ public final class Checkers {
         return phases;
     }
 
-    /** The installed checkers that run jobs: QA's alone today. */
+    /** The installed checkers whose {@code role.yml} declares jobs. */
     public static List<String> withJobs() {
-        return TaskChart.installedCheckers().stream().filter(QA::equals).toList();
+        return TaskChart.composition().withJobs();
     }
 
     /** The first checker whose read is running: it holds the turn. */
     static Optional<String> reading(Map<String, CheckerPhase> checkers) {
         return checkers.entrySet().stream().filter(entry -> entry.getValue() == CheckerPhase.READING)
                 .map(Map.Entry::getKey).findFirst();
-    }
-
-    /** The role whose read a turn on {@code step} opens. */
-    public static Optional<String> roleOfRead(String step) {
-        return QaVerdict.isStep(step) ? Optional.of(QA) : Optional.empty();
     }
 }

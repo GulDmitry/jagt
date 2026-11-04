@@ -2,7 +2,11 @@ package dev.jagt.orchestrator.config;
 
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,6 +25,44 @@ class RoleDefinitionsTest {
         assertThat(compiled.tools().refuse()).contains("Write", "Bash(git push:*)");
         assertThat(compiled.tools().git()).isTrue();
         assertThat(compiled.tools().fetch()).isTrue();
+    }
+
+    @Test
+    void theShippedQaRunsJobsAndItsReadOpensOnAcceptAgainAndDecline() {
+        RoleDefinition compiled = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"));
+
+        assertThat(compiled.checking().jobs()).isTrue();
+        assertThat(compiled.checking().readSteps()).containsExactly("accept", "again", "decline");
+    }
+
+    @Test
+    void aRoleDeclaringNeitherKeyRunsNoJobsAndOpensNoRead() {
+        RoleDefinition compiled = RoleDefinitions.compile("id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
+                + "oncePer: deploy\noutcomes: [round]\n");
+
+        assertThat(compiled.checking().jobs()).isFalse();
+        assertThat(compiled.checking().readSteps()).isEmpty();
+    }
+
+    @Test
+    void jobsHoldsOnlyForTheLiteralTrue() {
+        RoleDefinition compiled = RoleDefinitions.compile("id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
+                + "oncePer: deploy\noutcomes: [round]\njobs: \"true\"\nreadSteps: [one, two]\n");
+
+        assertThat(compiled.checking().jobs()).isFalse();
+        assertThat(compiled.checking().readSteps()).containsExactly("one", "two");
+    }
+
+    @Test
+    void aCopyLackingBothKeysKeepsTheShippedOnes(@TempDir Path folder) throws Exception {
+        Path copy = Files.writeString(folder.resolve("role.yml"), "model: opus\n");
+
+        RoleDefinition compiled = RoleDefinitions.fromFiles(
+                List.of(Path.of("../../roles/qa/role.yml.dist"), copy));
+
+        assertThat(compiled.model()).isEqualTo("opus");
+        assertThat(compiled.checking().jobs()).isTrue();
+        assertThat(compiled.checking().readSteps()).containsExactly("accept", "again", "decline");
     }
 
     @Test

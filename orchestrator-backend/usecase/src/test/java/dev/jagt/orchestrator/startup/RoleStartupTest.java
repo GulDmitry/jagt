@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.flow.CheckerRole;
 import dev.jagt.orchestrator.flow.Roles;
 import dev.jagt.orchestrator.service.InstalledRoles;
 import dev.jagt.orchestrator.service.ActStops;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -48,7 +50,7 @@ class RoleStartupTest {
 
         assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("qa");
         assertThat(roles.skipped()).isEmpty();
-        assertThat(Roles.lint("qa")).isEmpty();
+        assertThat(Roles.lint(new CheckerRole("qa", true, List.of("accept", "again", "decline")))).isEmpty();
     }
 
     @Test

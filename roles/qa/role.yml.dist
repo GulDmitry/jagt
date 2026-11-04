@@ -1,6 +1,7 @@
 # The QA role: a headless model that checks a deployed change against its ticket, read-only, once per deploy.
 # Write what you change into `roles/qa/role.yml`: it layers over this file per key, a list replacing whole.
-# Take effect: id, model (the default; `roles.qa.model` in jagt.yml overrides it), trigger, tools, answer, decline.
+# Take effect: id, model (the default; `roles.qa.model` in jagt.yml overrides it), trigger, tools, answer, decline,
+# jobs (true = the role runs jobs), readSteps (the brief steps whose turn opens its read).
 # trigger: deployed = the change is live; environment-named = jagt.yml names an environment;
 # pipelines-green always holds, as the check's key is the digest the green deploy pipelines set.
 # Declared for the lint only, nothing else reads them: name, oncePer (one check per deploy is fixed), outcomes.
@@ -10,6 +11,8 @@ model: sonnet
 trigger: [deployed, pipelines-green, environment-named]
 oncePer: deploy
 outcomes: [round, question, wait, dispute, stop]
+jobs: true
+readSteps: [accept, again, decline]
 tools:
   cli: [Read, Grep, Glob, Bash, WebFetch]
   allow: [Read, Grep, Glob, WebFetch, "Bash(curl -sS:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)"]
