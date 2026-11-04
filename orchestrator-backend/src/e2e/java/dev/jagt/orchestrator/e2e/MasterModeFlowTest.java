@@ -40,6 +40,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -47,7 +48,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -100,6 +104,8 @@ class MasterModeFlowTest {
     private McpHealth mcp;
     @MockitoBean
     private RoundReviewer reviewer;
+    @MockitoSpyBean
+    private Clock clock;
     @Autowired
     private TaskProvisioning provisioning;
     @Autowired
@@ -324,9 +330,13 @@ class MasterModeFlowTest {
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
         awaitTold("did not deploy");
+        Instant twoMinutesOn = Instant.now().plus(Duration.ofMinutes(2));
+        doReturn(twoMinutesOn).when(clock).instant();
+        doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
 
-        await().atMost(Duration.ofSeconds(120)).pollInterval(Duration.ofMillis(500))
-                .until(() -> task().currentConflict().filter(conflict -> conflict.told() != null).isPresent());
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
+
+        assertThat(task().currentConflict().filter(conflict -> conflict.told() != null)).isPresent();
 
         verify(userNotifier, timeout(10_000).times(1)).notify(contains("deploy conflict stalled"), any(), any());
         assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
