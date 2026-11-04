@@ -177,6 +177,9 @@ public class DeployPipelines {
         if (!landed.retriedTip() && retried(taskId, project, url, Objects.requireNonNull(landed.tip()))) {
             return Reading.waiting(at + "red, re-run once before it is handed back");
         }
+        if (greenSince(task, landed)) {
+            return Reading.green();
+        }
         try {
             fixes.open(task, taskId, project);
         } catch (RuntimeException e) {

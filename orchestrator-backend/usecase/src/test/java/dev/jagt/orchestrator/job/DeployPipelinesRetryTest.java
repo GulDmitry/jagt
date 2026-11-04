@@ -57,6 +57,8 @@ class DeployPipelinesRetryTest {
                 new CommitPipeline("failed", URL)), TokenUsage.NONE));
         when(causes.judgeDeploy("ABC-42", "shop", URL))
                 .thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
+        when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("none", "")), TokenUsage.NONE));
     }
 
     @Test
@@ -84,6 +86,23 @@ class DeployPipelinesRetryTest {
         assertThat(reading).isEqualTo(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
                 "red pipeline on the deploy commit: shop 01234567", "shop", URL, List.of()));
         verify(pipelines, never()).retryFailed(anyString(), anyString());
+    }
+
+    @Test
+    void aDeployRedOnItsCommitAfterItsReRunStandsOnALaterGreenPipelineContainingIt(@TempDir Path root) {
+        StateService state = stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA).withRetried(SHA));
+        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("failed", URL)), TokenUsage.NONE));
+        when(causes.judgeDeploy("ABC-42", "shop", URL))
+                .thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
+        when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("success", "https://git.example.invalid/shop/web/-/pipelines/9")), TokenUsage.NONE));
+        DeployPipelines deploys = new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK));
+
+        DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
+
+        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+        verify(fixes, never()).open(org.mockito.ArgumentMatchers.any(), anyString(), anyString());
     }
 
     @Test

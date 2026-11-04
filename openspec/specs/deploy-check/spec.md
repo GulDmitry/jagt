@@ -188,6 +188,7 @@ A merge or revert conflict SHALL never be ended by this read.
 - **WHEN** ABC-42 is `DEPLOY_CONFLICT` on a red deploy pipeline and a later finished one on `dev` containing it is green
 - **THEN** ABC-42 is `DEPLOYED` and its conflict is gone
 - **AND** its session is asked to check the change once, as after any green deploy
+- **AND** a later read stands on that green, not on the deploy commit's red, re-running nothing and opening no worktree
 
 #### Scenario: The newest containing pipeline is still red
 - **WHEN** the newest finished pipeline on `dev` containing the deploy commit is red, or the host lists none or cannot be read
