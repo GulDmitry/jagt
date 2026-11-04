@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.DeployTargets;
 
 import dev.jagt.orchestrator.service.GitDeploy;
@@ -46,7 +47,7 @@ class DeployConflictsTest {
 
         assertThat(conflicts).containsExactly(Map.entry("ABC-1",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-deploy"), true,
-                        new Conflict.Progress(0, 2, "d"), null, false)));
+                        new Conflict.Progress(0, 2, "d"), null, false, new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))));
     }
 
     @Test
@@ -91,6 +92,6 @@ class DeployConflictsTest {
 
         assertThat(conflicts).containsExactly(Map.entry("ABC-1",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-revert"), true,
-                        new Conflict.Progress(0, 1, "r"), null, true)));
+                        new Conflict.Progress(0, 1, "r"), null, true, new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))));
     }
 }

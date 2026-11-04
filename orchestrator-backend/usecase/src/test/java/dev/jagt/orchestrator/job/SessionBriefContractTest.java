@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.NoTracker;
 import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -81,7 +82,7 @@ class SessionBriefContractTest {
                 new TaskTurns(state, Clock.systemUTC())),
                 mock(ConflictStall.class), mock(ConflictFinish.class)).handle("ABC-42",
                 new DeployConflicts.WaitingConflict(Path.of("/repo/ABC-42-deploy"), false,
-                        new Conflict.Progress(7, 0, "d"), null, false));
+                        new Conflict.Progress(7, 0, "d"), null, false, new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
 
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
         verify(sessions).writeTaskContext(eq("ABC-42"), relayed.capture());

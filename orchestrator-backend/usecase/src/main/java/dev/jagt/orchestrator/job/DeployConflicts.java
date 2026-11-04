@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Facts;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.DeployTargets;
 
 import dev.jagt.orchestrator.service.GitDeploy;
@@ -41,19 +42,20 @@ public class DeployConflicts {
         if (Facts.revertConflicted(task)) {
             return new WaitingConflict(GitDeploy.revertWorktreePath(target.path(), taskId),
                     gitDeploy.revertResolved(target.path(), taskId), gitDeploy.revertProgress(target.path(), taskId),
-                    null, true);
+                    null, true, Standing.of(task));
         }
         Path worktree = GitDeploy.deployWorktreePath(target.path(), taskId);
         return new WaitingConflict(worktree, gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()),
                 gitDeploy.deployProgress(target.path(), taskId),
-                DeployTargets.handedBackForItsPipeline(task) ? task.message() : null, false);
+                DeployTargets.handedBackForItsPipeline(task) ? task.message() : null, false, Standing.of(task));
     }
 
     /**
      * {@code red} is the line of a deploy handed back for its pipeline, null for a merge that conflicts;
-     * {@code revert} is a revert's conflict, whose worktree is the revert's.
+     * {@code revert} is a revert's conflict, whose worktree is the revert's; {@code read} is where the task stood
+     * when the conflict was found.
      */
     public record WaitingConflict(Path worktree, boolean resolved, Conflict.Progress progress,
-                                  @Nullable String red, boolean revert) {
+                                  @Nullable String red, boolean revert, Standing read) {
     }
 }

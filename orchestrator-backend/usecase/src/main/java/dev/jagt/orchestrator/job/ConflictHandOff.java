@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.TaskMovedOn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,11 +25,18 @@ class ConflictHandOff {
             finish.press(taskId, conflict.worktree());
             return;
         }
+        if (!relay.standing(taskId).equals(conflict.read())) {
+            return;
+        }
         if (!stall.handed(taskId)) {
             AgentRuntime.Admission admission = sessions.admit(taskId, conflict.worktree());
             log.atInfo().setMessage("deploy conflict handed to session").addKeyValue("task", taskId)
                     .addKeyValue("worktree", conflict.worktree()).addKeyValue("admission", admission).log();
-            relay.write(taskId, Step.CONFLICT, told(taskId, conflict), relay.standing(taskId));
+            try {
+                relay.write(taskId, Step.CONFLICT, told(taskId, conflict), conflict.read());
+            } catch (TaskMovedOn dropped) {
+                return;
+            }
         }
         stall.watch(taskId, conflict);
     }
