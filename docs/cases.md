@@ -19,6 +19,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | A10 | a session is compacted or reopened in plan mode → its brief keeps task, branch and last report; the plan gate stands | 51a2ba67, 6c34876f, afe42f20 | `SessionReportsTest`, `AgentSessionControllerTest`, `AgentSessionsTest` |
 | A11 | a task session briefs sub-agents → lightest model, self-contained brief, result alone, the ship's message as the ship specifies | 70bce952, b0c6e815, deb035ec | `SubAgentBriefingTest` |
 | A12 | a plan or hand-back comes with a question → it is read and answered, with its facts in the prompt; a hand-back at VERIFYING says whose move | c0e97b9f, e4f5a366, b3922313 | `MasterAnswerJobTest`, `MasterReviewJobTest`, `AgentStatusReportsTest`, `RoundBriefTest` |
+| A13 | an eval case asserts what a QA row cites (the flag holding a change back) → the brief asks for it, so the case holds by rule, not by which file the QA happened to read | seen 2026-11-04: gate red, 1 of 3 runs named the flag | `QaVerdictEvalTest` |
 ## B — state overwritten / dedup key in the wrong place
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
