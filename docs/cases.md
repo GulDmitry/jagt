@@ -127,4 +127,5 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | G3 | a `do` line mentions the deploy branch → only a branch after from, into or onto refuses it | 4a41823d | `MasterShipTest` |
 | G4 | a reviewer answers the agent's reply → read as answered, not as a comment nobody answered | 97ebd363 | `ReviewSweepServiceTest`, `ReviewRoundCase` |
 | G5 | a field's teaching word is parsed → the parser reads the word, never a sentence | d779aa20 | `AgentStatusMessageTest`, `AgentStatusReportsTest` |
+| G6 | an unchanged thread is read with its first line written another way, or one request is linked from two repositories → the round repeats by the host's note ids alone, counted once | seen 2026-11-04: one thread read as URL, basename:line and path:line by turns relayed every poll and stopped two tasks as `ROUNDS` | `RoundTrailTest` |
 Families H–M: [cases-h-m.md](cases-h-m.md).

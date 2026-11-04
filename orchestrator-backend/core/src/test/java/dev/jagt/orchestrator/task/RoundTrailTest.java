@@ -54,6 +54,21 @@ class RoundTrailTest {
     }
 
     @Test
+    void holdsNoNewNoteWhereTheSameNoteIdsComeWithTheirThreadsWrittenAnotherWay() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a",
+                "https://host/abc/-/merge_requests/7#note_101 101\nsrc/Main.java:12 202"));
+
+        assertThat(trail.noNewNote("Main.java:12 202\nsrc/Main.java:30 101", "")).isTrue();
+    }
+
+    @Test
+    void holdsNoNewNoteWhereOneRequestLinkedFromTwoRepositoriesCarriesItsThreadsTwice() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 1, "", "a", "x 101"));
+
+        assertThat(trail.noNewNote("[api] x 101\n[web] x 101", "")).isTrue();
+    }
+
+    @Test
     void holdsNewNotesWhereTheyAreKnownAndTheLastRoundDidNotCarryThem() {
         RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a", "t1 note_1"));
 

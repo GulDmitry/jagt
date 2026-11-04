@@ -23,8 +23,15 @@ public record RoundTrail(List<Round> rounds, long since) {
         }
 
         public boolean repeats(String other) {
-            return RoundKey.stored(notes).sameAs(RoundKey.stored(other));
+            return noteIds(notes).sameAs(noteIds(other));
         }
+    }
+
+    /** The host's note ids alone: a thread's first line is model-written and reads differently from one read to the next. */
+    private static RoundKey noteIds(String notes) {
+        return RoundKey.stored(notes).known()
+                ? RoundKey.of(notes.lines().map(line -> line.substring(line.lastIndexOf(' ') + 1)).distinct().sorted().toList())
+                : RoundKey.unknown();
     }
 
     public RoundTrail {
