@@ -7,28 +7,42 @@ import java.util.List;
  * where nothing reads state, and whoever can answer supplies the answer.
  */
 public record MessageContext(List<String> projectsOnTask, boolean planRequired, List<String> configuredProjects,
-                             List<String> switchesOwed, boolean waitsRefused) {
+                             List<String> switchesOn, boolean firstReport, boolean visualMissing,
+                             boolean waitsRefused) {
 
     /** Nothing is known about the task yet, so the rules that need it say nothing. */
     public static final MessageContext NONE = new MessageContext(List.of(), false, List.of());
 
     public MessageContext(List<String> projectsOnTask, boolean planRequired, List<String> configuredProjects) {
-        this(projectsOnTask, planRequired, configuredProjects, List.of(), false);
+        this(projectsOnTask, planRequired, configuredProjects, List.of(), false, false, false);
     }
 
     /** Nothing here waits, so a report asking for a wait is refused. */
     public MessageContext refusingWaits() {
-        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOwed, true);
+        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOn, firstReport,
+                visualMissing, true);
     }
 
-    /** The switches the message must still be judged on: those that are on, for a task whose first report this is. */
-    public MessageContext withSwitchesOwed(List<String> switchesOwed) {
-        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOwed, waitsRefused);
+    /** The switches that are on, which the message judges itself on when it is the first report or hands back a plan. */
+    public MessageContext withSwitchesOn(List<String> switchesOn) {
+        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOn, firstReport,
+                visualMissing, waitsRefused);
+    }
+
+    public MessageContext withFirstReport(boolean firstReport) {
+        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOn, firstReport,
+                visualMissing, waitsRefused);
+    }
+
+    /** The task's worktree holds no picture; unknown reads as not missing. */
+    public MessageContext withVisualMissing(boolean visualMissing) {
+        return new MessageContext(projectsOnTask, planRequired, configuredProjects, switchesOn, firstReport,
+                visualMissing, waitsRefused);
     }
 
     public MessageContext {
         projectsOnTask = projectsOnTask == null ? List.of() : List.copyOf(projectsOnTask);
         configuredProjects = configuredProjects == null ? List.of() : List.copyOf(configuredProjects);
-        switchesOwed = switchesOwed == null ? List.of() : List.copyOf(switchesOwed);
+        switchesOn = switchesOn == null ? List.of() : List.copyOf(switchesOn);
     }
 }

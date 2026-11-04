@@ -14,7 +14,7 @@ public final class SwitchJudgements {
     public static final String FIELD = "switches";
     public static final List<String> NAMES = List.of("autoplan", "visualize", "diagnose");
     public static final String DESCRIBES = "Your judgement on each switch the task brief says is on, given on the"
-            + " first report: {\"<switch>\": \"yes — <why>\" or \"no — <why>\"}, a why for both.";
+            + " first report and the one handing back a plan: {\"<switch>\": \"yes — <why>\" or \"no — <why>\"}, a why for both.";
 
     private static final Pattern ANSWER = Pattern.compile("(yes|no) *(?:—|–|-|:) *(\\S.*)", Pattern.CASE_INSENSITIVE);
 
@@ -32,7 +32,7 @@ public final class SwitchJudgements {
         });
         owed.stream().filter(name -> given.keySet().stream().noneMatch(key -> key(key).equals(name)))
                 .forEach(name -> found.add(new Violation(FIELD, "answer " + name + " with `yes — <why>` or"
-                        + " `no — <why>`: it is on, and the first report carries your judgement of it")));
+                        + " `no — <why>`: it is on, and this report carries your judgement of it")));
         return List.copyOf(found);
     }
 

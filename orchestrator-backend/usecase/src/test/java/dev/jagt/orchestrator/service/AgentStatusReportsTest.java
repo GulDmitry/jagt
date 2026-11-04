@@ -6,6 +6,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Refusal;
@@ -1008,11 +1009,13 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
-        assertThat(reports.sessionContextFor("ABC-1").switchesOwed()).containsExactly("visualize");
+        MessageContext context = reports.sessionContextFor("ABC-1");
+        assertThat(context.switchesOn()).containsExactly("visualize");
+        assertThat(context.firstReport()).isTrue();
     }
 
     @Test
-    void owesNoJudgementOnASwitchThatIsOff(@TempDir Path root) {
+    void knowsNoSwitchIsOnWhenNoneIs(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
@@ -1021,11 +1024,11 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
-        assertThat(reports.sessionContextFor("ABC-1").switchesOwed()).isEmpty();
+        assertThat(reports.sessionContextFor("ABC-1").switchesOn()).isEmpty();
     }
 
     @Test
-    void owesNoJudgementOnceTheTaskHasLeftNew(@TempDir Path root) {
+    void marksTheFirstReportOnlyWhileTheTaskIsNew(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -1036,7 +1039,47 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
-        assertThat(reports.sessionContextFor("ABC-1").switchesOwed()).isEmpty();
+        assertThat(reports.sessionContextFor("ABC-1").firstReport()).isFalse();
+    }
+
+    @Test
+    void missesThePictureWhileTheWorktreeHoldsNoTaskVisual(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                configService);
+
+        assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isTrue();
+    }
+
+    @Test
+    void missesNoPictureOnceTheWorktreeHoldsTheTaskVisual(@TempDir Path root) throws IOException {
+        Files.writeString(root.resolve("task_visual.md"), "picture");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                configService);
+
+        assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
+    }
+
+    @Test
+    void missesNoPictureOfATaskWithoutAWorktree(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "", TaskStatus.IN_PROGRESS).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                configService);
+
+        assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
     }
 
     @Test

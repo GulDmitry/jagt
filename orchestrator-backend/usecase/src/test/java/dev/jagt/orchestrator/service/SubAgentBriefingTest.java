@@ -437,7 +437,7 @@ class SubAgentBriefingTest {
     }
 
     @Test
-    void asksForTheJudgementOfEverySwitchThatIsOnInTheFirstReport(@TempDir Path root) throws Exception {
+    void asksForTheJudgementOfEverySwitchThatIsOnInTheFirstReportAndThePlanHandBack(@TempDir Path root) throws Exception {
         Files.createDirectories(root.resolve("roles/session"));
         Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
@@ -451,6 +451,6 @@ class SubAgentBriefingTest {
                         new ConfigService.ConfigFile.VisualizeConfig(true),
                         ConfigService.ConfigFile.DiagnoseConfig.defaults());
 
-        assertThat(briefing).contains("first status report carries `switches`: for each of visualize");
+        assertThat(briefing).contains("first status report and the one handing back a plan carry `switches`: for each of visualize");
     }
 }

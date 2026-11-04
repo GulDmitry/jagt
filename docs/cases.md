@@ -49,6 +49,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B26 | a deploy conflict is worked after the human was told, then left again → a moved worktree makes the next stall new: the card and a banner say so again | audit 2026-11-04 | `ConflictTest` |
 | B27 | intake turned an item away for a cause later fixed → the key keeps only its telling, so each poll tries the item again | audit 2026-11-04 | `IntakeHistoryTest` |
 | B28 | drafted replies arrive under a move the human was already told of → the tap keys what it says, so it pings again naming them | audit 2026-11-04 | `YourMoveJobTest` |
+| B29 | a session judged a switch before analysing and handed back its plan on that answer → the plan hand-back owes the answers again, and a `yes` for `visualize` needs `task_visual.md` | owner 2026-11-04 | `AgentStatusMessageTest`, `AgentStatusReportsTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

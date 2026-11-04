@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.protocol.Reported;
 import dev.jagt.orchestrator.protocol.Violation;
+import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -23,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,10 +95,14 @@ public class AgentStatusReports {
                 List.copyOf(configService.load().projects().keySet()));
     }
 
-    /** As {@link #contextFor}, for a session's own report: its first one owes a judgement on each switch that is on. */
+    /** As {@link #contextFor}, for a session's own report: what it owes a judgement on, and whether its picture is there. */
     public MessageContext sessionContextFor(String taskId) {
-        boolean first = stateService.task(taskId).filter(task -> task.status() == TaskStatus.NEW).isPresent();
-        return contextFor(taskId).withSwitchesOwed(first ? configService.load().agent().switchesOn() : List.of());
+        Optional<TaskState> task = stateService.task(taskId);
+        boolean visualMissing = task.map(TaskState::worktreePath).filter(path -> !path.isBlank())
+                .map(path -> !Files.isRegularFile(Path.of(path, Artifact.VISUAL.fileName()))).orElse(false);
+        return contextFor(taskId).withSwitchesOn(configService.load().agent().switchesOn())
+                .withFirstReport(task.filter(one -> one.status() == TaskStatus.NEW).isPresent())
+                .withVisualMissing(visualMissing);
     }
 
     /** The task's repositories, primary first: which link a human follows first is the session's own. */

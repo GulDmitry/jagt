@@ -284,8 +284,52 @@ class AgentStatusMessageTest {
         var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
                 "starting work", Map.of());
 
-        assertThat(said.violations(MessageContext.NONE.withSwitchesOwed(List.of("visualize"))))
+        assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")).withFirstReport(true)))
                 .extracting(Violation::field).containsExactly("switches");
+    }
+
+    @Test
+    void refusesAPlanHandBackThatLeavesOutASwitchThatIsOn() {
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+                "plan written for approval", Map.of());
+
+        assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize"))))
+                .singleElement().satisfies(violation -> assertThat(violation.field()).isEqualTo("switches"))
+                .satisfies(violation -> assertThat(violation.expected()).contains("visualize"));
+    }
+
+    @Test
+    void refusesAPlanHandBackJudgingVisualizeYesWhileThePictureIsMissing() {
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+                "plan written for approval", Map.of("visualize", "yes — a new table"));
+
+        assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")).withVisualMissing(true)))
+                .singleElement().satisfies(violation -> assertThat(violation.expected()).contains("task_visual.md"));
+    }
+
+    @Test
+    void acceptsAPlanHandBackJudgingVisualizeYesOnceThePictureIsThere() {
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+                "plan written for approval", Map.of("visualize", "yes — a new table"));
+
+        assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")))).isEmpty();
+    }
+
+    @Test
+    void acceptsAPlanHandBackJudgingVisualizeNoWhileThePictureIsMissing() {
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+                "plan written for approval", Map.of("visualize", "no — a two-line fix"));
+
+        assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")).withVisualMissing(true)))
+                .isEmpty();
+    }
+
+    @Test
+    void owesNoSwitchOnALaterReportThatHandsBackNoPlan() {
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+                "back to work", Map.of());
+
+        assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")))).isEmpty();
     }
 
     @Test

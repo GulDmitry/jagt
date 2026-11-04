@@ -75,8 +75,8 @@ public class SubAgentBriefing {
 
     private static String judgementSentence(List<String> on) {
         return on.isEmpty() ? ""
-                : " Your first status report carries `switches`: for each of " + String.join(", ", on)
-                + " `yes — <why>` or `no — <why>`, whether you judged it needed.";
+                : " Your first status report and the one handing back a plan carry `switches`: for each of "
+                + String.join(", ", on) + " `yes — <why>` or `no — <why>`, whether you judged it needed after reading the task.";
     }
 
     private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskStatus;
 
 import lombok.With;
@@ -108,7 +109,13 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
     public List<Violation> violations(MessageContext context) {
         List<Violation> found = new ArrayList<>();
         Why.violation(why).ifPresent(found::add);
-        found.addAll(SwitchJudgements.violations(switches, context.switchesOwed()));
+        boolean owes = context.firstReport() || parsedStatus() == TaskStatus.PLAN_PENDING;
+        found.addAll(SwitchJudgements.violations(switches, owes ? context.switchesOn() : List.of()));
+        if (parsedStatus() == TaskStatus.PLAN_PENDING && context.visualMissing()
+                && SwitchJudgements.normalised(switches).getOrDefault("visualize", "").startsWith("yes")) {
+            found.add(new Violation(SwitchJudgements.FIELD, "visualize is yes: write " + Artifact.VISUAL.fileName()
+                    + " in the worktree before handing back the plan"));
+        }
         found.addAll(reportViolations(context));
         return List.copyOf(found);
     }
