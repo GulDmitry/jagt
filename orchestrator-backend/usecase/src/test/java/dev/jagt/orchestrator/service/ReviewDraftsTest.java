@@ -151,4 +151,41 @@ class ReviewDraftsTest {
 
         assertThat(drafted).isFalse();
     }
+
+    @Test
+    void digestsDifferWhereTheUnspentRepliesDiffer(@TempDir Path worktree) throws IOException {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        TaskState task = TaskState.builder("api", worktree.toString(), TaskStatus.REVIEW_PENDING).mrCreatedAt(2_000).build();
+        Path file = worktree.resolve("review_replies.md");
+        Files.setLastModifiedTime(Files.writeString(file, "> rename\n\nDone.\n"), FileTime.fromMillis(3_000));
+        String first = new ReviewDrafts(config).unspentDigest(task).orElseThrow();
+        Files.writeString(file, "> rename\n\nDone.\n\n> retry\n\nKept.\n");
+
+        String second = new ReviewDrafts(config).unspentDigest(task).orElseThrow();
+
+        assertThat(second).isNotEqualTo(first);
+    }
+
+    @Test
+    void digestsNothingWhereNoRepliesAreUnspent(@TempDir Path worktree) throws IOException {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Files.setLastModifiedTime(Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
+                FileTime.fromMillis(1_000));
+
+        assertThat(new ReviewDrafts(config).unspentDigest(TaskState.builder("api", worktree.toString(),
+                TaskStatus.REVIEW_PENDING).mrCreatedAt(2_000).build())).isEmpty();
+    }
+
+    @Test
+    void digestsRepliesEvenWhereTheFileCannotBeRead(@TempDir Path worktree) throws IOException {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Path file = Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n");
+        Files.setPosixFilePermissions(file, java.util.Set.of());
+
+        assertThat(new ReviewDrafts(config).unspentDigest(TaskState.builder("api", worktree.toString(),
+                TaskStatus.REVIEW_PENDING).mrCreatedAt(0).build())).isPresent();
+    }
 }

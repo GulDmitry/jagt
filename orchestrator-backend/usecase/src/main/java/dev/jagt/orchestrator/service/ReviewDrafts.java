@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.Turn;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * Whether a task is carrying answers a human still has to see. Presence alone cannot say: the file outlives the
@@ -57,6 +59,18 @@ public class ReviewDrafts {
                     && !spent(file, task, postsEveryDraft());
         } catch (IOException e) {
             return true;
+        }
+    }
+
+    /** What a ship would send of the drafts: their digest while {@link #drafted} holds, none otherwise. */
+    public Optional<String> unspentDigest(TaskState task) {
+        if (!drafted(task)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Turn.digestOf(Files.readString(draftsIn(task.worktreePath()))));
+        } catch (IOException e) {
+            return Optional.of("unreadable");
         }
     }
 
