@@ -13,7 +13,9 @@ Accepted 2026-11-04.
 - Measured 2026-11-04, one machine, the command-mapping read:
   - an agent CLI with no tools on a local model: 1.1–1.7 s on a one-line prompt, but 13 s or a hang past 40 s on the real prompt;
   - a direct call with a `json_schema` response format: 4.0–4.9 s, and the answer matched the schema every time.
-- Qwen3.5-4B mapped 2 of 5 requests right in a hand check, so quality is not yet at parity.
+- `promptEval` command mapping, one case at a time: haiku 15 of 15 at ~10 s a call; Qwen3.5-4B Q6 and 9B Q4 12 of 15
+  at ~1.5 s, both missing the editor, start-a-ticket and deploy rows, so quality is not yet at parity.
+- Run side by side, the local server queued past the timeout and every such call went to the cloud.
 
 ## Decision
 
