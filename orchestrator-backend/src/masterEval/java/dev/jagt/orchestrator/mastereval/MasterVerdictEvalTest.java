@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
+import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -39,6 +40,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -104,6 +106,8 @@ abstract class MasterVerdictEvalTest {
     private MasterDecisions decisions;
     @MockitoSpyBean
     private ReadGateController readGate;
+    @MockitoSpyBean
+    private MasterPanel panel;
 
     @BeforeAll
     static void nothingLiveIsWithinReach() throws Exception {
@@ -192,11 +196,18 @@ abstract class MasterVerdictEvalTest {
     private void decidesAsAHumanWould(MasterCase round, String taskId, TaskState task, Path worktree)
             throws Exception {
         MasterEvalTranscripts.typedIn(worktree, round.answer().said());
+        AtomicReference<String> firstLine = new AtomicReference<>();
+        Mockito.doAnswer(call -> {
+            Object made = call.callRealMethod();
+            ((Optional<?>) made).map(decision -> ((MasterPanel.Decision) decision).text())
+                    .ifPresent(text -> firstLine.set(text.lines().findFirst().orElse("")));
+            return made;
+        }).when(panel).answer(Mockito.eq(taskId), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
         masterMode("act");
         Optional<String> decided;
         try {
             stateService.putTask(taskId, task);
-            decided = awaitDecision(task);
+            decided = awaitDecision(task).map(recorded -> firstLine.get());
         } finally {
             stateService.removeTask(taskId);
             masterMode("judge");
@@ -205,7 +216,7 @@ abstract class MasterVerdictEvalTest {
         if (decided.isEmpty()) {
             throw EvalStalled.because("no decision inside " + VERDICT_WAIT);
         }
-        String report = MasterVerdictReport.of("a decision naming " + round.names() + ", never "
+        String report = MasterVerdictReport.of("a decision whose first line names " + round.names() + ", never "
                 + round.answer().refused(), worktree);
         String text = decided.orElseThrow().toLowerCase(Locale.ROOT);
         assertThat(round.names()).describedAs("%s", report)
