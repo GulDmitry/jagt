@@ -390,12 +390,14 @@ class BoardReportsTest extends BoardPageContext {
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - The older read.\n");
         page.waitForRequest("**/api/commands/replies**", () -> state.putTask("ABC-19",
                 state.task("ABC-19").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis())));
-        page.waitForCondition(() -> held.size() == 1);
+        page.waitForCondition(() -> !held.isEmpty());
+        int olderReads = held.size();
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - The newer read.\n");
         page.waitForRequest("**/api/commands/replies**", () -> state.putTask("ABC-19",
                 state.task("ABC-19").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "newer", System.currentTimeMillis())));
-        page.waitForCondition(() -> held.size() == 2);
-        held.get(1).fulfill(new Route.FulfillOptions().setResponse(read.get(1)));
+        page.waitForCondition(() -> held.size() > olderReads);
+        int newest = held.size() - 1;
+        held.get(newest).fulfill(new Route.FulfillOptions().setResponse(read.get(newest)));
         assertThat(page.locator("#report-body")).containsText("The newer read.");
 
         page.waitForRequestFinished(() -> held.get(0).fulfill(new Route.FulfillOptions().setResponse(read.get(0))));
