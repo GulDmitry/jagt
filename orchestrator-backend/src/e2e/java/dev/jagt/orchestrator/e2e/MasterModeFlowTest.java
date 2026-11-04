@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -62,6 +63,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -318,7 +320,36 @@ class MasterModeFlowTest {
     }
 
     @Test
-    void tellsTheHumanOnceAConflictStallsAndPressesNothing() throws Exception {
+    void asksTheMasterFirstWhenAConflictStallsAndRelaysItsAnswerToTheSession() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
+        E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+        handBackTheFirstRound();
+        shipsTheRoundTheMasterShipped();
+        E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
+        act("sweep");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
+        awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
+        awaitTold("did not deploy");
+        judges(new Judgement("", "ready",
+                List.of(new Finding("", "keep both lines", "decided", "advice", "", "")), "", List.of(), ""));
+        Instant twoMinutesOn = Instant.now().plus(Duration.ofMinutes(2));
+        doReturn(twoMinutesOn).when(clock).instant();
+        doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
+
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
+
+        awaitTold("keep both lines");
+        assertThat(task().currentConflict().filter(Conflict::askedTheMaster)).isPresent();
+        assertThat(task().currentConflict().map(Conflict::told).isPresent()).isFalse();
+        verify(userNotifier, never()).notify(contains("deploy conflict stalled"), any(), any());
+        assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    }
+
+    @Test
+    void tellsTheHumanOnceAConflictStallsAgainAfterTheMasterWasAskedAndPressesNothing() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
         E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);
         judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
@@ -333,6 +364,11 @@ class MasterModeFlowTest {
         Instant twoMinutesOn = Instant.now().plus(Duration.ofMinutes(2));
         doReturn(twoMinutesOn).when(clock).instant();
         doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
+        awaitTask(task -> task.currentConflict().filter(Conflict::askedTheMaster).isPresent());
+        Instant fourMinutesOn = Instant.now().plus(Duration.ofMinutes(4));
+        doReturn(fourMinutesOn).when(clock).instant();
+        doReturn(fourMinutesOn.toEpochMilli()).when(clock).millis();
 
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
 

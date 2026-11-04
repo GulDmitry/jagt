@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.ChecksUnread;
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.InfraRetry;
@@ -173,6 +174,14 @@ public final class TaskReducer {
     /** {@code task} with {@code step} recorded on its deployment; a step the phase has no edge for is dropped. */
     public static TaskState deployStepped(TaskState task, DeployStep step, long now) {
         return step(task, new TaskMove.DeployStepped(step), now);
+    }
+
+    /** {@code task} whose stalled conflict is put to the Master, once, as its session's question {@code reason}; where no conflict stands, nothing is asked. */
+    public static TaskState conflictReferred(TaskState task, String reason, long now) {
+        boolean unasked = task.currentConflict().filter(conflict -> !conflict.askedTheMaster()).isPresent();
+        TaskState referred = deployStepped(task, new DeployStep.Referred(), now);
+        boolean nowAsked = referred.currentConflict().filter(Conflict::askedTheMaster).isPresent();
+        return unasked && nowAsked ? asked(referred, AgentReport.QUESTION, reason, now) : referred;
     }
 
     /** {@code task} with the sign its session made recorded; a sign the phase has no edge for is dropped. */

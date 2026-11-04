@@ -48,7 +48,7 @@ final class LegacyDeployment {
         Deployment.Cause cause = recorded.map(target -> Objects.requireNonNull(target.conflict()).cause())
                 .orElse(DeployRedLine.marks(task.message()) ? Deployment.Cause.RED_PIPELINE : Deployment.Cause.MERGE);
         Conflict carried = watch == null ? Conflict.of(cause, task.lastActiveTimestamp())
-                : new Conflict(cause, watch.conflictSince(), watch.progress(), watch.movedAt(), watch.told(), null);
+                : new Conflict(cause, watch.conflictSince(), watch.progress(), watch.movedAt(), null, watch.told(), null);
         if (recorded.isPresent()) {
             return Objects.requireNonNull(deployment).withConflict(standing -> carried);
         }

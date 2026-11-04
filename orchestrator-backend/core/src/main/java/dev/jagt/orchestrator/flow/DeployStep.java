@@ -123,6 +123,14 @@ public sealed interface DeployStep {
         }
     }
 
+    /** The standing conflict's stall put to the Master: its clock starts over, and the Master is not asked of it again. */
+    record Referred() implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withConflict(conflict -> conflict.askedAt(now));
+        }
+    }
+
     record Told(String reason) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {

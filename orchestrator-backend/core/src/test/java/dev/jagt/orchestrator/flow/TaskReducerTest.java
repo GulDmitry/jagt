@@ -38,6 +38,48 @@ class TaskReducerTest {
     }
 
     @Test
+    void turnsAStalledConflictIntoTheSessionsQuestionAndRestartsItsClock() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("api", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("api",
+                Deployment.Cause.MERGE), 1_000);
+
+        TaskState referred = TaskReducer.conflictReferred(conflicted, "stalled for 20 min", 2_000);
+
+        assertThat(referred.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(referred.report()).isEqualTo(AgentReport.QUESTION);
+        assertThat(referred.message()).isEqualTo("stalled for 20 min");
+        assertThat(referred.currentConflict().orElseThrow().askedTheMaster()).isTrue();
+        assertThat(referred.currentConflict().orElseThrow().movedAt()).isEqualTo(2_000);
+        assertThat(Move.asking(referred.status(), referred.report())).isTrue();
+    }
+
+    @Test
+    void asksTheMasterOfAStalledConflictOnlyOnce() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("api", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("api",
+                Deployment.Cause.MERGE), 1_000);
+        TaskState referred = TaskReducer.conflictReferred(conflicted, "first", 2_000);
+
+        TaskState again = TaskReducer.conflictReferred(referred, "second", 3_000);
+
+        assertThat(again.message()).isEqualTo("first");
+        assertThat(again.currentConflict().orElseThrow().movedAt()).isEqualTo(2_000);
+    }
+
+    @Test
+    void asksNothingWhereNoConflictStands() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOYED).build();
+
+        TaskState referred = TaskReducer.conflictReferred(task, "stalled", 2_000);
+
+        assertThat(referred.report()).isEqualTo(AgentReport.PLAIN);
+    }
+
+    @Test
     void recordsThatTheDeployPipelineOfALandedCommitWasReRun() {
         TaskState task = TaskState.builder("a", "/wt", TaskStatus.DEPLOYED).build();
         TaskState landed = TaskReducer.deployStepped(TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(

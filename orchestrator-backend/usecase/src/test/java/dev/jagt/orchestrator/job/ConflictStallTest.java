@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
@@ -65,6 +66,84 @@ class ConflictStallTest {
         verify(notifications, times(1)).send(any());
         assertThat(state.task("ABC-42").orElseThrow().currentConflict()).hasValueSatisfying(
                 watch -> assertThat(watch.stalled()).isTrue());
+    }
+
+    @Test
+    void asksTheMasterInsteadOfTellingTheHumanOnTheFirstStallWhereItAnswers(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState conflicted = TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT).lastActiveTimestamp(1_000)
+                .build();
+        TaskState opened = TaskReducer.deployStepped(conflicted, new DeployStep.Opened(List.of(
+                Deployment.Target.of("web", "dev"))), 1_000);
+        state.putTask("ABC-42", TaskReducer.deployStepped(opened, new DeployStep.Conflicted("web",
+                Deployment.Cause.MERGE), 1_000));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"),
+                false, new Conflict.Progress(7, 0, "d"), null, false, Standing.ABSENT);
+        new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+                .watch("ABC-42", conflict);
+
+        new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+                .watch("ABC-42", conflict);
+
+        TaskState asked = state.task("ABC-42").orElseThrow();
+        assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
+        assertThat(asked.message()).contains("7 paths unmerged, 0 staged in /src/ABC-42-deploy");
+        assertThat(asked.currentConflict().orElseThrow().askedTheMaster()).isTrue();
+        verify(notifications, never()).send(any());
+    }
+
+    @Test
+    void tellsTheHumanOnTheSecondStallOfAConflictTheMasterWasAsked(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState conflicted = TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT).lastActiveTimestamp(1_000)
+                .build();
+        TaskState opened = TaskReducer.deployStepped(conflicted, new DeployStep.Opened(List.of(
+                Deployment.Target.of("web", "dev"))), 1_000);
+        state.putTask("ABC-42", TaskReducer.deployStepped(opened, new DeployStep.Conflicted("web",
+                Deployment.Cause.MERGE), 1_000));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"),
+                false, new Conflict.Progress(7, 0, "d"), null, false, Standing.ABSENT);
+        new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+                .watch("ABC-42", conflict);
+        new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+                .watch("ABC-42", conflict);
+
+        new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC))
+                .watch("ABC-42", conflict);
+
+        verify(notifications, times(1)).send(any());
+        assertThat(state.task("ABC-42").orElseThrow().currentConflict().orElseThrow().told()).isNotNull();
+    }
+
+    @Test
+    void tellsTheHumanOnTheFirstStallWhereAQuestionOfTheSessionAlreadyStands(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState conflicted = TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT).lastActiveTimestamp(1_000)
+                .build();
+        TaskState opened = TaskReducer.deployStepped(conflicted, new DeployStep.Opened(List.of(
+                Deployment.Target.of("web", "dev"))), 1_000);
+        TaskState asking = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000)
+                .withReport(AgentReport.QUESTION);
+        state.putTask("ABC-42", asking);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"),
+                false, new Conflict.Progress(7, 0, "d"), null, false, Standing.ABSENT);
+        new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+                .watch("ABC-42", conflict);
+
+        new ConflictStall(state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+                .watch("ABC-42", conflict);
+
+        verify(notifications, times(1)).send(any());
+        assertThat(state.task("ABC-42").orElseThrow().currentConflict().orElseThrow().askedTheMaster()).isFalse();
     }
 
     @Test

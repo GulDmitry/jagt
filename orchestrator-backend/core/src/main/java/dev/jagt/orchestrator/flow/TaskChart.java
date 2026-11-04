@@ -312,7 +312,8 @@ final class TaskChart {
         }
         deployed(chart, DeployPhase.HANDED, "discarded", DeployPhase.LANDING, step -> step instanceof DeployStep.Discarded);
         deployed(chart, DeployPhase.HANDED, "watched", DeployPhase.HANDED, step -> step instanceof DeployStep.Seen
-                || step instanceof DeployStep.Told || step instanceof DeployStep.Held);
+                || step instanceof DeployStep.Referred || step instanceof DeployStep.Told
+                || step instanceof DeployStep.Held);
         chart.onMatching(DEPLOY, DeployPhase.HANDED, "conflicted repository left",
                         move -> move instanceof TaskMove.RepoLeft left && left.endsConflict())
                 .emitFor(move -> new TaskEffect.Deploys(new DeployStep.Dropped(((TaskMove.RepoLeft) move).project())))

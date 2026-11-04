@@ -11,16 +11,19 @@ import java.time.temporal.ChronoUnit;
 
 /**
  * The conflict a deploy target stands in, from the press that met it. {@code progress} is null until its session is
- * handed it, {@code movedAt} is when its worktree last changed, {@code told} the human's one banner, {@code hold} the
- * stop that kept its resolution from being deployed.
+ * handed it, {@code movedAt} is when its worktree last changed, {@code asked} the Master's one question about its
+ * stall, {@code told} the human's one banner, {@code hold} the stop that kept its resolution from being deployed.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Conflict(Deployment.Cause cause, @JsonAlias("conflictSince") long since, @Nullable Progress progress,
-                       long movedAt, @Nullable Told told, @Nullable Hold hold) {
+                       long movedAt, @Nullable Asked asked, @Nullable Told told, @Nullable Hold hold) {
 
     /** {@code digest} changes with any edit in the worktree, staged or not. */
     public record Progress(int unmerged, int staged, String digest) {
+    }
+
+    public record Asked(long at) {
     }
 
     public record Told(long at, String reason) {
@@ -30,7 +33,7 @@ public record Conflict(Deployment.Cause cause, @JsonAlias("conflictSince") long 
     }
 
     public static Conflict of(Deployment.Cause cause, long now) {
-        return new Conflict(cause, now, null, now, null, null);
+        return new Conflict(cause, now, null, now, null, null, null);
     }
 
     public boolean handed() {
@@ -38,11 +41,15 @@ public record Conflict(Deployment.Cause cause, @JsonAlias("conflictSince") long 
     }
 
     public Conflict seen(Progress now, long at) {
-        return now.equals(progress) ? this : new Conflict(cause, since, now, at, told, hold);
+        return now.equals(progress) ? this : new Conflict(cause, since, now, at, asked, told, hold);
     }
 
     public boolean due(Duration after, long now) {
         return told == null && now - movedAt >= after.toMillis();
+    }
+
+    public boolean askedTheMaster() {
+        return asked != null;
     }
 
     public String reason(String worktree) {
@@ -51,8 +58,13 @@ public record Conflict(Deployment.Cause cause, @JsonAlias("conflictSince") long 
                 + Instant.ofEpochMilli(movedAt).truncatedTo(ChronoUnit.MINUTES);
     }
 
+    /** Put to the Master as the session's question, the stall clock starting over from {@code now}. */
+    public Conflict askedAt(long now) {
+        return asked != null ? this : new Conflict(cause, since, progress, now, new Asked(now), told, hold);
+    }
+
     public Conflict toldAt(long now, String reason) {
-        return new Conflict(cause, since, progress, movedAt, new Told(now, reason), hold);
+        return new Conflict(cause, since, progress, movedAt, asked, new Told(now, reason), hold);
     }
 
     /** Told, and nothing has moved in the worktree since. */
@@ -61,7 +73,7 @@ public record Conflict(Deployment.Cause cause, @JsonAlias("conflictSince") long 
     }
 
     public Conflict heldBy(long stopAt) {
-        return new Conflict(cause, since, progress, movedAt, told, new Hold(stopAt));
+        return new Conflict(cause, since, progress, movedAt, asked, told, new Hold(stopAt));
     }
 
     public boolean isHeldBy(long stopAt) {
