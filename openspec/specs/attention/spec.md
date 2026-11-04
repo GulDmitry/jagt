@@ -7,9 +7,7 @@ Whose move it is: how a blocked session reaches the board, what interrupts, and 
 ## Requirements
 ### Requirement: A question is reported first
 An agent MUST write its question, options and pick in `task_notes.md`, report `outcome=question` and end its turn (rule 1 of the brief's `context`
-step); its settings deny the CLI's question dialog. A question reported at CI_POLLING SHALL be refused, naming REVIEW_PENDING. `AgentReport.QUESTION`
-SHALL make `Move.owner` whoever `Turns.next` names, from any status, and the `DashboardLine` NEEDS INPUT. `YourMoveJob` SHALL ping once the projection
-turns a task YOU, or changes its advice while YOU, a report or not, after five seconds; not one already yours at start.
+step); its settings deny the CLI's question dialog. A question reported at CI_POLLING SHALL be refused, naming REVIEW_PENDING.
 #### Scenario: An agent stops to ask
 - **WHEN** an agent asks
 - **THEN** NEEDS INPUT, one desktop ping the first time
@@ -20,6 +18,10 @@ turns a task YOU, or changes its advice while YOU, a report or not, after five s
 - **THEN** it is refused: the dialog, with question, options and pick in `task_notes.md` before the report; CI_POLLING, naming REVIEW_PENDING
 - **WHEN** you `focus <task>`
 - **THEN** an `OPEN QUESTIONS:` line ends its output
+### Requirement: A question pings whoever's move it is
+`AgentReport.QUESTION` SHALL make `Move.owner` whoever `Turns.next` names, from any status, and the `DashboardLine`
+NEEDS INPUT. `YourMoveJob` SHALL ping once the projection turns a task YOU, or changes its advice while YOU, a report or
+not, after five seconds; not one already yours at start.
 #### Scenario: A step the Master may not take
 - **WHEN** its verdict leaves a plan or a round for you (`mine` names it)
 - **THEN** you are pinged once; a step the Master presses within five seconds pings nobody
@@ -170,9 +172,13 @@ It SHALL NOT stop a task; the header says it once. A failure of a task's own wor
 ### Requirement: Desktop banners are chosen per event
 Each notification SHALL carry one event: `your-move`, `auto-review`, `stopped`, `housekeeping`, `install`, `usage`,
 `request-opened` or `deployed`. The desktop channel SHALL raise a banner only for an event `notifications.desktop` lists
-(`DesktopNotifier.takes`); unset, every event but `deployed`; an unknown id is ignored. `MilestoneJob` SHALL raise
-`request-opened` (naming the requests) when a status turns into `CI_POLLING`, and `deployed` when it turns into `DEPLOYED`;
-a task first seen, a restart included, is silent.
+(`DesktopNotifier.takes`); unset, every event but `deployed`; an unknown id is ignored.
+#### Scenario: An event left out
+- **WHEN** `notifications.desktop` is `[stopped]` and a usage window fills
+- **THEN** no desktop banner is raised
+### Requirement: A milestone raises its event
+`MilestoneJob` SHALL raise `request-opened` (naming the requests) when a status turns into `CI_POLLING`, and `deployed`
+when it turns into `DEPLOYED`; a task first seen, a restart included, is silent.
 #### Scenario: A request opens, a deploy lands
 - **WHEN** ABC-42 turns to CI_POLLING with `notifications.desktop` unset
 - **THEN** one banner names the task and its request links
@@ -181,6 +187,3 @@ a task first seen, a restart included, is silent.
 #### Scenario: jagt restarts
 - **WHEN** ABC-42 already stands at CI_POLLING or DEPLOYED as jagt starts
 - **THEN** nobody is pinged
-#### Scenario: An event left out
-- **WHEN** `notifications.desktop` is `[stopped]` and a usage window fills
-- **THEN** no desktop banner is raised

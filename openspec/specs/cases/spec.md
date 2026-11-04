@@ -10,9 +10,7 @@ a human reads and extends; what no case takes is a miss.
 A step jagt relays SHALL reach a session only where a case of `roles/session/cases.md`, else
 `roles/session/cases.md.dist`, names it at the task's status; a verb the Master presses, or the replies on its ship,
 only where a case of the `master` role's `cases.md` does: `roles/master/cases.md`, `roles/master/cases.md.dist`.
-A step the Master relays SHALL take its statuses from its session case `by: master` alone.
-A case a copy lacks SHALL be read from its `.dist`. A case is a `## <id>` section holding
-one line saying what it is and the keys its `.dist` describes.
+A case a copy lacks SHALL be read from its `.dist`.
 
 #### Scenario: Nothing copied
 - **WHEN** no copy of `roles/session/cases.md` or of the Master's `cases.md` exists
@@ -26,11 +24,15 @@ one line saying what it is and the keys its `.dist` describes.
 - **WHEN** your copy's `wake` case says `at: IN_PROGRESS`
 - **THEN** a session stopped on a usage limit at REVIEW_PENDING is not woken
 
+### Requirement: A case is one section
+A case SHALL be a `## <id>` section holding one line saying what it is and the keys its `.dist` describes.
 #### Scenario: The keys of a case
 - **WHEN** a case is written
 - **THEN** a session case holds `step:`, `at:`, `by:` and `replies:`
 - **AND** a Master case holds `move:`, `at:` and `by: master`
 
+### Requirement: A step the Master relays follows its session case
+A step the Master relays SHALL take its statuses from its session case `by: master` alone.
 #### Scenario: A step the Master relays
 - **WHEN** your `roles/session/cases.md` sends `answered` by master at IN_PROGRESS and ABC-42 is IN_PROGRESS
 - **THEN** the Master's answer reaches the session, whatever the Master's `cases.md` holds
