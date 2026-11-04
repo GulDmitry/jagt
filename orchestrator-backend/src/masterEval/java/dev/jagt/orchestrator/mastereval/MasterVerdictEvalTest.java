@@ -12,7 +12,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.TaskState;
@@ -32,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +59,8 @@ abstract class MasterVerdictEvalTest {
     private static final int GATE_PORT = EvalPorts.free();
 
     private static final Duration VERDICT_WAIT = Duration.ofMinutes(20);
+
+    private static final String DECIDED = " \u2014 decided: ";
 
     private static final AtomicInteger ROUND = new AtomicInteger();
 
@@ -94,6 +100,8 @@ abstract class MasterVerdictEvalTest {
     private MasterReview reviews;
     @Autowired
     private UsageTracker usage;
+    @Autowired
+    private MasterDecisions decisions;
     @MockitoSpyBean
     private ReadGateController readGate;
 
@@ -147,6 +155,20 @@ abstract class MasterVerdictEvalTest {
                 MasterEvalWorkspace.root().resolve("repos/" + taskId + "/repo"), round, taskId);
         TaskState task = TaskState.builder("proj", worktree.toString(), round.status())
                 .alias("m" + ROUND.get()).title(round.instructions()).build();
+        if (round.answers()) {
+            decidesAsAHumanWould(round, taskId, task.withReport(AgentReport.QUESTION).withStatus(
+                    round.status(), round.answer().question(), 0), worktree);
+        } else {
+            handsBackAVerdict(round, taskId, task, worktree);
+        }
+        List<ReadGateController.ToolCall> heard = Mockito.mockingDetails(readGate).getInvocations().stream()
+                .filter(call -> call.getMethod().getName().equals("gate"))
+                .map(call -> (ReadGateController.ToolCall) call.getArgument(1)).toList();
+        assertThat(heard).describedAs("calls heard: %s", heard).anyMatch(call -> call.cwd() != null
+                && Path.of(call.cwd()).normalize().startsWith(worktree.normalize()));
+    }
+
+    private void handsBackAVerdict(MasterCase round, String taskId, TaskState task, Path worktree) {
         stateService.putTask(taskId, task);
         Optional<MasterReview.Verdict> verdict;
         try {
@@ -165,11 +187,51 @@ abstract class MasterVerdictEvalTest {
                 judged.advice().stream()).map(MasterReview.Said::line), judged.questions().stream()).toList());
         assertThat(round.names()).describedAs("%s", report)
                 .allSatisfy(name -> assertThat(named).containsAnyOf(name.split("\\|")));
-        List<ReadGateController.ToolCall> heard = Mockito.mockingDetails(readGate).getInvocations().stream()
-                .filter(call -> call.getMethod().getName().equals("gate"))
-                .map(call -> (ReadGateController.ToolCall) call.getArgument(1)).toList();
-        assertThat(heard).describedAs("calls heard: %s", heard).anyMatch(call -> call.cwd() != null
-                && Path.of(call.cwd()).normalize().startsWith(worktree.normalize()));
+    }
+
+    private void decidesAsAHumanWould(MasterCase round, String taskId, TaskState task, Path worktree)
+            throws Exception {
+        MasterEvalTranscripts.typedIn(worktree, round.answer().said());
+        masterMode("act");
+        Optional<String> decided;
+        try {
+            stateService.putTask(taskId, task);
+            decided = awaitDecision(task);
+        } finally {
+            stateService.removeTask(taskId);
+            masterMode("judge");
+        }
+
+        if (decided.isEmpty()) {
+            throw EvalStalled.because("no decision inside " + VERDICT_WAIT);
+        }
+        String report = MasterVerdictReport.of("a decision naming " + round.names() + ", never "
+                + round.answer().refused(), worktree);
+        String text = decided.orElseThrow().toLowerCase(Locale.ROOT);
+        assertThat(round.names()).describedAs("%s", report)
+                .allSatisfy(name -> assertThat(text).containsAnyOf(alternatives(name)));
+        assertThat(round.answer().refused()).describedAs("%s", report)
+                .allSatisfy(name -> assertThat(text).doesNotContain(alternatives(name)));
+    }
+
+    private static String[] alternatives(String names) {
+        return names.toLowerCase(Locale.ROOT).split("\\|");
+    }
+
+    private static void masterMode(String mode) throws Exception {
+        MasterEvalWorkspace.writeConfig(MasterEvalWorkspace.root().resolve("jagt.yml"),
+                MasterEvalWorkspace.root().resolve("placeholder"), "roles/master/brief.md", mode);
+    }
+
+    private Optional<String> awaitDecision(TaskState task) {
+        try {
+            return await().atMost(VERDICT_WAIT).pollInterval(Duration.ofSeconds(2))
+                    .until(() -> decisions.of(task), recorded -> recorded.contains(DECIDED))
+                    .lines().filter(line -> line.contains(DECIDED))
+                    .map(line -> line.substring(line.indexOf(DECIDED) + DECIDED.length())).findFirst();
+        } catch (ConditionTimeoutException noDecision) {
+            return Optional.empty();
+        }
     }
 
     private Optional<MasterReview.Verdict> awaitVerdict(String taskId) {

@@ -7,16 +7,35 @@ import java.util.List;
 import java.util.Map;
 
 record MasterCase(String name, String instructions, TaskStatus status, Map<String, String> baseline,
-                  Map<String, String> change, String plan, MasterReview.Kind verdict, List<String> names) {
+                  Map<String, String> change, String plan, MasterReview.Kind verdict, List<String> names,
+                  Answer answer) {
+
+    record Answer(String question, List<String> said, List<String> refused) {
+
+        static final Answer NONE = new Answer("", List.of(), List.of());
+    }
 
     static MasterCase round(String name, String instructions, Map<String, String> baseline,
                             Map<String, String> change, MasterReview.Kind verdict, List<String> names) {
-        return new MasterCase(name, instructions, TaskStatus.REVIEW_PENDING, baseline, change, "", verdict, names);
+        return new MasterCase(name, instructions, TaskStatus.REVIEW_PENDING, baseline, change, "", verdict, names,
+                Answer.NONE);
     }
 
     static MasterCase plan(String name, String instructions, Map<String, String> baseline, String plan,
                            MasterReview.Kind verdict, List<String> names) {
-        return new MasterCase(name, instructions, TaskStatus.PLAN_PENDING, baseline, Map.of(), plan, verdict, names);
+        return new MasterCase(name, instructions, TaskStatus.PLAN_PENDING, baseline, Map.of(), plan, verdict, names,
+                Answer.NONE);
+    }
+
+    static MasterCase answer(String name, String instructions, Map<String, String> baseline,
+                             Map<String, String> change, String question, List<String> humanSaid,
+                             List<String> names, List<String> refused) {
+        return new MasterCase(name, instructions, TaskStatus.IN_PROGRESS, baseline, change, "", null, names,
+                new Answer(question, humanSaid, refused));
+    }
+
+    boolean answers() {
+        return answer != Answer.NONE;
     }
 
     static List<MasterCase> matrix() {
@@ -424,7 +443,27 @@ record MasterCase(String name, String instructions, TaskStatus status, Map<Strin
                                 spring.datasource.url=jdbc:postgresql://localhost/shop
                                 spring.jpa.properties.jakarta.persistence.query.timeout=5000
                                 """),
-                        MasterReview.Kind.READY, List.of()));
+                        MasterReview.Kind.READY, List.of()),
+
+                answer("a fix without its test, merged now and proved later",
+                        "Round the invoice total to the nearest five rappen.",
+                        Map.of("src/main/java/Invoice.java", """
+                                class Invoice {
+                                    static int total(int cents) {
+                                        return cents;
+                                    }
+                                }
+                                """),
+                        Map.of("src/main/java/Invoice.java", """
+                                class Invoice {
+                                    static int total(int cents) {
+                                        return (cents + 2) / 5 * 5;
+                                    }
+                                }
+                                """),
+                        "Merge now and add the test after the merge?",
+                        List.of("ship it, we are late"),
+                        List.of("test"), List.of("after merge|after deploy|later")));
     }
 
     @Override
