@@ -46,6 +46,19 @@ class UnaffectedReposTest {
     }
 
     @Test
+    void thePrimaryRepositoryStaysOnTheTaskWhenThePlanMarksItUnaffected(@TempDir Path root) throws IOException {
+        StateService state = stateOf(root);
+        Files.writeString(root.resolve("plan.md"), "## Repositories\n- [unaffected: only the web changes] api\n- [changed] web\n");
+        state.putTask("ABC-42", TaskState.builder(List.of(new TaskRepo("api", root.toString(), "git@host:g/api.git", null),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", null)), TaskStatus.PLAN_PENDING).build());
+
+        new UnaffectedRepos(state, new TaskArtifacts(state), config, git, departure).leave("ABC-42");
+
+        assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
+        verifyNoInteractions(departure);
+    }
+
+    @Test
     void anUnaffectedRepositoryHoldingOwnCommitsStaysOnTheTask(@TempDir Path root) throws IOException {
         StateService state = stateOf(root);
         Files.writeString(root.resolve("plan.md"), "## Repositories\n- [changed] api\n- [unaffected: only the API changes] web\n");
@@ -74,7 +87,7 @@ class UnaffectedReposTest {
     }
 
     @Test
-    void theLastRepositoryStaysWhereThePlanMarksEveryOneUnaffected(@TempDir Path root) throws IOException {
+    void thePrimaryRepositoryAloneStaysWhereThePlanMarksEveryOneUnaffected(@TempDir Path root) throws IOException {
         StateService state = stateOf(root);
         Files.writeString(root.resolve("plan.md"),
                 "## Repositories\n- [unaffected: nothing moves] api\n- [unaffected: nothing moves] web\n");
@@ -84,7 +97,7 @@ class UnaffectedReposTest {
 
         new UnaffectedRepos(state, new TaskArtifacts(state), config, git, departure).leave("ABC-42");
 
-        assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("web");
+        assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
         verify(departure).settle(eq("ABC-42"), any(), any());
     }
 

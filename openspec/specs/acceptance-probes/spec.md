@@ -114,7 +114,8 @@ For a task with several repositories, `plan.md` SHALL hold a `## Repositories` s
 `- [changed] <key>` or `- [unaffected: <why>] <key>` (`protocol/PlanRepositories`).
 A PLAN_PENDING report SHALL be refused as `validation` for a missing section, an untagged item, a key outside the task
 or a repository left out. A repository the plan lacks is asked for with `needsProject`.
-On approval every repository tagged unaffected SHALL leave the task, unless its task branch holds own commits (`UnaffectedRepos`).
+On approval every repository tagged unaffected SHALL leave the task (`UnaffectedRepos`). The primary stays: it holds the
+session's checkout. One whose task branch holds own commits stays.
 
 #### Scenario: A repository left out
 - **WHEN** a task of repositories `api` and `web` reports a plan listing only `- [changed] api`
@@ -127,3 +128,7 @@ On approval every repository tagged unaffected SHALL leave the task, unless its 
 #### Scenario: An unaffected repository holding own commits
 - **WHEN** the approved plan lists `- [unaffected: only the API changes] web` and the task's branch in `web` holds own commits
 - **THEN** `web` stays on the task and an INFO line says why
+
+#### Scenario: The primary repository marked unaffected
+- **WHEN** the approved plan lists `- [unaffected: only the web changes] api` and `api` is the primary
+- **THEN** `api` stays on the task with its checkout

@@ -32,7 +32,10 @@ public class UnaffectedRepos {
             return;
         }
         for (String project : unaffected(taskId, task.projects())) {
-            leaveUnlessOwnCommits(taskId, project);
+            // The primary checkout holds the session's working directory and its artifacts.
+            if (!project.equals(task.project())) {
+                leaveUnlessOwnCommits(taskId, project);
+            }
         }
     }
 
