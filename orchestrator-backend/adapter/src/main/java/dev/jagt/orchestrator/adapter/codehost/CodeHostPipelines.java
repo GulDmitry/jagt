@@ -37,6 +37,11 @@ public class CodeHostPipelines implements PipelineRetry {
         return ask(project, (driver, host) -> driver.onCommit(host, remoteUrl, sha));
     }
 
+    @Override
+    public Answer<CommitPipeline> onBranchSince(String project, String remoteUrl, String branch, String sha) {
+        return ask(project, (driver, host) -> driver.onBranchSince(host, remoteUrl, branch, sha));
+    }
+
     private <T> Answer<T> ask(String project, BiFunction<CodeHostDriver, HostSettings, Answer<T>> question) {
         CodeHostChoice choice;
         try {

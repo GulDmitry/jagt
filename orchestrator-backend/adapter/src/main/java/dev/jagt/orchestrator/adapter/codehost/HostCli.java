@@ -73,6 +73,13 @@ final class HostCli {
         }
     }
 
+    /** {@code next} asked of what {@code first} read; a first that read nothing ends it with its own failure. */
+    static <T, R> Answer<R> then(Answer<T> first, Function<T, Answer<R>> next) {
+        return first.facts().isEmpty()
+                ? new Answer<>(Optional.empty(), TokenUsage.NONE, first.failure(), false, first.reach())
+                : next.apply(first.facts().get());
+    }
+
     List<Problem> missing(String key) {
         return Executables.unresolved(Executables.resolve(cli))
                 ? List.of(new Problem(key, key + ": codeHost needs `" + cli + "`, which is not on PATH nor in the usual"

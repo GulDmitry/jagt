@@ -60,6 +60,12 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
         return at < targets.size() && targets.get(at).conflicted() ? Optional.of(targets.get(at)) : Optional.empty();
     }
 
+    /** A conflict held by pipelines alone: some target is conflicted and none for a merge or a revert. */
+    public boolean heldByRedPipeline() {
+        List<Conflict> held = targets.stream().map(Target::conflict).filter(Objects::nonNull).toList();
+        return !held.isEmpty() && held.stream().allMatch(conflict -> conflict.cause() == Cause.RED_PIPELINE);
+    }
+
     /** {@code change} applied to the conflict of the target the press stopped at; none leaves the deployment as it is. */
     public Deployment withConflict(UnaryOperator<Conflict> change) {
         Optional<Target> stopped = conflictedTarget();

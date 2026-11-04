@@ -225,6 +225,11 @@ public final class FlowRules {
         return status == TaskStatus.DEPLOYED;
     }
 
+    /** Handed back as a deploy conflict, which a pipeline read on the deploy branch may still end. */
+    public static boolean deployConflicted(TaskStatus status) {
+        return status == TaskStatus.DEPLOY_CONFLICT;
+    }
+
     /** Where a read of the pipeline on a deploy commit lands: only a task live on the deploy branch moves, and only on a red the code owns. */
     public static TaskStatus deployReadLands(TaskStatus from, boolean redOnTheCode) {
         return TaskChart.land(from, new TaskMove.DeployRead(redOnTheCode)).orElse(from);

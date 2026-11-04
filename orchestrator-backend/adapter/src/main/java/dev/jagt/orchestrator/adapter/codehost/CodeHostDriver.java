@@ -19,6 +19,8 @@ public interface CodeHostDriver {
 
     Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha);
 
+    Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha);
+
     /** What this driver needs for {@code host} and does not have, without asking the network. */
     List<Problem> problems(HostSettings host);
 }

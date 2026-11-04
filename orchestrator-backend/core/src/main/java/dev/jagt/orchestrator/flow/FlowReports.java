@@ -222,6 +222,20 @@ public class FlowReports {
         return written.get();
     }
 
+    /**
+     * A deploy conflict held by red pipelines alone, ended because a later pipeline on the deploy branch containing
+     * the deploy commit is green: the task is live on the deploy branch again. Any other task is left alone.
+     */
+    public void endRedConflict(String taskId, String message) {
+        tasks.updateTask(taskId, task -> {
+            if (!FlowRules.deployConflicted(task.status()) || task.deployment() == null
+                    || !task.deployment().heldByRedPipeline()) {
+                return task;
+            }
+            return TaskReducer.reduce(task, new TaskMove.DeployRead(false), message, true, clock.millis());
+        });
+    }
+
     /** The deploy's check recorded as asked on the facts of {@code digest}, so the session is not asked again. */
     /** Marks {@code bare} as the landed targets that settled with no pipeline listed; a target listed since is cleared. */
     public void deployBare(String taskId, List<String> bare) {

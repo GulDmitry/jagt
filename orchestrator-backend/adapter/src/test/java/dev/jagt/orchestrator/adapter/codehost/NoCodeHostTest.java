@@ -23,6 +23,13 @@ class NoCodeHostTest {
     }
 
     @Test
+    void noPipelineIsReadOnABranch() {
+        Answer<CommitPipeline> answer = none.onBranchSince(host, "git@git.example.invalid:shop/web.git", "dev", "0123abc");
+
+        assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
+    }
+
+    @Test
     void nothingIsReRun() {
         assertThat(none.retryFailed(host, "https://git.example.invalid/shop/web/-/pipelines/7").facts()).isEmpty();
     }

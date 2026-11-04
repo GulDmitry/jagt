@@ -68,6 +68,11 @@ public class CommandPipeline implements CodeHostDriver {
     }
 
     @Override
+    public Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha) {
+        return Answer.failed(TokenUsage.NONE, host.key("pipelineCommand") + " reads one commit, not a branch");
+    }
+
+    @Override
     public List<Problem> problems(HostSettings host) {
         String key = host.key("pipelineCommand");
         if (host.pipelineCommand().isEmpty()) {

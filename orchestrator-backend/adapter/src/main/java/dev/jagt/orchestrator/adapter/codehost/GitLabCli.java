@@ -66,6 +66,18 @@ public class GitLabCli implements CodeHostDriver {
     }
 
     @Override
+    public Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha) {
+        return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), true).map(address -> HostCli.then(
+                cli.parsed(cli.run(address.hostname(), api(address, "/pipelines?ref="
+                        + URLEncoder.encode(branch, StandardCharsets.UTF_8) + "&scope=finished&per_page=1")),
+                        GitLabCli::newest),
+                newest -> newest.since(cli, sha, () -> cli.run(address.hostname(), api(address,
+                        "/repository/merge_base?refs[]=" + sha + "&refs[]=" + newest.sha())),
+                        base -> JSON.readTree(base).path("id").asString("").startsWith(sha))))
+                .orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
+    }
+
+    @Override
     public List<Problem> problems(HostSettings host) {
         return cli.missing(host.selectedBy());
     }
@@ -86,6 +98,10 @@ public class GitLabCli implements CodeHostDriver {
         JsonNode newest = JSON.readTree(output).path(0);
         return newest.isMissingNode() ? NO_PIPELINE
                 : new CommitPipeline(verdict(newest.path("status").asString("")), newest.path("web_url").asString(""));
+    }
+
+    private static BranchTip newest(String output) {
+        return new BranchTip(JSON.readTree(output).path(0).path("sha").asString(""), pipeline(output));
     }
 
     private static String verdict(String said) {

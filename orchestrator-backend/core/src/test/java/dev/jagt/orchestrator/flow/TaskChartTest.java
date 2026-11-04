@@ -219,6 +219,7 @@ class TaskChartTest {
                 arguments(TaskStatus.REVIEWED, new TaskMove.Ran(TaskAction.DEPLOY, Outcome.Kind.OK), TaskStatus.DEPLOYED),
                 arguments(TaskStatus.REVIEWED, new TaskMove.Ran(TaskAction.DEPLOY, Outcome.Kind.CONFLICT),
                         TaskStatus.DEPLOY_CONFLICT),
+                arguments(TaskStatus.DEPLOY_CONFLICT, new TaskMove.DeployRead(false), TaskStatus.DEPLOYED),
                 arguments(TaskStatus.DEPLOYED, new TaskMove.Ran(TaskAction.REVERT, Outcome.Kind.OK), TaskStatus.REVERTED),
                 arguments(TaskStatus.DEPLOYED, new TaskMove.Ran(TaskAction.REVERT, Outcome.Kind.CONFLICT),
                         TaskStatus.DEPLOY_CONFLICT),

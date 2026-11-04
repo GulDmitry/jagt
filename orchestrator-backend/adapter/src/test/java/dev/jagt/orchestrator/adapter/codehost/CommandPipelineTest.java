@@ -43,6 +43,14 @@ class CommandPipelineTest {
     }
 
     @Test
+    void aBranchIsNotReadByACommandThatReadsOneCommit() {
+        Answer<CommitPipeline> answer = command.onBranchSince(host, "git@anywhere:shop/web.git", "dev", "0123abc");
+
+        assertThat(answer.facts()).isEmpty();
+        assertThat(answer.failure()).isEqualTo("orchestrator.projects.shop.pipelineCommand reads one commit, not a branch");
+    }
+
+    @Test
     void aWordOutsideTheFiveIsAnUnreadPipelineNamingTheKey() {
         when(processes.run(any(Path.class), any(Duration.class), anyList()))
                 .thenReturn(new Processes.Result(0, "green", ""));

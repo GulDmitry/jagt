@@ -10,12 +10,15 @@ import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
@@ -27,6 +30,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class DeployPipelinesTest {
@@ -44,6 +48,12 @@ class DeployPipelinesTest {
     private final TaskState deployed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
             TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)), 1, null)).build();
 
+    private static TaskState conflicted(Deployment.Cause cause) {
+        return TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOY_CONFLICT)
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
+                        .withConflict(Conflict.of(cause, 1))), 0, null)).build();
+    }
+
     @Test
     void aDeployStandsOnceThePipelineOnItsCommitIsGreen() {
         when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(
@@ -53,6 +63,48 @@ class DeployPipelinesTest {
 
         assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
         verify(causes).deployStands("ABC-42");
+    }
+
+    @Test
+    void aRedPipelineConflictIsDisprovedByAGreenPipelineOnTheDeployBranchSinceItsCommit() {
+        when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("success", "https://git.example.invalid/shop/web/-/pipelines/9")), TokenUsage.NONE));
+
+        assertThat(deploys.redConflictDisproved(conflicted(Deployment.Cause.RED_PIPELINE))).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"failed", "running", "none"})
+    void aRedPipelineConflictStandsWhileThePipelineOnTheDeployBranchSinceItsCommitIsNotGreen(String status) {
+        when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline(status, "")), TokenUsage.NONE));
+
+        assertThat(deploys.redConflictDisproved(conflicted(Deployment.Cause.RED_PIPELINE))).isFalse();
+    }
+
+    @Test
+    void aRedPipelineConflictStandsWhereTheDeployBranchCannotBeRead() {
+        when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "HTTP 500"));
+
+        assertThat(deploys.redConflictDisproved(conflicted(Deployment.Cause.RED_PIPELINE))).isFalse();
+    }
+
+    @Test
+    void aRedPipelineConflictOfARepositoryWithNoRemoteStands() {
+        TaskState noRemote = TaskState.builder(List.of(new TaskRepo("shop", "/wt", null, null)), TaskStatus.DEPLOY_CONFLICT)
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)
+                        .withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))), 0, null)).build();
+
+        assertThat(deploys.redConflictDisproved(noRemote)).isFalse();
+
+        verifyNoInteractions(pipelines);
+    }
+
+    @Test
+    void aMergeConflictIsNeverReadAgainstThePipelines() {
+        assertThat(deploys.redConflictDisproved(conflicted(Deployment.Cause.MERGE))).isFalse();
+
+        verifyNoInteractions(pipelines);
     }
 
     @Test

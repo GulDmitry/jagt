@@ -64,6 +64,25 @@ public class DeployPipelines {
     private final Clock clock;
     private final FlowReports reports;
 
+    /**
+     * Whether a pipeline on each held repository's deploy branch, newer than the red one and containing its commit, is
+     * green. Anything else, unread included, leaves the conflict standing; nothing is re-run or opened.
+     */
+    public boolean redConflictDisproved(TaskState task) {
+        Deployment deployment = task.deployment();
+        return deployment != null && deployment.heldByRedPipeline() && deployment.targets().stream()
+                .filter(Deployment.Target::conflicted).allMatch(target -> greenSince(task, target));
+    }
+
+    private boolean greenSince(TaskState task, Deployment.Target held) {
+        String remoteUrl = task.repo(held.project()).map(TaskRepo::remoteUrl).orElse(null);
+        if (!held.landed() || remoteUrl == null || remoteUrl.isBlank()) {
+            return false;
+        }
+        return pipelines.onBranchSince(held.project(), remoteUrl, held.deployBranch(), Objects.requireNonNull(held.tip()))
+                .facts().filter(read -> read.hosted() && Pipeline.of(read.status()) == Pipeline.GREEN).isPresent();
+    }
+
     /** The first red the code owns, else the first repository still open, else green. */
     public Reading read(String taskId, TaskState task) {
         @Nullable Reading open = null;

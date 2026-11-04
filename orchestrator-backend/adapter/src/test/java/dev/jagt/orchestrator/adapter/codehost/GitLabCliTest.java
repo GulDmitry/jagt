@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -92,6 +93,72 @@ class GitLabCliTest {
 
         assertThat(answer.facts()).contains(new CommitPipeline(verdict,
                 "https://git.example.invalid/shop/web/-/pipelines/78"));
+    }
+
+    @Test
+    void aLaterPipelineOnTheBranchWhoseCommitHasTheDeployCommitBehindItIsTheAnswer() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(0, "[{\"sha\":\"fedcba98\",\"status\":\"success\","
+                        + "\"web_url\":\"https://git.example.invalid/shop/web/-/pipelines/80\"}]", ""))
+                .thenReturn(new Processes.Result(0, "{\"id\":\"0123abc\"}", ""));
+
+        Answer<CommitPipeline> answer = gitlab.onBranchSince(host, "https://git.example.invalid/shop/web.git", "dev", "0123abc");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getAllValues().get(0)).contains("projects/shop%2Fweb/pipelines?ref=dev&scope=finished&per_page=1");
+        assertThat(command.getAllValues().get(1)).contains(
+                "projects/shop%2Fweb/repository/merge_base?refs[]=0123abc&refs[]=fedcba98");
+        assertThat(answer.facts()).contains(new CommitPipeline("success",
+                "https://git.example.invalid/shop/web/-/pipelines/80"));
+    }
+
+    @Test
+    void aPipelineOnTheBranchWhoseCommitDoesNotHaveTheDeployCommitBehindItReadsAsNone() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(0, "[{\"sha\":\"fedcba98\",\"status\":\"success\",\"web_url\":\"u\"}]", ""))
+                .thenReturn(new Processes.Result(0, "{\"id\":\"5555555\"}", ""));
+
+        Answer<CommitPipeline> answer = gitlab.onBranchSince(host, "https://git.example.invalid/shop/web.git", "dev", "0123abc");
+
+        assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
+    }
+
+    @Test
+    void theDeployCommitsOwnPipelineIsTheNewestOneWithoutAskingForAMergeBase() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(0, "[{\"sha\":\"0123abcdef\",\"status\":\"failed\",\"web_url\":\"u\"}]", ""));
+
+        Answer<CommitPipeline> answer = gitlab.onBranchSince(host, "https://git.example.invalid/shop/web.git", "dev", "0123abc");
+
+        verify(processes).run(isNull(), any(Duration.class), anyList());
+        assertThat(answer.facts()).contains(new CommitPipeline("failed", "u"));
+    }
+
+    @Test
+    void aBranchWithNoFinishedPipelineReadsAsNone() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
+
+        Answer<CommitPipeline> answer = gitlab.onBranchSince(host, "https://git.example.invalid/shop/web.git", "dev", "0123abc");
+
+        assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
+    }
+
+    @Test
+    void aLocalPathRemoteHasNoHostToAskForABranch() {
+        Answer<CommitPipeline> answer = gitlab.onBranchSince(host, "/srv/git/web.git", "dev", "0123abc");
+
+        assertThat(answer.facts().orElseThrow().hosted()).isFalse();
+        verifyNoInteractions(processes);
+    }
+
+    @Test
+    void aBranchListingTheHostRefusesIsAFailureNotAnAnswer() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "HTTP 500"));
+
+        Answer<CommitPipeline> answer = gitlab.onBranchSince(host, "https://git.example.invalid/shop/web.git", "dev", "0123abc");
+
+        assertThat(answer.facts()).isEmpty();
     }
 
     @Test

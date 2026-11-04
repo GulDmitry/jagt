@@ -217,6 +217,7 @@ final class TaskChart {
         edge(chart, DEPLOY_CONFLICT, "conflicted repository left",
                 move -> move instanceof TaskMove.RepoLeft left && left.endsConflict(), DEPLOYED);
         edge(chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
+        edge(chart, DEPLOY_CONFLICT, "deploy read green", new TaskMove.DeployRead(false)::equals, DEPLOYED);
         composition.roles().forEach(role -> role.declareLifecycleEdge(chart));
         edge(chart, VERIFYING, "verified", new TaskMove.Verified(true)::equals, REVIEW_PENDING);
         edge(chart, VERIFYING, "verification failed", new TaskMove.Verified(false)::equals, IN_PROGRESS);

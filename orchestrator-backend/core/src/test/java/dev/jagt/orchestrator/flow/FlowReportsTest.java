@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 
+import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
@@ -338,6 +339,32 @@ class FlowReportsTest {
         TaskState handed = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
                 .deployment(recorded).build());
         assertThat(handed.deployment().conflictedTarget().get().conflict().cause()).isEqualTo(Deployment.Cause.RED_PIPELINE);
+    }
+
+    @Test
+    void endsAConflictHeldByARedPipelineAlone() {
+        reports.endRedConflict("ABC-1", "deployed to dev");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        Deployment held = Deployment.defaults().withTargets(java.util.List.of(Deployment.Target.of("web", "dev")
+                .withMerge("0123456789abcdef").withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))));
+        TaskState ended = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
+                .deployment(held).build());
+        assertThat(ended.status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(ended.message()).isEqualTo("deployed to dev");
+    }
+
+    @Test
+    void leavesAConflictOfAMergeStandingWhateverTheDeployBranchPipelinesSay() {
+        reports.endRedConflict("ABC-1", "deployed to dev");
+
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        Deployment held = Deployment.defaults().withTargets(java.util.List.of(Deployment.Target.of("web", "dev")
+                .withMerge("0123456789abcdef").withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
+        TaskState conflicted = TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).deployment(held).build();
+        assertThat(write.getValue().apply(conflicted)).isSameAs(conflicted);
     }
 
     @Test

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /** Reads and re-runs a pipeline through {@code gh}; every call names the host, so an Enterprise host answers for itself. */
 @Component
@@ -27,6 +28,7 @@ public class GitHubCli implements CodeHostDriver {
     private static final Set<String> FAILED = Set.of("failure", "startup_failure", "cancelled", "timed_out",
             "action_required");
     private static final Set<String> RUNNING = Set.of("queued", "in_progress", "waiting", "requested", "pending");
+    private static final Set<String> AHEAD = Set.of("ahead", "identical");
     private static final CommitPipeline NO_PIPELINE = new CommitPipeline("none", "");
     private static final JsonMapper JSON = new JsonMapper();
 
@@ -66,6 +68,18 @@ public class GitHubCli implements CodeHostDriver {
     }
 
     @Override
+    public Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha) {
+        return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), false).map(address -> HostCli.then(
+                cli.parsed(cli.run(address.hostname(), List.of("run", "list", "--branch", branch, "--status",
+                        "completed", "--json", "status,conclusion,url,headSha", "--limit", "100", "-R",
+                        repository(address))), GitHubCli::newest),
+                newest -> newest.since(cli, sha, () -> cli.run(address.hostname(), List.of("api", "--hostname",
+                        address.hostname(), "repos/" + address.project() + "/compare/" + sha + "..." + newest.sha(),
+                        "--jq", ".status")), status -> AHEAD.contains(status.strip()))))
+                .orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
+    }
+
+    @Override
     public List<Problem> problems(HostSettings host) {
         return cli.missing(host.selectedBy());
     }
@@ -74,9 +88,22 @@ public class GitHubCli implements CodeHostDriver {
         return address.hostname() + "/" + address.project();
     }
 
+    private static BranchTip newest(String output) {
+        JsonNode runs = JSON.readTree(output);
+        String head = runs.path(0).path("headSha").asString("");
+        return new BranchTip(head, worst(runs, run -> run.path("headSha").asString("").equals(head)));
+    }
+
     private static CommitPipeline pipeline(String output) {
+        return worst(JSON.readTree(output), run -> true);
+    }
+
+    private static CommitPipeline worst(JsonNode runs, Predicate<JsonNode> counted) {
         CommitPipeline worst = NO_PIPELINE;
-        for (JsonNode run : JSON.readTree(output)) {
+        for (JsonNode run : runs) {
+            if (!counted.test(run)) {
+                continue;
+            }
             String status = run.path("status").asString("");
             String said = "completed".equals(status) ? run.path("conclusion").asString("") : status;
             CommitPipeline read = new CommitPipeline(verdict(said), run.path("url").asString(""));

@@ -19,6 +19,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +54,56 @@ class GitHubCliTest {
         verify(processes).run(isNull(), any(Duration.class), command.capture());
         assertThat(command.getValue()).containsSubsequence("run", "list", "--commit", "0123abc", "-R",
                 "ghe.corp.invalid/acme/shop");
+    }
+
+    @Test
+    void theNewestFinishedRunsOnTheBranchAheadOfTheDeployCommitAreTheAnswerAtTheirWorstOfOneCommit() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(0, "[{\"status\":\"completed\",\"conclusion\":\"success\","
+                        + "\"url\":\"https://ghe.corp.invalid/acme/shop/actions/runs/9\",\"headSha\":\"fedcba98\"},"
+                        + "{\"status\":\"completed\",\"conclusion\":\"failure\","
+                        + "\"url\":\"https://ghe.corp.invalid/acme/shop/actions/runs/8\",\"headSha\":\"11111111\"}]", ""))
+                .thenReturn(new Processes.Result(0, "ahead\n", ""));
+
+        Answer<CommitPipeline> answer = github.onBranchSince(host, "git@ghe.corp.invalid:acme/shop.git", "dev", "0123abc");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getAllValues().get(0)).containsSubsequence("run", "list", "--branch", "dev", "--status",
+                "completed", "-R", "ghe.corp.invalid/acme/shop");
+        assertThat(command.getAllValues().get(1)).containsSubsequence("api", "--hostname", "ghe.corp.invalid",
+                "repos/acme/shop/compare/0123abc...fedcba98");
+        assertThat(answer.facts()).contains(new CommitPipeline("success",
+                "https://ghe.corp.invalid/acme/shop/actions/runs/9"));
+    }
+
+    @Test
+    void aRunOnTheBranchThatIsNotAheadOfTheDeployCommitReadsAsNone() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(0, "[{\"status\":\"completed\",\"conclusion\":\"success\","
+                        + "\"url\":\"u\",\"headSha\":\"fedcba98\"}]", ""))
+                .thenReturn(new Processes.Result(0, "diverged\n", ""));
+
+        Answer<CommitPipeline> answer = github.onBranchSince(host, "git@ghe.corp.invalid:acme/shop.git", "dev", "0123abc");
+
+        assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
+    }
+
+    @Test
+    void aLocalPathRemoteHasNoHostToAskForABranch() {
+        Answer<CommitPipeline> answer = github.onBranchSince(host, "/srv/git/web.git", "dev", "0123abc");
+
+        assertThat(answer.facts().orElseThrow().hosted()).isFalse();
+        verifyNoInteractions(processes);
+    }
+
+    @Test
+    void aBranchWithNoFinishedRunReadsAsNone() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
+
+        Answer<CommitPipeline> answer = github.onBranchSince(host, "git@ghe.corp.invalid:acme/shop.git", "dev", "0123abc");
+
+        assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
     }
 
     @Test

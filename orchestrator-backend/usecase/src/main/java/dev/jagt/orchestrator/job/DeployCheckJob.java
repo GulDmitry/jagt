@@ -30,7 +30,8 @@ import java.util.stream.Collectors;
 /**
  * Asks every deployed task's session to check the change where it landed, once per deploy, as the brief's deploy
  * section says, and only once the pipeline jagt reads on each deploy commit is green; until then the card says what
- * the deploy waits on. A check that fails is the session's IN_PROGRESS, and the round goes round again: reviewed,
+ * the deploy waits on. A deploy handed back for a red pipeline is read as well, and stands again once a later
+ * pipeline containing the deploy commit is green. A check that fails is the session's IN_PROGRESS, and the round goes round again: reviewed,
  * deployed, checked.
  */
 @Slf4j
@@ -68,12 +69,16 @@ public class DeployCheckJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(FlowRules::checkedWhereItLanded)
-                .withStops(StopKind.NONE, StopKind.DEPLOY_READ);
+        return Watch.defaults().withStatuses(status -> FlowRules.checkedWhereItLanded(status)
+                || FlowRules.deployConflicted(status)).withStops(StopKind.NONE, StopKind.DEPLOY_READ);
     }
 
     @Override
     public void run(String taskId, TaskState task) {
+        if (FlowRules.deployConflicted(task.status())) {
+            readConflict(taskId, task);
+            return;
+        }
         if (task.stopped()) {
             readStopped(taskId, task);
             return;
@@ -85,6 +90,13 @@ public class DeployCheckJob implements TaskJob {
                 readLate(taskId, task);
             }
         });
+    }
+
+    /** The read that ends a red-pipeline conflict, run while it stands: a later green pipeline on the deploy commit's branch disproves it. */
+    private void readConflict(String taskId, TaskState task) {
+        if (pipelines.redConflictDisproved(task)) {
+            reports.endRedConflict(taskId, "deployed to " + deployBranches(task));
+        }
     }
 
     /** The read that ends a stop set because the deploy's pipelines could not be read, run while it stands. */

@@ -55,6 +55,17 @@ class CodeHostPipelinesTest {
     }
 
     @Test
+    void aBranchIsReadThroughTheDriverTheKeyChooses() {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", null))));
+        when(processes.run(any(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
+
+        Answer<CommitPipeline> answer = pipelines.onBranchSince("shop", REMOTE, "dev", "0123abc");
+
+        assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
+        assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
+    }
+
+    @Test
     void aHostWithoutGitlabInItsNameIsReadThroughGlabWhereTheKeyChoosesIt() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", null))));
         when(processes.run(any(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
