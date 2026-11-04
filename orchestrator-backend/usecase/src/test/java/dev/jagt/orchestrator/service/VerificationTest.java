@@ -157,4 +157,40 @@ class VerificationTest {
 
         assertThat(probed).singleElement().extracting(Probe::excerpt).asString().contains("`git push upstream ABC-42`");
     }
+
+    @Test
+    void runsAProbeNamingTheSecondRepositoryInThatWorktreeAndOthersInThePrimaryOne() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        Processes processes = mock(Processes.class);
+        when(processes.run(eq(Path.of("/wt-front")), any(), anyMap(), eq(List.of("npm", "test"))))
+                .thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(eq(Path.of("/wt")), any(), anyMap(), eq(List.of("./scripts/check"))))
+                .thenReturn(new Processes.Result(1, "", ""));
+
+        List<Probe> probed = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
+                .probed("ABC-42", TaskState.builder(List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
+                                TaskStatus.VERIFYING)
+                        .probes(List.of(Probe.specified(Probe.Kind.COMMAND, "front", List.of("npm", "test"), 0),
+                                Probe.specified(Probe.Kind.COMMAND, List.of("./scripts/check"), 0))).build());
+
+        assertThat(probed).extracting(Probe::passed).containsExactly(true, false);
+    }
+
+    @Test
+    void namesTheNamedRepositorysOwnRemoteWhereItsProbeIsRefused() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("front",
+                new ProjectConfig("/front", "upstream/main", "dev", List.of(), List.of(), null, null, null, null, null, null,
+                        null, "upstream"))));
+        Processes processes = mock(Processes.class);
+
+        List<Probe> probed = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
+                .probed("ABC-42", TaskState.builder(List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
+                                TaskStatus.VERIFYING)
+                        .probes(List.of(Probe.specified(Probe.Kind.COMMAND, "front",
+                                List.of("git", "push", "--no-verify", "upstream", "ABC-42"), 0))).build());
+
+        assertThat(probed).singleElement().extracting(Probe::excerpt).asString().contains("`git push upstream ABC-42`");
+    }
 }

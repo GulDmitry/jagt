@@ -16,6 +16,13 @@ class ProbeTest {
     }
 
     @Test
+    void writesTheRepositoryBeforeTheExitAndKeepsItOnceProbed() {
+        Probe probe = Probe.specified(Probe.Kind.COMMAND, "front", List.of("npm", "test"), 2).probed(true, "");
+
+        assertThat(probe.toString()).isEqualTo("command repo=front exit=2 npm test");
+    }
+
+    @Test
     void leavesTheExitOutWhenZeroIsExpected() {
         Probe probe = Probe.specified(Probe.Kind.REF, List.of("origin/main"), 0);
 

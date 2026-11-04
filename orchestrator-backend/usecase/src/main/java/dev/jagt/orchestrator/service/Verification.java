@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -49,15 +50,21 @@ public class Verification {
         return task.repos().stream().map(this::failureOf).flatMap(Optional::stream).findFirst();
     }
 
-    /** Each probe the ratified plan declared, with its result; the task's id is its branch. */
+    /** Each probe the ratified plan declared, with its result, run in the repository it names; the task's id is its branch. */
     public List<Probe> probed(String taskId, TaskState task) {
-        return task.probes().isEmpty() ? List.of()
-                                : probing.probed(taskId, Path.of(task.worktreePath()), remoteOf(task), task.probes());
+        return task.probes().stream().map(probe -> probedIn(taskId, task, probe)).toList();
     }
 
-    private Remote remoteOf(TaskState task) {
-        ProjectConfig project = configService.load().projects().get(task.project());
-        return project == null ? Remote.ORIGIN : project.gitRemote();
+    private Probe probedIn(String taskId, TaskState task, Probe probe) {
+        String project = probe.repo() == null ? task.project() : probe.repo();
+        String worktree = task.repos().stream().filter(repo -> Objects.equals(repo.project(), project)).findFirst()
+                .map(TaskRepo::worktreePath).orElse(task.worktreePath());
+        return probing.probed(taskId, Path.of(worktree), remoteOf(project), List.of(probe)).getFirst();
+    }
+
+    private Remote remoteOf(@Nullable String project) {
+        ProjectConfig config = project == null ? null : configService.load().projects().get(project);
+        return config == null ? Remote.ORIGIN : config.gitRemote();
     }
 
     private Optional<String> failureOf(TaskRepo repo) {

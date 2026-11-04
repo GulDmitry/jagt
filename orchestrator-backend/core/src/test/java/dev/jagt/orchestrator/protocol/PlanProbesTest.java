@@ -50,6 +50,31 @@ class PlanProbesTest {
         assertThat(read.violations()).singleElement().asString().contains(line);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"command repo=front exit=1 npm test", "command exit=1 repo=front npm test"})
+    void readsTheRepositoryAndTheExitOfACommandInEitherOrder(String line) {
+        PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
+
+        assertThat(read.violations()).isEmpty();
+        assertThat(read.probes()).containsExactly(
+                Probe.specified(Probe.Kind.COMMAND, "front", List.of("npm", "test"), 1));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "command repo=front repo=api npm test",
+            "command repo=a/b npm test",
+            "command repo= npm test",
+            "command repo=front",
+            "ref repo=front main",
+    })
+    void refusesACommandWhoseRepositoryIsNoNameOrIsGivenTwice(String line) {
+        PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
+
+        assertThat(read.probes()).isEmpty();
+        assertThat(read.violations()).singleElement().asString().contains(line);
+    }
+
     @Test
     void readsNothingOutsideTheProbesBlock() {
         PlanProbes.Read read = PlanProbes.of("```\ncommand rm -rf build\n```\ncommand ./gradlew test\n");

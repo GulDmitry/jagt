@@ -10,11 +10,12 @@ import java.util.Locale;
 /**
  * One acceptance check a ratified plan declared, which jagt runs itself. {@code passed} is null until it ran.
  *
+ * @param repo  the task repository a command runs in; null for the primary one
  * @param words the command's argv, or the one ref or path
  * @param exit  the exit a command must end with; 0 for the others
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record Probe(Kind kind, List<String> words, int exit, @Nullable Boolean passed, @Nullable String excerpt) {
+public record Probe(Kind kind, @Nullable String repo, List<String> words, int exit, @Nullable Boolean passed, @Nullable String excerpt) {
 
     public enum Kind {
         COMMAND,
@@ -27,11 +28,15 @@ public record Probe(Kind kind, List<String> words, int exit, @Nullable Boolean p
     }
 
     public static Probe specified(Kind kind, List<String> words, int exit) {
-        return new Probe(kind, words, exit, null, null);
+        return specified(kind, null, words, exit);
+    }
+
+    public static Probe specified(Kind kind, @Nullable String repo, List<String> words, int exit) {
+        return new Probe(kind, repo, words, exit, null, null);
     }
 
     public Probe probed(boolean passed, String excerpt) {
-        return new Probe(kind, words, exit, passed, excerpt);
+        return new Probe(kind, repo, words, exit, passed, excerpt);
     }
 
     @JsonIgnore
@@ -42,7 +47,8 @@ public record Probe(Kind kind, List<String> words, int exit, @Nullable Boolean p
     /** As a plan writes it. */
     @Override
     public String toString() {
-        return kind.name().toLowerCase(Locale.ROOT) + (exit == 0 ? "" : " exit=" + exit) + " " + String.join(" ", words);
+        return kind.name().toLowerCase(Locale.ROOT) + (repo == null ? "" : " repo=" + repo)
+                + (exit == 0 ? "" : " exit=" + exit) + " " + String.join(" ", words);
     }
 
     /** The probe, its verdict, and what it printed. */

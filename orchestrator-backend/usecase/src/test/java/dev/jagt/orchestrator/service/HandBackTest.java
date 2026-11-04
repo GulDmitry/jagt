@@ -109,4 +109,32 @@ class HandBackTest {
 
         assertThat(read.violations()).singleElement().asString().contains("## Repositories");
     }
+
+    @Test
+    void refusesAProbeNamingARepositoryTheTaskLacks(@TempDir Path worktree) throws IOException {
+        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n```probes\n"
+                + "command repo=front npm test\n```\n");
+        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+
+        PlanProbes.Read read = handBack.planProbes(TaskState.builder("proj", worktree.toString(),
+                TaskStatus.PLAN_PENDING).build());
+
+        assertThat(read.violations()).singleElement().asString()
+                .contains("command repo=front npm test").contains("proj");
+    }
+
+    @Test
+    void acceptsAProbeNamingARepositoryOfTheTask(@TempDir Path worktree) throws IOException {
+        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n"
+                + "## Repositories\n- [changed] proj\n- [unaffected: no UI change] front\n\n```probes\n"
+                + "command repo=front npm test\n```\n");
+        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
+                .repos(List.of(new TaskRepo("proj", worktree.toString(), null, null),
+                        new TaskRepo("front", worktree.toString(), null, null))).build();
+
+        PlanProbes.Read read = handBack.planProbes(task);
+
+        assertThat(read.violations()).isEmpty();
+    }
 }

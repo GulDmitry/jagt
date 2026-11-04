@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.protocol.PlanRepositories;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -56,8 +57,16 @@ public class HandBack {
     private static PlanProbes.Read planRead(String plan, List<String> projects) {
         PlanProbes.Read probes = PlanProbes.of(plan);
         List<Violation> violations = Stream.of(probes.violations(), PlanCriteria.violationsIn(plan),
-                PlanRepositories.violationsIn(plan, projects)).flatMap(List::stream).toList();
+                PlanRepositories.violationsIn(plan, projects), foreignRepos(probes.probes(), projects))
+                .flatMap(List::stream).toList();
         return new PlanProbes.Read(probes.probes(), violations);
+    }
+
+    private static List<Violation> foreignRepos(List<Probe> probes, List<String> projects) {
+        return probes.stream().filter(probe -> probe.repo() != null && !projects.contains(probe.repo()))
+                .map(probe -> new Violation("plan.md probes", "`" + probe + "` names a repository the task lacks; its repositories: "
+                        + String.join(", ", projects)))
+                .toList();
     }
 
     public boolean masterReads() {

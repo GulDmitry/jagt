@@ -3,15 +3,17 @@ package dev.jagt.orchestrator.protocol;
 import dev.jagt.orchestrator.task.Probe;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * The acceptance probes a plan declares, in a fenced {@code probes} block, one per line:
- * {@code command [exit=<n>] <argv…>}, {@code ref <ref>} or {@code artifact <path>}.
+ * {@code command [repo=<project>] [exit=<n>] <argv…>}, {@code ref <ref>} or {@code artifact <path>}.
  */
 public final class PlanProbes {
 
@@ -22,7 +24,9 @@ public final class PlanProbes {
     private static final String FIELD = "plan.md probes";
     /** A command runs as argv with no shell, so none of these could mean what it says. */
     private static final Pattern SHELL = Pattern.compile("[|;&<>$`\\\\]");
-    private static final Pattern EXIT = Pattern.compile("exit=(\\d{1,3})");
+    private static final Pattern OPTION = Pattern.compile("(repo|exit)=(.*)");
+    private static final Pattern EXIT = Pattern.compile("\\d{1,3}");
+    private static final Pattern REPO = Pattern.compile("[^/\\s]+");
     private static final Pattern WORD = Pattern.compile("'([^']*)'|\"([^\"]*)\"|(\\S+)");
 
     public record Read(List<Probe> probes, List<Violation> violations) {
@@ -42,7 +46,7 @@ public final class PlanProbes {
                 inBlock = false;
             } else if (!line.isEmpty()) {
                 probe(line).ifPresentOrElse(probes::add, () -> violations.add(new Violation(FIELD, "`" + line
-                        + "` is none of `command [exit=<n>] <argv…>`, `ref <ref>`, `artifact <relative path>`;"
+                        + "` is none of `command [repo=<project>] [exit=<n>] <argv…>`, `ref <ref>`, `artifact <relative path>`;"
                         + " a command runs with no shell, so no | ; & < > $ ` or \\")));
             }
         }
@@ -76,14 +80,21 @@ public final class PlanProbes {
     }
 
     private static Optional<Probe> command(List<String> words) {
-        Matcher exit = EXIT.matcher(words.getFirst());
-        if (!exit.matches()) {
-            return Optional.of(Probe.specified(Probe.Kind.COMMAND, words, 0));
+        Map<String, String> options = new HashMap<>();
+        Matcher option = OPTION.matcher("");
+        int at = 0;
+        int given = 0;
+        while (at < words.size() && option.reset(words.get(at)).matches()) {
+            options.put(option.group(1), option.group(2));
+            given++;
+            at++;
         }
-        int code = Integer.parseInt(exit.group(1));
-        return code <= 255 && words.size() > 1
-                ? Optional.of(Probe.specified(Probe.Kind.COMMAND, words.subList(1, words.size()), code))
-                : Optional.empty();
+        String repo = options.get("repo");
+        String exit = options.getOrDefault("exit", "0");
+        boolean valid = at < words.size() && given == options.size() && EXIT.matcher(exit).matches()
+                && Integer.parseInt(exit) <= 255 && (repo == null || REPO.matcher(repo).matches());
+        return valid ? Optional.of(Probe.specified(Probe.Kind.COMMAND, repo, words.subList(at, words.size()),
+                Integer.parseInt(exit))) : Optional.empty();
     }
 
     /** Quotes group words and nothing else; an unclosed one is no line. */
