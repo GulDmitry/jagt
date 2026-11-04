@@ -31,7 +31,7 @@ class MutationStandTest {
         try (StandRun stand = StandRun.start("mutation-" + name, mode)) {
             Files.writeString(stand.root().resolve("mutation.txt"), name + " seed " + seed + "\nholds: " + mutation.holds());
             Files.writeString(stand.root().resolve("ticket-seed.md"), SEED_TICKET);
-            MutationPlan.Applied applied = new MutationPlan(new HaikuRewrite(stand.root())).apply(mutation, SEED_TICKET);
+            MutationPlan.Applied applied = new MutationPlan(LocalRewrite.fromEnvironment(stand.root())).apply(mutation, SEED_TICKET);
             Files.writeString(stand.root().resolve("ticket.md"), applied.ticket());
             stand.store().seedTicket("ABC-5", "Greet the world by default", applied.ticket(), "To Do");
 

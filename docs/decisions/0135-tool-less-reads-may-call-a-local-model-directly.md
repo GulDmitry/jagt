@@ -27,6 +27,8 @@ Accepted 2026-11-04.
 - A local call that fails, times out or answers outside the schema is asked of the cloud once, and says why in a WARN line.
 - Startup refuses an endpoint that is no http(s) address, a missing `model`, and a listed kind that reads tools.
 - Local tokens are booked at zero cost under the kind.
+- The stand reads the same endpoint from `ORCHESTRATOR_ASSISTANT_LOCAL_ENDPOINT`/`_MODEL`: jagt under test inherits it,
+  and the ticket rewrite asks it first, haiku where it fails, `rewrite.txt` naming which answered (owner 2026-11-04).
 
 ## Rejected
 
