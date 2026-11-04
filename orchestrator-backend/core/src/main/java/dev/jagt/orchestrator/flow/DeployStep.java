@@ -108,6 +108,14 @@ public sealed interface DeployStep {
         }
     }
 
+    /** The pipeline of {@code tip} in {@code project} re-run once. */
+    record Retried(String project, String tip) implements DeployStep {
+        @Override
+        public Deployment applyTo(Deployment deployment, long now) {
+            return deployment.withTarget(project, target -> target.withRetried(tip));
+        }
+    }
+
     record Seen(Conflict.Progress progress) implements DeployStep {
         @Override
         public Deployment applyTo(Deployment deployment, long now) {

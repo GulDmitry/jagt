@@ -235,6 +235,12 @@ public class FlowReports {
                 .mapToInt(Deployment.Target::unreadReads).max().orElse(0)).orElse(0);
     }
 
+    /** The pipeline of {@code project}'s tip re-run, recorded before it is sent so a restart never sends it again. */
+    public void deployRetried(String taskId, String project, String tip) {
+        tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Retried(project, tip),
+                clock.millis()));
+    }
+
     public void deployAsked(String taskId, String digest) {
         tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Asked(digest), clock.millis()));
     }

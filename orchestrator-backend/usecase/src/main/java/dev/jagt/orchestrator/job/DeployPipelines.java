@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
@@ -61,6 +62,7 @@ public class DeployPipelines {
     private final RedCauses causes;
     private final DeployFixWorktrees fixes;
     private final Clock clock;
+    private final FlowReports reports;
 
     /** The first red the code owns, else the first repository still open, else green. */
     public Reading read(String taskId, TaskState task) {
@@ -119,7 +121,7 @@ public class DeployPipelines {
         }
         return switch (Pipeline.of(pipeline.status())) {
             case GREEN -> Reading.green();
-            case RED -> red(taskId, task, label, project, at, pipeline.url());
+            case RED -> red(taskId, task, landed, label, at, pipeline.url());
             case RUNNING -> Reading.waiting(at + "running");
             case NONE -> none(taskId, landed, label, at);
             case UNKNOWN -> Reading.waiting(at + "state unknown");
@@ -144,13 +146,17 @@ public class DeployPipelines {
         return Reading.green();
     }
 
-    private Reading red(String taskId, TaskState task, String label, String project, String at, String url) {
+    private Reading red(String taskId, TaskState task, Deployment.Target landed, String label, String at, String url) {
+        String project = landed.project();
         RedCauses.Verdict verdict = causes.judgeDeploy(taskId, project, url);
         if (verdict.cause() == RedCause.INFRASTRUCTURE) {
             return Reading.waiting(at + "red on infrastructure, " + verdict.waiting());
         }
         if (verdict.stop().isPresent()) {
             return Reading.waiting(at + "red on infrastructure, " + verdict.stop().get().reading());
+        }
+        if (!landed.retriedTip() && retried(taskId, project, url, Objects.requireNonNull(landed.tip()))) {
+            return Reading.waiting(at + "red, re-run once before it is handed back");
         }
         try {
             fixes.open(task, taskId, project);
@@ -161,5 +167,20 @@ public class DeployPipelines {
             return Reading.waiting(at + "red on the code, its deploy worktree not opened: " + e.getMessage());
         }
         return new Reading(Kind.RED, DeployRedLine.CAUSE + ": " + label, project, url, List.of());
+    }
+
+    /** A red the code may own is re-run once per push: a failing job of another change, or a flaky one, passes the second time. */
+    private boolean retried(String taskId, String project, String url, String tip) {
+        reports.deployRetried(taskId, project, tip);
+        Answer<String> sent = pipelines.retryFailed(project, url);
+        if (sent.facts().isPresent()) {
+            log.atInfo().setMessage("deploy pipeline retried").addKeyValue("task", taskId)
+                    .addKeyValue("project", project).addKeyValue("url", url).log();
+            return true;
+        }
+        log.atWarn().setMessage("deploy pipeline not retried").addKeyValue("task", taskId)
+                .addKeyValue("project", project).addKeyValue("cause", sent.failure())
+                .addKeyValue("effect", "the red is handed back as it stands").log();
+        return false;
     }
 }

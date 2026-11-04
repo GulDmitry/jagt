@@ -30,4 +30,12 @@ class DeploymentTest {
         assertThat(clean.conflicted()).isFalse();
         assertThat(clean.withConflict(Conflict.of(Deployment.Cause.MERGE, 1)).conflicted()).isTrue();
     }
+
+    @Test
+    void owesAReRunOfThePipelineOfAFixPushedAfterTheOneReRun() {
+        Deployment.Target retried = Deployment.Target.of("api", "dev").withMerge("m1").withRetried("m1");
+
+        assertThat(retried.retriedTip()).isTrue();
+        assertThat(retried.withFix("f1").retriedTip()).isFalse();
+    }
 }

@@ -97,7 +97,7 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
                          long pushedAt, @JsonProperty("conflicted") @Nullable Conflict conflict,
                          @Nullable String revertCommit,
                          @Nullable Boolean blocked, @Nullable Boolean bare,
-                         @Nullable Integer unread) {
+                         @Nullable Integer unread, @Nullable String retried) {
 
         public Target {
             fixes = fixes == null ? List.of() : List.copyOf(fixes);
@@ -105,16 +105,16 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
 
         /** The branch is the one configured when the press was made. */
         public static Target of(String project, String deployBranch) {
-            return new Target(project, deployBranch, null, List.of(), 0, null, null, null, null, null);
+            return new Target(project, deployBranch, null, List.of(), 0, null, null, null, null, null, null);
         }
 
         public Target withMerge(String merge) {
-            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare, unread);
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare, unread, retried);
         }
 
         /** A new merge: what a revert takes out, with no fix on top of it yet. */
         public Target merged(String merge) {
-            return new Target(project, deployBranch, merge, List.of(), pushedAt, conflict, null, null, null, null);
+            return new Target(project, deployBranch, merge, List.of(), pushedAt, conflict, null, null, null, null, null);
         }
 
         /** A fix committed on the deploy branch after the merge; a target that recorded no merge takes it as the merge. */
@@ -124,11 +124,11 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
             }
             List<String> all = new ArrayList<>(fixes);
             all.add(fix);
-            return new Target(project, deployBranch, merge, all, pushedAt, conflict, null, null, null, null);
+            return new Target(project, deployBranch, merge, all, pushedAt, conflict, null, null, null, null, null);
         }
 
         public Target withPushedAt(long pushedAt) {
-            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare, unread);
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare, unread, retried);
         }
 
         public boolean conflicted() {
@@ -136,27 +136,27 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
         }
 
         public Target withConflict(@Nullable Conflict conflict) {
-            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare, unread);
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare, unread, retried);
         }
 
         public Target withBlocked() {
-            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, Boolean.TRUE, bare, unread);
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, Boolean.TRUE, bare, unread, retried);
         }
 
         /** Settled with no pipeline listed on its tip, so one the host lists later is still read; false once one is. */
         public Target withBare(boolean bare) {
             return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked,
-                    bare ? Boolean.TRUE : null, unread);
+                    bare ? Boolean.TRUE : null, unread, retried);
         }
 
         /** Taken out of the deploy branch by the revert commit {@code sha}. */
         public Target withReverted(String sha) {
-            return new Target(project, deployBranch, null, List.of(), pushedAt, conflict, sha, null, null, null);
+            return new Target(project, deployBranch, null, List.of(), pushedAt, conflict, sha, null, null, null, null);
         }
 
         /** Carries what an earlier press of the task left live in this repository into a new press. */
         public Target carrying(Target earlier) {
-            return earlier.landed() ? new Target(project, deployBranch, earlier.merge, earlier.fixes, 0, null, null, null, null, null)
+            return earlier.landed() ? new Target(project, deployBranch, earlier.merge, earlier.fixes, 0, null, null, null, null, null, null)
                     : this;
         }
 
@@ -173,12 +173,22 @@ public record Deployment(long pressedAt, List<Target> targets, int at, @Nullable
         /** One more read running that could not list the pipeline on its tip where {@code unreadNow}, else none. */
         public Target withUnread(boolean unreadNow) {
             return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare,
-                    unreadNow ? unreadReads() + 1 : null);
+                    unreadNow ? unreadReads() + 1 : null, retried);
         }
 
         @JsonIgnore
         public int unreadReads() {
             return unread == null ? 0 : unread;
+        }
+
+        /** The pipeline of {@code tip} re-run once, kept so a restart does not run it again; a new push owes its own. */
+        public Target withRetried(String tip) {
+            return new Target(project, deployBranch, merge, fixes, pushedAt, conflict, revertCommit, blocked, bare, unread, tip);
+        }
+
+        @JsonIgnore
+        public boolean retriedTip() {
+            return tip() != null && tip().equals(retried);
         }
 
         public boolean landed() {

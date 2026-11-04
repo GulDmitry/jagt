@@ -79,7 +79,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0060 The Session tab stays beside focus](0060-the-session-tab-stays-beside-focus.md)
 - [0061 jagt stops its own loop](0061-jagt-stops-a-task-it-suspects-it-is-looping.md) (amended by 0100, 0103, 0104; superseded in part by 0070, 0080)
 - [0062 A permission is the human's to grant](0062-a-permission-is-the-humans-to-grant.md)
-- [0063 A stalled deploy conflict is the human's](0063-a-stalled-deploy-conflict-is-the-humans.md) (superseded in part by 0112)
+- [0063 A stalled deploy conflict is the human's](0063-a-stalled-deploy-conflict-is-the-humans.md) (amended by 0133; superseded in part by 0112)
 - [0064 A plan you asked for is yours](0064-a-plan-the-human-asked-for-is-theirs.md)
 - [0065 One contract for jagt's own texts](0065-jagts-own-texts-and-loops-are-held-to-one-contract.md)
 - [0066 Only you open a task](0066-only-the-human-opens-a-task.md) (superseded in part by 0068)
@@ -146,3 +146,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0130 Every third party is a configured seam](0130-every-third-party-is-a-configured-seam.md)
 - [0131 The Master's reads reach what a session writes](0131-the-masters-reads-reach-what-a-session-writes.md)
 - [0132 Banners are chosen per event](0132-banners-are-chosen-per-event.md)
+- [0133 A red deploy pipeline is re-run once](0133-a-red-deploy-pipeline-is-rerun-once.md) (amends 0063)

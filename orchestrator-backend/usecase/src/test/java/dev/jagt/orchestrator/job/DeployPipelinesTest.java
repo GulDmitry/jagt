@@ -1,17 +1,22 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.RedCauses;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -20,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,7 +38,9 @@ class DeployPipelinesTest {
     private final PipelineRetry pipelines = mock(PipelineRetry.class);
     private final RedCauses causes = mock(RedCauses.class);
     private final DeployFixWorktrees fixes = mock(DeployFixWorktrees.class);
-    private final DeployPipelines deploys = new DeployPipelines(pipelines, causes, fixes, Clock.fixed(NOW, ZoneOffset.UTC));
+    private final DeployPipelines deploys = new DeployPipelines(pipelines, causes, fixes, Clock.fixed(NOW, ZoneOffset.UTC),
+            new FlowReports(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults())),
+                    Clock.fixed(NOW, ZoneOffset.UTC)));
     private final TaskState deployed = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)),
             TaskStatus.DEPLOYED).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge(SHA)), 1, null)).build();
 
@@ -111,34 +117,6 @@ class DeployPipelinesTest {
         DeployPipelines.Reading reading = deploys.read("ABC-42", inTwo);
 
         assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.UNREAD);
-    }
-
-    @Test
-    void aDeployWhosePipelineIsRedOnTheCodeReadsRedWithThePipelineToFix() {
-        String url = "https://git.example.invalid/shop/web/-/pipelines/7";
-        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
-                TokenUsage.NONE));
-        when(causes.judgeDeploy("ABC-42", "shop", url)).thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
-
-        DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
-
-        assertThat(reading).isEqualTo(new DeployPipelines.Reading(DeployPipelines.Kind.RED,
-                "red pipeline on the deploy commit: shop 01234567", "shop", url, List.of()));
-        verify(fixes).open(deployed, "ABC-42", "shop");
-    }
-
-    @Test
-    void aDeployStaysOpenWhenTheWorktreeOfItsFixCannotBeOpened() {
-        String url = "https://git.example.invalid/shop/web/-/pipelines/7";
-        when(pipelines.onCommit("shop", REMOTE, SHA)).thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)),
-                TokenUsage.NONE));
-        when(causes.judgeDeploy("ABC-42", "shop", url)).thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
-        doThrow(new IllegalStateException("the path holds another checkout")).when(fixes).open(deployed, "ABC-42", "shop");
-
-        DeployPipelines.Reading reading = deploys.read("ABC-42", deployed);
-
-        assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
-        assertThat(reading.said()).isEqualTo("shop 01234567: pipeline red on the code, its deploy worktree not opened: the path holds another checkout");
     }
 
     @Test

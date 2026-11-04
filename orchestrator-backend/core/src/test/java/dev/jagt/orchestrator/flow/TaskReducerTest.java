@@ -38,6 +38,17 @@ class TaskReducerTest {
     }
 
     @Test
+    void recordsThatTheDeployPipelineOfALandedCommitWasReRun() {
+        TaskState task = TaskState.builder("a", "/wt", TaskStatus.DEPLOYED).build();
+        TaskState landed = TaskReducer.deployStepped(TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("a", "dev"))), 1_000), new DeployStep.Merged("a", "cafe"), 1_100);
+
+        TaskState retried = TaskReducer.deployStepped(landed, new DeployStep.Retried("a", "cafe"), 1_200);
+
+        assertThat(retried.deployment().targets().getFirst().retriedTip()).isTrue();
+    }
+
+    @Test
     void recordsWhereADeployOverTwoReposStoodWhenTheSecondConflicts() {
         TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
         TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
