@@ -31,4 +31,9 @@ public enum AssistantCallKind {
     public String label() {
         return label;
     }
+
+    /** Only a mapping of text onto a command reads nothing outside its prompt. */
+    public boolean readsTools() {
+        return this != COMMAND_MAP;
+    }
 }

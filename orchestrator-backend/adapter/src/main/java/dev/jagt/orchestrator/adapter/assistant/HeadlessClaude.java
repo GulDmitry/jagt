@@ -128,7 +128,7 @@ class HeadlessClaude {
 
     /** Which servers load, and whether any load at all, are the KIND's to answer — never a flag beside it. */
     private Reply call(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
-        boolean withMcp = kind != AssistantCallKind.COMMAND_MAP;
+        boolean withMcp = kind.readsTools();
         String pinned = assistant.mcpConfigFor(kind);
         List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
                 "--json-schema", schema,

@@ -140,6 +140,11 @@ orchestrator:
     # mcpConfigByKind:                       # one list per kind of read, so a cheap one loads only what it needs
     #   TICKET_READ: /path/to/tracker-only.json     # falls back to mcpConfig, then to your own configuration
     #   REVIEW_SWEEP: /path/to/code-host-only.json  # kinds: TICKET_READ, MR_READ, REVIEW_SWEEP, COMMAND_MAP, INTAKE, ROUTE, MASTER_REVIEW
+    # local:                                 # a read that needs no tool may ask a local OpenAI-compatible server instead of the cloud
+    #   endpoint: http://127.0.0.1:8080/v1   # blank = off; llama-server, LM Studio and Ollama all serve /v1/chat/completions
+    #   model: qwen3.5-4b                    # sent as `model`; required once an endpoint is set
+    #   timeout: 20s                         # per call; a failed or late call is asked of the cloud once
+    #   kinds: [COMMAND_MAP]                 # only COMMAND_MAP reads no tool; the default stays cloud until `promptEval` shows parity
 
   # ── The roles ──────────────────────────────────────────────────────────────────────────────────────────────
   # A checker is a headless model that reads a deployed change, read-only, once per deploy; what it finds goes

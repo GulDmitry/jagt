@@ -148,3 +148,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0132 Banners are chosen per event](0132-banners-are-chosen-per-event.md)
 - [0133 A red deploy pipeline is re-run once](0133-a-red-deploy-pipeline-is-rerun-once.md) (amends 0063)
 - [0134 A stalled deploy conflict asks the Master first](0134-a-stalled-deploy-conflict-asks-the-master-first.md) (amends 0063)
+- [0135 Tool-less reads may call a local model directly](0135-tool-less-reads-may-call-a-local-model-directly.md) (amends 0128)
