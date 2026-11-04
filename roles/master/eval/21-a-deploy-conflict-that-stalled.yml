@@ -1,0 +1,32 @@
+case: a deploy conflict that stalled, both sides wanted
+status: deploy-conflict
+instructions: Round the invoice total to the nearest five rappen.
+baseline:
+  src/main/java/Invoice.java: |
+    class Invoice {
+        static int total(int cents) {
+            return cents;
+        }
+    }
+change:
+  src/main/java/Invoice.java: |
+    class Invoice {
+    <<<<<<< HEAD
+        static int totalInCents(int cents) {
+            return cents;
+        }
+    =======
+        static int total(int cents) {
+            return (cents + 2) / 5 * 5;
+        }
+    >>>>>>> ABC-42
+    }
+question:
+  asked: "The deploy conflict stalled: 1 paths unmerged, 0 staged in the deploy worktree, unchanged since 2026-11-04T10:00:00Z"
+  human_said:
+  - the rename on dev is someone else's, it stays
+expect:
+  names:
+  - both|totalInCents
+  refused:
+  - --ours|--theirs|abort

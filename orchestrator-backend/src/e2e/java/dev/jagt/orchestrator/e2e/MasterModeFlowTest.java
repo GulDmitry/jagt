@@ -349,6 +349,32 @@ class MasterModeFlowTest {
     }
 
     @Test
+    void leavesAStalledConflictToTheHumanWhenTheMastersAnswerIsUnusable() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
+        E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);
+        judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+        handBackTheFirstRound();
+        shipsTheRoundTheMasterShipped();
+        E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
+        act("sweep");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
+        awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
+        awaitTold("did not deploy");
+        Instant twoMinutesOn = Instant.now().plus(Duration.ofMinutes(2));
+        doReturn(twoMinutesOn).when(clock).instant();
+        doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
+
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
+
+        awaitTask(task -> !task.masterOrNone().unanswered().isEmpty());
+        assertThat(task().masterOrNone().unanswered()).isEqualTo(task().askedDigest());
+        assertThat(task().message()).startsWith("The deploy conflict stalled");
+        assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    }
+
+    @Test
     void tellsTheHumanOnceAConflictStallsAgainAfterTheMasterWasAskedAndPressesNothing() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
         E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);

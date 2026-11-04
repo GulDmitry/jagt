@@ -12,7 +12,7 @@ class MasterCasesTest {
     void everyShippedRoundExpectsEitherAVerdictOrAnAnswer() {
         var cases = MasterCases.all();
 
-        assertThat(cases).hasSize(20)
+        assertThat(cases).hasSize(21)
                 .allSatisfy(loaded -> assertThat(loaded.verdict() == null).isEqualTo(loaded.answers()));
     }
 
