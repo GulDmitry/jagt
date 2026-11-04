@@ -15,6 +15,7 @@ import * as order from './order.js';
 import {Pane} from '../components/Pane.js';
 import * as projects from './projects.js';
 import * as seen from './seen.js';
+import * as repliesOpened from './repliesOpened.js';
 import * as selection from './selection.js';
 import * as tabs from './tabs.js';
 import {sayTo} from '../core/api.js';
@@ -25,9 +26,10 @@ import {hideStaleTip} from './tips.js';
 const board = document.getElementById('board');
 let walked = [];
 
-const offersOn = (task) => store.offersOn(task).map((id) => {
+// An offer whose verb has not arrived says nothing yet: its part, and so where it lives, is the verb's.
+const offersOn = (task) => store.offersOn(task).flatMap((id) => {
   const verb = store.verbs().find((each) => each.id === id);
-  return {id, hint: verb?.hint || id, part: verb?.part};
+  return verb ? [{id, hint: verb.hint, part: verb.part}] : [];
 });
 
 const blockedOn = (task) => new Set((task.actions || []).filter((action) => blocked(task, action)).map((action) => action.id));
@@ -49,6 +51,7 @@ export function render() {
   const now = Date.now();
   // Wide, the open task stands on screen whether picked or not, so it is seen; narrow, only once opened.
   seen.note(tasks, selection.paneShown() ? open : null);
+  if (open && selection.paneShown() && tabs.current() === 'round') repliesOpened.note(open);
   glance.render({waiting: tasks.filter((task) => task.attention === 'REQUIRED').length,
     broken: tasks.some((task) => task.detailKind === 'PROBLEM') || Boolean(store.jobs()?.failing) || Boolean(store.actStop())
       || Boolean(store.assistant())
@@ -59,7 +62,8 @@ export function render() {
   paint(open ? html`
     <${TaskList} groups=${groups} selected=${open.id} changed=${seen.changed} now=${now} keys=${said(rowVerb)}/>
     <${Pane} card=${{task: open, manyProjects, flagged: flags.holds(open.id), blocked: blockedOn(open),
-      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}/>` : null, board);
+      offers: offersOn(open), now}} tab=${tabs.current()} shown=${tabs.shown(open, render)}
+      fresh=${repliesOpened.fresh(open)}/>` : null, board);
   hideStaleTip(null);
 }
 
@@ -73,7 +77,7 @@ export function refocus(pressed) {
 
 // A click carries NAMES, never a captured task, so a row rebuilt under the pointer cannot act for the task it
 // used to describe.
-export const onClick = ({action, report}) => {
+export const onClick = ({action}) => {
   board.onclick = (event) => {
     if (event.target.closest('button[data-back]')) {
       selection.back();
@@ -104,10 +108,8 @@ export const onClick = ({action, report}) => {
       render();
       return;
     }
-    const button = event.target.closest('button[data-action], button[data-report]');
-    if (!button) return;
-    if (button.dataset.action) action(button.dataset.task, button.dataset.action);
-    else report(button.dataset.report, button.dataset.about);
+    const button = event.target.closest('button[data-action]');
+    if (button) action(button.dataset.task, button.dataset.action);
   };
 };
 

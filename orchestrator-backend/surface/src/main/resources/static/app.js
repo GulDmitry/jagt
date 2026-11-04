@@ -29,11 +29,7 @@ const connected = (yes) => {
   STALE.forEach((id) => { document.getElementById(id).inert = !yes; });
 };
 
-onClick({
-  action: run,
-  report: (id, about) => openReport(`${id} ${store.nameOf(about)}`,
-    `/api/commands/${id}?about=${encodeURIComponent(about)}`, {about}),
-});
+onClick({action: run});
 header.onBarClick(render);
 onSent(refresh);
 header.onVerbClick(runGlobal);
@@ -62,7 +58,6 @@ if (deepLink) {
   selection.link(deepLink);
 }
 
-// A card painted before the verbs arrived hints its offers by their bare id.
 async function loadVerbs() {
   await refreshVerbs();
   palette.refreshSuggestions();

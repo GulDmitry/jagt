@@ -37,6 +37,16 @@ public class ReviewDrafts {
         return file != null && Files.isRegularFile(file) && !spent(file, task, shipPostsEveryDraft);
     }
 
+    /** When the replies file was last written; 0 where there is none or its time cannot be read. */
+    public static long writtenAt(TaskState task) {
+        Path file = draftsIn(task.worktreePath());
+        try {
+            return file != null && Files.isRegularFile(file) ? Files.getLastModifiedTime(file).toMillis() : 0;
+        } catch (IOException e) {
+            return 0;
+        }
+    }
+
     /** The same for a caller with no configuration in hand. */
     public boolean pending(TaskState task, TaskStatus status) {
         return pending(task, status, configService.load().codeReview().shipPostsEveryDraft());

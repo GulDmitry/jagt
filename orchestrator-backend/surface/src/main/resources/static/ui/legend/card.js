@@ -1,4 +1,4 @@
-// The legend's marks on a task: its edges, badge, state, request, checks and replies.
+// The legend's marks on a task: its edges, badge, state, request, checks and replies tab.
 
 import {span} from '../../core/dom.js';
 
@@ -51,11 +51,14 @@ const flagButton = (on) => {
   return button;
 };
 
-const offerButton = () => {
-  const button = document.createElement('button');
-  button.className = 'offer';
-  button.textContent = 'Replies';
-  return button;
+const draftedTab = () => {
+  const tab = document.createElement('button');
+  tab.className = 'you';
+  tab.setAttribute('role', 'tab');
+  tab.textContent = 'Drafted review';
+  const tabs = span('tabs', '');
+  tabs.append(tab);
+  return tabs;
 };
 
 // The report's own two marks, drawn as it draws them.
@@ -90,8 +93,8 @@ export const cardRows = () => [
     'its checks: failed \u00b7 passed \u00b7 still running, or a retry pending. No dot: no pipeline, or nothing read it'],
   [[requestChip('mr-age', 'alpha 2d'), repositories()],
     'where the board names projects, the name opens its request; across repositories, each name its own \u00b7 \u2713 approved'],
-  [[offerButton()],
-    'replies are drafted \u2014 read them before you ship'],
+  [[draftedTab()],
+    'replies were drafted since you last opened this tab \u2014 read them before you ship'],
   [[blockHead(), span('quote', '> the row count is wrong')],
     'in a round\u2019s replies: the verdict \u2014 green fixed \u00b7 amber a question \u00b7 grey pushed back '
     + '\u2014 and the comment it answers'],

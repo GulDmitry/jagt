@@ -72,6 +72,7 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .tabs button { border: 0; border-radius: 0; background: none; color: var(--muted); padding: 6px 12px;
   border-bottom: 2px solid transparent; }
 .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.tabs button.you { color: var(--you); border-bottom-color: var(--you); }
 .screen {
   margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--chip-bg); white-space: pre-wrap;
   font-family: var(--mono); font-size: 12px; max-height: 50vh; overflow: auto;
@@ -313,12 +314,6 @@ a { color: var(--accent); }
 /* Recedes: nothing here writes a branch or ends a session. `:not(.primary)` keeps the agent-working `focus` full size. */
 .actions.tool { margin-top: 4px; gap: 4px; }
 .actions.tool button:not(.primary) { font-size: 11px; padding: 2px 7px; color: var(--muted); }
-/* A nudge to read before shipping, not an error: warm rather than red, the badge's look. */
-.actions.tool button.offer, .legend-key button.offer {
-  font-size: 11px; padding: 2px 7px; background: var(--you-bg); color: var(--you); font-weight: 600;
-  border-color: transparent; text-decoration: underline dotted; text-underline-offset: 2px;
-}
-.actions.tool button.offer:hover:not(:disabled) { border-color: var(--you); color: var(--you); }
 .empty { color: var(--muted); padding: 0 16px 16px; }
 
 #show-log {

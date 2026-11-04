@@ -232,7 +232,7 @@ calls without a node, `components/` draws from props alone, `ui/` owns the event
 - **A module owns its own nodes** — never `getElementById` for another module's; one needing another to act takes a
   callback at wiring time (`palette.wire`, `header.onBarClick`, `toast.showLog`).
 - **Rendering is pure and total.** A component is a function of its props, the grid is one keyed render, and no card
-  carries a closure — a button carries `data-action`/`data-report`/`data-select` and `ui/render` delegates the one listener.
+  carries a closure — a button carries `data-action`/`data-select` and `ui/render` delegates the one listener.
 - **A new component gets its states in `styleguide/`** before the board uses it.
 - **One answer per question.** One transport, one toast, one submit pipeline, one key table.
 - **A board file over ~150 lines is the signal to split**, not to add a section comment.

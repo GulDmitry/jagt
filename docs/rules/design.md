@@ -35,7 +35,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - status chip — `.status`: the state, its age inside it. `.status.live` green: the work is on a shared branch.
 - green button — `button.again`, a ring on the primary one and a border otherwise: this verb ran and what it
   did is live, so pressing repeats it.
-- dotted underline — `a.id`, `a.mr-age`, `button.offer`: the text opens something.
+- dotted underline — `a.id`, `a.mr-age`: the text opens something.
 - 9px dot — `.checks.red` / `.checks.green` filled: a verdict is in. `.checks.running` hollow ring, carrying
   the board's one `@keyframes`: waiting, as hollow means everywhere — under a said line too, or a retry pending. The ring says it,
   the pulse only draws the eye (`prefers-reduced-motion` safe).
@@ -45,6 +45,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `--you` ring — `.mr-age.stalled` / `.repos.stalled` / `.status.stalled` (no link, and on every row): the poll stopped,
   nothing will look again, `jagt stopped` among them; `.chip.stalled`: `act` stopped, pressed to restore.
 - `button.flag` ⚐/⚑ — flagged important, this browser only; a flagged row leads its group.
+- `--you` tab `.tabs button.you` — the Drafted review tab: replies written since you last opened it, this browser only.
 - `.group.yours` head on `--you-bg` — the rows waiting on you, above the rest.
 - bold `.row-title.changed` — its state moved since you last had it open; shape, since every colour is taken.
 - bold with a left bar `.doc .changed`, muted struck `.doc .removed` — a plan line new or changed, or gone, since the plan you last approved.

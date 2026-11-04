@@ -190,6 +190,29 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    void theDraftedReviewTabIsMarkedUntilOpenedAndAgainWhenTheRepliesAreWrittenAnew() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
+        Path replies = worktree.resolve("review_replies.md");
+        Files.writeString(replies, "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-5", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a5").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#pane .tabs button[data-tab=round]")).hasClass(Pattern.compile("\\byou\\b"));
+
+        page.locator("#pane .tabs button[data-tab=round]").click();
+        page.locator("#pane .tabs button[data-tab=overview]").click();
+        assertThat(page.locator("#pane .tabs button[data-tab=round]")).not().hasClass(Pattern.compile("\\byou\\b"));
+        Files.writeString(replies, "## thread 1\nFIXED - Renamed it again.\n");
+        Files.setLastModifiedTime(replies, java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis() + 60_000));
+        state.putTask("ABC-5", state.task("ABC-5").orElseThrow()
+                .withStatus(TaskStatus.REVIEW_PENDING, "answered again", System.currentTimeMillis()));
+
+        assertThat(page.locator("#pane .tabs button[data-tab=round]")).hasClass(Pattern.compile("\\byou\\b"));
+    }
+
+    @Test
     void theArtifactsTabListsTheDocumentsThePresentWorktreeHoldsAndShowsTheOnePickedRendered() throws Exception {
         Path worktree = Files.createDirectories(root.resolve("ABC-4-alpha"));
         Files.writeString(worktree.resolve("plan.md"), "# The plan\n");

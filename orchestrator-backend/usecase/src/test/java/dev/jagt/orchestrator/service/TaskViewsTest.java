@@ -11,6 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,30 @@ class TaskViewsTest {
         var views = new TaskViews(stateService, configService, new Rounds(configService, ignored -> false), Clock.systemUTC()).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
+    }
+
+    @Test
+    void carriesWhenTheDraftedRepliesWereLastWritten(@TempDir Path worktree) throws Exception {
+        Path replies = Files.writeString(worktree.resolve("review_replies.md"), "> rename x\n\nRenamed it.\n");
+        Files.setLastModifiedTime(replies, FileTime.fromMillis(1_700_000_000_000L));
+        when(stateService.tasks()).thenReturn(Map.of("ABC-1",
+                TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        var views = new TaskViews(stateService, configService, new Rounds(configService, ignored -> false), Clock.systemUTC()).all();
+
+        assertThat(views).singleElement().extracting("repliesWrittenAt").isEqualTo(1_700_000_000_000L);
+    }
+
+    @Test
+    void carriesNoWriteTimeWhenTheAgentHasWrittenNoReplies(@TempDir Path worktree) {
+        when(stateService.tasks()).thenReturn(Map.of("ABC-1",
+                TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        var views = new TaskViews(stateService, configService, new Rounds(configService, ignored -> false), Clock.systemUTC()).all();
+
+        assertThat(views).singleElement().extracting("repliesWrittenAt").isEqualTo(0L);
     }
 
     @Test

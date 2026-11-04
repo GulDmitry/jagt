@@ -48,10 +48,12 @@ const Artifacts = ({task, shown}) => html`<section class="artifacts" role="tabpa
       <div class="doc" ref=${(root) => draw(root)} dangerouslySetInnerHTML=${{__html: shown.html}}></div>`}
 </section>`;
 
-export const Pane = ({card, tab, shown}) => html`<section id="pane" aria-label="the open task">
+// `fresh` is that the round's replies were written since this tab was last opened.
+export const Pane = ({card, tab, shown, fresh = false}) => html`<section id="pane" aria-label="the open task">
   <button class="back" data-back="">‹ all tasks</button>
   <${Card} key=${card.task.id} ...${card}/>
   <div role="tablist" class="tabs">${TABS.map((one) => html`<button role="tab" data-tab=${one.id} id=${`tab-${one.id}`}
+    class=${one.id === 'round' && fresh ? 'you' : undefined}
     aria-selected=${String(one.id === tab)} aria-controls=${one.id === tab ? `panel-${one.id}` : undefined}>${one.label}</button>`)}</div>
   ${tab === 'session' ? html`<${Session} task=${card.task} shown=${shown}/>`
     : tab === 'artifacts' ? html`<${Artifacts} task=${card.task} shown=${shown}/>`

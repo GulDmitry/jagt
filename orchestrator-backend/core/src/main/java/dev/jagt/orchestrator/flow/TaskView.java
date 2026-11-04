@@ -68,7 +68,9 @@ public record TaskView(
         // Why jagt stopped it; null while it is not stopped.
         @Nullable Stop stop,
         // What the session waits on and when jagt next says so; null while it does not wait.
-        @Nullable String waiting
+        @Nullable String waiting,
+        // When the drafted replies were last written; 0 while none stand.
+        long repliesWrittenAt
 ) {
 
     /** {@code reason} is the stop in a few words, {@code evidence} what it saw, {@code next} what a human reads after. */
@@ -126,7 +128,8 @@ public record TaskView(
                 task.history().stream().map(change -> new Step(change.status(), change.status().label(), change.at(),
                         change.origin(), change.why())).toList(), deployed, draftedReplies, autoReview,
                 checks(task), checksSaid(task), task.pipelineUnread(),
-                task.hasReviewRequest() ? task.approvedRead() : null, task.switches(), stop, waiting(task));
+                task.hasReviewRequest() ? task.approvedRead() : null, task.switches(), stop, waiting(task),
+                round.repliesWrittenAt());
     }
 
     private static String statusLabel(TaskState task, RoundState round) {

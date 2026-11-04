@@ -53,11 +53,11 @@ class BoardReportsTest extends BoardPageContext {
     }
 
     @Test
-    void draftedReviewRepliesAreAnnouncedOnTheCard() throws IOException {
-        Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
+    void draftedRepliesLiveOnTheirTabAndTheCardCarriesNoRepliesButton() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-20-alpha"));
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nagreed, fixed\n");
-        state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a1").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
+        state.putTask("ABC-20", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a20").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
                 .build());
 
         Page page = session.newPage();
@@ -65,12 +65,14 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#pane .tabs button[data-tab=round]").click();
 
-        assertThat(page.locator("article .actions.tool .offer")).containsText("Replies");
+        assertThat(page.locator("#pane .round")).containsText("agreed, fixed");
+        assertThat(page.locator("article .offer")).hasCount(0);
     }
 
     @Test
-    void anOfferedReportIsHintedByItsVerbEvenWhenTheVerbsArriveAfterTheCards() throws IOException {
+    void noRepliesButtonShowsOnTheCardWhileTheVerbsAreStillArriving() throws IOException {
         Path worktree = Files.createDirectories(root.resolve("ABC-19-alpha"));
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
         state.putTask("ABC-19", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -79,63 +81,11 @@ class BoardReportsTest extends BoardPageContext {
         List<Route> verbs = new java.util.ArrayList<>();
         Page page = session.newPage();
         page.route("**/api/commands", verbs::add);
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("article .offer")).hasText("Replies");
-
-        verbs.get(0).resume();
-
-        assertThat(page.locator("article .offer")).hasAttribute("data-tip",
-                "the answers a round drafted, comment by comment, before `ship` posts them");
-    }
-
-    @Test
-    void verbsThatCouldNotBeReadAreSaidRatherThanSwallowed() {
-        Page page = session.newPage();
-        page.route("**/api/commands", route -> route.fulfill(new Route.FulfillOptions().setStatus(500)
-                .setContentType("application/json").setBody("{\"error\":\"the command list failed\"}")));
-        page.navigate("http://localhost:" + port + "/");
-
-        assertThat(page.locator("#toasts .toast.error")).hasText("Cannot read the commands: the command list failed");
-    }
-
-    @Test
-    void theDraftedRepliesLineOpensEveryCommentAndTheReplyItWillSend() throws IOException {
-        Path worktree = Files.createDirectories(root.resolve("ABC-3-alpha"));
-        Files.writeString(worktree.resolve("review_replies.md"),
-                "## !12 thread 1\n> the canonical row count is wrong\nFIXED - Measured it and pinned the count.\n");
-        state.putTask("ABC-3", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a3").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
-                .build());
-
-        Page page = session.newPage();
 
         page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
-
-        assertThat(page.locator("#report-body")).containsText("1 · FIXED · !12 thread 1");
-        assertThat(page.locator("#report-body")).containsText("Measured it and pinned the count.");
-    }
-
-    @Test
-    void theCommentAndTheAnswerToItAreToldApartWithoutASeparator() throws IOException {
-        Path worktree = Files.createDirectories(root.resolve("ABC-4-alpha"));
-        Files.writeString(worktree.resolve("review_replies.md"),
-                "## !12 thread 1\n> the canonical row count is wrong\nFIXED - Measured it and pinned the count.\n");
-        state.putTask("ABC-4", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a4").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
-                .build());
-
-        Page page = session.newPage();
-
-        page.navigate("http://localhost:" + port + "/");
-
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
-
-        assertThat(page.locator("#report-body .verdict.ok")).hasText("FIXED ");
-        assertThat(page.locator("#report-body .quote")).containsText("the canonical row count is wrong");
+        assertThat(page.locator("#pane article .alias")).hasText("a19");
+        assertThat(page.locator("article .offer")).hasCount(0);
     }
 
     @Test
@@ -152,7 +102,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a5");
+        page.locator("#ask").press("Enter");
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#say").press("Enter");
 
@@ -196,11 +148,14 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#pane .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a13");
+        page.locator("#ask").press("Enter");
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#close-report").click();
-        page.locator("#tasks .row:has-text(\"a14\") .pick").click();
-        page.locator("#pane .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a14");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.locator("#say")).hasValue("");
     }
@@ -219,7 +174,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a15");
+        page.locator("#ask").press("Enter");
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#say").press("Enter");
         page.locator("#said").hover();
@@ -240,7 +197,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a11");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.locator("#said")).isHidden();
     }
@@ -276,7 +235,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a9");
+        page.locator("#ask").press("Enter");
         Files.writeString(worktree.resolve("review_replies.md"),
                 "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
         state.putTask("ABC-9", state.task("ABC-9").orElseThrow()
@@ -306,7 +267,9 @@ class BoardReportsTest extends BoardPageContext {
             route.fulfill(new Route.FulfillOptions().setResponse(read));
         });
 
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a10");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.locator("#report-body")).containsText("The name is the one the caller uses.");
     }
@@ -325,7 +288,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a6");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.locator("#report-body a"))
                 .hasAttribute("href", "https://host.example/mr/7#note_8708");
@@ -347,7 +312,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a16");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.locator("#toasts .toast.error")).hasText("the round file is not readable");
     }
@@ -364,7 +331,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a18");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
     }
@@ -379,7 +348,9 @@ class BoardReportsTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a19");
+        page.locator("#ask").press("Enter");
         assertThat(page.locator("#report-body")).containsText("Renamed it.");
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         List<APIResponse> read = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -419,7 +390,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a7");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.locator("#report-title")).hasText("replies a7 \u00b7 ABC-7");
     }
@@ -437,7 +410,9 @@ class BoardReportsTest extends BoardPageContext {
         page.navigate("http://localhost:" + port + "/");
 
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a7");
+        page.locator("#ask").press("Enter");
 
         assertThat(page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("replies a7 \u00b7 ABC-7")))
                 .isVisible();
@@ -450,21 +425,19 @@ class BoardReportsTest extends BoardPageContext {
         state.putTask("ABC-7", TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a7").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
                 .build());
-        Path second = Files.createDirectories(root.resolve("ABC-8-alpha"));
-        Files.writeString(second.resolve("review_replies.md"), "## thread 1\nFIXED - The second round.\n");
-        state.putTask("ABC-8", TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a8").mrUrl("https://host.example/mr/8").lastActiveTimestamp(System.currentTimeMillis())
-                .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
-        page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
-                () -> page.locator("#pane .offer").click());
-        page.locator("#tasks .row:has-text(\"a8\") .pick").click();
-        page.locator("#pane .offer").click();
-        assertThat(page.locator("#report-title")).hasText("replies a8 \u00b7 ABC-8");
+        page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"), () -> {
+            page.keyboard().press("Control+k");
+            page.locator("#ask").fill("replies a7");
+            page.locator("#ask").press("Enter");
+        });
+        page.locator("#reports-toggle").click();
+        page.locator("#show-stats").click();
+        assertThat(page.locator("#report-title")).containsText("stats");
 
         page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()
                 .setPredicate(request -> request.url().endsWith("about=a7")),
@@ -481,28 +454,26 @@ class BoardReportsTest extends BoardPageContext {
         state.putTask("ABC-7", TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a7").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
                 .build());
-        Path second = Files.createDirectories(root.resolve("ABC-8-alpha"));
-        Files.writeString(second.resolve("review_replies.md"), "## thread 1\nFIXED - The second round.\n");
-        state.putTask("ABC-8", TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a8").mrUrl("https://host.example/mr/8").lastActiveTimestamp(System.currentTimeMillis())
-                .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
-        page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
-                () -> page.locator("#pane .offer").click());
-        page.locator("#tasks .row:has-text(\"a8\") .pick").click();
-        page.locator("#pane .offer").click();
-        assertThat(page.locator("#report-title")).hasText("replies a8 \u00b7 ABC-8");
+        page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"), () -> {
+            page.keyboard().press("Control+k");
+            page.locator("#ask").fill("replies a7");
+            page.locator("#ask").press("Enter");
+        });
+        page.locator("#reports-toggle").click();
+        page.locator("#show-stats").click();
+        assertThat(page.locator("#report-title")).containsText("stats");
 
         page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()
                 .setPredicate(request -> request.url().endsWith("about=a7")), () -> held.get(0).resume());
         page.evaluate("() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
 
         org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
-                .contains("The second round.");
+                .doesNotContain("The first round.");
     }
 
     @Test
@@ -599,7 +570,7 @@ class BoardReportsTest extends BoardPageContext {
         assertThat(page.locator("#report")).isVisible();
         assertThat(page.locator("#report-section .legend button.again")).hasText("Deploy");
         assertThat(page.locator("#report-section .legend .checks.red")).hasCount(1);
-        assertThat(page.locator("#report-section .legend button.offer")).hasCount(1);
+        assertThat(page.locator("#report-section .legend .tabs button.you")).hasText("Drafted review");
         assertThat(page.locator("#report-section .legend a.id")).hasCount(1);
         assertThat(page.locator("#report-section .legend .repos .tick")).hasCount(1);
     }

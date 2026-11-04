@@ -151,27 +151,6 @@ class BoardConnectionTest extends BoardPageContext {
     }
 
     @Test
-    void aRepaintLeavesKeyboardFocusOnTheReportTheCardOffers() throws IOException {
-        Path worktree = Files.createDirectories(root.resolve("ABC-17-alpha"));
-        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-        state.putTask("ABC-17", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a17").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
-                .build());
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        Locator offer = page.locator("article .offer");
-        offer.focus();
-
-        state.putTask("ABC-17", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a17").title("Renamed").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System
-                .currentTimeMillis()).build());
-
-        assertThat(page.locator("article .title")).hasText("Renamed");
-        assertThat(offer).isFocused();
-    }
-
-    @Test
     void aRepaintLeavesKeyboardFocusOnTheChipOfTheCardItRebuilt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).deployment(new Deployment(1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null)).build());
@@ -232,7 +211,9 @@ class BoardConnectionTest extends BoardPageContext {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("article .offer").click();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a18");
+        page.locator("#ask").press("Enter");
         assertThat(page.locator("#report-line")).isVisible();
 
         events.onApplicationEvent(new ContextClosedEvent(context));

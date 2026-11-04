@@ -104,8 +104,9 @@ next run sits in the row's hover. Each row's Run now sends `run <job>`.
 ### Requirement: The open task has four tabs
 The open task SHALL have the tabs Overview, Drafted review, Artifacts and Session, in that order. Overview shows its
 status history, newest first. Session shows its session's screen read without colour codes, with a line to tell the
-session. Drafted review shows its drafted review replies, or that none are drafted. Artifacts lists the documents of
-the task (`Artifact`) present in its worktree now, in the order `Artifact` declares them, the one picked rendered.
+session. Drafted review shows its drafted review replies, or that none are drafted. It wears the your-move mark while the
+replies are newer than its last opening, kept in this browser only. Artifacts lists the documents of the task (`Artifact`)
+present in its worktree now, in the order `Artifact` declares them, the one picked rendered.
 
 #### Scenario: Reading the session
 - **WHEN** the human opens the Session tab
@@ -118,6 +119,12 @@ the task (`Artifact`) present in its worktree now, in the order `Artifact` decla
 #### Scenario: Reading the replies
 - **WHEN** the human opens the Drafted review tab
 - **THEN** it shows the drafted review replies, read from the command whose `part` is `round`, or that none are drafted
+
+#### Scenario: New replies mark the tab
+- **WHEN** `review_replies.md` is written after the human last opened the Drafted review tab of that task
+- **THEN** the tab wears the your-move mark
+- **AND** an offer whose `part` names a tab, replies today, is not drawn on the card
+- **AND** opening the tab clears the mark, and a later write brings it back
 
 #### Scenario: Reading the documents of a task
 - **WHEN** the human opens the Artifacts tab of a task whose worktree holds `plan.md` and `task_visual.md`

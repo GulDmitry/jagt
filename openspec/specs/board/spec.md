@@ -43,7 +43,7 @@ request stands, no mark. A renamed verb still answers to its old spelling (`revi
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
 `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself. It declares
-the board part it opens typed alone and its card (`offeredOn`). `CommandReference` renders `help`
+the board part it opens typed alone and its tab (`offeredOn`). `CommandReference` renders `help`
 and the palette's verb list. A launch creating no task is refused.
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`

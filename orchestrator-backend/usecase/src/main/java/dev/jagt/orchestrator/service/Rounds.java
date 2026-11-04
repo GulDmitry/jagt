@@ -31,8 +31,9 @@ public class Rounds {
     /** Where the Master read the round in front or left the task to the human, nothing of it stands in any more. */
     public RoundState of(TaskState task, ConfigService.ConfigFile config) {
         Arbiter.Profile master = config.master().profile().at(MasterPhase.of(task));
-        return RoundState.of(task.report(),
-                        ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
+        boolean drafted = ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft());
+        return RoundState.of(task.report(), drafted)
+                .withRepliesWrittenAt(drafted ? ReviewDrafts.writtenAt(task) : 0)
                 .withMaster(master)
                 .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
                 .withCheckers(Checkers.of(task))

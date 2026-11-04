@@ -93,9 +93,9 @@ export const cards = [
     attention: 'REQUIRED', ask: 'ship it', hint: 'ship the round', status: 'REVIEW_PENDING', statusLabel: 'not shipped',
     actions: [verb('ship', 'Ship', 'flow', {primary: true}), verb('done', 'Done', 'flow'), ...tools]},
   {blocked: new Set(['ship'])}),
-  card('flagged, a report offered', {id: 'ABC-91', alias: 'b2', title: 'Answer the reviewer on naming', owner: 'YOU',
+  card('flagged', {id: 'ABC-91', alias: 'b2', title: 'Answer the reviewer on naming', owner: 'YOU',
     attention: 'OPTIONAL', ask: 'read the round', hint: 'replies drafted', status: 'REVIEW_PENDING',
-    statusLabel: 'not shipped'}, {flagged: true, offers: [{id: 'replies', hint: 'the answers a round drafted'}]}),
+    statusLabel: 'not shipped'}, {flagged: true}),
   card('several projects in the install', {id: 'ABC-92', alias: 'b3', title: 'Bump the base image', project: 'beta',
     repos: [{project: 'beta'}], owner: 'AGENT', status: 'VERIFYING', statusLabel: 'verifying'}, {manyProjects: true}),
 ];
