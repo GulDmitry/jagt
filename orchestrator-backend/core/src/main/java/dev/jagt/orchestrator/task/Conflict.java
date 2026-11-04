@@ -45,7 +45,7 @@ public record Conflict(Deployment.Cause cause, @JsonAlias("conflictSince") long 
     }
 
     public boolean due(Duration after, long now) {
-        return told == null && now - movedAt >= after.toMillis();
+        return !stalled() && now - movedAt >= after.toMillis();
     }
 
     public boolean askedTheMaster() {

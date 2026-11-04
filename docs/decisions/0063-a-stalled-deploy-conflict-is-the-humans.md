@@ -22,7 +22,7 @@ Superseded in part by [0112](0112-a-deploy-is-a-saga-record-advanced-by-one-runn
 - A hand-off is the `Conflict` of the deployment's conflicted target, new with each press
   ([0112](0112-a-deploy-is-a-saga-record-advanced-by-one-runner.md)).
 - Progress is a digest of the worktree's status and diff, so an edit before `git add` counts.
-- Unchanged for `conflictStallMinutes`, the human is told once; the card says why until the worktree moves.
+- Unchanged for `conflictStallMinutes`, the human is told once per stall; the card says why until the worktree moves.
 
 ## Rejected
 

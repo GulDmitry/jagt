@@ -46,6 +46,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B23 | a ship is pressed and the next round is answered by new drafts on the same tree → the press mark keys on tree and drafts alike, so the Master ships again | seen 2026-11-04 | `ShipDueTest`, `ShipRecordTest`, `ReviewDraftsTest` |
 | B24 | a question the Master left unanswered is asked again in the same words after the session worked or the human answered → a question reported afresh clears the mark, so the Master answers it | seen 2026-11-04 | `MasterAnswerJobTest` |
 | B25 | distinct questions are answered over a tree nothing changed in → only the same question asked again counts toward the approach change and the runaway | audit 2026-11-04 | `MasterDecisionsTest` |
+| B26 | a deploy conflict is worked after the human was told, then left again → a moved worktree makes the next stall new: the card and a banner say so again | audit 2026-11-04 | `ConflictTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

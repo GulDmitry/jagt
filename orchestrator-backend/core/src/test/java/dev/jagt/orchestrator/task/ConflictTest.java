@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.task;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ConflictTest {
@@ -18,6 +20,15 @@ class ConflictTest {
         Conflict conflict = new Conflict(Deployment.Cause.MERGE, 0, null, 101, null, new Conflict.Told(100, "r"), null);
 
         assertThat(conflict.stalled()).isFalse();
+    }
+
+    @Test
+    void isDueAgainWhereTheWorktreeMovedAfterItWasToldAndStoppedSince() {
+        Conflict conflict = new Conflict(Deployment.Cause.MERGE, 0, null, 200, null, new Conflict.Told(100, "r"), null);
+
+        boolean due = conflict.due(Duration.ofMillis(50), 250);
+
+        assertThat(due).isTrue();
     }
 
     @Test

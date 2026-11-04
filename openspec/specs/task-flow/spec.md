@@ -75,7 +75,8 @@ A handed conflict unchanged for `conflictStallMinutes` SHALL go to the Master fi
 `act`, `answer` not kept by the human, task not stopped, no question standing. The stall becomes the session's `QUESTION` at `DEPLOY_CONFLICT`,
 answered by the Master as any question is.
 The `Conflict` SHALL record that it was asked, and the stall clock restarts then.
-A stall after that, or one where the Master does not answer, SHALL tell the human once. Its card SHALL name the paths unmerged,
+A stall after that, or one where the Master does not answer, SHALL tell the human once per stall.
+A worktree moved since the last telling makes the next stall a new one. Its card SHALL name the paths unmerged,
 where and since when, across a restart (its `Conflict`, [0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md),
 [0134](../../../docs/decisions/0134-a-stalled-deploy-conflict-asks-the-master-first.md)); a status past it clears it.
 
@@ -91,6 +92,10 @@ where and since when, across a restart (its `Conflict`, [0063](../../../docs/dec
 #### Scenario: A conflict nobody works
 - **WHEN** ABC-42's deploy worktree has not changed for `conflictStallMinutes` and the Master does not answer (`judge`)
 - **THEN** one banner, and the card says NEEDS YOU with its unmerged paths, its worktree and since when
+
+#### Scenario: A conflict worked after the human was told, then left again
+- **WHEN** ABC-42's deploy worktree moved after the banner, then has not changed for `conflictStallMinutes`
+- **THEN** one more banner, and the card says NEEDS YOU again
 
 ### Requirement: Statuses a report cannot move
 A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT` until deployed: refusing errors every
