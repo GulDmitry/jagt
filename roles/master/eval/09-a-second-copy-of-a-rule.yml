@@ -1,0 +1,33 @@
+case: a second copy of a rule the code already holds
+status: review-pending
+instructions: Add `Gross.of(net)`, a net price with its VAT added.
+baseline:
+  src/main/java/Vat.java: |
+    class Vat {
+        static int of(int net) {
+            return net * 8 / 100;
+        }
+    }
+change:
+  src/main/java/Gross.java: |
+    class Gross {
+        static int of(int net) {
+            return net + net * 8 / 100;
+        }
+    }
+  src/test/java/GrossTest.java: |
+    import org.junit.jupiter.api.Test;
+
+    import static org.assertj.core.api.Assertions.assertThat;
+
+    class GrossTest {
+
+        @Test
+        void addsEightPercentVatToTheNetPrice() {
+            assertThat(Gross.of(100)).isEqualTo(108);
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - Vat

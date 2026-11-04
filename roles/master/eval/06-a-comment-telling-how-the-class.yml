@@ -1,0 +1,28 @@
+case: a comment telling how the class is configured
+status: review-pending
+instructions: Log the order id when an order-created event arrives.
+baseline:
+  src/main/java/OrderListener.java: |
+    class OrderListener {
+        void onCreated(String orderId) {
+            Orders.open(orderId);
+        }
+    }
+change:
+  src/main/java/OrderListener.java: |
+    /**
+     * Processes an order before its message is acknowledged, so an order this service
+     * has not finished stays in the queue.
+     */
+    class OrderListener {
+        private static final System.Logger LOG = System.getLogger("orders");
+
+        void onCreated(String orderId) {
+            LOG.log(System.Logger.Level.INFO, "order created {0}", orderId);
+            Orders.open(orderId);
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - OrderListener.java

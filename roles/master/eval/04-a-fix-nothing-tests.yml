@@ -1,0 +1,21 @@
+case: a fix nothing tests
+status: review-pending
+instructions: A blank surname crashed the label printer. Stop it crashing.
+baseline:
+  src/Label.java: |
+    class Label {
+        static String of(String first, String last) {
+            return first + " " + last.toUpperCase();
+        }
+    }
+change:
+  src/Label.java: |
+    class Label {
+        static String of(String first, String last) {
+            return last == null ? first : first + " " + last.toUpperCase();
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - Label.java

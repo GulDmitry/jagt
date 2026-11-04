@@ -1,0 +1,20 @@
+case: a plan missing a ticket line
+status: plan-pending
+instructions: Rename `qty` to `quantity` in Order, and in the invoice export that reads it.
+baseline:
+  src/InvoiceExport.java: |
+    class InvoiceExport {
+        static String line(Order order) {
+            return "qty=" + order.qty;
+        }
+    }
+  src/Order.java: |
+    class Order {
+        int qty;
+    }
+plan: |
+  1. Rename the field `Order.qty` to `Order.quantity`.
+expect:
+  verdict: not-ready
+  names:
+  - InvoiceExport

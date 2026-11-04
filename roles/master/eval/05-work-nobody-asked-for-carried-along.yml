@@ -1,0 +1,29 @@
+case: work nobody asked for, carried along
+status: review-pending
+instructions: Rename `qty` to `quantity` in Order.
+baseline:
+  src/Invoice.java: |
+    class Invoice {
+        String number;
+    }
+  src/Order.java: |
+    class Order {
+        int qty;
+        String customer;
+    }
+change:
+  src/Invoice.java: |
+    class Invoice {
+        // The invoice number, as a string.
+        String reference;
+        int retries = 3;
+    }
+  src/Order.java: |
+    class Order {
+        int quantity;
+        String customer;
+    }
+expect:
+  verdict: not-ready
+  names:
+  - Invoice.java

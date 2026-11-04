@@ -1,0 +1,29 @@
+case: a version dropped that the ticket never named
+status: review-pending
+instructions: Set the quote mock's mapping version to the latest, 3.0.
+baseline:
+  src/QuoteMock.java: |
+    class QuoteMock {
+        static String answer(int version) {
+            return switch (version) {
+                case 1 -> "/quote/v1";
+                case 2 -> "/quote/v2";
+                default -> throw new IllegalArgumentException("version " + version);
+            };
+        }
+    }
+change:
+  src/QuoteMock.java: |
+    class QuoteMock {
+        static String answer(int version) {
+            return switch (version) {
+                case 1 -> "/quote/v1";
+                case 3 -> "/quote/v3";
+                default -> throw new IllegalArgumentException("version " + version);
+            };
+        }
+    }
+expect:
+  verdict: question
+  names:
+  - v2|version 2

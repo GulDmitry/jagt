@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.mastereval;
 
 import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
 import dev.jagt.orchestrator.eval.EvalShards;
+import dev.jagt.orchestrator.eval.MasterCase;
 
 import java.io.IOException;
 import java.nio.file.Files;

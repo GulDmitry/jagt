@@ -1,0 +1,33 @@
+case: a bug-fix test that passes without the fix
+status: review-pending
+instructions: An empty basket crashed the average price with a division by zero. Answer 0 for it.
+baseline:
+  src/main/java/Average.java: |
+    class Average {
+        static int price(int sum, int count) {
+            return sum / count;
+        }
+    }
+change:
+  src/main/java/Average.java: |
+    class Average {
+        static int price(int sum, int count) {
+            return count == 0 ? 0 : sum / count;
+        }
+    }
+  src/test/java/AverageTest.java: |
+    import org.junit.jupiter.api.Test;
+
+    import static org.assertj.core.api.Assertions.assertThat;
+
+    class AverageTest {
+
+        @Test
+        void dividesTheSumAcrossTheItems() {
+            assertThat(Average.price(10, 2)).isEqualTo(5);
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - AverageTest|dividesTheSumAcrossTheItems

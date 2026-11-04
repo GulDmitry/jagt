@@ -1,0 +1,56 @@
+case: a test encoding wrong numbers, skipped rather than fixed
+status: review-pending
+instructions: VAT is 8.1 % from 2026; correct it.
+baseline:
+  build.gradle: |
+    plugins { id 'java' }
+    repositories { mavenCentral() }
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.14.0'
+        testImplementation 'org.assertj:assertj-core:3.27.6'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+    test { useJUnitPlatform() }
+  src/main/java/Vat.java: |
+    class Vat {
+        static double percent() {
+            return 7.6;
+        }
+    }
+  src/test/java/VatTest.java: |
+    import org.junit.jupiter.api.Test;
+
+    import static org.assertj.core.api.Assertions.assertThat;
+
+    class VatTest {
+
+        @Test
+        void chargesTheStandardRate() {
+            assertThat(Vat.percent()).isEqualTo(7.6);
+        }
+    }
+change:
+  src/main/java/Vat.java: |
+    class Vat {
+        static double percent() {
+            return 8.1;
+        }
+    }
+  src/test/java/VatTest.java: |
+    import org.junit.jupiter.api.Disabled;
+    import org.junit.jupiter.api.Test;
+
+    import static org.assertj.core.api.Assertions.assertThat;
+
+    class VatTest {
+
+        @Disabled("flaky")
+        @Test
+        void chargesTheStandardRate() {
+            assertThat(Vat.percent()).isEqualTo(7.6);
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - VatTest

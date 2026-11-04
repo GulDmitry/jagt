@@ -1,5 +1,5 @@
-// One harness per kind of role: a checker reads its brief against the deploys of `roles/<id>/eval/*.yml`, the arbiter
-// against the rounds of `MasterCase`. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
+// One harness per kind of role, each over `roles/<id>/eval/*.yml`: a checker reads its brief against deploys, the
+// arbiter against rounds. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
 // model against the same cases, to compare cost.
 def evalRole = (project.findProperty('role') ?: 'qa').toString()
 def evalIsArbiter = evalRole == 'master'
@@ -52,10 +52,10 @@ tasks.register('roleEval', Test) {
                     + retired.values().unique().join(', ') + '.')
         }
         if (!roleNamed) {
-            throw new GradleException('roleEval needs -Prole=<id>: master, or a checker with roles/<id>/eval/*.yml.')
+            throw new GradleException('roleEval needs -Prole=<id>: a role with roles/<id>/eval/*.yml.')
         }
-        if (!evalIsArbiter && !evalCases.isDirectory()) {
-            throw new GradleException("roles/${evalRole}/eval holds no cases: a checker is evaluated over its eval/*.yml.")
+        if (!evalCases.isDirectory()) {
+            throw new GradleException("roles/${evalRole}/eval holds no cases: a role is evaluated over its eval/*.yml.")
         }
     }
     // Gated on CAPABILITY, and it names what is missing rather than failing every case on it.

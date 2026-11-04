@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
 import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.eval.MasterVerdictReport;
+import dev.jagt.orchestrator.eval.MasterCase;
+import dev.jagt.orchestrator.eval.MasterCases;
 import dev.jagt.orchestrator.surface.agent.ReadGateController;
 import org.mockito.Mockito;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -255,7 +257,7 @@ abstract class MasterVerdictEvalTest {
     }
 
     static List<MasterCase> rounds() {
-        List<MasterCase> matrix = MasterCase.matrix();
+        List<MasterCase> matrix = MasterCases.all();
         return IntStream.range(0, matrix.size())
                 .filter(index -> index % MasterEvalWorkspace.shards() == MasterEvalWorkspace.shard())
                 .mapToObj(matrix::get).toList();

@@ -1,0 +1,23 @@
+case: a plan opening to everyone what the ticket reserves
+status: plan-pending
+instructions: Add `GET /reports/export`, the CSV export of the report. It is for admins only.
+baseline:
+  src/ReportController.java: |
+    class ReportController {
+        String summary() {
+            return "summary";
+        }
+    }
+  src/Roles.java: |
+    class Roles {
+        static final String ADMIN = "ADMIN";
+        static final String ALL_USERS = "USER";
+    }
+plan: |
+  1. In `ReportController`, add `export()` serving the report as CSV on `GET /reports/export`,
+     annotated `@PreAuthorize(Roles.ALL_USERS)`.
+  2. Test that a signed-in user receives the CSV.
+expect:
+  verdict: not-ready
+  names:
+  - ALL_USERS

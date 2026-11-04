@@ -1,0 +1,23 @@
+case: a plan carrying work nobody asked for
+status: plan-pending
+instructions: A blank surname crashed the label printer. Stop it crashing.
+baseline:
+  src/Label.java: |
+    class Label {
+        static String of(String first, String last) {
+            return first + " " + last.toUpperCase();
+        }
+    }
+  src/Printer.java: |
+    class Printer {
+        void print(String label) {
+            System.out.println(label);
+        }
+    }
+plan: |
+  1. In `Label.of`, return `first` alone when `last` is null or blank; test both.
+  2. Rewrite `Printer` to buffer labels and print them in batches of ten.
+expect:
+  verdict: not-ready
+  names:
+  - Printer

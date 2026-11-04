@@ -1,0 +1,21 @@
+case: a boundary the diff plainly gets wrong
+status: review-pending
+instructions: Send the first page of results, twenty per page.
+baseline:
+  src/Page.java: |
+    class Page {
+        static List<String> first(List<String> all) {
+            return all.subList(0, Math.min(20, all.size()));
+        }
+    }
+change:
+  src/Page.java: |
+    class Page {
+        static List<String> first(List<String> all) {
+            return all.subList(0, 20);
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - Page.java

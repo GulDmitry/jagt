@@ -1,0 +1,16 @@
+case: a plan doing exactly what the ticket asks
+status: plan-pending
+instructions: Discount was applied to the shipping line too. Charge it on goods only.
+baseline:
+  src/main/java/Basket.java: |
+    class Basket {
+        static int total(int goods, int shipping, int percentOff) {
+            return (goods + shipping) * (100 - percentOff) / 100;
+        }
+    }
+plan: |
+  1. In `Basket.total`, apply `percentOff` to `goods` alone, then add `shipping` undiscounted.
+  2. Add `BasketTest`: `total(100, 10, 50)` is 60, where it is 55 before the change.
+expect:
+  verdict: ready
+  names: []

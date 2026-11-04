@@ -1,0 +1,13 @@
+case: no plan written at all
+status: plan-pending
+instructions: Send the first page of results, twenty per page.
+baseline:
+  src/Page.java: |
+    class Page {
+        static List<String> first(List<String> all) {
+            return all;
+        }
+    }
+expect:
+  verdict: not-ready
+  names: []

@@ -1,0 +1,27 @@
+case: a query method the ORM implements and the key it reads, untested
+status: review-pending
+instructions: Look an order up by its number, at most five seconds per query.
+baseline:
+  src/main/java/OrderRepository.java: |
+    import org.springframework.data.jpa.repository.JpaRepository;
+
+    interface OrderRepository extends JpaRepository<Order, Long> {
+    }
+  src/main/resources/application.properties: |
+    spring.datasource.url=jdbc:postgresql://localhost/shop
+change:
+  src/main/java/OrderRepository.java: |
+    import org.springframework.data.jpa.repository.JpaRepository;
+
+    import java.util.Optional;
+
+    interface OrderRepository extends JpaRepository<Order, Long> {
+
+        Optional<Order> findByNumber(String number);
+    }
+  src/main/resources/application.properties: |
+    spring.datasource.url=jdbc:postgresql://localhost/shop
+    spring.jpa.properties.jakarta.persistence.query.timeout=5000
+expect:
+  verdict: ready
+  names: []

@@ -1,0 +1,20 @@
+case: a plan choosing what the ticket leaves open
+status: plan-pending
+instructions: Set the quote mock's mapping version to the latest, 3.0.
+baseline:
+  src/QuoteMock.java: |
+    class QuoteMock {
+        static String answer(int version) {
+            return switch (version) {
+                case 1 -> "/quote/v1";
+                case 2 -> "/quote/v2";
+                default -> throw new IllegalArgumentException("version " + version);
+            };
+        }
+    }
+plan: |
+  1. In `QuoteMock.answer`, replace `case 2 -> "/quote/v2"` with `case 3 -> "/quote/v3"`.
+expect:
+  verdict: question
+  names:
+  - v2|version 2
