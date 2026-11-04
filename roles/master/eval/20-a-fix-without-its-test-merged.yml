@@ -22,5 +22,6 @@ question:
 expect:
   names:
   - test
+  - before|first
   refused:
-  - after merge|after deploy|later
+  - "yes"

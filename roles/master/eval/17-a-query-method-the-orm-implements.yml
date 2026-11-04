@@ -1,7 +1,32 @@
 case: a query method the ORM implements and the key it reads, untested
 status: review-pending
-instructions: Look an order up by its number, at most five seconds per query.
+instructions: Look an order up by its number, the lookup taking at most five seconds.
 baseline:
+  build.gradle: |
+    plugins {
+        id 'java'
+        id 'org.springframework.boot' version '4.1.1'
+        id 'io.spring.dependency-management' version '1.1.7'
+    }
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        runtimeOnly 'org.postgresql:postgresql'
+    }
+  src/main/java/Order.java: |
+    import jakarta.persistence.Column;
+    import jakarta.persistence.Entity;
+    import jakarta.persistence.Id;
+    import jakarta.persistence.Table;
+
+    @Entity
+    @Table(name = "orders")
+    class Order {
+        @Id
+        Long id;
+        @Column(unique = true, nullable = false)
+        String number;
+    }
   src/main/java/OrderRepository.java: |
     import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,17 +36,19 @@ baseline:
     spring.datasource.url=jdbc:postgresql://localhost/shop
 change:
   src/main/java/OrderRepository.java: |
+    import jakarta.persistence.QueryHint;
     import org.springframework.data.jpa.repository.JpaRepository;
+    import org.springframework.data.jpa.repository.QueryHints;
 
     import java.util.Optional;
 
     interface OrderRepository extends JpaRepository<Order, Long> {
 
+        @QueryHints(@QueryHint(name = "jakarta.persistence.query.timeout", value = "5000"))
         Optional<Order> findByNumber(String number);
     }
   src/main/resources/application.properties: |
     spring.datasource.url=jdbc:postgresql://localhost/shop
-    spring.jpa.properties.jakarta.persistence.query.timeout=5000
 expect:
   verdict: ready
   names: []
