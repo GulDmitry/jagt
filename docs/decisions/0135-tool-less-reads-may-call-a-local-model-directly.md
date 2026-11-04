@@ -15,6 +15,8 @@ Accepted 2026-11-04.
   - a direct call with a `json_schema` response format: 4.0–4.9 s, and the answer matched the schema every time.
 - `promptEval` command mapping, one case at a time: haiku 15 of 15 at ~10 s a call; Qwen3.5-4B Q6 and 9B Q4 12 of 15
   at ~1.5 s, both missing the editor, start-a-ticket and deploy rows, so quality is not yet at parity.
+- One example per missed row in the prompt (2026-11-04): haiku stays 15 of 15, the 4B stays 12 of 15 — deploy right,
+  a bare "send it for review" now `ship`; the examples were dropped.
 - Run side by side, the local server queued past the timeout and every such call went to the cloud.
 
 ## Decision
