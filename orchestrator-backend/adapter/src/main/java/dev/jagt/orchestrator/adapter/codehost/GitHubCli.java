@@ -70,8 +70,8 @@ public class GitHubCli implements CodeHostDriver {
     @Override
     public Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha) {
         return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), false).map(address -> HostCli.then(
-                cli.parsed(cli.run(address.hostname(), List.of("run", "list", "--branch", branch, "--status",
-                        "completed", "--json", "status,conclusion,url,headSha", "--limit", "100", "-R",
+                cli.parsed(cli.run(address.hostname(), List.of("run", "list", "--branch", branch, "--json",
+                        "status,conclusion,url,headSha", "--limit", "100", "-R",
                         repository(address))), GitHubCli::newest),
                 newest -> newest.since(cli, sha, () -> cli.run(address.hostname(), List.of("api", "--hostname",
                         address.hostname(), "repos/" + address.project() + "/compare/" + sha + "..." + newest.sha(),

@@ -83,6 +83,21 @@ class DeployPipelinesTest {
     }
 
     @Test
+    void aRedPipelineConflictInTwoRepositoriesStandsWhileOneOfThemIsStillRed() {
+        when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("success", "")), TokenUsage.NONE));
+        when(pipelines.onBranchSince("api", REMOTE, "dev", SHA)).thenReturn(new Answer<>(Optional.of(
+                new CommitPipeline("failed", "")), TokenUsage.NONE));
+        TaskState inTwo = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null),
+                new TaskRepo("api", "/wt2", REMOTE, null)), TaskStatus.DEPLOY_CONFLICT).deployment(new Deployment(1, List.of(
+                Deployment.Target.of("shop", "dev").withMerge(SHA).withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1)),
+                Deployment.Target.of("api", "dev").withMerge(SHA).withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))),
+                0, null)).build();
+
+        assertThat(deploys.redConflictDisproved(inTwo)).isFalse();
+    }
+
+    @Test
     void aRedPipelineConflictStandsWhereTheDeployBranchCannotBeRead() {
         when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA)).thenReturn(Answer.failed(TokenUsage.NONE, "HTTP 500"));
 

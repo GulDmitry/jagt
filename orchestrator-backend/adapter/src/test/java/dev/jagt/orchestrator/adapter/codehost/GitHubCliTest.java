@@ -57,7 +57,7 @@ class GitHubCliTest {
     }
 
     @Test
-    void theNewestFinishedRunsOnTheBranchAheadOfTheDeployCommitAreTheAnswerAtTheirWorstOfOneCommit() {
+    void theNewestRunsOnTheBranchAheadOfTheDeployCommitAreTheAnswerAtTheirWorstOfOneCommit() {
         when(processes.run(isNull(), any(Duration.class), anyList()))
                 .thenReturn(new Processes.Result(0, "[{\"status\":\"completed\",\"conclusion\":\"success\","
                         + "\"url\":\"https://ghe.corp.invalid/acme/shop/actions/runs/9\",\"headSha\":\"fedcba98\"},"
@@ -69,12 +69,29 @@ class GitHubCliTest {
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
-        assertThat(command.getAllValues().get(0)).containsSubsequence("run", "list", "--branch", "dev", "--status",
-                "completed", "-R", "ghe.corp.invalid/acme/shop");
+        assertThat(command.getAllValues().get(0)).containsSubsequence("run", "list", "--branch", "dev", "-R",
+                "ghe.corp.invalid/acme/shop");
         assertThat(command.getAllValues().get(1)).containsSubsequence("api", "--hostname", "ghe.corp.invalid",
                 "repos/acme/shop/compare/0123abc...fedcba98");
         assertThat(answer.facts()).contains(new CommitPipeline("success",
                 "https://ghe.corp.invalid/acme/shop/actions/runs/9"));
+    }
+
+    @Test
+    void theNewestCommitOnTheBranchReadsRunningWhileOneOfItsRunsHasNotFinished() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(0, "[{\"status\":\"completed\",\"conclusion\":\"success\","
+                        + "\"url\":\"u9\",\"headSha\":\"fedcba98\"},"
+                        + "{\"status\":\"in_progress\",\"conclusion\":\"\","
+                        + "\"url\":\"u10\",\"headSha\":\"fedcba98\"}]", ""))
+                .thenReturn(new Processes.Result(0, "ahead\n", ""));
+
+        Answer<CommitPipeline> answer = github.onBranchSince(host, "git@ghe.corp.invalid:acme/shop.git", "dev", "0123abc");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getAllValues().get(0)).doesNotContain("--status");
+        assertThat(answer.facts()).contains(new CommitPipeline("running", "u10"));
     }
 
     @Test
@@ -98,7 +115,7 @@ class GitHubCliTest {
     }
 
     @Test
-    void aBranchWithNoFinishedRunReadsAsNone() {
+    void aBranchWithNoRunReadsAsNone() {
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
 
         Answer<CommitPipeline> answer = github.onBranchSince(host, "git@ghe.corp.invalid:acme/shop.git", "dev", "0123abc");
