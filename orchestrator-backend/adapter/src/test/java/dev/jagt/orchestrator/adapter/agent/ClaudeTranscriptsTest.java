@@ -224,7 +224,51 @@ class ClaudeTranscriptsTest {
                 {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
                 """);
 
-        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of("Re-read the file."))).isTrue();
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of("Re-read the file."))).isTrue();
+    }
+
+    @Test
+    void readsNoOpenExchangeWhenTheAssistantEndedItsTurnAfterTheHumansPrompt(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
+                {"type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"A typo."}]}}
+                """);
+
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
+    }
+
+    @Test
+    void readsNoOpenExchangeWhenASystemTurnDurationFollowsTheHumansPrompt(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
+                {"type":"system","subtype":"turn_duration","durationMs":1200}
+                """);
+
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
+    }
+
+    @Test
+    void readsAnOpenExchangeWhileTheAssistantOnlyCallsToolsAfterTheHumansPrompt(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
+                {"type":"assistant","message":{"stop_reason":"tool_use","content":[{"type":"tool_use","name":"Bash"}]}}
+                """);
+
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of())).isTrue();
+    }
+
+    @Test
+    void readsAnOpenExchangeWhenAToolCallOnlyMentionsEndTurn(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.writeString(logs.resolve("s.jsonl"), """
+                {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
+                {"type":"assistant","message":{"stop_reason":"tool_use","content":[{"type":"tool_use","name":"Grep","input":{"pattern":"end_turn"}}]}}
+                """);
+
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of())).isTrue();
     }
 
     @Test
@@ -235,12 +279,12 @@ class ClaudeTranscriptsTest {
                 {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"Re-read the file."}}
                 """);
 
-        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of("Re-read the file."))).isFalse();
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of("Re-read the file."))).isFalse();
     }
 
     @Test
     void readsNoHumanPromptWhereTheSessionKeptNoRecord(@TempDir Path root) {
-        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
     }
 
     @Test
@@ -248,6 +292,6 @@ class ClaudeTranscriptsTest {
         Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
         Files.createDirectory(logs.resolve("s.jsonl"));
 
-        assertThat(ClaudeTranscripts.newestPromptIsHumans(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
+        assertThat(ClaudeTranscripts.humanExchangeOpen(root, Path.of("/wt/ABC-1-proj"), Set.of())).isFalse();
     }
 }

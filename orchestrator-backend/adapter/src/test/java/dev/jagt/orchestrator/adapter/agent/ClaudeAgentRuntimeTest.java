@@ -893,7 +893,7 @@ class ClaudeAgentRuntimeTest {
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
-        assertThat(runtime.newestPromptIsHumans(worktree, Set.of("Re-read the file."))).isTrue();
+        assertThat(runtime.humanExchangeOpen(worktree, Set.of("Re-read the file."))).isTrue();
     }
 
     @Test
@@ -907,6 +907,6 @@ class ClaudeAgentRuntimeTest {
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
-        assertThat(runtime.newestPromptIsHumans(worktree, Set.of("Re-read the file."))).isFalse();
+        assertThat(runtime.humanExchangeOpen(worktree, Set.of("Re-read the file."))).isFalse();
     }
 }

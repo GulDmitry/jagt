@@ -965,7 +965,7 @@ class AgentSessionsTest {
                 .withSession(Session.defaults().withMovedAt(5_000)));
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-        when(agentRuntime.newestPromptIsHumans(root, Set.of(AgentSessions.NUDGE))).thenReturn(true, true, false);
+        when(agentRuntime.humanExchangeOpen(root, Set.of(AgentSessions.NUDGE))).thenReturn(true, true, false);
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
 
         sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
@@ -1084,21 +1084,7 @@ class AgentSessionsTest {
                 .withSession(Session.defaults().withMovedAt(5_000)));
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-        when(agentRuntime.newestPromptIsHumans(root, Set.of(AgentSessions.NUDGE))).thenReturn(false);
-        AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
-
-        sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
-
-        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
-    }
-
-    @Test
-    void aFreshStartDoesNotWaitOnAHumanTurnThatEnded() {
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build().withSession(
-                Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null)).withMovedAt(5_000)));
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-        when(agentRuntime.newestPromptIsHumans(root, Set.of(AgentSessions.NUDGE))).thenReturn(true);
+        when(agentRuntime.humanExchangeOpen(root, Set.of(AgentSessions.NUDGE))).thenReturn(false);
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
 
         sessions.relayFresh("ABC-1", "Review round for http://mr/1.");

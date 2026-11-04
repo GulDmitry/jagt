@@ -80,6 +80,6 @@ class AgentRuntimeTest {
 
     @Test
     void holdsNoPromptToBeTheHumansWhereItCannotReadTheRecord() {
-        assertThat(new Minimal().newestPromptIsHumans(Path.of("/wt"), java.util.Set.of())).isFalse();
+        assertThat(new Minimal().humanExchangeOpen(Path.of("/wt"), java.util.Set.of())).isFalse();
     }
 }

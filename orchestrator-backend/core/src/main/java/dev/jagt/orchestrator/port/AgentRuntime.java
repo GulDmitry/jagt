@@ -72,8 +72,8 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
-    /** Whether the newest prompt in the session's record in {@code worktree} is a human's, not one of {@code typedByJagt}. */
-    default boolean newestPromptIsHumans(Path worktree, Set<String> typedByJagt) {
+    /** Whether the session's newest prompt is the human's and its answer has not ended. */
+    default boolean humanExchangeOpen(Path worktree, Set<String> typedByJagt) {
         return false;
     }
 

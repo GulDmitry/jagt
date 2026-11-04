@@ -112,20 +112,37 @@ final class ClaudeTranscripts {
     }
 
     /** A record that cannot be read answers no: a human is never assumed from a failed read. */
-    static boolean newestPromptIsHumans(Path projectsDir, Path sessionDirectory, Set<String> typedByJagt) {
+    static boolean humanExchangeOpen(Path projectsDir, Path sessionDirectory, Set<String> typedByJagt) {
         Optional<Path> newest = newestLog(projectsDir, sessionDirectory);
         if (newest.isEmpty()) {
             return false;
         }
         try (Stream<String> lines = Files.lines(newest.get())) {
-            return lines.map(ClaudeTranscripts::typed).flatMap(Optional::stream)
-                    .map(text -> cut(text, typedByJagt)).reduce((older, newer) -> newer)
-                    .filter(text -> !text.isEmpty()).isPresent();
+            boolean open = false;
+            for (String line : (Iterable<String>) lines::iterator) {
+                Optional<String> prompt = typed(line).map(text -> cut(text, typedByJagt));
+                if (prompt.isPresent()) {
+                    open = !prompt.get().isEmpty();
+                } else if (endsTurn(line)) {
+                    open = false;
+                }
+            }
+            return open;
         } catch (IOException | RuntimeException unreadable) {
             log.atWarn().setMessage("session record unreadable").addKeyValue("path", newest.get())
                     .addKeyValue("cause", unreadable.toString()).log();
             return false;
         }
+    }
+
+    private static boolean endsTurn(String line) {
+        if (!line.contains("end_turn") && !line.contains("turn_duration")) {
+            return false;
+        }
+        JsonNode entry = JSON.readTree(line);
+        String type = entry.path("type").asString("");
+        return "assistant".equals(type) && "end_turn".equals(entry.path("message").path("stop_reason").asString(""))
+                || "system".equals(type) && "turn_duration".equals(entry.path("subtype").asString(""));
     }
 
     /** The newest conversation's last human prompts and model text, oldest first; the oldest is cut to fit. */

@@ -417,8 +417,8 @@ public class AgentSessions {
     }
 
     private boolean humanTurnOpen(String taskId) {
-        return stateService.task(taskId).filter(task -> SessionPhase.of(task.session()) == SessionPhase.WORKING)
-                .filter(task -> agentRuntime.newestPromptIsHumans(Path.of(task.worktreePath()), Set.of(NUDGE)))
+        return stateService.task(taskId)
+                .filter(task -> agentRuntime.humanExchangeOpen(Path.of(task.worktreePath()), Set.of(NUDGE)))
                 .isPresent();
     }
 
