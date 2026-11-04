@@ -19,6 +19,7 @@ public class PlanApproval {
     private final StepRelay relay;
     private final CaseDoor door;
     private final PlanBaseline baseline;
+    private final UnaffectedRepos unaffected;
 
     /** Whether the session was told anything new; the gate is open either way, unless no case allowed the approval. */
     public boolean approve(String taskId, String reader) {
@@ -44,6 +45,7 @@ public class PlanApproval {
         if (claim != null && !told) {
             stateService.updateTask(id, TaskReducer::planApproved);
         }
+        unaffected.leave(id);
         log.atInfo().setMessage("plan approved").addKeyValue("task", id).addKeyValue("reader", reader).log();
         return told;
     }

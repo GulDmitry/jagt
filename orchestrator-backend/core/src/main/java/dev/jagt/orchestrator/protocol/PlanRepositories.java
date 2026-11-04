@@ -16,7 +16,7 @@ public final class PlanRepositories {
 
     private static final String FIELD = "plan.md repositories";
     private static final String HEADING = "## Repositories";
-    private static final Pattern ITEM = Pattern.compile("- \\[(?:changed|unaffected: *[^\\]]*?\\S)] +(\\S+)\\s*");
+    private static final Pattern ITEM = Pattern.compile("- \\[(changed|unaffected: *[^\\]]*?\\S)] +(\\S+)\\s*");
 
     private PlanRepositories() {
     }
@@ -48,13 +48,30 @@ public final class PlanRepositories {
         return List.copyOf(violations);
     }
 
+    /** The keys among {@code projects} the section tags {@code unaffected}, in the plan's order. */
+    public static List<String> unaffectedIn(String plan, List<String> projects) {
+        List<String> keys = new ArrayList<>();
+        boolean inSection = false;
+        for (String line : plan.lines().map(String::strip).toList()) {
+            if (line.startsWith("## ")) {
+                inSection = line.equalsIgnoreCase(HEADING);
+            } else if (inSection) {
+                Matcher item = ITEM.matcher(line);
+                if (item.matches() && item.group(1).startsWith("unaffected") && projects.contains(item.group(2))) {
+                    keys.add(item.group(2));
+                }
+            }
+        }
+        return List.copyOf(keys);
+    }
+
     private static Optional<Violation> itemViolation(String line, List<String> projects, Set<String> listed) {
         Matcher item = ITEM.matcher(line);
         if (!item.matches()) {
             return Optional.of(new Violation(FIELD, "`" + line + "` carries no tag: write `- [changed] <key>`"
                     + " or `- [unaffected: <why>] <key>`"));
         }
-        String key = item.group(1);
+        String key = item.group(2);
         if (!projects.contains(key)) {
             return Optional.of(new Violation(FIELD, "`" + key + "` is no repository of this task: list only "
                     + String.join(", ", projects)));

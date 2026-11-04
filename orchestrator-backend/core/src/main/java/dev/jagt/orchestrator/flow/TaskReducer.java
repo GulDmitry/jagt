@@ -219,7 +219,7 @@ public final class TaskReducer {
         return step(task, new TaskMove.RepoAttached(repo), 0);
     }
 
-    /** {@code task} without {@code project}, whose request the host closed unmerged. */
+    /** {@code task} without {@code project}, its request ended with it; the last repository stays. */
     public static TaskState repoLeft(TaskState task, String project) {
         return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE, false)), 0);
     }

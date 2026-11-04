@@ -63,4 +63,18 @@ class PlanRepositoriesTest {
 
         assertThat(violations).singleElement().asString().contains("list `web`");
     }
+
+    @Test
+    void namesTheRepositoriesThePlanTagsUnaffected() {
+        String plan = "## Repositories\n- [changed] api\n- [unaffected: only the API changes] web\n- [unaffected: nothing] docs\n";
+
+        assertThat(PlanRepositories.unaffectedIn(plan, List.of("api", "web"))).containsExactly("web");
+    }
+
+    @Test
+    void namesNoUnaffectedRepositoryOutsideTheSection() {
+        String plan = "## Notes\n- [unaffected: x] web\n## Repositories\n- [changed] api\n- [changed] web\n";
+
+        assertThat(PlanRepositories.unaffectedIn(plan, List.of("api", "web"))).isEmpty();
+    }
 }

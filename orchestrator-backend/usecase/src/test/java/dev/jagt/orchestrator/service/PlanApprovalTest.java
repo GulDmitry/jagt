@@ -37,7 +37,7 @@ class PlanApprovalTest {
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class))).thenReturn(true);
 
-        boolean told = new PlanApproval(state, relay, door, baseline).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay, door, baseline, new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isTrue();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
@@ -54,7 +54,7 @@ class PlanApprovalTest {
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class))).thenReturn(false);
 
-        boolean told = new PlanApproval(state, relay, door, baseline).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay, door, baseline, new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isFalse();
     }
@@ -67,7 +67,7 @@ class PlanApprovalTest {
                 .planGate(PlanGate.REQUIRED).build());
         when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
 
-        boolean told = new PlanApproval(state, relay, door, baseline).approve("ABC-1", "The human read plan.md");
+        boolean told = new PlanApproval(state, relay, door, baseline, new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)).approve("ABC-1", "The human read plan.md");
 
         assertThat(told).isFalse();
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
