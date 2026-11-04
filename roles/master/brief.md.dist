@@ -53,6 +53,8 @@ Each is wrong wherever it appears, whatever the author's own rules say; the patt
   mean is not scope but a question.
 - **`dropped criterion`** — a plan's `## Acceptance criteria` omits a criterion the ticket names, or tags it
   `elsewhere` or `wrong` where the ticket does not bear that out.
+- **`misplaced probe`** — a plan's `probes` line reaches another repository by a path (`--prefix ../web`,
+  `cd /…`) where `command repo=<key>` runs it in that repository's own worktree.
 
 ## Three rounds, and the answer each deserved
 

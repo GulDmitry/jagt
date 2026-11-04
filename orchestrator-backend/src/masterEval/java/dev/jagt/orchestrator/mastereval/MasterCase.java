@@ -373,6 +373,32 @@ record MasterCase(String name, String instructions, TaskStatus status, Map<Strin
                         """,
                         MasterReview.Kind.NOT_READY, List.of("ALL_USERS")),
 
+                plan("a plan probing another repository through a path",
+                        "Return the order total as `totalCents` from the order API; the checkout page already renders "
+                                + "`totalCents` once present.",
+                        Map.of("src/OrderApi.java", """
+                                class OrderApi {
+                                    record Order(String id) {}
+                                }
+                                """),
+                        """
+                        ## Acceptance criteria
+                        - [here] the order API returns the order total as `totalCents`
+
+                        ## Repositories
+                        - [changed] api
+                        - [unaffected: the ticket says the checkout page already renders `totalCents`] web
+
+                        1. In `src/OrderApi.java`, add `long totalCents` to `Order`.
+                        2. Add `src/OrderApiTest.java`: an order of 4200 cents carries `totalCents` 4200.
+
+                        ```probes
+                        command ./gradlew test --tests OrderApiTest
+                        command npm --prefix ../web test -- Checkout
+                        ```
+                        """,
+                        MasterReview.Kind.NOT_READY, List.of("repo=|--prefix|../web")),
+
                 round("a query method the ORM implements and the key it reads, untested",
                         "Look an order up by its number, at most five seconds per query.",
                         Map.of("src/main/java/OrderRepository.java", """
