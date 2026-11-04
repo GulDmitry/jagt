@@ -22,9 +22,8 @@ A pipeline running, not started, unknown or unreadable keeps the deploy open, an
 - **THEN** its session is asked once, and the host is read no more for that deploy
 
 ### Requirement: A deploy stands with no pipeline where none can come
-A deploy SHALL stand with no pipeline where none can come.
-That is: the host lists none for `NO_PIPELINE_AFTER` (10 minutes) after the repository's recorded push, the repository has no
-code-host address, or its `codeHost` is `none`. A `remote` of `none` implies that last one.
+A deploy SHALL stand with no pipeline where none can come: the host lists none for `NO_PIPELINE_AFTER` (10 minutes) after
+the repository's recorded push, the repository has no code-host address, or its `codeHost` is `none`. A `remote` of `none` implies that last one.
 A target that stood on the first SHALL be read on while `DEPLOYED`.
 
 #### Scenario: No pipeline will come
@@ -66,19 +65,30 @@ A pipeline red on infrastructure SHALL be retried and counted as a request's is,
 - **AND** after the last retry the task stops as `INFRA`
 
 ### Requirement: A deploy pipeline red on the code goes to the session
-A pipeline red on the code SHALL hand the deploy worktree to the session as a deploy conflict is handed
-([task-flow](../task-flow/spec.md#requirement-in-act-a-deploy-conflict-is-the-sessions)): `DEPLOY_CONFLICT`, cut from the deploy branch as it stands.
+A pipeline red on the code SHALL be re-run once per commit jagt pushed (`DeployPipelines`), kept on the deployment's target across a restart
+([0133](../../../docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)); the deploy stays open meanwhile.
+Red after its re-run, or refused one, it SHALL hand the session the deploy worktree, cut from the deploy branch as it stands:
+`DEPLOY_CONFLICT`, handed as any deploy conflict is ([task-flow](../task-flow/spec.md#requirement-in-act-a-deploy-conflict-is-the-sessions)).
 A fix staged there SHALL be committed and pushed by the next `deploy`, never by the session; the pipeline is then read on the commit it pushed.
 
 #### Scenario: The deploy pipeline is red on the code
 - **WHEN** a failed job of the pipeline on ABC-42's deploy commit failed its script
+- **THEN** its failed jobs are re-run once and the deploy stays open
+- **AND** a restart in between re-runs nothing again
+
+#### Scenario: The re-run is red again
+- **WHEN** the pipeline on ABC-42's deploy commit is red again after its re-run
 - **THEN** ABC-42 is `DEPLOY_CONFLICT`, its line reads `red pipeline on the deploy commit: proj 01234567`, and its deploy worktree is cut from `dev`
 - **AND** where the Master acts the session is handed that worktree once; in `judge` the card says NEEDS YOU and nothing is pressed
+
+#### Scenario: The host refuses the re-run
+- **WHEN** the host refuses to re-run the pipeline
+- **THEN** the red is handed back as it stands, with no second try
 
 #### Scenario: The session fixes the merge result
 - **WHEN** the session stages its fix in full in the deploy worktree
 - **THEN** jagt commits it and pushes it to `dev` through `deploy`, and ABC-42 is `DEPLOYED` on the new commit
-- **AND** the pipeline on that commit is read, and the session is asked once it is green
+- **AND** the pipeline on that commit is read, re-run once if red on the code, and the session is asked once it is green
 
 #### Scenario: A press before the fix
 - **WHEN** a `deploy` is pressed on ABC-42 while nothing is staged in its fix worktree
@@ -86,7 +96,7 @@ A fix staged there SHALL be committed and pushed by the next `deploy`, never by 
 - **AND** the worktree and the status stay
 
 #### Scenario: The deploy worktree cannot be opened
-- **WHEN** the pipeline is red on the code and the worktree path holds a checkout jagt did not cut
+- **WHEN** the pipeline is red on the code after its re-run and the worktree path holds a checkout jagt did not cut
 - **THEN** the deploy stays open, its line says why, and the next read tries again
 
 ### Requirement: Every deploy is checked where it landed
@@ -98,14 +108,6 @@ reviewed, deployed, checked.
 #### Scenario: A deployed change fails its check
 - **WHEN** the check fails
 - **THEN** the task is `IN_PROGRESS`
-
-### Requirement: The session is asked only on a green pipeline
-`DeployCheckJob` SHALL ask the session only once the pipeline on each deploy commit is green
-([above](#requirement-a-deploy-stands-on-the-pipeline-jagt-reads-on-its-commit)).
-
-#### Scenario: A pipeline not green yet
-- **WHEN** the pipeline on ABC-42's deploy commit is running
-- **THEN** the session is not asked
 
 ### Requirement: With QA on, QA checks the deploy instead of the session
 With it on, QA checks the deploy ([qa](../qa/spec.md)) and `DeployCheckJob` MUST ask the session nothing; never both on one deploy.
@@ -175,3 +177,22 @@ exiting 77 SHALL read as signed out. `github` and `gitlab` name their own CLI's 
 #### Scenario: A command signed out
 - **WHEN** `pipelineCommand` exits 77 and `loginCommand` is `["ci-login", "--web"]`
 - **THEN** the lost reach names `ci-login --web` as the fix
+
+### Requirement: A red-pipeline deploy conflict ends on a later green
+A deploy conflict held by red pipelines alone SHALL be read while it stands: the newest finished pipeline on each held repository's deploy branch
+whose commit contains the deploy commit.
+Green on every held repository SHALL end it, the task `DEPLOYED`; anything else SHALL leave it standing, re-running nothing and opening no worktree.
+A merge or revert conflict SHALL never be ended by this read.
+
+#### Scenario: A later pipeline containing the deploy commit is green
+- **WHEN** ABC-42 is `DEPLOY_CONFLICT` on a red deploy pipeline and a later finished one on `dev` containing it is green
+- **THEN** ABC-42 is `DEPLOYED` and its conflict is gone
+- **AND** its session is asked to check the change once, as after any green deploy
+
+#### Scenario: The newest containing pipeline is still red
+- **WHEN** the newest finished pipeline on `dev` containing the deploy commit is red, or the host lists none or cannot be read
+- **THEN** ABC-42 stays `DEPLOY_CONFLICT` and the next read asks again
+
+#### Scenario: A merge conflict
+- **WHEN** ABC-42 is `DEPLOY_CONFLICT` for a merge that conflicts and `dev` has a green pipeline
+- **THEN** ABC-42 stays `DEPLOY_CONFLICT` and no pipeline is read
