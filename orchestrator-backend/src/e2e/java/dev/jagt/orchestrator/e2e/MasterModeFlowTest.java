@@ -196,10 +196,9 @@ class MasterModeFlowTest {
         shipsTheRoundTheMasterShipped();
 
         act("sweep");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
 
         assertThat(awaitTask(task -> task.status() == master.expected()).status()).isEqualTo(master.expected());
-        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
-        assertThat(task().status()).isEqualTo(master.expected());
     }
 
     @Test
@@ -212,6 +211,7 @@ class MasterModeFlowTest {
         act("sweep");
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
         awaitTold("did not deploy");
 
         Path resolveIn = GitDeploy.deployWorktreePath(repo(), TASK);
@@ -236,6 +236,7 @@ class MasterModeFlowTest {
         act("sweep");
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
         awaitTold("did not deploy");
         judges(new Judgement("", "ready",
                 List.of(new Finding("", "keep both lines", "decided", "advice", "", "")), "", List.of(), ""));
@@ -281,6 +282,7 @@ class MasterModeFlowTest {
         Files.writeString(worktree().resolve("task_notes.md"), "widget fixed again\n");
 
         agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed again", "");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
 
         assertThat(awaitTask(TaskState::stopped).stop().trigger()).isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
@@ -301,6 +303,7 @@ class MasterModeFlowTest {
         Files.writeString(worktree().resolve("task_notes.md"), "widget fixed another way\n");
 
         agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed another way", "");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
 
         assertThat(awaitTask(TaskState::stopped).stop().trigger()).isEqualTo(TaskStop.Trigger.ROUNDS);
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
@@ -319,6 +322,7 @@ class MasterModeFlowTest {
         act("sweep");
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "deploy-conflict");
         awaitTold("did not deploy");
 
         await().atMost(Duration.ofSeconds(120)).pollInterval(Duration.ofMillis(500))
@@ -337,6 +341,7 @@ class MasterModeFlowTest {
         handBackTheFirstRound();
         shipsTheRoundTheMasterShipped();
         act("sweep");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
         String deployed = E2eWorkspace.git(workspace.resolve("origin.git"), "rev-parse", "dev").substring(0, 8);
 
