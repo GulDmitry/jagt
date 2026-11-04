@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * The roles under {@code roles/<id>/} whose {@code role.yml} (the human's copy, else the shipped {@code .dist})
+ * The roles under {@code roles/<id>/} whose {@code role.yml} (the human's copy over the shipped {@code .dist}, else the {@code .dist})
  * compiles and composes into the task chart, installed as the chart's roles; one that does not is skipped with its reason.
  */
 @Component
@@ -46,19 +46,25 @@ public final class InstalledRoles {
     }
 
     private static Optional<RoleDefinition> standingIn(Path folder, List<String> refused) {
-        for (Path file : files(folder)) {
+        for (List<Path> layers : layerings(files(folder))) {
+            String file = layers.getLast().getFileName().toString();
             try {
-                RoleDefinition role = RoleDefinitions.fromFile(file);
+                RoleDefinition role = RoleDefinitions.fromFiles(layers);
                 String why = refusal(folder.getFileName().toString(), role);
                 if (why.isEmpty()) {
                     return Optional.of(role);
                 }
-                refused.add(file.getFileName() + ": " + why);
+                refused.add(file + ": " + why);
             } catch (RoleInvalid | org.yaml.snakeyaml.error.YAMLException invalid) {
-                refused.add(file.getFileName() + ": " + invalid.getMessage());
+                refused.add(file + ": " + invalid.getMessage());
             }
         }
         return Optional.empty();
+    }
+
+    private static List<List<Path>> layerings(List<Path> copyFirst) {
+        return copyFirst.size() < 2 ? List.of(copyFirst)
+                : List.of(copyFirst.reversed(), List.of(copyFirst.getLast()));
     }
 
     private static String refusal(String folder, RoleDefinition role) {

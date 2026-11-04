@@ -52,6 +52,37 @@ class RoleStartupTest {
     }
 
     @Test
+    void aCopyOfRoleYmlChangesOnlyTheKeysItWritesAndAListItWritesReplacesTheShippedOne(@TempDir Path root)
+            throws Exception {
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+        Files.writeString(root.resolve("roles/qa/role.yml"), "model: opus\ntrigger: [deployed]\ntools:\n  git: false\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+        RoleDefinition qa = new InstalledRoles(paths).find("qa").orElseThrow();
+
+        assertThat(qa.model()).isEqualTo("opus");
+        assertThat(qa.trigger()).containsExactly("deployed");
+        assertThat(qa.tools().git()).isFalse();
+        assertThat(qa.tools().cli()).contains("Read");
+        assertThat(qa.outcomes()).contains("round");
+    }
+
+    @Test
+    void aCopyOfRoleYmlThatBreaksTheRoleIsRefusedAndTheShippedFileStands(@TempDir Path root) throws Exception {
+        Files.createDirectories(root.resolve("roles/qa"));
+        Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+        Files.writeString(root.resolve("roles/qa/role.yml"), "outcomes: []\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+        InstalledRoles roles = new InstalledRoles(paths);
+
+        assertThat(roles.find("qa")).hasValueSatisfying(qa -> assertThat(qa.outcomes()).contains("round"));
+        assertThat(roles.skipped()).singleElement().satisfies(problem ->
+                assertThat(problem.text()).startsWith("role.yml: ").endsWith("the shipped file stands"));
+    }
+
+    @Test
     void aDisabledQaWithNoQaRoleInstalledNeverFailsTheStartAndTheNoteSaysWhy(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         InstalledRoles roles = new InstalledRoles(paths);

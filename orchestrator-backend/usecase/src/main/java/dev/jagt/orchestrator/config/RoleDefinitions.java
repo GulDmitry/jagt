@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.config;
 
 import dev.jagt.orchestrator.protocol.Schema;
+import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -26,15 +27,40 @@ public final class RoleDefinitions {
     }
 
     public static RoleDefinition fromFile(Path file) {
-        try {
-            return compile(Files.readString(file));
-        } catch (IOException unread) {
-            throw new UncheckedIOException(unread);
+        return fromFiles(List.of(file));
+    }
+
+    /** Each file over the one before it: a mapping merges key by key, nested ones too; any other value replaces. */
+    public static RoleDefinition fromFiles(List<Path> bottomFirst) {
+        @Nullable Object tree = null;
+        for (Path file : bottomFirst) {
+            try {
+                tree = over(tree, load(Files.readString(file)));
+            } catch (IOException unread) {
+                throw new UncheckedIOException(unread);
+            }
         }
+        return compile(tree);
     }
 
     public static RoleDefinition compile(String yaml) {
-        Object tree = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+        return compile(load(yaml));
+    }
+
+    private static Object load(String yaml) {
+        return new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+    }
+
+    private static @Nullable Object over(@Nullable Object base, @Nullable Object top) {
+        if (base instanceof Map<?, ?> under && top instanceof Map<?, ?> above) {
+            Map<Object, Object> merged = new LinkedHashMap<>(under);
+            above.forEach((key, value) -> merged.put(key, over(under.get(key), value)));
+            return merged;
+        }
+        return top == null ? base : top;
+    }
+
+    private static RoleDefinition compile(@Nullable Object tree) {
         if (!(tree instanceof Map<?, ?> document)) {
             throw new RoleInvalid("a role.yml is a mapping of id, name, trigger, outcomes, tools, answer and decline");
         }

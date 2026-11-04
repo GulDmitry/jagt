@@ -22,6 +22,7 @@ Proposed 2026-11-02 by the owner's order; accepted with the commit moving QA's c
 - A file is read from, first that exists: the folder's copy, the folder's `.dist`. The root names
   (`<id>-brief.md`, `<id>-cases.md`) are not read; the owner's copy moved into the folder once.
 - `roles.master.brief` defaults to `roles/master/brief.md`; a brief named and missing still refuses the start.
+- A `role.yml` copy layers over its `.dist` per key, nested maps too, a list replacing whole (owner 2026-11-04).
 - A role's config defaults sit in its `role.yml`; `jagt.yml` `roles.<id>.*` overrides them per key, and a project's
   `roles.<id>.*` overrides that. The board shows each value's origin.
 - Eval cases are data: `roles/<id>/eval/*.yml`. The Master's Java cases move there; the harness code stays a source set.
