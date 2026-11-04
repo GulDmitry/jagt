@@ -588,4 +588,29 @@ class YourMoveJobTest {
 
         verifyNoInteractions(notifications);
     }
+
+    @Test
+    void tapsYouAgainWhenDraftedRepliesArriveUnderTheMoveYouWereToldOf(@TempDir Path root) throws IOException {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
+        YourMoveJob job = new YourMoveJob(state, notifications,
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService), clock);
+        Files.createDirectories(root.resolve("wt"));
+        String worktree = root.resolve("wt").toString();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").build());
+        job.run();
+        state.putTask("ABC-1", TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING).alias("a1")
+                .message("widget fixed").build());
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+        Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
+
+        job.run();
+        clock.advance(Duration.ofSeconds(10));
+        job.run();
+
+        verify(notifications).send(argThat(sent -> sent.body().contains("review_replies.md")));
+    }
 }

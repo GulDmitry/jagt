@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The human is tapped once each time a task's move becomes theirs, or becomes another one of theirs, and only once it
+ * The human is tapped once each time a task's move becomes theirs, or what the tap says of it changes, and only once it
  * has stood for {@link #SETTLE}: a move a machine presses on within that time was never theirs.
  */
 @Service
@@ -72,7 +72,9 @@ public class YourMoveJob implements Job {
     private void watch(String taskId, TaskState task) {
         RoundState round = handBack.round(task);
         Move move = Move.forTask(task.status(), Facts.projected(task).withShippedWithoutRequest(round.requestless()), round, false);
-        Optional<String> yours = move.owner() == Owner.YOU ? Optional.of(move.hint()) : Optional.empty();
+        String title = title(task.status(), round);
+        String banner = banner(move.hint(), round);
+        Optional<String> yours = move.owner() == Owner.YOU ? Optional.of(title + "\n" + banner) : Optional.empty();
         Instant now = clock.instant();
         Standing before = seen.get(taskId);
         Standing standing = before != null && before.yours().equals(yours) ? before
@@ -80,7 +82,7 @@ public class YourMoveJob implements Job {
         boolean settled = !standing.told() && !now.isBefore(standing.since().plus(SETTLE));
         seen.put(taskId, settled ? new Standing(yours, standing.since(), true) : standing);
         if (settled) {
-            notifications.send(Notification.fromAgent(taskId, title(task.status(), round), banner(move.hint(), round)));
+            notifications.send(Notification.fromAgent(taskId, title, banner));
         }
     }
 

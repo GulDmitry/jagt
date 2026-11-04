@@ -48,6 +48,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B25 | distinct questions are answered over a tree nothing changed in → only the same question asked again counts toward the approach change and the runaway | audit 2026-11-04 | `MasterDecisionsTest` |
 | B26 | a deploy conflict is worked after the human was told, then left again → a moved worktree makes the next stall new: the card and a banner say so again | audit 2026-11-04 | `ConflictTest` |
 | B27 | intake turned an item away for a cause later fixed → the key keeps only its telling, so each poll tries the item again | audit 2026-11-04 | `IntakeHistoryTest` |
+| B28 | drafted replies arrive under a move the human was already told of → the tap keys what it says, so it pings again naming them | audit 2026-11-04 | `YourMoveJobTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
