@@ -19,8 +19,7 @@
   [spec](../openspec/specs/attention/spec.md#requirement-attention-tiers)
 - **Badge names the act** — Each badge says which action waits for you, with a sentence in its tooltip.
   [spec](../openspec/specs/attention/spec.md#requirement-the-badge-names-the-act)
-- **Banners per event** — `notifications.desktop` lists the events that raise a desktop banner, a request opening
-  among them and, off by default, a deploy landing.
+- **Banners per event** — `notifications.desktop` lists the events raising a desktop banner, a request opening and, off by default, a deploy landing.
   [spec](../openspec/specs/attention/spec.md#requirement-desktop-banners-are-chosen-per-event)
 
 ## Board · [spec](../openspec/specs/board/spec.md)
@@ -157,7 +156,8 @@
   [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
 - **Local reads** — Command mapping may ask a local model, the cloud answering where it fails. Key: `orchestrator.assistant.local.endpoint`, off.
   [spec](../openspec/specs/startup/spec.md#requirement-a-read-that-needs-no-tool-may-ask-a-local-model)
-- **OpenCode agents** — `agent.cli: opencode`. [spec](../openspec/specs/startup/spec.md#requirement-opencode-may-run-the-agents)
+- **OpenCode agents** — `agent.cli: opencode` runs sessions there, `opencode.reads` a role's reads. Key: `orchestrator.opencode.reads`, off.
+  [spec](../openspec/specs/startup/spec.md#requirement-a-read-named-under-reads-runs-on-opencode)
 
 ## Task flow · [spec](../openspec/specs/task-flow/spec.md)
 - **One table of statuses** — One table says which action is allowed in which status and where it leads.

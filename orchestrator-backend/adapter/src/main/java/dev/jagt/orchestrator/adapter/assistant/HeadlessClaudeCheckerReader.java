@@ -16,12 +16,11 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
 @RequiredArgsConstructor
-public class HeadlessClaudeCheckerReader implements CheckerReader {
+public class HeadlessClaudeCheckerReader {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(20);
 
@@ -30,21 +29,15 @@ public class HeadlessClaudeCheckerReader implements CheckerReader {
     private final AssistantProperties assistant;
     private final List<RoleDefinition> roles;
 
-    @Override
-    public Answer<QaVerdict> read(Run run) {
-        HeadlessReply reply = ask(run);
-        QaVerdict verdict = CheckerAnswers.verdict(run.sha(), reply);
-        CheckerAnswers.write(run.worktree().resolve(run.role() + "-report.md"), run.role(), verdict);
-        return new Answer<>(Optional.of(verdict), reply.usage());
+    public Answer<QaVerdict> read(CheckerReader.Run run) {
+        return CheckerAnswers.verdictOf(run, ask(run));
     }
 
-    @Override
-    public Answer<QaDecline> reconsider(Run run) {
-        HeadlessReply reply = ask(run);
-        return new Answer<>(Optional.of(CheckerAnswers.decline(run.sha(), reply)), reply.usage());
+    public Answer<QaDecline> reconsider(CheckerReader.Run run) {
+        return CheckerAnswers.declineOf(run, ask(run));
     }
 
-    private HeadlessReply ask(Run run) {
+    private HeadlessReply ask(CheckerReader.Run run) {
         RoleDefinition.Tools scope = roles.stream().filter(role -> role.id().equals(run.role())).findFirst()
                 .orElseThrow(() -> new IllegalStateException("no installed role " + run.role())).tools();
         List<String> mcpReads = ReadOnlyTools.mcpNamed(assistant.allowedTools());

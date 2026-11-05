@@ -151,3 +151,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0135 Tool-less reads may call a local model directly](0135-tool-less-reads-may-call-a-local-model-directly.md) (amends 0128)
 - [0136 A task may plan before it has a repository](0136-a-task-may-plan-before-it-has-a-repository.md)
 - [0137 OpenCode is an agent CLI driver](0137-opencode-is-an-agent-cli-driver.md) (stands under 0128)
+- [0138 A read may run on OpenCode](0138-a-read-may-run-on-opencode.md) (amends 0137)

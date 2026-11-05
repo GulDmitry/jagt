@@ -18,7 +18,7 @@ import java.util.List;
 @Component
 @ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
 @RequiredArgsConstructor
-public class HeadlessClaudeRoundReviewer implements RoundReviewer {
+public class HeadlessClaudeRoundReviewer {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(15);
     private static final String TOOLS = "Read,Grep,Glob,Bash";
@@ -26,8 +26,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
 
-    @Override
-    public Answer<Judgement> review(Round round) {
+    public Answer<RoundReviewer.Judgement> review(RoundReviewer.Round round) {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), round.prompt(), "-p",
                 "--json-schema", RoundRead.SCHEMA.json(), "--output-format", "json",
                 // The worktree's settings are the diff's to write, and its hooks would report as the task's session.
@@ -63,7 +62,6 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
                 round.worktrees().getFirst().toString()));
     }
 
-    @Override
     public boolean loadsMcpServer() {
         return !ReadOnlyTools.mcpNamed(assistant.allowedTools()).isEmpty();
     }

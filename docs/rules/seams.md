@@ -4,9 +4,8 @@
 
 ## Pluggable by design
 
-Linux and macOS, with terminals, notifiers, editors
-and agent runtimes (any MCP-capable CLI) behind a **strategy interface**: an
-implementation plus a config value, never `if claude` or `if macos`.
+Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-capable CLI) behind a
+**strategy interface**: an implementation plus a config value, never `if claude` or `if macos`.
 
 - Selected by config: `UserNotifier` by `orchestrator.platform` (macos default, linux). `TerminalDriver` by
   `orchestrator.terminal` (kitty default, ghostty on macOS only). `EditorDriver` by `orchestrator.editor-command`.
@@ -16,6 +15,7 @@ implementation plus a config value, never `if claude` or `if macos`.
   a notifier reaching nothing logs and returns.
 - **Every third-party service or technology is a seam** ([0130](../decisions/0130-every-third-party-is-a-configured-seam.md)):
   a port, one driver per vendor, a `jagt.yml` key with a default; never guessed from a name, a URL, a host or a file.
+- **A read may run on OpenCode** (`opencode.reads`): the `Chosen…Reader`s pick per role, `HeadlessOpenCode` skips the cloud's breaker.
 - **A driver that cannot reach its party is jagt's failure, not a task's**: one mark on the board's head naming the fix,
   ended by the next read that succeeds; a card stops only on its own work.
 - **The code host is a seam for jagt's own reads** (`codeHost`: `github` default, `gitlab`, `command`, `none`, `replay`), the

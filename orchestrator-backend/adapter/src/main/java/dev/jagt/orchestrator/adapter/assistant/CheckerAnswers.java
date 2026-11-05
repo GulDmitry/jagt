@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaVerdict;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,16 @@ import java.util.stream.Collectors;
 final class CheckerAnswers {
 
     private CheckerAnswers() {
+    }
+
+    static Answer<QaVerdict> verdictOf(CheckerReader.Run run, HeadlessReply reply) {
+        QaVerdict verdict = verdict(run.sha(), reply);
+        write(run.worktree().resolve(run.role() + "-report.md"), run.role(), verdict);
+        return new Answer<>(Optional.of(verdict), reply.usage());
+    }
+
+    static Answer<QaDecline> declineOf(CheckerReader.Run run, HeadlessReply reply) {
+        return new Answer<>(Optional.of(decline(run.sha(), reply)), reply.usage());
     }
 
     static QaDecline decline(String sha, HeadlessReply reply) {
