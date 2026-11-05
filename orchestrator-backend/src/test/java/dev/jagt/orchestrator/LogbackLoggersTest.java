@@ -43,6 +43,13 @@ class LogbackLoggersTest {
                 assertThat(config).as(name).contains("<logger name=\"" + name + "\"><appender-ref ref=\"MASTER\"/>"));
     }
 
+    @Test
+    void theMasterWindowsTimestampIsWrittenInTheTerminalsOwnColourSoADarkThemeShowsIt() throws IOException {
+        String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
+
+        assertThat(config).contains("<pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} ");
+    }
+
     private static Stream<Path> walk(Path root) {
         try {
             return Files.walk(root).filter(path -> path.toString().endsWith(".java"));
