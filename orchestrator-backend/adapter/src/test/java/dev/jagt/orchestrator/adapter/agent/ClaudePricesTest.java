@@ -23,6 +23,17 @@ class ClaudePricesTest {
         assertThat(ClaudePrices.of(model)).contains(expected);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "claude-opus-5-5, 24.2",
+            "claude-haiku-5-5, 0.61",
+    })
+    void pricesAMillionOfInputCacheReadAndOutputAtTheModelsOwnListPrice(String model, double expected) {
+        double cost = ClaudePrices.of(model).orElseThrow().costOf(1_000_000, 0, 0, 1_000_000, 1_000_000);
+
+        assertThat(cost).isCloseTo(expected, within(1e-9));
+    }
+
     @Test
     void pricesEachTokenKindAtItsOwnRatePerMillion() {
         double cost = ClaudePrices.SONNET.costOf(2_000_000, 1_000_000, 1_000_000, 10_000_000, 1_000_000);
