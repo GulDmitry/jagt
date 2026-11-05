@@ -13,7 +13,6 @@ Accepted 2026-11-05.
 - A task is a worktree on a branch in one project, so the human picks the project before any plan exists.
 - Where the change belongs is often the plan's own finding; a wrong pick costs a cut worktree and a restart.
 - 0068 lets a session ask for a repository only after the task has one.
-- Routing a free-text start would be a model choosing a repository, which 0066 reserves to the human.
 
 ## Decision
 
