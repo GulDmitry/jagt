@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -26,11 +27,15 @@ public class TrustedGitState {
     private final StateService stateService;
     private final GitWorktrees git;
 
-    /** Trusts what git obeys now; throws where it cannot be read. */
-    public void trust(String taskId) {
+    /**
+     * Trusts what git obeys now; throws where it cannot be read. True where the task was parked on a change and its
+     * session waits on a question.
+     */
+    public boolean trust(String taskId) {
         TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
         Map<String, String> now = read(task);
         stateService.updateTask(taskId, current -> TaskReducer.gitTrusted(current, GitTrust.of(now)));
+        return task.gitTrust() != null && task.gitTrust().changed() != null && task.report() == AgentReport.QUESTION;
     }
 
     private Map<String, String> read(TaskState task) {

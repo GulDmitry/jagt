@@ -45,3 +45,5 @@ is the human's in every Master mode.
 #### Scenario: Trust
 - **WHEN** you press Trust git on a parked task
 - **THEN** its record is what git obeys now, and `deploy` is offered again
+- **WHEN** its session had asked you to trust it
+- **THEN** the session is told `answered`: retry what the guard refused
