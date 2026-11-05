@@ -19,6 +19,10 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.RandomAccessFile;
+import java.nio.file.attribute.FileTime;
+import java.time.Duration;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LogFileRollTest {
 
     @Test
-    void keepsThePreviousRunsLogAsTheOneArchiveBeforeTheAppenderOpensIt(@TempDir Path root) throws IOException {
+    void rollsThePreviousRunsLogIntoDotOneBeforeTheAppenderOpensIt(@TempDir Path root) throws IOException {
         Path log = root.resolve("jagt.log");
         Files.writeString(log, "yesterday\n");
         Files.writeString(root.resolve("jagt.log.1"), "the day before");
@@ -48,6 +52,73 @@ class LogFileRollTest {
         assertThat(root.resolve("jagt.log.1")).content().contains("yesterday");
         assertThat(root.resolve("jagt.log.2026-08-17.0.gz")).doesNotExist();
         assertThat(root.resolve("keep-me.log")).exists();
+    }
+
+    @Test
+    void keepsTheOlderRunAsADatedArchiveWhenAnotherRunStarts(@TempDir Path root) throws IOException {
+        Path log = root.resolve("jagt.log");
+        Files.writeString(log, "yesterday\n");
+        Path previous = root.resolve("jagt.log.1");
+        Files.writeString(previous, "the day before");
+        Files.setLastModifiedTime(previous, FileTime.from(Instant.parse("2100-03-04T05:06:07Z")));
+
+        LogFileRoll.start(log);
+
+        assertThat(root.resolve("jagt.log.2100-03-04-050607")).content().isEqualTo("the day before");
+        assertThat(previous).content().contains("yesterday");
+    }
+
+    @Test
+    void deletesAnArchiveOlderThanFourteenDaysAndKeepsOneYoungerThanThat(@TempDir Path root) throws IOException {
+        Path log = root.resolve("jagt.log");
+        Files.writeString(log, "yesterday\n");
+        Path old = root.resolve("jagt.log.2026-01-01-000000");
+        Files.writeString(old, "stale");
+        Files.setLastModifiedTime(old, FileTime.from(Instant.now().minus(Duration.ofDays(15))));
+        Path recent = root.resolve("jagt.log.2026-01-02-000000");
+        Files.writeString(recent, "fresh");
+        Files.setLastModifiedTime(recent, FileTime.from(Instant.now().minus(Duration.ofDays(13))));
+
+        LogFileRoll.start(log);
+
+        assertThat(old).doesNotExist();
+        assertThat(recent).exists();
+    }
+
+    @Test
+    void deletesTheOldestArchivesOncePastTwoHundredMegabytesInTotal(@TempDir Path root) throws IOException {
+        Path log = root.resolve("jagt.log");
+        Files.writeString(log, "yesterday\n");
+        Path oldest = sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Duration.ofDays(3));
+        Path middle = sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Duration.ofDays(2));
+        Path newest = sparseArchive(root.resolve("jagt.log.2026-01-03-000000"), 100, Duration.ofDays(1));
+
+        LogFileRoll.start(log);
+
+        assertThat(oldest).doesNotExist();
+        assertThat(middle).exists();
+        assertThat(newest).exists();
+    }
+
+    @Test
+    void keepsArchivesTotallingExactlyTwoHundredMegabytes(@TempDir Path root) throws IOException {
+        Path log = root.resolve("jagt.log");
+        Files.writeString(log, "yesterday\n");
+        Path older = sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Duration.ofDays(2));
+        Path newer = sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Duration.ofDays(1));
+
+        LogFileRoll.start(log);
+
+        assertThat(older).exists();
+        assertThat(newer).exists();
+    }
+
+    private static Path sparseArchive(Path file, int megabytes, Duration age) throws IOException {
+        try (RandomAccessFile sparse = new RandomAccessFile(file.toFile(), "rw")) {
+            sparse.setLength(megabytes * 1024L * 1024L);
+        }
+        Files.setLastModifiedTime(file, FileTime.from(Instant.now().minus(age)));
+        return file;
     }
 
     @Test

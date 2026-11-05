@@ -27,8 +27,10 @@ A session line `ToolGate` refuses and a report `FlowRules.refusedReport` refuses
 - **THEN** it becomes `interactions.jsonl.1`, the older `.1` is gone, and the next press starts a new file
 
 ### Requirement: A log keeps one archive and a headless read none
-`jagt-backend.log` and `jagt-master.log` SHALL roll at 10 MB and at each start into one `.1`, replacing the last. A headless read SHALL
-keep no transcript (`--no-session-persistence`); a session's own transcripts are bounded by its agent CLI.
+`jagt-backend.log` and `jagt-master.log` SHALL roll at 10 MB into one `.1`, replacing the last. At each start the previous `.1`
+SHALL become `<log>.<UTC yyyy-MM-dd-HHmmss>` and the log `.1`; dated archives SHALL be deleted past 14 days, then oldest first
+past 200 MB in total. A headless read SHALL keep no transcript (`--no-session-persistence`); a session's own transcripts are
+bounded by its agent CLI.
 
 #### Scenario: A long run
 - **WHEN** the Master's log passes 10 MB

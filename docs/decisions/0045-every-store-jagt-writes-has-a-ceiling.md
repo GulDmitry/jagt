@@ -23,7 +23,7 @@ Accepted 2026-10-15.
   oldest entries first; the newest stays. Decided 2026-10-28: the snapshots are for a human's last look, zips
   nobody opens bound nothing.
 - An artifact past 10 MB is not copied; a `.not-kept` line names it.
-- Each log rolls at 10 MB into one `.1`, replacing the last.
+- Each log rolls at 10 MB into one `.1`; at each start the old `.1` becomes a dated archive kept 14 days, 200 MB at most.
 - A session's own transcripts are the agent CLI's: jagt reads them, its cleanup bounds them.
 
 ## Rejected

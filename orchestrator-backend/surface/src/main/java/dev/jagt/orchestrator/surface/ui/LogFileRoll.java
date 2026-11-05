@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * This run's log, the previous run's in {@code .1}: runs in the gap after {@code application.yml} is read and before the appender opens the
+ * This run's log, the previous run's in {@code .1}, the runs before it dated beside it: runs in the gap after {@code application.yml} is read and before the appender opens the
  * file. Registered by hand rather than declared — {@code bootJar} hoists {@code META-INF/spring/…imports} to
  * the jar root, which is not on the executable jar's classpath.
  */
@@ -52,6 +52,9 @@ public class LogFileRoll implements ApplicationListener<ApplicationEnvironmentPr
         String name = fileName.toString();
         Path previous = directory.resolve(name + ".1");
         try {
+            if (Files.isRegularFile(previous)) {
+                Files.move(previous, LogArchives.archiveName(previous, name), StandardCopyOption.REPLACE_EXISTING);
+            }
             if (Files.isRegularFile(absolute)) {
                 Files.move(absolute, previous, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -59,12 +62,14 @@ public class LogFileRoll implements ApplicationListener<ApplicationEnvironmentPr
                 List<Path> strays = siblings
                         .filter(sibling -> sibling.getFileName().toString().startsWith(name + "."))
                         .filter(sibling -> !sibling.equals(previous))
+                        .filter(sibling -> !LogArchives.isArchive(sibling, name))
                         .filter(Files::isRegularFile)
                         .toList();
                 for (Path stray : strays) {
                     Files.deleteIfExists(stray);
                 }
             }
+            LogArchives.prune(directory, name);
         } catch (IOException | RuntimeException e) {
             Console.problem("Could not roll " + absolute + ": " + e.getMessage());
         }

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-Each log holds at most two files: past 10MB it rolls into `<log>.1`, replacing the last one. Boot's own appender
-rolls daily and keeps a week of archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at start.
+Past 10MB a log rolls into `<log>.1`, replacing the last one. Boot's own appender rolls daily and keeps a week of
+archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at start and keeps the old `.1` dated for 14 days.
 -->
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
