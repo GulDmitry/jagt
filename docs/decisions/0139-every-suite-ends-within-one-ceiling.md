@@ -13,6 +13,7 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   168 s, `roleEval -Prole=master` about 7 min (21 cases), `promptEval` under 1 min.
 - The local-model QA eval: 32 min for 10 cases, its time spent in loops the read repeats, not in the model.
 - CI's `pitest` on a push's diff: 47 min on 2026-11-05 (5,428 mutations, `usecase` 2,813 s, 30 minion timeouts).
+- `pitestDiff` on one commit's diff: about 130 s for 1 and for 8 changed main files, most of it coverage analysis.
 
 ## Decision
 
@@ -31,6 +32,8 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
 
 - A constant per task: one more number per suite, each raised on its own.
 - No ceiling on investigations: a run nobody bounded is the one that ran 27 minutes.
+- `pitest`'s incremental history: 1.30 refuses it without arcmutate's paid history plugin.
+- `threads` split across the concurrent `pitest` tasks: `:usecase` alone is the critical path.
 
 ## Reopen when
 
