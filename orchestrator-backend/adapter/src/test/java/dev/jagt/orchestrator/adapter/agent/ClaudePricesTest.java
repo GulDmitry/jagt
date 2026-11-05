@@ -26,6 +26,7 @@ class ClaudePricesTest {
     @ParameterizedTest
     @CsvSource({
             "claude-opus-5-5, 24.2",
+            "claude-sonnet-5-5, 12.1",
             "claude-haiku-5-5, 0.61",
     })
     void pricesAMillionOfInputCacheReadAndOutputAtTheModelsOwnListPrice(String model, double expected) {

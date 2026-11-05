@@ -16,6 +16,7 @@ enum ClaudePrices {
     OPUS_5_5("opus-5-5", 4, 0.2, 20),
     OPUS_4_1("opus-4-1", 15, 1.5, 75),
     OPUS("opus", 5, 0.5, 25),
+    SONNET_5_5("sonnet-5-5", 2, 0.1, 10),
     SONNET_5("sonnet-5", 2, 0.2, 10),
     SONNET("sonnet", 3, 0.3, 15),
     HAIKU_5_5("haiku-5-5", 0.1, 0.01, 0.5),
