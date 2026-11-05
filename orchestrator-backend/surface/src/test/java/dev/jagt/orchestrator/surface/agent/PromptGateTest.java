@@ -61,14 +61,13 @@ class PromptGateTest {
     }
 
     @Test
-    void letsAPromptThroughWhileTheTurnIsOpen() {
+    void relaysAPromptToAFreshSessionWhenAnOpenTurnSignedNothingPastTheCacheLifetime() {
         TaskState working = idle.withSession(Session.defaults().withMovedAt(5_000));
-        when(runtime.pastCacheLifetime(anyLong(), any())).thenReturn(true);
+        when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
 
-        String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", working, "go on");
+        new PromptGate(coldPrompts, runtime, config).answer("ABC-1", working, "go on");
 
-        assertThat(answered).isEmpty();
-        verify(coldPrompts, never()).relay(anyString(), anyString());
+        verify(coldPrompts).relay("ABC-1", "go on");
     }
 
     @Test

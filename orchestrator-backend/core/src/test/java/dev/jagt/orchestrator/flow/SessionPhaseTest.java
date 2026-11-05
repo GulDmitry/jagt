@@ -1,12 +1,19 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SessionPhaseTest {
 
@@ -44,28 +51,37 @@ class SessionPhaseTest {
     }
 
     @Test
-    void isIdleSinceTheLaterOfItsHaltAndItsLastMove() {
+    void isColdFromTheLaterOfItsHaltAndItsLastMove() {
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.pastCacheLifetime(7_000, Duration.ofHours(1))).thenReturn(true);
         Session session = Session.defaults().withMovedAt(7_000)
                 .withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null));
 
-        assertThat(SessionPhase.idleSince(session)).isEqualTo(7_000);
+        assertThat(SessionPhase.cold(session, runtime, Duration.ofHours(1))).isTrue();
     }
 
     @Test
-    void isIdleSinceItsLastReadSignWhereNoHookEverStampedIt() {
-        Session session = Session.defaults().withQuietSince(7_000);
+    void isColdFromItsLastReadSignWhereNoHookEverStampedIt() {
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.pastCacheLifetime(7_000, Duration.ofHours(1))).thenReturn(true);
 
-        assertThat(SessionPhase.idleSince(session)).isEqualTo(7_000);
+        assertThat(SessionPhase.cold(Session.defaults().withQuietSince(7_000), runtime, Duration.ofHours(1))).isTrue();
     }
 
     @Test
-    void isNotIdleWhileItsTurnIsOpen() {
-        assertThat(SessionPhase.idleSince(Session.defaults().withMovedAt(7_000))).isZero();
+    void isColdWhileItsTurnIsOpenWhenItsLastSignIsPastTheCacheLifetime() {
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.pastCacheLifetime(7_000, Duration.ofHours(1))).thenReturn(true);
+
+        assertThat(SessionPhase.cold(Session.defaults().withMovedAt(7_000), runtime, Duration.ofHours(1))).isTrue();
     }
 
     @Test
-    void isNotIdleWhenItHasSignedNothing() {
-        assertThat(SessionPhase.idleSince(Session.defaults())).isZero();
+    void isNotColdWhenItHasSignedNothing() {
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.pastCacheLifetime(anyLong(), any())).thenReturn(true);
+
+        assertThat(SessionPhase.cold(Session.defaults(), runtime, Duration.ofHours(1))).isFalse();
     }
 
     @Test

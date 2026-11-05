@@ -72,6 +72,12 @@ public class RestartAskJob implements TaskJob {
                     .addKeyValue("effect", "nothing said, the session is not revived for it").log();
             return;
         }
+        if (sessions.cold(taskId)) {
+            log.atInfo().setMessage("restart ask skipped").addKeyValue("task", taskId)
+                    .addKeyValue("cause", "the session is idle past its cache lifetime")
+                    .addKeyValue("effect", "nothing said, its report predates anything the restart lost").log();
+            return;
+        }
         try {
             relay.say(taskId, Step.RESTARTED, FACTS, read);
         } catch (RuntimeException e) {

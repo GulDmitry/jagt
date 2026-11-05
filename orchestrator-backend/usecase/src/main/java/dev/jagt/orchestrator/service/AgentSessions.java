@@ -172,7 +172,11 @@ public class AgentSessions {
     public String say(String taskId, String line) {
         String id = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(id);
-        String session = agentSession(configService.load(), id);
+        ConfigService.ConfigFile config = configService.load();
+        if (cold(task, config)) {
+            return relayUnderCold(id, line);
+        }
+        String session = agentSession(config, id);
         if (sessions.taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
                 || !sessions.nudgeTaskWindow(session, id, line)) {
             throw new IllegalStateException("No " + agentRuntime.displayName() + " session is running for "
@@ -311,10 +315,13 @@ public class AgentSessions {
         }
     }
 
+    public boolean cold(String taskId) {
+        return stateService.task(stateService.canonicalTaskId(taskId))
+                .filter(task -> cold(task, configService.load())).isPresent();
+    }
+
     private boolean cold(TaskState task, ConfigService.ConfigFile config) {
-        long idleSince = SessionPhase.idleSince(task.session());
-        return idleSince > 0
-                && agentRuntime.pastCacheLifetime(idleSince, config.agent().cacheLifetimeOrDefault());
+        return SessionPhase.cold(task.session(), agentRuntime, config.agent().cacheLifetimeOrDefault());
     }
 
     /** A line typed over a draft is glued to it and sent as the human's, so the nudge waits for an empty prompt. */

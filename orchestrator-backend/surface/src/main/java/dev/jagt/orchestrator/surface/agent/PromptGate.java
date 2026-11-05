@@ -48,8 +48,6 @@ public class PromptGate {
     }
 
     private boolean cold(TaskState task) {
-        long idleSince = SessionPhase.idleSince(task.session());
-        return idleSince > 0
-                && runtime.pastCacheLifetime(idleSince, configService.load().agent().cacheLifetimeOrDefault());
+        return SessionPhase.cold(task.session(), runtime, configService.load().agent().cacheLifetimeOrDefault());
     }
 }

@@ -87,6 +87,19 @@ class RestartAskJobTest {
     }
 
     @Test
+    void asksNothingOfASessionIdlePastItsCacheLifetime(@TempDir Path root) {
+        StateService state = state(root);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
+        when(presence.agentLive("ABC-42")).thenReturn(true);
+        when(sessions.cold("ABC-42")).thenReturn(true);
+
+        new RestartAskJob(sessions, presence, relay).runOn(state.tasks());
+
+        verify(relay, never()).say(anyString(), any(Step.class), anyString(), any(Standing.class));
+    }
+
+    @Test
     void keepsAskingTheOtherTasksWhenOneCannotBeTold(@TempDir Path root) {
         StateService state = state(root);
         TaskTurns turns = new TaskTurns(state, Clock.systemUTC());

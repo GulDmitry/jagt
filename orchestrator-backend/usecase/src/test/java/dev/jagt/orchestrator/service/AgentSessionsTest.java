@@ -277,18 +277,17 @@ class AgentSessionsTest {
     }
 
     @Test
-    void nudgesTheRunningConversationWhileItsTurnIsOpenWhateverTheCacheLifetimeSays() {
+    void startsAFreshSessionForNewInstructionsWhenAnOpenTurnSignedNothingPastTheCacheLifetime() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build()
                 .withSession(Session.defaults().withMovedAt(5_000)));
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
-        when(agentRuntime.pastCacheLifetime(anyLong(), any())).thenReturn(true);
+        when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
 
         sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
-        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -357,6 +356,33 @@ class AgentSessionsTest {
 
         assertThat(state.task("ABC-1").orElseThrow().planGate()).isNotEqualTo(PlanGate.REQUIRED);
         verifyNoInteractions(tmux);
+    }
+
+    @Test
+    void writesALineForAFreshSessionInsteadOfTypingItIntoOneIdlePastItsCacheLifetime() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build().withSession(
+                Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null))));
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+        String answer = sessions.say("ABC-1", "jagt was restarted.");
+
+        assertThat(answer).contains("a fresh session was started");
+        assertThat(Files.readString(root.resolve("task_context.md"))).contains("jagt was restarted.");
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true, true", "false, false"})
+    void readsATaskColdOnlyWhenItsSessionIdledPastTheCacheLifetime(boolean pastLifetime, boolean cold) {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build().withSession(
+                Session.defaults().withHalt(new Session.Halt(Session.Halt.Kind.IDLE, 5_000, null))));
+        when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(pastLifetime);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+        assertThat(sessions.cold("ABC-1")).isEqualTo(cold);
     }
 
     @Test

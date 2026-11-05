@@ -1,9 +1,12 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import org.jspecify.annotations.Nullable;
+
+import java.time.Duration;
 
 /** The session region's states, each decided from the record alone. */
 public enum SessionPhase {
@@ -26,12 +29,10 @@ public enum SessionPhase {
         return session.movedAt() > 0 ? WORKING : NONE;
     }
 
-    /** Since when the session has not been working, or 0 while its turn is open or it has signed nothing. */
-    public static long idleSince(Session session) {
-        return switch (of(session)) {
-            case NONE, WORKING -> 0;
-            default -> session.idleSince();
-        };
+    /** Whether the session's last sign, in any phase, is past the cache lifetime; false where it signed nothing. */
+    public static boolean cold(Session session, AgentRuntime runtime, Duration cacheLifetime) {
+        long lastSign = session.idleSince();
+        return lastSign > 0 && runtime.pastCacheLifetime(lastSign, cacheLifetime);
     }
 
     /** Since when an agent that should be working has stopped, or 0 where it has not, or where its status idles by design. */
