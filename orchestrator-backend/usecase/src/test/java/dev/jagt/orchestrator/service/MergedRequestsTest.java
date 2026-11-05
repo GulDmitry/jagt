@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -12,6 +13,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -113,6 +116,23 @@ class MergedRequestsTest {
         assertThat(left).isTrue();
         assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
         verify(departure).settle(eq("ABC-42"), eq(web), any());
+    }
+
+    @Test
+    void aRepositoryWhoseRequestTheHostClosedTakesItsTrustedGitEntriesWithIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
+        state.putTask("ABC-42", TaskState.builder(List.of(
+                new TaskRepo("api", "/api-wt", "git@host:g/api.git", "http://mr/api"), web), TaskStatus.REVIEWED)
+                .gitTrust(GitTrust.of(Map.of("core.bare in /api/.git/config", "a1",
+                        "core.bare in /web/.git/config", "b2"))).build());
+        when(departure.trustedOnlyBy(eq("ABC-42"), any(), eq(web))).thenReturn(Set.of("core.bare in /web/.git/config"));
+
+        new MergedRequests(state, config, inspection, new WorktreeChanges(config, inspection), departure)
+                .hostSaidClosed("ABC-42", web);
+
+        assertThat(state.task("ABC-42").orElseThrow().gitTrust().recorded()).containsOnlyKeys("core.bare in /api/.git/config");
     }
 
     @Test

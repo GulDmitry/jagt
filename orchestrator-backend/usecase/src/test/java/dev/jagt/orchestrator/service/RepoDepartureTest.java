@@ -2,11 +2,15 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.contains;
@@ -52,5 +56,13 @@ class RepoDepartureTest {
         departure.settle("ABC-42", web, "its request was closed on the host");
 
         verify(sessions).relayUnder(eq("ABC-42"), contains("web"), anyBoolean());
+    }
+
+    @Test
+    void asksTheRetiredWorktreesWhichTrustedEntriesOnlyTheLeavingRepositoryHolds() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.PLAN_PENDING).build();
+        when(worktrees.trustedOnlyBy("ABC-42", task, web)).thenReturn(Set.of("core.bare in /web/.git/config"));
+
+        assertThat(departure.trustedOnlyBy("ABC-42", task, web)).containsExactly("core.bare in /web/.git/config");
     }
 }

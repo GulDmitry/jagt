@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -33,6 +34,13 @@ public record GitTrust(Map<String, String> recorded, @With @Nullable String chan
         Map<String, String> both = new HashMap<>(recorded);
         both.putAll(more.recorded());
         return new GitTrust(both, changed);
+    }
+
+    /** This record without the entries named {@code keys}. */
+    public GitTrust excluding(Set<String> keys) {
+        Map<String, String> kept = new HashMap<>(recorded);
+        kept.keySet().removeAll(keys);
+        return new GitTrust(kept, changed);
     }
 
     /** Each entry differing from the record, in name order, followed by how. */

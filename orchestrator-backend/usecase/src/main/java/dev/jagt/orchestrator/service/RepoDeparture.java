@@ -1,11 +1,13 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 
 /** What a repository leaving a task leaves behind: its checkout goes, its branch stays, the session is told. */
 @Component
@@ -16,6 +18,11 @@ public class RepoDeparture {
     private final ConfigService configService;
     private final RetiredWorktrees worktrees;
     private final AgentSessions sessions;
+
+    /** The trusted git entries only {@code leaving} holds among {@code task}'s repositories. */
+    public Set<String> trustedOnlyBy(String taskId, TaskState task, TaskRepo leaving) {
+        return worktrees.trustedOnlyBy(taskId, task, leaving);
+    }
 
     public void settle(String taskId, TaskRepo repo, String cause) {
         log.atInfo().setMessage("repository left the task").addKeyValue("task", taskId)

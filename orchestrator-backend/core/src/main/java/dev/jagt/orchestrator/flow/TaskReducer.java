@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /** The one place a task's status, stop, plan gate, report, turn, deployment, session, git trust, repository request, review requests, checks, approval and infrastructure re-runs are written: the chart's step, every effect applied in order. */
 public final class TaskReducer {
@@ -222,6 +223,14 @@ public final class TaskReducer {
     /** {@code task} without {@code project}, its request ended with it; the last repository stays. */
     public static TaskState repoLeft(TaskState task, String project) {
         return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE, false)), 0);
+    }
+
+    /** {@code task} without {@code project}, and without the trusted git entries only it held. */
+    public static TaskState repoLeft(TaskState task, String project, Set<String> trustedOnlyByIt) {
+        TaskState left = repoLeft(task, project);
+        GitTrust trust = left.gitTrust();
+        return trust == null || left.repos().size() == task.repos().size()
+                ? left : left.withGitTrust(trust.excluding(trustedOnlyByIt));
     }
 
     /** {@code task} with the requests a report linked, a new round where it is one; the links are stamped {@code now}. */

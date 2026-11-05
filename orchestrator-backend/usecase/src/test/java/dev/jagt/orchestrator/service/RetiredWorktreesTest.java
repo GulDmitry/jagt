@@ -2,17 +2,21 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class RetiredWorktreesTest {
 
@@ -83,5 +87,43 @@ class RetiredWorktreesTest {
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())));
 
         assertThat(missing).isFalse();
+    }
+
+    @Test
+    void namesTheTrustedEntriesNoStayingRepositoryAlsoHolds() {
+        TaskRepo web = TaskRepo.of("web", "/web-wt");
+        TaskRepo api = TaskRepo.of("api", "/api-wt");
+        TaskState task = TaskState.builder(List.of(api, web), TaskStatus.PLAN_PENDING).build();
+        when(git.gitState(List.of(Path.of("/web-wt")))).thenReturn(Map.of("core.bare in /web/.git/config", "a1",
+                "/shared/hooks/pre-push", "b2"));
+        when(git.gitState(List.of(Path.of("/api-wt")))).thenReturn(Map.of("core.bare in /api/.git/config", "c3",
+                "/shared/hooks/pre-push", "b2"));
+
+        Set<String> own = new RetiredWorktrees(git, sessions).trustedOnlyBy("ABC-42", task, web);
+
+        assertThat(own).containsExactly("core.bare in /web/.git/config");
+    }
+
+    @Test
+    void namesNoEntryWhereTheLeavingCheckoutCannotBeRead() {
+        TaskRepo web = TaskRepo.of("web", "/web-wt");
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.PLAN_PENDING).build();
+        when(git.gitState(List.of(Path.of("/web-wt")))).thenThrow(new IllegalStateException("gone"));
+
+        Set<String> own = new RetiredWorktrees(git, sessions).trustedOnlyBy("ABC-42", task, web);
+
+        assertThat(own).isEmpty();
+    }
+
+    @Test
+    void ignoresAStayingRepositoryWithNoCheckoutWhenNamingTheLeavingOnesEntries() {
+        TaskRepo web = TaskRepo.of("web", "/web-wt");
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("api", null), web), TaskStatus.PLAN_PENDING).build();
+        when(git.gitState(List.of(Path.of("/web-wt")))).thenReturn(Map.of("core.bare in /web/.git/config", "a1"));
+        when(git.gitState(List.of())).thenReturn(Map.of());
+
+        Set<String> own = new RetiredWorktrees(git, sessions).trustedOnlyBy("ABC-42", task, web);
+
+        assertThat(own).containsExactly("core.bare in /web/.git/config");
     }
 }

@@ -51,6 +51,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B27 | intake turned an item away for a cause later fixed → the key keeps only its telling, so each poll tries the item again | audit 2026-11-04 | `IntakeHistoryTest` |
 | B28 | drafted replies arrive under a move the human was already told of → the tap keys what it says, so it pings again naming them | audit 2026-11-04 | `YourMoveJobTest` |
 | B29 | a session judged a switch before analysing and handed back its plan on that answer → the plan hand-back owes the answers again, and a `yes` for `visualize` needs `task_visual.md` | owner 2026-11-04 | `AgentStatusMessageTest`, `AgentStatusReportsTest` |
+| B30 | a repository leaves a multi-repo task (plan marks it unaffected, its request closed on the host) → the git entries only it held leave the trust with it, so the task is not parked as changed | seen 2026-11-05: a task with two repositories parked 0.4 s after plan approval, "core.bare in …/.git/config removed" | `GitTrustTest`, `UnaffectedReposTest`, `MergedRequestsTest`, `RepoDepartureTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

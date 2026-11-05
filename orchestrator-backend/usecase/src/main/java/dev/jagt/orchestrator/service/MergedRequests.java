@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /** Which of a task's requests git finds merged into their target, kept on the task for the flow to read. */
 @Service
@@ -59,9 +60,11 @@ public class MergedRequests {
      */
     public boolean hostSaidClosed(String taskId, TaskRepo repo) {
         String project = Objects.requireNonNull(repo.project());
-        boolean several = stateService.task(taskId).map(task -> task.repos().size() > 1).orElse(false);
+        TaskState task = stateService.task(taskId).orElse(null);
+        boolean several = task != null && task.repos().size() > 1;
         if (several) {
-            stateService.updateTask(taskId, current -> TaskReducer.repoLeft(current, project));
+            Set<String> trustedOnlyByIt = departure.trustedOnlyBy(taskId, Objects.requireNonNull(task), repo);
+            stateService.updateTask(taskId, current -> TaskReducer.repoLeft(current, project, trustedOnlyByIt));
             departure.settle(taskId, repo, "its request was closed on the host");
         }
         return several;

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /** Takes the repositories an approved plan marks unaffected out of the task, those holding own commits excepted. */
 @Component
@@ -48,9 +49,9 @@ public class UnaffectedRepos {
     }
 
     private void leaveUnlessOwnCommits(String taskId, String project) {
-        TaskRepo repo = stateService.task(taskId).filter(task -> task.repos().size() > 1)
-                .flatMap(task -> task.repos().stream().filter(one -> project.equals(one.project())).findFirst())
-                .orElse(null);
+        TaskState task = stateService.task(taskId).filter(one -> one.repos().size() > 1).orElse(null);
+        TaskRepo repo = task == null ? null
+                : task.repos().stream().filter(one -> project.equals(one.project())).findFirst().orElse(null);
         if (repo == null) {
             return;
         }
@@ -60,7 +61,9 @@ public class UnaffectedRepos {
                     .addKeyValue("project", project).addKeyValue("cause", "its task branch holds own commits").log();
             return;
         }
-        stateService.updateTask(taskId, current -> TaskReducer.repoLeft(current, Objects.requireNonNull(repo.project())));
+        Set<String> trustedOnlyByIt = departure.trustedOnlyBy(taskId, Objects.requireNonNull(task), repo);
+        stateService.updateTask(taskId, current -> TaskReducer.repoLeft(current, Objects.requireNonNull(repo.project()),
+                trustedOnlyByIt));
         departure.settle(taskId, repo, "the approved plan marks it unaffected");
     }
 }
