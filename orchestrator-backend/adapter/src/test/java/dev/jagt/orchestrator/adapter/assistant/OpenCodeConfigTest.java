@@ -16,7 +16,7 @@ class OpenCodeConfigTest {
         OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(Path.of("/wt")),
                 List.of());
 
-        JsonNode tools = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope))
+        JsonNode tools = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")))
                 .path("agent").path("jagt-read").path("tools");
 
         assertThat(tools.propertyNames()).containsExactly("*", "read", "grep", "glob", "bash");
@@ -28,7 +28,7 @@ class OpenCodeConfigTest {
         OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)", "Bash(git show:*)"),
                 List.of("Bash(git * --ou*)"), false, true, List.of(Path.of("/wt")), List.of());
 
-        JsonNode bash = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope))
+        JsonNode bash = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")))
                 .path("agent").path("jagt-read").path("permission").path("bash");
 
         assertThat(bash.propertyNames()).containsExactly("*", "git log*", "git show*", "git * --ou*", "* -o *", "* -O*",
@@ -46,7 +46,7 @@ class OpenCodeConfigTest {
         OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt1"), Path.of("/wt2")),
                 List.of());
 
-        JsonNode outside = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope))
+        JsonNode outside = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")))
                 .path("agent").path("jagt-read").path("permission").path("external_directory");
 
         assertThat(outside.propertyNames()).containsExactly("*", "/wt1/**", "/wt2/**");
@@ -60,8 +60,8 @@ class OpenCodeConfigTest {
                 List.of("https://dev.example.test"));
         OpenCodeScope silent = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
 
-        JsonNode allowed = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", fetching));
-        JsonNode denied = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", silent));
+        JsonNode allowed = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", fetching, Path.of("/state/gate")));
+        JsonNode denied = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", silent, Path.of("/state/gate")));
 
         assertThat(allowed.path("agent").path("jagt-read").path("tools").path("webfetch").asBoolean(false)).isTrue();
         assertThat(allowed.path("agent").path("jagt-read").path("permission").path("webfetch").asString()).isEqualTo("allow");
@@ -73,7 +73,7 @@ class OpenCodeConfigTest {
     void runsTheReadOnItsOwnAgentOnTheRolesModelWithNoMcpServerAndNoEdit() {
         OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
 
-        JsonNode config = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope));
+        JsonNode config = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")));
 
         assertThat(config.path("default_agent").asString()).isEqualTo("jagt-read");
         assertThat(config.path("model").asString()).isEqualTo("local/qwen-4b");
@@ -83,5 +83,15 @@ class OpenCodeConfigTest {
         assertThat(config.path("agent").path("jagt-read").path("permission").path("edit").asString()).isEqualTo("deny");
         assertThat(config.path("autoupdate").asBoolean(true)).isFalse();
         assertThat(config.path("share").asString()).isEqualTo("disabled");
+    }
+
+    @Test
+    void loadsTheGatePluginFromItsDirectoryAndNoOther() {
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
+
+        JsonNode plugin = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope,
+                Path.of("/state/opencode-gate"))).path("plugin");
+
+        assertThat(plugin).extracting(JsonNode::asString).containsExactly("/state/opencode-gate");
     }
 }

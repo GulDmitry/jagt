@@ -13,9 +13,11 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * One read on a local OpenCode, booked the moment it returns. It runs outside {@code AssistantProcess}, whose breaker
@@ -31,14 +33,26 @@ class HeadlessOpenCode {
     private final Processes processes;
     private final OpenCodeProperties opencode;
     private final UsageTracker usageTracker;
+    private final OpenCodeGate gate;
 
     HeadlessReply run(OpenCodeRead read) {
+        String fence = UUID.randomUUID().toString();
+        try {
+            return fenced(read, fence);
+        } finally {
+            gate.close(fence);
+        }
+    }
+
+    private HeadlessReply fenced(OpenCodeRead read, String fence) {
         String label = read.cwd().toString();
+        Map<String, String> env = new HashMap<>(gate.open(fence, read.scope().fenced()));
+        env.put("OPENCODE_CONFIG_CONTENT", OpenCodeConfig.json(opencode.endpoint(), read.model(), read.scope(),
+                gate.directory()));
+        env.put("OPENCODE_DISABLE_PROJECT_CONFIG", "1");
         Processes.Result result;
         try {
-            result = processes.run(read.cwd(), read.timeout(), Map.of(
-                    "OPENCODE_CONFIG_CONTENT", OpenCodeConfig.json(opencode.endpoint(), read.model(), read.scope()),
-                    "OPENCODE_DISABLE_PROJECT_CONFIG", "1"),
+            result = processes.run(read.cwd(), read.timeout(), env,
                     List.of(opencode.command(), "run", "--standalone", "--format", "json", read.framed()));
         } catch (Processes.Stopped unjudged) {
             throw unjudged;
@@ -61,6 +75,19 @@ class HeadlessOpenCode {
                     .log();
             return HeadlessReply.failed(events.usage(), "exit " + result.exitCode());
         }
+        if (!gate.heard(fence) && events.calls().stream().anyMatch(call -> "completed".equals(call.status()))) {
+            log.atError().setMessage("opencode read unfenced")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("cause", "no call reached the read gate")
+                    .addKeyValue("effect", "answer discarded")
+                    .log();
+            return HeadlessReply.failed(events.usage(), "unfenced: no call reached the read gate");
+        }
+        log.atInfo().setMessage("opencode read gated")
+                .addKeyValue("ref", label)
+                .addKeyValue("calls", gate.heardCalls(fence))
+                .addKeyValue("refused", gate.refused(fence))
+                .log();
         Optional<String> violation = OpenCodeToolCalls.violation(read.scope(), events.calls());
         if (violation.isPresent()) {
             log.atError().setMessage("opencode read out of scope")

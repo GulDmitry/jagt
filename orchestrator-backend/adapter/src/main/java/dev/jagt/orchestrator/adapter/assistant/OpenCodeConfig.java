@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.adapter.agent.OpenCodeProvider;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -20,11 +21,12 @@ final class OpenCodeConfig {
     private OpenCodeConfig() {
     }
 
-    static String json(String endpoint, String model, OpenCodeScope scope) {
+    static String json(String endpoint, String model, OpenCodeScope scope, Path gate) {
         ObjectNode root = JSON.createObjectNode();
         root.put("$schema", "https://opencode.ai/config.json");
         root.put("autoupdate", false);
         root.put("share", "disabled");
+        root.putArray("plugin").add(gate.toString());
         OpenCodeProvider.write(root, endpoint, model);
         root.put("default_agent", AGENT);
         ObjectNode agent = root.putObject("agent").putObject(AGENT);

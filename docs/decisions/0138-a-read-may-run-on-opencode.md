@@ -20,8 +20,6 @@ Accepted 2026-11-05.
 - Permissions sit on `jagt-read`, deny first: `edit` deny, `external_directory` `"*"` deny then each worktree allow,
   `bash` `"*"` deny, the role's globs allow, its refused ones deny, the curl write and send flags deny,
   `"*>*"` deny last.
-- After the run every completed call goes through `ReadGate`, the one gate of both CLIs; a refusal discards the answer.
-  It is defence in depth behind the permissions.
 - The answer is the last text's JSON fence, mapped through `SchemaAnswer` into the envelope the Claude readers' mappers read.
 - Tokens are booked through `UsageTracker` whatever the read answered.
 - `ChosenCheckerReader` and `ChosenRoundReviewer` pick per role; the per-CLI readers do not implement the port, so each consumer keeps one bean.
@@ -41,7 +39,12 @@ Accepted 2026-11-05.
 - Routing through `AssistantProcess`: a local failure would trip the cloud's breaker.
 - Trusting the permissions alone: the order of patterns decided a write once.
 
+## Amended 2026-11-05
+
+- A plugin beside `state.json` puts every call to `ReadGate`, the one gate of both CLIs, before it runs; a refusal denies, the model retries.
+- Left to the run's events: a completed read of a role-refused file, and a completed call no gate heard.
+- The chained-command check is gone: the shell's resources arrive split, and the gate admits only literal words.
+
 ## Reopen when
 
-- OpenCode's permissions gain a documented ordering guarantee: the after-check may go.
 - A read needs files outside the worktrees: `external_directory` is unmeasured here.

@@ -184,17 +184,15 @@ The QA checker read follows the role's declared tools, `master` names the round 
 ### Requirement: A read on OpenCode is held to its role's scope
 A read SHALL be offered `read`, `grep`, `glob`, `bash` and, where the role fetches, `webfetch`, and no MCP server.
 Its permissions SHALL deny every command first, allow the role's, deny its refused ones, and deny any redirect last.
-Every completed tool call SHALL then be held to the same scope; one outside it discards the answer and answers failed.
+Every call SHALL first go to jagt's read gate through a plugin written beside `state.json` at each start.
+A refused call or an unreachable gate denies the call, and the model retries.
+A completed call no gate heard, or a completed read of a file the role refuses, discards the answer and answers failed.
 Tokens SHALL be booked whatever the read answered, and a local failure SHALL NOT open the cloud's breaker.
 
-#### Scenario: A redirect
-- **WHEN** a read's `git log > f` ran
-- **THEN** its answer is discarded and the check reports that it failed, naming the command
+#### Scenario: A call outside the scope
+- **WHEN** a read's `git log > f` is put to the gate, or its `touch b.txt` was denied by the permissions
+- **THEN** the call does not run, and the read goes on to an answer that stands
 
-#### Scenario: A denied call
-- **WHEN** a read's `touch b.txt` was denied by the permissions
-- **THEN** its answer stands
-
-#### Scenario: A fetch outside the environments
-- **WHEN** a QA read fetched a URL under none of the run's environments
-- **THEN** its answer is discarded
+#### Scenario: The plugin never loaded
+- **WHEN** a call completed and no call reached the gate
+- **THEN** the answer is discarded and the check reports that it failed

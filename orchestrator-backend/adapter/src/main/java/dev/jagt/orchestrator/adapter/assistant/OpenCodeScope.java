@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
@@ -16,6 +18,10 @@ record OpenCodeScope(List<String> bashAllowed, List<String> bashRefused, List<St
         return new OpenCodeScope(inside("Bash", allow).map(OpenCodeScope::glob).toList(),
                 inside("Bash", refuse).map(OpenCodeScope::glob).toList(), inside("Read", refuse).toList(), fetch, git,
                 roots, environments);
+    }
+
+    ReadScope fenced() {
+        return new ReadScope(roots, List.of(), git, List.of(), fetch ? environments : List.of());
     }
 
     private static Stream<String> inside(String tool, List<String> entries) {

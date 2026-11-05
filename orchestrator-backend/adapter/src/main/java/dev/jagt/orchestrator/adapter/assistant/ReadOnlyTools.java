@@ -63,10 +63,14 @@ class ReadOnlyTools {
 
     /** Every call of the run under {@code fence} is put to jagt first: a hook's deny beats any allow rule. */
     List<String> fence(String fence, ReadScope scope) {
-        scopes.open(fence, scope.withWrites(MCP_WRITES));
+        open(fence, scope);
         return List.of("--settings", mapper.writeValueAsString(Map.of("disableAllHooks", false,
                 "hooks", Map.of("PreToolUse", List.of(Map.of("hooks", List.of(Map.of("type", "command",
                         "command", hooks.readGateCommand(fence), "timeout", 10))))))));
+    }
+
+    void open(String fence, ReadScope scope) {
+        scopes.open(fence, scope.withWrites(MCP_WRITES));
     }
 
     /** Every call the run under {@code fence} made, asked before {@link #lift} forgets them. */

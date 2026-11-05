@@ -5,6 +5,12 @@ import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
+import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.service.ReadScopes;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.QaDecline;
@@ -28,10 +34,18 @@ class OpenCodeCheckerReaderTest {
 
     private static final RoleDefinition QA = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"));
 
+    @TempDir
+    static Path state;
+
     private final Processes processes = mock(Processes.class);
+    private final ReadScopes scopes = new ReadScopes();
+    private final OpenCodeGate gate = new OpenCodeGate(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(state.toString())),
+            new ReadOnlyTools(mock(McpHealth.class), AssistantProperties.empty(), scopes,
+                    new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")),
+            new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
     private final OpenCodeCheckerReader reader = new OpenCodeCheckerReader(new HeadlessOpenCode(processes,
             new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "qwen-9b")),
-            mock(UsageTracker.class)),
+            mock(UsageTracker.class), gate),
             new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "qwen-9b")),
             List.of(QA));
 

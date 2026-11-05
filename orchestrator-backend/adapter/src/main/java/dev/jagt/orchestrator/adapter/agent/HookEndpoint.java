@@ -33,10 +33,14 @@ public class HookEndpoint {
         return command(worktree, "prompt", url, PROMPT_GATE_SECONDS);
     }
 
+    public String readGateUrl(String fence) {
+        return gateUrl + "/read/" + fence;
+    }
+
     /** A headless read's gate fails closed: exit 2 refuses the call when jagt cannot answer. */
     public String readGateCommand(String fence) {
         return "curl -sf -m 5 -X POST --data-binary @- -H 'Content-Type: application/json' "
-                + AbstractAgentRuntime.shellQuote(gateUrl + "/read/" + fence)
+                + AbstractAgentRuntime.shellQuote(readGateUrl(fence))
                 + " || { echo 'jagt could not judge this call' >&2; exit 2; }";
     }
 

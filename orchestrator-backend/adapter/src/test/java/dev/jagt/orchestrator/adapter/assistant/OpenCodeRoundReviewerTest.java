@@ -2,6 +2,12 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
+import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.service.ReadScopes;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -22,10 +28,18 @@ import static org.mockito.Mockito.when;
 
 class OpenCodeRoundReviewerTest {
 
+    @TempDir
+    static Path state;
+
     private final Processes processes = mock(Processes.class);
+    private final ReadScopes scopes = new ReadScopes();
+    private final OpenCodeGate gate = new OpenCodeGate(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(state.toString())),
+            new ReadOnlyTools(mock(McpHealth.class), AssistantProperties.empty(), scopes,
+                    new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")),
+            new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
     private final OpenCodeRoundReviewer reviewer = new OpenCodeRoundReviewer(new HeadlessOpenCode(processes,
             new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("master", "")),
-            mock(UsageTracker.class)),
+            mock(UsageTracker.class), gate),
             new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("master", "")));
 
     @Test
