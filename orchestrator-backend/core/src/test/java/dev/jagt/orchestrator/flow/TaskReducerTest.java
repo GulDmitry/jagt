@@ -743,6 +743,26 @@ class TaskReducerTest {
     }
 
     @Test
+    void leavesTheDeployLandingSoItsCheckIsAskedAgainWhereTheConflictedRepositoryLeavesTheTask() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
+                TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))), 1_000);
+        TaskState merged = TaskReducer.deployStepped(TaskReducer.deployStepped(opened,
+                new DeployStep.Merged("alpha", "a1"), 1_100), new DeployStep.Merged("beta", "b1"), 1_100);
+        TaskState red = TaskReducer.deployStepped(merged, new DeployStep.Conflicted("beta",
+                Deployment.Cause.RED_PIPELINE), 1_200);
+
+        TaskState left = TaskReducer.repoLeft(red, "beta");
+        TaskState asked = TaskReducer.deployStepped(left, new DeployStep.Asked("dg"), 1_300);
+
+        assertThat(DeployPhase.of(left.deployment())).isEqualTo(DeployPhase.LANDING);
+        assertThat(DeployPhase.of(asked.deployment())).isEqualTo(DeployPhase.CHECK_ASKED);
+    }
+
+    @Test
     void keepsTheDeployConflictWhereTheConflictedRepositoryIsTheTasksOnlyOne() {
         TaskState task = TaskState.builder(List.of(
                 new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha")),

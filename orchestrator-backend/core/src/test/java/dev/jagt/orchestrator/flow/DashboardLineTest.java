@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Session;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 
 import org.junit.jupiter.api.Test;
@@ -97,6 +98,27 @@ class DashboardLineTest {
 
         assertThat(DashboardLine.forTask(stalled, null).text()).isEqualTo("NEEDS YOU: the deploy conflict stopped moving:"
                 + " 7 paths unmerged, 0 staged in /src/ABC-42-deploy, unchanged since 1970-01-01T00:00:00Z");
+    }
+
+    @Test
+    void dropsTheStalledConflictLineWhereTheConflictedRepositoryLeftTheTask() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
+                TaskStatus.DEPLOY_CONFLICT).lastActiveTimestamp(1_000).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))), 1_000);
+        TaskState merged = TaskReducer.deployStepped(TaskReducer.deployStepped(opened,
+                new DeployStep.Merged("alpha", "a1"), 1_000), new DeployStep.Merged("beta", "b1"), 1_000);
+        TaskState red = TaskReducer.deployStepped(merged, new DeployStep.Conflicted("beta",
+                Deployment.Cause.RED_PIPELINE), 1_000);
+        TaskState seen = TaskReducer.deployStepped(red, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")), 1_000);
+        TaskState stalled = TaskReducer.deployStepped(seen, new DeployStep.Told("pipeline red"), 1_201_000);
+        assertThat(DashboardLine.forTask(stalled, null).text()).contains("stopped moving");
+
+        TaskState left = TaskReducer.repoLeft(stalled, "beta");
+
+        assertThat(DashboardLine.forTask(left, null).text()).doesNotContain("stopped moving");
     }
 
     @Test
