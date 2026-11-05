@@ -17,6 +17,8 @@ Accepted 2026-11-04.
   at ~1.5 s, both missing the editor, start-a-ticket and deploy rows, so quality is not yet at parity.
 - One example per missed row in the prompt (2026-11-04): haiku stays 15 of 15, the 4B stays 12 of 15 — deploy right,
   a bare "send it for review" now `ship`; the examples were dropped.
+- `claude -p` through `ANTHROPIC_BASE_URL` on llama-server fails: the chat template rejects a system message that is not
+  first, and 182 s of retries follow; a local model needs a CLI of its own or a direct call.
 - Run side by side, the local server queued past the timeout and every such call went to the cloud.
 
 ## Decision
@@ -28,7 +30,8 @@ Accepted 2026-11-04.
 - Startup refuses an endpoint that is no http(s) address, a missing `model`, and a listed kind that reads tools.
 - Local tokens are booked at zero cost under the kind.
 - The stand reads the same endpoint from `ORCHESTRATOR_ASSISTANT_LOCAL_ENDPOINT`/`_MODEL`: jagt under test inherits it,
-  and the ticket rewrite asks it first, haiku where it fails, `rewrite.txt` naming which answered (owner 2026-11-04).
+  and the ticket rewrite asks it first, haiku where it fails, `rewrite.txt` naming which answered (owner 2026-11-04);
+  the 4B named the files the ask hid, so a local rewrite is weaker than haiku's.
 
 ## Rejected
 

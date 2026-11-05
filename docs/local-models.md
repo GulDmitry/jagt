@@ -41,3 +41,29 @@ Measured 2026-11-05 on an M4, 32 GiB (`promptEval`, 15 cases, one run; QA eval, 
 once ([0135](decisions/0135-tool-less-reads-may-call-a-local-model-directly.md)). Role reads on OpenCode
 (`opencode.reads`, [0138](decisions/0138-a-read-may-run-on-opencode.md)) stay for a machine whose model passes
 `roleEval -ProleCli=opencode`.
+
+Every local model misses the same rows: "get going on ABC-99" (answers `none`), "send it for review" and the deploy row (answer `ship`).
+
+A QA read on the 9B hit the 10-minute cap after 2 of 12 cases, both wrong:
+
+- one cited a commit sha it made up;
+- one answered prose outside the schema.
+
+The gate worked: refused calls were retried, none discarded as unfenced. Role reads and sessions stay on the cloud.
+A task session on OpenCode was not tried: a session asks more of the model than a QA read.
+
+The stand runs the 9B for the ticket rewrite only: one mutation scenario passed in 3 min 16 s with swap flat.
+
+## OpenCode notes
+
+Measured 2026-11-05, opencode 2.2.5, for a machine whose model passes the role evals:
+
+- The default agent uses tools unasked and sends about 10k tokens on a first turn; an agent with `"*": false` tools about 700 tokens, 6 s.
+- `OPENCODE_CONFIG` merges with the user's own config and with a parent `opencode.json`; `OPENCODE_DISABLE_PROJECT_CONFIG=1` drops the parents.
+- Without `--standalone` a run attaches to a shared background service.
+- The top-level command has no `--model` or `--agent`: the model lives in the config.
+- The gate plugin is a directory with a `package.json` (`type: module`) and an `index.js` default-exporting `{id, setup}`,
+  listed by absolute path under `plugin`.
+- A plugin that fails to load is a WARN and the run goes on unguarded; the read then lifts as unfenced.
+- A plugin stops a call by setting `effect` to `deny` and a `message` in its `permission` `evaluate` hook, before the call runs;
+  a returned value is ignored, and a configured `deny` skips the hook.
