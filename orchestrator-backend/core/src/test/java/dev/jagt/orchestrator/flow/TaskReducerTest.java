@@ -489,14 +489,14 @@ class TaskReducerTest {
     }
 
     @Test
-    void goesQuietSinceTheWindowLastPrintedWhenItPrintedAfterTheTurnEnded() {
+    void staysIdleAndGoesQuietSinceTheTurnEndedWhenTheWindowOnlyRepaintedAfterIt() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
         TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
         TaskState quiet = TaskReducer.signed(idle, new SessionSign.Read(Session.Window.State.RUNNING, 2_000, 0, 0, 5_000, null), 9_000);
 
-        assertThat(quiet.session().halt()).isNull();
-        assertThat(quiet.session().quietSince()).isEqualTo(2_000);
+        assertThat(quiet.session().halt().kind()).isEqualTo(Session.Halt.Kind.IDLE);
+        assertThat(quiet.session().quietSince()).isEqualTo(1_000);
     }
 
     @Test

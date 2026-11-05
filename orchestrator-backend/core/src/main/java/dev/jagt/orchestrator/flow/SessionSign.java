@@ -94,7 +94,7 @@ public sealed interface SessionSign {
     /**
      * What a look at the session found, with the signs that need no hook: the window's last print, the file the
      * session appends to, and the task's own last activity. The window is {@code UNREAD} where it was not asked.
-     * A halt older than a later sign is dropped, except that output alone never undoes a failure or an end; a running
+     * A halt older than a later sign is dropped; output alone never undoes a halt, a repaint prints too; a running
      * agent process ends an end.
      * A window holding no agent process ends the session, its reason what the agent printed on the way out.
      */
@@ -130,8 +130,7 @@ public sealed interface SessionSign {
                 return session.withHalt(goneHalt(halt, now)).withQuietSince(0).withWindow(windowAfter(session, now));
             }
             long last = Math.max(later, halt == null ? 0 : halt.at());
-            if ((halt == null || halt.kind() == Session.Halt.Kind.IDLE) && printedAt > last) {
-                halt = null;
+            if (halt == null && printedAt > last) {
                 last = printedAt;
             }
             boolean stale = halt == null || halt.kind() == Session.Halt.Kind.IDLE;
