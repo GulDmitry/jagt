@@ -15,6 +15,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | H11 | a session reports a question while the task stands at CI_POLLING → the report is refused as a state refusal naming REVIEW_PENDING, so the question ends the round and never parks | seen 2026-11-02 09:31Z: a question parked at CI_POLLING, the Master's no-change answer met no case | `FlowReportsTest` |
 | H13 | a read on OpenCode runs a command outside its globs, or reads a second worktree of its round → the read's own agent denies the command before it runs and opens each worktree, no other directory | seen 2026-11-05 by hand: `touch` ran under a top-level permission a custom agent ignores; a second worktree read was denied | `OpenCodeConfigTest` |
 | H14 | a QA read on OpenCode runs a curl that writes a file or sends data, or fetches a URL outside its environments → OpenCode denies the flags before the call and the gate discards the answer | seen 2026-11-05 by hand: `curl -sS -o saved.html <url>` ran and wrote under `curl -sS*` | `HeadlessOpenCodeTest`, `OpenCodeConfigTest` |
+| H15 | a change validates but names a requirement archive cannot apply (MODIFIED of a missing one, ADDED of an existing one) → the hand-back is refused with the validator's issue, not at ship | seen 2026-11-05: the CLI reports it at INFO with exit 0, so a session handed back what ship then refused | `OpenSpecTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

@@ -5,6 +5,10 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.Specs;
 import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.MissingNode;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +16,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,6 +34,8 @@ public class OpenSpec implements Specs {
     private static final Duration LIMIT = Duration.ofMinutes(2);
     /** An archived change is named `YYYY-MM-DD-<change>`. */
     private static final int ARCHIVE_DATE = "2026-01-01-".length();
+
+    private static final JsonMapper MAPPER = new JsonMapper();
 
     private final Processes processes;
     private final String binary;
@@ -81,15 +88,39 @@ public class OpenSpec implements Specs {
         return Files.isDirectory(worktree.resolve(HOME));
     }
 
-    /** `archive -y` folds a change it never validated, so every fold validates first. */
+    /**
+     * `archive -y` folds a change it never validated, so every fold validates first. The CLI reports a delta archive
+     * would refuse as an INFO issue with exit 0, so any issue refuses.
+     */
     private Optional<String> refusal(Path worktree, String name) {
         Processes.Result result = run(worktree, List.of("validate", name, "--type", "change", "--strict",
-                "--no-interactive"));
-        if (result.exitCode() == 0) {
+                "--no-interactive", "--json"));
+        JsonNode item;
+        try {
+            item = MAPPER.readTree(result.stdout()).path("items").path(0);
+        } catch (JacksonException e) {
+            item = MissingNode.getInstance();
+        }
+        if (item.isMissingNode()) {
+            return Optional.of(refusalHeader(name) + raw(result));
+        }
+        List<String> issues = new ArrayList<>();
+        for (JsonNode issue : item.path("issues")) {
+            issues.add(issue.path("level").asString() + " " + issue.path("path").asString() + ": "
+                    + issue.path("message").asString());
+        }
+        if (issues.isEmpty() && result.exitCode() == 0) {
             return Optional.empty();
         }
-        return Optional.of("openspec/changes/" + name + " does not validate — fix every line and hand back again:\n"
-                + (result.stdout() + "\n" + result.stderr()).strip());
+        return Optional.of(refusalHeader(name) + (issues.isEmpty() ? raw(result) : String.join("\n", issues)));
+    }
+
+    private static String raw(Processes.Result result) {
+        return (result.stdout() + "\n" + result.stderr()).strip();
+    }
+
+    private static String refusalHeader(String name) {
+        return "openspec/changes/" + name + " does not validate — fix every line and hand back again:\n";
     }
 
     private Processes.Result run(Path worktree, List<String> arguments) {

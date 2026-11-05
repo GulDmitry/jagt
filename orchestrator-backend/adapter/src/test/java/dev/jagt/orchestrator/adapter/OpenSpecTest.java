@@ -29,7 +29,7 @@ class OpenSpecTest {
     private final Host host = mock(Host.class);
 
     private static final List<String> VALIDATE = List.of("/bin/openspec", "validate", "abc-42", "--type", "change",
-            "--strict", "--no-interactive");
+            "--strict", "--no-interactive", "--json");
     private static final List<String> ARCHIVE = List.of("/bin/openspec", "archive", "abc-42", "-y");
 
     @Test
@@ -61,10 +61,51 @@ class OpenSpecTest {
         Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
-                .thenReturn(new Processes.Result(1, "Change must have at least one delta", ""));
+                .thenReturn(new Processes.Result(1, """
+                        {"items":[{"valid":false,"issues":[{"level":"ERROR","path":"file","message":"Change must have at least one delta"}]}]}
+                        """, ""));
 
         assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42")).get().asString()
                 .contains("Change must have at least one delta");
+    }
+
+    @Test
+    void refusesAHandBackWhoseDeltaArchiveWouldRefuse(@TempDir Path worktree) throws IOException {
+        when(host.resolve("openspec")).thenReturn("/bin/openspec");
+        Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+        Processes processes = mock(Processes.class);
+        when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+                .thenReturn(new Processes.Result(0, """
+                        {"items":[{"valid":true,"issues":[{"level":"INFO","path":"board/spec.md",
+                        "message":"Archive would refuse this delta: board MODIFIED failed - not found"}]}]}
+                        """, ""));
+
+        assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42")).get().asString()
+                .contains("INFO board/spec.md: Archive would refuse this delta");
+    }
+
+    @Test
+    void refusesWithTheRawOutputWhereTheValidatorAnswersNoJson(@TempDir Path worktree) throws IOException {
+        when(host.resolve("openspec")).thenReturn("/bin/openspec");
+        Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+        Processes processes = mock(Processes.class);
+        when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+                .thenReturn(new Processes.Result(1, "", "unknown option"));
+
+        assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42")).get().asString()
+                .contains("unknown option");
+    }
+
+    @Test
+    void refusesWithTheRawOutputWhereTheValidatorFailsWithoutNamingAnIssue(@TempDir Path worktree) throws IOException {
+        when(host.resolve("openspec")).thenReturn("/bin/openspec");
+        Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+        Processes processes = mock(Processes.class);
+        when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+                .thenReturn(new Processes.Result(1, "{\"items\":[{\"valid\":false,\"issues\":[]}]}", "crashed"));
+
+        assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42")).get().asString()
+                .contains("crashed");
     }
 
     @Test
@@ -73,7 +114,9 @@ class OpenSpecTest {
         Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
-                .thenReturn(new Processes.Result(1, "Change must have at least one delta", ""));
+                .thenReturn(new Processes.Result(1, """
+                        {"items":[{"valid":false,"issues":[{"level":"ERROR","path":"file","message":"Change must have at least one delta"}]}]}
+                        """, ""));
 
         assertThatThrownBy(() -> new OpenSpec(processes, host).fold(worktree, "ABC-42"))
                 .isInstanceOf(IllegalStateException.class)
@@ -87,7 +130,9 @@ class OpenSpecTest {
         Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
-                .thenReturn(new Processes.Result(0, "", ""));
+                .thenReturn(new Processes.Result(0, """
+                        {"items":[{"valid":true,"issues":[]}]}
+                        """, ""));
 
         new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -101,7 +146,9 @@ class OpenSpecTest {
         Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
-                .thenReturn(new Processes.Result(0, "", ""));
+                .thenReturn(new Processes.Result(0, """
+                        {"items":[{"valid":true,"issues":[]}]}
+                        """, ""));
 
         new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -117,7 +164,9 @@ class OpenSpecTest {
         Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
-                .thenReturn(new Processes.Result(0, "", ""));
+                .thenReturn(new Processes.Result(0, """
+                        {"items":[{"valid":true,"issues":[]}]}
+                        """, ""));
 
         new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -156,7 +205,9 @@ class OpenSpecTest {
         Files.createDirectories(worktree.resolve("openspec/changes/abc-42-2"));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
-                .thenReturn(new Processes.Result(1, "Change must have at least one delta", ""));
+                .thenReturn(new Processes.Result(1, """
+                        {"items":[{"valid":false,"issues":[{"level":"ERROR","path":"file","message":"Change must have at least one delta"}]}]}
+                        """, ""));
 
         assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42")).get().asString()
                 .contains("openspec/changes/abc-42-2 does not validate");

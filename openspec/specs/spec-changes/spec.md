@@ -23,6 +23,10 @@ it lists the change, which the session writes once the plan is approved.
 - **WHEN** the repository holds no `openspec/`
 - **THEN** nothing is owed
 
+#### Scenario: A delta archive cannot apply
+- **WHEN** a change validates but names a requirement archive cannot apply (MODIFIED of a missing one, ADDED of an existing one)
+- **THEN** the hand-back is refused with what the validator said
+
 ### Requirement: A ship folds the change into the specs
 `ship` SHALL validate and archive every open change of the task (`<task>` and `<task>-<n>`) in each of its
 repositories. It does so before the session is told to commit (`SpecFold`). The delta so reaches the request beside the code.
