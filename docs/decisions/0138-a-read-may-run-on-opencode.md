@@ -17,7 +17,8 @@ Accepted 2026-11-05.
 - `HeadlessOpenCode` runs `opencode run --standalone --format json` with stdin closed, its config in `OPENCODE_CONFIG_CONTENT`.
 - It calls the process port directly: `AssistantProcess`'s breaker is the cloud's, and a local failure must not trip it.
 - The config offers one agent `jagt-read`: tools `"*": false` first, then `read`, `grep`, `glob`, `bash`, `webfetch` where the role fetches.
-- Permissions deny first: `edit` deny, `bash` `"*"` deny, the role's globs allow, its refused ones deny, `"*>*"` deny last.
+- Permissions sit on `jagt-read`, deny first: `edit` deny, `external_directory` `"*"` deny then each worktree allow,
+  `bash` `"*"` deny, the role's globs allow, its refused ones deny, `"*>*"` deny last.
 - After the run every completed call is checked against the scope; a violation discards the answer. It is defence in depth behind the permissions.
 - The answer is the last text's JSON fence, mapped through `SchemaAnswer` into the envelope the Claude readers' mappers read.
 - Tokens are booked through `UsageTracker` whatever the read answered.
@@ -26,6 +27,7 @@ Accepted 2026-11-05.
 ## Measured 2026-11-05
 
 - An agent's `tools` needs `"*": false` first or it masks every later key.
+- A custom agent ignores the top-level `permission`: under it `touch` ran; on the agent it is denied.
 - The last matching bash pattern wins: `git log > f` passed `git log*` and wrote until `"*>*"` came last.
 - `run --format json` prints `{type, part}` lines: `text`, `tool_use`, `step_finish` with `tokens {input, output, reasoning, cache}`.
 - A denied call is a `tool_use` with status `error`, `Permission denied: shell`, and `providerCall.executed` false.

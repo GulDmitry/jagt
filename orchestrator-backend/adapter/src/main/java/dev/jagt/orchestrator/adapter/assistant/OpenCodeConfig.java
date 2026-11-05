@@ -4,7 +4,10 @@ import dev.jagt.orchestrator.adapter.agent.OpenCodeProvider;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
-/** The config one read runs under: a single agent offered only the read tools, every other door denied first. */
+/**
+ * The config one read runs under: a single agent offered only the read tools, every other door denied first. The
+ * doors sit on the agent: a custom agent ignores the top-level {@code permission}.
+ */
 final class OpenCodeConfig {
 
     static final String AGENT = "jagt-read";
@@ -20,7 +23,8 @@ final class OpenCodeConfig {
         root.put("share", "disabled");
         OpenCodeProvider.write(root, endpoint, model);
         root.put("default_agent", AGENT);
-        ObjectNode tools = root.putObject("agent").putObject(AGENT).putObject("tools");
+        ObjectNode agent = root.putObject("agent").putObject(AGENT);
+        ObjectNode tools = agent.putObject("tools");
         tools.put("*", false);
         tools.put("read", true);
         tools.put("grep", true);
@@ -29,9 +33,12 @@ final class OpenCodeConfig {
         if (scope.fetch()) {
             tools.put("webfetch", true);
         }
-        ObjectNode permission = root.putObject("permission");
+        ObjectNode permission = agent.putObject("permission");
         permission.put("edit", "deny");
         permission.put("webfetch", scope.fetch() ? "allow" : "deny");
+        ObjectNode outside = permission.putObject("external_directory");
+        outside.put("*", "deny");
+        scope.roots().forEach(dir -> outside.put(dir + "/**", "allow"));
         ObjectNode bash = permission.putObject("bash");
         bash.put("*", "deny");
         scope.bashAllowed().forEach(glob -> bash.put(glob, "allow"));

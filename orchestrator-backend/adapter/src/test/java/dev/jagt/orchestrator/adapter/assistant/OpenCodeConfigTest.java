@@ -29,13 +29,26 @@ class OpenCodeConfigTest {
                 List.of("Bash(git * --ou*)"), false, List.of(Path.of("/wt")), List.of());
 
         JsonNode bash = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope))
-                .path("permission").path("bash");
+                .path("agent").path("jagt-read").path("permission").path("bash");
 
         assertThat(bash.propertyNames()).containsExactly("*", "git log*", "git show*", "git * --ou*", "*>*");
         assertThat(bash.path("*").asString()).isEqualTo("deny");
         assertThat(bash.path("git log*").asString()).isEqualTo("allow");
         assertThat(bash.path("git * --ou*").asString()).isEqualTo("deny");
         assertThat(bash.path("*>*").asString()).isEqualTo("deny");
+    }
+
+    @Test
+    void opensEveryWorktreeOfTheReadAndNoOtherDirectory() {
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, List.of(Path.of("/wt1"), Path.of("/wt2")),
+                List.of());
+
+        JsonNode outside = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope))
+                .path("agent").path("jagt-read").path("permission").path("external_directory");
+
+        assertThat(outside.propertyNames()).containsExactly("*", "/wt1/**", "/wt2/**");
+        assertThat(outside.path("*").asString()).isEqualTo("deny");
+        assertThat(outside.path("/wt2/**").asString()).isEqualTo("allow");
     }
 
     @Test
@@ -48,9 +61,9 @@ class OpenCodeConfigTest {
         JsonNode denied = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", silent));
 
         assertThat(allowed.path("agent").path("jagt-read").path("tools").path("webfetch").asBoolean(false)).isTrue();
-        assertThat(allowed.path("permission").path("webfetch").asString()).isEqualTo("allow");
+        assertThat(allowed.path("agent").path("jagt-read").path("permission").path("webfetch").asString()).isEqualTo("allow");
         assertThat(denied.path("agent").path("jagt-read").path("tools").has("webfetch")).isFalse();
-        assertThat(denied.path("permission").path("webfetch").asString()).isEqualTo("deny");
+        assertThat(denied.path("agent").path("jagt-read").path("permission").path("webfetch").asString()).isEqualTo("deny");
     }
 
     @Test
@@ -64,7 +77,7 @@ class OpenCodeConfigTest {
         assertThat(config.path("provider").path("local").path("options").path("baseURL").asString())
                 .isEqualTo("http://127.0.0.1:8080/v1");
         assertThat(config.has("mcp")).isFalse();
-        assertThat(config.path("permission").path("edit").asString()).isEqualTo("deny");
+        assertThat(config.path("agent").path("jagt-read").path("permission").path("edit").asString()).isEqualTo("deny");
         assertThat(config.path("autoupdate").asBoolean(true)).isFalse();
         assertThat(config.path("share").asString()).isEqualTo("disabled");
     }
