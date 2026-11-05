@@ -31,6 +31,24 @@ subprojects {
     }
 
     tasks.named('pitest') { forkedTestEnv(it) }
+
+    // `:usecase` runs `:core`'s tests too, so a changed `:core` type is mutated there alone (0139).
+    if (project.path == ':core') {
+        configurations.create('pitestTests') {
+            canBeConsumed = true
+            canBeResolved = false
+            extendsFrom configurations.testImplementation, configurations.testRuntimeOnly
+            outgoing.artifacts(provider { sourceSets.test.output.classesDirs.files }) { builtBy tasks.named('testClasses') }
+        }
+    }
+    if (project.path == ':usecase') {
+        def coreTests = configurations.create('pitestCoreTests') {
+            canBeConsumed = false
+            canBeResolved = true
+        }
+        dependencies { pitestCoreTests project(path: ':core', configuration: 'pitestTests') }
+        tasks.named('pitest') { additionalClasspath.from(coreTests) }
+    }
 }
 
 // Every `test` ends in `pitestDiff` (0127): pitest on the main classes changed against `-PpitestDiff=<base>` (default
@@ -64,10 +82,10 @@ changedLines.keySet().each { path ->
     if (owner == ':usecase' && type in usecaseGitClasses) {
         owner = ':adapter'
     }
-    targets[owner] << type
     if (owner == ':core') {
-        targets[':usecase'] << type
+        owner = ':usecase'
     }
+    targets[owner] << type
 }
 targets.each { module, types ->
     project(module).pitest.targetClasses = types.collectMany { [it, it + '$*'] }
@@ -81,7 +99,6 @@ tasks.register('pitestDiff') {
             println "pitestDiff: no main line changed against ${base}"
             return
         }
-        // A `:core` mutant is mutated by `:usecase` too; it stands only if no report killed it.
         def outcomes = [:].withDefault { [] as Set }
         def mutated = [] as Set
         reports.findAll { it.exists() }.each { report ->

@@ -24,6 +24,8 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
 - Excluded until sped up: `pitest` on a push's diff (the cause above); it still reports its seconds.
 - `pitest` runs jqwik at 100 tries: `TaskReducer`'s 95 mutants took 4 min 17 s at 1,000 and 30 s at 100, every
   mutant detected at both.
+- A changed `:core` type is mutated once, in `:usecase`, with `:core`'s tests on its classpath: the 2026-11-05
+  push diff took 11 min 40 s instead of 14 min 41 s, the same 3,015 of 3,288 mutants detected.
 
 ## Rejected
 
