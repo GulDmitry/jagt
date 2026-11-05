@@ -185,7 +185,7 @@
   [spec](../openspec/specs/unattended-work/spec.md#requirement-a-task-has-a-ceiling-of-unattended-moves-an-hour)
   [spec](../openspec/specs/task-stops/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
   [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
-- **Pause** — You pause a started task to look at it: nothing of jagt runs on it, reads included, until you lift.
+- **Pause** — You pause a started task to look at it, or tell the Master to: nothing of jagt runs on it until you lift.
   [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)

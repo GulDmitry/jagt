@@ -1,6 +1,10 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Facts;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.ReviewFacts;
@@ -40,6 +44,18 @@ public class TaskStops {
     /** The stop standing once this one was set: an earlier stop stands, and keeps its own words. */
     public Optional<TaskStop> stop(String taskId, TaskStop.Trigger trigger, String evidence) {
         return trip(taskId, task -> task, task -> Optional.of(new TaskStop(trigger, clock.millis(), evidence)));
+    }
+
+    /** A pause the human ordered in words, held to the same offer as their press. */
+    public String pauseOnWord(String taskIdOrAlias, String reason) {
+        String taskId = stateService.canonicalTaskId(taskIdOrAlias);
+        TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
+        if (!FlowRules.allows(task.status(), TaskAction.PAUSE, Facts.projected(task))) {
+            throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE,
+                    "pause is not available for " + taskId + " (it is " + task.status() + ")");
+        }
+        stop(taskId, TaskStop.Trigger.PAUSE, reason);
+        return "pause " + taskId + ": nothing of jagt moves it until the human lifts the stop";
     }
 
     /** False where a round of {@code step}, a move too, would run past a ceiling, which stops the task, or a stop stands. */
