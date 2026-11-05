@@ -136,6 +136,8 @@ tasks.register('e2eTest', Test) {
     testClassesDirs = sourceSets.e2e.output.classesDirs
     classpath = sourceSets.e2e.runtimeClasspath
     useJUnitPlatform()
+    // Its classes are order-dependent within, not between: each fork names its tmux sessions by its own pid.
+    maxParallelForks = Runtime.runtime.availableProcessors()
     // A run killed mid-suite skips its @TempDir cleanup: its leftovers land here, and the next run wipes them.
     def scratch = temporaryDir
     systemProperty 'java.io.tmpdir', scratch.absolutePath

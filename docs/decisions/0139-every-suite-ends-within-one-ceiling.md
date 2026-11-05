@@ -32,6 +32,8 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   push diff took 11 min 40 s instead of 14 min 41 s, the same 3,015 of 3,288 mutants detected.
 - The ArchUnit rule tests share one import of main, `MainClasses.CODE`: each class took 19–27 s re-importing,
   about 4 s sharing it; the root `:test` task 16 s to 9 s.
+- `e2eTest` runs its classes in parallel forks, each naming its tmux sessions by its pid: 168 s to 90 s, bounded by
+  `MasterModeFlowTest`.
 
 ## Rejected
 
