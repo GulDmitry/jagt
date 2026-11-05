@@ -1,8 +1,10 @@
 // One harness per kind of role, each over `roles/<id>/eval/*.yml`: a checker reads its brief against deploys, the
 // arbiter against rounds. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
-// model against the same cases, to compare cost.
+// model against the same cases, to compare cost. -ProleCli=opencode reads at -PopencodeEndpoint on -ProleModel.
 def evalRole = (project.findProperty('role') ?: 'qa').toString()
 def evalIsArbiter = evalRole == 'master'
+def evalCli = (project.findProperty('roleCli') ?: 'claude').toString()
+def evalOnOpenCode = evalCli == 'opencode'
 tasks.register('roleEval', Test) {
     description = 'Reads a role\'s shipped brief against cases whose verdict is known, -Prole=<id> (spends tokens, minutes).'
     group = 'verification'
@@ -39,12 +41,18 @@ tasks.register('roleEval', Test) {
     if (project.hasProperty('roleModel')) {
         systemProperty "${harness}Eval.model", project.property('roleModel')
     }
+    if (evalOnOpenCode) {
+        systemProperty 'orchestrator.opencode.endpoint', project.findProperty('opencodeEndpoint') ?: ''
+        systemProperty 'orchestrator.opencode.model', project.findProperty('roleModel') ?: ''
+        systemProperty "orchestrator.opencode.reads.${evalRole}", ''
+    }
     Map<String, String> retired = ['masterBrief': '-Prole=master -ProleBrief', 'masterModel': '-Prole=master -ProleModel',
                                    'qaBrief': '-Prole=qa -ProleBrief', 'qaModel': '-Prole=qa -ProleModel',
                                    'masterShards': '-PevalShards', 'qaShards': '-PevalShards'].findAll { name, use ->
         project.hasProperty(name)
     }
     boolean roleNamed = project.hasProperty('role')
+    boolean openCodeNamed = project.findProperty('opencodeEndpoint') && project.findProperty('roleModel')
     File evalCases = file("../roles/${evalRole}/eval")
     doFirst {
         if (retired) {
@@ -57,11 +65,20 @@ tasks.register('roleEval', Test) {
         if (!evalCases.isDirectory()) {
             throw new GradleException("roles/${evalRole}/eval holds no cases: a role is evaluated over its eval/*.yml.")
         }
+        if (!(evalCli in ['claude', 'opencode'])) {
+            throw new GradleException("-ProleCli ${evalCli} must be claude or opencode.")
+        }
+        if (evalOnOpenCode && evalIsArbiter) {
+            throw new GradleException('-ProleCli=opencode reads a checker only: the Master\'s round runs in its own session.')
+        }
+        if (evalOnOpenCode && !openCodeNamed) {
+            throw new GradleException('-ProleCli=opencode needs -PopencodeEndpoint=<base url> and -ProleModel=<the model it serves>.')
+        }
     }
     // Gated on CAPABILITY, and it names what is missing rather than failing every case on it.
     onlyIf { task ->
         List<String> missing = []
-        (evalIsArbiter ? ['claude', 'tmux', 'git'] : ['claude', 'git']).each { binary ->
+        (evalIsArbiter ? ['claude', 'tmux', 'git'] : [evalCli, 'git']).each { binary ->
             if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
                     .any { dir -> dir && new File(dir, binary).canExecute() }) {
                 missing << binary
@@ -118,7 +135,7 @@ tasks.named('promptEval') {
 tasks.named('roleEval') {
     systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : 'qaEval'
     systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
-    systemProperty 'eval.model', project.findProperty('roleModel') ?: 'default'
+    systemProperty 'eval.model', (evalOnOpenCode ? 'opencode/' : '') + (project.findProperty('roleModel') ?: 'default')
     systemProperty 'eval.brief.file', project.findProperty('roleBrief')
             ?: file("../roles/${evalRole}/brief.md.dist").path
 }
