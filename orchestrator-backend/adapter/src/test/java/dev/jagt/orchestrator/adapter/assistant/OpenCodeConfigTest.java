@@ -24,17 +24,20 @@ class OpenCodeConfigTest {
     }
 
     @Test
-    void deniesEveryCommandFirstAndAnyRedirectLastSoTheLastMatchingRuleHoldsTheLine() {
+    void deniesEveryCommandFirstThenCurlWritesAndAnyRedirectLastSoTheLastMatchingRuleHoldsTheLine() {
         OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)", "Bash(git show:*)"),
                 List.of("Bash(git * --ou*)"), false, true, List.of(Path.of("/wt")), List.of());
 
         JsonNode bash = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope))
                 .path("agent").path("jagt-read").path("permission").path("bash");
 
-        assertThat(bash.propertyNames()).containsExactly("*", "git log*", "git show*", "git * --ou*", "*>*");
+        assertThat(bash.propertyNames()).containsExactly("*", "git log*", "git show*", "git * --ou*", "* -o *", "* -O*",
+                "* --output*", "* -T *", "* --upload-file*", "* -d *", "* --data*", "* -F *", "* --form*", "* -X *",
+                "* --request*", "*>*");
         assertThat(bash.path("*").asString()).isEqualTo("deny");
         assertThat(bash.path("git log*").asString()).isEqualTo("allow");
         assertThat(bash.path("git * --ou*").asString()).isEqualTo("deny");
+        assertThat(bash.path("* --upload-file*").asString()).isEqualTo("deny");
         assertThat(bash.path("*>*").asString()).isEqualTo("deny");
     }
 

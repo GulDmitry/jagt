@@ -18,8 +18,10 @@ Accepted 2026-11-05.
 - It calls the process port directly: `AssistantProcess`'s breaker is the cloud's, and a local failure must not trip it.
 - The config offers one agent `jagt-read`: tools `"*": false` first, then `read`, `grep`, `glob`, `bash`, `webfetch` where the role fetches.
 - Permissions sit on `jagt-read`, deny first: `edit` deny, `external_directory` `"*"` deny then each worktree allow,
-  `bash` `"*"` deny, the role's globs allow, its refused ones deny, `"*>*"` deny last.
-- After the run every completed call is checked against the scope; a violation discards the answer. It is defence in depth behind the permissions.
+  `bash` `"*"` deny, the role's globs allow, its refused ones deny, the curl write and send flags deny,
+  `"*>*"` deny last.
+- After the run every completed call goes through `ReadGate`, the one gate of both CLIs; a refusal discards the answer.
+  It is defence in depth behind the permissions.
 - The answer is the last text's JSON fence, mapped through `SchemaAnswer` into the envelope the Claude readers' mappers read.
 - Tokens are booked through `UsageTracker` whatever the read answered.
 - `ChosenCheckerReader` and `ChosenRoundReviewer` pick per role; the per-CLI readers do not implement the port, so each consumer keeps one bean.

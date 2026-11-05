@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.adapter.agent.OpenCodeProvider;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.util.List;
+
 /**
  * The config one read runs under: a single agent offered only the read tools, every other door denied first. The
  * doors sit on the agent: a custom agent ignores the top-level {@code permission}.
@@ -12,6 +14,8 @@ final class OpenCodeConfig {
 
     static final String AGENT = "jagt-read";
     private static final JsonMapper JSON = new JsonMapper();
+    private static final List<String> CURL_WRITES = List.of("* -o *", "* -O*", "* --output*", "* -T *", "* --upload-file*",
+            "* -d *", "* --data*", "* -F *", "* --form*", "* -X *", "* --request*");
 
     private OpenCodeConfig() {
     }
@@ -43,6 +47,7 @@ final class OpenCodeConfig {
         bash.put("*", "deny");
         scope.bashAllowed().forEach(glob -> bash.put(glob, "allow"));
         scope.bashRefused().forEach(glob -> bash.put(glob, "deny"));
+        CURL_WRITES.forEach(glob -> bash.put(glob, "deny"));
         bash.put("*>*", "deny");
         return JSON.writeValueAsString(root);
     }
