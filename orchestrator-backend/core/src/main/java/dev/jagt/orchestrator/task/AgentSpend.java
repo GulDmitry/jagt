@@ -17,7 +17,7 @@ public record AgentSpend(TokenUsage usage, Map<String, Long> marks) {
     public static final AgentSpend NONE = new AgentSpend(TokenUsage.NONE, Map.of());
 
     public AgentSpend {
-        // Insertion order is what says which log was heard from longest ago, and an immutable copy loses it.
+        // Insertion order is the order the logs were first read in, and an immutable copy loses it.
         marks = marks == null ? Map.of()
                 : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(marks));
     }
@@ -28,17 +28,9 @@ public record AgentSpend(TokenUsage usage, Map<String, Long> marks) {
         return marks.getOrDefault(log, 0L);
     }
 
-    /** As many logs as a task plausibly has sessions; past that the oldest mark goes rather than the file grows. */
-    private static final int MARKS_KEPT = 10;
-
     public AgentSpend plus(TokenUsage added, String log, long mark) {
         Map<String, Long> moved = new LinkedHashMap<>(marks);
-        // Removed before it is put, so the order is oldest-first and what goes is the log heard from longest ago.
-        moved.remove(log);
         moved.put(log, mark);
-        while (moved.size() > MARKS_KEPT) {
-            moved.remove(moved.keySet().iterator().next());
-        }
         return new AgentSpend(usageOrNone().plus(added), moved);
     }
 

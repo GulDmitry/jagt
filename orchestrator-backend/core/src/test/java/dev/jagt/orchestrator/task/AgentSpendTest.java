@@ -18,7 +18,7 @@ class AgentSpendTest {
     }
 
     @Test
-    void keepsTheMarksOfTheLastTenLogsAndDropsTheOldest() {
+    void remembersWhereTheFirstLogStopped_afterElevenOthersWereRead() {
         AgentSpend spend = AgentSpend.NONE
                 .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/1.jsonl", 1)
                 .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/2.jsonl", 2)
@@ -33,9 +33,6 @@ class AgentSpendTest {
                 .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/11.jsonl", 11)
                 .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/12.jsonl", 12);
 
-        assertThat(spend.marks()).hasSize(10);
-        assertThat(spend.markFor("/logs/1.jsonl")).isZero();
-        assertThat(spend.markFor("/logs/12.jsonl")).isEqualTo(12);
-        assertThat(spend.usageOrNone().calls()).isEqualTo(12);
+        assertThat(spend.markFor("/logs/1.jsonl")).isEqualTo(1);
     }
 }
