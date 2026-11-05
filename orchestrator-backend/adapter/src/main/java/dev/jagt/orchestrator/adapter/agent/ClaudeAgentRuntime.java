@@ -78,9 +78,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 + " " + shellQuote(prompt);
     }
 
-    /** `--continue` takes the newest conversation this worktree holds, and simply starts one where it holds none. */
+    /** `--continue` exits where the worktree holds no conversation, so there the session starts afresh. */
     @Override
     public String reviveCommand(Path worktree) {
+        if (sessionLogOf(worktree).isEmpty()) {
+            return launchCommand(worktree, false);
+        }
         return COMPACT_ENV + claude.command() + pinnedServers(worktree) + " --continue " + shellQuote(brief.line(Step.REVIVE));
     }
 

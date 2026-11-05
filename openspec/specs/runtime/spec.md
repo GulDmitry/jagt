@@ -41,6 +41,8 @@ So SHALL a relay past the cache lifetime (`AgentRuntime.pastCacheLifetime` from 
 #### Scenario: The tmux server is lost, a relay comes late, or a round comes early
 - **WHEN** jagt revives a session after its tmux server died
 - **THEN** the revived session re-enters with `--continue`
+- **WHEN** jagt revives a session whose worktree holds no conversation (its repository left the task)
+- **THEN** the session starts fresh, since `--continue` there exits
 - **WHEN** a relay comes after the cache lifetime
 - **THEN** the session starts fresh from the current `task_notes.md`, on the model its `next-model:` line names
 - **WHEN** a review round comes within the cache lifetime, a headless run wrote after the session, or `respawn` runs

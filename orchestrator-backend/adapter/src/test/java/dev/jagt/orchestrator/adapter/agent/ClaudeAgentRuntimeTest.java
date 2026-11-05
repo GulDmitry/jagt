@@ -62,13 +62,29 @@ class ClaudeAgentRuntimeTest {
     void continuesTheWorktreesNewestConversationWhenJagtReEntersASessionItDidNotEnd(@TempDir Path root) throws Exception {
         Files.createDirectories(root.resolve("roles/session"));
         Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
+        Path worktree = Files.createDirectories(root.resolve("wt"));
+        Files.writeString(Files.createDirectories(ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
+                .resolve("s.jsonl"), "{}\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
-        assertThat(runtime.reviveCommand(Path.of("/wt")))
+        assertThat(runtime.reviveCommand(worktree))
                 .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --continue 'pick up where you left off'");
+    }
+
+    @Test
+    void startsAfreshWhenJagtRevivesAWorktreeHoldingNoConversation(@TempDir Path root) throws Exception {
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
+        var runtime = new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
+
+        assertThat(runtime.reviveCommand(root.resolve("wt")))
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
     }
 
     @Test
@@ -657,14 +673,17 @@ class ClaudeAgentRuntimeTest {
     void revivesWithThePinnedServersAloneWhenServersArePinned(@TempDir Path root) throws Exception {
         Files.createDirectories(root.resolve("roles/session"));
         Files.writeString(root.resolve("roles/session/brief.md"), "## revive\n\ngo on\n");
+        Path worktree = Files.createDirectories(root.resolve("wt"));
+        Files.writeString(Files.createDirectories(ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
+                .resolve("s.jsonl"), "{}\n");
         var runtime = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
                 new ClaudeProperties("claude", "/stand/servers.json"), new McpEndpoint("http://localhost:8290/mcp"),
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC());
 
-        assertThat(runtime.reviveCommand(Path.of("/wt")))
-                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --mcp-config '/wt/.mcp.json'"
-                        + " '/stand/servers.json' --strict-mcp-config --continue 'go on'");
+        assertThat(runtime.reviveCommand(worktree))
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --mcp-config '" + worktree.resolve(".mcp.json")
+                        + "' '/stand/servers.json' --strict-mcp-config --continue 'go on'");
     }
 
     @Test
