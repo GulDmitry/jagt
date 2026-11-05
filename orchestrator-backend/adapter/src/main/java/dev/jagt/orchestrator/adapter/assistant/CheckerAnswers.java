@@ -1,0 +1,64 @@
+package dev.jagt.orchestrator.adapter.assistant;
+
+import dev.jagt.orchestrator.task.QaDecline;
+import dev.jagt.orchestrator.task.QaVerdict;
+import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Slf4j
+final class CheckerAnswers {
+
+    private CheckerAnswers() {
+    }
+
+    static QaDecline decline(String sha, HeadlessReply reply) {
+        JsonNode answer = reply.envelope() == null ? null : reply.envelope().path("structured_output");
+        return answer == null || !answer.isObject()
+                ? QaDecline.failed(sha, reply.envelope() == null ? "the check failed: " + reply.cause()
+                        : "the check answered nothing readable")
+                : new QaDecline(sha, answer.path("failure").asString(""), answer.path("dispute").asString(""));
+    }
+
+    static void write(Path file, String role, QaVerdict verdict) {
+        if (verdict.rows().isEmpty()) {
+            return;
+        }
+        String rows = verdict.rows().stream().map(row -> "| " + row.criterion() + " | " + row.status() + " | "
+                + row.evidence() + " |").collect(Collectors.joining("\n"));
+        try {
+            Files.writeString(file, "# " + role.toUpperCase(Locale.ROOT) + " report, " + verdict.sha() + "\n\n| criterion | status | evidence |\n|---|---|---|\n"
+                    + rows + "\n");
+        } catch (IOException unwritten) {
+            log.atWarn().setMessage("qa report not written").addKeyValue("file", file)
+                    .addKeyValue("cause", unwritten.toString()).log();
+        }
+    }
+
+    static QaVerdict verdict(String sha, HeadlessReply reply) {
+        JsonNode envelope = reply.envelope();
+        if (envelope == null) {
+            return QaVerdict.failed(sha, "the check failed: " + reply.cause());
+        }
+        JsonNode answer = envelope.path("structured_output");
+        if (!answer.isObject()) {
+            return QaVerdict.failed(sha, "the check answered nothing readable");
+        }
+        List<QaVerdict.Row> rows = new ArrayList<>();
+        for (JsonNode row : answer.path("rows")) {
+            Optional<QaVerdict.Status> status = QaVerdict.Status.of(row.path("status").asString(""));
+            rows.add(new QaVerdict.Row(row.path("criterion").asString(""),
+                    status.orElse(QaVerdict.Status.UNPROVABLE), row.path("evidence").asString("")));
+        }
+        return new QaVerdict(sha, answer.path("failure").asString(""), rows, answer.path("question").asString(""),
+                answer.path("waitingOn").asString(""));
+    }
+}

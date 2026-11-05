@@ -397,7 +397,7 @@ class HeadlessClaudeTest {
     void namesTheModelsOwnWordsWhenItAnsweredPastTheSchema() {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
-        Logger assistantLog = (Logger) LoggerFactory.getLogger(HeadlessClaude.class);
+        Logger assistantLog = (Logger) LoggerFactory.getLogger(SchemaAnswer.class);
         assistantLog.addAppender(log);
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,

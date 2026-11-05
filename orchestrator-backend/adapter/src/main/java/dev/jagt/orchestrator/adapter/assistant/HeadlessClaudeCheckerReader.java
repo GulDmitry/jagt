@@ -10,25 +10,17 @@ import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaVerdict;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.JsonNode;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 @ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
 @RequiredArgsConstructor
-@Slf4j
 public class HeadlessClaudeCheckerReader implements CheckerReader {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(20);
@@ -40,24 +32,19 @@ public class HeadlessClaudeCheckerReader implements CheckerReader {
 
     @Override
     public Answer<QaVerdict> read(Run run) {
-        HeadlessClaude.Reply reply = ask(run);
-        QaVerdict verdict = verdict(run.sha(), reply);
-        write(run.worktree().resolve(run.role() + "-report.md"), run.role(), verdict);
+        HeadlessReply reply = ask(run);
+        QaVerdict verdict = CheckerAnswers.verdict(run.sha(), reply);
+        CheckerAnswers.write(run.worktree().resolve(run.role() + "-report.md"), run.role(), verdict);
         return new Answer<>(Optional.of(verdict), reply.usage());
     }
 
     @Override
     public Answer<QaDecline> reconsider(Run run) {
-        HeadlessClaude.Reply reply = ask(run);
-        JsonNode answer = reply.envelope() == null ? null : reply.envelope().path("structured_output");
-        QaDecline decline = answer == null || !answer.isObject()
-                ? QaDecline.failed(run.sha(), reply.envelope() == null ? "the check failed: " + reply.cause()
-                        : "the check answered nothing readable")
-                : new QaDecline(run.sha(), answer.path("failure").asString(""), answer.path("dispute").asString(""));
-        return new Answer<>(Optional.of(decline), reply.usage());
+        HeadlessReply reply = ask(run);
+        return new Answer<>(Optional.of(CheckerAnswers.decline(run.sha(), reply)), reply.usage());
     }
 
-    private HeadlessClaude.Reply ask(Run run) {
+    private HeadlessReply ask(Run run) {
         RoleDefinition.Tools scope = roles.stream().filter(role -> role.id().equals(run.role())).findFirst()
                 .orElseThrow(() -> new IllegalStateException("no installed role " + run.role())).tools();
         List<String> mcpReads = ReadOnlyTools.mcpNamed(assistant.allowedTools());
@@ -84,39 +71,5 @@ public class HeadlessClaudeCheckerReader implements CheckerReader {
         return headless.run(run.worktree(), TIMEOUT, cmd, new ReadScope(List.of(run.worktree()), tools, scope.git(), List.of(),
                         scope.fetch() ? run.environments() : List.of()),
                 AssistantCallKind.QA_CHECK, run.worktree().toString());
-    }
-
-    private static void write(Path file, String role, QaVerdict verdict) {
-        if (verdict.rows().isEmpty()) {
-            return;
-        }
-        String rows = verdict.rows().stream().map(row -> "| " + row.criterion() + " | " + row.status() + " | "
-                + row.evidence() + " |").collect(Collectors.joining("\n"));
-        try {
-            Files.writeString(file, "# " + role.toUpperCase(Locale.ROOT) + " report, " + verdict.sha() + "\n\n| criterion | status | evidence |\n|---|---|---|\n"
-                    + rows + "\n");
-        } catch (IOException unwritten) {
-            log.atWarn().setMessage("qa report not written").addKeyValue("file", file)
-                    .addKeyValue("cause", unwritten.toString()).log();
-        }
-    }
-
-    private static QaVerdict verdict(String sha, HeadlessClaude.Reply reply) {
-        JsonNode envelope = reply.envelope();
-        if (envelope == null) {
-            return QaVerdict.failed(sha, "the check failed: " + reply.cause());
-        }
-        JsonNode answer = envelope.path("structured_output");
-        if (!answer.isObject()) {
-            return QaVerdict.failed(sha, "the check answered nothing readable");
-        }
-        List<QaVerdict.Row> rows = new ArrayList<>();
-        for (JsonNode row : answer.path("rows")) {
-            Optional<QaVerdict.Status> status = QaVerdict.Status.of(row.path("status").asString(""));
-            rows.add(new QaVerdict.Row(row.path("criterion").asString(""),
-                    status.orElse(QaVerdict.Status.UNPROVABLE), row.path("evidence").asString("")));
-        }
-        return new QaVerdict(sha, answer.path("failure").asString(""), rows, answer.path("question").asString(""),
-                answer.path("waitingOn").asString(""));
     }
 }

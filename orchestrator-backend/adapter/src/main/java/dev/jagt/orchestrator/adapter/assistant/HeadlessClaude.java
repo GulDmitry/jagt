@@ -26,8 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,7 +61,6 @@ class HeadlessClaude {
     static final String RETRY_REASON = "\n\nYour last reply was prose without the " + STRUCTURED_OUTPUT
             + " call: answer through " + STRUCTURED_OUTPUT + " alone.";
     private static final String BUDGET_SUBTYPE = "error_max_budget_usd";
-    private static final Pattern FENCE = Pattern.compile("```(?:json)?\\s*(\\{.*?})\\s*```", Pattern.DOTALL);
 
     private final AssistantProcess process;
     private final ClaudeProperties claude;
@@ -97,37 +94,21 @@ class HeadlessClaude {
     }
 
     Answer<JsonNode> ask(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
-        Reply first = call(prompt, schema, label, kind, timeout);
+        HeadlessReply first = call(prompt, schema, label, kind, timeout);
         JsonNode firstEnvelope = first.envelope();
-        Optional<JsonNode> answer = firstEnvelope != null ? answerOf(firstEnvelope, label, schema) : Optional.empty();
+        Optional<JsonNode> answer = firstEnvelope != null ? SchemaAnswer.answerOf(firstEnvelope, label, schema) : Optional.empty();
         if (firstEnvelope == null || answer.isPresent()) {
             return new Answer<>(answer, first.usage(), first.cause(), first.refused());
         }
         // The CLI at times hands back the model's prose without the object its schema tool validated.
-        Reply second = call(prompt + RETRY_REASON, schema, label, kind, timeout);
+        HeadlessReply second = call(prompt + RETRY_REASON, schema, label, kind, timeout);
         JsonNode secondEnvelope = second.envelope();
-        return new Answer<>(secondEnvelope != null ? answerOf(secondEnvelope, label, schema) : Optional.empty(),
+        return new Answer<>(secondEnvelope != null ? SchemaAnswer.answerOf(secondEnvelope, label, schema) : Optional.empty(),
                 first.usage().plus(second.usage()), second.cause(), first.refused() || second.refused());
     }
 
-    /** A failed call carries no envelope, only its cause: asking again would not mend it. */
-    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause, boolean refused) {
-
-        Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
-            this(envelope, usage, cause, false);
-        }
-
-        Reply refusedByGate(boolean gate) {
-            return new Reply(envelope, usage, cause, refused || gate);
-        }
-
-        static Reply failed(TokenUsage usage, String cause) {
-            return new Reply(null, usage, cause);
-        }
-    }
-
     /** Which servers load, and whether any load at all, are the KIND's to answer — never a flag beside it. */
-    private Reply call(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
+    private HeadlessReply call(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
         boolean withMcp = kind.readsTools();
         String pinned = assistant.mcpConfigFor(kind);
         List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
@@ -175,7 +156,7 @@ class HeadlessClaude {
      * Any headless command, held to {@code scope} while it runs and booked under {@code kind} the moment it returns,
      * whatever it answered.
      */
-    Reply run(Path cwd, Duration timeout, List<String> cmd, ReadScope scope, AssistantCallKind kind, String label) {
+    HeadlessReply run(Path cwd, Duration timeout, List<String> cmd, ReadScope scope, AssistantCallKind kind, String label) {
         String fence = UUID.randomUUID().toString();
         // A one-shot's prompt is never read again past its minutes, so the 1h TTL's double write price buys nothing.
         List<String> fenced = new ArrayList<>(List.of("env", "FORCE_PROMPT_CACHING_5M=1", MAX_RETRIES));
@@ -183,7 +164,7 @@ class HeadlessClaude {
         fenced.addAll(List.of("--max-budget-usd", String.format(Locale.ROOT, "%.2f", assistant.maxCostUsd())));
         fenced.addAll(cmd.subList(1, cmd.size()));
         fenced.addAll(readOnlyTools.fence(fence, scope));
-        Reply reply;
+        HeadlessReply reply;
         Optional<String> unheard;
         List<String> calls;
         boolean refused;
@@ -216,12 +197,12 @@ class HeadlessClaude {
                     .addKeyValue("effect", "answer discarded")
                     .addKeyValue("fix", "allowManagedHooksOnly: false")
                     .log();
-            return Reply.failed(reply.usage(), "unfenced: " + unheard.get());
+            return HeadlessReply.failed(reply.usage(), "unfenced: " + unheard.get());
         }
         return reply.refusedByGate(refused);
     }
 
-    private Reply booked(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {
+    private HeadlessReply booked(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {
         Processes.Result result;
         try {
             result = process.run(cwd, timeout, cmd);
@@ -235,12 +216,12 @@ class HeadlessClaude {
                     .addKeyValue("limit", timeout)
                     .addKeyValue("effect", "token cost unmeasured")
                     .log();
-            return Reply.failed(TokenUsage.NONE, "did not return: " + e.getMessage());
+            return HeadlessReply.failed(TokenUsage.NONE, "did not return: " + e.getMessage());
         }
         return judged(result, kind, label);
     }
 
-    private Reply judged(Processes.Result result, AssistantCallKind kind, String label) {
+    private HeadlessReply judged(Processes.Result result, AssistantCallKind kind, String label) {
         JsonNode envelope = parseEnvelope(result.stdout(), label);
         // Booked whatever the outcome: a call that errored or came back unusable was still paid for.
         TokenUsage usage = usageOf(envelope);
@@ -267,7 +248,7 @@ class HeadlessClaude {
                     .addKeyValue("effect", "answer discarded")
                     .addKeyValue("fix", "orchestrator.assistant.maxCostUsd")
                     .log();
-            return Reply.failed(usage, cause);
+            return HeadlessReply.failed(usage, cause);
         }
         if (result.exitCode() != 0 || envelope == null) {
             log.atWarn().setMessage("assistant call failed")
@@ -275,7 +256,7 @@ class HeadlessClaude {
                     .addKeyValue("exit", result.exitCode())
                     .addKeyValue("cause", oneLine(result.stderr().isBlank() ? result.stdout() : result.stderr()))
                     .log();
-            return Reply.failed(usage, "exit " + result.exitCode());
+            return HeadlessReply.failed(usage, "exit " + result.exitCode());
         }
         if (envelope.path("is_error").asBoolean(false)) {
             String cause = errorOf(envelope);
@@ -283,9 +264,9 @@ class HeadlessClaude {
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", oneLine(cause))
                     .log();
-            return Reply.failed(usage, "errored: " + cause);
+            return HeadlessReply.failed(usage, "errored: " + cause);
         }
-        return new Reply(envelope, usage, "");
+        return new HeadlessReply(envelope, usage, "");
     }
 
     /** An error with a blank result still names its subtype and what ended its run. */
@@ -313,60 +294,6 @@ class HeadlessClaude {
                     .log();
             return null;
         }
-    }
-
-    /** {@code structured_output} when the CLI already parsed it, else {@code result}, holding the same JSON. */
-    private Optional<JsonNode> answerOf(JsonNode envelope, String label, String schema) {
-        JsonNode structured = envelope.path("structured_output");
-        if (structured.isObject()) {
-            return Optional.of(structured);
-        }
-        String raw = envelope.path("result").asString("");
-        if (raw.isBlank()) {
-            log.atWarn().setMessage("assistant answer empty")
-                    .addKeyValue("ref", label)
-                    .addKeyValue("cause", "result blank")
-                    .log();
-            return Optional.empty();
-        }
-        try {
-            JsonNode answer = mapper.readTree(fenced(raw));
-            return answer.isObject() && carriesSchema(answer, schema)
-                    ? Optional.of(answer)
-                    : outsideSchema(label, "not the schema's object", raw);
-        } catch (RuntimeException e) {
-            return outsideSchema(label, e.getMessage(), raw);
-        }
-    }
-
-    /** A model that skipped the schema tool often still writes the object, fenced inside its prose: the last fence. */
-    private static String fenced(String raw) {
-        Matcher fence = FENCE.matcher(raw);
-        String last = raw;
-        while (fence.find()) {
-            last = fence.group(1);
-        }
-        return last;
-    }
-
-    /**
-     * The CLI validated {@code structured_output} against the schema; this fallback nobody checked. The
-     * schema's FIRST required field is its discriminator, so an answer built of generic names alone
-     * ({@code title}, {@code url}) cannot pass as facts and be read as "no such item".
-     */
-    private boolean carriesSchema(JsonNode answer, String schema) {
-        String discriminator = mapper.readTree(schema).path("required").path(0).asString("");
-        return !discriminator.isEmpty() && answer.has(discriminator);
-    }
-
-    /** An answer read as facts would report a read that never happened as the item not existing. */
-    private Optional<JsonNode> outsideSchema(String label, @Nullable String cause, String said) {
-        log.atWarn().setMessage("assistant answered outside the schema")
-                .addKeyValue("ref", label)
-                .addKeyValue("cause", oneLine(cause))
-                .addKeyValue("said", oneLine(said))
-                .log();
-        return Optional.empty();
     }
 
     /** Fresh input = prompt + cache WRITES, both billed at input rates; cache reads count apart, being cheaper. */

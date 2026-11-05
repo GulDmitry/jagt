@@ -96,14 +96,7 @@ public class OpenCodeAgentRuntime extends AbstractAgentRuntime implements Startu
         server.putObject("headers").put(McpEndpoint.CALLER_HEADER, McpEndpoint.callerHeaderValue(worktree.path()));
         server.put("oauth", false);
         server.put("enabled", true);
-        if (opencode.hasEndpoint()) {
-            ObjectNode local = root.putObject("provider").putObject("local");
-            local.put("npm", "@ai-sdk/openai-compatible");
-            local.put("name", "local");
-            local.putObject("options").put("baseURL", opencode.endpoint());
-            local.putObject("models").putObject(opencode.model());
-            root.put("model", "local/" + opencode.model());
-        }
+        OpenCodeProvider.write(root, opencode);
         write(worktree.path().resolve(CONFIG_FILE), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(root));
     }
 }
