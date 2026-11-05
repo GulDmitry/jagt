@@ -39,7 +39,7 @@ public class MergedReadJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(status -> !FlowRules.closed(status)).withStops(StopKind.values());
+        return Watch.defaults().withStatuses(status -> !FlowRules.closed(status)).withStops(StopKind.withoutPause());
     }
 
     @Override

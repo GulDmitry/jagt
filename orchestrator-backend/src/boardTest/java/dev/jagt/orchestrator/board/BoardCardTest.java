@@ -444,9 +444,9 @@ class BoardCardTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
         assertThat(page.locator("article .actions button")).hasText(
-                new String[]{"Check review", "Deploy", "Done", "Focus", "Open IDE", "Diff", "Restart agent"});
+                new String[]{"Check review", "Deploy", "Pause", "Done", "Focus", "Open IDE", "Diff", "Restart agent"});
         assertThat(page.locator("article .actions.flow button")).hasText(
-                new String[]{"Check review", "Deploy", "Done"});
+                new String[]{"Check review", "Deploy", "Pause", "Done"});
         assertThat(page.locator("article .actions.tool button")).hasText(
                 new String[]{"Focus", "Open IDE", "Diff", "Restart agent"});
         assertThat(page.locator("article .actions button.primary")).hasText("Deploy");

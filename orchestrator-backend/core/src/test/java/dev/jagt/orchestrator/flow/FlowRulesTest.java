@@ -311,6 +311,14 @@ class FlowRulesTest {
                 .isFalse();
     }
 
+    @ParameterizedTest
+    @CsvSource({"NEW,false,false", "PLAN_PENDING,false,false", "IN_PROGRESS,false,true", "REVERTED,false,true",
+            "DONE,false,false", "IN_PROGRESS,true,false"})
+    void offersPauseOnlyToAStartedTaskNotAlreadyStopped(TaskStatus status, boolean stopped, boolean offered) {
+        assertThat(FlowRules.allows(status, TaskAction.PAUSE, Facts.defaults().withStopped(stopped)))
+                .isEqualTo(offered);
+    }
+
     @Test
     void parksAStoppedTaskWithTheHumanAndLiftAsTheMove() {
         Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withHasReviewRequest(true).withStopped(true), RoundState.NONE,

@@ -45,6 +45,15 @@ class WatchTest {
     }
 
     @ParameterizedTest
+    @CsvSource({"PAUSE,false", "PACE,true"})
+    void refusesAPausedTaskToAWatchOfEveryOtherStop(TaskStop.Trigger trigger, boolean admitted) {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(trigger, 1, "evidence")).build();
+
+        assertThat(Watch.defaults().withStops(StopKind.withoutPause()).admits(task)).isEqualTo(admitted);
+    }
+
+    @ParameterizedTest
     @CsvSource({"PLAIN,true", "QUESTION,false"})
     void leavesOutAReportThatAsksWhenTheWatchExcludesIt(AgentReport report, boolean admitted) {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).report(report).build();

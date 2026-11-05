@@ -85,3 +85,22 @@ stops are counted on a request; the others SHALL stand.
 #### Scenario: A new request replaces the one the stop was counted on
 - **WHEN** ABC-42 was stopped on !571 and opens !573
 - **THEN** the stop lifts, the count restarts, the sweep reads !573, and the log says `stop lifted` with `cause=new request`
+
+### Requirement: You pause a started task
+`pause` SHALL stop a started task for you to look at: nothing of jagt runs on it, reads included, until your `lift`.
+It is offered from IN_PROGRESS on, never to a stopped task, and is the human's in every Master mode.
+The task's session keeps running; jagt says nothing into it and moves nothing. The card carries the stop mark.
+A `deploy` you press lifts it as it lifts any stop. Nothing else ends it.
+
+#### Scenario: A paused task is left alone
+- **WHEN** you press `pause` on ABC-42 at IN_PROGRESS
+- **THEN** no job reads or moves it and nothing is relayed into its session until you press `lift`
+- **AND** the stop is neither logged as a warning nor notified
+
+#### Scenario: Where pause is offered
+- **WHEN** ABC-42 is NEW, PLAN_PENDING, DONE or already stopped
+- **THEN** `pause` is not offered
+
+#### Scenario: The Master cannot pause
+- **WHEN** the Master presses `pause`
+- **THEN** it is refused

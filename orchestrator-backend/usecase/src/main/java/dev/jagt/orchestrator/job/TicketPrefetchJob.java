@@ -42,7 +42,7 @@ public class TicketPrefetchJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(TaskStatus.IN_PROGRESS).withStops(StopKind.values());
+        return Watch.defaults().withStatuses(TaskStatus.IN_PROGRESS).withStops(StopKind.withoutPause());
     }
 
     @Override

@@ -3,9 +3,16 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.TaskStop;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Arrays;
+
 /** The stop region's states: none, or the way the standing stop ends. */
 public enum StopKind {
-    NONE, LIFT, HOST_READ, SESSION_ALIVE, SESSION_REPORT, DEPLOY_READ;
+    NONE, LIFT, HOST_READ, SESSION_ALIVE, SESSION_REPORT, DEPLOY_READ, PAUSE;
+
+    /** Every kind a stop can stand in but a human's pause. */
+    public static StopKind[] withoutPause() {
+        return Arrays.stream(values()).filter(kind -> kind != PAUSE).toArray(StopKind[]::new);
+    }
 
     public static StopKind of(@Nullable TaskStop stop) {
         return stop == null ? NONE : of(stop.trigger().ends());

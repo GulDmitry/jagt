@@ -38,7 +38,7 @@ public class FreshStartWaitJob implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStops(StopKind.values());
+        return Watch.defaults().withStops(StopKind.withoutPause());
     }
 
     @Override

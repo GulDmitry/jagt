@@ -463,6 +463,16 @@ class JobsTest {
         assertThat(reached).allMatch(task -> job.watch().stops().contains(StopKind.of(task.stop())));
     }
 
+    @ParameterizedTest
+    @MethodSource("taskJobs")
+    void neverAdmitsAPausedTaskToATaskJob(Class<? extends TaskJob> type) {
+        TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
+        TaskState paused = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it")).build();
+
+        assertThat(job.watch().admits(paused)).isFalse();
+    }
+
     private static List<TaskState> reachedBy(TaskJob job, Map<String, TaskState> tasks) {
         doReturn("job").when(job).id();
         doNothing().when(job).run(any(String.class), any(TaskState.class));

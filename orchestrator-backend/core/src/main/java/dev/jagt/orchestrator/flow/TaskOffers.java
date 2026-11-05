@@ -50,6 +50,8 @@ final class TaskOffers {
 
     private static final Set<TaskStatus> OPEN = EnumSet.complementOf(EnumSet.of(DONE));
 
+    private static final Set<TaskStatus> STARTED = difference(ANY, EnumSet.of(NEW, PLAN_PENDING, DONE));
+
     private static final Set<TaskStatus> WRITTEN = EnumSet.of(IN_PROGRESS, VERIFYING, REVIEW_PENDING);
 
     private static final Set<TaskStatus> SHIP_ON_A_REQUEST = difference(SHIP_FROM, EnumSet.of(IN_PROGRESS, VERIFYING,
@@ -77,6 +79,7 @@ final class TaskOffers {
             offer(TaskAction.REVERT, EnumSet.of(DEPLOYED, DEPLOY_CONFLICT), no(GIT_CHANGED)),
             offer(TaskAction.REVERT, REVERT_ON_A_LIVE_DEPLOY, no(GIT_CHANGED), yes(LIVE_DEPLOY)),
             offer(TaskAction.TRUST, ANY, yes(GIT_CHANGED)),
+            offer(TaskAction.PAUSE, STARTED, no(STOPPED)),
             offer(TaskAction.LIFT, ANY, yes(STOPPED)),
             offer(TaskAction.FOCUS, ANY),
             offer(TaskAction.IDE, ANY),

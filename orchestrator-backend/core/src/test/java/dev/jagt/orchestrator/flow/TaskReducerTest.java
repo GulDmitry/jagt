@@ -153,6 +153,18 @@ class TaskReducerTest {
     }
 
     @Test
+    void keepsAPauseWhateverEndIsReportedUntilTheLift() {
+        TaskStop pause = new TaskStop(TaskStop.Trigger.PAUSE, 1_000, "you paused it");
+        TaskState paused = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).stop(pause).build();
+
+        TaskState kept = TaskReducer.ended(paused, TaskStop.Trigger.Ends.PAUSE, "", 2_000);
+        TaskState lifted = TaskReducer.lift(kept, 3_000);
+
+        assertThat(kept.stop()).isEqualTo(pause);
+        assertThat(lifted.stop()).isNull();
+    }
+
+    @Test
     void keepsALiftStopOnAReadThatDisprovesAHostReadStop() {
         TaskStop stop = new TaskStop(TaskStop.Trigger.STALLED, 1_000, "rounds bring nothing new");
         TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).stop(stop).build();

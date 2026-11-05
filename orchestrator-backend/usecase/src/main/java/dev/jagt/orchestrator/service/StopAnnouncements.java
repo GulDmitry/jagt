@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
-/** What a newly tripped stop tells: the log, the human, the journal. */
+/** What a newly tripped stop tells: the log, the human, the journal; a stop the human set tells nothing. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -20,6 +20,9 @@ public class StopAnnouncements {
     private final StopLog journal;
 
     public void announce(String taskId, TaskState task, TaskStop stop) {
+        if (stop.trigger().ends() == TaskStop.Trigger.Ends.PAUSE) {
+            return;
+        }
         String alias = task.alias() == null ? taskId : task.alias();
         String trigger = stop.trigger().name();
         log.atWarn().setMessage("task stopped").addKeyValue("task", taskId).addKeyValue("alias", alias)

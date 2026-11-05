@@ -43,7 +43,7 @@ public class LaunchExits implements TaskJob {
 
     @Override
     public Watch watch() {
-        return Watch.defaults().withStatuses(TaskStatus.NEW).withStops(StopKind.values());
+        return Watch.defaults().withStatuses(TaskStatus.NEW).withStops(StopKind.withoutPause());
     }
 
     @Override
