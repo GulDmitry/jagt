@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.protocol.PlanRepositories;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -51,6 +52,10 @@ public class PlanPlacement {
         WorktreeFiles.copyFiles(scratch, repos.getFirst().worktreePath(), Artifact.fileNames());
         String override = task.baseBranch() == null || task.baseBranch().isBlank() ? null : repos.getFirst().baseBranch();
         List<TaskRepo> placed = repos.stream().map(NewRepo::registered).toList();
-        stateService.updateTask(taskId, current -> TaskReducer.placed(current, placed, override));
+        GitTrust trust = worktrees.trust(repos);
+        stateService.updateTask(taskId, current -> {
+            TaskState moved = TaskReducer.placed(current, placed, override);
+            return trust == null ? moved : TaskReducer.gitTrusted(moved, trust);
+        });
     }
 }

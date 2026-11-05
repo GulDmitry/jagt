@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -18,6 +19,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,6 +78,27 @@ class PlanPlacementTest {
         assertThat(root.resolve("ABC-9-api/plan.md")).content().contains("- [changed] web");
         assertThat(root.resolve("ABC-9-api/task_request.md")).hasContent("split the mailer");
         verify(retired).remove("ABC-9", List.of(scratchRepo), ConfigService.ConfigFile.defaults().projects());
+    }
+
+    @Test
+    void trustsTheGitStateOfTheWorktreesItWasPlacedIn() throws Exception {
+        Path scratch = Files.createDirectories(root.resolve("scratch/ABC-9"));
+        Files.writeString(scratch.resolve("plan.md"), "## Repositories\n- [changed] api\n");
+        Files.createDirectories(root.resolve("ABC-9-api"));
+        List<NewRepo> cut = List.of(new NewRepo("api", new ProjectConfig("/api", "origin/main", "dev", List.of()), Path.of("/api"),
+                root.resolve("ABC-9-api"), root.resolve(".git"), "origin/main", "", true));
+        when(worktrees.place(any(), any(), any())).thenAnswer(call -> {
+            Consumer<List<NewRepo>> registration = call.getArgument(2);
+            registration.accept(cut);
+            return cut;
+        });
+        GitTrust trust = GitTrust.of(Map.of("core.hooksPath", "hooks"));
+        when(worktrees.trust(cut)).thenReturn(trust);
+        state.putTask("ABC-9", TaskState.builder(List.of(TaskRepo.of(null, scratch.toString())), TaskStatus.PLAN_PENDING).build());
+
+        placement.place("ABC-9");
+
+        assertThat(state.task("ABC-9").orElseThrow().gitTrust()).isEqualTo(trust);
     }
 
     @Test
