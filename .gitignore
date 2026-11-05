@@ -81,3 +81,6 @@ orchestrator-backend/eval-stats.jsonl*
 roles/*/*
 !roles/*/*.dist
 !roles/*/eval/
+
+# Held specs: text of behaviour not yet built, kept out of the tree
+openspec-held/
