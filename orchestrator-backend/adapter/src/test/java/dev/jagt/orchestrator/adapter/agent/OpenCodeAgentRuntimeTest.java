@@ -11,8 +11,6 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.SandboxConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -76,7 +74,7 @@ class OpenCodeAgentRuntimeTest {
 
         new OpenCodeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b"),
+                new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", null),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"), config)
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
@@ -97,7 +95,7 @@ class OpenCodeAgentRuntimeTest {
 
         new OpenCodeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new OpenCodeProperties("", "", "qwen-4b"),
+                new OpenCodeProperties("", "", "qwen-4b", null),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"), config)
                 .provisionWorktree(AgentWorktree.of(worktree, root));
 
@@ -125,7 +123,7 @@ class OpenCodeAgentRuntimeTest {
     void startsOnThePlanAgentInPlanModeSoNothingIsEditedBeforeTheHumanApproves() {
         var runtime = new OpenCodeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new OpenCodeProperties("/opt/bin/opencode", "", ""), new McpEndpoint("http://127.0.0.1:8290/mcp"),
+                new OpenCodeProperties("/opt/bin/opencode", "", "", null), new McpEndpoint("http://127.0.0.1:8290/mcp"),
                 mock(ConfigService.class));
 
         assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true, "", "go"))
@@ -134,53 +132,35 @@ class OpenCodeAgentRuntimeTest {
                         + " /opt/bin/opencode --standalone --prompt 'go'");
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "true,'',orchestrator.agent.cli",
-            "false,ftp://127.0.0.1:8080,orchestrator.opencode.endpoint",
-            "false,not a url,orchestrator.opencode.endpoint",
-            "false,http://127.0.0.1:8080/v1,orchestrator.opencode.model"})
-    void refusesToStartWhereOpenCodeCannotRunAsConfigured(boolean sandbox, String endpoint, String key) {
+    @Test
+    void refusesToStartWhereTheSandboxIsOnBecauseOpenCodeHasNone() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults().withAgent(AgentConfig.defaults()
-                .withSandbox(SandboxConfig.defaults().withEnabled(sandbox))));
+                .withSandbox(SandboxConfig.defaults().withEnabled(true))));
 
         var runtime = new OpenCodeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new OpenCodeProperties("", endpoint, ""), new McpEndpoint("http://127.0.0.1:8290/mcp"), config);
+                OpenCodeProperties.defaults(), new McpEndpoint("http://127.0.0.1:8290/mcp"), config);
 
-        assertThat(runtime.problems()).extracting(Problem::key).contains(key);
+        assertThat(runtime.problems()).extracting(Problem::key).containsExactly("orchestrator.agent.cli");
     }
 
     @Test
-    void refusesToStartWithoutTheCliOnPath() {
+    void startsWhereTheSandboxIsOff() {
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigFile.defaults());
+        when(config.load()).thenReturn(ConfigFile.defaults().withAgent(AgentConfig.defaults()
+                .withSandbox(SandboxConfig.defaults().withEnabled(false))));
 
         var runtime = new OpenCodeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new OpenCodeProperties("no-such-agent-cli", "", ""), new McpEndpoint("http://127.0.0.1:8290/mcp"),
-                config);
-
-        assertThat(runtime.problems()).extracting(Problem::key).containsExactly("orchestrator.opencode.command");
-    }
-
-    @Test
-    void acceptsALocalEndpointWithItsModelAndNoSandbox() {
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigFile.defaults());
-
-        var runtime = new OpenCodeAgentRuntime(
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new OpenCodeProperties("sh", "http://127.0.0.1:8080/v1", "qwen-4b"),
-                new McpEndpoint("http://127.0.0.1:8290/mcp"), config);
+                OpenCodeProperties.defaults(), new McpEndpoint("http://127.0.0.1:8290/mcp"), config);
 
         assertThat(runtime.problems()).isEmpty();
     }
 
     @Test
     void fallsBackToTheCliNameWhereTheConfiguredCommandIsBlank() {
-        assertThat(new OpenCodeProperties("  ", "", "").command()).isEqualTo("opencode");
+        assertThat(new OpenCodeProperties("  ", "", "", null).command()).isEqualTo("opencode");
     }
 
     @Test

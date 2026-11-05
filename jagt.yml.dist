@@ -109,6 +109,7 @@ orchestrator:
   #   command: opencode
   #   endpoint: ""      # an OpenAI-compatible base URL, e.g. http://127.0.0.1:8080/v1; blank: your own OpenCode config picks the model
   #   model: ""         # the model name that endpoint serves; required with an endpoint
+  #   reads: {qa: qwen-4b}   # roles whose read runs on OpenCode at the endpoint; master = the round reads; blank model = model
 
   # What a session is told at each step jagt sends it: roles/session/brief.md.dist; copy it to roles/session/brief.md to edit a step.
   # When jagt may send each step: roles/session/cases.md.dist; copy it to roles/session/cases.md to edit a case.

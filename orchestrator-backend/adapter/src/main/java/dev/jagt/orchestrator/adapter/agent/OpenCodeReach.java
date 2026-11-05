@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.List;
 
-/** The sessions' model endpoint, read while it is set: one that does not answer is jagt's lost reach until one does. */
+/** The OpenCode model endpoint, read while it is set: one that does not answer is jagt's lost reach until one does. */
 @Component
-@ConditionalOnExpression("'${orchestrator.agent.cli:}' == 'opencode' && '${orchestrator.opencode.endpoint:}' != ''")
+@ConditionalOnExpression("'${orchestrator.opencode.endpoint:}' != ''")
 @RequiredArgsConstructor
 public class OpenCodeReach implements Job {
 

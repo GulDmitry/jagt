@@ -12,7 +12,7 @@ class OpenCodeReachTest {
     void boardHeadNamesTheEndpointWhenItsModelsDoNotAnswer() {
         ReachLedger reach = new ReachLedger();
 
-        new OpenCodeReach(new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen"),
+        new OpenCodeReach(new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen", null),
                 url -> !url.equals("http://127.0.0.1:8080/v1/models"), reach).run();
 
         assertThat(reach.standing()).extracting(ReachLost::said)
@@ -24,7 +24,7 @@ class OpenCodeReachTest {
         ReachLedger reach = new ReachLedger();
         reach.lost(new ReachLost("opencode", "http://127.0.0.1:8080/v1", null, "opencode cannot reach it"));
 
-        new OpenCodeReach(new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen"),
+        new OpenCodeReach(new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen", null),
                 url -> url.equals("http://127.0.0.1:8080/v1/models"), reach).run();
 
         assertThat(reach.standing()).isEmpty();
