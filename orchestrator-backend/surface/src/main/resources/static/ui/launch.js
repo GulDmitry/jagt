@@ -13,6 +13,7 @@ const strategy = document.getElementById('strategy');
 export const open = () => {
   if (!dialog.open) dialog.showModal();
   ref.focus();
+  projects.cards();
 };
 
 document.getElementById('close-launch').onclick = () => dialog.close();
@@ -41,7 +42,11 @@ export function render() {
   }
 }
 
+const plan = document.getElementById('plan');
+form.addEventListener('change', () => document.getElementById('launch-state').classList.remove('bad'));
+
 submits(form, {
+  problem: () => (projects.chosen() || plan.checked ? null : 'Choose a project, or start with plan first'),
   waiting: 'starting…',
   send: () => api('/api/tasks', {
     method: 'POST',
@@ -49,7 +54,7 @@ submits(form, {
     body: JSON.stringify({
       ref: ref.value,
       project: projects.chosen(),
-      mode: document.getElementById('plan').checked ? 'plan' : null,
+      mode: plan.checked ? 'plan' : null,
       strategy: strategy.value,
       baseBranch: document.getElementById('base-branch').value,
       notes: document.getElementById('notes').value,

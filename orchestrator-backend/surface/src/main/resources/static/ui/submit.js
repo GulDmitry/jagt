@@ -8,11 +8,17 @@ let afterwards = async () => {};
 
 export const onSent = (read) => { afterwards = read; };
 
-export async function sending(form, {waiting, send, done}) {
+export async function sending(form, {waiting, send, done, problem}) {
   const state = form.querySelector('.state');
   const button = form.querySelector('button[type=submit]');
   // requestSubmit() fires a submit even when the button is disabled.
   if (button.disabled) return;
+  const refused = problem?.();
+  state?.classList.toggle('bad', !!refused);
+  if (refused) {
+    state.textContent = refused;
+    return;
+  }
   button.disabled = true;
   if (state) state.textContent = waiting;
   try {

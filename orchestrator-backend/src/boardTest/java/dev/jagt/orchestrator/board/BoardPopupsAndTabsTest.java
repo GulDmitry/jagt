@@ -475,6 +475,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
+        page.locator("#project input[value=alpha]").check();
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#pane .round")).containsText("Renamed it.");

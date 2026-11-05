@@ -132,14 +132,13 @@ body.stale #board, body.stale #phases, body.stale #report-line { opacity: .5; }
 #palette[hidden] { display: none; }
 button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 #palette-state.ok { color: var(--ok); }
-#palette-state.bad { color: var(--danger); }
+#palette-state.bad, #launch-state.bad { color: var(--danger); }
 /* Plain <pre> inside: a report is written in columns, and a table would only misrepresent them. */
 #report {
   border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text);
   padding: 0; max-width: min(1000px, 94vw); max-height: 92vh; overflow: hidden;
   box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
 }
-/* A column, so the head and the line keep their height and the body takes what is left, with or without one. */
 #report[open] { display: flex; flex-direction: column; }
 #report::backdrop { background: rgb(0 0 0 / 45%); }
 .report-head {
@@ -147,7 +146,6 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
   position: sticky; top: 0; background: var(--panel);
 }
 #report-scroll { overflow: auto; min-height: 0; }
-/* Wraps, never scrolls sideways; only a word longer than the dialog breaks, so a path stays copyable. */
 #report-body {
   margin: 0; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: break-word;
   font-family: var(--mono); font-size: 12px; line-height: 1.45;
@@ -162,7 +160,6 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 .legend-key .block, .legend-key .quote {
   font-family: var(--mono); font-size: 12px;
 }
-/* Thin on purpose: one line, no button — Enter sends it, and the round above is what it is about. */
 #report-line {
   display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line);
 }
@@ -202,9 +199,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 #phases .count { font-weight: 700; color: var(--text); }
 #phases .phase.empty .count { font-weight: 400; color: var(--muted); }
 #phases .sep { opacity: .4; }
-/* One cell per TASK: a card keeps its place, and only its own contents change under it. */
 main { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; padding: 16px; }
-/* The list keeps its width and the open task takes the rest; a narrow window shows one of the two. */
 main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-items: start; }
 #tasks { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .group-head {
@@ -235,14 +230,12 @@ main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-i
 }
 main#board { padding-bottom: 56px; }
 main#board:empty { padding: 0; }
-/* The open task stays in view while the list scrolls under it. */
 #pane {
   display: flex; flex-direction: column; gap: 12px; min-width: 0;
   position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto;
 }
 #pane article { align-self: stretch; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 #pane article > .card-top, #pane article > .heading, #pane article > .meta, #pane article > .detail { flex: 0 0 100%; }
-/* One line of verbs in the open task: what moves it, then what only looks, then Done at the far end. */
 #pane article > .actions { display: contents; }
 #pane article .actions.flow > button { order: 1; }
 #pane article .actions.tool > button { order: 2; }
@@ -357,11 +350,9 @@ button.primary.again { box-shadow: 0 0 0 2px var(--ok); }
 .state { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .state figcaption { font-size: 12px; }
 
-/* The open task reads as one header: alias, id and badge, then a title that leads, then the line of facts. */
 #pane .heading { margin: 0; }
 #pane .title { font-size: 16px; font-weight: 600; }
 #pane article .actions > button { font-size: 12px; padding: 4px 10px; }
-/* What is wanted now, whole and set off, at the head of the open task. */
 #pane .detail { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); white-space: pre-wrap; }
 #pane .detail.you { border-color: var(--you); background: var(--you-bg); }
 #pane .detail.problem { border-color: var(--danger); }

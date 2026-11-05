@@ -43,6 +43,8 @@
 - **Add a project, run a job now** — Add, change or drop a project in `jagt.yml` from the board or `project`; any unattended job runs now.
   [add, edit, remove](../openspec/specs/project-setup/spec.md) ·
   [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
+- **Project hover in the new-task form** — Hovering a project shows its `jagt.yml` entry and remote; Start with no project needs `plan first`.
+  [spec](../openspec/specs/board/spec.md#requirement-a-mark-says-what-it-replaces)
 - **Keys for verbs, who asked** — Every verb shows its key, even one that asks first; each history step names who asked.
   [keys](../openspec/specs/board-workspace/spec.md#requirement-a-verb-carries-its-key) ·
   [who](../openspec/specs/board-workspace/spec.md#requirement-the-history-names-who-asked)

@@ -1,5 +1,6 @@
 // The projects a new task can run in, one box each, filled from the same snapshot the board renders.
 
+import {api, refusal} from '../core/api.js';
 import * as store from '../core/store.js';
 
 const group = document.getElementById('project');
@@ -15,6 +16,15 @@ export const chosen = () => {
 export const forget = () => {
   group.querySelectorAll('input').forEach((box) => { box.checked = false; });
 };
+
+const said = (card) => Object.entries(card).filter(([, value]) => value?.length)
+  .map(([name, value]) => `${name}: ${[value].flat().join(', ')}`).join('\n');
+
+// A remote's address is read from git, so the cards are read again whenever the form opens.
+export const cards = () => Promise.all([...group.querySelectorAll('label')].map(async (label) => {
+  const key = label.firstElementChild.value;
+  label.dataset.tip = await api(`/api/projects/${encodeURIComponent(key)}/card`).then(said, (e) => `${key}: ${refusal(e)}`);
+}));
 
 export function render() {
   const configured = store.projects();

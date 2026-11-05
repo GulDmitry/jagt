@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -154,7 +155,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     }
 
     @Test
-    void startingATaskWithoutPickingAProjectLeavesTheChoiceToTheTicketRead() {
+    void startingATaskWithNoProjectIsAllowedWhenPlanFirstIsTicked() {
         when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
         Page page = session.newPage();
@@ -164,10 +165,26 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
+        page.locator("#plan").check();
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withStrategy("fresh"));
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withMode("plan").withStrategy("fresh"));
+    }
+
+    @Test
+    void startingATaskWithNoProjectAndNoPlanFirstSaysSoAndSendsNothing() {
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#new-task").click();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#launch-state")).hasText("Choose a project, or start with plan first");
+        verifyNoInteractions(launcher);
     }
 
     @Test
@@ -181,11 +198,12 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
+        page.locator("#project input[value=alpha]").check();
         page.locator("#notes").fill("start with the failing test");
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withStrategy("fresh")
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("alpha").withStrategy("fresh")
                 .withNotes("start with the failing test"));
     }
 
@@ -201,6 +219,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
+        page.locator("#project input[value=alpha]").check();
         page.locator("#base-branch").fill("feature/parent");
         page.locator("#notes").fill("start with the failing test");
         page.locator("#launch button[type=submit]").click();
@@ -291,6 +310,26 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     }
 
     @Test
+    void hoveringAProjectShowsItsConfigurationAndTheAddressOfItsRepository() throws Exception {
+        Files.createDirectories(root.resolve("alpha"));
+        new ProcessBuilder("git", "-C", root.resolve("alpha").toString(), "init", "-q").start().waitFor();
+        new ProcessBuilder("git", "-C", root.resolve("alpha").toString(), "remote", "add", "origin",
+                "git@code.example:acme/alpha.git").start().waitFor();
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#new-task").click();
+        assertThat(page.locator("#project label").first()).hasAttribute("data-tip",
+                Pattern.compile("remoteUrl: git@code.example:acme/alpha.git"));
+
+        page.locator("#project label").first().hover();
+
+        assertThat(page.locator("#tip")).containsText("baseBranch: origin/main");
+        assertThat(page.locator("#tip")).containsText("deployBranch: dev");
+        assertThat(page.locator("#tip")).containsText("remoteUrl: git@code.example:acme/alpha.git");
+    }
+
+    @Test
     void offersTheProjectsByNameWhateverOrderJagtYmlListsThem() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
@@ -360,11 +399,12 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
+        page.locator("#project input[value=alpha]").check();
         page.locator("#strategy").selectOption("recreate");
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withStrategy("recreate"));
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("alpha").withStrategy("recreate"));
     }
 
     @ParameterizedTest
@@ -399,6 +439,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
+        page.locator("#project input[value=alpha]").check();
 
         page.locator("#ref").press("Meta+Enter");
 
@@ -417,6 +458,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
         page.locator("#new-task").click();
         page.locator("#ref").fill("ABC-9");
+        page.locator("#project input[value=alpha]").check();
 
         page.locator("#ref").press("Meta+Enter");
         assertThat(page.locator("#launch button[type=submit]")).isDisabled();
