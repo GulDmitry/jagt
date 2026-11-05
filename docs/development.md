@@ -20,7 +20,7 @@ project rule into a vendor-named file.
 | `./gradlew e2eTest` | git + tmux | the task flow over real worktrees, one row per case |
 | `./gradlew boardTest` | a Chromium (downloaded on first run) | the board in a real browser |
 | `./gradlew linuxDriverTest` | Linux + notify-send/kitty + a display | the Linux drivers against real binaries |
-| `./gradlew promptEval` | the assistant's CLI, and tokens | whether an operator's own words still map onto one command |
+| `./gradlew promptEval` | the assistant's CLI, and tokens | whether an operator's own words still map onto one command; `-PlocalEndpoint=<url> -PlocalModel=<name>` reads them through `assistant.local` instead, no cloud fallback |
 | `./gradlew roleEval -Prole=master` | the assistant's CLI, tokens, minutes, and `.master-eval/root` trusted once | whether the shipped Master brief still reaches a human's verdict |
 
 Timed 2026-11-01, `--rerun-tasks`, 10 CPUs: `test` 80 s, `e2eTest` 309 s, `boardTest` 82 s, `standTest -Pmodelfree` 42 s,

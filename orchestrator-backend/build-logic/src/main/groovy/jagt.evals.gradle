@@ -111,15 +111,45 @@ tasks.register('promptEval', Test) {
             systemProperty key, project.property(property)
         }
     }
-    // Gated on the binary that answers, and it names what is missing rather than failing every row on it.
-    onlyIf { task ->
-        boolean present = (System.getenv('PATH') ?: '').split(File.pathSeparator)
-                .any { dir -> dir && new File(dir, 'claude').canExecute() }
-        if (!present) {
-            task.logger.lifecycle('Skipping promptEval — no `claude` on PATH; the rows are answered by the'
-                    + ' assistant configured in jagt.yml, through its own CLI.')
+    // -PlocalEndpoint and -PlocalModel read the rows through assistant.local (0135) instead of the cloud; -PlocalTimeout is optional.
+    String localEndpoint = (project.findProperty('localEndpoint') ?: '').toString()
+    String localModel = (project.findProperty('localModel') ?: '').toString()
+    boolean onLocal = !localEndpoint.isEmpty() || !localModel.isEmpty()
+    if (onLocal) {
+        systemProperty 'orchestrator.assistant.local.endpoint', localEndpoint
+        systemProperty 'orchestrator.assistant.local.model', localModel
+        systemProperty 'orchestrator.assistant.local.kinds', 'COMMAND_MAP'
+        systemProperty 'eval.local', 'true'
+        if (project.hasProperty('localTimeout')) {
+            systemProperty 'orchestrator.assistant.local.timeout', project.property('localTimeout')
         }
-        present
+    }
+    // Gated on what answers, and it names what is missing rather than failing every row on it.
+    onlyIf { task ->
+        List<String> missing = []
+        if (onLocal) {
+            if (localEndpoint.isEmpty() || localModel.isEmpty()) {
+                missing << '-PlocalEndpoint and -PlocalModel together'
+            } else {
+                try {
+                    def connection = new URL(localEndpoint.replaceAll('/+$', '') + '/models').openConnection()
+                    connection.connectTimeout = 3000
+                    connection.readTimeout = 3000
+                    if (connection.responseCode >= 400) {
+                        missing << "an endpoint answering at ${localEndpoint} (HTTP ${connection.responseCode})"
+                    }
+                } catch (IOException unreachable) {
+                    missing << "an endpoint answering at ${localEndpoint} (${unreachable.class.simpleName})"
+                }
+            }
+        } else if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                .any { dir -> dir && new File(dir, 'claude').canExecute() }) {
+            missing << 'claude on PATH (the rows are answered by the assistant configured in jagt.yml, through its own CLI)'
+        }
+        if (missing) {
+            task.logger.lifecycle("Skipping promptEval — missing: ${missing.join('; ')}.")
+        }
+        missing.isEmpty()
     }
     shouldRunAfter tasks.named('test')
 }
@@ -128,7 +158,7 @@ tasks.register('promptEval', Test) {
 tasks.named('promptEval') {
     systemProperty 'eval.suite', 'promptEval'
     systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
-    systemProperty 'eval.model', 'default'
+    systemProperty 'eval.model', project.hasProperty('localModel') ? "local/${project.property('localModel')}" : 'default'
     systemProperty 'eval.brief.file', file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path
 }
 // The suite names stay `masterEval` and `qaEval`, so the trend a later run reads continues across the rename.

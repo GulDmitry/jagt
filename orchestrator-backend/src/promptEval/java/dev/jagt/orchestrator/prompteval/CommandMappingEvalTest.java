@@ -103,6 +103,9 @@ class CommandMappingEvalTest {
             Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.menu());
             paid.add(answer.usage().costUsd());
 
+            if (Boolean.getBoolean("eval.local") && answer.usage().costUsd() > 0) {
+                throw EvalStalled.because("the local model failed and the cloud answered: " + answer.failure());
+            }
             if (answer.facts().isEmpty()) {
                 throw EvalStalled.because("no proposal: " + answer.failure());
             }
