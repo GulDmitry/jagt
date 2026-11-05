@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * This run's log, the previous run's in {@code .1}, the runs before it dated beside it: runs in the gap after {@code application.yml} is read and before the appender opens the
- * file. Registered by hand rather than declared — {@code bootJar} hoists {@code META-INF/spring/…imports} to
- * the jar root, which is not on the executable jar's classpath.
+ * This run's log, the previous run's in {@code .1}, the runs before it dated beside it: runs in the gap after
+ * {@code application.yml} is read and before the appender opens the file. Registered by hand rather than declared —
+ * {@code bootJar} hoists {@code META-INF/spring/…imports} to the jar root, which is not on the executable jar's classpath.
  */
 public class LogFileRoll implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
