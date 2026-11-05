@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator;
 
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import dev.jagt.orchestrator.flow.Arbiter;
 import org.junit.jupiter.api.Test;
 
@@ -21,9 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class RoleNamesTest {
 
-    private static final JavaClasses CODE = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS).importPackages("dev.jagt.orchestrator");
-
     private static final Map<String, String> ALLOWED = Map.of(
             "dev.jagt.orchestrator.service.ConfigService$ConfigFile$QaConfig", "the old orchestrator.qa key, named as jagt.yml wrote it",
             "dev.jagt.orchestrator.service.ConfigService$ConfigFile$QaEnvironment", "an environment as roles.qa.environments writes it",
@@ -37,7 +31,7 @@ class RoleNamesTest {
         roleFolderIds().forEach(id -> modules.put(id.toLowerCase(Locale.ROOT),
                 id.equals(Arbiter.ID) ? RoleModules.ARBITER : RoleModules.CHECKERS.getOrDefault(id, List.of())));
 
-        assertThat(CODE.stream().filter(type -> modules.entrySet().stream()
+        assertThat(MainClasses.CODE.stream().filter(type -> modules.entrySet().stream()
                         .anyMatch(role -> type.getSimpleName().toLowerCase(Locale.ROOT).startsWith(role.getKey())
                                 && role.getValue().stream().noneMatch(type.getName()::startsWith)))
                 .map(JavaClass::getName).filter(name -> !ALLOWED.containsKey(name))).isEmpty();
@@ -45,7 +39,7 @@ class RoleNamesTest {
 
     @Test
     void anAllowedNameIsAClassThatStillExists() {
-        assertThat(ALLOWED.keySet().stream().filter(name -> CODE.stream().noneMatch(type -> type.getName().equals(name)))).isEmpty();
+        assertThat(ALLOWED.keySet().stream().filter(name -> MainClasses.CODE.stream().noneMatch(type -> type.getName().equals(name)))).isEmpty();
     }
 
     private static Stream<String> roleFolderIds() {

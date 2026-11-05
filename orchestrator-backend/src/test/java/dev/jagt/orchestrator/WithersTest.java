@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator;
 
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
@@ -29,8 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class WithersTest {
 
-    private static final List<Class<?>> RECORDS = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS).importPackages("dev.jagt.orchestrator")
+    private static final List<Class<?>> RECORDS = MainClasses.CODE
             .stream().filter(JavaClass::isRecord).<Class<?>>map(JavaClass::reflect).toList();
 
     @Test

@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator;
 
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -17,7 +15,6 @@ class TaskOpeningDoorsTest {
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.job.IntakeStart")
                 .should().dependOnClassesThat().haveFullyQualifiedName("dev.jagt.orchestrator.service.TaskLauncher")
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 }

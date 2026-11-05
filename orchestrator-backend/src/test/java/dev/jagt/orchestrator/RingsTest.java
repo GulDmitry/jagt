@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator;
 
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -29,9 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class RingsTest {
 
-    private static final JavaClasses CODE = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS).importPackages("dev.jagt.orchestrator");
-
     private static final List<Path> ROOTS = List.of(
             Path.of("core/src/main/java/dev/jagt/orchestrator"),
             Path.of("usecase/src/main/java/dev/jagt/orchestrator"),
@@ -46,19 +40,19 @@ class RingsTest {
                         resideOutsideOfPackage("dev.jagt.orchestrator..")
                                 .or(resideInAnyPackage(Stream.of(maySee.split(" ")).map(RingsTest::packageOf)
                                         .toArray(String[]::new))))
-                .check(CODE);
+                .check(MainClasses.CODE);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"capability", "command", "job", "notify", "service", "surface", "config", "startup"})
     void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) {
         noClasses().that().resideInAPackage(packageOf(ring)).should().dependOnClassesThat()
-                .resideInAPackage(packageOf("adapter")).check(CODE);
+                .resideInAPackage(packageOf("adapter")).check(MainClasses.CODE);
     }
 
     @Test
     void noTwoRingsDependOnEachOther() {
-        slices().matching("dev.jagt.orchestrator.(*)..").should().beFreeOfCycles().check(CODE);
+        slices().matching("dev.jagt.orchestrator.(*)..").should().beFreeOfCycles().check(MainClasses.CODE);
     }
 
     @ParameterizedTest

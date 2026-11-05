@@ -30,6 +30,8 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   mutant detected at both.
 - A changed `:core` type is mutated once, in `:usecase`, with `:core`'s tests on its classpath: the 2026-11-05
   push diff took 11 min 40 s instead of 14 min 41 s, the same 3,015 of 3,288 mutants detected.
+- The ArchUnit rule tests share one import of main, `MainClasses.CODE`: each class took 19–27 s re-importing,
+  about 4 s sharing it; the root `:test` task 16 s to 9 s.
 
 ## Rejected
 

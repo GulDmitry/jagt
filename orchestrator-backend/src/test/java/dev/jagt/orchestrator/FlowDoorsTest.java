@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator;
 
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 
 import dev.jagt.orchestrator.task.Turn;
@@ -17,8 +15,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withStatus")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -27,8 +24,7 @@ class FlowDoorsTest {
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withStop")))
                 .orShould().callMethodWhere(target(name("lifted")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -36,8 +32,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withPlanGate")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -45,8 +40,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withGitTrust")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -56,8 +50,7 @@ class FlowDoorsTest {
                 .should().callMethodWhere(target(name("withRepoRequest")))
                 .orShould().callMethodWhere(target(name("withRepo")))
                 .orShould().callMethodWhere(target(name("withoutRepo")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -70,8 +63,7 @@ class FlowDoorsTest {
                 .orShould().callMethodWhere(target(name("withReviewRound")))
                 .orShould().callMethodWhere(target(name("withMerged")))
                 .orShould().callMethodWhere(target(name("withMergedByHost")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -83,8 +75,7 @@ class FlowDoorsTest {
                 .orShould().callMethodWhere(target(name("withChecksReset")))
                 .orShould().callMethodWhere(target(name("withApproved")))
                 .orShould().callMethodWhere(target(name("withHead")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -92,8 +83,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethod(dev.jagt.orchestrator.task.TaskState.class, "withRole", String.class, dev.jagt.orchestrator.task.RoleRecord.class)
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -102,8 +92,7 @@ class FlowDoorsTest {
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethod(dev.jagt.orchestrator.task.TaskState.class, "withMaster",
                         dev.jagt.orchestrator.task.Master.class)
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -111,8 +100,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withInfraRetries")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -120,8 +108,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withReport")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -131,8 +118,7 @@ class FlowDoorsTest {
                 .should().callMethodWhere(target(name("withTurn")))
                 .orShould().callMethod(Turn.class, "relayed", String.class, String.class, String.class, long.class)
                 .orShould().callMethod(Turn.class, "closed", long.class)
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -140,8 +126,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withDeployment")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -149,8 +134,7 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("withSession")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -164,8 +148,7 @@ class FlowDoorsTest {
                 .orShould().callMethodWhere(target(name("withWorkStartedAt")))
                 .orShould().callMethodWhere(target(name("withReportedAt")))
                 .orShould().callMethodWhere(target(name("withStampedAsk")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     @Test
@@ -173,7 +156,6 @@ class FlowDoorsTest {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.FlowReports")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
                 .should().callMethodWhere(target(name("restoredFrom")))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 }

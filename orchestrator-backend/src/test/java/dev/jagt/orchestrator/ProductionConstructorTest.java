@@ -5,8 +5,6 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaModifier;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -22,8 +20,7 @@ class ProductionConstructorTest {
                 .should(ArchCondition.from(DescribedPredicate.describe(
                         "be a Spring bean's only constructor or a record's canonical one",
                         ProductionConstructorTest::springOrRecordOwns)))
-                .check(new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("dev.jagt.orchestrator"));
+                .check(MainClasses.CODE);
     }
 
     private static DescribedPredicate<JavaConstructor> notCalledFromMain() {
