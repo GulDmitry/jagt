@@ -81,7 +81,7 @@ export const cards = [
     requestOpenedAt: now - 9 * 1440 * MINUTE, autoReview: {state: 'STALLED', label: 'poll stopped', note: 'request unreadable'}}),
   card('stopped by jagt: the reason on the line, the evidence in the hover', {id: 'ABC-83', alias: 'a8',
     title: 'Cache headers, retried', owner: 'YOU', attention: 'REQUIRED', ask: 'lift the stop — ships with no new note',
-    hint: 'jagt stopped this task; hover for what it saw and what to check, then lift or close', status: 'CI_POLLING',
+    hint: 'the task is stopped; hover for why and what to check, then lift or close', status: 'CI_POLLING',
     statusLabel: 'out for review', stop: {reason: 'ships with no new note', at: now - 20 * MINUTE,
       evidence: 'a ship asked past 3 without a new note in 24h', next: 'Check a new note or commit waits to ship; if one does, report a jagt defect'},
     actions: [verb('lift', 'Lift stop', 'flow', {primary: true}), verb('done', 'Done', 'flow'), ...tools]}),

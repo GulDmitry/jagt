@@ -24,10 +24,18 @@ project key renders only where projects are several, in the install or the task.
 #### Scenario: The launch row
 - **WHEN** the human presses New task or `t`
 - **THEN** a dialog offers ticket, a box per project, base branch, `plan first`, notes, branch strategy, Start
-- **AND** no box ticked sends no project
+#### Scenario: A project is hovered in the launch row
+- **WHEN** the human hovers a project's name or box
+- **THEN** its hover shows the project's whole `jagt.yml` entry and the address of its repository's remote
+#### Scenario: Start with no project
+- **WHEN** the human presses Start with no box ticked and `plan first` unticked
+- **THEN** the form says "Choose a project, or start with plan first" and sends nothing
+- **WHEN** `plan first` is ticked
+- **THEN** Start sends the task with no project
 #### Scenario: Resuming a request
 - **WHEN** the human resumes a review request
 - **THEN** `resume <url>` after ⌘K is the one control
+
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, a row per `TaskAction.Group`; a hint's text lives in
 `command/CommandReference` alone. `approve-plan` replaces the CLI plan mode's approval dialog and its go-ahead hint.
