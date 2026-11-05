@@ -22,6 +22,8 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   before it starts as `-PrunMinutes=<n>`, which replaces the ceiling for that run only.
 - The regular flow (commit gate, batch-end suites, release gate) never passes `-PrunMinutes`.
 - Excluded until sped up: `pitest` on a push's diff (the cause above); it still reports its seconds.
+- `pitest` runs jqwik at 100 tries: `TaskReducer`'s 95 mutants took 4 min 17 s at 1,000 and 30 s at 100, every
+  mutant detected at both.
 
 ## Rejected
 

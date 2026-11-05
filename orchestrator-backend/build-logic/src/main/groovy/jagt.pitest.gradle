@@ -26,7 +26,8 @@ subprojects {
         threads = Runtime.runtime.availableProcessors()
         outputFormats = ['HTML', 'XML']
         timestampedReports = false
-        jvmArgs = ['-Xshare:off', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC']
+        // A property run per mutant at jqwik's 1,000 tries is what made `:core` take 47 min (0139).
+        jvmArgs = ['-Xshare:off', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC', '-Djqwik.tries.default=100']
     }
 
     tasks.named('pitest') { forkedTestEnv(it) }
