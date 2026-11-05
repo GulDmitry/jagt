@@ -116,6 +116,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | E37 | a session ends its turn with a question and its window repaints afterwards (status line, TUI redraw) → the turn end stands, so the card does not read "agent working" and the session stays visible to the cold check | seen 2026-11-05: a task waiting on a trust read "agent working 15h", the repaint's print clearing its IDLE halt | `TaskReducerTest` |
 | E38 | a session asks the human to trust its changed git config and the human presses `trust` → the session is told `answered` and retries, so its question turn does not wait forever | seen 2026-11-05: a task stayed parked on its question for 15 h after the trust took | `TrustCapabilityTest` |
 | E39 | jagt revives a session in a worktree holding no conversation (the repository holding it left the task) → the session starts fresh instead of `--continue` exiting on every open | seen 2026-11-05: a multi-repo task's window closed on "No conversation found to continue" each time it opened | `ClaudeAgentRuntimeTest` |
+| E40 | a red-pipeline deploy conflict is held by a repository the task no longer holds → the conflict read ends it instead of waiting on a pipeline nothing reads | seen 2026-11-05: a repository left a multi-repo task before 0.19.1 and its red pipeline held the task in DEPLOY_CONFLICT for two days | `DeployPipelinesTest` |
 ## F — unbounded loop / no ceiling
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

@@ -116,6 +116,18 @@ class DeployPipelinesTest {
     }
 
     @Test
+    void aRedPipelineConflictOfARepositoryTheTaskNoLongerHoldsIsDisproved() {
+        TaskState left = TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOY_CONFLICT)
+                .deployment(new Deployment(1, List.of(
+                        Deployment.Target.of("api", "dev").withMerge(SHA).withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1)),
+                        Deployment.Target.of("shop", "dev").withMerge(SHA)), 0, null)).build();
+
+        assertThat(deploys.redConflictDisproved(left)).isTrue();
+
+        verifyNoInteractions(pipelines);
+    }
+
+    @Test
     void aMergeConflictIsNeverReadAgainstThePipelines() {
         assertThat(deploys.redConflictDisproved(conflicted(Deployment.Cause.MERGE))).isFalse();
 

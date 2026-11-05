@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Whether a deploy stands: the host's pipeline on each commit it pushed, read by jagt. Anything but green keeps the
@@ -66,7 +67,8 @@ public class DeployPipelines {
 
     /**
      * Whether a pipeline on each held repository's deploy branch, newer than the red one and containing its commit, is
-     * green. Anything else, unread included, leaves the conflict standing; nothing is re-run or opened.
+     * green, or the task no longer holds it. Anything else, unread included, leaves the conflict standing; nothing is
+     * re-run or opened.
      */
     public boolean redConflictDisproved(TaskState task) {
         Deployment deployment = task.deployment();
@@ -75,7 +77,11 @@ public class DeployPipelines {
     }
 
     private boolean greenSince(TaskState task, Deployment.Target held) {
-        String remoteUrl = task.repo(held.project()).map(TaskRepo::remoteUrl).orElse(null);
+        Optional<TaskRepo> repo = task.repo(held.project());
+        if (repo.isEmpty()) {
+            return true;
+        }
+        String remoteUrl = repo.get().remoteUrl();
         if (!held.landed() || remoteUrl == null || remoteUrl.isBlank()) {
             return false;
         }
