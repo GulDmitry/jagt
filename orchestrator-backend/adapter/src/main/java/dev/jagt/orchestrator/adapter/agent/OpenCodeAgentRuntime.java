@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.startup.HttpAddress;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.Step;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +51,7 @@ public class OpenCodeAgentRuntime extends AbstractAgentRuntime implements Startu
             problems.add(new Problem(CLI_KEY, CLI_KEY + "=opencode has no sandbox: set"
                     + " orchestrator.agent.sandbox.enabled: false."));
         }
-        if (opencode.hasEndpoint() && !httpAddress(opencode.endpoint())) {
+        if (opencode.hasEndpoint() && !HttpAddress.is(opencode.endpoint())) {
             problems.add(new Problem(ENDPOINT_KEY, ENDPOINT_KEY + ": '" + opencode.endpoint()
                     + "' is not an http(s) address"));
         }
@@ -105,14 +105,5 @@ public class OpenCodeAgentRuntime extends AbstractAgentRuntime implements Startu
             root.put("model", "local/" + opencode.model());
         }
         write(worktree.path().resolve(CONFIG_FILE), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(root));
-    }
-
-    private static boolean httpAddress(String endpoint) {
-        try {
-            URI uri = URI.create(endpoint);
-            return ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && uri.getHost() != null;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
     }
 }

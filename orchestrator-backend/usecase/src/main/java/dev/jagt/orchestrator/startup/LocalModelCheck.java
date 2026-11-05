@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.task.AssistantCallKind;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +27,7 @@ public class LocalModelCheck implements StartupCheck {
             return List.of();
         }
         List<Problem> found = new ArrayList<>();
-        if (!httpAddress(local.endpoint())) {
+        if (!HttpAddress.is(local.endpoint())) {
             found.add(new Problem(ENDPOINT, ENDPOINT + ": '" + local.endpoint() + "' is not an http(s) address"));
         }
         if (local.model().isEmpty()) {
@@ -42,14 +41,5 @@ public class LocalModelCheck implements StartupCheck {
     @Override
     public boolean machine() {
         return false;
-    }
-
-    private static boolean httpAddress(String endpoint) {
-        try {
-            URI uri = URI.create(endpoint);
-            return ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && uri.getHost() != null;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
     }
 }
