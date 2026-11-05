@@ -35,7 +35,8 @@ class PlanApprovalLeavesTest {
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         PlanBaseline baseline = new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none());
 
-        new PlanApproval(state, relay, door, baseline, unaffected).approve("ABC-1", "The human read plan.md");
+        new PlanApproval(state, relay, door, baseline,
+                new ApprovedRepos(new PlanPlacement(state, null, null, null, null), unaffected)).approve("ABC-1", "The human read plan.md");
 
         verify(unaffected).leave("ABC-1");
     }
@@ -50,7 +51,8 @@ class PlanApprovalLeavesTest {
         when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
         PlanBaseline baseline = new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none());
 
-        new PlanApproval(state, relay, door, baseline, unaffected).approve("ABC-1", "The human read plan.md");
+        new PlanApproval(state, relay, door, baseline,
+                new ApprovedRepos(new PlanPlacement(state, null, null, null, null), unaffected)).approve("ABC-1", "The human read plan.md");
 
         verify(unaffected, never()).leave("ABC-1");
     }

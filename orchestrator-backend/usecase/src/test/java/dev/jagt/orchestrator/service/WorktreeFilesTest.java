@@ -219,4 +219,17 @@ class WorktreeFilesTest {
 
         assertThat(worktree.resolve(".editor").resolve("runs").resolve("empty")).isDirectory();
     }
+
+    @Test
+    void copiesTheNamedFilesTheSourceHoldsAndSkipsTheOnesItLacks(@TempDir Path root) throws Exception {
+        Path from = Files.createDirectories(root.resolve("scratch"));
+        Path to = Files.createDirectories(root.resolve("worktree"));
+        Files.writeString(from.resolve("plan.md"), "the plan");
+        Files.writeString(to.resolve("plan.md"), "an older plan");
+
+        WorktreeFiles.copyFiles(from, to, List.of("plan.md", "task_notes.md"));
+
+        assertThat(to.resolve("plan.md")).hasContent("the plan");
+        assertThat(to.resolve("task_notes.md")).doesNotExist();
+    }
 }

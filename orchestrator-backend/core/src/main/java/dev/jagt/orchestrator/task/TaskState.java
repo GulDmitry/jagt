@@ -633,6 +633,10 @@ public record TaskState(
         return toBuilder().repos(grown).repoRequest(null).build();
     }
 
+    public TaskState placedIn(List<TaskRepo> placed, @Nullable String baseBranch) {
+        return toBuilder().repos(placed).repoRequest(null).baseBranch(baseBranch).build();
+    }
+
     /** A task never loses its last repository. */
     public TaskState withoutRepo(String project) {
         if (repos.size() < 2) {

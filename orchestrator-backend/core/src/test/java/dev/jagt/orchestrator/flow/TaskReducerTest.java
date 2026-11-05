@@ -596,6 +596,30 @@ class TaskReducerTest {
     }
 
     @Test
+    void placesATaskInTheRepositoriesItsPlanNamedInPlaceOfItsScratchFolder() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-9")), TaskStatus.PLAN_PENDING)
+                .baseBranch("origin/feature/parent").build();
+
+        TaskState placed = TaskReducer.placed(task, List.of(TaskRepo.of("api", "/wt-api"), TaskRepo.of("web", "/wt-web")),
+                "feature/parent");
+
+        assertThat(placed.projects()).containsExactly("api", "web");
+        assertThat(placed.status()).isEqualTo(TaskStatus.PLAN_PENDING);
+        assertThat(placed.baseBranch()).isEqualTo("feature/parent");
+    }
+
+    @Test
+    void placesATaskThatAskedForARepositoryWithoutKeepingTheRequest() {
+        TaskState task = TaskReducer.repoAsked(TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-9")),
+                TaskStatus.PLAN_PENDING).build(), "registry");
+
+        TaskState placed = TaskReducer.placed(task, List.of(TaskRepo.of("api", "/wt-api")), null);
+
+        assertThat(placed.asksForARepository()).isFalse();
+        assertThat(placed.baseBranch()).isNull();
+    }
+
+    @Test
     void aReportNeedingNoRepositoryEndsTheRequestForOne() {
         TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).repoRequest("registry").build();
 

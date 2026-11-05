@@ -84,7 +84,7 @@ Its planning session SHALL run in `scratch/<slug>`, a sibling of `state.json` un
 
 ### Requirement: A scratch folder is no repository
 A task with no repository SHALL hold no worktree, branch or request: its folder under `scratch/` is outside git for its session
-and `ship` and `deploy` are not offered.
+and `ship` and `deploy` are not offered. Its repositories begin with `approve-plan`.
 
 #### Scenario: A plan-only task
 - **WHEN** a task holds only its scratch folder
@@ -97,6 +97,32 @@ It SHALL say the plan's `## Repositories` names every project the task changes, 
 #### Scenario: A plan-first session with no project
 - **WHEN** such a task's session is briefed
 - **THEN** it reads that `plan.md` needs `## Repositories` with a `- [changed] <key>` per project
+
+### Requirement: An approved plan places the task
+`approve-plan` on a task with no repository SHALL cut a worktree per `[changed]` key of the plan's `## Repositories`, the first primary.
+It SHALL copy `plan.md` and the task's other artifacts into it.
+An existing ticket branch follows the intake rule: its own commits are resumed, else it is recreated.
+The scratch folder SHALL be deleted after the state write; the session starts fresh in the primary and the task is `IN_PROGRESS`.
+A cut that fails SHALL unwind every cut and the task keeps its scratch folder.
+A `[changed]` key `jagt.yml` lacks, or a typed base branch a named project lacks, SHALL cut nothing:
+the task stays `PLAN_PENDING` and the human's question names the keys and points at the add-project form.
+The Master in `act` never adds a project; its approval yields the same question.
+
+#### Scenario: Placed
+- **WHEN** you approve a plan listing `- [changed] api` and `- [changed] web`, both configured
+- **THEN** worktrees exist for both, `api` runs the session fresh with the plan copied in, the scratch folder is gone, the task is `IN_PROGRESS`
+
+#### Scenario: A key jagt.yml lacks
+- **WHEN** the plan lists `- [changed] billing`, not configured
+- **THEN** nothing is cut, the task stays `PLAN_PENDING` and the question names `billing` and the add-project form
+
+#### Scenario: The Master approves
+- **WHEN** the Master in `act` approves that plan
+- **THEN** no project is added and the same question stands
+
+#### Scenario: A cut fails
+- **WHEN** the second worktree's cut fails
+- **THEN** the first is removed and the task keeps its scratch folder
 
 ### Requirement: An existing branch is never lost
 Nothing SHALL be freed or moved until `recreate` or `resume` is picked for a branch that exists.

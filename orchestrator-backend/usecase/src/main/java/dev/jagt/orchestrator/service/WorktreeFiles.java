@@ -160,6 +160,19 @@ public final class WorktreeFiles {
         }
     }
 
+    /** Fails loudly: the folder these come from may be deleted next. */
+    public static void copyFiles(Path from, Path to, List<String> names) {
+        for (String name : names) {
+            if (Files.isRegularFile(from.resolve(name))) {
+                try {
+                    Files.copy(from.resolve(name), to.resolve(name), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Cannot copy " + name + " to " + to, e);
+                }
+            }
+        }
+    }
+
     /** Fails loudly: a folder that stays is a task's leftover nobody else will delete. */
     public static void deleteTree(Path dir) {
         try {

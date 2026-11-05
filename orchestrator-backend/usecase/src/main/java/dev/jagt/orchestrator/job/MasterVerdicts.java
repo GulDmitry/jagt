@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.Unplaceable;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
@@ -99,9 +100,14 @@ public class MasterVerdicts {
     }
 
     private boolean go(String taskId, TaskState task, MasterReview.Verdict verdict) {
-        StepRelay.Claim claim = claiming(taskId, advised(taskId, task, verdict), AgentReport.PLAIN, "master: the plan holds");
-        if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human", claim)) {
-            return false;
+        TaskState standing = advised(taskId, task, verdict);
+        StepRelay.Claim claim = claiming(taskId, standing, AgentReport.PLAIN, "master: the plan holds");
+        try {
+            if (!approval.approve(taskId, "The Master read plan.md against the ticket, standing in for the human", claim)) {
+                return false;
+            }
+        } catch (Unplaceable unplaceable) {
+            return ask(taskId, standing, unplaceable.question());
         }
         decisions.returned(task, verdict.round(), List.of());
         log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).addKeyValue("alias", task.alias()).log();

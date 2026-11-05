@@ -19,7 +19,7 @@ public class PlanApproval {
     private final StepRelay relay;
     private final CaseDoor door;
     private final PlanBaseline baseline;
-    private final UnaffectedRepos unaffected;
+    private final ApprovedRepos repos;
 
     /** Whether the session was told anything new; the gate is open either way, unless no case allowed the approval. */
     public boolean approve(String taskId, String reader) {
@@ -35,19 +35,29 @@ public class PlanApproval {
         if (!door.presses(id, MasterMove.APPROVE_PLAN.id())) {
             return false;
         }
+        boolean placed = repos.place(id);
         baseline.keep(id);
         Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
         if (claim == null) {
             stateService.updateTask(id, TaskReducer::planApproved);
         }
-        boolean told = claim == null ? relay.relay(id, Step.PLAN, reader + ": the plan holds.", read)
-                : relay.relay(id, Step.PLAN, reader + ": the plan holds.", opened(claim));
+        String facts = reader + ": the plan holds.";
+        boolean told = claim == null ? tell(id, facts, placed, read) : tell(id, facts, placed, opened(claim));
         if (claim != null && !told) {
             stateService.updateTask(id, TaskReducer::planApproved);
         }
-        unaffected.leave(id);
+        repos.leave(id);
         log.atInfo().setMessage("plan approved").addKeyValue("task", id).addKeyValue("reader", reader).log();
         return told;
+    }
+
+    /** A task just placed starts a fresh session in its new primary: its plan carries the context. */
+    private boolean tell(String id, String facts, boolean fresh, Standing read) {
+        return fresh ? relay.relayUnder(id, Step.PLAN, facts, true, read) : relay.relay(id, Step.PLAN, facts, read);
+    }
+
+    private boolean tell(String id, String facts, boolean fresh, StepRelay.Claim claim) {
+        return fresh ? relay.relayUnder(id, Step.PLAN, facts, true, claim) : relay.relay(id, Step.PLAN, facts, claim);
     }
 
     private static StepRelay.Claim opened(StepRelay.Claim claim) {

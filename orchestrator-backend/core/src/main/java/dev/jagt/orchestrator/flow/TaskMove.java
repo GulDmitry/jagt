@@ -8,6 +8,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 
+import org.jspecify.annotations.Nullable;
+
+import java.util.List;
 import java.util.Map;
 
 /** What can happen to a task's status, named by the door it came through. */
@@ -135,6 +138,10 @@ sealed interface TaskMove {
 
     /** A repository added to the task, which ends any request. */
     record RepoAttached(TaskRepo repo) implements TaskMove {
+    }
+
+    /** The repositories an approved plan named, which a task with none now holds, its base branch override kept. */
+    record Placed(List<TaskRepo> repos, @Nullable String baseBranch) implements TaskMove {
     }
 
     /**

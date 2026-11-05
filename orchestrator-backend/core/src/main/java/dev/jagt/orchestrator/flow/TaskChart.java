@@ -413,6 +413,11 @@ final class TaskChart {
         chart.onMatching(REPO, RepoPhase.ASKED, "attached", move -> move instanceof TaskMove.RepoAttached)
                 .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo()))
                 .to(RepoPhase.NONE);
+        for (RepoPhase from : RepoPhase.values()) {
+            chart.onMatching(REPO, from, "placed", move -> move instanceof TaskMove.Placed)
+                    .emitFor(move -> new TaskEffect.Places(((TaskMove.Placed) move).repos(),
+                            ((TaskMove.Placed) move).baseBranch())).to(RepoPhase.NONE);
+        }
         chart.onMatching(REPO, RepoPhase.NONE, "attached unasked", move -> move instanceof TaskMove.RepoAttached)
                 .emitFor(move -> new TaskEffect.AttachesRepo(((TaskMove.RepoAttached) move).repo())).stay();
     }

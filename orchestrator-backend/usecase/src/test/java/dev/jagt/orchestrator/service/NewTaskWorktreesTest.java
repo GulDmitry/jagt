@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -548,5 +550,100 @@ class NewTaskWorktreesTest {
         assertThatThrownBy(() -> worktrees.scratch(NewTask.unplacedBuilder("ABC-9").build(),
                 ConfigService.ConfigFile.defaults())).isInstanceOf(Refusal.class);
         verifyNoInteractions(setup);
+    }
+
+    @Test
+    void cutsAWorktreePerRepositoryTheFirstBeingThePrimary() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+        when(config.load()).thenReturn(configured);
+
+        List<NewRepo> placed = worktrees.place(NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(), configured,
+                repos -> { });
+
+        assertThat(placed).extracting(NewRepo::project, NewRepo::primary).containsExactly(
+                tuple("api", true), tuple("web", false));
+        verify(git).createWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9", "origin/main", BranchStrategy.FRESH);
+        verify(git).createWorktree(Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9", "origin/main", BranchStrategy.FRESH);
+        verify(setup, times(2)).fill(any(), any(), any());
+    }
+
+    @Test
+    void resumesABranchHoldingOwnCommitsAndRecreatesALeftoverOneWhenPlacing() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+        when(config.load()).thenReturn(configured);
+        when(git.branchExists(Path.of("/api"), "ABC-9")).thenReturn(true);
+        when(git.holdsOwnCommits(Path.of("/api"), "ABC-9", "origin/main")).thenReturn(true);
+        when(git.branchExists(Path.of("/web"), "ABC-9")).thenReturn(true);
+
+        worktrees.place(NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(), configured, repos -> { });
+
+        verify(git).createWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9", "origin/main", BranchStrategy.RESUME);
+        verify(git).createWorktree(Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9", "origin/main", BranchStrategy.RECREATE);
+    }
+
+    @Test
+    void cutsNothingWhereAProjectIsNotConfigured() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of())));
+        when(config.load()).thenReturn(configured);
+
+        assertThatThrownBy(() -> worktrees.place(NewTask.builder("ABC-9", "api").alsoIn(List.of("billing")).build(),
+                configured, repos -> { }))
+                .isInstanceOfSatisfying(Unplaceable.class, unplaceable -> assertThat(unplaceable.projects())
+                        .containsExactly("billing"));
+
+        verify(git, never()).createWorktree(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void cutsNothingWhereATypedBaseBranchIsNotOnAProjectsOrigin() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+        when(config.load()).thenReturn(configured);
+        when(git.remoteBranchExists(Path.of("/api"), "feature/parent")).thenReturn(true);
+
+        assertThatThrownBy(() -> worktrees.place(NewTask.builder("ABC-9", "api").alsoIn(List.of("web"))
+                .baseBranch("feature/parent").build(), configured, repos -> { }))
+                .isInstanceOfSatisfying(Unplaceable.class, unplaceable -> assertThat(unplaceable.projects())
+                        .containsExactly("web"));
+
+        verify(git, never()).createWorktree(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void removesTheFirstWorktreeWhereTheSecondCutFailsWhenPlacing() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+        when(config.load()).thenReturn(configured);
+        doThrow(new IllegalStateException("git failed")).when(git)
+                .createWorktree(Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9", "origin/main", BranchStrategy.FRESH);
+
+        assertThatThrownBy(() -> worktrees.place(NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
+                configured, repos -> { })).isInstanceOf(IllegalStateException.class);
+
+        verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9");
+        verify(git, never()).removeWorktree(eq(Path.of("/web")), any(), any());
+    }
+
+    @Test
+    void removesEveryWorktreeWhereTheRegistrationFailsWhenPlacing() {
+        ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+        when(config.load()).thenReturn(configured);
+
+        assertThatThrownBy(() -> worktrees.place(NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
+                configured, repos -> {
+                    throw new IllegalStateException("state not written");
+                })).isInstanceOf(IllegalStateException.class);
+
+        verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-9-api"), "ABC-9");
+        verify(git).removeWorktree(Path.of("/web"), Path.of("/ABC-9-web"), "ABC-9");
     }
 }

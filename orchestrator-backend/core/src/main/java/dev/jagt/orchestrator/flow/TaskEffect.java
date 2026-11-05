@@ -9,6 +9,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 
+import org.jspecify.annotations.Nullable;
+
+import java.util.List;
 import java.util.Map;
 
 /** What a chart step does to a task, as data; {@link TaskReducer} is the one place that applies it. */
@@ -63,6 +66,9 @@ sealed interface TaskEffect {
     }
 
     record AttachesRepo(TaskRepo repo) implements TaskEffect {
+    }
+
+    record Places(List<TaskRepo> repos, @Nullable String baseBranch) implements TaskEffect {
     }
 
     record LeavesRepo(String project) implements TaskEffect {

@@ -220,6 +220,11 @@ public final class TaskReducer {
         return step(task, new TaskMove.RepoAttached(repo), 0);
     }
 
+    /** {@code task} holding {@code repos} in place of the scratch folder it planned in. */
+    public static TaskState placed(TaskState task, List<TaskRepo> repos, @Nullable String baseBranch) {
+        return step(task, new TaskMove.Placed(repos, baseBranch), 0);
+    }
+
     /** {@code task} without {@code project}, its request ended with it; the last repository stays. */
     public static TaskState repoLeft(TaskState task, String project) {
         return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE, false)), 0);
@@ -384,6 +389,7 @@ public final class TaskReducer {
             case TaskEffect.AsksRepo asks -> task.withRepoRequest(asks.project());
             case TaskEffect.DropsRepoRequest _ -> task.withRepoRequest(null);
             case TaskEffect.AttachesRepo attaches -> task.withRepo(attaches.repo());
+            case TaskEffect.Places places -> task.placedIn(places.repos(), places.baseBranch());
             case TaskEffect.LeavesRepo leaves -> task.withoutRepo(leaves.project());
             case TaskEffect.LinksRequests links -> linked(task, links, now);
             case TaskEffect.MergesRequest merges -> task.withMerged(merges.project(), merges.merged());

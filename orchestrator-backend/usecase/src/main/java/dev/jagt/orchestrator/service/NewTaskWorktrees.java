@@ -20,9 +20,12 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -104,6 +107,60 @@ public class NewTaskWorktrees {
         List<NewRepo> repos = resolveRepos(request, config, strategy);
         cutWorktrees(request, repos, strategy);
         return repos;
+    }
+
+    /**
+     * Every repository of {@code request} cut, each on the strategy its own ticket branch calls for, then {@code registration}
+     * run; a failure in either unwinds every cut. A key the configuration lacks, or a typed base branch its origin
+     * lacks, cuts nothing and throws {@link Unplaceable}.
+     */
+    public List<NewRepo> place(NewTask request, ConfigService.ConfigFile config, Consumer<List<NewRepo>> registration) {
+        Map<String, BranchStrategy> strategies = strategies(request, config);
+        List<NewRepo> repos = new ArrayList<>();
+        strategies.forEach((key, strategy) -> {
+            NewRepo resolved = resolveRepos(NewTask.builder(request.taskId(), key).baseBranch(request.baseBranch()).build(),
+                    config, strategy).getFirst();
+            repos.add(repos.isEmpty() ? resolved : resolved.besideTheSession());
+        });
+        List<NewRepo> cut = new ArrayList<>();
+        try {
+            for (NewRepo repo : repos) {
+                gitWorktrees.createWorktree(repo.projectPath(), repo.worktreePath(), request.taskId(), repo.baseBranch(),
+                        Objects.requireNonNull(strategies.get(repo.project())));
+                cut.add(repo);
+                worktreeSetup.fill(request, repo, repos);
+            }
+            registration.accept(repos);
+        } catch (RuntimeException e) {
+            cut.forEach(repo -> unwind(request, List.of(repo), List.of(repo), Objects.requireNonNull(strategies.get(repo.project()))));
+            throw e;
+        }
+        return repos;
+    }
+
+    private Map<String, BranchStrategy> strategies(NewTask request, ConfigService.ConfigFile config) {
+        Map<String, BranchStrategy> strategies = new LinkedHashMap<>();
+        List<String> unplaceable = new ArrayList<>();
+        for (String key : request.projectKeys()) {
+            ProjectConfig project = config.projects().get(key);
+            if (project == null) {
+                unplaceable.add(key);
+                continue;
+            }
+            BranchStrategy strategy = strategyForExisting(request.taskId(), key);
+            String override = branchOverride(request.baseBranch(), project.gitRemote());
+            if (override != null && !onOrigin(override, Path.of(project.path()).toAbsolutePath().normalize(), strategy)) {
+                unplaceable.add(key);
+            }
+            strategies.put(key, strategy);
+        }
+        if (!unplaceable.isEmpty()) {
+            log.atInfo().setMessage("task not placed").addKeyValue("task", request.taskId())
+                    .addKeyValue("projects", unplaceable).addKeyValue("cause", "not configured or lacking the base branch")
+                    .addKeyValue("effect", "nothing cut, the human is asked").log();
+            throw new Unplaceable(unplaceable);
+        }
+        return strategies;
     }
 
     /** The folder a task with no repository plans in; the same refusals come before it exists. */
@@ -286,12 +343,16 @@ public class NewTaskWorktrees {
      */
     private void requireOnOrigin(String branch, String projectKey, Path projectPath,
                                  BranchStrategy strategy) {
-        // A RESUMED task is not cut from anything: the branch is only remembered as its review target.
-        if (strategy != BranchStrategy.RESUME && !gitWorktrees.remoteBranchExists(projectPath, branch)) {
+        if (!onOrigin(branch, projectPath, strategy)) {
             throw Refusal.byState("Base branch '" + branch + "' does not exist on "
                     + projectKey + "'s origin — the worktree is cut from origin/" + branch + ", so check the"
                     + " name (or push it there first).");
         }
+    }
+
+    /** A RESUMED task is not cut from anything: the branch is only remembered as its review target. */
+    private boolean onOrigin(String branch, Path projectPath, BranchStrategy strategy) {
+        return strategy == BranchStrategy.RESUME || gitWorktrees.remoteBranchExists(projectPath, branch);
     }
 
     /** A project key is a config key and a directory suffix, not a branch — it stays plain. */

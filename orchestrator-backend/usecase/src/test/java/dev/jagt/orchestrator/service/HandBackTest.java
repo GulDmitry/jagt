@@ -137,4 +137,28 @@ class HandBackTest {
 
         assertThat(read.violations()).isEmpty();
     }
+
+    @Test
+    void acceptsAProbeNamingAChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree) throws IOException {
+        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n"
+                + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=api npm test\n```\n");
+        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+        TaskState task = TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING).build();
+
+        PlanProbes.Read read = handBack.planProbes(task);
+
+        assertThat(read.violations()).isEmpty();
+    }
+
+    @Test
+    void refusesAProbeNamingNoChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree) throws IOException {
+        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n"
+                + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=front npm test\n```\n");
+        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+        TaskState task = TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING).build();
+
+        PlanProbes.Read read = handBack.planProbes(task);
+
+        assertThat(read.violations()).singleElement().asString().contains("command repo=front npm test").contains("api");
+    }
 }

@@ -50,6 +50,11 @@ public record Outcome(Kind kind, String message, @Nullable String stamp, AgentRe
         return new Outcome(Kind.NOTHING, message, null, AgentReport.PLAIN, null);
     }
 
+    /** Nothing happened, and the task carries {@code stamp} afterwards. */
+    public static Outcome nothing(String message, String stamp) {
+        return new Outcome(Kind.NOTHING, message, stamp, AgentReport.PLAIN, null);
+    }
+
     public static Outcome relayed(String message, String stamp) {
         return new Outcome(Kind.RELAYED, message, stamp, AgentReport.PLAIN, null);
     }

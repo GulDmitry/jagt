@@ -56,7 +56,8 @@ public class HandBack {
     private static PlanProbes.Read planRead(String plan, List<String> projects) {
         PlanProbes.Read probes = PlanProbes.of(plan);
         List<Violation> violations = Stream.of(probes.violations(), PlanCriteria.violationsIn(plan),
-                PlanRepositories.violationsIn(plan, projects), foreignRepos(probes.probes(), projects))
+                PlanRepositories.violationsIn(plan, projects),
+                foreignRepos(probes.probes(), projects.isEmpty() ? PlanRepositories.changedIn(plan) : projects))
                 .flatMap(List::stream).toList();
         return new PlanProbes.Read(probes.probes(), violations);
     }
