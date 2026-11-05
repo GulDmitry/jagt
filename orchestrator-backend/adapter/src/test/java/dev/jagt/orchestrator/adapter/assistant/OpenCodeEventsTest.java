@@ -21,7 +21,7 @@ class OpenCodeEventsTest {
         assertThat(events.usage().outputTokens()).isEqualTo(169);
         assertThat(events.calls()).extracting(OpenCodeEvents.Call::status).containsExactly("completed", "error", "error");
         assertThat(events.calls().getFirst().tool()).isEqualTo("shell");
-        assertThat(events.calls().getFirst().input().path("command").asString()).isEqualTo("git log --oneline");
+        assertThat(events.calls().getFirst().input().path("command").asString()).isEqualTo("git log --oneline --no-ext-diff --no-textconv");
     }
 
     @Test

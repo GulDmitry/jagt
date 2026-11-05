@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.surface.agent;
+package dev.jagt.orchestrator.service;
 
 import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;

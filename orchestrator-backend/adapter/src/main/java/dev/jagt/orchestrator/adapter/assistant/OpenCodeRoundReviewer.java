@@ -29,7 +29,7 @@ class OpenCodeRoundReviewer {
         String prompt = round.shared().isBlank() ? round.prompt() : round.shared() + "\n\n" + round.prompt();
         OpenCodeScope scope = OpenCodeScope.of(RoundReadTools.READS,
                 Stream.concat(RoundReadTools.REFUSED.stream(), RoundReadTools.BUILDS.stream()).toList(), false,
-                round.worktrees(), List.of());
+                true, round.worktrees(), List.of());
         return RoundAnswers.judged(headless.run(new OpenCodeRead(round.worktrees().getFirst(), prompt,
                 RoundRead.SCHEMA.json(), model, scope, AssistantCallKind.MASTER_REVIEW, TIMEOUT)));
     }

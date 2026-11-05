@@ -18,7 +18,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void discardsAnAnswerWhoseCommandMatchesARefusedGlobThoughItMatchesAnAllowedOne(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of("Bash(git * --ou*)"), false,
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of("Bash(git * --ou*)"), false, true,
                 List.of(worktree), List.of());
         Call call = new Call("shell", "completed", json.createObjectNode().put("command", "git log --output=out.txt"));
 
@@ -27,7 +27,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void discardsAnAnswerWhoseCommandMatchesNoAllowedGlob(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, List.of(worktree), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of());
         Call call = new Call("shell", "completed", json.createObjectNode().put("command", "touch out.txt"));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isPresent();
@@ -35,16 +35,53 @@ class OpenCodeToolCallsTest {
 
     @Test
     void keepsAnAnswerWhoseCommandMatchesAnAllowedGlobAndNoRefusedOne(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of("Bash(git * --ou*)"), false,
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of("Bash(git * --ou*)"), false, true,
                 List.of(worktree), List.of());
-        Call call = new Call("shell", "completed", json.createObjectNode().put("command", "git log --oneline"));
+        Call call = new Call("shell", "completed", json.createObjectNode().put("command", "git log --oneline --no-ext-diff --no-textconv"));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isEmpty();
     }
 
     @Test
+    void discardsAnAnswerWhoseGitReadMatchesNoAllowedGlobThoughTheGateLetsItThrough(@TempDir Path worktree) {
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git show:*)"), List.of(), false, true, List.of(worktree),
+                List.of());
+        Call call = new Call("shell", "completed",
+                json.createObjectNode().put("command", "git log --oneline --no-ext-diff --no-textconv"));
+
+        assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isPresent();
+    }
+
+    @Test
+    void discardsAnAnswerWhoseGitReadMatchesARefusedGlobThoughTheGateLetsItThrough(@TempDir Path worktree) {
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of("Bash(git log --oneline*)"), false, true,
+                List.of(worktree), List.of());
+        Call call = new Call("shell", "completed",
+                json.createObjectNode().put("command", "git log --oneline --no-ext-diff --no-textconv"));
+
+        assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isPresent();
+    }
+
+    @Test
+    void keepsAnAnswerThatReadAFileTheRoleDoesNotRefuseBesideOneItDoes(@TempDir Path worktree) {
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of("Read(**/review_replies.md)"), false, false,
+                List.of(worktree), List.of());
+        Call call = new Call("read", "completed", json.createObjectNode().put("filePath", worktree.resolve("A.java").toString()));
+
+        assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isEmpty();
+    }
+
+    @Test
+    void namesTheFileAReadOpenedOutsideTheWorktrees(@TempDir Path worktree) {
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(worktree), List.of());
+        Call call = new Call("read", "completed", json.createObjectNode().put("filePath", "/etc/hosts"));
+
+        assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).hasValue("read /etc/hosts");
+    }
+
+    @Test
     void discardsAnAnswerWhoseRedirectPassedTheGlobThatAllowedItsCommand(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, List.of(worktree), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of());
         Call call = new Call("shell", "completed", json.createObjectNode().put("command", "git log > f"));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).hasValueSatisfying(said -> assertThat(said).contains("git log > f"));
@@ -54,7 +91,7 @@ class OpenCodeToolCallsTest {
     @ValueSource(strings = {"git log; touch f", "git log && touch f", "git log || touch f", "git log $(touch f)",
             "git log `touch f`", "git log\ntouch f"})
     void discardsAnAnswerWhoseChainedCommandRanBehindTheGlobThatAllowedItsFirst(String command, @TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, List.of(worktree), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of());
         Call call = new Call("shell", "completed", json.createObjectNode().put("command", command));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isPresent();
@@ -62,7 +99,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void discardsAnAnswerThatReadAFileOutsideTheWorktrees(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, List.of(worktree), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(worktree), List.of());
         Call call = new Call("read", "completed", json.createObjectNode().put("filePath", "/etc/hosts"));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isPresent();
@@ -70,7 +107,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void keepsAnAnswerThatReadAFileInsideAnyOfTheWorktrees(@TempDir Path first, @TempDir Path second) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, List.of(first, second), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(first, second), List.of());
         Call call = new Call("read", "completed", json.createObjectNode().put("filePath", second.resolve("A.java").toString()));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isEmpty();
@@ -78,7 +115,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void discardsAnAnswerThatReadAFileTheRoleRefuses(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of("Read(**/review_replies.md)"), false, List.of(worktree),
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of("Read(**/review_replies.md)"), false, false, List.of(worktree),
                 List.of());
         Call call = new Call("read", "completed", json.createObjectNode().put("filePath",
                 worktree.resolve("review_replies.md").toString()));
@@ -88,7 +125,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void keepsAnAnswerWhoseOutOfScopeCallWasDeniedAndSoNeverRan(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, List.of(worktree), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of());
         Call call = new Call("shell", "error", json.createObjectNode().put("command", "touch b.txt"));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isEmpty();
@@ -96,7 +133,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void discardsAnAnswerThatFetchedOutsideTheEnvironmentsTheRunNames(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), true, List.of(worktree),
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), true, false, List.of(worktree),
                 List.of("https://dev.example.test"));
         Call call = new Call("webfetch", "completed", json.createObjectNode().put("url", "https://other.example.test/x"));
 
@@ -105,7 +142,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void keepsAnAnswerThatFetchedBelowAnEnvironmentTheRunNames(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), true, List.of(worktree),
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), true, false, List.of(worktree),
                 List.of("https://dev.example.test"));
         Call call = new Call("webfetch", "completed", json.createObjectNode().put("url", "https://dev.example.test/version"));
 
@@ -114,7 +151,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void discardsAnAnswerThatCalledAToolTheReadWasNeverGiven(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, List.of(worktree), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(worktree), List.of());
         Call call = new Call("edit", "completed", json.createObjectNode().put("filePath", worktree.resolve("A.java").toString()));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).hasValueSatisfying(said -> assertThat(said).contains("edit"));

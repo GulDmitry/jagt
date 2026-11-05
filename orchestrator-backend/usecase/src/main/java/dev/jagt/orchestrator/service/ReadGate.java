@@ -1,7 +1,8 @@
-package dev.jagt.orchestrator.surface.agent;
+package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.PatternMatchUtils;
 
 import java.io.IOException;
@@ -36,7 +37,8 @@ public final class ReadGate {
     }
 
     /** Why the call is refused, or empty when it may go on to the CLI's own permission rules. */
-    public static Optional<String> refusal(ReadScope read, String tool, Map<String, Object> input, String cwd) {
+    public static Optional<String> refusal(ReadScope read, String tool, Map<String, Object> input,
+                                           @Nullable String cwd) {
         List<String> allowing = read.tools().stream().filter(named -> names(named, tool)).toList();
         if (allowing.contains(tool)
                 || !allowing.isEmpty() && read.writes().stream().noneMatch(write -> names(write, tool))) {

@@ -2,14 +2,18 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.assistant.OpenCodeEvents.Call;
 import dev.jagt.orchestrator.service.OneLine;
+import dev.jagt.orchestrator.service.ReadGate;
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import tools.jackson.databind.JsonNode;
 
-import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -21,6 +25,11 @@ final class OpenCodeToolCalls {
 
     /** A glob's trailing {@code *} matches the rest of the line, so a redirect or a second command would pass it. */
     private static final Pattern CHAINED = Pattern.compile(">|;|&&|\\|\\||\\$\\(|`|\\n");
+    private static final Map<String, String> TOOLS = Map.of("read", "Read", "grep", "Grep", "glob", "Glob",
+            "shell", "Bash", "webfetch", "WebFetch");
+    private static final Set<String> FILE_TOOLS = Set.of("Read", "Grep", "Glob");
+    private static final Map<String, String> KEYS = Map.of("filePath", "file_path", "command", "command", "url", "url",
+            "path", "path", "pattern", "pattern");
 
     private OpenCodeToolCalls() {
     }
@@ -31,59 +40,48 @@ final class OpenCodeToolCalls {
     }
 
     private static Optional<String> refusal(OpenCodeScope scope, Call call) {
+        String tool = TOOLS.get(call.tool());
+        if (tool == null) {
+            return Optional.of("tool " + call.tool());
+        }
         JsonNode input = call.input();
-        return switch (call.tool()) {
-            case "read", "grep", "glob" -> file(scope, call.tool(), input);
-            case "shell" -> shell(scope, input.path("command").asString(""));
-            case "webfetch" -> fetch(scope, input.path("url").asString(""));
-            default -> Optional.of("tool " + call.tool());
-        };
+        ReadScope read = new ReadScope(scope.roots(), List.of(), scope.git(), List.of(),
+                scope.fetch() ? scope.environments() : List.of());
+        boolean refused = "Bash".equals(tool) ? !shellAllowed(scope, input.path("command").asString(""))
+                : FILE_TOOLS.contains(tool) && readRefused(scope, input);
+        boolean gated = !refused && ReadGate.refusal(read, tool, arguments(input), null).isPresent();
+        return refused || gated ? Optional.of(call.tool() + " " + OneLine.clipped(target(input))) : Optional.empty();
     }
 
-    private static Optional<String> file(OpenCodeScope scope, String tool, JsonNode input) {
+    private static String target(JsonNode input) {
+        return List.of("command", "url", "filePath", "path").stream().map(key -> input.path(key).asString("")).filter(value -> !value.isEmpty())
+                .findFirst().orElse("");
+    }
+
+    private static Map<String, Object> arguments(JsonNode input) {
+        Map<String, Object> arguments = new HashMap<>();
+        KEYS.forEach((key, name) -> {
+            if (input.path(key).isString()) {
+                arguments.put(name, input.path(key).asString());
+            }
+        });
+        return arguments;
+    }
+
+    private static boolean readRefused(OpenCodeScope scope, JsonNode input) {
         String path = input.path("filePath").asString(input.path("path").asString("."));
-        boolean globEscapes = "glob".equals(tool) && input.path("pattern").asString("").contains("..");
-        boolean refused = scope.readRefused().stream().anyMatch(glob -> matches(glob, path));
-        return globEscapes || refused || !inside(scope, path) ? Optional.of(tool + " " + path) : Optional.empty();
+        return scope.readRefused().stream()
+                .anyMatch(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob).matches(Path.of(path)));
     }
 
-    private static boolean matches(String glob, String path) {
-        return FileSystems.getDefault().getPathMatcher("glob:" + glob).matches(Path.of(path));
-    }
-
-    private static Optional<String> shell(OpenCodeScope scope, String command) {
-        boolean allowed = scope.bashAllowed().stream().anyMatch(glob -> globMatches(glob, command))
+    private static boolean shellAllowed(OpenCodeScope scope, String command) {
+        return scope.bashAllowed().stream().anyMatch(glob -> globMatches(glob, command))
                 && scope.bashRefused().stream().noneMatch(glob -> globMatches(glob, command))
                 && !CHAINED.matcher(command).find();
-        return allowed ? Optional.empty() : Optional.of("shell " + OneLine.clipped(command));
-    }
-
-    private static Optional<String> fetch(OpenCodeScope scope, String url) {
-        boolean listed = scope.fetch() && scope.environments().stream().anyMatch(environment -> url.equals(environment)
-                || url.startsWith(environment) && (environment.endsWith("/") || "/?#".indexOf(url.charAt(environment.length())) >= 0));
-        return listed ? Optional.empty() : Optional.of("webfetch " + url);
     }
 
     private static boolean globMatches(String glob, String command) {
         return Pattern.compile(Arrays.stream(glob.split("\\*", -1)).map(Pattern::quote).collect(Collectors.joining(".*")),
                 Pattern.DOTALL).matcher(command).matches();
-    }
-
-    private static boolean inside(OpenCodeScope scope, String path) {
-        if (path.startsWith("~")) {
-            return false;
-        }
-        Path target = real(scope.roots().getFirst().resolve(path));
-        return scope.roots().stream().map(OpenCodeToolCalls::real).anyMatch(target::startsWith);
-    }
-
-    private static Path real(Path path) {
-        Path absolute = path.toAbsolutePath().normalize();
-        try {
-            return absolute.toRealPath();
-        } catch (IOException e) {
-            Path parent = absolute.getParent();
-            return parent == null ? absolute : real(parent).resolve(absolute.getFileName());
-        }
     }
 }

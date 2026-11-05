@@ -8,7 +8,7 @@ paths:
   - "**/service/TaskProvisioning.java"
   - "**/service/NewTaskWorktrees.java"
   - "**/surface/agent/*Gate*.java"
-  - "**/surface/agent/GitReadLine.java"
+  - "**/service/ReadGate.java"
   - "**/service/HostCliLine.java"
   - "**/service/ToolGate.java"
   - "**/service/DeployTargets.java"

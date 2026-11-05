@@ -39,8 +39,8 @@ class OpenCodeCheckerReader {
         String model = opencode.readModel(run.role())
                 .orElseThrow(() -> new IllegalStateException("no OpenCode model for " + run.role()));
         String prompt = run.shared().isBlank() ? run.prompt() : run.shared() + "\n\n" + run.prompt();
-        OpenCodeScope scope = OpenCodeScope.of(tools.allow(), tools.refuse(), tools.fetch(), List.of(run.worktree()),
-                run.environments());
+        OpenCodeScope scope = OpenCodeScope.of(tools.allow(), tools.refuse(), tools.fetch(), tools.git(),
+                List.of(run.worktree()), run.environments());
         return headless.run(new OpenCodeRead(run.worktree(), prompt, run.schema(), model, scope,
                 AssistantCallKind.QA_CHECK, TIMEOUT));
     }

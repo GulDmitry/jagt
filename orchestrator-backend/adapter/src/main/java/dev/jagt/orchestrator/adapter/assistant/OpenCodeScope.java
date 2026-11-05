@@ -9,13 +9,13 @@ import java.util.stream.Stream;
  * {@code Bash(git log:*)} becomes the glob {@code git log*}, {@code Read(<glob>)} a path no read may open.
  */
 record OpenCodeScope(List<String> bashAllowed, List<String> bashRefused, List<String> readRefused, boolean fetch,
-                     List<Path> roots, List<String> environments) {
+                     boolean git, List<Path> roots, List<String> environments) {
 
-    static OpenCodeScope of(List<String> allow, List<String> refuse, boolean fetch, List<Path> roots,
-                            List<String> environments) {
+    static OpenCodeScope of(List<String> allow, List<String> refuse, boolean fetch, boolean git,
+                            List<Path> roots, List<String> environments) {
         return new OpenCodeScope(inside("Bash", allow).map(OpenCodeScope::glob).toList(),
-                inside("Bash", refuse).map(OpenCodeScope::glob).toList(), inside("Read", refuse).toList(), fetch, roots,
-                environments);
+                inside("Bash", refuse).map(OpenCodeScope::glob).toList(), inside("Read", refuse).toList(), fetch, git,
+                roots, environments);
     }
 
     private static Stream<String> inside(String tool, List<String> entries) {
