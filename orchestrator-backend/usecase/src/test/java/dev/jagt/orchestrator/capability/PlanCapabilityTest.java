@@ -36,7 +36,7 @@ class PlanCapabilityTest {
 
     @Test
     void asksTheHumanToAddWhatThePlanNamesAndJagtCannotPlace() {
-        when(approval.approve("ABC-1", "The human read plan.md")).thenThrow(new Unplaceable(List.of("billing")));
+        when(approval.approve("ABC-1", "The human read plan.md")).thenThrow(new Unplaceable(List.of("billing"), List.of()));
 
         Outcome outcome = new PlanCapability(approval).run("ABC-1");
 

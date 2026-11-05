@@ -158,7 +158,7 @@ public class NewTaskWorktrees {
             log.atInfo().setMessage("task not placed").addKeyValue("task", request.taskId())
                     .addKeyValue("projects", unplaceable).addKeyValue("cause", "not configured or lacking the base branch")
                     .addKeyValue("effect", "nothing cut, the human is asked").log();
-            throw new Unplaceable(unplaceable);
+            throw new Unplaceable(unplaceable, config.projects().keySet());
         }
         return strategies;
     }

@@ -790,14 +790,14 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void asksTheHumanInsteadOfAddingAProjectThePlanNamesAndJagtLacks(@TempDir Path root) throws Exception {
+    void returnsToTheSessionAPlanNamingAProjectJagtLacksInsteadOfAskingTheHuman(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
         Files.createDirectories(root.resolve("roles/session"));
         Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
         Files.createDirectories(root.resolve("roles/master"));
         Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  master:\n    mode: judge\n");
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects:\n    api:\n      path: /srv/api\n  master:\n    mode: judge\n");
         Files.writeString(root.resolve("plan.md"), "## Repositories\n- [changed] billing\n");
         StateService state = new StateService(new JsonMapper(), paths);
         TaskState planned = TaskState.builder(List.of(TaskRepo.of(null, root.toString())), TaskStatus.PLAN_PENDING).alias("a1").build();
@@ -819,9 +819,9 @@ class MasterVerdictsTest {
 
         assertThat(moved).isTrue();
         assertThat(state.task("ABC-1").orElseThrow())
-                .returns(AgentReport.QUESTION, TaskState::report)
+                .returns(AgentReport.PLAIN, TaskState::report)
                 .returns(true, TaskState::unplaced);
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("billing"));
+        verify(sessions).writeTaskContext(eq("ABC-1"), contains("billing, which jagt cannot place; registered: api"));
     }
 
     @Test

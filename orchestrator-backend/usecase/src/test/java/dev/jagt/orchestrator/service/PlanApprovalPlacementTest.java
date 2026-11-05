@@ -80,7 +80,7 @@ class PlanApprovalPlacementTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING).planGate(PlanGate.REQUIRED).build());
         PlanPlacement placement = mock(PlanPlacement.class);
-        when(placement.place("ABC-1")).thenThrow(new Unplaceable(List.of("billing")));
+        when(placement.place("ABC-1")).thenThrow(new Unplaceable(List.of("billing"), List.of()));
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
 
         assertThatThrownBy(() -> new PlanApproval(state, relay, door,

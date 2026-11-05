@@ -107,10 +107,22 @@ public class MasterVerdicts {
                 return false;
             }
         } catch (Unplaceable unplaceable) {
-            return ask(taskId, standing, unplaceable.question());
+            return revise(taskId, task, standing, verdict, unplaceable.revision());
         }
         decisions.returned(task, verdict.round(), List.of());
         log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).addKeyValue("alias", task.alias()).log();
+        return true;
+    }
+
+    /** jagt.yml is the human's, so a plan naming what it lacks goes back to its author. */
+    private boolean revise(String taskId, TaskState task, TaskState standing, MasterReview.Verdict verdict, String revision) {
+        StepRelay.Claim claim = claiming(taskId, standing, AgentReport.PLAIN, "reviewer: not ready; relayed");
+        if (!relay.relayRound(taskId, MasterMove.PLAN_NOT_READY.step(), revision, claim)) {
+            return false;
+        }
+        decisions.returned(task, verdict.round(), List.of());
+        log.atInfo().setMessage("master returns an unplaceable plan").addKeyValue("task", taskId)
+                .addKeyValue("alias", task.alias()).log();
         return true;
     }
 
