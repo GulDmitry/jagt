@@ -12,6 +12,7 @@ plugins {
     id 'jagt.stand' apply false
     id 'jagt.evals' apply false
     id 'jagt.uncached-suites' apply false
+    id 'jagt.suite-stats' apply false
 }
 
 group = 'dev.jagt'
@@ -39,3 +40,4 @@ apply plugin: 'jagt.doc-inputs'
 apply plugin: 'jagt.stand'
 apply plugin: 'jagt.evals'
 apply plugin: 'jagt.uncached-suites'
+apply plugin: 'jagt.suite-stats'

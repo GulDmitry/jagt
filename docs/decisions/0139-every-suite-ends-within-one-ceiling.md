@@ -23,6 +23,9 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   before it starts as `-PrunMinutes=<n>`, which replaces the ceiling for that run only.
 - The regular flow (commit gate, batch-end suites, release gate) never passes `-PrunMinutes`.
 - Excluded until sped up: `pitest` on a push's diff (the cause above); it still reports its seconds.
+- `suite-stats.jsonl` keeps each executed `Test` and `pitest` task's seconds; a `Test` task slower than
+  `suiteSlowdownFactor` times the median of its last `suiteTrendRuns` runs under the same command is named at the
+  build's end, never failing it; `pitest` has no trend, its work is the diff's size.
 - `pitest` runs jqwik at 100 tries: `TaskReducer`'s 95 mutants took 4 min 17 s at 1,000 and 30 s at 100, every
   mutant detected at both.
 - A changed `:core` type is mutated once, in `:usecase`, with `:core`'s tests on its classpath: the 2026-11-05

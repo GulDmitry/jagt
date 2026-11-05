@@ -1,0 +1,15 @@
+import dev.jagt.gradle.SuiteStats
+import org.gradle.build.event.BuildEventsListenerRegistry
+
+// 0139: every suite's seconds, and a run slower than its own trend named at the build's end.
+def command = (gradle.startParameter.taskNames + gradle.startParameter.projectProperties
+    .findAll { !(it.key in ['runMinutes', 'suiteTrendRuns', 'suiteSlowdownFactor']) }.collect { "-P${it.key}=${it.value}" }.sort()).join(' ')
+def stats = gradle.sharedServices.registerIfAbsent('suiteStats', SuiteStats) {
+    parameters.log = layout.projectDirectory.file('suite-stats.jsonl')
+    parameters.trended = provider { allprojects.collectMany { p -> p.tasks.withType(Test).collect { it.path } } }
+    parameters.untrended = provider { allprojects.collectMany { p -> p.tasks.matching { it.name == 'pitest' }.collect { it.path } } }
+    parameters.command = command
+    parameters.trendRuns = providers.gradleProperty('suiteTrendRuns').map { it as Integer }
+    parameters.slowdownFactor = providers.gradleProperty('suiteSlowdownFactor').map { new BigDecimal(it) }
+}
+services.get(BuildEventsListenerRegistry).onTaskCompletion(stats)
