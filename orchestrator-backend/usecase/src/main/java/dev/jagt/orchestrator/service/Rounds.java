@@ -14,13 +14,18 @@ import org.springframework.stereotype.Component;
 /** What a task's last round left behind. */
 @Component
 @RequiredArgsConstructor
-public class Rounds {
+public class Rounds implements PhaseProfiles {
 
     private final ConfigService configService;
     private final RequestlessShip requestless;
 
     public RoundState of(TaskState task) {
         return of(task, configService.load());
+    }
+
+    @Override
+    public Arbiter.Profile at(TaskState task) {
+        return of(task).master();
     }
 
     /** The Master runs and has read the plan or round in front. */

@@ -24,8 +24,12 @@ public record DeployLiftsStop(TaskStops stops) implements CapabilityInterceptor 
     @Override
     public Outcome around(String taskId, Supplier<Outcome> work) {
         Outcome outcome = work.get();
-        if (LIFTING.contains(OriginContext.current()) && stops.stopped(taskId)) {
-            stops.lift(taskId);
+        if (LIFTING.contains(OriginContext.current())) {
+            if (stops.stopped(taskId)) {
+                stops.lift(taskId);
+            } else {
+                stops.restoreMasterLifts(taskId);
+            }
         }
         return outcome;
     }

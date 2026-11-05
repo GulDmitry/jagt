@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -72,7 +73,7 @@ class CommandServiceTest {
         StateService state = new StateService(new JsonMapper(), paths);
         CommandService guarded = new CommandService(flow, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())));
 
         assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER,
@@ -92,7 +93,7 @@ class CommandServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
         CommandService guarded = new CommandService(flow, new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())));
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())));
 
         OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 

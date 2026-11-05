@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.MasterCases;
@@ -64,7 +65,7 @@ class QaRoundFlowTest {
                         .withMerge("0123456789abcdef")), 1, "digest"));
         state.putTask("ABC-42", task);
         FlowReports flow = new FlowReports(state, Clock.systemUTC());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths)), Clock.systemUTC());
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
@@ -102,7 +103,7 @@ class QaRoundFlowTest {
                         .withMerge("0123456789abcdef")), 1, "digest"));
         state.putTask("ABC-42", task);
         FlowReports flow = new FlowReports(state, Clock.systemUTC());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths)), Clock.systemUTC());
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,

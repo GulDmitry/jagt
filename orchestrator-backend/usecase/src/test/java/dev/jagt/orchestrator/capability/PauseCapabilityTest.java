@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -30,7 +31,7 @@ class PauseCapabilityTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        PauseCapability pause = new PauseCapability(new TaskStops(state,
+        PauseCapability pause = new PauseCapability(new TaskStops(ignored -> Arbiter.Profile.OFF, state,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()));
 

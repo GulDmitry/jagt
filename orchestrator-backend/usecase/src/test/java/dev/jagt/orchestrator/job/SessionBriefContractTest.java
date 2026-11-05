@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.NoTracker;
 import dev.jagt.orchestrator.capability.ship.ShipService;
@@ -76,7 +77,7 @@ class SessionBriefContractTest {
         state.putTask("ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC())),
@@ -124,7 +125,7 @@ class SessionBriefContractTest {
         AgentSessions sessions = mock(AgentSessions.class);
 
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
 
         ShipService ships = new ShipService(state, config, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, Clock.systemUTC())),

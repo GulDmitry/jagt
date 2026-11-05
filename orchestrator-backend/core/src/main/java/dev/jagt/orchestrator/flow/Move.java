@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 
@@ -28,6 +29,9 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "read what git changed",
                     FlowRules.allowed(status, facts), TaskAction.TRUST,
                     "git config or hooks changed since you trusted them; read the line, then trust");
+        }
+        if (facts.stopped() && facts.stopIsTheMasters() && round.master().may(MasterRight.LIFT)) {
+            return masterDecidesStop(status, facts);
         }
         if (facts.stopped()) {
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "lift the stop",
@@ -58,6 +62,11 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                 FlowRules.allowed(status, facts),
                 revertLeads(status, facts, primaryOf(status, hasReviewRequest, round, polled)),
                 hint(status, hasReviewRequest, round, agentSilent, polled, facts.revertConflict()));
+    }
+
+    private static Move masterDecidesStop(TaskStatus status, Facts facts) {
+        return new Move(phaseOf(status), Owner.AGENT, Attention.NONE, null, FlowRules.allowed(status, facts), null,
+                "the Master is deciding this stop; no action required");
     }
 
     private static @Nullable TaskAction revertLeads(TaskStatus status, Facts facts, @Nullable TaskAction primary) {

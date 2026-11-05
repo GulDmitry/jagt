@@ -87,7 +87,16 @@ QA_FAILED and PAUSE stay yours, and the stops a read ends end on it.
 
 #### Scenario: One lift between yours
 - **WHEN** the Master lifted ABC-42's stop and the task stops again before your lift or deploy
-- **THEN** that stop is yours, and your lift or deploy restores the Master's one
+- **THEN** that stop is yours, and your lift or deploy restores the Master's one, a deploy too where no stop stands
+
+#### Scenario: The Master holds the stop
+- **WHEN** ABC-42 stops on ROUNDS in `act` and the Master was not yet asked
+- **THEN** the card is the Master's: `master review`, no badge, `lift` still offered, and nobody is pinged or notified of the stop
+- **AND** once the Master was asked and left it, the card is yours: `lift the stop`
+
+#### Scenario: A task the Master left
+- **WHEN** the Master left ABC-42 to you, or read its round, and the task stops
+- **THEN** the stop is yours and the Master is not asked
 
 ### Requirement: A stopped task is rung on the board
 The board SHALL ring it `jagt stopped`, its move line `lift the stop` followed by the stop's short reason. That

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.MasterCases;
@@ -66,7 +67,7 @@ class ShipServiceTest {
         stateService = new StateService(new JsonMapper(), paths);
         door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), stateService,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(stateService, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, stateService, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), stateService, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));

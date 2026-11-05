@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -54,7 +55,7 @@ class VerifyJobTest {
         when(verification.failure(any())).thenReturn(Optional.empty());
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(statusReports).verified(true, "verified", "ABC-1");
@@ -70,7 +71,7 @@ class VerifyJobTest {
         when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay).relayRound(eq("ABC-1"), eq(Step.VERIFY), contains("BUILD FAILED"), any(Standing.class));
@@ -87,7 +88,7 @@ class VerifyJobTest {
                 .report(AgentReport.QUESTION).build());
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(verification, never()).failure(any());
@@ -104,11 +105,11 @@ class VerifyJobTest {
         when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
         when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class))).thenReturn(true);
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(verification, times(1)).failure(any());
@@ -127,11 +128,11 @@ class VerifyJobTest {
         when(verification.failure(any())).thenReturn(Optional.of("[proj] `./gradlew test` exited 1\nBUILD FAILED"));
         when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class))).thenReturn(true);
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(verification, times(2)).failure(any());
@@ -146,7 +147,7 @@ class VerifyJobTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(verification, never()).failure(any());
@@ -164,7 +165,7 @@ class VerifyJobTest {
         when(verification.probed(eq("ABC-1"), any())).thenReturn(List.of(passed, failed));
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay).relayRound(eq("ABC-1"), eq(Step.PROBES), eq("artifact docs/guide.md — FAILED\nno such file"), any(Standing.class));
@@ -186,7 +187,7 @@ class VerifyJobTest {
         });
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(statusReports, never()).verified(eq(false), any(), any());
@@ -206,7 +207,7 @@ class VerifyJobTest {
         });
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -227,7 +228,7 @@ class VerifyJobTest {
         });
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay, never()).relayRound(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -246,7 +247,7 @@ class VerifyJobTest {
         when(verification.probed(eq("ABC-42"), any())).thenReturn(List.of(failed));
 
         new VerifyJob(state, verification, statusReports, relay,
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())).runOn(state.tasks());
 
         verify(relay).relayRound("ABC-42", Step.PROBES, "artifact docs/guide.md — FAILED\nno such file", Standing.of(state.task("ABC-42").orElseThrow()));

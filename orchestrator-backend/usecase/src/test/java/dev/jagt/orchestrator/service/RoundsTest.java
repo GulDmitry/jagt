@@ -76,4 +76,16 @@ class RoundsTest {
 
         assertThat(round.requestless()).isTrue();
     }
+
+    @Test
+    void theMasterActsOnATaskItStandsInForAndOnNoneItLeft() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        TaskState standsIn = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState left = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .master(Master.defaults().withLeft("deploy")).build();
+
+        assertThat(rounds.at(standsIn).running()).isTrue();
+        assertThat(rounds.at(left).running()).isFalse();
+    }
 }

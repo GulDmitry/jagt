@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -40,7 +41,7 @@ class OwnStatusReportsTest {
 
     private static ReportEffects effects(StateService state) {
         TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()))),
                 Clock.systemUTC());
@@ -142,7 +143,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 effects(state));
 
         reports.report(broke, "ABC-42");
@@ -166,7 +167,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 effects(state));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
@@ -190,7 +191,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 effects(state));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
@@ -216,7 +217,7 @@ class OwnStatusReportsTest {
         OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 effects(state));
 
         assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);

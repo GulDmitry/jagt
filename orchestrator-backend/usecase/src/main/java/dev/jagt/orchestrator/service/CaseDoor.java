@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.CaseBook;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -65,8 +64,7 @@ public class CaseDoor {
 
     /** The one human-only verb the Master presses: a lift of a stop it was asked about, within its bound. */
     private boolean liftedByTheMaster(String taskId, TaskAction action) {
-        return action == TaskAction.LIFT && stateService.task(stateService.canonicalTaskId(taskId))
-                .filter(task -> StopHold.mayBeLifted(task) && StopHold.asked(task)).isPresent();
+        return action == TaskAction.LIFT && stops.masterMayLift(stateService.canonicalTaskId(taskId));
     }
 
     /** Only the Master's move is held to a case: any other passes. */

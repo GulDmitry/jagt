@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.LoopBreaker;
@@ -36,6 +37,7 @@ public class TaskStops {
     private static final Set<ReviewSweepService.SweepResult.Kind> DISPROVING_REFUSALS =
             EnumSet.of(ReviewSweepService.SweepResult.Kind.GONE, ReviewSweepService.SweepResult.Kind.NO_MR);
 
+    private final PhaseProfiles profiles;
     private final StateService stateService;
     private final LoopBreaker.Current breakers;
     private final StopAnnouncements announcements;
@@ -118,11 +120,26 @@ public class TaskStops {
         return stateService.task(taskId).filter(TaskState::stopped).isPresent();
     }
 
+    /** Whose the standing stop is to lift, in the phase the task stands in. */
+    private StopHold holdOf(TaskState task) {
+        return StopHold.of(task, profiles.at(task));
+    }
+
+    /** Whether the Master was asked about the stop standing and may lift it, within its bound. */
+    public boolean masterMayLift(String taskId) {
+        return stateService.task(taskId).filter(task -> StopHold.liftableByTheMaster(task, profiles.at(task))).isPresent();
+    }
+
     /** A human's lift, or a deploy's, restores the Master's lifts; the Master's own lift spends one. */
     public void lift(String taskId) {
         boolean byTheMaster = CaseDoor.byTheMaster();
         stateService.updateTask(taskId, task -> TaskReducer.masterLiftedStops(TaskReducer.lift(task, clock.millis()),
                 byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
+    }
+
+    /** A deploy by a human restores the Master's lifts, whether or not a stop stands. */
+    public void restoreMasterLifts(String taskId) {
+        stateService.updateTask(taskId, task -> TaskReducer.masterLiftedStops(task, 0));
     }
 
     /** The stop a read of the checks ended: one whose trigger ends on a read, and the read listed the checks, not red. */
@@ -188,13 +205,14 @@ public class TaskStops {
             }
             TaskState recorded = record.apply(task);
             Optional<TaskStop> stop = check.apply(recorded);
+            TaskState after = stop.map(s -> TaskReducer.stop(recorded, s, clock.millis())).orElse(recorded);
             stop.ifPresent(tripped::set);
-            stop.ifPresent(s -> stoppedTask.set(recorded));
+            stop.ifPresent(s -> stoppedTask.set(after));
             stop.ifPresent(standing::set);
-            return stop.map(s -> TaskReducer.stop(recorded, s, clock.millis())).orElse(recorded);
+            return after;
         });
         Optional.ofNullable(tripped.get())
-                .ifPresent(stop -> announcements.announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));
+                .ifPresent(stop -> announcements.announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop, holdOf(stoppedTask.get())));
         return Optional.ofNullable(standing.get());
     }
 

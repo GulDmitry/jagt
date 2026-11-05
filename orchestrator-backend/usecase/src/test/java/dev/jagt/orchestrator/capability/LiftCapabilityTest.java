@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -31,7 +32,7 @@ class LiftCapabilityTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .stop(new TaskStop(TaskStop.Trigger.STALLED, 2, "3 rounds")).build());
-        LiftCapability lift = new LiftCapability(new TaskStops(state,
+        LiftCapability lift = new LiftCapability(new TaskStops(ignored -> Arbiter.Profile.OFF, state,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()));
 

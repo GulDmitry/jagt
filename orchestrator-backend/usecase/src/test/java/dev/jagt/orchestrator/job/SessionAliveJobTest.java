@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -36,7 +37,7 @@ class SessionAliveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
                 Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC));
         stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
@@ -53,7 +54,7 @@ class SessionAliveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
                 Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC));
         stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
@@ -70,7 +71,7 @@ class SessionAliveJobTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
                 Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC));
         stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");

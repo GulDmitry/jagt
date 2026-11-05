@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
@@ -50,8 +51,8 @@ class RoundRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, clock),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
-        RoundRelay relay = new RoundRelay(new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+        RoundRelay relay = new RoundRelay(new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock),
                 new StepRelay(new SessionBrief(paths), sessions, door,
                         new TaskTurns(state, clock)), door, new SessionBrief(paths));
         ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("https://host/mr/1#note_1\nbot: rename x"), 0, List.of(), List.of(), "", false, false);
@@ -74,8 +75,8 @@ class RoundRelayTest {
                 .report(AgentReport.QUESTION).build());
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, clock),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
-        RoundRelay relay = new RoundRelay(new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+        RoundRelay relay = new RoundRelay(new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock),
                 new StepRelay(new SessionBrief(paths), sessions, door,
                         new TaskTurns(state, clock)), door, new SessionBrief(paths));
 
@@ -98,8 +99,8 @@ class RoundRelayTest {
                 .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1L, "5 ships")).build());
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, clock),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
-        RoundRelay relay = new RoundRelay(new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+        RoundRelay relay = new RoundRelay(new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock),
                 new StepRelay(new SessionBrief(paths), sessions, door,
                         new TaskTurns(state, clock)), door, new SessionBrief(paths));
 
@@ -122,7 +123,7 @@ class RoundRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
 
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
 
         SweepResult result = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, clock)), door, new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
@@ -146,7 +147,7 @@ class RoundRelayTest {
         StateService state = new StateService(new JsonMapper(), paths);
 
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
 
         new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, clock)), door, new SessionBrief(paths)).relay("ABC-42", "http://mr/api, http://mr/web",
@@ -168,7 +169,7 @@ class RoundRelayTest {
         when(stops.round(anyString(), any(), anyString(), anyString())).thenReturn(TaskStops.Relay.RELAY);
         when(stops.sinceLast(anyString(), any())).thenReturn("");
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
         RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, clock)), door, new SessionBrief(paths));
         ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("reviewer (a.java:3): drop the cache"), 0, List.of(), List.of(), "", false, false);
@@ -190,7 +191,7 @@ class RoundRelayTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
         TaskStops stops = mock(TaskStops.class);
         CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, clock),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), clock));
         RoundRelay relay = new RoundRelay(stops, new StepRelay(new SessionBrief(paths), sessions, door,
                 new TaskTurns(state, clock)), door, new SessionBrief(paths));
 

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -56,7 +57,7 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new Conflict.Progress(7, 0, "d"), null, false, new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
 
@@ -73,7 +74,7 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new Conflict.Progress(7, 0, "d"), null, false, Standing.ABSENT));
 
@@ -91,7 +92,7 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", conflict);
 
         verify(stall).watch("ABC-42", conflict);
@@ -106,7 +107,7 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new Conflict.Progress(7, 0, "d"), null, false, Standing.ABSENT));
 
@@ -120,7 +121,7 @@ class ConflictHandOffTest {
         StateService state = new StateService(new JsonMapper(), paths);
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), true, new Conflict.Progress(0, 7, "d"), null, false, Standing.ABSENT));
 
@@ -138,7 +139,7 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new Conflict.Progress(0, 0, "d"),
                 "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7", false, new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
@@ -159,7 +160,7 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-revert"), false, new Conflict.Progress(2, 0, "r"), null, true, new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
 
@@ -178,7 +179,7 @@ class ConflictHandOffTest {
 
         new ConflictHandOff(sessions, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(state, Clock.systemUTC())), stall, finish).handle("ABC-42", new DeployConflicts.WaitingConflict(
                 Path.of("/src/ABC-42-deploy"), false, new Conflict.Progress(0, 0, "d"),
                 "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7", false,

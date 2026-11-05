@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterStopAnswer;
 import dev.jagt.orchestrator.service.master.MasterStopPanel;
@@ -28,6 +29,7 @@ public class MasterStopJob implements TaskJob {
     private final MasterStopPanel panel;
     private final MasterStopMoves moves;
     private final TaskTurns turns;
+    private final Rounds rounds;
 
     @Override
     public String id() {
@@ -56,8 +58,9 @@ public class MasterStopJob implements TaskJob {
 
     @Override
     public void run(String taskId, TaskState task) {
-        ConfigService.ConfigFile.MasterConfig config = configService.load().master();
-        if (StopHold.of(task, config.profile()) != StopHold.MASTER) {
+        ConfigService.ConfigFile file = configService.load();
+        ConfigService.ConfigFile.MasterConfig config = file.master();
+        if (StopHold.of(task, rounds.of(task, file).master()) != StopHold.MASTER) {
             return;
         }
         TaskStop stop = Objects.requireNonNull(task.stop());

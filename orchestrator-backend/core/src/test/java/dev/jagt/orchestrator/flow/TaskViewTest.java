@@ -299,6 +299,33 @@ class TaskViewTest {
     }
 
     @Test
+    void ABC42StoppedOnROUNDSInActIsTheMastersToDecideBeforeItWasAsked() {
+        TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds")).build();
+        Arbiter.Profile act = new Arbiter.Profile(MasterMode.ACT, java.util.Set.of());
+
+        TaskView view = TaskView.of("ABC-42", stopped, RoundState.NONE.withMaster(act), AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.owner()).isEqualTo(Owner.AGENT);
+        assertThat(view.attention()).isEqualTo(Attention.NONE);
+        assertThat(view.statusLabel()).isEqualTo("master review");
+        assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("lift");
+    }
+
+    @Test
+    void ABC42StoppedOnROUNDSInActIsTheHumansToLiftOnceTheMasterWasAsked() {
+        TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
+        TaskState asked = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).stop(stop)
+                .master(Master.defaults().withAskedStop(stop.key())).build();
+        Arbiter.Profile act = new Arbiter.Profile(MasterMode.ACT, java.util.Set.of());
+
+        TaskView view = TaskView.of("ABC-42", asked, RoundState.NONE.withMaster(act), AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.owner()).isEqualTo(Owner.YOU);
+        assertThat(view.ask()).isEqualTo("lift the stop \u2014 same round sent too often");
+    }
+
+    @Test
     void carriesTheStopsReasonEvidenceAdviceAndTimeWhereJagtStoppedTheTask() {
         TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
                 .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1_700_000_000_000L, "a ship asked past 3 without a new note"))

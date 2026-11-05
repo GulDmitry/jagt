@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Outcome;
@@ -11,6 +12,7 @@ import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -39,7 +41,7 @@ class DeployLiftsStopTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
         DeployLiftsStop lifter = new DeployLiftsStop(stops);
@@ -60,7 +62,7 @@ class DeployLiftsStopTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
         DeployLiftsStop lifter = new DeployLiftsStop(stops);
@@ -68,5 +70,22 @@ class DeployLiftsStopTest {
         OriginContext.as(other, () -> lifter.around("ABC-42", () -> Outcome.ok("deployed")));
 
         assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ActionOrigin.class, names = {"BOARD", "PALETTE"})
+    void aHumansDeployRestoresTheMastersLiftWhereNoStopStands(ActionOrigin human, @TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
+                .master(Master.defaults().withLiftedStops(1)).build());
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
+        DeployLiftsStop lifter = new DeployLiftsStop(stops);
+
+        OriginContext.as(human, () -> lifter.around("ABC-42", () -> Outcome.ok("deployed")));
+
+        assertThat(state.task("ABC-42").orElseThrow().masterOrNone().liftedStops()).isZero();
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -111,7 +112,7 @@ class ReportEffectsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
         TaskTurns turns = new TaskTurns(state, clock);
-        TaskStops realStops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops realStops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
                 InfraWaitProperties.defaults());
@@ -129,7 +130,7 @@ class ReportEffectsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
         TaskTurns turns = new TaskTurns(state, clock);
-        TaskStops realStops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops realStops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
                 InfraWaitProperties.defaults());
@@ -149,7 +150,7 @@ class ReportEffectsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
         TaskTurns turns = new TaskTurns(state, clock);
-        TaskStops realStops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops realStops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
                 InfraWaitProperties.defaults());

@@ -35,7 +35,7 @@ class StopHoldTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TaskStop.Trigger.class, names = {"MISS", "QA_FAILED", "PAUSE", "CHECKS", "INFRA", "UNDELIVERED"})
+    @EnumSource(value = TaskStop.Trigger.class, names = {"MISS", "QA_FAILED", "PAUSE", "CHECKS", "INFRA", "UNDELIVERED", "WAIT", "DEPLOY_UNREAD"})
     void aStopTheHumanSetOrAReadEndsIsNeverTheMastersTurn(TaskStop.Trigger trigger) {
         TaskState task = stopped(trigger);
 

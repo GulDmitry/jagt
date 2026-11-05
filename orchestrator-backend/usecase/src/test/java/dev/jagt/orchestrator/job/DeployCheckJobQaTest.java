@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -64,7 +65,7 @@ class DeployCheckJobQaTest {
                 DeployPipelines.Kind.GREEN, "", "", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 

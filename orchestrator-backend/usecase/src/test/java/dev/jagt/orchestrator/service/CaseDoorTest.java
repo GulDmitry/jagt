@@ -16,6 +16,8 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
@@ -32,9 +34,14 @@ class CaseDoorTest {
             "## ship\n\nmove: ship\nat: REVIEW_PENDING\nby: master\nThe Master ships it.\n";
 
     private static CaseDoor doorOver(OrchestratorPaths paths, StateService state) {
+        return doorOver(paths, state, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+    }
+
+    private static CaseDoor doorOver(OrchestratorPaths paths, StateService state,
+                                     ConfigService.ConfigFile.MasterConfig master) {
         return new CaseDoor(new SessionCases(paths), new MasterCases(paths), state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(task -> master.profile(), state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
     }
 
@@ -84,6 +91,26 @@ class CaseDoorTest {
 
         assertThat(lifted).isTrue();
         assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-43", TaskAction.LIFT)))
+                .isInstanceOfSatisfying(Refusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"ROUNDS@5, 1, plan", "ROUNDS@4, 0, plan", "ROUNDS@5, 0, lift"})
+    void refusesTheMasterToLiftAStopWhenItsBoundIsSpentOrItWasAskedAboutAnOlderOneOrItLacksTheRight(
+            String asked, int liftedStops, String mine, @TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md"),
+                "## lift\n\nmove: lift\nat: any but DONE\nby: master\nThe Master lifts it.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds"))
+                .master(Master.defaults().withAskedStop(asked).withLiftedStops(liftedStops)).build());
+        CaseDoor door = doorOver(paths, state, new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(mine), null));
+
+        assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.LIFT)))
                 .isInstanceOfSatisfying(Refusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
     }

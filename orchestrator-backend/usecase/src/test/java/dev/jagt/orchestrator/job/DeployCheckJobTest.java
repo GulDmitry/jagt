@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -70,7 +71,7 @@ class DeployCheckJobTest {
         when(pipelines.redConflictDisproved(any())).thenReturn(true);
 
         new DeployCheckJob(config, mock(StepRelay.class), pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -92,7 +93,7 @@ class DeployCheckJobTest {
         when(pipelines.redConflictDisproved(any())).thenReturn(true);
 
         new DeployCheckJob(config, mock(StepRelay.class), pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -113,7 +114,7 @@ class DeployCheckJobTest {
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -137,7 +138,7 @@ class DeployCheckJobTest {
                 new DeployPipelines.Reading(DeployPipelines.Kind.RED, "red pipeline on the deploy commit: proj 01234567",
                         "proj", "https://git.example.invalid/p/7", List.of()));
         DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()));
         job.runOn(state.tasks());
@@ -160,7 +161,7 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.UNREAD,
                 "proj 01234567: pipeline unread, glab not logged in", "proj", "", List.of()));
         DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()));
         job.runOn(state.tasks());
@@ -185,7 +186,7 @@ class DeployCheckJobTest {
         when(pipelines.read(eq("ABC-42"), any())).thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.UNREACHED,
                 "proj 01234567: pipeline unreached, glab not logged in", "proj", "", List.of()));
         DeployCheckJob job = new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()));
         job.runOn(state.tasks());
@@ -214,7 +215,7 @@ class DeployCheckJobTest {
                 DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -235,7 +236,7 @@ class DeployCheckJobTest {
                 DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -258,7 +259,7 @@ class DeployCheckJobTest {
                 "red pipeline on the deploy commit: proj 01234567", "proj", "https://git.example.invalid/p/7", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -287,10 +288,10 @@ class DeployCheckJobTest {
         StateService before = new StateService(new JsonMapper(), paths);
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, new CaseDoor(new SessionCases(paths), new MasterCases(paths), before,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                new TaskStops(ignored -> Arbiter.Profile.OFF, before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(before, Clock.systemUTC()));
         new DeployCheckJob(config, relay, pipelines, new FlowReports(before, Clock.systemUTC()),
-                new TaskStops(before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, before, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), before, Runnable::run), new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC())).runOn(before.tasks());
         relay.relay("ABC-42", Step.ANSWERED, "The Master answered your question, standing in for the human:\nyes", relay.standing("ABC-42"));
@@ -298,9 +299,9 @@ class DeployCheckJobTest {
 
         new DeployCheckJob(config, new StepRelay(new SessionBrief(paths), sessions,
                 new CaseDoor(new SessionCases(paths), new MasterCases(paths), restarted, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                        new TaskStops(restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), restarted, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
+                        new TaskStops(ignored -> Arbiter.Profile.OFF, restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), restarted, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC())),
                 new TaskTurns(restarted, Clock.systemUTC())), pipelines, new FlowReports(restarted, Clock.systemUTC()),
-                new TaskStops(restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, restarted, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), restarted, Runnable::run), new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC())).runOn(restarted.tasks());
 
@@ -317,7 +318,7 @@ class DeployCheckJobTest {
                 .withDeployment(new Deployment(1, List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")), 1, null)));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -339,7 +340,7 @@ class DeployCheckJobTest {
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -357,7 +358,7 @@ class DeployCheckJobTest {
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -378,7 +379,7 @@ class DeployCheckJobTest {
                 new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -401,7 +402,7 @@ class DeployCheckJobTest {
         when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class))).thenReturn(true);
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -422,7 +423,7 @@ class DeployCheckJobTest {
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -442,7 +443,7 @@ class DeployCheckJobTest {
         when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -465,7 +466,7 @@ class DeployCheckJobTest {
                 "proj 01234567: pipeline unread, glab not logged in", "proj", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -488,7 +489,7 @@ class DeployCheckJobTest {
                 "proj 01234567: pipeline unreached, glab not logged in", "proj", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 
@@ -510,7 +511,7 @@ class DeployCheckJobTest {
                 DeployPipelines.Kind.WAITING, "proj 01234567: pipeline running", "", "", List.of()));
 
         new DeployCheckJob(config, relay, pipelines, new FlowReports(state, Clock.systemUTC()),
-                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC())).runOn(state.tasks());
 

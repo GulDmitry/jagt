@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Outcome;
@@ -42,7 +43,7 @@ class MergedGuardTest {
                 .history(List.of(new StatusChange(TaskStatus.SHIPPING, 99_000_000, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.SHIPPING, 99_100_000, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.SHIPPING, 99_200_000, ActionOrigin.MASTER))).build());
-        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+        TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         when(merged.refresh("ABC-42")).thenReturn(true);
 

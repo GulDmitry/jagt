@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
@@ -108,7 +109,7 @@ class AutoReviewSchedulerTest {
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
@@ -133,7 +134,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -159,7 +160,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -184,7 +185,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -214,7 +215,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -245,7 +246,7 @@ class AutoReviewSchedulerTest {
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, mock(Notifications.class), new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, mock(Notifications.class), new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), mock(Notifications.class), Clock.systemUTC()).run();
@@ -266,7 +267,7 @@ class AutoReviewSchedulerTest {
         when(disabled.load()).thenReturn(ConfigFile.defaults());
 
         new AutoReviewScheduler(state, disabled,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
@@ -292,7 +293,7 @@ class AutoReviewSchedulerTest {
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
@@ -327,7 +328,7 @@ class AutoReviewSchedulerTest {
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
@@ -347,7 +348,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -378,7 +379,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -407,7 +408,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -436,7 +437,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -464,7 +465,7 @@ class AutoReviewSchedulerTest {
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000_000_000L), ZoneOffset.UTC);
 
-        new AutoReviewScheduler(state, config, new AutoReviewPolls(mock(ReviewSweepService.class), mock(Notifications.class), new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+        new AutoReviewScheduler(state, config, new AutoReviewPolls(mock(ReviewSweepService.class), mock(Notifications.class), new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), mock(Notifications.class), clock).run();
@@ -486,7 +487,7 @@ class AutoReviewSchedulerTest {
         List<Runnable> queued = new ArrayList<>();
         Notifications notifications = mock(Notifications.class);
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, new AutoReviewPolls(
-                mock(ReviewSweepService.class), notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                mock(ReviewSweepService.class), notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), queued::add, state), notifications, Clock.systemUTC());
@@ -514,7 +515,7 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
@@ -544,14 +545,14 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
         state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
 
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
@@ -572,13 +573,13 @@ class AutoReviewSchedulerTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
 
         new AutoReviewScheduler(state, config,
-                new AutoReviewPolls(sweep, notifications, new TaskStops(state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                new AutoReviewPolls(sweep, notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
                         new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC()).run();
