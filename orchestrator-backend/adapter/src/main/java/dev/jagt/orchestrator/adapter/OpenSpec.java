@@ -88,10 +88,7 @@ public class OpenSpec implements Specs {
         return Files.isDirectory(worktree.resolve(HOME));
     }
 
-    /**
-     * `archive -y` folds a change it never validated, so every fold validates first. The CLI reports a delta archive
-     * would refuse as an INFO issue with exit 0, so any issue refuses.
-     */
+    /** `archive -y` folds a change it never validated; a delta it would refuse is an INFO issue at exit 0, so any issue refuses. */
     private Optional<String> refusal(Path worktree, String name) {
         Processes.Result result = run(worktree, List.of("validate", name, "--type", "change", "--strict",
                 "--no-interactive", "--json"));
@@ -168,8 +165,9 @@ public class OpenSpec implements Specs {
 
     private static String howToOpen(String change) {
         return "this repository records its behaviour in openspec/specs, and your hand-back carries no change:"
-                + " run `openspec new change " + change + "`, then write its delta under openspec/changes/" + change
-                + "/specs/ (`openspec instructions specs --change " + change + "` says how), or set"
+                + " run `openspec new change " + change + "`, read `openspec instructions specs --change " + change
+                + "` for the delta format and rules, then write its delta under openspec/changes/" + change
+                + "/specs/, or set"
                 + " `skip_specs: true` in its .openspec.yaml when no behaviour changes";
     }
 }

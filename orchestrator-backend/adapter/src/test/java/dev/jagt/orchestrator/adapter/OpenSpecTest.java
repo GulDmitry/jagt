@@ -44,7 +44,8 @@ class OpenSpecTest {
         Files.createDirectories(worktree.resolve("openspec/changes/archive"));
         OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
-        assertThat(specs.owed(worktree, "ABC-42")).get().asString().contains("openspec new change abc-42");
+        assertThat(specs.owed(worktree, "ABC-42")).get().asString()
+                .contains("openspec new change abc-42", "openspec instructions specs --change abc-42");
     }
 
     @Test
