@@ -24,6 +24,8 @@ stay on the cloud until a model passes their evals here.
 3. Uncomment the `local:` block under `assistant` in `jagt.yml`; `model` is the name the server lists at
    `http://127.0.0.1:8080/v1/models`.
 
+The board's head marks a server that is down or serves another model than the one configured.
+
 ## What it serves
 
 Measured 2026-11-05 on an M4, 32 GiB (`promptEval`, 15 cases, one run; QA eval, 12 cases, 10-min cap):

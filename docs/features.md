@@ -154,7 +154,7 @@
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
 - **One configuration file** — Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
   [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
-- **Local reads** — Command mapping may ask a local model, the cloud answering where it fails. Key: `orchestrator.assistant.local.endpoint`, off.
+- **Local reads** — A local model may map commands, else the cloud; a down one is a lost reach. Key: `orchestrator.assistant.local.endpoint`, off.
   [spec](../openspec/specs/startup/spec.md#requirement-a-read-that-needs-no-tool-may-ask-a-local-model)
 - **OpenCode agents** — `agent.cli: opencode` runs sessions there, `opencode.reads` a role's reads. Key: `orchestrator.opencode.reads`, off.
   [spec](../openspec/specs/startup/spec.md#requirement-a-read-named-under-reads-runs-on-opencode)

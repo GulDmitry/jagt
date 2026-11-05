@@ -71,8 +71,7 @@ See [components](../../../docs/rules/components.md#whoever-works-on-jagt-reads-t
 task's worktree as its caller. Its config SHALL be jagt's own; the project's `opencode.json` neither replaces nor feeds it.
 `orchestrator.opencode.endpoint` and `model`, when set, SHALL be the sessions' model; blank, the user's own OpenCode config
 chooses. Startup SHALL refuse OpenCode with `agent.sandbox.enabled`, an endpoint that is no http(s) address, and an
-endpoint without a model. A set endpoint SHALL be read every minute (`<endpoint>/models`): one that does not answer is
-jagt's lost reach on the board's head, not pressable, ended by the next read that answers.
+endpoint without a model.
 
 #### Scenario: A local model
 - **WHEN** `endpoint` and `model` are set under `orchestrator.opencode`
@@ -85,11 +84,6 @@ jagt's lost reach on the board's head, not pressable, ended by the next read tha
 #### Scenario: A sandbox
 - **WHEN** `agent.cli` is `opencode` and `agent.sandbox.enabled` is true
 - **THEN** the start is refused, naming the key
-
-#### Scenario: The local endpoint stops answering
-- **WHEN** the endpoint's `/models` does not answer while ABC-42 runs
-- **THEN** the board's head says `opencode cannot reach <endpoint>`, and no card stops
-- **AND** the next read that answers clears it, with no restart
 
 ### Requirement: The steps the Master leaves you are checked at start
 `roles.master.mine` SHALL name only `task/MasterRight` steps, and in `act` `deploy` and `revert` both or neither; anything
@@ -196,3 +190,11 @@ Tokens SHALL be booked whatever the read answered, and a local failure SHALL NOT
 #### Scenario: The plugin never loaded
 - **WHEN** a call completed and no call reached the gate
 - **THEN** the answer is discarded and the check reports that it failed
+
+### Requirement: A local endpoint is read for its model
+`orchestrator.opencode.endpoint` and `orchestrator.assistant.local.endpoint`, when set, SHALL each be read every minute
+(`<endpoint>/models`); one not answering or not listing its `model` is jagt's lost reach on the board's head, not pressable.
+
+#### Scenario: A local endpoint not serving its configured model is a lost reach until a read lists it
+- **WHEN** ABC-42 runs and `assistant.local.model` is `qwen` while the endpoint lists only `other`
+- **THEN** the head says `<endpoint> does not serve qwen`, no card stops, and a read listing `qwen` clears it
