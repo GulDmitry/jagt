@@ -2,21 +2,21 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate, and **a cached green is not a run**: at a batch's end and before a push it is
-`./gradlew test --rerun-tasks`. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest` needs git +
-tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`);
-`promptEval` the assistant's CLI and tokens; `roleEval -Prole=<id>` those plus minutes. **Every `test` run ends in
-`pitestDiff`**, mutants on the `main` lines changed against `HEAD`, on CI against the push's base; the writer judges
-each survivor before the commit ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md),
+`./gradlew test` is the hermetic gate; **a cached green is not a run**: `--rerun-tasks` at a batch's end and before a push.
+Other suites live in `src/<name>/java`, none in `check`: `e2eTest` needs git + tmux, `boardTest` Playwright's Chromium,
+`linuxDriverTest` Linux binaries + a display (`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens.
+**Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD` (CI: the push's base), each
+survivor judged before the commit ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md),
 [0127](../decisions/0127-mutants-run-with-every-test.md), [0129](../decisions/0129-ci-reports-the-mutants-of-a-push.md)).
+**A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`** ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix. Its
 `docs/cases.md` row and `Defect-family:` trailer make defects countable per family. **Every new install requirement goes in
-`docs/installation.md`**. **Leave no trace**: a suite booting the app passes `--orchestrator.open-terminal-window=false`,
-uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a
-tmux server of its own (`TMUX_TMPDIR`, killed after the task), so no test reaches the human's. A test reading the
-repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainSources`, `ConfigReferenceTest.javaFilesUnder`
-…). A shared **fake** of a production seam (`ScriptedProcesses`) is allowed, a shared builder is not.
+`docs/installation.md`**. **Leave no trace**: a suite booting the app passes `--orchestrator.open-terminal-window=false`, uses
+a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes the worktrees and branches; every `Test` task runs on a tmux
+server of its own (`TMUX_TMPDIR`, killed after the task), so no test reaches the human's. A test reading the repository's own
+files may keep **file-scanning** helpers (`TextBudgetTest.mainSources`, `ConfigReferenceTest.javaFilesUnder` …). A shared
+**fake** of a production seam (`ScriptedProcesses`) is allowed, a shared builder is not.
 
 ### Every test pins a business case
 
@@ -33,8 +33,8 @@ repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainS
 
 ### One constructor, the one production calls
 
-- **Every constructor in `main` is called from `main`** (`ProductionConstructorTest`). Exempt: a record's canonical
-  constructor, the only constructor of a Spring bean, a private one.
+- **Every constructor in `main` is called from `main`** (`ProductionConstructorTest`), but a record's canonical one,
+  a Spring bean's only one and a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies
   is a collaborator, supplied by `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies
   is a constant, and the test writes the volume that reaches it.

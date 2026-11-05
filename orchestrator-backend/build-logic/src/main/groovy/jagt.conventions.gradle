@@ -1,3 +1,5 @@
+import java.time.Duration
+
 // Every project is built the same way: one toolchain, one repository list, and the reflective parameter
 // names Spring needs. Declared once here, root assembly included, rather than copied into five build files.
 allprojects {
@@ -95,6 +97,12 @@ allprojects {
         systemProperty 'logging.file.name', 'build/test-logs/suite.log'
         systemProperty 'logging.master.name', 'build/test-logs/master.log'
         forkedTestEnv(it)
+    }
+
+    // 0139: an investigation states its own length with -PrunMinutes; nothing else may outrun the ceiling.
+    def runMinutes = providers.gradleProperty('runMinutes').orElse(providers.gradleProperty('suiteCeilingMinutes'))
+    tasks.withType(Test).configureEach {
+        timeout = runMinutes.map { Duration.ofMinutes(it as long) }
     }
 
     afterEvaluate {
