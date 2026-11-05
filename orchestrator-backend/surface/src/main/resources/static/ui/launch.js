@@ -18,7 +18,7 @@ export const open = () => {
 
 document.getElementById('close-launch').onclick = () => dialog.close();
 
-// ⌘↵ starts from any field, the way a form that has a single submit is sent everywhere else.
+// ⌘↵ starts from any field.
 form.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
     event.preventDefault();
@@ -35,7 +35,7 @@ export function render() {
   rendered = signature;
   const chosenBefore = strategy.value;
   strategy.replaceChildren(...choices.map((choice) => new Option(choice.id, choice.id)));
-  // The words are the server's: a page that spelled out what each choice does would be the copy that goes stale.
+  // The words are the server's.
   strategy.dataset.tip = choices.map((choice) => `${choice.id} — ${choice.hint}`).join(' · ');
   if (choices.some((choice) => choice.id === chosenBefore)) {
     strategy.value = chosenBefore;
@@ -43,10 +43,20 @@ export function render() {
 }
 
 const plan = document.getElementById('plan');
+const notes = document.getElementById('notes');
+
+const problem = () => {
+  const ticket = ref.value.trim();
+  if (/\s/.test(ticket)) return 'A ticket is a key or a URL, not words';
+  if (!ticket && !notes.value.trim()) return 'Give a ticket, or notes saying what to do';
+  if (!ticket && !projects.chosen() && store.projects().length !== 1) return 'Choose a project for your notes';
+  return projects.chosen() || plan.checked ? null : 'Choose a project, or start with plan first';
+};
+
 form.addEventListener('change', () => document.getElementById('launch-state').classList.remove('bad'));
 
 submits(form, {
-  problem: () => (projects.chosen() || plan.checked ? null : 'Choose a project, or start with plan first'),
+  problem,
   waiting: 'starting…',
   send: () => api('/api/tasks', {
     method: 'POST',
@@ -57,7 +67,7 @@ submits(form, {
       mode: plan.checked ? 'plan' : null,
       strategy: strategy.value,
       baseBranch: document.getElementById('base-branch').value,
-      notes: document.getElementById('notes').value,
+      notes: notes.value,
     }),
   }),
   done: () => {

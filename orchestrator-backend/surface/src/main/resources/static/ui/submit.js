@@ -3,7 +3,7 @@
 import {refusal} from '../core/api.js';
 import {toast} from './toast.js';
 
-// The board is read again after every form, whatever it answered; what reads it is wired in, not imported.
+// The board is read again after every form, whatever it answered.
 let afterwards = async () => {};
 
 export const onSent = (read) => { afterwards = read; };

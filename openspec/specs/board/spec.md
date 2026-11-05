@@ -30,6 +30,7 @@ project key renders only where projects are several, in the install or the task.
 #### Scenario: Start with no project
 - **WHEN** the human presses Start with no box ticked and `plan first` unticked
 - **THEN** the form says "Choose a project, or start with plan first" and sends nothing
+- **AND** it says the server's other refusals itself: spaces in the ticket, no ticket and no notes, notes alone and no project of several
 - **WHEN** `plan first` is ticked
 - **THEN** Start sends the task with no project
 #### Scenario: Resuming a request

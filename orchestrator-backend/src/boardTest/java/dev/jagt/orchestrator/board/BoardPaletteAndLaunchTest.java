@@ -188,6 +188,52 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     }
 
     @Test
+    void startingAFreshFormSaysItNeedsATicketOrNotesAndSendsNothing() {
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#new-task").click();
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#launch-state")).hasText("Give a ticket, or notes saying what to do");
+        verifyNoInteractions(launcher);
+    }
+
+    @Test
+    void startingWithWordsInTheTicketFieldSaysATicketIsAKeyOrAUrlAndSendsNothing() {
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#new-task").click();
+        page.locator("#ref").fill("fix the login page");
+        page.locator("#project input[value=alpha]").check();
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#launch-state"))
+                .hasText("A ticket is a key or a URL, not words");
+        verifyNoInteractions(launcher);
+    }
+
+    @Test
+    void startingNotesWithNoTicketAndNoProjectAmongSeveralSaysToChooseOneAndSendsNothing() {
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        page.locator("#new-task").click();
+        page.locator("#notes").fill("fix the login page");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#launch-state")).hasText("Choose a project for your notes");
+        verifyNoInteractions(launcher);
+    }
+
+    @Test
     void sendsTheExtraInstructionsTypedForTheAgent() {
         when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
