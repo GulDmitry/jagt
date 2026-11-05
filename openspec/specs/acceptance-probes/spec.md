@@ -117,6 +117,17 @@ or a repository left out. A repository the plan lacks is asked for with `needsPr
 On approval every repository tagged unaffected SHALL leave the task (`UnaffectedRepos`). The primary stays: it holds the
 session's checkout. One whose task branch holds own commits stays.
 
+A task with no repository SHALL report PLAN_PENDING only with the section and at least one `- [changed] <key>`;
+any key passes, configured or not, and `[unaffected]` keys are ignored.
+
+#### Scenario: A task with no repository names none
+- **WHEN** a task with no repository reports a plan whose section lists `- [unaffected: no change] api` alone
+- **THEN** the report is refused as `validation`, naming `## Repositories`
+
+#### Scenario: A task with no repository names a key jagt.yml lacks
+- **WHEN** a task with no repository reports a plan listing `- [changed] billing`, not configured
+- **THEN** the plan passes
+
 #### Scenario: A repository left out
 - **WHEN** a task of repositories `api` and `web` reports a plan listing only `- [changed] api`
 - **THEN** the report is refused as `validation`, naming `web`

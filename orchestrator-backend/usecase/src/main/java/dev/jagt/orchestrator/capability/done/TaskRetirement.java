@@ -28,8 +28,9 @@ public class TaskRetirement {
         boolean anyProjectMissing = worktrees.remove(taskId, task.repos(), configService.load().projects());
         stateService.removeTask(taskId);
         boolean closedViewer = viewer.closeIfNoTasksLeft();
-        return "Task " + taskId + " removed: worktree deleted, state entry dropped. Branch '" + taskId
-                + "' was kept"
+        return "Task " + taskId + " removed: "
+                + (task.unplaced() ? "scratch folder deleted, state entry dropped"
+                        : "worktree deleted, state entry dropped. Branch '" + taskId + "' was kept")
                 + (anyProjectMissing ? " (worktree left on disk: project missing from jagt.yml)" : "")
                 + (closedViewer ? ". Last task gone — the agents window was closed." : "");
     }

@@ -57,6 +57,23 @@ class PlanRepositoriesTest {
         assertThat(violations).singleElement().asString().contains("`docs` is no repository of this task");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "# Plan\n",
+            "## Repositories\n",
+            "## Repositories\n- [unaffected: no change] api\n",
+    })
+    void refusesAPlanOfATaskWithNoRepositoryThatNamesNoChangedOne(String plan) {
+        List<Violation> violations = PlanRepositories.violationsIn(plan, List.of());
+
+        assertThat(violations).singleElement().asString().contains("## Repositories").contains("- [changed] <key>");
+    }
+
+    @Test
+    void acceptsAnyChangedKeyForATaskWithNoRepository() {
+        assertThat(PlanRepositories.violationsIn("## Repositories\n- [changed] billing\n", List.of())).isEmpty();
+    }
+
     @Test
     void refusesATaskRepositoryTheSectionLeavesOut() {
         List<Violation> violations = PlanRepositories.violationsIn("## Repositories\n- [changed] api\n", List.of("api", "web"));
@@ -69,6 +86,13 @@ class PlanRepositoriesTest {
         String plan = "## Repositories\n- [changed] api\n- [unaffected: only the API changes] web\n- [unaffected: nothing] docs\n";
 
         assertThat(PlanRepositories.unaffectedIn(plan, List.of("api", "web"))).containsExactly("web");
+    }
+
+    @Test
+    void namesTheChangedKeysInThePlansOrder() {
+        String plan = "## Repositories\n- [changed] web\n- [unaffected: nothing] docs\n- [changed] billing\n";
+
+        assertThat(PlanRepositories.changedIn(plan)).containsExactly("web", "billing");
     }
 
     @Test

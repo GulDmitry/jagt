@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The {@code ## Repositories} section of a plan for a task with several repositories: one
+ * The {@code ## Repositories} section of a plan for a task with several repositories or none: one
  * {@code - [changed] <key>} or {@code - [unaffected: <why>] <key>} item per repository of the task.
  */
 public final class PlanRepositories {
@@ -22,6 +22,10 @@ public final class PlanRepositories {
     }
 
     public static List<Violation> violationsIn(String plan, List<String> projects) {
+        if (projects.isEmpty()) {
+            return changedIn(plan).isEmpty() ? List.of(new Violation(FIELD, "add a `" + HEADING
+                    + "` section naming at least one `- [changed] <key>` per project this task changes")) : List.of();
+        }
         if (projects.size() < 2) {
             return List.of();
         }
@@ -50,19 +54,29 @@ public final class PlanRepositories {
 
     /** The keys among {@code projects} the section tags {@code unaffected}, in the plan's order. */
     public static List<String> unaffectedIn(String plan, List<String> projects) {
-        List<String> keys = new ArrayList<>();
+        return itemsIn(plan).stream().filter(item -> item.group(1).startsWith("unaffected"))
+                .map(item -> item.group(2)).filter(projects::contains).toList();
+    }
+
+    /** The keys the section tags {@code changed}, in the plan's order, configured or not. */
+    public static List<String> changedIn(String plan) {
+        return itemsIn(plan).stream().filter(item -> item.group(1).equals("changed")).map(item -> item.group(2)).toList();
+    }
+
+    private static List<Matcher> itemsIn(String plan) {
+        List<Matcher> items = new ArrayList<>();
         boolean inSection = false;
         for (String line : plan.lines().map(String::strip).toList()) {
             if (line.startsWith("## ")) {
                 inSection = line.equalsIgnoreCase(HEADING);
             } else if (inSection) {
                 Matcher item = ITEM.matcher(line);
-                if (item.matches() && item.group(1).startsWith("unaffected") && projects.contains(item.group(2))) {
-                    keys.add(item.group(2));
+                if (item.matches()) {
+                    items.add(item);
                 }
             }
         }
-        return List.copyOf(keys);
+        return items;
     }
 
     private static Optional<Violation> itemViolation(String line, List<String> projects, Set<String> listed) {

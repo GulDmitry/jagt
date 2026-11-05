@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.capability.TaskViewer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.flow.Refusal;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,6 +47,20 @@ class TaskRetirementTest {
         order.verify(worktrees).remove(anyString(), any(), any());
         assertThat(state.task("ABC-1")).isEmpty();
         assertThat(result).contains("Branch 'ABC-1' was kept").doesNotContain("agents window");
+    }
+
+    @Test
+    void namesNoBranchForATaskThatNeverHadARepository(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
+                .alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        TaskRetirement retirement = new TaskRetirement(state, config, worktrees, viewer);
+
+        String result = retirement.retire("a1");
+
+        assertThat(result).contains("scratch folder deleted").doesNotContain("Branch");
     }
 
     @Test
