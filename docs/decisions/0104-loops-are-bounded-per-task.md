@@ -6,6 +6,7 @@
 
 Accepted 2026-10-29. Supersedes [0049](0049-unattended-starts-have-a-daily-ceiling.md); amends
 [0061](0061-jagt-stops-a-task-it-suspects-it-is-looping.md): what a `ROUNDS` run counts.
+Amended by [0140](0140-in-act-the-master-decides-a-stop-for-a-suspected-loop.md): in `act` the Master decides a `PACE` stop.
 
 ## Context
 

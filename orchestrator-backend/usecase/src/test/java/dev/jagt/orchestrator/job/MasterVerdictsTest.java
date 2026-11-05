@@ -412,6 +412,31 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void tellsTheSessionTheInstructionOfAStopTheMasterLiftedAndLeavesItAtWork(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
+        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
+        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
+                new TaskTurns(state, Clock.systemUTC()));
+        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
+                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+
+        boolean told = verdicts.stopReturned("ABC-1", task, "fix the fixture, not the test");
+
+        assertThat(told).isTrue();
+        verify(sessions).writeTaskContext(eq("ABC-1"), contains("fix the fixture, not the test"));
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
     void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));

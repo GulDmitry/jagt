@@ -21,7 +21,7 @@ class StateFileCompatibilityTest {
         TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
         assertThat(task.roleOrNone("qa").passed()).isEqualTo("proj@abc");
-        assertThat(task.masterOrNone()).isEqualTo(new Master("", "", "", "abc", 3));
+        assertThat(task.masterOrNone()).isEqualTo(new Master("", "", "", "abc", 3, "", 0));
         assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
     }
 }

@@ -46,4 +46,20 @@ sealed interface MasterNote {
             return master.withSeal(seal, round);
         }
     }
+
+    record AskedStop(String key) implements MasterNote {
+
+        @Override
+        public Master applyTo(Master master) {
+            return master.withAskedStop(key);
+        }
+    }
+
+    record LiftedStops(int count) implements MasterNote {
+
+        @Override
+        public Master applyTo(Master master) {
+            return master.withLiftedStops(count);
+        }
+    }
 }

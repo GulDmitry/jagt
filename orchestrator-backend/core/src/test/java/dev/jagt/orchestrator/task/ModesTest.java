@@ -63,7 +63,7 @@ class ModesTest {
     void refusesAMasterRightNoneOfTheWordsMean() {
         assertThat(MasterRight.of("sometimes")).isEmpty();
         assertThat(MasterRight.of(null)).isEmpty();
-        assertThat(MasterRight.ids()).containsExactly("ship", "deploy", "revert", "reply", "answer", "plan", "repo");
+        assertThat(MasterRight.ids()).containsExactly("ship", "deploy", "revert", "reply", "answer", "plan", "repo", "lift");
     }
 
     @ParameterizedTest

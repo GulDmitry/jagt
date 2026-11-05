@@ -171,10 +171,7 @@ public class MasterVerdicts {
     private boolean answer(String taskId, TaskState task, String question, String decision, String opened) {
         String answer = "The Master answered your question, standing in for the human:\n" + decision + opened;
         StepRelay.Claim claim = claiming(taskId, task, AgentReport.PLAIN, "master answered the question");
-        boolean told = FlowRules.awaitsItsInstruction(task.status())
-                ? relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.step(), answer, false, claim)
-                : relay.relay(taskId, MasterMove.ANSWERED.step(), answer, claim);
-        if (!told) {
+        if (!tell(taskId, task, answer, claim)) {
             return false;
         }
         decisions.record(task, "- asked: " + question + " — decided: " + decision.replace('\n', ' '));
@@ -183,6 +180,27 @@ public class MasterVerdicts {
                 .addKeyValue("question", OneLine.clipped(question))
                 .addKeyValue("decision", OneLine.clipped(decision)).log();
         return true;
+    }
+
+    /** A stop the Master lifted, the session told its instruction as an answer, and back at work on it; not where a plan waits. */
+    public boolean stopReturned(String taskId, TaskState task, String instruction) {
+        return OriginContext.as(ActionOrigin.MASTER, () -> {
+            StepRelay.Claim claim = claiming(taskId, task, AgentReport.PLAIN, "master: stop lifted, returned to the session");
+            boolean told = tell(taskId, task, "The Master lifted jagt's stop and returns the task to you, standing in for"
+                    + " the human:\n" + instruction, claim);
+            if (told) {
+                log.atInfo().setMessage("master returns the task").addKeyValue("task", taskId)
+                        .addKeyValue("alias", task.alias()).addKeyValue("instruction", OneLine.clipped(instruction)).log();
+            }
+            return told;
+        });
+    }
+
+    private boolean tell(String taskId, TaskState task, String text, StepRelay.Claim claim) {
+        if (FlowRules.awaitsItsInstruction(task.status())) {
+            return relay.relayUnder(taskId, MasterMove.ANSWERED_UNDER.step(), text, false, claim);
+        }
+        return relay.relay(taskId, MasterMove.ANSWERED.step(), text, claim);
     }
 
     public int answersOverThisTree(TaskState task) {

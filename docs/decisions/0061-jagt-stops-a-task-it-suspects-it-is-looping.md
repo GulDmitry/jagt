@@ -11,6 +11,7 @@ Superseded in part by [0080](0080-a-repeating-round-ends-in-one-stop.md): the st
 Amended by [0103](0103-a-round-is-the-same-by-its-facts-not-its-brief.md): the digest is of the round's facts.
 Amended by [0104](0104-loops-are-bounded-per-task.md): what a `ROUNDS` run counts.
 Amended by [0100](0100-a-stop-is-scoped-to-its-request.md): a new request replacing the counted one also clears it.
+Amended by [0140](0140-in-act-the-master-decides-a-stop-for-a-suspected-loop.md): in `act` the Master decides the stop.
 
 ## Context
 

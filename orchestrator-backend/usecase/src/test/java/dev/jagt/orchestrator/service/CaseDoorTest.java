@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -59,6 +60,30 @@ class CaseDoorTest {
         CaseDoor door = doorOver(paths, state);
 
         assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.DONE)))
+                .isInstanceOfSatisfying(Refusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+    }
+
+    @Test
+    void letsTheMasterLiftAStopItWasAskedAboutAndNoOther(@TempDir Path root) throws Exception {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/cases.md"),
+                "## lift\n\nmove: lift\nat: any but DONE\nby: master\nThe Master lifts it.\n");
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskStop asked = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(asked)
+                .master(Master.defaults().withAskedStop(asked.key())).build());
+        state.putTask("ABC-43", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(TaskStop.Trigger.PAUSE, 5, "until the managers answer"))
+                .master(Master.defaults().withAskedStop("PAUSE@5")).build());
+        CaseDoor door = doorOver(paths, state);
+
+        boolean lifted = OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.LIFT));
+
+        assertThat(lifted).isTrue();
+        assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-43", TaskAction.LIFT)))
                 .isInstanceOfSatisfying(Refusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
     }

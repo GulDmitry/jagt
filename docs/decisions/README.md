@@ -153,3 +153,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0137 OpenCode is an agent CLI driver](0137-opencode-is-an-agent-cli-driver.md) (stands under 0128)
 - [0138 A read may run on OpenCode](0138-a-read-may-run-on-opencode.md) (amends 0137)
 - [0139 Every suite ends within one ceiling](0139-every-suite-ends-within-one-ceiling.md)
+- [0140 In act the Master decides a stop for a suspected loop](0140-in-act-the-master-decides-a-stop-for-a-suspected-loop.md) (amends 0061, 0104)

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.CaseBook;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -55,11 +56,17 @@ public class CaseDoor {
         if (!byTheMaster()) {
             return true;
         }
-        if (action.humanOnly()) {
+        if (action.humanOnly() && !liftedByTheMaster(taskId, action)) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE,
                     action.label() + " is a human's to press, never the Master's.");
         }
         return held(taskId, action.id());
+    }
+
+    /** The one human-only verb the Master presses: a lift of a stop it was asked about, within its bound. */
+    private boolean liftedByTheMaster(String taskId, TaskAction action) {
+        return action == TaskAction.LIFT && stateService.task(stateService.canonicalTaskId(taskId))
+                .filter(task -> StopHold.mayBeLifted(task) && StopHold.asked(task)).isPresent();
     }
 
     /** Only the Master's move is held to a case: any other passes. */

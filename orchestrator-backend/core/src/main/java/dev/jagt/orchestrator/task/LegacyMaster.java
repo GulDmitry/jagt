@@ -23,7 +23,7 @@ final class LegacyMaster {
             return stored;
         }
         Master read = new Master(mark(turn, LEFT), mark(turn, UNANSWERED), mark(turn, PRESSED_DEPLOY),
-                mark(turn, SEAL), 0);
+                mark(turn, SEAL), 0, "", 0);
         return read.isEmpty() ? null : read;
     }
 

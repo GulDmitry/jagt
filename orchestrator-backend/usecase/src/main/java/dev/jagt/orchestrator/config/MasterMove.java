@@ -17,6 +17,7 @@ public enum MasterMove {
     DEPLOY("deploy", false),
     APPROVE_PLAN("approve-plan", false),
     ADD_REPO("add-repo", false),
+    LIFT("lift", false),
     ROUND_NOT_READY("round-not-ready", true),
     PLAN_NOT_READY("plan-not-ready", true),
     ASKED_HUMAN("asked-human", true),

@@ -128,6 +128,16 @@ public final class TaskReducer {
         return noted(task, new MasterNote.PressedDeploy(arrival));
     }
 
+    /** {@code task} whose Master was asked about the stop {@code key}. */
+    public static TaskState masterAskedStop(TaskState task, String key) {
+        return noted(task, new MasterNote.AskedStop(key));
+    }
+
+    /** {@code task} whose Master has lifted {@code count} stops since the human's last lift or deploy. */
+    public static TaskState masterLiftedStops(TaskState task, int count) {
+        return noted(task, new MasterNote.LiftedStops(count));
+    }
+
     /** {@code task} with the fingerprint of the verdict jagt wrote for its Master, answering {@code round}. */
     public static TaskState masterSealed(TaskState task, String seal, long round) {
         return noted(task, new MasterNote.Sealed(seal, round));

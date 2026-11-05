@@ -45,6 +45,7 @@ rolls daily and keeps a week of archives. `LogFileRoll` rolls the backend log an
         </triggeringPolicy>
     </appender>
     <logger name="dev.jagt.orchestrator.job.MasterAnswerJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.MasterStopJob"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.job.MasterReviewJob"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.job.MasterVerdicts"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.job.MasterPress"><appender-ref ref="MASTER"/></logger>

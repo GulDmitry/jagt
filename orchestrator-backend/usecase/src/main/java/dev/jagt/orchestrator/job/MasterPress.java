@@ -47,9 +47,15 @@ class MasterPress {
 
     /** A verb no path of the task can keep from the human; false where the move was refused. */
     boolean execute(String taskId, TaskAction action) {
-        if (!stops.moveDue(taskId)) {
-            return false;
-        }
+        return stops.moveDue(taskId) && pressed(taskId, action);
+    }
+
+    /** A lift the door lets the Master press: a stopped task is the one place no move is due, so none is counted. */
+    boolean lift(String taskId) {
+        return pressed(taskId, TaskAction.LIFT);
+    }
+
+    private boolean pressed(String taskId, TaskAction action) {
         log.atInfo().setMessage("master presses").addKeyValue("task", taskId).addKeyValue("cmd", action.id()).log();
         // Through the same door a human's press uses, so an illegal move is refused rather than taken, and
         // stamped as the Master's so what a verb does on its behalf can differ from what it does on yours.

@@ -19,14 +19,20 @@ public final class Turns {
     private Turns() {
     }
 
-    /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check a checker reads holds it. */
+    /** As {@link #next(TaskStatus, AgentReport, StopHold, Map, Arbiter.Profile)}, a stop standing being the human's. */
     public static Holder next(TaskStatus status, AgentReport report, boolean stopped,
+                              Map<String, CheckerPhase> checkers, Arbiter.Profile profile) {
+        return next(status, report, stopped ? StopHold.HUMAN : StopHold.NONE, checkers, profile);
+    }
+
+    /** A question rides on the plan or round the Master reads; elsewhere no model grants a right. A check a checker reads holds it. */
+    public static Holder next(TaskStatus status, AgentReport report, StopHold stop,
                               Map<String, CheckerPhase> checkers, Arbiter.Profile profile) {
         if (FlowRules.closed(status)) {
             return Holder.NOBODY;
         }
-        if (stopped) {
-            return Holder.HUMAN;
+        if (stop != StopHold.NONE) {
+            return stop == StopHold.MASTER ? Holder.ARBITER : Holder.HUMAN;
         }
         Optional<String> reading = Checkers.reading(checkers);
         if (reading.isPresent()) {

@@ -161,4 +161,26 @@ class MasterPressTest {
 
         assertThatThrownBy(() -> press.execute("ABC-1", TaskAction.DEPLOY)).isInstanceOf(UncheckedIOException.class);
     }
+
+    @Test
+    void liftsAStopWithoutAskingWhetherAMoveIsDueForATaskThatIsStopped(@TempDir Path root) {
+        boolean lifted = new MasterPress(commands, humanPaths, stops, new TaskTurns(new StateService(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))), Clock.systemUTC())).lift("ABC-1");
+
+        assertThat(lifted).isTrue();
+        verify(commands).execute("ABC-1", TaskAction.LIFT);
+        verifyNoInteractions(stops);
+    }
+
+    @Test
+    void reportsALiftTheDoorRefusedAsNotMade(@TempDir Path root) {
+        doThrow(new IllegalStateException("not stopped")).when(commands).execute("ABC-1", TaskAction.LIFT);
+
+        boolean lifted = new MasterPress(commands, humanPaths, stops, new TaskTurns(new StateService(new JsonMapper(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))), Clock.systemUTC())).lift("ABC-1");
+
+        assertThat(lifted).isFalse();
+    }
 }

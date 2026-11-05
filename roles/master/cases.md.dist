@@ -50,3 +50,10 @@ move: add-repo
 at: any but DONE
 by: master
 The session asked for a repository its task lacks, and the Master adds it.
+
+## lift
+
+move: lift
+at: any but DONE
+by: master
+You left a stop for a suspected loop to the Master, which was asked about it and lifts it.

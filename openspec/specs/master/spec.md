@@ -55,9 +55,9 @@ for them ([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-th
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `roles.master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and
-answer a question. It SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`) and deploy a
-`REVIEWED` or `APPROVED` task once (`MasterDeployJob`). A permission, and a plan asked for in `plan` mode, stay yours.
+With `roles.master.mode: act` the Master SHALL ship a `ready` round, approve a plan that holds as `approve-plan` does, and answer a question. It
+SHALL press `add-repo` for a repository a session asked for (`MasterRepoJob`) and deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`).
+It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)); `mine: [lift]` keeps it yours.
 
 #### Scenario: What it presses in act
 - **WHEN** a task reaches `REVIEWED` or `APPROVED`

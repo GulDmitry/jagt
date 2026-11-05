@@ -24,7 +24,9 @@ public enum MasterRight {
     /** Telling a session its plan holds and to start on it. */
     PLAN,
     /** Attaching the repository a session asked for to its task. */
-    REPO;
+    REPO,
+    /** Lifting a stop that jagt's loop guards set. */
+    LIFT;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

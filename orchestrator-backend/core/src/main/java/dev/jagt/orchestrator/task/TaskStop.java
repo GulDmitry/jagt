@@ -76,6 +76,11 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
         return request == null || requested.isBlank() || Arrays.asList(request.split(" ")).contains(requested);
     }
 
+    /** Names this stop alone: the same trigger set again later is another. */
+    public String key() {
+        return trigger + "@" + at;
+    }
+
     public String reading() {
         return evidence + ". " + trigger.next + ", then lift or close";
     }

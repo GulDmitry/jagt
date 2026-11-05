@@ -575,4 +575,24 @@ class TaskStopsTest {
                 .isInstanceOf(Refusal.class);
         assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
     }
+
+    @Test
+    void theMastersLiftSpendsItsBoundAndTheHumansLiftRestoresIt(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(new JsonMapper(), paths);
+        TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).build());
+        TaskStops stops = new TaskStops(state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
+
+        OriginContext.as(ActionOrigin.MASTER, () -> stops.lift("ABC-42"));
+        int afterTheMasters = state.task("ABC-42").orElseThrow().masterOrNone().liftedStops();
+        stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "4 ships");
+        OriginContext.as(ActionOrigin.BOARD, () -> stops.lift("ABC-42"));
+        int afterTheHumans = state.task("ABC-42").orElseThrow().masterOrNone().liftedStops();
+
+        assertThat(afterTheMasters).isEqualTo(1);
+        assertThat(afterTheHumans).isZero();
+    }
 }

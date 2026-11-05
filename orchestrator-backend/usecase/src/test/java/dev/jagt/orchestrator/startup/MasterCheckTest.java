@@ -148,7 +148,7 @@ class MasterCheckTest {
         Files.createDirectories(root.resolve("roles/master"));
         Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
-                .withMine(List.of("ship", "deploy", "revert", "reply", "answer", "plan", "repo"))));
+                .withMine(List.of("ship", "deploy", "revert", "reply", "answer", "plan", "repo", "lift"))));
         MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())),
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),

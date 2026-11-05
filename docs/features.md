@@ -40,8 +40,7 @@
 - **Plan changes since approval** — The Artifacts tab marks plan lines new or rewritten since your last approval, and strikes removed ones.
   [spec](../openspec/specs/board/spec.md#requirement-a-plan-shows-what-changed-since-its-last-approval)
 - **Add a project, run a job now** — Add, change or drop a project in `jagt.yml` from the board or `project`; any unattended job runs now.
-  [add, edit, remove](../openspec/specs/project-setup/spec.md) ·
-  [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
+  [add, edit, remove](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Project hover in the new-task form** — Hovering a project shows its `jagt.yml` entry and remote; Start with no project needs `plan first`.
   [spec](../openspec/specs/board/spec.md#requirement-a-mark-says-what-it-replaces)
 - **Keys for verbs, who asked** — Every verb shows its key, even one that asks first; each history step names who asked.
@@ -183,11 +182,12 @@
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
 - **Activity report** — A report of what jagt did unasked is read back from its own log.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-reads-jagts-own-log)
-- **Brakes** — `act` stops after bad endings, an hourly ceiling bounds a task's unasked moves, a looping or case-less task waits for your lift.
+- **Brakes** — `act` stops after bad endings, an hourly ceiling bounds unasked moves; a looping or case-less task waits for your lift or the Master's.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
   [spec](../openspec/specs/unattended-work/spec.md#requirement-a-task-has-a-ceiling-of-unattended-moves-an-hour)
   [spec](../openspec/specs/task-stops/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
   [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
+  [spec](../openspec/specs/task-stops/spec.md#requirement-in-act-the-master-decides-a-stop-for-a-suspected-loop)
 - **Pause** — You pause a started task to look at it, or tell the Master to: nothing of jagt runs on it until you lift.
   [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
 

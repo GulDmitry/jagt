@@ -102,6 +102,10 @@ public class TaskTurns {
                 task -> TaskReducer.masterUnanswered(task, task.askedDigest()));
     }
 
+    public void askedStop(String taskId, String key) {
+        stateService.updateTask(stateService.canonicalTaskId(taskId), task -> TaskReducer.masterAskedStop(task, key));
+    }
+
     public void pressedDeploy(String taskId, String arrival) {
         stateService.updateTask(stateService.canonicalTaskId(taskId),
                 task -> TaskReducer.masterPressedDeploy(task, arrival));

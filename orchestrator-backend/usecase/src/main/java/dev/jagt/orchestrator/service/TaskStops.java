@@ -118,8 +118,11 @@ public class TaskStops {
         return stateService.task(taskId).filter(TaskState::stopped).isPresent();
     }
 
+    /** A human's lift, or a deploy's, restores the Master's lifts; the Master's own lift spends one. */
     public void lift(String taskId) {
-        stateService.updateTask(taskId, task -> TaskReducer.lift(task, clock.millis()));
+        boolean byTheMaster = CaseDoor.byTheMaster();
+        stateService.updateTask(taskId, task -> TaskReducer.masterLiftedStops(TaskReducer.lift(task, clock.millis()),
+                byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
     }
 
     /** The stop a read of the checks ended: one whose trigger ends on a read, and the read listed the checks, not red. */

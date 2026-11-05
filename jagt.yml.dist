@@ -168,7 +168,7 @@ orchestrator:
                                # blank inherits the agent CLI's. One run per role of the brief, per round;
                                # a `model` column in the brief's role table overrides it for that role
       # mine: [plan]           # the steps that stay YOURS in `act`: ship, deploy + revert (together), reply, answer, plan,
-                               # repo (attaching a repository a session asked for).
+                               # repo (attaching a repository a session asked for), lift (a stop jagt set for a suspected loop).
                                # Unset: [plan]; [] hands the Master every step. Anything not listed the Master may do;
                                # closing a task and a plan you opened in `plan` mode are always yours
     qa:                     # checks a deployed change against its ticket on a running environment

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -167,6 +168,11 @@ public final class FlowRules {
         return TaskStatus.CI_POLLING;
     }
 
+    /** A stop of this trigger is a loop jagt suspected, which in act the Master decides; the others are the human's or end on a read. */
+    public static boolean liftedByTheMaster(TaskStop.Trigger trigger) {
+        return LIFTED_BY_THE_MASTER.contains(trigger);
+    }
+
     /** A closed task: its worktree is gone, so nothing can be relayed into it. */
     public static boolean closed(TaskStatus status) {
         return status == TaskStatus.DONE;
@@ -269,6 +275,9 @@ public final class FlowRules {
     public static Set<TaskStatus> redirects() {
         return EnumSet.of(TaskStatus.VERIFYING);
     }
+
+    private static final Set<TaskStop.Trigger> LIFTED_BY_THE_MASTER = EnumSet.of(TaskStop.Trigger.STALLED,
+            TaskStop.Trigger.SHIPS, TaskStop.Trigger.ROUNDS, TaskStop.Trigger.PACE, TaskStop.Trigger.UNCHANGED_FAILURE);
 
     private static final Set<TaskStatus> WATCHED = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,
             TaskStatus.SHIPPING);
