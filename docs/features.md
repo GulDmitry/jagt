@@ -174,7 +174,7 @@
   [spec](../openspec/specs/task-start/spec.md#requirement-starting-a-task)
 - **Plan first** — A task asked to plan, or under autoplan, changes no file but its plan until you approve the plan on the board.
   [spec](../openspec/specs/task-start/spec.md#requirement-plan-first-is-a-gate-jagt-holds)
-- **Plan before a project** — `plan first` with no project ticked plans in a scratch folder, never routed; `done` deletes the folder.
+- **Plan before a project** — `plan first`, no project ticked: plans in a scratch folder; approval cuts each `[changed]` project's worktree.
   [spec](../openspec/specs/task-start/spec.md#requirement-a-task-may-plan-before-it-has-a-repository)
 
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
