@@ -47,6 +47,11 @@ public record NewTask(String taskId, List<String> projectKeys, @Nullable String 
         return builder;
     }
 
+    /** A task that plans before it has a repository. */
+    public static NewTaskBuilder unplacedBuilder(String taskId) {
+        return new NewTaskBuilder().taskId(taskId);
+    }
+
     @SuppressWarnings("NullAway.Init")
     public static class NewTaskBuilder {
         private List<String> projectKeys = new ArrayList<>();

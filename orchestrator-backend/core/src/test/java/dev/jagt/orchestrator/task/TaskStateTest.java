@@ -771,4 +771,11 @@ class TaskStateTest {
         assertThat(moved.session().halt()).isEqualTo(idle.session().halt());
         assertThat(moved.session().quietSince()).isZero();
     }
+
+    @Test
+    void holdsNoRepositoryUntilAProjectIsRegistered() {
+        assertThat(TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.NEW).build().unplaced())
+                .isTrue();
+        assertThat(TaskState.builder("api", "/wt", TaskStatus.NEW).build().unplaced()).isFalse();
+    }
 }

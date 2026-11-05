@@ -80,4 +80,12 @@ class WorktreeSandboxTest {
 
         assertThat(sandbox).isEqualTo(Sandbox.off());
     }
+
+    @Test
+    void writesInAScratchFolderWhereThereIsNoRepositoryToWriteIn() {
+        Sandbox sandbox = WorktreeSandbox.scratch(SandboxConfig.defaults().withEnabled(true), Path.of("/w/scratch/ABC-42"),
+                Path.of("/home/me"), Path.of("/tmp"));
+
+        assertThat(sandbox.writable()).contains(Path.of("/w/scratch/ABC-42"));
+    }
 }

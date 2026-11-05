@@ -25,14 +25,22 @@ final class WorktreeSandbox {
     }
 
     static Sandbox of(SandboxConfig config, List<NewRepo> repos, Path home, Path tempDir) {
-        if (!config.enabledOrDefault()) {
-            return Sandbox.off();
-        }
         Set<Path> writable = new LinkedHashSet<>();
         repos.forEach(repo -> {
             writable.add(real(repo.worktreePath()));
             writable.add(real(repo.gitCommonDir()));
         });
+        return of(config, writable, home, tempDir);
+    }
+
+    static Sandbox scratch(SandboxConfig config, Path folder, Path home, Path tempDir) {
+        return of(config, new LinkedHashSet<>(Set.of(real(folder))), home, tempDir);
+    }
+
+    private static Sandbox of(SandboxConfig config, Set<Path> writable, Path home, Path tempDir) {
+        if (!config.enabledOrDefault()) {
+            return Sandbox.off();
+        }
         // A JVM opens its attach socket here, not in /tmp: denied, a test that mocks with an agent cannot start.
         writable.add(real(tempDir));
         Stream.concat(WRITABLE.stream().map(entry -> expanded(entry, home)), config.allowWritePaths(home).stream())

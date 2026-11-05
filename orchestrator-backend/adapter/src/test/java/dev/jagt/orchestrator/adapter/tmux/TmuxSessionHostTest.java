@@ -747,4 +747,37 @@ class TmuxSessionHostTest {
         verify(processes, never()).run(isNull(), any(Duration.class),
                 argThat((List<String> command) -> command.contains("new-window")));
     }
+
+    @Test
+    void stopsGitClimbingOutOfAScratchFolderWhereTheSessionRuns() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, paths, mock(TerminalDriver.class),
+                mock(AgentRuntime.class));
+
+        host.openTaskWindow("jagt", "agents", "ABC-1", null, paths.scratch().resolve("ABC-1"), true, "");
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).anySatisfy(command ->
+                assertThat(command.getLast()).startsWith("GIT_CEILING_DIRECTORIES='" + paths.scratch() + "' "));
+    }
+
+    @Test
+    void leavesGitsCeilingAloneForAWorktreeOfARepository() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).noneSatisfy(command ->
+                assertThat(command.getLast()).contains("GIT_CEILING_DIRECTORIES"));
+    }
 }

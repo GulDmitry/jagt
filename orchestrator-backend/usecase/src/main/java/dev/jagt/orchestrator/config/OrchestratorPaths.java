@@ -75,6 +75,11 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("plan-baselines");
     }
 
+    /** One folder per task that plans before it has a repository, named by the task's slug. */
+    public Path scratch() {
+        return stateFile.resolveSibling("scratch");
+    }
+
     private Path resolve(@Nullable String override, String defaultName) {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()

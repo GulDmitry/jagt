@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import static org.mockito.Mockito.verifyNoInteractions;
 import java.util.Map;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -297,5 +298,15 @@ class WorktreeChangesTest {
                 null, null, null, null, null, null, null, "upstream");
 
         assertThat(WorktreeChanges.targetBranch(task, project)).isEqualTo("main");
+    }
+
+    @Test
+    void measuresNoGitForATaskStillPlanningInItsScratchFolder() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.IN_PROGRESS).build();
+        WorktreeChanges changes = new WorktreeChanges(configService, inspection);
+
+        assertThat(changes.state(task)).contains("");
+        assertThat(changes.uncommitted(task)).contains(false);
+        verifyNoInteractions(inspection);
     }
 }

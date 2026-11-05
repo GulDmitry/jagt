@@ -26,10 +26,7 @@ public class SubAgentBriefing {
                      ConfigService.ConfigFile.VisualizeConfig visualize,
                      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
         String taskId = request.taskId();
-        String switches = planFirstSentence(request.mode()) + autoplanSentence(autoplan)
-                + visualizeSentence(visualize) + diagnoseSentence(diagnose)
-                + judgementSentence(ConfigService.ConfigFile.AgentConfig.defaults().withAutoplan(autoplan)
-                        .withVisualize(visualize).withDiagnose(diagnose).switchesOn());
+        String switches = switches(request, autoplan, visualize, diagnose);
         return TASK.formatted(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
                         repo.remoteUrl(), repo.worktreePath(), alsoYours(repo, repos) + deployWorktrees(taskId, repos))
                 + brief.section(Step.CONTEXT).filter(context -> !context.isBlank()).map(context -> context + "\n\n")
@@ -37,6 +34,50 @@ public class SubAgentBriefing {
                 + HARD_SAFETY.formatted(taskId, baseBranches(repos), deployBranches(repos))
                 + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
     }
+
+    /** A task with no repository yet: it plans in a scratch folder, outside git, and names its repositories. */
+    public String ofScratch(NewTask request, ConfigService.ConfigFile.AutoplanConfig autoplan,
+                            ConfigService.ConfigFile.VisualizeConfig visualize,
+                            ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+        String switches = switches(request, autoplan, visualize, diagnose);
+        return SCRATCH.formatted(request.taskId(), request.taskId())
+                + brief.section(Step.CONTEXT).filter(context -> !context.isBlank()).map(context -> context + "\n\n")
+                        .orElse("")
+                + SCRATCH_SAFETY
+                + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
+    }
+
+    private static String switches(NewTask request, ConfigService.ConfigFile.AutoplanConfig autoplan,
+                                   ConfigService.ConfigFile.VisualizeConfig visualize,
+                                   ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+        return planFirstSentence(request.mode()) + autoplanSentence(autoplan)
+                + visualizeSentence(visualize) + diagnoseSentence(diagnose)
+                + judgementSentence(ConfigService.ConfigFile.AgentConfig.defaults().withAutoplan(autoplan)
+                        .withVisualize(visualize).withDiagnose(diagnose).switchesOn());
+    }
+
+    private static final String SCRATCH = """
+            <role>
+            You are the jagt worker agent for task %s, in a scratch folder. No preamble.
+            </role>
+
+            <task>
+            - Task ID: %s
+            - This task has no repository yet, and this folder is outside git. You plan here; the approved plan places the task.
+            - Read the ticket, its labels and its description, then decide which projects the change touches.
+            - `plan.md` holds `## Repositories`: one `- [changed] <key>` per project you change, registered in
+              `jagt.yml` or not (`list_projects` names those that are).
+            - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+            - `task_request.md`, if present: the request the task opened with, never overwritten.
+            </task>
+
+            """;
+
+    private static final String SCRATCH_SAFETY = """
+            <hard_safety>
+            No git of any kind here: no commit, no push, no branch. Write nothing but the plan and what it asks for;
+            code waits for the approved plan, which cuts a worktree per repository it names.
+            </hard_safety>""";
 
     private static final String TASK = """
             <role>

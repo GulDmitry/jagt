@@ -49,6 +49,18 @@ public class TaskLaunches {
         return refusedForExistingBranch(settled, chosen).orElseGet(() -> launched(settled, read, chosen));
     }
 
+    /** A task that plans before it has a repository: the item's own checks, no project and no router. */
+    public Launched unplaced(LaunchRequest request) {
+        if (request.ref() == null) {
+            return written(request, List.of());
+        }
+        Answer<TicketFacts> read = placement.read(request.ref());
+        return switch (placement.unplaced(request.ref(), read)) {
+            case TicketPlacement.Refused refused -> Launched.refused(refused.message());
+            case TicketPlacement.Placed placed -> created(request, placed, null, read);
+        };
+    }
+
     /**
      * A task nobody filed: the human's own words are its instructions, and they name its branch too, since a task
      * IS its branch and no tracker handed this one a key.
@@ -106,8 +118,9 @@ public class TaskLaunches {
 
     private static NewTask.NewTaskBuilder newTask(String taskId, List<String> projectKeys, String instructions,
                                            LaunchRequest request) {
-        return NewTask.builder(taskId, projectKeys.get(0))
-                .alsoIn(projectKeys.subList(1, projectKeys.size()))
+        NewTask.NewTaskBuilder builder = projectKeys.isEmpty() ? NewTask.unplacedBuilder(taskId)
+                : NewTask.builder(taskId, projectKeys.get(0)).alsoIn(projectKeys.subList(1, projectKeys.size()));
+        return builder
                 .instructions(instructions)
                 .mode(request.mode())
                 .branchStrategy(request.strategy())

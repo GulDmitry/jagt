@@ -100,6 +100,19 @@ public class NewTaskWorktrees {
 
     /** Every repository of {@code request}, each worktree cut; a refusal comes before anything is. */
     public List<NewRepo> cut(NewTask request, ConfigService.ConfigFile config, BranchStrategy strategy) {
+        requireOpenable(request, config);
+        List<NewRepo> repos = resolveRepos(request, config, strategy);
+        cutWorktrees(request, repos, strategy);
+        return repos;
+    }
+
+    /** The folder a task with no repository plans in; the same refusals come before it exists. */
+    public Path scratch(NewTask request, ConfigService.ConfigFile config) {
+        requireOpenable(request, config);
+        return worktreeSetup.scratch(request);
+    }
+
+    private void requireOpenable(NewTask request, ConfigService.ConfigFile config) {
         String taskId = request.taskId();
         TaskName.require(taskId, "taskId");
         requireOwnBranch(taskId, request.baseBranch(), config);
@@ -120,9 +133,6 @@ public class NewTaskWorktrees {
                             + " the directory " + TaskName.slug(taskId) + ". Retire " + registered
                             + " first, or take a different branch.");
                 });
-        List<NewRepo> repos = resolveRepos(request, config, strategy);
-        cutWorktrees(request, repos, strategy);
-        return repos;
     }
 
     private List<NewRepo> resolveRepos(NewTask request, ConfigService.ConfigFile config,

@@ -4,12 +4,17 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.NewRepo;
+import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -47,13 +52,8 @@ public class WorktreeSetup {
         Path worktreePath = repo.worktreePath();
         WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir(), agentRuntime);
         WorktreeHooks.install(worktreePath, request.taskId());
-        // Which files exist and what is in them belongs to the runtime.
-        agentRuntime.provisionWorktree(AgentWorktree.of(worktreePath, paths.root())
-                .withOutputStyle(configService.load().agent().outputStyleOrNull())
-                .withDisabledPlugins(agentDisabledPlugins)
-                .withAllowedTools(agentAllowedTools)
-                .withSandbox(WorktreeSandbox.of(configService.load().agent().sandboxOrDefault(), repos,
-                        Path.of(System.getProperty("user.home")), Path.of(System.getProperty("java.io.tmpdir")))));
+        provision(worktreePath, WorktreeSandbox.of(configService.load().agent().sandboxOrDefault(), repos,
+                Path.of(System.getProperty("user.home")), Path.of(System.getProperty("java.io.tmpdir"))));
         GitDeploy.deployWorktreePaths(repos, request.taskId())
                 .forEach(deployWorktree -> agentRuntime.admit(worktreePath, deployWorktree));
         WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, WorktreeFiles.PROJECT_FILES);
@@ -63,8 +63,42 @@ public class WorktreeSetup {
                 configService.load().agent().autoplanOrDefault(),
                 configService.load().agent().visualizeOrDefault(),
                 configService.load().agent().diagnoseOrDefault()));
-        // The instructions live where the session reads them, and a relay writes to that same one worktree.
-        if (repo.primary() && request.instructions() != null && !request.instructions().isBlank()) {
+        if (repo.primary()) {
+            writeInstructions(worktreePath, request);
+        }
+    }
+
+    /** The folder a task with no repository plans in, briefed and provisioned as a worktree is, without git. */
+    public Path scratch(NewTask request) {
+        Path folder = paths.scratch().resolve(TaskName.slug(request.taskId()));
+        try {
+            Files.createDirectories(folder);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot create " + folder, e);
+        }
+        Path systemKnowledge = agentRuntime.systemKnowledgeFile(folder);
+        provision(folder, WorktreeSandbox.scratch(configService.load().agent().sandboxOrDefault(), folder,
+                Path.of(System.getProperty("user.home")), Path.of(System.getProperty("java.io.tmpdir"))));
+        WorktreeFiles.write(systemKnowledge, briefing.ofScratch(request,
+                configService.load().agent().autoplanOrDefault(),
+                configService.load().agent().visualizeOrDefault(),
+                configService.load().agent().diagnoseOrDefault()));
+        writeInstructions(folder, request);
+        return folder;
+    }
+
+    /** Which files exist and what is in them belongs to the runtime. */
+    private void provision(Path worktreePath, Sandbox sandbox) {
+        agentRuntime.provisionWorktree(AgentWorktree.of(worktreePath, paths.root())
+                .withOutputStyle(configService.load().agent().outputStyleOrNull())
+                .withDisabledPlugins(agentDisabledPlugins)
+                .withAllowedTools(agentAllowedTools)
+                .withSandbox(sandbox));
+    }
+
+    /** The instructions live where the session reads them, and a relay writes to that same one worktree. */
+    private static void writeInstructions(Path worktreePath, NewTask request) {
+        if (request.instructions() != null && !request.instructions().isBlank()) {
             WorktreeFiles.write(worktreePath.resolve(Artifact.CONTEXT.fileName()), request.instructions());
             WorktreeFiles.write(worktreePath.resolve(Artifact.REQUEST.fileName()), request.instructions());
         }

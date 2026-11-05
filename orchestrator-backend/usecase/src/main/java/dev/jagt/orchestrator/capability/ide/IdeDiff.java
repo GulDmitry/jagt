@@ -25,6 +25,9 @@ class IdeDiff {
 
     /** One comparison per repository, each right side FROZEN at this call: the editor's own Refresh does nothing. */
     String open(String taskId, TaskState task) {
+        if (task.unplaced()) {
+            return "Nothing to diff yet: " + taskId + " has no repository until its plan is approved";
+        }
         List<String> against = new ArrayList<>();
         boolean many = task.repos().size() > 1;
         for (TaskRepo repo : task.repos()) {

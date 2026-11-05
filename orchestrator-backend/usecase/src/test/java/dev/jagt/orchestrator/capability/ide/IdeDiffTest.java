@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ide;
 
+import static org.mockito.Mockito.verifyNoInteractions;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DiffCheckouts;
@@ -65,5 +66,15 @@ class IdeDiffTest {
         assertThat(opened).contains("(api vs origin/main, web vs origin/next)");
         verify(diffs).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
         verify(diffs).checkoutBaseForDiff(Path.of("/web-repo"), "origin/next", "ABC-1", "web");
+    }
+
+    @Test
+    void opensNoDiffForATaskThatHasNoRepositoryYet() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING).build();
+
+        String answer = new IdeDiff(config, diffs, editor).open("ABC-1", task);
+
+        assertThat(answer).isEqualTo("Nothing to diff yet: ABC-1 has no repository until its plan is approved");
+        verifyNoInteractions(editor);
     }
 }

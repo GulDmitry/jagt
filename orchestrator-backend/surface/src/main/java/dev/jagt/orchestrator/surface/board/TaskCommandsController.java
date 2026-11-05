@@ -36,7 +36,9 @@ public class TaskCommandsController {
     /** Slow on purpose when a ticket is named: reading it is a remote call. */
     @PostMapping("/tasks")
     public ActionResult launch(@RequestBody LaunchRequest request) {
-        Launched launched = launcher.launch(request.normalized());
+        LaunchRequest normalized = request.normalized();
+        Launched launched = normalized.project() == null ? launcher.launchUnplaced(normalized)
+                : launcher.launch(normalized);
         if (!launched.created()) {
             throw new Refusal(Refusal.Code.STATE, launched.message());
         }

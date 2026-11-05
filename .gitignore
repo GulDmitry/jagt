@@ -61,6 +61,8 @@ act-strikes
 intake-turned-away
 # The plan each task last had approved, written beside state.json
 plan-baselines/
+# Where a task with no repository plans, written beside state.json
+scratch/
 # The Master's MCP token, drawn by jagt at each start
 /.jagt/
 

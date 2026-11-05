@@ -169,4 +169,31 @@ class TaskLauncherTest {
         assertThatThrownBy(() -> launcher.launch(LaunchRequest.defaults().withNotes("tidy the logs")))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("specify one");
     }
+
+    @Test
+    void refusesAStartWithNoProjectThatIsNotPlanFirstAndCreatesNothing() {
+        Launched refused = launcher.launchUnplaced(LaunchRequest.of("ABC-42"));
+
+        assertThat(refused.created()).isFalse();
+        verifyNoInteractions(launches);
+    }
+
+    @Test
+    void startsAPlanFirstRequestWithNoProjectWithoutResolvingAProject() {
+        LaunchRequest request = LaunchRequest.of("ABC-42").withMode("plan");
+        when(launches.unplaced(request)).thenReturn(Launched.created("ABC-42", "initialized"));
+
+        Launched started = launcher.launchUnplaced(request);
+
+        assertThat(started.taskId()).isEqualTo("ABC-42");
+        verifyNoInteractions(configService);
+    }
+
+    @Test
+    void refusesAPlanFirstStartNamingNeitherATicketNorNotes() {
+        Launched refused = launcher.launchUnplaced(LaunchRequest.defaults().withMode("plan"));
+
+        assertThat(refused.reason()).isEqualTo(Launched.Reason.NOTHING_TO_DO);
+        verifyNoInteractions(launches);
+    }
 }

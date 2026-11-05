@@ -206,6 +206,12 @@ public record TaskState(
         return repos.isEmpty() ? TaskRepo.of(null, null) : repos.get(0);
     }
 
+    /** Holds no repository yet: it plans in a scratch folder. */
+    @JsonIgnore
+    public boolean unplaced() {
+        return projects().isEmpty();
+    }
+
     @JsonIgnore
     public @Nullable String project() {
         return primary().project();

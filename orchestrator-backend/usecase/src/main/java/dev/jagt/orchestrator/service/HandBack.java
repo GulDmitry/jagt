@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.protocol.PlanRepositories;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.Probe;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,7 +45,7 @@ public class HandBack {
 
     public PlanProbes.Read planProbes(TaskState task) {
         Path plan = Path.of(task.worktreePath()).resolve(Artifact.PLAN.fileName());
-        List<String> projects = task.repos().stream().map(TaskRepo::project).toList();
+        List<String> projects = task.projects();
         if (!Files.isRegularFile(plan)) {
             return planRead("", projects);
         }

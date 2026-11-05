@@ -156,7 +156,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
     @Test
     void startingATaskWithNoProjectIsAllowedWhenPlanFirstIsTicked() {
-        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+        when(launcher.launchUnplaced(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
         Page page = session.newPage();
 
@@ -169,7 +169,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withMode("plan").withStrategy("fresh"));
+        verify(launcher).launchUnplaced(LaunchRequest.of("ABC-9").withMode("plan").withStrategy("fresh"));
     }
 
     @Test

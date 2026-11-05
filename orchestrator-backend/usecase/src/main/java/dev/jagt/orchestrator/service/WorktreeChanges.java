@@ -43,7 +43,7 @@ public class WorktreeChanges {
      */
     public Optional<Boolean> uncommitted(TaskState task) {
         boolean anyChanged = false;
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             Optional<Boolean> read = uncommitted(repo);
             if (read.isEmpty()) {
                 return Optional.empty();
@@ -56,7 +56,7 @@ public class WorktreeChanges {
     /** Every repository's {@link WorktreeInspection#treeState}; EMPTY where git could not answer for one. */
     public Optional<String> state(TaskState task) {
         StringBuilder state = new StringBuilder();
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             try {
                 state.append(inspection.treeState(projectPath(Objects.requireNonNull(repo.project())), Path.of(repo.worktreePath())))
                         .append(';');
@@ -99,7 +99,7 @@ public class WorktreeChanges {
      * branch lacks. A worktree git cannot answer for counts as holding it, as in {@link #holdsWork}.
      */
     public boolean anythingNewToShip(TaskState task) {
-        return task.repos().stream().anyMatch(repo -> {
+        return placed(task).stream().anyMatch(repo -> {
             Path worktree = Path.of(Objects.requireNonNull(repo.worktreePath()));
             Path project = projectPath(Objects.requireNonNull(repo.project()));
             try {
@@ -114,7 +114,7 @@ public class WorktreeChanges {
     /** The commit each request's branch last had pushed, one per repository; blank where the repository cannot name every one. */
     public String pushedTips(TaskState task) {
         List<String> tips = new java.util.ArrayList<>();
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             if (!repo.hasReviewRequest()) {
                 continue;
             }
@@ -141,7 +141,7 @@ public class WorktreeChanges {
     /** Each repository's changes since its base, or why they could not be read; blank past what a prompt quotes. */
     public String diff(TaskState task) {
         StringBuilder diff = new StringBuilder();
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             diff.append("# ").append(repo.project()).append('\n');
             try {
                 String base = task.baseBranchOr(configService.project(Objects.requireNonNull(repo.project())).baseBranch());
@@ -157,7 +157,7 @@ public class WorktreeChanges {
     /** Each repository's commits and changed files since its base, each at most {@code maxLines} lines. */
     public String history(TaskState task, int maxLines) {
         StringBuilder history = new StringBuilder();
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             history.append("# ").append(repo.project()).append('\n');
             try {
                 String project = Objects.requireNonNull(repo.project());
@@ -185,7 +185,7 @@ public class WorktreeChanges {
     /** Each repository's changed paths since its base, by project; EMPTY where git could not answer for one. */
     public Optional<Map<String, List<String>>> paths(TaskState task) {
         Map<String, List<String>> paths = new LinkedHashMap<>();
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             String project = Objects.requireNonNull(repo.project());
             try {
                 String base = task.baseBranchOr(configService.project(project).baseBranch());
@@ -201,7 +201,7 @@ public class WorktreeChanges {
     /** Every repository's {@link WorktreeInspection#ownDiffId}; EMPTY where one cannot say. */
     public Optional<String> ownDiff(TaskState task) {
         StringBuilder id = new StringBuilder();
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             String project = Objects.requireNonNull(repo.project());
             try {
                 String base = task.baseBranchOr(configService.project(project).baseBranch());
@@ -221,7 +221,7 @@ public class WorktreeChanges {
     /** Lines the task added to every repository's agent files; EMPTY where git could not count them for one. */
     public Optional<Integer> agentFileLinesAdded(TaskState task) {
         int added = 0;
-        for (TaskRepo repo : task.repos()) {
+        for (TaskRepo repo : placed(task)) {
             try {
                 String base = task.baseBranchOr(configService.project(Objects.requireNonNull(repo.project())).baseBranch());
                 added += inspection.agentFileLinesAdded(projectPath(Objects.requireNonNull(repo.project())), Path.of(repo.worktreePath()), base);
@@ -231,6 +231,11 @@ public class WorktreeChanges {
             }
         }
         return Optional.of(added);
+    }
+
+    /** A task still planning in its scratch folder has no repository to measure. */
+    private static List<TaskRepo> placed(TaskState task) {
+        return task.repos().stream().filter(repo -> repo.project() != null).toList();
     }
 
     private Path projectPath(String project) {

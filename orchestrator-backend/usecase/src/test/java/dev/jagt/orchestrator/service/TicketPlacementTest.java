@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import static org.mockito.Mockito.verifyNoInteractions;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -146,5 +147,16 @@ class TicketPlacementTest {
 
         assertThat(placement.namesAnItem("ABC-42")).isTrue();
         assertThat(placement.namesAnItem("feature/widget")).isFalse();
+    }
+
+    @Test
+    void placesAnItemInNoProjectWithoutAskingTheRouter() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-42");
+
+        var outcome = placement.unplaced("ABC-42", new Answer<>(Optional.of(item), TokenUsage.NONE));
+
+        assertThat(outcome).isEqualTo(new TicketPlacement.Placed(item, List.of()));
+        verifyNoInteractions(routing);
     }
 }

@@ -40,4 +40,12 @@ class OrchestratorPathsTest {
 
         assertThat(root).isEqualTo(Path.of(System.getenv("ORCHESTRATOR_ROOT")).toAbsolutePath().normalize());
     }
+
+    @Test
+    void keepsScratchFoldersBesideTheStateFile(@TempDir Path root) {
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("work/state.json").toString()));
+
+        assertThat(paths.scratch()).isEqualTo(root.resolve("work/scratch"));
+    }
 }

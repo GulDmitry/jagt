@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -22,11 +23,17 @@ public class RetiredWorktrees {
 
     private final GitWorktrees gitWorktrees;
     private final AgentSessions sessions;
+    private final OrchestratorPaths paths;
 
     /** Whether a repository's project had left the configuration, its worktree then staying on disk. */
     public boolean remove(String taskId, List<TaskRepo> repos, Map<String, ProjectConfig> projects) {
         boolean anyProjectMissing = false;
         for (TaskRepo repo : repos) {
+            if (repo.project() == null) {
+                sessions.forgetWorktree(Path.of(repo.worktreePath()));
+                removeScratch(Path.of(repo.worktreePath()));
+                continue;
+            }
             // The agent's record of the worktree goes too, or the next session there stops at the prompt it answers.
             sessions.forgetWorktree(Path.of(repo.worktreePath()));
             ProjectConfig project = projects.get(repo.project());
@@ -48,6 +55,12 @@ public class RetiredWorktrees {
             gitWorktrees.removeDiffWorktrees(projectPath, taskId, Objects.requireNonNull(repo.project()));
         }
         return anyProjectMissing;
+    }
+
+    private void removeScratch(Path folder) {
+        if (folder.toAbsolutePath().normalize().startsWith(paths.scratch())) {
+            WorktreeFiles.deleteTree(folder);
+        }
     }
 
     /**

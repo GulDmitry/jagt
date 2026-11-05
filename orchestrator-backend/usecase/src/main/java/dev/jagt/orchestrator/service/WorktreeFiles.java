@@ -4,6 +4,8 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.FileSystemUtils;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
@@ -155,6 +157,15 @@ public final class WorktreeFiles {
             Files.writeString(file, content);
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot write " + file, e);
+        }
+    }
+
+    /** Fails loudly: a folder that stays is a task's leftover nobody else will delete. */
+    public static void deleteTree(Path dir) {
+        try {
+            FileSystemUtils.deleteRecursively(dir);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot delete " + dir, e);
         }
     }
 

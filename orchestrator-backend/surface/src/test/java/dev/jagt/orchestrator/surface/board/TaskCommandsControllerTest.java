@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import static org.mockito.Mockito.never;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -66,7 +67,7 @@ class TaskCommandsControllerTest {
 
     @Test
     void refusesALaunchThatCreatedNoTaskLikeTheTypedDo() {
-        LaunchRequest posted = LaunchRequest.of("ABC-42");
+        LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo");
         when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
 
         assertThatThrownBy(() -> api.launch(posted))
@@ -77,11 +78,11 @@ class TaskCommandsControllerTest {
 
     @Test
     void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotAProjectNamedEmptyString() {
-        when(launcher.launch(any())).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
+        when(launcher.launchUnplaced(any())).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
         api.launch(new LaunchRequest("  ABC-42 ", "", "", "", "", ""));
 
-        verify(launcher).launch(LaunchRequest.of("ABC-42"));
+        verify(launcher).launchUnplaced(LaunchRequest.of("ABC-42"));
     }
 
     @Test
@@ -100,5 +101,16 @@ class TaskCommandsControllerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody()).containsEntry("error", "ship: ABC-1 is DONE — nothing to ship onto");
+    }
+
+    @Test
+    void startsAPlanFirstFormWithNoProjectWithoutTheRouterBeingAsked() {
+        LaunchRequest posted = LaunchRequest.of("ABC-42").withMode("plan");
+        when(launcher.launchUnplaced(posted)).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
+
+        var result = api.launch(posted);
+
+        assertThat(result.message()).isEqualTo("Task ABC-42 initialized");
+        verify(launcher, never()).launch(any());
     }
 }

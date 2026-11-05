@@ -227,7 +227,8 @@ from them rather than starting the task over.
    `plan.md`. Its first section is `## Acceptance criteria`: the ticket's, read with every field (a tracker may keep
    them in a custom field), else your own. One `- ` item each, tagged `[here]`, `[elsewhere: <part>]` or
    `[wrong: <why>]`, with `, own` inside for yours. A task with several repositories adds `## Repositories`: one
-   `- [changed] <key>` or `- [unaffected: <why>] <key>` per repository; one it lacks, ask for with `needsProject`.
+   `- [changed] <key>` or `- [unaffected: <why>] <key>` per repository; one it lacks, ask for with `needsProject`;
+   a task with no repository lists every project it changes, registered or not.
    Then its checks in a fenced `probes` block jagt runs (`command [repo=<key>] [exit=<n>] <argv>` in that
    repository's worktree, the primary one by default, never a path into another; `ref <ref>`, `artifact <path>`),
    and any picture asked for. List every file you will create after

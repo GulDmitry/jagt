@@ -36,8 +36,8 @@ public class TicketPlacement {
         return workflow.isItemKey(ref);
     }
 
-    /** {@code chosen} is null where no human named a project. */
-    public Outcome place(String ref, Answer<TicketFacts> read, @Nullable List<String> chosen) {
+    /** The item's own checks, placed in no project: the one a task that plans before it has a repository takes. */
+    public Outcome unplaced(String ref, Answer<TicketFacts> read) {
         // Three different answers: one names a missing item, the others a read that never got there.
         if (read.facts().isEmpty()) {
             String cause = read.failure().isBlank() ? "(cause in the log)" : "— " + read.failure();
@@ -55,10 +55,19 @@ public class TicketPlacement {
             return new Refused("error: asked for " + ref + " and got " + f.key() + " back — no task"
                     + " created. Launch it under the key the tracker itself reports.");
         }
-        if (chosen != null) {
-            return new Placed(f, chosen);
-        }
-        // A human who named a project has settled it; only an unplaced one is worth asking about.
+        return new Placed(f, List.of());
+    }
+
+    /** {@code chosen} is null where no human named a project. */
+    public Outcome place(String ref, Answer<TicketFacts> read, @Nullable List<String> chosen) {
+        return switch (unplaced(ref, read)) {
+            case Refused refused -> refused;
+            case Placed placed -> chosen != null ? new Placed(placed.facts(), chosen) : routed(placed.facts());
+        };
+    }
+
+    /** A human who named a project has settled it; only an unplaced one is worth asking about. */
+    private Outcome routed(TicketFacts f) {
         ProjectRouting.Placement placement = routing.projectFor(f);
         return placement.projects().isEmpty()
                 ? new Refused("error: " + f.key() + " not placed in a configured project: "

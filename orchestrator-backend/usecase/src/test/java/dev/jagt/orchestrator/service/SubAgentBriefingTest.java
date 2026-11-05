@@ -453,4 +453,19 @@ class SubAgentBriefingTest {
 
         assertThat(briefing).contains("first status report and the one handing back a plan carry `switches`: for each of visualize");
     }
+
+    @Test
+    void tellsATaskWithNoRepositoryToNameEveryProjectItChangesInItsPlan(@TempDir Path root) throws Exception {
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.copy(Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+        String briefing = new SubAgentBriefing(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))))
+                .ofScratch(NewTask.unplacedBuilder("ABC-42").mode("plan").build(),
+                        ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                        ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                        ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+        assertThat(briefing).contains("## Repositories", "- [changed] <key>", "registered in", "No git of any kind")
+                .contains("PLAN FIRST", "ASKING IS STOPPING", "no repository");
+    }
 }

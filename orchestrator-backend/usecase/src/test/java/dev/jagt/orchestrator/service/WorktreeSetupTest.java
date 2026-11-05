@@ -200,4 +200,22 @@ class WorktreeSetupTest {
         assertThat(apiWorktree.resolve("AGENTS.md")).hasContent("api sees both");
         assertThat(registryWorktree.resolve("AGENTS.md")).hasContent("registry sees both");
     }
+
+    @Test
+    void plansInAFolderBesideTheStateFileThatHoldsNoGit(@TempDir Path root) {
+        Path folder = root.resolve("scratch/ABC-1");
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(runtime.systemKnowledgeFile(folder)).thenReturn(folder.resolve("AGENTS.md"));
+        when(briefing.ofScratch(any(), any(), any(), any())).thenReturn("the scratch briefing");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+        Path session = new WorktreeSetup(runtime, paths, config, briefing)
+                .scratch(NewTask.unplacedBuilder("ABC-1").instructions("Plan ABC-1.").build());
+
+        verify(runtime).provisionWorktree(any());
+        assertThat(session).isEqualTo(folder);
+        assertThat(folder.resolve(".git")).doesNotExist();
+        assertThat(folder.resolve("AGENTS.md")).hasContent("the scratch briefing");
+        assertThat(folder.resolve("task_context.md")).hasContent("Plan ABC-1.");
+    }
 }

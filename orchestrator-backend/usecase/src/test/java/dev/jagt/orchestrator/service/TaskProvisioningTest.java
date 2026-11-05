@@ -283,4 +283,20 @@ class TaskProvisioningTest {
 
         assertThat(provisioning.remoteOf("proj")).isEqualTo(new Remote("upstream"));
     }
+
+    @Test
+    void runsAPlanOnlyTaskInItsScratchFolderWithNoProject() {
+        Path folder = root.resolve("scratch/ABC-8");
+        when(worktrees.scratch(any(), any())).thenReturn(folder);
+
+        String answer = provisioning.initializeTask(NewTask.unplacedBuilder("ABC-8").mode("plan")
+                .baseBranch("feature/parent").build());
+
+        TaskState task = state.task("ABC-8").orElseThrow();
+        assertThat(answer).contains("agent planning in " + folder, "approve-plan a1");
+        assertThat(task.baseBranch()).isEqualTo("feature/parent");
+        assertThat(task.unplaced()).isTrue();
+        assertThat(task.worktreePath()).isEqualTo(folder.toString());
+        verify(sessions).startAgent("ABC-8", "a1", folder, true);
+    }
 }

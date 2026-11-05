@@ -67,6 +67,12 @@ public class TmuxSessionHost implements SessionHost {
                 : agentRuntime.launchCommand(worktreePath, planMode, model));
     }
 
+    /** A scratch folder sits beside state.json, which may lie inside a repository: git must not climb out to it. */
+    private String outsideGit(Path worktreePath) {
+        return worktreePath.toAbsolutePath().normalize().startsWith(paths.scratch())
+                ? "GIT_CEILING_DIRECTORIES='" + paths.scratch().toString().replace("'", "'\\''") + "' " : "";
+    }
+
     @Override
     public void reviveTaskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias,
                                  Path worktreePath) {
@@ -82,7 +88,7 @@ public class TmuxSessionHost implements SessionHost {
             // One task = one window: respawns must never accumulate duplicates.
             killTaskWindows(session, taskId);
             String windowId = newWindow(session, taskId, worktreePath,
-                    WorktreeHooks.gitEnv(worktreePath) + command);
+                    WorktreeHooks.gitEnv(worktreePath) + outsideGit(worktreePath) + command);
             log.atInfo().setMessage("task window opened").addKeyValue("task", taskId)
                     .addKeyValue("window", windowId).log();
             // The window name must stay the taskId; the alias rides in a window user-option.

@@ -323,4 +323,34 @@ class TaskLaunchesTest {
         verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue().title()).isEqualTo("a".repeat(kept) + (cut ? "…" : ""));
     }
+
+    @Test
+    void createsATaskInNoProjectWithItsTypedBaseBranchWhenItPlansBeforeItHasARepository() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("t")
+                .withUrl("https://tracker/ABC-42");
+        Answer<TicketFacts> read = new Answer<>(Optional.of(item), TokenUsage.NONE);
+        when(placement.read("ABC-42")).thenReturn(read);
+        when(placement.unplaced("ABC-42", read)).thenReturn(new TicketPlacement.Placed(item, List.of()));
+
+        when(provisioning.initializeTask(any())).thenReturn("ABC-42 is a1");
+
+        Launched started = launches.unplaced(LaunchRequest.of("ABC-42").withMode("plan").withBaseBranch("feature/parent"));
+
+        assertThat(started.taskId()).isEqualTo("ABC-42");
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue().projectKeys()).isEmpty();
+        assertThat(created.getValue().baseBranch()).isEqualTo("feature/parent");
+        verify(placement, never()).place(any(), any(), any());
+    }
+
+    @Test
+    void createsATaskInNoProjectNamedByTheWordsOfAHumanWhoFiledNoTicket() {
+        when(worktrees.freeTaskName("split-the-invoice-mailer", List.of())).thenReturn("split-the-invoice-mailer");
+        when(provisioning.initializeTask(any())).thenReturn("split-the-invoice-mailer is a1");
+
+        Launched started = launches.unplaced(LaunchRequest.defaults().withMode("plan").withNotes("split the invoice mailer"));
+
+        assertThat(started.taskId()).isEqualTo("split-the-invoice-mailer");
+    }
 }

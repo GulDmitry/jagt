@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -34,18 +35,28 @@ public class TaskLauncher {
     }
 
     public Launched launch(LaunchRequest request) {
+        return unusable(request).orElseGet(() -> request.ref() != null
+                // An unknown project is settled before the read, not after paying for one.
+                ? launches.ticket(request, request.project() != null ? resolveProjects(request.project()) : null)
+                : launches.written(request, resolveProjects(request.project())));
+    }
+
+    /** A start with no project: only a plan can come before the repository is known, and no router is asked. */
+    public Launched launchUnplaced(LaunchRequest request) {
+        if (!AgentSessions.planMode(request.mode())) {
+            return Launched.refused("error: no project and no plan first — choose a project, or start with plan first");
+        }
+        return unusable(request).orElseGet(() -> launches.unplaced(request));
+    }
+
+    private static Optional<Launched> unusable(LaunchRequest request) {
         if (request.ref() != null && request.ref().codePoints().anyMatch(Character::isWhitespace)) {
-            return Launched.refused("error: a ticket is a key or a URL; for your own words pick a project and say"
-                    + " what to do");
+            return Optional.of(Launched.refused("error: a ticket is a key or a URL; for your own words pick a project"
+                    + " and say what to do"));
         }
-        if (request.ref() != null) {
-            // An unknown project is settled before the read, not after paying for one.
-            return launches.ticket(request, request.project() != null ? resolveProjects(request.project()) : null);
-        }
-        if (request.notes() == null || request.notes().isBlank()) {
-            return Launched.refused(Launched.Reason.NOTHING_TO_DO, "error: no ticket and nothing to do");
-        }
-        return launches.written(request, resolveProjects(request.project()));
+        return request.ref() == null && (request.notes() == null || request.notes().isBlank())
+                ? Optional.of(Launched.refused(Launched.Reason.NOTHING_TO_DO, "error: no ticket and nothing to do"))
+                : Optional.empty();
     }
 
     /** {@code read} is the item's facts already read and paid for, as intake reads them. */

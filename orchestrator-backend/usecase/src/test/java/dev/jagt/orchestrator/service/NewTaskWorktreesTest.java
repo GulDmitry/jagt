@@ -530,4 +530,23 @@ class NewTaskWorktreesTest {
 
         verify(git, never()).createWorktree(any(), any(), any(), any(), any());
     }
+
+    @Test
+    void handsBackTheScratchFolderOfATaskThatPlansBeforeItHasARepository() {
+        NewTask request = NewTask.unplacedBuilder("ABC-9").build();
+        when(setup.scratch(request)).thenReturn(root.resolve("scratch/ABC-9"));
+
+        Path folder = worktrees.scratch(request, ConfigService.ConfigFile.defaults());
+
+        assertThat(folder).isEqualTo(root.resolve("scratch/ABC-9"));
+    }
+
+    @Test
+    void refusesAScratchFolderForATaskNameAnotherTaskHolds() {
+        state.putTask("ABC-9", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).build());
+
+        assertThatThrownBy(() -> worktrees.scratch(NewTask.unplacedBuilder("ABC-9").build(),
+                ConfigService.ConfigFile.defaults())).isInstanceOf(Refusal.class);
+        verifyNoInteractions(setup);
+    }
 }

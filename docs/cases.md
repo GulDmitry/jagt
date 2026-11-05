@@ -79,6 +79,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | D5 | the reviewer's framing, severity and comments → fresh session per round, severity one of five, listener wiring never passed as scope | 9eb5cf78, 2a3a40b3, d733224f | `MasterSessionTest`, `SchemaTest`, `ReviewSweepServiceTest` |
 | D6 | a label or command word is mapped → only schema-listed values pass; a layer label is not a repository | 1b5868c6, 452eb3b4 | `IntakeRoutingTest`, `CommandMappingEvalTest`, `PaletteContextTest` |
 | D7 | an item's labels name several projects → every one is attached; a repository leaves a multi-repo task by an approved plan's `[unaffected]` line, unless its branch holds own commits | seen 2026-10-28: labels `sng` + `sobrado-connect` placed in one project, the other dropped unlogged | `ProjectRoutingTest`, `PlanRepositoriesTest`, `HandBackTest`, `UnaffectedReposTest` |
+| D8 | the form starts a plan first task with no project → no router is asked, the task plans in its scratch folder; a no-project start without plan first is refused | seen 2026-11-05 | `TaskCommandsControllerTest`, `TaskLauncherTest`, `TaskLaunchesTest` |
 ## E — missing ending
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
