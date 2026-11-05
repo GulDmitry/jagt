@@ -59,7 +59,7 @@ orchestrator:
   # `agent.cli` selects the runtime; the rest of `agent` is read live. One key cannot be a word to Spring and a
   # section to jagt in the same file, which is why the choice sits INSIDE the section it is about.
   # agent:
-  #   cli: codex     # claude | codex. A Codex worktree runs against its own CODEX_HOME, so your ~/.codex
+  #   cli: codex     # claude | codex | opencode. A Codex worktree runs against its own CODEX_HOME, so your ~/.codex
   # codex:           # servers are not there.
   #   command: codex
   # Also used by the headless reads, which stay Claude whichever agent runs the tasks.

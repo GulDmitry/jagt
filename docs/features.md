@@ -157,6 +157,7 @@
   [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
 - **Local reads** — Command mapping may ask a local model, the cloud answering where it fails. Key: `orchestrator.assistant.local.endpoint`, off.
   [spec](../openspec/specs/startup/spec.md#requirement-a-read-that-needs-no-tool-may-ask-a-local-model)
+- **OpenCode agents** — `agent.cli: opencode`. [spec](../openspec/specs/startup/spec.md#requirement-opencode-may-run-the-agents)
 
 ## Task flow · [spec](../openspec/specs/task-flow/spec.md)
 - **One table of statuses** — One table says which action is allowed in which status and where it leads.

@@ -10,7 +10,7 @@ implementation plus a config value, never `if claude` or `if macos`.
 
 - Selected by config: `UserNotifier` by `orchestrator.platform` (macos default, linux). `TerminalDriver` by
   `orchestrator.terminal` (kitty default, ghostty on macOS only). `EditorDriver` by `orchestrator.editor-command`.
-  `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex).
+  `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex, opencode).
   `PipelineRetry` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.
 - **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`);
   a notifier reaching nothing logs and returns.
@@ -25,7 +25,8 @@ implementation plus a config value, never `if claude` or `if macos`.
 - `AbstractAgentRuntime` templates `provisionWorktree`, each agent its hook.
 - `mcp_client.js` is a **standard, agent-agnostic** stdio↔HTTP proxy; only the config declaring it differs
   (Claude `.mcp.json` + `.claude/settings.local.json`; Codex `.jagt/codex/config.toml`, `CODEX_HOME` pointed
-  at it and **not** the worktree's `.codex/`).
+  at it and **not** the worktree's `.codex/`; OpenCode a remote server in `.jagt/opencode/opencode.json`, `OPENCODE_CONFIG`
+  pointed at it, no bridge).
 - **Nothing outside the runtime names an agent's files**: `WorktreeSetup` calls `provisionWorktree`,
   `AgentSessions` `displayName`.
 - **The hook wire is the CLI's own protocol, read where it lands**: `ReadGate` and the two

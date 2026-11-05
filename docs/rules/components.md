@@ -10,6 +10,7 @@
 
 - **HTTP** first (Claude): the CLI is pointed at `orchestrator.mcp-url` and carries
   `X-Working-Directory: <worktree>` itself.
+- **HTTP** too for OpenCode, in `.jagt/opencode/opencode.json` (0137).
 - **stdio** for Codex, which can only *spawn* a server: `AbstractAgentRuntime.linkStdioProxy` links
   `mcp_client.js` (same header, `ECONNREFUSED` retry only).
 - `.mcp.json` is Claude Code's project MCP config, **generated per worktree** by `ClaudeAgentRuntime`, never

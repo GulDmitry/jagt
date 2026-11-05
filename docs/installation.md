@@ -24,6 +24,7 @@ The rest are optional, and what selects each is in `jagt.yml.dist`:
 | technology | needed for |
 |---|---|
 | [Codex CLI](https://developers.openai.com/codex/cli) + [Node 18+](https://nodejs.org/) | `agent.cli: codex` — an alternative to Claude Code for the agents, reached over a stdio bridge |
+| [OpenCode](https://opencode.ai/) | `agent.cli: opencode` — an alternative for the agents, on a local model through `opencode.endpoint` |
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier) | macOS notifications you can click; without it, osascript banners you cannot |
 | [libnotify](https://gitlab.gnome.org/GNOME/libnotify) + a daemon such as [dunst](https://dunst-project.org/) | Linux notifications; GNOME and KDE bring the daemon, a bare WM does not |
 | [lsof](https://github.com/lsof-org/lsof) | reaping a worktree's leftover processes on `done`; skipped when absent |

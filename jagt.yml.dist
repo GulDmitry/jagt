@@ -78,7 +78,7 @@ orchestrator:
 
   # ── The agents ─────────────────────────────────────────────────────────────────────────────────────────────
   agent:
-    # cli: codex          # claude | codex (stub, replay: test runs); read at startup, unlike the two below. A Codex worktree runs
+    # cli: codex          # claude | codex | opencode (stub, replay: test runs); read at startup, unlike the two below. A Codex worktree runs
     #                     # against its own CODEX_HOME, so your ~/.codex servers are not there.
     outputStyle: ""       # a Claude output style to start every sub-agent with
     model: ""             # the model a session starts on when its notes name none; blank inherits your CLI default
@@ -105,6 +105,10 @@ orchestrator:
     # mcpConfig: /path/to/servers.json   # a session loads jagt's server and these alone, none of yours
   # codex:
   #   command: codex
+  # opencode:           # agent.cli: opencode; no sandbox, so agent.sandbox.enabled must stay false
+  #   command: opencode
+  #   endpoint: ""      # an OpenAI-compatible base URL, e.g. http://127.0.0.1:8080/v1; blank: your own OpenCode config picks the model
+  #   model: ""         # the model name that endpoint serves; required with an endpoint
 
   # What a session is told at each step jagt sends it: roles/session/brief.md.dist; copy it to roles/session/brief.md to edit a step.
   # When jagt may send each step: roles/session/cases.md.dist; copy it to roles/session/cases.md to edit a case.
