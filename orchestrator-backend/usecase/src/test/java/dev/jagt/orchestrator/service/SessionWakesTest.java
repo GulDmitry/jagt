@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -92,6 +93,24 @@ class SessionWakesTest {
         assertThat(whileTyping).isEmpty();
         assertThat(afterSending).containsExactly(new SessionWakes.Due("ABC-42", Step.WAKE, new Standing(TaskStatus.IN_PROGRESS, "NONE", 0, 0)));
         assertThat(again).isEmpty();
+    }
+
+    @Test
+    void keepsADueWakePendingWhileTheTaskIsPausedAndSendsItAfterTheLift(@TempDir Path dir) {
+        Path file = dir.resolve("state.json");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(dir.toString()).withStateFile(file.toString())));
+        state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it")).build());
+        sessionWakes(file, STOPPED).arm("ABC-42", RESET, Step.WAIT_OVER);
+        SessionWakes later = sessionWakes(file, RESET);
+
+        List<SessionWakes.Due> whilePaused = later.takeDue(taskId -> false);
+        state.updateTask("ABC-42", task -> task.lifted(2));
+        List<SessionWakes.Due> afterLift = later.takeDue(taskId -> false);
+
+        assertThat(whilePaused).isEmpty();
+        assertThat(afterLift).extracting(SessionWakes.Due::step).containsExactly(Step.WAIT_OVER);
     }
 
     @Test

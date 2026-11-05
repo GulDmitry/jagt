@@ -24,10 +24,11 @@ public class DeployConflicts {
     private final DeployTargets deployTargets;
     private final GitDeploy gitDeploy;
 
-    /** Every task handed back from a deploy conflict, with the worktree it waits in. */
+    /** Every task handed back from a deploy conflict and not paused, with the worktree it waits in. */
     public Map<String, WaitingConflict> waiting() {
         Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
         stateService.tasks().forEach((taskId, task) -> deployTargets.stopped(task)
+                .filter(target -> !task.paused())
                 .filter(target -> holds(task, taskId, target))
                 .ifPresent(target -> waiting.put(taskId, conflict(taskId, task, target))));
         return waiting;

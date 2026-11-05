@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -48,6 +49,26 @@ class DeployConflictsTest {
         assertThat(conflicts).containsExactly(Map.entry("ABC-1",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-deploy"), true,
                         new Conflict.Progress(0, 2, "d"), null, false, new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))));
+    }
+
+    @Test
+    void leavesAPausedTasksConflictAlone(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
+                .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it"))
+                .deployment(new Deployment(1, List.of(Deployment.Target.of("web", "dev")
+                        .withConflict(Conflict.of(Deployment.Cause.MERGE, 1))), 0, null)).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("web",
+                new ProjectConfig("/src/web", "origin/main", "dev", null))));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
+
+        var conflicts = service.waiting();
+
+        assertThat(conflicts).isEmpty();
     }
 
     @Test

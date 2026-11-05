@@ -592,6 +592,11 @@ public record TaskState(
         return stop != null;
     }
 
+    @JsonIgnore
+    public boolean paused() {
+        return stop != null && stop.trigger().ends() == TaskStop.Trigger.Ends.PAUSE;
+    }
+
     /** The conflict this task stands in now, as its deployment records it. */
     @JsonIgnore
     public Optional<Conflict> currentConflict() {

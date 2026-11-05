@@ -53,13 +53,13 @@ public class SessionWakes {
         }
     }
 
-    /** Due wakes not held back by {@code held}, which stays pending for the next call; one of a turn gone by is dropped. */
+    /** Due wakes not held back by {@code held} or a pause, which stay pending; one of a turn gone by is dropped. */
     public synchronized List<Due> takeDue(Predicate<String> held) {
         long now = clock.millis();
         List<Due> due = new ArrayList<>();
         stateService.tasks().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
             Optional<Wake> wake = wakeOf(entry.getValue()).filter(pending -> pending.at() <= now);
-            if (wake.isEmpty() || held.test(entry.getKey())) {
+            if (wake.isEmpty() || entry.getValue().paused() || held.test(entry.getKey())) {
                 return;
             }
             turns.unmark(entry.getKey(), Wake.MARK);
