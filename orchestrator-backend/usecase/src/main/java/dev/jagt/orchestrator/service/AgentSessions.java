@@ -320,6 +320,14 @@ public class AgentSessions {
                 .filter(task -> cold(task, configService.load())).isPresent();
     }
 
+    /** Whether the session's log was written after {@code millis}; false where it keeps none jagt can find. */
+    public boolean loggedSince(String taskId, long millis) {
+        return stateService.task(stateService.canonicalTaskId(taskId))
+                .map(TaskState::worktreePath)
+                .flatMap(worktree -> agentRuntime.sessionLogOf(Path.of(worktree)))
+                .filter(log -> FileStamps.modified(log) > millis).isPresent();
+    }
+
     private boolean cold(TaskState task, ConfigService.ConfigFile config) {
         return SessionPhase.cold(task.session(), agentRuntime, config.agent().cacheLifetimeOrDefault());
     }

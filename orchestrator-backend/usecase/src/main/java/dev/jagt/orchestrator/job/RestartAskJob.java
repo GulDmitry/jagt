@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
-/** Once per start, a running session holding an open turn is asked to repeat its last report, which a restart may have lost. */
+/** Once per start, a running session holding an open turn and writing while jagt was down repeats its last report, which may be lost. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -26,6 +26,7 @@ public class RestartAskJob implements TaskJob {
     private final AgentSessions sessions;
     private final AgentPresence presence;
     private final StepRelay relay;
+    private final AliveStamp alive;
 
     @Override
     public String id() {
@@ -34,7 +35,7 @@ public class RestartAskJob implements TaskJob {
 
     @Override
     public String describe() {
-        return "ask each running session holding an open turn to repeat its last status report, once after a start";
+        return "ask each warm running session holding an open turn and writing while jagt was down to repeat its last report, once after a start";
     }
 
     @Override
@@ -76,6 +77,13 @@ public class RestartAskJob implements TaskJob {
             log.atInfo().setMessage("restart ask skipped").addKeyValue("task", taskId)
                     .addKeyValue("cause", "the session is idle past its cache lifetime")
                     .addKeyValue("effect", "nothing said, its report predates anything the restart lost").log();
+            return;
+        }
+        long down = alive.lastAliveBeforeStart();
+        if (down == 0 || !sessions.loggedSince(taskId, down)) {
+            log.atInfo().setMessage("restart ask skipped").addKeyValue("task", taskId)
+                    .addKeyValue("cause", "its log was not written while jagt was down, or jagt left no alive stamp")
+                    .addKeyValue("effect", "nothing said, no report of it was lost").log();
             return;
         }
         try {

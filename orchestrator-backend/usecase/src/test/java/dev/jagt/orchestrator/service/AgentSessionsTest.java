@@ -27,6 +27,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -1116,5 +1118,31 @@ class AgentSessionsTest {
         sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
         verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    }
+
+    @Test
+    void aLogWrittenAfterTheMomentReadsAsLoggedSince() throws Exception {
+        Path log = Files.writeString(root.resolve("session.jsonl"), "{}\n");
+        Files.setLastModifiedTime(log, FileTime.from(Instant.parse("2026-11-05T07:00:01Z")));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(agentRuntime.sessionLogOf(root)).thenReturn(Optional.of(log));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+        boolean logged = sessions.loggedSince("ABC-1", 1793862000000L);
+
+        assertThat(logged).isTrue();
+    }
+
+    @Test
+    void aLogLastWrittenBeforeTheMomentDoesNotReadAsLoggedSince() throws Exception {
+        Path log = Files.writeString(root.resolve("session.jsonl"), "{}\n");
+        Files.setLastModifiedTime(log, FileTime.from(Instant.parse("2026-11-05T06:59:59Z")));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(agentRuntime.sessionLogOf(root)).thenReturn(Optional.of(log));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+        boolean logged = sessions.loggedSince("ABC-1", 1793862000000L);
+
+        assertThat(logged).isFalse();
     }
 }

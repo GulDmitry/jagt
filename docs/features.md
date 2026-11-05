@@ -122,7 +122,7 @@
 - **Sessions in tmux** — Each agent runs in a tmux window, viewed in kitty or Ghostty (`orchestrator.terminal`),
   on `orchestrator.agent.model` where the notes name none. [spec](../openspec/specs/runtime/spec.md#requirement-the-backend-owns-no-terminal)
 - **Viewer detaches** — A closed viewer never stops a session. [spec](../openspec/specs/runtime/spec.md#requirement-closing-the-viewer-only-detaches)
-- **Revive after a restart** — Sessions return where they were, each holding the turn asked once to repeat its last report.
+- **Revive after a restart** — Sessions return where they were; one that wrote while jagt was down is asked once to repeat its report.
   [spec](../openspec/specs/runtime/spec.md#requirement-what-jagt-revives-it-re-enters)
   [spec](../openspec/specs/session-brief/spec.md#requirement-a-restart-asks-for-the-report-it-may-have-lost)
 - **Cold prompts** — Past the cache lifetime, a typed prompt starts fresh. [spec](../openspec/specs/cold-prompts/spec.md)

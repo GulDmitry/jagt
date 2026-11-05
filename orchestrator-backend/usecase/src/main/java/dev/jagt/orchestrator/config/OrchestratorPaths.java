@@ -50,6 +50,11 @@ public class OrchestratorPaths {
         return stateFile.resolveSibling("act-strikes");
     }
 
+    /** The last moment this process was seen alive, rewritten every minute. */
+    public Path alive() {
+        return stateFile.resolveSibling("alive");
+    }
+
     /** The keys intake turned away, one per line. */
     public Path intakeTurnedAway() {
         return stateFile.resolveSibling("intake-turned-away");
