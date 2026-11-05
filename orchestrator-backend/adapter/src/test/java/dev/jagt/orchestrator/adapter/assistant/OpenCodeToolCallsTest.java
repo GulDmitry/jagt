@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.assistant.OpenCodeEvents.Call;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -46,6 +48,16 @@ class OpenCodeToolCallsTest {
         Call call = new Call("shell", "completed", json.createObjectNode().put("command", "git log > f"));
 
         assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).hasValueSatisfying(said -> assertThat(said).contains("git log > f"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"git log; touch f", "git log && touch f", "git log || touch f", "git log $(touch f)",
+            "git log `touch f`", "git log\ntouch f"})
+    void discardsAnAnswerWhoseChainedCommandRanBehindTheGlobThatAllowedItsFirst(String command, @TempDir Path worktree) {
+        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, List.of(worktree), List.of());
+        Call call = new Call("shell", "completed", json.createObjectNode().put("command", command));
+
+        assertThat(OpenCodeToolCalls.violation(scope, List.of(call))).isPresent();
     }
 
     @Test

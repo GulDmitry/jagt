@@ -19,6 +19,9 @@ import java.util.stream.Collectors;
  */
 final class OpenCodeToolCalls {
 
+    /** A glob's trailing {@code *} matches the rest of the line, so a redirect or a second command would pass it. */
+    private static final Pattern CHAINED = Pattern.compile(">|;|&&|\\|\\||\\$\\(|`|\\n");
+
     private OpenCodeToolCalls() {
     }
 
@@ -51,7 +54,7 @@ final class OpenCodeToolCalls {
     private static Optional<String> shell(OpenCodeScope scope, String command) {
         boolean allowed = scope.bashAllowed().stream().anyMatch(glob -> globMatches(glob, command))
                 && scope.bashRefused().stream().noneMatch(glob -> globMatches(glob, command))
-                && !command.contains(">");
+                && !CHAINED.matcher(command).find();
         return allowed ? Optional.empty() : Optional.of("shell " + OneLine.clipped(command));
     }
 
