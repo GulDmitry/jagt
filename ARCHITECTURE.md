@@ -168,7 +168,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
-| `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/NoKeepAwake` |
+| `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/SystemdInhibit` |
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |
 | `EditorDriver` | `adapter/CliEditorDriver` |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
