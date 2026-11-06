@@ -13,7 +13,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,9 +26,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class Verification {
-
-    /** Long enough for a real suite, since a timeout reads as a failure the agent then cannot reproduce. */
-    private static final Duration LIMIT = Duration.ofMinutes(20);
 
     /** The tail a failing run relays: a whole build log is not a brief. */
     private static final int LINES = 40;
@@ -68,11 +64,12 @@ public class Verification {
     }
 
     private Optional<String> failureOf(TaskRepo repo) {
-        List<String> command = command(configService.load().projects().get(repo.project()));
-        if (command.isEmpty()) {
+        ProjectConfig project = configService.load().projects().get(repo.project());
+        List<String> command = command(project);
+        if (project == null || command.isEmpty()) {
             return Optional.empty();
         }
-        Processes.Result result = processes.run(Path.of(repo.worktreePath()), LIMIT, command);
+        Processes.Result result = processes.run(Path.of(repo.worktreePath()), project.verifyTimeoutOrDefault(), command);
         if (result.exitCode() == 0) {
             return Optional.empty();
         }

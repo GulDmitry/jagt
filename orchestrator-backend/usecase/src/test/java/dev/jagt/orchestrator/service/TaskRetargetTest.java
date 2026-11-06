@@ -74,7 +74,7 @@ class TaskRetargetTest {
         GitWorktrees git = mock(GitWorktrees.class);
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "upstream/main", "dev", List.of(), List.of(),
-                null, null, null, null, null, null, null, "upstream", null));
+                null, null, null, null, null, null, null, "upstream", null, null));
         when(git.remoteBranchExists(Path.of("/wt"), "ABC-41")).thenReturn(true);
         when(git.standsOn(Path.of("/wt"), "ABC-41")).thenReturn(true);
 

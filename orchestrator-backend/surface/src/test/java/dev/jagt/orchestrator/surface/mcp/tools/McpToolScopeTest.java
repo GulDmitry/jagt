@@ -177,7 +177,7 @@ class McpToolScopeTest {
     void tellsTheMasterWhatEachConfiguredProjectIsAndWhichLabelsPlaceAnItemInIt() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig("/api",
-                "origin/main", "dev", List.of("backend"), List.of(), "the order API", null, null, null, null, null, null, null, null))));
+                "origin/main", "dev", List.of("backend"), List.of(), "the order API", null, null, null, null, null, null, null, null, null))));
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
                 mock(TaskViews.class), config).declare(registered);

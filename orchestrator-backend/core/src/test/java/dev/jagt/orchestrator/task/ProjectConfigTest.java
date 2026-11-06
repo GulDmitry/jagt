@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,7 +14,7 @@ class ProjectConfigTest {
     @Test
     void tellsARouterWhatTheRepositoryIsInTheWordsTheInstallWrote() {
         var project = new ProjectConfig("/repos/parser", "origin/main", "dev", List.of(), List.of(),
-                "the PDF parser behind the intake form", null, null, null, null, null, null, null, null);
+                "the PDF parser behind the intake form", null, null, null, null, null, null, null, null, null);
 
         assertThat(project.aboutOrPath()).isEqualTo("the PDF parser behind the intake form");
     }
@@ -59,7 +60,7 @@ class ProjectConfigTest {
     @Test
     void listsTheHumanPathsTheInstallWroteAndNoneWhereItWroteNone() {
         var declared = new ProjectConfig("/repos/parser", "main", "dev", List.of(), List.of(), null,
-                List.of("db/migration/**"), null, null, null, null, null, null, null);
+                List.of("db/migration/**"), null, null, null, null, null, null, null, null);
         var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
 
         assertThat(declared.humanPathsOrNone()).containsExactly("db/migration/**");
@@ -69,7 +70,7 @@ class ProjectConfigTest {
     @Test
     void readsTheBaseBranchWithoutTheProjectsOwnRemotePrefix() {
         var project = new ProjectConfig("/repos/parser", "upstream/main", "dev", List.of(), List.of(), null, null,
-                null, null, null, null, null, "upstream", null);
+                null, null, null, null, null, "upstream", null, null);
 
         assertThat(project.baseBranchName()).isEqualTo("main");
     }
@@ -77,8 +78,17 @@ class ProjectConfigTest {
     @Test
     void refusesToDeployIntoTheBaseBranchWhereTheRepositoryHasNoRemote() {
         var project = new ProjectConfig("/repos/parser", "main", "main", List.of(), List.of(), null, null,
-                null, null, null, null, null, "none", null);
+                null, null, null, null, null, "none", null, null);
 
         assertThat(project.deploysIntoTheBaseBranch()).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0", "-3"})
+    void limitsAVerifyCommandToTwentyMinutesWhereTheWrittenMinutesAreNotPositive(int written) {
+        var project = new ProjectConfig("/repos/parser", "main", "dev", List.of(), List.of(), null, null,
+                null, null, null, null, null, null, null, written);
+
+        assertThat(project.verifyTimeoutOrDefault()).isEqualTo(Duration.ofMinutes(20));
     }
 }

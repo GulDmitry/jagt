@@ -35,7 +35,7 @@ class CodeHostPipelinesTest {
 
     private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
         return new ProjectConfig("/repo/shop", "origin/main", "dev", List.of(), List.of(), null, null, codeHost, null,
-                pipelineCommand, null, null, null, null);
+                pipelineCommand, null, null, null, null, null);
     }
 
     private String firstWordOfTheCommandRun() {
@@ -141,7 +141,7 @@ class CodeHostPipelinesTest {
     void settlesADeployWithNoPipelineForAProjectWithNoRemoteAndNoCodeHostKey() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("shop",
                 new ProjectConfig("/repo/shop", "main", "dev", List.of(), List.of(), null, null, null, null, null,
-                        null, null, "none", null))));
+                        null, null, "none", null, null))));
 
         Answer<CommitPipeline> answer = pipelines.onCommit("shop", "", "0123abc");
 

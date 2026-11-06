@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import org.jspecify.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -24,7 +25,9 @@ public record ProjectConfig(
         @Nullable List<String> loginCommand,
         // The git remote branches are shared through; blank is origin, none a repository kept on this machine.
         @Nullable String remote,
-        @Nullable List<String> closeCommand
+        @Nullable List<String> closeCommand,
+        // Minutes the verify command may run; null, zero or negative = 20.
+        @Nullable Integer verifyMinutes
 ) {
 
     /** The {@code codeHost} value of a repository with no host to open a request on or read a pipeline from. */
@@ -32,12 +35,16 @@ public record ProjectConfig(
 
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
-        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null, null, null, null);
+        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null, null, null, null, null);
     }
 
     /** What a router is told this repository is; its path where nobody wrote a line, the name carrying most. */
     public String aboutOrPath() {
         return about == null || about.isBlank() ? String.valueOf(path) : about;
+    }
+
+    public Duration verifyTimeoutOrDefault() {
+        return Duration.ofMinutes(verifyMinutes == null || verifyMinutes <= 0 ? 20 : verifyMinutes);
     }
 
     /** Repository paths, as globs, whose change only a human takes further. */

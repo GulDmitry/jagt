@@ -19,7 +19,7 @@ class HostlessShipsTest {
     private final WorktreeChanges changes = mock(WorktreeChanges.class);
     private final HostlessShips ships = new HostlessShips(configService, changes);
     private final ProjectConfig hostless = new ProjectConfig("/repo", "main", "dev", List.of(), List.of(),
-            null, null, "none", null, null, null, null, null, null);
+            null, null, "none", null, null, null, null, null, null, null);
     private final ProjectConfig hosted = new ProjectConfig("/repo", "origin/main", "dev", List.of());
 
     @Test

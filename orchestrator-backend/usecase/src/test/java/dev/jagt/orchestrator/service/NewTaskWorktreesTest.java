@@ -256,7 +256,7 @@ class NewTaskWorktreesTest {
     void cutsTheWorktreeFromTheBranchNamedUnderTheProjectsOwnRemote() {
         ConfigService.ConfigFile configured = ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new ProjectConfig(root.resolve("repo").toString(), "upstream/main", null, List.of(), List.of(),
-                        null, null, null, null, null, null, null, "upstream", null)));
+                        null, null, null, null, null, null, null, "upstream", null, null)));
         when(git.remoteBranchExists(any(), eq("feature/parent"))).thenReturn(true);
 
         worktrees.cut(NewTask.builder("ABC-3", "proj").baseBranch("upstream/feature/parent").build(), configured,

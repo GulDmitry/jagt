@@ -23,7 +23,7 @@ class CodeHostCheckTest {
 
     private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
         return new ProjectConfig("/repo/shop", "origin/main", "dev", List.of(), List.of(), null, null, codeHost, null,
-                pipelineCommand, null, null, null, null);
+                pipelineCommand, null, null, null, null, null);
     }
 
     @Test
