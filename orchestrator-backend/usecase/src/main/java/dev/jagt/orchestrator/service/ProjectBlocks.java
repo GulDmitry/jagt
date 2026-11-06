@@ -15,7 +15,8 @@ final class ProjectBlocks {
 
     private static final Pattern ROOT = Pattern.compile("(?m)^orchestrator:[ \\t]*(#.*)?$");
     private static final Pattern LEADING = Pattern.compile("^( *)\\S");
-    private static final Set<String> MANAGED = Set.of("path", "baseBranch", "deployBranch", "verifyCommand", "about");
+    private static final Set<String> MANAGED = Set.of("path", "baseBranch", "deployBranch", "verifyCommand", "about", "labels",
+            "humanPaths");
     private static final JsonMapper JSON = new JsonMapper();
 
     private ProjectBlocks() {
@@ -168,6 +169,12 @@ final class ProjectBlocks {
         }
         if (entry.about() != null && !entry.about().isBlank()) {
             block.append(inner).append("about: ").append(JSON.writeValueAsString(entry.about())).append('\n');
+        }
+        if (entry.labels() != null && !entry.labels().isEmpty()) {
+            block.append(inner).append("labels: ").append(JSON.writeValueAsString(entry.labels())).append('\n');
+        }
+        if (entry.humanPaths() != null && !entry.humanPaths().isEmpty()) {
+            block.append(inner).append("humanPaths: ").append(JSON.writeValueAsString(entry.humanPaths())).append('\n');
         }
         return block.toString();
     }

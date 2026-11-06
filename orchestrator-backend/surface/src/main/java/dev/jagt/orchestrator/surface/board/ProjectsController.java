@@ -54,7 +54,7 @@ public class ProjectsController {
     @PutMapping("/{key}")
     public ActionResult edit(@PathVariable("key") String key, @RequestBody ProjectSetup.Entry entry) {
         return new ActionResult(setup.edit(new ProjectSetup.Entry(key, entry.path(), entry.baseBranch(),
-                entry.deployBranch(), entry.verifyCommand(), entry.about())));
+                entry.deployBranch(), entry.verifyCommand(), entry.about(), entry.labels(), entry.humanPaths())));
     }
 
     @DeleteMapping("/{key}")

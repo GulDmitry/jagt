@@ -39,7 +39,7 @@ class ProjectsControllerTest {
 
     @Test
     void servesTheEntryTheEditFormStartsFrom() {
-        ProjectSetup.Entry entry = new ProjectSetup.Entry("demo", "/work/demo", "main", "dev", List.of("make"), "one");
+        ProjectSetup.Entry entry = new ProjectSetup.Entry("demo", "/work/demo", "main", "dev", List.of("make"), "one", null, null);
         when(setup.entry("demo")).thenReturn(entry);
 
         assertThat(projects.entry("demo")).isSameAs(entry);
@@ -47,7 +47,7 @@ class ProjectsControllerTest {
 
     @Test
     void answersAnAddedProjectWithWhatTheSetupSaid() {
-        ProjectSetup.Entry entry = new ProjectSetup.Entry("demo", "/work/demo", "main", null, null, null);
+        ProjectSetup.Entry entry = new ProjectSetup.Entry("demo", "/work/demo", "main", null, null, null, null, null);
         when(setup.add(entry)).thenReturn("demo added");
 
         assertThat(projects.add(entry).message()).isEqualTo("demo added");
@@ -63,10 +63,11 @@ class ProjectsControllerTest {
 
     @Test
     void changesTheProjectTheUrlNamesWhateverKeyTheBodyCarries() {
-        when(setup.edit(new ProjectSetup.Entry("demo", "/work/demo", "main", null, null, "one line")))
-                .thenReturn("Changed demo in jagt.yml");
+        when(setup.edit(new ProjectSetup.Entry("demo", "/work/demo", "main", null, null, "one line",
+                List.of("bill"), List.of("**/auth/**")))).thenReturn("Changed demo in jagt.yml");
 
-        assertThat(projects.edit("demo", new ProjectSetup.Entry("other", "/work/demo", "main", null, null, "one line"))
+        assertThat(projects.edit("demo", new ProjectSetup.Entry("other", "/work/demo", "main", null, null, "one line",
+                List.of("bill"), List.of("**/auth/**")))
                 .message()).isEqualTo("Changed demo in jagt.yml");
     }
 

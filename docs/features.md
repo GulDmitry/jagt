@@ -39,7 +39,7 @@
   [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
 - **Plan changes since approval** — The Artifacts tab marks plan lines new or rewritten since your last approval, and strikes removed ones.
   [spec](../openspec/specs/board/spec.md#requirement-a-plan-shows-what-changed-since-its-last-approval)
-- **Add a project, run a job now** — Add, change or drop a project in `jagt.yml` from the board or `project`; any unattended job runs now.
+- **Add a project, run a job now** — Add, change or drop a project, labels and human paths too, from the board or `project`; any job runs now.
   [add, edit, remove](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Project hover in the new-task form** — Hovering a project shows its `jagt.yml` entry and remote; Start with no project needs `plan first`.
   [spec](../openspec/specs/board/spec.md#requirement-a-mark-says-what-it-replaces)

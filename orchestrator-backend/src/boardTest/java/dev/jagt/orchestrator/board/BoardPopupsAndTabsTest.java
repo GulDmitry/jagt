@@ -82,6 +82,27 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     }
 
     @Test
+    void commaSeparatedLabelsAndHumanPathsTypedInTheProjectFormAreSentAsLists() throws Exception {
+        Path folder = Files.createDirectories(root.resolve("notes"));
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        page.locator("#new-task").click();
+        page.locator("#add-project").click();
+        page.locator("#project-path").fill(folder.toString());
+        page.locator("#project-key").fill("notes");
+        page.locator("#project-base").fill("origin/main");
+        page.locator("#project-labels").fill("bill, pay");
+        page.locator("#project-human").fill("**/auth/**");
+
+        com.microsoft.playwright.Request sent = page.waitForRequest(
+                request -> request.url().endsWith("/api/projects") && "POST".equals(request.method()),
+                () -> page.locator("#project-form button[type=submit]").click());
+
+        org.assertj.core.api.Assertions.assertThat(sent.postData())
+                .contains("\"labels\":[\"bill\",\"pay\"]").contains("\"humanPaths\":[\"**/auth/**\"]");
+    }
+
+    @Test
     void typingAFolderPrefixInTheProjectPathOffersTheFoldersUnderIt() throws Exception {
         Files.createDirectories(root.resolve("billing/.git"));
         Files.createDirectories(root.resolve("billboard"));

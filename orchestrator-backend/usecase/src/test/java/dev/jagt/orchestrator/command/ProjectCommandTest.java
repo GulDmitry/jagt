@@ -32,7 +32,7 @@ class ProjectCommandTest {
                 List.of(new ProjectSetup.Line(true, "a git repository")), "billing", "origin/main", "develop",
                 List.of("develop"), List.of("make", "test")));
         when(setup.add(new ProjectSetup.Entry("billing", "/work/billing", "origin/main", "develop",
-                List.of("make", "test"), null))).thenReturn("Added billing to jagt.yml");
+                List.of("make", "test"), null, null, null))).thenReturn("Added billing to jagt.yml");
 
         assertThat(command.run(" /work/billing ")).isEqualTo("Added billing to jagt.yml");
     }

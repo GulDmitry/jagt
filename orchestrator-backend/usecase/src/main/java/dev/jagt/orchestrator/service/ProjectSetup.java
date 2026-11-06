@@ -54,7 +54,8 @@ public class ProjectSetup {
     }
 
     public record Entry(String key, String path, String baseBranch, @Nullable String deployBranch,
-                        @Nullable List<String> verifyCommand, @Nullable String about) {
+                        @Nullable List<String> verifyCommand, @Nullable String about,
+                        @Nullable List<String> labels, @Nullable List<String> humanPaths) {
     }
 
     private final ConfigService configService;
@@ -180,7 +181,8 @@ public class ProjectSetup {
         return new Entry(key, project.path(), project.baseBranch(),
                 project.deployBranch() == null || project.deployBranch().isBlank() ? null : project.deployBranch(),
                 project.verifyCommand() == null || project.verifyCommand().isEmpty() ? null : project.verifyCommand(),
-                project.about());
+                project.about(), project.labels() == null || project.labels().isEmpty() ? null : project.labels(),
+                project.humanPaths() == null || project.humanPaths().isEmpty() ? null : project.humanPaths());
     }
 
     /** Rewrites the managed keys of a project's block, leaving its other keys, comments and every other line. */

@@ -57,6 +57,6 @@ public class ProjectCommand implements GlobalCommand {
         }
         return setup.add(new ProjectSetup.Entry(reading.key(), path, reading.baseBranch(),
                 reading.deployBranch().isBlank() ? null : reading.deployBranch(),
-                reading.verifyCommand().isEmpty() ? null : reading.verifyCommand(), null));
+                reading.verifyCommand().isEmpty() ? null : reading.verifyCommand(), null, null, null));
     }
 }

@@ -59,7 +59,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         String answer = setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "dev",
-                List.of("./gradlew", "test"), "the invoicing backend"));
+                List.of("./gradlew", "test"), "the invoicing backend", null, null));
 
         assertThat(answer).isEqualTo("Added billing to jagt.yml");
 
@@ -91,7 +91,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("notes", folder.toString(), "origin/main", null, null,
-                null))).isInstanceOf(IllegalArgumentException.class).hasMessage("not a git repository");
+                null, null, null))).isInstanceOf(IllegalArgumentException.class).hasMessage("not a git repository");
         assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
     }
 
@@ -109,7 +109,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
-                null))).isInstanceOf(IllegalArgumentException.class);
+                null, null, null))).isInstanceOf(IllegalArgumentException.class);
         assertThat(Files.readString(configFile))
                 .isEqualTo("orchestrator:\n  projects:\n    billing: {path: /srv/other, baseBranch: origin/main}\n");
     }
@@ -136,7 +136,7 @@ class ProjectSetupTest {
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
-        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
+        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
         assertThat(Files.readString(configFile)).isEqualTo("""
                 orchestrator:   # mine
@@ -166,7 +166,7 @@ class ProjectSetupTest {
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
-        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
+        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
         assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects:\n    billing:\n      path: \"%s\"\n"
                 .formatted(repo) + "      baseBranch: \"origin/main\"\n  keepAwake: false\n");
@@ -203,7 +203,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "main",
-                null, null)))
+                null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("jagt never writes to the base branch");
         assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
@@ -260,7 +260,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(config, paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null,
-                null, null)))
+                null, null, null, null)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("jagt.yml did not read after the change, so it was put back: bad yaml");
         assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
@@ -286,7 +286,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(config, paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null,
-                null, null)))
+                null, null, null, null)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageStartingWith("jagt.yml did not read after the change and could not be put back; fix it by hand:");
     }
@@ -305,7 +305,7 @@ class ProjectSetupTest {
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
-        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
+        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
         assertThat(Files.isSymbolicLink(configFile)).isTrue();
         assertThat(Files.readString(target)).contains("billing:");
@@ -553,7 +553,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null,
-                null, null)))
+                null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("jagt.yml holds no projects: under orchestrator: to add to");
     }
@@ -576,7 +576,7 @@ class ProjectSetupTest {
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
-        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null));
+        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
         assertThat(Files.readString(configFile)).startsWith("""
                 orchestrator:
@@ -599,7 +599,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
-                null))).isInstanceOf(IllegalArgumentException.class)
+                null, null, null))).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("no origin/main or origin/master to cut tasks from");
     }
 
@@ -615,7 +615,7 @@ class ProjectSetupTest {
                       # why
                       path: /old/path
                       baseBranch: origin/main
-                      labels: [BILL]
+                      codeHost: github
                       verifyCommand:
                         - ./gradlew
                         - test
@@ -633,7 +633,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         String answer = setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "dev",
-                List.of("make", "test"), "the invoicing backend"));
+                List.of("make", "test"), "the invoicing backend", null, null));
 
         assertThat(answer).isEqualTo("Changed billing in jagt.yml");
         assertThat(Files.readString(configFile)).isEqualTo("""
@@ -647,7 +647,7 @@ class ProjectSetupTest {
                       verifyCommand: ["make","test"]
                       about: "the invoicing backend"
                       # why
-                      labels: [BILL]
+                      codeHost: github
                     web:
                       path: /srv/web
                       baseBranch: origin/main
@@ -670,7 +670,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         String answer = setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
-                "now with a line"));
+                "now with a line", null, null));
 
         assertThat(answer).isEqualTo("Changed billing in jagt.yml");
     }
@@ -691,7 +691,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
-                null))).isInstanceOf(IllegalArgumentException.class)
+                null, null, null))).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("a project already points here");
         assertThat(Files.readString(configFile)).isEqualTo(before);
     }
@@ -711,7 +711,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
-                null))).isInstanceOf(IllegalArgumentException.class)
+                null, null, null))).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No project billing");
     }
 
@@ -730,7 +730,7 @@ class ProjectSetupTest {
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
 
         assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
-                null))).isInstanceOf(IllegalArgumentException.class)
+                null, null, null))).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("written inline");
         assertThat(Files.readString(configFile)).isEqualTo(before);
     }
@@ -845,7 +845,7 @@ class ProjectSetupTest {
         folder.toFile().setWritable(false);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
-                null))).isInstanceOf(java.io.UncheckedIOException.class)
+                null, null, null))).isInstanceOf(java.io.UncheckedIOException.class)
                 .hasMessageStartingWith("Cannot change ");
         assertThat(Files.readString(configFile)).isEqualTo(before);
     }
@@ -860,6 +860,8 @@ class ProjectSetupTest {
                       baseBranch: origin/main
                       deployBranch: dev
                       about: the invoicing backend
+                      labels: [bill, pay]
+                      humanPaths: ["**/auth/**"]
                 """);
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()));
@@ -867,7 +869,7 @@ class ProjectSetupTest {
                 paths, mock(Processes.class));
 
         assertThat(setup.entry("billing")).isEqualTo(new ProjectSetup.Entry("billing", "/srv/billing", "origin/main",
-                "dev", null, "the invoicing backend"));
+                "dev", null, "the invoicing backend", List.of("bill", "pay"), List.of("**/auth/**")));
         assertThatThrownBy(() -> setup.entry("web")).isInstanceOf(IllegalArgumentException.class);
     }
 }

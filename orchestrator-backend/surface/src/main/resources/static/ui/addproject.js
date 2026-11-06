@@ -39,7 +39,8 @@ export const open = () => {
 async function edit(key) {
   const entry = await api(`/api/projects/${encodeURIComponent(key)}`);
   reset(key);
-  Object.entries({...entry, verify: (entry.verifyCommand || []).join(' ')}).forEach(([name, value]) => {
+  Object.entries({...entry, verify: (entry.verifyCommand || []).join(' '), labels: (entry.labels || []).join(', '),
+    humanPaths: (entry.humanPaths || []).join(', ')}).forEach(([name, value]) => {
     if (form.elements[name]) Object.assign(form.elements[name], {value: value || ''}).dataset.typed = 'true';
   });
   open();
@@ -113,6 +114,10 @@ $('close-project').onclick = () => dialog.close();
 dialog.addEventListener('close', () => reset());
 
 const said = (name) => form.elements[name].value.trim();
+const list = (name) => {
+  const each = said(name).split(',').map((one) => one.trim()).filter(Boolean);
+  return each.length ? each : null;
+};
 
 form.onsubmit = (event) => {
   event.preventDefault();
@@ -128,6 +133,8 @@ form.onsubmit = (event) => {
         deployBranch: said('deployBranch') || null,
         verifyCommand: said('verify') ? said('verify').split(/\s+/) : null,
         about: said('about') || null,
+        labels: list('labels'),
+        humanPaths: list('humanPaths'),
       }),
     }),
     done: () => dialog.close(),
