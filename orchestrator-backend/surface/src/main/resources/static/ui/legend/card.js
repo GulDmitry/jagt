@@ -1,79 +1,33 @@
 // The legend's marks on a task: its edges, badge, state, request, checks and replies tab.
 
-import {span} from '../../core/dom.js';
+import {make, span} from '../../core/dom.js';
 
 const edge = (owner) => span(`legend-edge ${owner}`, '');
 
-const statusChip = () => {
-  const status = span('status', 'in progress');
-  status.append(' ', span('age', '12m'));
-  return status;
-};
-
-const liveStatusChip = () => {
-  const status = span('status live', 'done');
-  status.append(' ', span('age', '3d'));
-  return status;
-};
-
-const stalledStatusChip = () => {
-  const status = span('status stalled', 'out for review');
-  status.append(' ', span('age', '9d'));
-  return status;
-};
+const aged = (className, text, age) => make('span', className, text, ' ', span('age', age));
 
 // The board draws this one as an anchor, and the dotted underline is half of what it says.
-const requestChip = (className, text) => {
-  const anchor = document.createElement('a');
-  anchor.className = className;
-  anchor.textContent = text;
-  return anchor;
-};
+const requestChip = (className, text) => make('a', className, text);
 
-const repositories = () => {
-  const group = span('repos', '');
-  group.append(requestChip('mr-age', 'alpha'), ' + ', requestChip('mr-age', 'beta'), ' ', span('tick', '\u2713'));
-  return group;
-};
-
-const deployedButton = () => {
-  const button = document.createElement('button');
-  button.className = 'again';
-  button.textContent = 'Deploy';
-  return button;
-};
+const repositories = () => make('span', 'repos', '', requestChip('mr-age', 'alpha'), ' + ', requestChip('mr-age', 'beta'), ' ',
+  span('tick', '\u2713'));
 
 const flagButton = (on) => {
-  const button = document.createElement('button');
-  button.className = 'flag';
-  button.textContent = on ? '\u2691' : '\u2690';
+  const button = make('button', 'flag', on ? '\u2691' : '\u2690');
   button.setAttribute('aria-pressed', String(on));
   return button;
 };
 
 const draftedTab = () => {
-  const tab = document.createElement('button');
-  tab.className = 'you';
+  const tab = make('button', 'you', 'Drafted review');
   tab.setAttribute('role', 'tab');
-  tab.textContent = 'Drafted review';
-  const tabs = span('tabs', '');
-  tabs.append(tab);
-  return tabs;
+  return make('span', 'tabs', '', tab);
 };
 
 // The report's own two marks, drawn as it draws them.
-const blockHead = () => {
-  const head = span('block', '1 \u00b7 ');
-  head.append(span('verdict ok', 'FIXED'), ' \u00b7 thread 4');
-  return head;
-};
+const blockHead = () => make('span', 'block', '1 \u00b7 ', span('verdict ok', 'FIXED'), ' \u00b7 thread 4');
 
-const detailLine = (className, text) => {
-  const line = document.createElement('div');
-  line.className = className;
-  line.textContent = text;
-  return line;
-};
+const detailLine = (className, text) => make('div', className, text);
 
 export const cardRows = () => [
   [[edge('you'), edge('agent'), edge('ci'), edge('')],
@@ -83,9 +37,9 @@ export const cardRows = () => [
     'you are the hold-up \u00b7 yours whenever you like \u00b7 red: what is waiting on you is broken'],
   [[flagButton(false), flagButton(true)],
     'not flagged \u00b7 flagged important by you, in this browser only; its row leads its group'],
-  [[statusChip(), liveStatusChip()],
+  [[aged('status', 'in progress', '12m'), aged('status live', 'done', '3d')],
     'the state and its age \u00b7 green: already on a shared branch'],
-  [[deployedButton()],
+  [[make('button', 'again', 'Deploy')],
     'already deployed \u2014 press again for what came after'],
   [[requestChip('id', 'ABC-42'), requestChip('mr-age approved', 'request 5d \u2713'), requestChip('mr-age', 'request 2d')],
     'the ticket \u00b7 the request and how long it has been open \u00b7 green \u2713: approved'],
@@ -98,7 +52,7 @@ export const cardRows = () => [
   [[blockHead(), span('quote', '> the row count is wrong')],
     'in a round\u2019s replies: the verdict \u2014 green fixed \u00b7 amber a question \u00b7 grey pushed back '
     + '\u2014 and the comment it answers'],
-  [[requestChip('mr-age stalled', 'request 9d'), stalledStatusChip(), span('chip stalled', 'act stopped')],
+  [[requestChip('mr-age stalled', 'request 9d'), aged('status stalled', 'out for review', '9d'), span('chip stalled', 'act stopped')],
     'stopped, yours to restart: nothing will look at this round again on its own, the state wearing it where no '
     + 'request is linked · in the header, the Master only judges until you press it'],
   [[detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],

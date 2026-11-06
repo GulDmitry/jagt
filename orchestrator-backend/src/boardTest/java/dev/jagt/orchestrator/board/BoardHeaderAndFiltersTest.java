@@ -49,6 +49,18 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
+    void theDarkThemeChosenOnTheGearSurvivesAReload() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.click("#gear");
+        page.click("#gear-menu button[value=dark]");
+        page.reload();
+
+        assertThat(page.locator("html")).hasAttribute("data-theme", "dark");
+    }
+
+    @Test
     void theRequestSaysHowOftenItsTaskWasShipped() {
         long now = System.currentTimeMillis();
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),

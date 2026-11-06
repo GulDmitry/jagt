@@ -1,5 +1,6 @@
 // Draws the mermaid fences of a rendered document; the library is fetched only when a document holds one.
 
+import {make} from '../core/dom.js';
 import {toast} from './toast.js';
 
 let loading = null;
@@ -25,9 +26,7 @@ export function draw(root) {
   const fences = root ? [...root.querySelectorAll('pre > code.language-mermaid')] : [];
   if (!fences.length) return;
   const nodes = fences.map((code) => {
-    const node = document.createElement('div');
-    node.className = 'mermaid';
-    node.textContent = code.textContent;
+    const node = make('div', 'mermaid', code.textContent);
     code.parentElement.replaceWith(node);
     return node;
   });

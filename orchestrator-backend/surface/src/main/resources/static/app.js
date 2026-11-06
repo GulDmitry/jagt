@@ -18,6 +18,7 @@ import {onSent} from './ui/submit.js';
 import {onClick, render} from './ui/render.js';
 import * as selection from './ui/selection.js';
 import * as tabs from './ui/tabs.js';
+import './ui/theme.js';
 import {sessionLog, showLog} from './ui/toast.js';
 
 // Cut off from the backend, the board is a picture of the past: nothing on it may act.

@@ -1,54 +1,27 @@
 // The legend's marks on the rest of the page: the list, the jobs, a verb's answer, the tab and the header.
 
-import {span} from '../../core/dom.js';
+import {make, span} from '../../core/dom.js';
 
-const yoursHead = () => {
-  const group = document.createElement('div');
-  group.className = 'group yours';
-  group.append(span('group-head', 'yours 2'));
-  return group;
-};
+const yoursHead = () => make('div', 'group yours', '', span('group-head', 'yours 2'));
 
 const verbButton = (className, text, key) => {
-  const button = document.createElement('button');
-  button.className = className;
-  button.textContent = text;
+  const button = make('button', className, text);
   if (key) button.dataset.key = key;
   return button;
 };
 
-const failedLastRun = () => {
-  const table = document.createElement('table');
-  table.className = 'jobs';
-  const cell = document.createElement('td');
-  cell.className = 'last failed';
-  cell.textContent = '6m ago';
-  const row = document.createElement('tr');
-  row.append(cell);
-  const body = document.createElement('tbody');
-  body.append(row);
-  table.append(body);
-  return table;
-};
+const failedLastRun = () => make('table', 'jobs', '',
+  make('tbody', '', '', make('tr', '', '', make('td', 'last failed', '6m ago'))));
 
-const planChange = (className, text) => {
-  const line = document.createElement('div');
-  line.className = 'doc';
-  line.append(span(className, text));
-  return line;
-};
+const planChange = (className, text) => make('div', 'doc', '', span(className, text));
 
-const toastEdge = (className) => {
-  const toast = document.createElement('div');
-  toast.className = className;
-  toast.textContent = className.includes('error') ? 'refused' : 'done';
-  return toast;
-};
+const toastEdge = (className) => make('div', className, className.includes('error') ? 'refused' : 'done');
 
-const rowVerb = (className) => {
-  const button = document.createElement('button');
-  button.className = className;
-  button.textContent = '\u25b8_';
+const rowVerb = (className) => make('button', className, '\u25b8_');
+
+const gearButton = () => {
+  const button = document.getElementById('gear').cloneNode(true);
+  button.removeAttribute('id');
   return button;
 };
 
@@ -78,4 +51,6 @@ export const pageRows = () => [
     span('chip bad', 'glab not logged in to host')],
     'in the header: this page is cut off from the backend, and nothing on it can run \u00b7 the model provider '
     + 'failed repeatedly, so headless reads wait for one probe \u00b7 jagt cannot reach a code host, pressed to log in, no card stops'],
+  [[gearButton()],
+    'in the header: the gear opens the settings \u00b7 the theme, auto following the system, kept in this browser alone'],
 ];

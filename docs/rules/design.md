@@ -11,10 +11,10 @@ disagree**: APPROVED wears both — the approval landed, the deploy is yours.
 
 ## The colour palette
 
-Thirteen tokens, at the top of `app.css` and again under `prefers-color-scheme: dark`: a token in one scheme
-only is a hole. The dark block holds one *rule*, `button.primary`'s label (`#fff`, `#10131a`
-dark): accent text on the accent fill is illegible. A hex outside `:root` is a bug — that label and the
-translucent blacks (four shadows, the dialog backdrop) apart.
+Fourteen tokens, each defined once at the top of `app.css` as `light-dark(light, dark)`: the gear's theme choice
+(`data-theme` on `<html>`) and `prefers-color-scheme` both only set `color-scheme`, so a token cannot be in one
+theme only. `--on-accent` is `button.primary`'s label (`#fff`, `#10131a` dark): accent text on the accent fill is
+illegible. A hex outside `:root` is a bug, but the translucent blacks (four shadows, the dialog backdrop).
 
 - `--you` `#b45309` / `#fbbf24` — **your move**: nothing advances without you.
 - `--agent` `#1d4ed8` / `#93b4ff` — **an agent is working**.

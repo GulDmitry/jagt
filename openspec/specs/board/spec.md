@@ -6,10 +6,9 @@ What a card shows, which verbs exist, how a command reaches the core.
 
 ## Requirements
 ### Requirement: One surface, one projection
-The board, served by the jar, SHALL be the one front-end. Its projection is `flow/Move` + `flow/TaskView`, built by
-`service/TaskViews`, rendered by `/api/tasks`; gate and button read one `FlowRules.allows`;
-`TaskViews.snapshot()` reads the configuration once a render. A second surface MUST add no second answer to a board
-question. Stopping the backend is no verb.
+The board, served by the jar, SHALL be the one front-end. Its projection is `flow/Move` + `flow/TaskView`, built by `service/TaskViews`, rendered by
+`/api/tasks`; gate and button read one `FlowRules.allows`; `TaskViews.snapshot()` reads the configuration once a render. A second surface MUST add
+no second answer to a board question. Stopping the backend is no verb.
 #### Scenario: Ship
 - **WHEN** `ship` runs
 - **THEN** it asks its button's `FlowRules`
@@ -49,10 +48,9 @@ request stands, no mark. A renamed verb still answers to its old spelling (`revi
 - **WHEN** the human reads a card's buttons
 - **THEN** the top row moves the task on; the bottom row only looks or restarts
 ### Requirement: Commands are two declarations
-A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
-`command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself. It declares
-the board part it opens typed alone and its tab (`offeredOn`). `CommandReference` renders `help`
-and the palette's verb list. A launch creating no task is refused.
+A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a `command/GlobalCommand` bean
+(`command/*`, collected by `GlobalCommands`) running itself. It declares the board part it opens typed alone and its tab (`offeredOn`).
+`CommandReference` renders `help` and the palette's verb list. A launch creating no task is refused.
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`
 - **THEN** `stats` splits each open task's time: human, agent, host
@@ -72,18 +70,16 @@ session (`POST /api/tasks/say`): not a verb, the only control there.
 - **WHEN** the human presses Escape, the button, or the dimmed area
 - **THEN** the dialog closes
 ### Requirement: Tier 1 is grammar, tier 2 only proposes
-Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2,
-`surface/board/NaturalLanguageDispatch`, sends ⌘K free text via `POST /api/interpret` to a model proposing one grammar
-command, validated (task and verb exist) and run through `CommandService`: never more than a button. The call is stripped
-(`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
+Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `surface/board/NaturalLanguageDispatch`, sends ⌘K free text via `POST
+/api/interpret` to a model proposing one grammar command, validated (task and verb exist) and run through `CommandService`: never more than a
+button. The call is stripped (`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
 #### Scenario: A proposal names no real verb
 - **WHEN** the model proposes a missing task or verb
 - **THEN** nothing runs
 ### Requirement: Rules live behind the controller
 `service/CommandService` SHALL validate against `Move` first; `service/TaskLauncher` starts a task; controller and
-palette own no rules. A refusal's sentence is the whole answer; one a caller acts on carries a `flow/Refusal.Code`,
-grown only when something branches on it. No tools facade: each MCP tool group under `surface/mcp/tools` declares
-its own.
+palette own no rules. A refusal's sentence is the whole answer; one a caller acts on carries a `flow/Refusal.Code`, grown only when something
+branches on it. No tools facade: each MCP tool group under `surface/mcp/tools` declares its own.
 #### Scenario: A stale tab
 - **WHEN** a stale tab sends a verb `Move` no longer allows
 - **THEN** a sentence refuses it, not a git error
@@ -111,10 +107,9 @@ A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link
 - **WHEN** `ABC-42`, shown on its card as `p3`, stops
 - **THEN** the banner reads `jagt · p3 · ABC-42 · agent stopped`; a task without a short name reads `jagt · ABC-42 · agent stopped`
 ### Requirement: Facts sit on the thing they are about
-The task number SHALL open the ticket. Where the board names projects, each project's name opens its own request;
-on a board of one project the `request` chip does. The chip shows the request's own age, green with ✓ once approved.
-Its hover says how often the task shipped, from the second ship on.
-The Deploy button is green while the work is live. A `⚐` beside the title flags the task, in this browser alone.
+The task number SHALL open the ticket. Where the board names projects, each project's name opens its own request; on a board of one project the
+`request` chip does. The chip shows the request's own age, green with ✓ once approved. Its hover says how often the task shipped, from the second
+ship on. The Deploy button is green while the work is live. A `⚐` beside the title flags the task, in this browser alone.
 #### Scenario: Taking the colour off
 - **WHEN** a live task is reverted
 - **THEN** the Deploy button loses its green
@@ -124,6 +119,13 @@ The Deploy button is green while the work is live. A `⚐` beside the title flag
 #### Scenario: A task shipped again
 - **WHEN** ABC-42 shipped twice
 - **THEN** its request chip's hover reads `shipped 2 times`
+### Requirement: The gear holds the board's settings
+One gear at the header's top right SHALL open a menu choosing the theme: `auto` follows `prefers-color-scheme`,
+`light` and `dark` force it. The choice is kept in this browser alone and applied before the first paint. A colour
+keeps its one meaning in both themes. The legend has the gear's row.
+#### Scenario: Dark chosen
+- **WHEN** the human chooses `dark` on the gear and reloads the board
+- **THEN** the page is dark with no flash, and `auto` clears the choice
 ### Requirement: A plan shows what changed since its last approval
 Each `approve-plan` SHALL keep the approved `plan.md` as the task's baseline, in jagt's own root, not the worktree.
 The Artifacts tab SHALL render `plan.md` against that baseline: a line new or changed is bold with a bar,
@@ -164,10 +166,9 @@ board renders. A component reads no module state: everything it shows arrives in
 - **WHEN** a human opens `/styleguide.html`
 - **THEN** every card state stands as one card under its name, and the page throws nothing
 ### Requirement: A press is logged as a control and a status
-The board SHALL log each press as `{at, control, status}` to `interactions.jsonl` beside `state.json`, unless
-`interactionLog: false`. `control` names the verb, report or element; `status` is the task's status or null. A press
-SHALL NOT carry a task id, an alias, a ticket or typed text. A batch is sent two seconds after a burst begins, holds
-at most 50 presses, and is refused whole when one press breaks the shape.
+The board SHALL log each press as `{at, control, status}` to `interactions.jsonl` beside `state.json`, unless `interactionLog: false`. `control`
+names the verb, report or element; `status` is the task's status or null. A press SHALL NOT carry a task id, an alias, a ticket or typed text. A
+batch is sent two seconds after a burst begins, holds at most 50 presses, and is refused whole when one press breaks the shape.
 #### Scenario: Pressing Focus
 - **WHEN** the human presses Focus on an agent's working task
 - **THEN** a line holds `action:focus` and `IN_PROGRESS`, and nothing naming the task
@@ -177,10 +178,9 @@ at most 50 presses, and is refused whole when one press breaks the shape.
 - **WHEN** `interactionLog: false`
 - **THEN** a batch is checked and nothing is written
 ### Requirement: The press log notes two sightings
-The board SHALL log `shown:required` when a task's attention BECOMES required, and `shown:jobs-failed` when the
-failed-jobs chip appears. Both SHALL go through a press's batch and switch. A sighting is logged once per
-change, never per render, and the first board painted only seeds. `shown:required` carries the task's status and
-`shown:jobs-failed` null; neither carries a task id or text.
+The board SHALL log `shown:required` when a task's attention BECOMES required, and `shown:jobs-failed` when the failed-jobs chip appears. Both SHALL
+go through a press's batch and switch. A sighting is logged once per change, never per render, and the first board painted only seeds.
+`shown:required` carries the task's status and `shown:jobs-failed` null; neither carries a task id or text.
 #### Scenario: A sighting
 - **WHEN** a task's attention turns REQUIRED, or the hidden failed-jobs chip appears, on a board already painted
 - **THEN** one line holds `shown:required` and its status, or `shown:jobs-failed` and null; further renders add none

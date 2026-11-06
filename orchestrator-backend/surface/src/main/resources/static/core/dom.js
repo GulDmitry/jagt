@@ -1,5 +1,13 @@
 // Built, never interpolated into markup: ids, aliases and project keys come out of a file a human edits by hand.
 
+export const make = (tag, className, text = '', ...children) => {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  node.textContent = text;
+  node.append(...children);
+  return node;
+};
+
 export const span = (className, text) => {
   const node = document.createElement('span');
   if (className) node.className = className;

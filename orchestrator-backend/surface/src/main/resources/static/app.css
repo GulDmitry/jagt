@@ -1,22 +1,19 @@
 /* One stylesheet, no imports, no fonts to fetch: the board must work with the machine offline. */
 :root {
-  --bg: #f6f7f9; --panel: #fff; --line: #d9dde3; --text: #1c2024; --muted: #5f6672;
-  --you: #b45309; --you-bg: #fef3c7; --agent: #1d4ed8; --ci: #6d28d9;
-  --accent: #1d4ed8; --danger: #b42318; --ok: #15803d; --chip-bg: #eceef1;
+  color-scheme: light dark;
+  --bg: light-dark(#f6f7f9, #14171a); --panel: light-dark(#fff, #1c2024); --line: light-dark(#d9dde3, #2c3238);
+  --text: light-dark(#1c2024, #e6e8ea); --muted: light-dark(#5f6672, #9aa3ad);
+  --you: light-dark(#b45309, #fbbf24); --you-bg: light-dark(#fef3c7, #3a2c08);
+  --agent: light-dark(#1d4ed8, #93b4ff); --ci: light-dark(#6d28d9, #c4b5fd);
+  --accent: light-dark(#1d4ed8, #93b4ff); --on-accent: light-dark(#fff, #10131a);
+  --danger: light-dark(#b42318, #fca5a5); --ok: light-dark(#15803d, #86efac);
+  --chip-bg: light-dark(#eceef1, #24282c);
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14171a; --panel: #1c2024; --line: #2c3238; --text: #e6e8ea; --muted: #9aa3ad;
-    --you: #fbbf24; --you-bg: #3a2c08; --agent: #93b4ff; --ci: #c4b5fd;
-    --accent: #93b4ff; --danger: #fca5a5; --ok: #86efac; --chip-bg: #24282c;
-  }
-}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 * { box-sizing: border-box; }
-body {
-  margin: 0; background: var(--bg); color: var(--text);
-  font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-}
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
 header {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 46px;
   padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0;
@@ -31,22 +28,18 @@ header .chip, header .waiting { font-size: 13px; }
 .search:focus-within { border-color: var(--accent); }
 .search button { padding: 1px 6px; font-size: 11px; }
 .menu { position: relative; }
-#reports {
+#reports, #gear-menu {
   position: absolute; right: 0; top: calc(100% + 4px); z-index: 4; width: 340px; padding: 6px;
   display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
 }
-#reports[hidden] { display: none; }
-#reports button { border: 0; text-align: left; padding: 6px 10px; white-space: normal; }
+#reports[hidden], #gear-menu[hidden] { display: none; }
+#reports button, #gear-menu button { border: 0; text-align: left; padding: 6px 10px; white-space: normal; }
+#gear-menu { width: auto; min-width: 150px; }
 #reports button .muted { display: block; font-size: 12px; }
 /* The key is drawn, not written: a verb's name stays its own words for whoever reads or names it. */
-button[data-key]::after {
-  content: " " attr(data-key); font-family: var(--mono); font-size: 11px;
-  font-weight: 400;
-}
-kbd {
-  font-family: var(--mono); font-size: 11px; opacity: .7; font-weight: 400;
-}
+button[data-key]::after { content: " " attr(data-key); font-family: var(--mono); font-size: 11px; font-weight: 400; }
+kbd { font-family: var(--mono); font-size: 11px; opacity: .7; font-weight: 400; }
 button.link { border: 0; padding: 0; background: none; color: var(--accent); cursor: pointer; }
 .field > button.link { align-self: flex-start; }
 button.apart { margin-left: auto; color: var(--muted); border-color: transparent; background: none; }
@@ -115,12 +108,9 @@ button {
 }
 button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 button:disabled { opacity: .5; cursor: progress; }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
 /* The generic hover paints the label with the accent, which on a primary button IS the background. */
-button.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.12); }
-@media (prefers-color-scheme: dark) {
-  button.primary, button.primary:hover:not(:disabled) { color: #10131a; }
-}
+button.primary:hover:not(:disabled) { color: var(--on-accent); filter: brightness(1.12); }
 .chip { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
 .chip.bad { color: var(--danger); border-color: var(--danger); }
 body.stale #board, body.stale #phases, body.stale #report-line { opacity: .5; }
@@ -157,12 +147,8 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 .verdict.you { color: var(--you); }
 .verdict.muted, .quote { color: var(--muted); }
 /* The legend renders these outside the report, where the report's own font does not reach them. */
-.legend-key .block, .legend-key .quote {
-  font-family: var(--mono); font-size: 12px;
-}
-#report-line {
-  display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line);
-}
+.legend-key .block, .legend-key .quote { font-family: var(--mono); font-size: 12px; }
+#report-line { display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line); }
 #report-line[hidden] { display: none; }
 #report-line input { flex: 1; font-size: 13px; }
 
@@ -170,10 +156,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
   display: grid; grid-template-columns: max-content 1fr; gap: 10px 14px; align-items: center;
   padding: 12px 14px 14px; border-bottom: 1px solid var(--line); font-size: 13px;
 }
-.legend-head {
-  grid-column: 1 / -1;
-  font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; color: var(--muted);
-}
+.legend-head { grid-column: 1 / -1; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; color: var(--muted); }
 .legend-key { display: flex; gap: 10px; align-items: center; }
 /* A sample is only the page's own element if it is the SIZE the page draws it. */
 .legend-key button { font-size: 12px; padding: 3px 8px; }
@@ -184,10 +167,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 .legend-edge.agent { background: var(--agent); }
 .legend-edge.ci { background: var(--ci); }
 
-#phases {
-  display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline;
-  padding: 10px 16px 0; font-size: 12px; color: var(--muted);
-}
+#phases { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; padding: 10px 16px 0; font-size: 12px; color: var(--muted); }
 #phases button.phase {
   font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; border-radius: 999px;
   padding: 1px 6px; cursor: pointer;
@@ -200,7 +180,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 #phases .phase.empty .count { font-weight: 400; color: var(--muted); }
 #phases .sep { opacity: .4; }
 main { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; padding: 16px; }
-main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-items: start; }
+main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-items: start; padding-bottom: 56px; }
 #tasks { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .group-head {
   margin: 0; padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .04em;
@@ -220,16 +200,9 @@ main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-i
 .row-facts { font-size: 12px; color: var(--muted); padding-left: 30px; }
 .row .alias { width: 22px; flex-shrink: 0; font-size: 12px; }
 .row-verb:not(.primary) { background: none; }
-.row-verb {
-  width: 44px; flex-shrink: 0; border: 0; border-left: 1px solid var(--line); border-radius: 0;
-  font-family: var(--mono); font-size: 12px;
-}
-main#board { padding-bottom: 56px; }
+.row-verb { width: 44px; flex-shrink: 0; border: 0; border-left: 1px solid var(--line); border-radius: 0; font-family: var(--mono); font-size: 12px; }
 main#board:empty { padding: 0; }
-#pane {
-  display: flex; flex-direction: column; gap: 12px; min-width: 0;
-  position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto;
-}
+#pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; }
 #pane article { align-self: stretch; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 #pane article > .card-top, #pane article > .heading, #pane article > .meta, #pane article > .detail { flex: 0 0 100%; }
 #pane article > .actions { display: contents; }
@@ -237,8 +210,7 @@ main#board:empty { padding: 0; }
 #pane article .actions.tool > button { order: 2; }
 #pane article .actions.tool > button:first-child { margin-left: 12px; }
 #pane article .actions > button.apart { order: 3; }
-.history ol { margin: 0; padding: 0 10px 8px 28px; font-size: 12px; }
-.history .age { font-family: var(--mono); color: var(--muted); }
+.history ol { margin: 0; padding: 0 10px 8px 10px; font-size: 12px; list-style: none; }
 #pane .back { display: none; align-self: start; }
 @media (max-width: 1199px) {
   main#board { grid-template-columns: minmax(0, 1fr); }
@@ -256,9 +228,7 @@ article {
 .row.ci, article.ci { border-left-color: var(--ci); }
 /* Wraps: the badge is a phrase, and on one line it would break inside its own pill. */
 .card-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.alias {
-  font-family: var(--mono); font-weight: 700; color: var(--text);
-}
+.alias { font-family: var(--mono); font-weight: 700; color: var(--text); }
 .id { font-family: var(--mono); }
 .heading { display: flex; gap: 6px; align-items: baseline; margin: 6px 0; }
 .title { overflow-wrap: anywhere; }
@@ -275,17 +245,12 @@ button.flag:hover:not(:disabled) { color: var(--accent); }
 .badge.optional { background: var(--chip-bg); color: var(--muted); font-weight: 400; }
 .mr-age { font-family: var(--mono); font-size: 11px; }
 /* Not flex: a flex box drops the space between two words. */
-.status {
-  padding: 1px 7px; border-radius: 999px;
-  background: var(--chip-bg); color: var(--text); font-size: 11px; font-weight: 600;
-}
+.status { padding: 1px 7px; border-radius: 999px; background: var(--chip-bg); color: var(--text); font-size: 11px; font-weight: 600; }
 .status .age { font-family: var(--mono); font-weight: 400; opacity: .7; }
 /* Where no verb is the deploy, the state says the work is live: same colour, one mark. */
 .status.live { color: var(--ok); }
 /* Clickable without a link's colour: a whole meta row in accent would compete with the buttons. */
-a.id, a.mr-age {
-  color: inherit; text-decoration: underline dotted; text-underline-offset: 2px;
-}
+a.id, a.mr-age { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
 /* The request wears ONE fact — an APPROVAL, as green and a tick — because the checks answer as their own dot. */
 a.mr-age.approved, .tick { color: var(--ok); }
 /* A poll that STOPPED hands the move back: a ring on the request it was watching, never a fifth thing in the row. */
@@ -305,10 +270,7 @@ a { color: var(--accent); }
 .actions.tool button:not(.primary) { font-size: 11px; padding: 2px 7px; color: var(--muted); }
 .empty { color: var(--muted); padding: 0 16px 16px; }
 
-#show-log {
-  position: fixed; left: 16px; bottom: 16px; color: var(--muted); font-size: 12px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
-}
+#show-log { position: fixed; left: 16px; bottom: 16px; color: var(--muted); font-size: 12px; box-shadow: 0 6px 20px rgb(0 0 0 / 12%); }
 #tip {
   position: fixed; z-index: 60; pointer-events: none; max-width: min(340px, 76vw);
   max-height: 40vh; overflow-y: auto;
@@ -351,13 +313,11 @@ button.primary.again { box-shadow: 0 0 0 2px var(--ok); }
 #pane .detail { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); white-space: pre-wrap; }
 #pane .detail.you { border-color: var(--you); background: var(--you-bg); }
 #pane .detail.problem { border-color: var(--danger); }
-.history ol { list-style: none; padding-left: 10px; }
-.history .age { display: inline-block; min-width: 110px; }
+.history .age { font-family: var(--mono); color: var(--muted); display: inline-block; min-width: 110px; }
 .badge.problem { background: var(--chip-bg); color: var(--danger); }
 #tasks .keys { margin: 0; padding: 6px 10px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted);
   font-family: var(--mono); }
 .row .pick:focus-visible, .row-verb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.row-verb { display: flex; align-items: center; justify-content: center; }
 table.jobs th { text-align: left; font-weight: 400; color: var(--muted); font-size: 11px; padding: 2px 6px; }
 table.jobs td.last.failed { color: var(--danger); }
 #empty { text-align: center; padding: 64px 16px; }

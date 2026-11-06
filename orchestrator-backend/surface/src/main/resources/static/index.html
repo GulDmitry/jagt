@@ -9,6 +9,7 @@
   <link rel="icon" href="favicon.ico" sizes="48x48 32x32 16x16">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <script>try { document.documentElement.dataset.theme = localStorage.theme || ''; } catch (blocked) {}</script>
   <link rel="stylesheet" href="app.css">
   <script type="importmap">{"imports": {"preact": "./vendor/preact.mjs", "preact/hooks": "./vendor/hooks.mjs", "htm": "./vendor/htm.mjs"}}</script>
 </head>
@@ -35,6 +36,10 @@
     <div id="reports" hidden></div>
   </div>
   <button id="new-task" type="button" class="primary">New task <kbd>t</kbd></button>
+  <div class="menu">
+    <button id="gear" type="button" aria-label="settings" aria-expanded="false" data-tip="settings">⚙</button>
+    <div id="gear-menu" hidden></div>
+  </div>
   <span id="offline" class="chip bad" role="status" hidden data-tip="nothing on the board is current and nothing on it can run; it reconnects by itself">backend unreachable</span>
 </header>
 

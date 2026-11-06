@@ -1,5 +1,6 @@
 // The Reports menu: one button opens the list, and a pick, a press elsewhere or Escape closes it.
 
+import {make, span} from '../core/dom.js';
 import * as store from '../core/store.js';
 
 const toggle = document.getElementById('reports-toggle');
@@ -26,11 +27,9 @@ export const onPick = (open) => { picked = open; };
 // entry would answer for all of them.
 export const render = () => list.replaceChildren(
   ...store.verbs().filter((verb) => verb.report && !verb.aboutOneTask).map((verb) => {
-    const button = document.createElement('button');
+    const button = make('button', '', verb.id.charAt(0).toUpperCase() + verb.id.slice(1), span('muted', verb.hint));
     button.id = `show-${verb.id}`;
     button.dataset.verb = verb.id;
-    button.append(verb.id.charAt(0).toUpperCase() + verb.id.slice(1),
-      Object.assign(document.createElement('span'), {className: 'muted', textContent: verb.hint}));
     return button;
   }));
 

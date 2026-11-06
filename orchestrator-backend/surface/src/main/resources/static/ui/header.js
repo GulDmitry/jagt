@@ -3,7 +3,7 @@
 //
 // Pure rendering: each button carries its own data attribute, clicks are delegated through `onBarClick`.
 
-import {span} from '../core/dom.js';
+import {make, span} from '../core/dom.js';
 import {countdown} from '../core/format.js';
 import * as store from '../core/store.js';
 import * as filters from './filters.js';
@@ -90,9 +90,7 @@ export function render(tasks, showing) {
   // stylesheet away from reading `build 0review 1`.
   phaseBar.replaceChildren(...store.phases().flatMap(({id: phase, label}, index) => {
     const held = perPhase.filter((task) => task.phase === phase).length;
-    const segment = document.createElement('button');
-    segment.className = held ? 'phase' : 'phase empty';
-    segment.append(`${label} `, span('count', held));
+    const segment = make('button', held ? 'phase' : 'phase empty', `${label} `, span('count', held));
     // Nothing to show is nothing to press, and an empty phase says so rather than answering with a blank board.
     segment.disabled = held === 0;
     segment.dataset.phase = phase;
@@ -102,17 +100,13 @@ export function render(tasks, showing) {
   }));
   // Another segment of the same line, separator and all: it states the order the board is IN, and the hover the
   // one a press would take it to.
-  const sort = document.createElement('button');
-  sort.className = 'order';
+  const sort = make('button', 'order', `order: ${order.holds() ? 'alias' : 'added'}`);
   sort.dataset.order = '';
-  sort.textContent = `order: ${order.holds() ? 'alias' : 'added'}`;
   sort.dataset.tip = order.holds() ? 'order by when each task was added' : 'order by alias';
   phaseBar.append(span('sep', ' \u00b7 '), sort);
   if (filters.on()) {
-    const clear = document.createElement('button');
-    clear.className = 'clear-filters';
+    const clear = make('button', 'clear-filters', `clear ${filters.on()} filter(s)`);
     clear.dataset.clear = '';
-    clear.textContent = `clear ${filters.on()} filter(s)`;
     phaseBar.append(clear);
   }
 }

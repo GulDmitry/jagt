@@ -1,6 +1,7 @@
 // The projects a new task can run in, one box each, filled from the same snapshot the board renders.
 
 import {api, refusal} from '../core/api.js';
+import {make, span} from '../core/dom.js';
 import * as store from '../core/store.js';
 
 const group = document.getElementById('project');
@@ -36,11 +37,8 @@ export function render() {
   const ticked = new Set(chosen().split(',').filter(Boolean));
   const byName = [...configured].sort((a, b) => a.localeCompare(b, 'en'));
   group.replaceChildren(...(byName.length ? byName.map((project) => {
-    const label = document.createElement('label');
-    label.className = 'checkbox';
     const box = Object.assign(document.createElement('input'), {type: 'checkbox', value: project, name: 'project'});
     box.checked = ticked.has(project);
-    label.append(box, ` ${project}`);
-    return label;
-  }) : [Object.assign(document.createElement('span'), {className: 'muted', textContent: 'no projects in jagt.yml'})]));
+    return make('label', 'checkbox', '', box, ` ${project}`);
+  }) : [span('muted', 'no projects in jagt.yml')]));
 }
