@@ -37,6 +37,15 @@ class BoardLanguagesTest {
     }
 
     @Test
+    void aFileInTheRootThatIsNoCatalogOffersNoLanguage() throws IOException {
+        Files.createDirectories(root.resolve("i18n"));
+        Files.writeString(root.resolve("i18n/de"), "{}");
+        Files.writeString(root.resolve("i18n/not a code.json"), "{}");
+
+        assertThat(languages().codes()).containsExactly("en", "pl", "ru");
+    }
+
+    @Test
     void aCatalogInTheRootOverridesTheShippedWordAndKeepsTheRest() throws IOException {
         Files.createDirectories(root.resolve("i18n"));
         Files.writeString(root.resolve("i18n/pl.json"), "{\"common.close\": \"Zamknij teraz\"}");
