@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -71,5 +72,47 @@ class TokenUsageTest {
 
         assertThat(start.coldStarts()).isZero();
         assertThat(start.warmStarts()).isEqualTo(1);
+    }
+
+    @Test
+    void readsAnUnpricedCallAsALowerBoundOnceSummedWithAPricedOne() {
+        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0.25).plus(TokenUsage.ofUnpricedCall(500, 0, 10));
+
+        assertThat(total.calls()).isEqualTo(2);
+        assertThat(total.costUsd()).isEqualTo(0.25);
+        assertThat(total.unpricedCalls()).isEqualTo(1);
+        assertThat(total.costIsLowerBound()).isTrue();
+    }
+
+    @Test
+    void keepsACostCompleteWhileEveryCallIsPriced() {
+        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0).plus(TokenUsage.ofCall(500, 0, 10, 0.25));
+
+        assertThat(total.costIsLowerBound()).isFalse();
+    }
+
+    @Test
+    void doesNotCountAnUnpricedCallThatNeverReachedAModel() {
+        assertThat(TokenUsage.ofUnpricedCall(0, 0, 0)).isEqualTo(TokenUsage.NONE);
+    }
+
+    @Test
+    void keepsTheLowerBoundWhenACallIsMarkedAsAStart() {
+        assertThat(TokenUsage.ofUnpricedCall(500, 0, 10).asStart().costIsLowerBound()).isTrue();
+    }
+
+    @Test
+    void readsARecordWrittenBeforeUnpricedCallsWereCountedAsComplete() throws Exception {
+        TokenUsage read = new JsonMapper().readValue(
+                "{\"calls\":2,\"inputTokens\":300,\"cachedInputTokens\":0,\"outputTokens\":0,\"costUsd\":0.5,"
+                        + "\"coldStarts\":0,\"warmStarts\":0}", TokenUsage.class);
+
+        assertThat(read.costIsLowerBound()).isFalse();
+    }
+
+    @Test
+    void writesNoFieldForACompleteCost() {
+        assertThat(new JsonMapper().writeValueAsString(TokenUsage.ofCall(500, 0, 10, 0.25)))
+                .doesNotContain("unpricedCalls");
     }
 }

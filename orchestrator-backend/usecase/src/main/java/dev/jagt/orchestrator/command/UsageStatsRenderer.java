@@ -110,7 +110,8 @@ public class UsageStatsRenderer {
             return "median cost per deployed task: unknown (" + deployed.size() + " deployed, none with a known spend)\n";
         }
         double median = (costs[(costs.length - 1) / 2] + costs[costs.length / 2]) / 2;
-        return String.format(Locale.ROOT, "median cost per deployed task: %.2f USD (%d of %d deployed with a known spend)%n",
+        String bound = deployed.stream().anyMatch(FinishedTask::costIsLowerBound) ? "≥ " : "";
+        return String.format(Locale.ROOT, "median cost per deployed task: " + bound + "%.2f USD (%d of %d deployed with a known spend)%n",
                 median, costs.length, deployed.size());
     }
 
@@ -142,7 +143,7 @@ public class UsageStatsRenderer {
                 TokenFormat.compact(usage.cachedInputTokens()),
                 TokenFormat.compact(usage.outputTokens()),
                 TokenFormat.compact(usage.total()),
-                String.format(Locale.ROOT, "%.2f", usage.costUsd()),
+                TokenFormat.cost(usage),
                 cold(usage));
     }
 

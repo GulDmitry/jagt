@@ -305,11 +305,12 @@ class HeadlessClaude {
         if (usage.isMissingNode() || !usage.isObject()) {
             return TokenUsage.NONE;
         }
-        TokenUsage call = TokenUsage.ofCall(
-                usage.path("input_tokens").asLong(0) + usage.path("cache_creation_input_tokens").asLong(0),
-                usage.path("cache_read_input_tokens").asLong(0),
-                usage.path("output_tokens").asLong(0),
-                envelope.path("total_cost_usd").asDouble(0));
+        long fresh = usage.path("input_tokens").asLong(0) + usage.path("cache_creation_input_tokens").asLong(0);
+        long cached = usage.path("cache_read_input_tokens").asLong(0);
+        long output = usage.path("output_tokens").asLong(0);
+        TokenUsage call = envelope.has("total_cost_usd")
+                ? TokenUsage.ofCall(fresh, cached, output, envelope.path("total_cost_usd").asDouble(0))
+                : TokenUsage.ofUnpricedCall(fresh, cached, output);
         return usage.has("cache_read_input_tokens") ? call.asStart() : call;
     }
 }

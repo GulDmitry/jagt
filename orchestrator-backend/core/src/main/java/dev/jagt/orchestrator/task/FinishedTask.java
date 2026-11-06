@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 
@@ -62,6 +63,13 @@ public record FinishedTask(
 
     private static @Nullable TokenUsage countedOrNull(TokenUsage usage) {
         return usage.isNone() ? null : usage;
+    }
+
+    /** Whether a call of an unpriced model is missing from {@code costUsd}. */
+    @JsonIgnore
+    public boolean costIsLowerBound() {
+        return costUsd != null && ((usage != null && usage.costIsLowerBound())
+                || (agentUsage != null && agentUsage.costIsLowerBound()));
     }
 
     /** Whether the reviewer read this task at all; every comparison below is over these and no others. */

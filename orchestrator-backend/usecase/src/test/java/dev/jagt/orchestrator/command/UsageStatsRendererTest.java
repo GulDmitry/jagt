@@ -210,4 +210,29 @@ class UsageStatsRendererTest {
         assertThat(UsageStatsRenderer.costPerDeployed(finished))
                 .isEqualTo("median cost per deployed task: unknown (1 deployed, none with a known spend)\n");
     }
+
+    @Test
+    void marksTheMedianCostAsALowerBoundWhenADeployedTaskHadAnUnpricedCall() {
+        List<FinishedTask> finished = List.of(
+                new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
+                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 2.0, null,
+                        TokenUsage.ofCall(10, 0, 10, 2.0).plus(TokenUsage.ofUnpricedCall(10, 0, 10)), null, null));
+
+        assertThat(UsageStatsRenderer.costPerDeployed(finished))
+                .isEqualTo("median cost per deployed task: ≥ 2.00 USD (1 of 1 deployed with a known spend)\n");
+    }
+
+    @Test
+    void marksATasksUsdAsALowerBoundWhenItHadAnUnpricedCall(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
+        tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05).plus(TokenUsage.ofUnpricedCall(10, 0, 10)));
+
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty()), mock(FinishedTasks.class))
+                .render(state.tasks());
+
+        assertThat(out.lines().filter(l -> l.startsWith("ABC-1")).findFirst().orElseThrow()).contains("≥0.05");
+    }
 }

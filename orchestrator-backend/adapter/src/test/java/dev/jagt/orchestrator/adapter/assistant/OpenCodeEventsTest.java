@@ -44,4 +44,13 @@ class OpenCodeEventsTest {
         assertThat(events.usage().isNone()).isTrue();
         assertThat(events.calls()).isEmpty();
     }
+
+    @Test
+    void countsAStepThatReportsNoCostAsUnpricedButAZeroCostAsPriced() {
+        String free = "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":10,\"output\":5}}}\n";
+        String unknown = "{\"type\":\"step_finish\",\"part\":{\"tokens\":{\"input\":10,\"output\":5}}}";
+
+        assertThat(OpenCodeEvents.parse(free).usage().costIsLowerBound()).isFalse();
+        assertThat(OpenCodeEvents.parse(free + unknown).usage().unpricedCalls()).isEqualTo(1);
+    }
 }

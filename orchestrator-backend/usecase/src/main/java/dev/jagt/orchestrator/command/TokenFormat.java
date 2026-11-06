@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.task.TokenUsage;
+
 import java.util.Locale;
 
 /** How a token count is written in a fixed-width column — one owner, shared by every view that shows one. */
@@ -25,5 +27,10 @@ public final class TokenFormat {
         return tokens < 9_950_000
                 ? String.format(Locale.ROOT, "%.1fM", tokens / 1_000_000d)
                 : Math.round(tokens / 1_000_000d) + "M";
+    }
+
+    /** {@code 1.25}, or {@code ≥1.25} where a call of an unpriced model is missing from it. */
+    public static String cost(TokenUsage usage) {
+        return (usage.costIsLowerBound() ? "≥" : "") + String.format(Locale.ROOT, "%.2f", usage.costUsd());
     }
 }

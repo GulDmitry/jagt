@@ -713,4 +713,11 @@ class HeadlessClaudeTest {
                 .extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
         assistantLog.detachAppender(log);
     }
+
+    @Test
+    void countsAnEnvelopeThatReportsNoCostAsUnpricedNotAsFree() {
+        var envelope = new JsonMapper().readTree("{\"usage\":{\"input_tokens\":4,\"output_tokens\":60}}");
+
+        assertThat(HeadlessClaude.usageOf(envelope).costIsLowerBound()).isTrue();
+    }
 }

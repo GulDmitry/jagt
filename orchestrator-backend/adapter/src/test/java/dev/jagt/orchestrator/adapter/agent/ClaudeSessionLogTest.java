@@ -1,5 +1,12 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import java.util.List;
+import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import ch.qos.logback.core.read.ListAppender;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.Logger;
 import dev.jagt.orchestrator.port.SessionLog;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
@@ -26,7 +33,7 @@ class ClaudeSessionLogTest {
 
         SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
-        assertThat(spent.usage()).isEqualTo(new TokenUsage(2, 1005, 41000, 190, 0, 0, 1));
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(2, 1005, 41000, 190, 0, 0, 1, 2));
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
     }
 
@@ -111,7 +118,7 @@ class ClaudeSessionLogTest {
 
         SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
-        assertThat(spent.usage()).isEqualTo(new TokenUsage(2, 12, 0, 30, 0));
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(2, 12, 0, 30, 0, 0, 0, 2));
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
     }
 
@@ -125,7 +132,7 @@ class ClaudeSessionLogTest {
 
         SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
-        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0));
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0, 0, 0, 1));
         assertThat(spent.upTo()).isEqualTo(complete.getBytes().length);
     }
 
@@ -141,7 +148,7 @@ class ClaudeSessionLogTest {
 
         SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, first.getBytes().length);
 
-        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0));
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0, 0, 0, 1));
         assertThat(spent.upTo()).isEqualTo(first.getBytes().length);
     }
 
@@ -218,7 +225,7 @@ class ClaudeSessionLogTest {
 
         SessionLog.Spent spent = new ClaudeSessionLog().spent(log, mark, Files.size(log) - mark);
 
-        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 7, 0, 20, 0));
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 7, 0, 20, 0, 0, 0, 1));
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
     }
 
@@ -280,7 +287,73 @@ class ClaudeSessionLogTest {
 
         SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
-        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0));
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0, 0, 0, 1));
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
+    }
+
+    @Test
+    void countsATurnOfAModelWithNoKnownPriceAsUnpricedNotAsFree(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,"output_tokens":10}}}
+                {"type":"assistant","message":{"model":"claude-opus-5","usage":{"input_tokens":1000000,"output_tokens":0}}}
+                """);
+
+        TokenUsage usage = new ClaudeSessionLog().spent(log, 0, Files.size(log)).usage();
+
+        assertThat(usage.unpricedCalls()).isEqualTo(1);
+        assertThat(usage.costUsd()).isEqualTo(5);
+        assertThat(usage.costIsLowerBound()).isTrue();
+    }
+
+    @Test
+    void leavesTheCostCompleteWhenEveryModelIsPriced(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-opus-5","usage":{"input_tokens":100,"output_tokens":10}}}
+                """);
+
+        assertThat(new ClaudeSessionLog().spent(log, 0, Files.size(log)).usage().costIsLowerBound()).isFalse();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsOncePerUnpricedModelNotOncePerTurn(@TempDir Path dir) throws IOException {
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        ((Logger) LoggerFactory.getLogger(ClaudeSessionLog.class)).addAppender(appender);
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,"output_tokens":10}}}
+                {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,"output_tokens":10}}}
+                {"type":"assistant","message":{"model":"claude-nova-8","usage":{"input_tokens":100,"output_tokens":10}}}
+                """);
+
+        new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(List.copyOf(appender.list)).extracting(ILoggingEvent::getMessage)
+                .containsExactly("model unpriced", "model unpriced");
+    }
+
+    @Test
+    void countsTheCacheWritesOfAnUnpricedTurnAsInput(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,\
+                "cache_creation_input_tokens":50,"output_tokens":10}}}
+                """);
+
+        assertThat(new ClaudeSessionLog().spent(log, 0, Files.size(log)).usage().inputTokens()).isEqualTo(150);
+    }
+
+    @Test
+    void countsTheCacheWritesOfAPricedTurnAsInput(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-opus-5","usage":{"input_tokens":100,\
+                "cache_creation_input_tokens":50,"output_tokens":10}}}
+                """);
+
+        assertThat(new ClaudeSessionLog().spent(log, 0, Files.size(log)).usage().inputTokens()).isEqualTo(150);
     }
 }

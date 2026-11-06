@@ -110,4 +110,17 @@ class UsageLedgerTest {
         assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl"))).singleElement().asString()
                 .contains("\"kind\":\"MASTER_REVIEW\"");
     }
+
+    @Test
+    void keepsTheUnpricedCallsOfADayInItsLine(@TempDir Path root) throws Exception {
+        UsageLedger ledger = new UsageLedger(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())),
+                Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
+
+        ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofUnpricedCall(1_000, 0, 10));
+        ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofUnpricedCall(1_000, 0, 10));
+
+        assertThat(Files.readAllLines(root.resolve("usage-by-day.jsonl"))).singleElement().asString()
+                .contains("\"unpricedCalls\":2");
+    }
 }

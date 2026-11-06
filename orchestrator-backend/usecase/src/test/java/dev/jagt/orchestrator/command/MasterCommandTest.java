@@ -167,10 +167,23 @@ class MasterCommandTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
         when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
         when(usage.sessionByKind()).thenReturn(Map.of(AssistantCallKind.MASTER_REVIEW,
-                new TokenUsage(2, 1000, 0, 500, 1.25, 0, 0)));
+                new TokenUsage(2, 1000, 0, 500, 1.25)));
 
         String report = new MasterCommand(configService, usage, record, briefs).run("");
 
         assertThat(report).contains("\n  spent:     1.5k tokens, $1.25 since jagt started");
+    }
+
+    @Test
+    void showsWhatTheReviewCostAsALowerBoundWhenAnUnpricedModelAnswered() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+        when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
+        when(usage.sessionByKind()).thenReturn(Map.of(AssistantCallKind.MASTER_REVIEW,
+                TokenUsage.ofCall(1000, 0, 500, 1.25).plus(TokenUsage.ofUnpricedCall(10, 0, 10))));
+
+        String report = new MasterCommand(configService, usage, record, briefs).run("");
+
+        assertThat(report).contains("tokens, ≥ $1.25 since jagt started");
     }
 }

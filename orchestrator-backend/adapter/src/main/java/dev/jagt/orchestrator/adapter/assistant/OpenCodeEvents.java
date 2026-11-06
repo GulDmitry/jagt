@@ -37,9 +37,11 @@ record OpenCodeEvents(Optional<String> answer, TokenUsage usage, List<Call> call
     private static TokenUsage stepUsage(JsonNode part) {
         JsonNode tokens = part.path("tokens");
         JsonNode cache = tokens.path("cache");
-        return TokenUsage.ofCall(tokens.path("input").asLong(0) + cache.path("write").asLong(0),
-                cache.path("read").asLong(0), tokens.path("output").asLong(0) + tokens.path("reasoning").asLong(0),
-                part.path("cost").asDouble(0));
+        long fresh = tokens.path("input").asLong(0) + cache.path("write").asLong(0);
+        long output = tokens.path("output").asLong(0) + tokens.path("reasoning").asLong(0);
+        return part.has("cost")
+                ? TokenUsage.ofCall(fresh, cache.path("read").asLong(0), output, part.path("cost").asDouble(0))
+                : TokenUsage.ofUnpricedCall(fresh, cache.path("read").asLong(0), output);
     }
 
     private static JsonNode event(String line) {

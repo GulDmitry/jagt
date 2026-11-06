@@ -13,6 +13,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * One JSON object per line, an assistant turn carrying {@code message.usage}. The log prices nothing itself: a
@@ -23,6 +26,7 @@ import java.nio.file.Path;
 public class ClaudeSessionLog implements SessionLog {
 
     private final JsonMapper mapper = new JsonMapper();
+    private final Set<String> warned = ConcurrentHashMap.newKeySet();
 
     @Override
     public Spent spent(Path log, long from, long limit) {
@@ -125,8 +129,10 @@ public class ClaudeSessionLog implements SessionLog {
             long cacheWrite = usage.path("cache_creation_input_tokens").asLong(0);
             long cacheRead = usage.path("cache_read_input_tokens").asLong(0);
             long output = usage.path("output_tokens").asLong(0);
-            TokenUsage turn = TokenUsage.ofCall(input + cacheWrite, cacheRead, output,
-                    priceOf(message.path("model").asString(null), usage, input, cacheRead, output));
+            String model = message.path("model").asString(null);
+            TokenUsage turn = priceOf(model, usage, input, cacheRead, output)
+                    .map(cost -> TokenUsage.ofCall(input + cacheWrite, cacheRead, output, cost))
+                    .orElseGet(() -> unpriced(model, TokenUsage.ofUnpricedCall(input + cacheWrite, cacheRead, output)));
             return firstTurn && usage.has("cache_read_input_tokens") ? turn.asStart() : turn;
         } catch (RuntimeException unreadable) {
             return TokenUsage.NONE;
@@ -134,14 +140,21 @@ public class ClaudeSessionLog implements SessionLog {
     }
 
     /** A cache write without its TTL split is priced as the five-minute kind, the cheaper of the two. */
-    private static double priceOf(String model, JsonNode usage, long input, long cacheRead, long output) {
+    private static Optional<Double> priceOf(@Nullable String model, JsonNode usage, long input, long cacheRead, long output) {
         JsonNode split = usage.path("cache_creation");
         long write1h = split.path("ephemeral_1h_input_tokens").asLong(0);
         long write5m = split.isMissingNode()
                 ? usage.path("cache_creation_input_tokens").asLong(0)
                 : split.path("ephemeral_5m_input_tokens").asLong(0);
         return ClaudePrices.of(model)
-                .map(prices -> prices.costOf(input, write5m, write1h, cacheRead, output))
-                .orElse(0d);
+                .map(prices -> prices.costOf(input, write5m, write1h, cacheRead, output));
+    }
+
+    private TokenUsage unpriced(@Nullable String model, TokenUsage turn) {
+        if (!turn.isNone() && warned.add(String.valueOf(model))) {
+            log.atWarn().setMessage("model unpriced").addKeyValue("model", model)
+                    .addKeyValue("effect", "cost counted as a lower bound").addKeyValue("fix", "ClaudePrices").log();
+        }
+        return turn;
     }
 }

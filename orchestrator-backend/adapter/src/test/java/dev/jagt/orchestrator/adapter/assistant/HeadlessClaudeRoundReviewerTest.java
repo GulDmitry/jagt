@@ -257,7 +257,7 @@ class HeadlessClaudeRoundReviewerTest {
     @Test
     void booksTheReviewUnderItsKindTheMomentItReturns() {
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
-                "{\"structured_output\":{\"verdict\":\"ready\"},\"usage\":{\"input_tokens\":900,\"output_tokens\":40}}",
+                "{\"structured_output\":{\"verdict\":\"ready\"},\"total_cost_usd\":0,\"usage\":{\"input_tokens\":900,\"output_tokens\":40}}",
                 ""));
 
         reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));

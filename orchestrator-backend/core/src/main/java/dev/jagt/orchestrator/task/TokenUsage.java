@@ -1,20 +1,26 @@
 package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Tokens a model was handed and answered with. {@code inputTokens} counts fresh context, cache writes included —
  * both bill at input rates; {@code cachedInputTokens} counts cache reads, an order of magnitude cheaper.
+ * {@code unpricedCalls} are calls whose model has no known price: their cost is in no {@code costUsd}, which is
+ * then a lower bound.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TokenUsage(int calls, long inputTokens, long cachedInputTokens, long outputTokens,
-                         double costUsd, int coldStarts, int warmStarts) {
+                         double costUsd, int coldStarts, int warmStarts,
+                         @JsonInclude(JsonInclude.Include.NON_DEFAULT) @JsonSetter(nulls = Nulls.AS_EMPTY) int unpricedCalls) {
 
     public static final TokenUsage NONE = new TokenUsage(0, 0, 0, 0, 0);
 
     public TokenUsage(int calls, long inputTokens, long cachedInputTokens, long outputTokens, double costUsd) {
-        this(calls, inputTokens, cachedInputTokens, outputTokens, costUsd, 0, 0);
+        this(calls, inputTokens, cachedInputTokens, outputTokens, costUsd, 0, 0, 0);
     }
 
     /** One measured call. Zero tokens means the call never reached a model — that is NOT a call. */
@@ -26,10 +32,17 @@ public record TokenUsage(int calls, long inputTokens, long cachedInputTokens, lo
         return new TokenUsage(1, inputTokens, cachedInputTokens, outputTokens, costUsd);
     }
 
+    /** One measured call of a model with no known price: its cost is unknown, never 0. */
+    public static TokenUsage ofUnpricedCall(long inputTokens, long cachedInputTokens, long outputTokens) {
+        TokenUsage call = ofCall(inputTokens, cachedInputTokens, outputTokens, 0);
+        return call.isNone() ? call : new TokenUsage(1, inputTokens, cachedInputTokens, outputTokens, 0, 0, 0, 1);
+    }
+
     public TokenUsage plus(TokenUsage other) {
         return new TokenUsage(calls + other.calls, inputTokens + other.inputTokens,
                 cachedInputTokens + other.cachedInputTokens, outputTokens + other.outputTokens,
-                costUsd + other.costUsd, coldStarts + other.coldStarts, warmStarts + other.warmStarts);
+                costUsd + other.costUsd, coldStarts + other.coldStarts, warmStarts + other.warmStarts,
+                unpricedCalls + other.unpricedCalls);
     }
 
     /** Marks one measured call as the start of a prompt prefix: cold when it read nothing from the cache. */
@@ -39,7 +52,13 @@ public record TokenUsage(int calls, long inputTokens, long cachedInputTokens, lo
         }
         boolean cold = cachedInputTokens == 0 && inputTokens > 0;
         return new TokenUsage(calls, inputTokens, cachedInputTokens, outputTokens, costUsd,
-                cold ? 1 : 0, cold ? 0 : 1);
+                cold ? 1 : 0, cold ? 0 : 1, unpricedCalls);
+    }
+
+    /** Whether some call is missing from {@code costUsd}, so the true cost is at least that. */
+    @JsonIgnore
+    public boolean costIsLowerBound() {
+        return unpricedCalls > 0;
     }
 
     /** Starts whose cache fields were read; calls without them are in neither count, never counted warm. */

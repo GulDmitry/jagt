@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.command;
 
+import org.junit.jupiter.api.Test;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -27,5 +29,16 @@ class TokenFormatTest {
             "12300000,12M"})
     void writesATokenCountShortEnoughForItsColumnWithoutLosingItsScale(long tokens, String expected) {
         assertThat(TokenFormat.compact(tokens)).isEqualTo(expected);
+    }
+
+    @Test
+    void writesACostWithAnUnpricedCallAsALowerBound() {
+        assertThat(TokenFormat.cost(TokenUsage.ofCall(500, 0, 10, 1.25).plus(TokenUsage.ofUnpricedCall(500, 0, 10))))
+                .isEqualTo("≥1.25");
+    }
+
+    @Test
+    void writesAFullyPricedCostAsAPlainFigure() {
+        assertThat(TokenFormat.cost(TokenUsage.ofCall(500, 0, 10, 1.25))).isEqualTo("1.25");
     }
 }

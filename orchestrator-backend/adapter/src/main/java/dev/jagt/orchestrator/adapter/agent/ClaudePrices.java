@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -32,7 +33,7 @@ enum ClaudePrices {
     private final double output;
 
     /** Declaration order decides: the more specific family comes before the one its name contains. */
-    static Optional<ClaudePrices> of(String model) {
+    static Optional<ClaudePrices> of(@Nullable String model) {
         if (model == null) {
             return Optional.empty();
         }

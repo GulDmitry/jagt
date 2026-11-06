@@ -61,8 +61,9 @@ public class MasterCommand implements GlobalCommand {
 
     private String spent() {
         TokenUsage spent = usage.sessionByKind().getOrDefault(AssistantCallKind.MASTER_REVIEW, TokenUsage.NONE);
-        return "\n  spent:     " + TokenFormat.compact(spent.total()) + " tokens, $"
-                + String.format(java.util.Locale.ROOT, "%.2f", spent.costUsd()) + " since jagt started, each"
+        return "\n  spent:     " + TokenFormat.compact(spent.total()) + " tokens, "
+                + (spent.costIsLowerBound() ? "≥ $" : "$") + String.format(java.util.Locale.ROOT, "%.2f", spent.costUsd())
+                + " since jagt started, each"
                 + " round also charged to its task";
     }
 

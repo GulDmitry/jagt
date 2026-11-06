@@ -185,4 +185,36 @@ class FinishedTaskTest {
         assertThat(task.agentUsage()).isNull();
         assertThat(task.transcripts()).isEmpty();
     }
+
+    @Test
+    void readsTheCostAsALowerBoundWhenTheOwnReadsHadAnUnpricedCall() {
+        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, 1.0,
+                TokenUsage.ofUnpricedCall(10, 0, 10), TokenUsage.ofCall(10, 0, 10, 1.0), null, null);
+
+        assertThat(task.costIsLowerBound()).isTrue();
+    }
+
+    @Test
+    void readsTheCostAsALowerBoundWhenTheAgentSessionHadAnUnpricedCall() {
+        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, 1.0,
+                TokenUsage.ofCall(10, 0, 10, 1.0), TokenUsage.ofUnpricedCall(10, 0, 10), null, null);
+
+        assertThat(task.costIsLowerBound()).isTrue();
+    }
+
+    @Test
+    void readsTheCostAsCompleteWhenEveryCallWasPriced() {
+        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, 1.0,
+                TokenUsage.ofCall(10, 0, 10, 0.5), TokenUsage.ofCall(10, 0, 10, 0.5), null, null);
+
+        assertThat(task.costIsLowerBound()).isFalse();
+    }
+
+    @Test
+    void readsNoCostAsNoBoundWhateverTheUnpricedCalls() {
+        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, null,
+                TokenUsage.ofUnpricedCall(10, 0, 10), null, null, null);
+
+        assertThat(task.costIsLowerBound()).isFalse();
+    }
 }
