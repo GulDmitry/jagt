@@ -3,9 +3,9 @@ package dev.jagt.orchestrator.adapter;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.Notifier;
 import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.service.BoardUrl;
 import dev.jagt.orchestrator.service.ConfigService;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
 
@@ -15,12 +15,12 @@ public class DesktopNotifier implements Notifier {
 
     private final UserNotifier os;
     private final ConfigService config;
-    private final String boardUrl;
+    private final BoardUrl boardUrl;
 
-    public DesktopNotifier(UserNotifier os, ConfigService config, @Value("${server.port:8290}") String port) {
+    public DesktopNotifier(UserNotifier os, ConfigService config, BoardUrl boardUrl) {
         this.os = os;
         this.config = config;
-        this.boardUrl = "http://localhost:" + port + "/";
+        this.boardUrl = boardUrl;
     }
 
     @Override
@@ -39,8 +39,7 @@ public class DesktopNotifier implements Notifier {
     }
 
     private @Nullable String link(@Nullable String taskId) {
-        return taskId == null ? null
-                : boardUrl + "?task=" + java.net.URLEncoder.encode(taskId, java.nio.charset.StandardCharsets.UTF_8);
+        return taskId == null ? null : boardUrl.ofTask(taskId);
     }
 
     private static String title(Notification notification) {

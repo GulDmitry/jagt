@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.service.BoardUrl;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig;
@@ -20,7 +21,7 @@ class DesktopNotifierTest {
     void namesTheTaskInTheBannerTitleAndClicksThroughToItsCard() {
         UserNotifier os = mock(UserNotifier.class);
 
-        new DesktopNotifier(os, mock(ConfigService.class), "8290")
+        new DesktopNotifier(os, mock(ConfigService.class), new BoardUrl("8290"))
                 .deliver(Notification.watchdog("ABC-42", "agent unresponsive", "silent for 6 min"));
 
         verify(os).notify("jagt · ABC-42 · agent unresponsive", "silent for 6 min",
@@ -31,7 +32,7 @@ class DesktopNotifierTest {
     void namesNoTaskWhenTheNotificationIsAboutTheInstallItself() {
         UserNotifier os = mock(UserNotifier.class);
 
-        new DesktopNotifier(os, mock(ConfigService.class), "8290")
+        new DesktopNotifier(os, mock(ConfigService.class), new BoardUrl("8290"))
                 .deliver(Notification.install("restart needed", "the running jar was rebuilt"));
 
         verify(os).notify("jagt · restart needed", "the running jar was rebuilt", null);
@@ -41,7 +42,7 @@ class DesktopNotifierTest {
     void namesTheAliasBeforeTheTaskIdInTheBannerTitle() {
         UserNotifier os = mock(UserNotifier.class);
 
-        new DesktopNotifier(os, mock(ConfigService.class), "8290")
+        new DesktopNotifier(os, mock(ConfigService.class), new BoardUrl("8290"))
                 .deliver(Notification.watchdog("ABC-42", "agent stopped", "silent for 6 min").withAlias("p3"));
 
         verify(os).notify("jagt · p3 · ABC-42 · agent stopped", "silent for 6 min",
@@ -50,14 +51,14 @@ class DesktopNotifierTest {
 
     @Test
     void isTheNotifierTheConfigNamesDesktop() {
-        assertThat(new DesktopNotifier(mock(UserNotifier.class), mock(ConfigService.class), "8290").id()).isEqualTo("desktop");
+        assertThat(new DesktopNotifier(mock(UserNotifier.class), mock(ConfigService.class), new BoardUrl("8290")).id()).isEqualTo("desktop");
     }
 
     @Test
     void takesWhatTheDefaultConfigListsAndNotADeploy() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults());
-        DesktopNotifier desktop = new DesktopNotifier(mock(UserNotifier.class), config, "8290");
+        DesktopNotifier desktop = new DesktopNotifier(mock(UserNotifier.class), config, new BoardUrl("8290"));
 
         assertThat(desktop.takes(Notification.requestOpened("ABC-42", "!1"))).isTrue();
         assertThat(desktop.takes(Notification.watchdog("ABC-42", "agent stopped", "silent"))).isTrue();
@@ -69,7 +70,7 @@ class DesktopNotifierTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withNotifications(new NotificationsConfig(List.of("deployed"), null)));
-        DesktopNotifier desktop = new DesktopNotifier(mock(UserNotifier.class), config, "8290");
+        DesktopNotifier desktop = new DesktopNotifier(mock(UserNotifier.class), config, new BoardUrl("8290"));
 
         assertThat(desktop.takes(Notification.deployed("ABC-42", "deployed"))).isTrue();
         assertThat(desktop.takes(Notification.requestOpened("ABC-42", "!1"))).isFalse();
@@ -82,7 +83,7 @@ class DesktopNotifierTest {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withNotifications(new NotificationsConfig(List.of("no-such-event"), null)));
 
-        assertThat(new DesktopNotifier(mock(UserNotifier.class), config, "8290")
+        assertThat(new DesktopNotifier(mock(UserNotifier.class), config, new BoardUrl("8290"))
                 .takes(Notification.install("restart needed", "x"))).isFalse();
     }
 }

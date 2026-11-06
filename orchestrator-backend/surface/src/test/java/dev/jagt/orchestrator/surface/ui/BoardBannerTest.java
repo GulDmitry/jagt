@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.ui;
 
+import dev.jagt.orchestrator.service.BoardUrl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -15,7 +16,7 @@ class BoardBannerTest {
     @Test
     @ResourceLock(Resources.GLOBAL)
     void tellsTheHumanWhereTheBoardListens(CapturedOutput output) {
-        new BoardBanner("8290").run(null);
+        new BoardBanner(new BoardUrl("8290")).run(null);
 
         assertThat(output.getOut()).contains("jagt board → http://localhost:8290   (Ctrl-C stops)");
     }
