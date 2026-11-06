@@ -71,13 +71,16 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
                              @Nullable QaConfig qa, @Nullable Map<String, RoleConfig> roles,
                              @Nullable String codeHost, @Nullable NotificationsConfig notifications) {
 
-        /** Which events raise a desktop banner; unset keeps each event's own default, an unknown id is ignored. */
+        /**
+         * Which events raise a desktop banner, and which a team channel's command receives; unset keeps each
+         * event's own default for the desktop, an unknown id is ignored.
+         */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record NotificationsConfig(@Nullable List<String> desktop) {
+        public record NotificationsConfig(@Nullable List<String> desktop, @Nullable ChannelConfig channel) {
 
             public static NotificationsConfig defaults() {
-                return new NotificationsConfig(null);
+                return new NotificationsConfig(null, null);
             }
 
             public Set<Notification.Event> desktopEvents() {
@@ -85,8 +88,38 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
                     return Arrays.stream(Notification.Event.values()).filter(Notification.Event::onByDefault)
                             .collect(Collectors.toUnmodifiableSet());
                 }
-                return desktop.stream().map(Notification.Event::ofId).flatMap(Optional::stream)
+                return eventsOf(desktop);
+            }
+
+            public ChannelConfig channel() {
+                return channel == null ? ChannelConfig.defaults() : channel;
+            }
+
+            private static Set<Notification.Event> eventsOf(List<String> ids) {
+                return ids.stream().map(Notification.Event::ofId).flatMap(Optional::stream)
                         .collect(Collectors.toUnmodifiableSet());
+            }
+
+            /** An empty command is off; unset events are a request opening and a deploy landing. */
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            @With
+            public record ChannelConfig(@Nullable List<String> command, @Nullable List<String> events) {
+
+                public static ChannelConfig defaults() {
+                    return new ChannelConfig(null, null);
+                }
+
+                public List<String> commandOrEmpty() {
+                    boolean blank = command == null || command.isEmpty() || command.get(0) == null
+                            || command.get(0).isBlank();
+                    return blank ? List.of() : List.copyOf(command);
+                }
+
+                public Set<Notification.Event> eventSet() {
+                    return events == null
+                            ? Set.of(Notification.Event.REQUEST_OPENED, Notification.Event.DEPLOYED)
+                            : eventsOf(events);
+                }
             }
         }
 

@@ -128,6 +128,17 @@ public class ProcessRunner implements Processes {
 
     @Override
     public Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
+        return execute(workingDir, timeout, env, null, command);
+    }
+
+    @Override
+    public Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, String stdin,
+                      List<String> command) {
+        return execute(workingDir, timeout, env, stdin, command);
+    }
+
+    private Result execute(@Nullable Path workingDir, Duration timeout, Map<String, String> env,
+                           @Nullable String stdin, List<String> command) {
         Process process = null;
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
@@ -137,9 +148,14 @@ public class ProcessRunner implements Processes {
             builder.environment().put("GIT_OPTIONAL_LOCKS", "0");
             builder.environment().putAll(env);
             // /dev/null so no subprocess steals the console's stdin, and a CLI waiting on it gets instant EOF.
-            builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
+            if (stdin == null) {
+                builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
+            }
             process = builder.start();
             running.add(process);
+            if (stdin != null) {
+                feed(process, stdin);
+            }
             // Drain both streams before waitFor to avoid pipe-buffer deadlock on chatty commands.
             var stdoutReader = process.inputReader();
             var stderrReader = process.errorReader();
@@ -172,6 +188,16 @@ public class ProcessRunner implements Processes {
                 running.remove(process);
             }
         }
+    }
+
+    private static void feed(Process process, String stdin) {
+        Thread.startVirtualThread(() -> {
+            try (var out = process.getOutputStream()) {
+                out.write(stdin.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                // a command that exits without reading its input is judged by its exit
+            }
+        });
     }
 
     /** The signal stopping jagt reaches its process group first: a command ending from here on was not judged. */

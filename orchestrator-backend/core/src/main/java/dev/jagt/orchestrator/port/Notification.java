@@ -43,6 +43,10 @@ public record Notification(Topic topic, @With Event event, @Nullable String task
             this.onByDefault = onByDefault;
         }
 
+        public String id() {
+            return id;
+        }
+
         public boolean onByDefault() {
             return onByDefault;
         }

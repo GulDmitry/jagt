@@ -55,6 +55,11 @@ orchestrator:
     # install: restart needed   usage: a usage window filled   request-opened: a task's request opened
     # deployed: a deploy landed (off by default)
     desktop: [your-move, auto-review, stopped, housekeeping, install, usage, request-opened]
+    # A team channel: the command gets one JSON object on stdin, {"event","task","alias","title","body"}, null fields
+    # left out. Blank = off. The secret (a webhook URL) stays in your environment: the command reads it from there.
+    # channel:
+    #   command: []          # e.g. ["sh", "-c", "curl -s -X POST -H 'Content-Type: application/json' -d @- \"$TEAM_WEBHOOK\""]
+    #   events: [request-opened, deployed]
   keepAwake: false         # true: macOS stays awake while the Master acts, auto-review polls or `take` runs
   interactionLog: true     # what you press on the board, to `interactions.jsonl` beside state.json; 1 MB, one `.1`
   # terminal: kitty       # kitty | ghostty: the viewer; ghostty is macOS only and needs Ghostty 1.3 or newer

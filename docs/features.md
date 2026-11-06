@@ -18,7 +18,7 @@
   [spec](../openspec/specs/attention/spec.md#requirement-attention-tiers)
 - **Badge names the act** — Each badge says which action waits for you, with a sentence in its tooltip.
   [spec](../openspec/specs/attention/spec.md#requirement-the-badge-names-the-act)
-- **Banners per event** — `notifications.desktop` lists the events raising a desktop banner, a request opening and, off by default, a deploy landing.
+- **Banners and a team channel** — `notifications.desktop` and `notifications.channel` choose the events for a banner or a command's stdin.
   [spec](../openspec/specs/attention/spec.md#requirement-desktop-banners-are-chosen-per-event)
 
 ## Board · [spec](../openspec/specs/board/spec.md)

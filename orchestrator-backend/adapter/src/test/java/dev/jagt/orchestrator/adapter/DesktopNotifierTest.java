@@ -68,7 +68,7 @@ class DesktopNotifierTest {
     void takesADeployOnlyWhenTheConfigListsDeployed() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
-                .withNotifications(new NotificationsConfig(List.of("deployed"))));
+                .withNotifications(new NotificationsConfig(List.of("deployed"), null)));
         DesktopNotifier desktop = new DesktopNotifier(mock(UserNotifier.class), config, "8290");
 
         assertThat(desktop.takes(Notification.deployed("ABC-42", "deployed"))).isTrue();
@@ -80,7 +80,7 @@ class DesktopNotifierTest {
     void takesNothingWhenTheConfigListsOnlyAnUnknownEvent() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults()
-                .withNotifications(new NotificationsConfig(List.of("no-such-event"))));
+                .withNotifications(new NotificationsConfig(List.of("no-such-event"), null)));
 
         assertThat(new DesktopNotifier(mock(UserNotifier.class), config, "8290")
                 .takes(Notification.install("restart needed", "x"))).isFalse();

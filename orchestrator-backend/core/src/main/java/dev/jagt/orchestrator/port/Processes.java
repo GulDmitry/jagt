@@ -37,6 +37,9 @@ public interface Processes {
 
     Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command);
 
+    /** As above, with {@code stdin} written to the command's input and then closed. */
+    Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, String stdin, List<String> command);
+
     /**
      * Starts a command that OUTLIVES jagt and does not share its signals. The returned handle is the command
      * itself, so {@code destroy()} still reaches it.

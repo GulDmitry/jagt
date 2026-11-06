@@ -41,6 +41,22 @@ class ProcessRunnerTest {
     }
 
     @Test
+    void feedsTheGivenInputToTheCommandAndClosesIt() {
+        String echoed = new ProcessRunner().run(null, Duration.ofSeconds(5), java.util.Map.of(), "{\"a\":1}",
+                List.of("cat")).stdout();
+
+        assertThat(echoed).isEqualTo("{\"a\":1}");
+    }
+
+    @Test
+    void passesTheGivenEnvironmentToTheCommand() {
+        String seen = new ProcessRunner().run(null, Duration.ofSeconds(5), java.util.Map.of("ABC_HOOK", "x"),
+                List.of("sh", "-c", "printf %s \"$ABC_HOOK\"")).stdout();
+
+        assertThat(seen).isEqualTo("x");
+    }
+
+    @Test
     void launchesTheAppOutsideTheProcessGroupTheTerminalSendsCtrlCTo() {
         ProcessRunner runner = new ProcessRunner();
         Process launched = runner.runDetached(null, List.of("sleep", "5"));

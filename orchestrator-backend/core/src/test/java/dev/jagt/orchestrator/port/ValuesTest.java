@@ -71,6 +71,12 @@ class ValuesTest {
     }
 
     @Test
+    void namesAnEventByTheIdAConfigurationListsIt() {
+        assertThat(Notification.Event.REQUEST_OPENED.id()).isEqualTo("request-opened");
+        assertThat(Notification.Event.ofId(Notification.Event.DEPLOYED.id())).contains(Notification.Event.DEPLOYED);
+    }
+
+    @Test
     void wantsEveryNotificationUnlessAChannelSaysOtherwise() {
         Notifier everything = new Notifier() {
             @Override

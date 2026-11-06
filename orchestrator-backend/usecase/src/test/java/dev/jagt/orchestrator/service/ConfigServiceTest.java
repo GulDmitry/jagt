@@ -102,6 +102,37 @@ class ConfigServiceTest {
     }
 
     @Test
+    void readsTheCommandAndEventsTheHumanListedForTheTeamChannel(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  notifications:\n    channel:\n"
+                + "      command: [sh, -c, cat]\n      events: [stopped, no-such-event]\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        var channel = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                .load().notifications().channel();
+
+        assertThat(channel.commandOrEmpty()).containsExactly("sh", "-c", "cat");
+        assertThat(channel.eventSet()).containsExactly(Notification.Event.STOPPED);
+    }
+
+    @Test
+    void leavesTheTeamChannelOffAndListsARequestAndADeployWhereTheHumanWroteNone() {
+        var channel = ConfigFile.defaults().notifications().channel();
+
+        assertThat(channel.commandOrEmpty()).isEmpty();
+        assertThat(channel.eventSet())
+                .containsExactlyInAnyOrder(Notification.Event.REQUEST_OPENED, Notification.Event.DEPLOYED);
+    }
+
+    @Test
+    void treatsABlankFirstWordAsNoCommand() {
+        var channel = new ConfigFile.NotificationsConfig.ChannelConfig(List.of(" "), null);
+
+        assertThat(channel.commandOrEmpty()).isEmpty();
+    }
+
+    @Test
     void qaIsOffWhenNeitherTheRolesKeyNorTheOldOneSaysOtherwise(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
