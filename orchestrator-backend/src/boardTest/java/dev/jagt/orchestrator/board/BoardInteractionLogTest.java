@@ -67,12 +67,15 @@ class BoardInteractionLogTest extends BoardPageContext {
     }
 
     @Test
-    void aTaskTurningRequiredIsLoggedOnceByItsStatusAlone() throws Exception {
+    void aTaskTurningRequiredIsLoggedOnceByItsStatusAloneWhateverBoardsAreOpen() throws Exception {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
+        Page second = session.newPage();
+        second.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#tasks .row")).hasCount(1);
+        assertThat(second.locator("#tasks .row")).hasCount(1);
 
         page.waitForResponse("**/api/interactions", () -> {
             state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -80,6 +83,7 @@ class BoardInteractionLogTest extends BoardPageContext {
             state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
                     TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
         });
+        second.waitForResponse("**/api/interactions", () -> second.keyboard().press("j"));
 
         String log = Files.readString(root.resolve("interactions.jsonl"));
         org.assertj.core.api.Assertions.assertThat(log).contains("\"control\":\"shown:required\",\"status\":\"REVIEWED\"")

@@ -39,6 +39,9 @@ export const note = (name, taskId) => {
 
 let required = null;
 let jobsFailed = false;
+// One board per browser logs sightings, the next open one taking over when it closes.
+let sighting = !navigator.locks;
+navigator.locks?.request('jagt-sightings', () => new Promise(() => sighting = true));
 
 // A sighting is logged when it BEGINS: the first board seen only seeds, since when it turned required is unknown.
 export function watch(tasks, failing) {
@@ -46,7 +49,7 @@ export function watch(tasks, failing) {
   jobsFailed = failing;
   if (!tasks.length) return;
   const now = new Set(tasks.filter((task) => task.attention === 'REQUIRED').map((task) => task.id));
-  if (required) tasks.filter((task) => now.has(task.id) && !required.has(task.id)).forEach((task) => note('shown:required', task.id));
+  if (required && sighting) tasks.filter((task) => now.has(task.id) && !required.has(task.id)).forEach((task) => note('shown:required', task.id));
   required = now;
 }
 
