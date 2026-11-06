@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
@@ -14,19 +13,18 @@ import java.util.List;
 /** On Linux Claude's sandbox is bubblewrap with socat relaying its network, neither of which ships with the OS. */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "claude", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "linux")
 @RequiredArgsConstructor
 public class ClaudeSandboxCheck implements StartupCheck {
 
     private static final List<String> LINUX_BINARIES = List.of("bwrap", "socat");
 
-    private final OrchestratorProperties properties;
     private final ConfigService configService;
     private final Host host;
 
     @Override
     public List<Problem> problems() {
-        if (!"linux".equalsIgnoreCase(properties.platform())
-                || !configService.load().agent().sandboxOrDefault().enabledOrDefault()) {
+        if (!configService.load().agent().sandboxOrDefault().enabledOrDefault()) {
             return List.of();
         }
         List<String> missing = LINUX_BINARIES.stream().filter(name -> !host.onPath(name)).toList();

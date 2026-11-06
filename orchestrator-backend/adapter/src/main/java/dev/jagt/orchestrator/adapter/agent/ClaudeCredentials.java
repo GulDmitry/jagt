@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.port.Host;
-import dev.jagt.orchestrator.port.Processes;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -13,9 +10,8 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
+import java.util.Optional;
 
 /** The login Claude Code stored: the macOS Keychain first, else its credentials file. Never refreshed here. */
 @Component
@@ -23,36 +19,19 @@ import java.util.List;
 public class ClaudeCredentials {
 
     private static final JsonMapper JSON = new JsonMapper();
-    private static final String KEYCHAIN_SERVICE = "Claude Code-credentials";
-    private static final int KEYCHAIN_ITEM_MISSING = 44;
-    private static final Duration KEYCHAIN_TIMEOUT = Duration.ofSeconds(10);
 
-    private final Processes processes;
-    private final boolean macos;
+    private final Optional<ClaudeKeychain> keychain;
     private final Path file;
 
-    public ClaudeCredentials(Processes processes, Host host, @Value("${orchestrator.platform:macos}") String platform) {
-        this.processes = processes;
-        this.macos = "macos".equals(platform);
+    public ClaudeCredentials(Optional<ClaudeKeychain> keychain, Host host) {
+        this.keychain = keychain;
         this.file = host.home().resolve(".claude").resolve(".credentials.json");
     }
 
     OAuthCredential read(Instant now) {
-        if (macos) {
-            Processes.Result keychain;
-            try {
-                keychain = processes.run(null, KEYCHAIN_TIMEOUT, List.of(Executables.resolve("security"),
-                        "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"));
-            } catch (IllegalStateException e) {
-                return new OAuthCredential.Failed("keychain read failed " + e.getMessage());
-            }
-            if (keychain.exitCode() == 0) {
-                return parse(keychain.stdout(), now);
-            }
-            if (keychain.exitCode() != KEYCHAIN_ITEM_MISSING) {
-                return new OAuthCredential.Failed("keychain read exited " + keychain.exitCode() + " "
-                        + keychain.stderr());
-            }
+        Optional<OAuthCredential> stored = keychain.flatMap(k -> k.read(now));
+        if (stored.isPresent()) {
+            return stored.get();
         }
         if (!Files.exists(file)) {
             return new OAuthCredential.None();

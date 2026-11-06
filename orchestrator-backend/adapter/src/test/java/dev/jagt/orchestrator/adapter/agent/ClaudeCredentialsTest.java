@@ -8,12 +8,12 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ClaudeCredentialsTest {
@@ -64,75 +64,45 @@ class ClaudeCredentialsTest {
         Host host = mock(Host.class);
         when(host.home()).thenReturn(home);
 
-        var credential = new ClaudeCredentials(processes, host, "macos").read(NOW);
+        var credential = new ClaudeCredentials(Optional.of(new ClaudeKeychain(processes)), host).read(NOW);
 
         assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-file", ""));
     }
 
     @Test
-    void answersFailedRatherThanNoSubscriptionWhenTheKeychainRefused(@TempDir Path home) {
-        Processes processes = mock(Processes.class);
-        when(processes.run(any(), any(), anyList()))
-                .thenReturn(new Processes.Result(51, "", "user interaction is not allowed"));
-
-        Host host = mock(Host.class);
-        when(host.home()).thenReturn(home);
-
-        var credential = new ClaudeCredentials(processes, host, "macos").read(NOW);
-
-        assertThat(credential).isEqualTo(new OAuthCredential.Failed(
-                "keychain read exited 51 user interaction is not allowed"));
-    }
-
-    @Test
-    void takesTheKeychainLoginWhenItHoldsOne(@TempDir Path home) {
+    void takesTheKeychainLoginInsteadOfLookingForTheFile(@TempDir Path home) {
         Processes processes = mock(Processes.class);
         when(processes.run(any(), any(), anyList())).thenReturn(new Processes.Result(0,
                 "{\"claudeAiOauth\": {\"accessToken\": \"tok-keychain\"}}", ""));
         Host host = mock(Host.class);
         when(host.home()).thenReturn(home);
 
-        var credential = new ClaudeCredentials(processes, host, "macos").read(NOW);
+        var credential = new ClaudeCredentials(Optional.of(new ClaudeKeychain(processes)), host).read(NOW);
 
         assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-keychain", ""));
     }
 
     @Test
-    void answersFailedWhenTheKeychainCannotBeRun(@TempDir Path home) {
-        Processes processes = mock(Processes.class);
-        when(processes.run(any(), any(), anyList())).thenThrow(new IllegalStateException("security not found"));
-        Host host = mock(Host.class);
-        when(host.home()).thenReturn(home);
-
-        var credential = new ClaudeCredentials(processes, host, "macos").read(NOW);
-
-        assertThat(credential).isEqualTo(new OAuthCredential.Failed("keychain read failed security not found"));
-    }
-
-    @Test
     void answersNoSubscriptionWhenThereIsNoCredentialsFile(@TempDir Path home) {
-        Processes processes = mock(Processes.class);
         Host host = mock(Host.class);
         when(host.home()).thenReturn(home);
 
-        var credential = new ClaudeCredentials(processes, host, "linux").read(NOW);
+        var credential = new ClaudeCredentials(Optional.empty(), host).read(NOW);
 
         assertThat(credential).isEqualTo(new OAuthCredential.None());
     }
 
     @Test
-    void readsTheCredentialsFileWithoutAskingTheKeychainOffMacos(@TempDir Path home) throws Exception {
-        Processes processes = mock(Processes.class);
+    void readsTheCredentialsFileWhenNoKeychainIsWired(@TempDir Path home) throws Exception {
         Files.createDirectories(home.resolve(".claude"));
         Files.writeString(home.resolve(".claude/.credentials.json"),
                 "{\"claudeAiOauth\": {\"accessToken\": \"tok-file\"}}");
         Host host = mock(Host.class);
         when(host.home()).thenReturn(home);
 
-        var credential = new ClaudeCredentials(processes, host, "linux").read(NOW);
+        var credential = new ClaudeCredentials(Optional.empty(), host).read(NOW);
 
         assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-file", ""));
-        verifyNoInteractions(processes);
     }
 
     @Test
@@ -141,7 +111,7 @@ class ClaudeCredentialsTest {
         Host host = mock(Host.class);
         when(host.home()).thenReturn(home);
 
-        var credential = new ClaudeCredentials(mock(Processes.class), host, "linux").read(NOW);
+        var credential = new ClaudeCredentials(Optional.empty(), host).read(NOW);
 
         assertThat(credential).isEqualTo(new OAuthCredential.Failed("credentials file unreadable IOException"));
     }

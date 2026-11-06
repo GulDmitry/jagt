@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -38,6 +39,9 @@ class LinuxProfileContextTest {
     @Autowired
     private TerminalDriver terminalDriver;
 
+    @Autowired
+    private ApplicationContext context;
+
     @DynamicPropertySource
     static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) throws IOException {
         Files.createDirectories(root.resolve("roles/session"));
@@ -54,5 +58,11 @@ class LinuxProfileContextTest {
     void picksTheLinuxNotifierAndTerminalWithoutAnyMacOsBeanBeingRequired() {
         assertThat(userNotifier).isInstanceOf(LibNotifyNotifier.class);
         assertThat(terminalDriver).isInstanceOf(LinuxKittyTerminalDriver.class);
+    }
+
+    @Test
+    void checksTheClaudeSandboxAndLeavesTheMacKeychainOut() {
+        assertThat(context.containsBean("claudeSandboxCheck")).isTrue();
+        assertThat(context.containsBean("claudeKeychain")).isFalse();
     }
 }

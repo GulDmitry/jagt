@@ -63,6 +63,12 @@ class OrchestratorApplicationTest {
     }
 
     @Test
+    void readsTheMacKeychainAndSkipsTheLinuxSandboxCheckOnTheDefaultPlatform() {
+        assertThat(context.containsBean("claudeKeychain")).isTrue();
+        assertThat(context.containsBean("claudeSandboxCheck")).isFalse();
+    }
+
+    @Test
     void keepsTheDevelopersOwnStateFileOutOfABootedContext() {
         assertThat(context.getBean(OrchestratorPaths.class).stateFile().toString())
                 .startsWith(root.toString());
