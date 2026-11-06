@@ -1,12 +1,13 @@
 // One task, as one card: every fact arrives in its props, so a card renders the same wherever it is drawn.
 
 import {bothNames, stopLines, switchLines} from '../core/format.js';
+import {t} from '../core/i18n.js';
 import {httpOnly} from '../core/dom.js';
 import {html} from './html.js';
 import {Meta} from './Meta.js';
 
 const Flag = ({taskId, on}) => html`<button class="flag" data-flag=${taskId} aria-pressed=${String(on)}
-  aria-label="flag as important" data-tip="important — kept in this browser only">${on ? '⚑' : '⚐'}</button>`;
+  aria-label=${t('card.flag')} data-tip=${t('card.flag.tip')}>${on ? '⚑' : '⚐'}</button>`;
 
 // A verb drawn apart stays muted at the row's end even where the move names it.
 const verbClass = (action) => [action.primary && !action.apart && 'primary', action.again && 'again', action.apart && 'apart']

@@ -1,5 +1,6 @@
 // The wiring, and nothing else: no module below here has to know that another one exists.
 
+import {t} from './core/i18n.js';
 import * as store from './core/store.js';
 import * as addProject from './ui/addproject.js';
 import {run, runGlobal} from './ui/act.js';
@@ -49,7 +50,7 @@ const openVerb = (id) => {
 };
 menu.onPick(openVerb);
 header.onJobsClick(() => openVerb('jobs'));
-showLog(() => showReport('log — this session', sessionLog()));
+showLog(() => showReport(t('log.title'), sessionLog()));
 
 // A linked task lands in the FILTER rather than a selection of its own: the control that did it is visible, and
 // clearing it is a button already on the page.

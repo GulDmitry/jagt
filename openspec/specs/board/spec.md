@@ -13,10 +13,10 @@ no second answer to a board question. Stopping the backend is no verb.
 - **WHEN** `ship` runs
 - **THEN** it asks its button's `FlowRules`
 ### Requirement: A mark says what it replaces
-The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours
-are [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the New task form's branch-strategy
-picker and MCP schema both read `task/BranchStrategy`. A verb with all its inputs gets no form. The
-project key renders only where projects are several, in the install or the task.
+The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours are
+[design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the New task form's branch-strategy picker and MCP schema both
+read `task/BranchStrategy`. A verb with all its inputs gets no form. The project key renders only where projects are several, in the install or the
+task.
 #### Scenario: A mark is unclear
 - **WHEN** the human opens `Help`
 - **THEN** above the commands every mark stands beside its one board-wide meaning
@@ -62,10 +62,9 @@ A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `Com
 - **WHEN** the human types `do` alone
 - **THEN** the launch row takes the focus
 ### Requirement: One endpoint, one dialog
-`GET /api/commands/{id}` SHALL serve any report, `POST` run any other; no command but the launch row's pickers
-(`POST /api/tasks`) gets its own endpoint, a GET never starts a task. A report opens in a `<dialog>` over the board,
-never a page. One about one task (`aboutOneTask`) gets no bar button, no tier 2 offer, and one line typing into that
-session (`POST /api/tasks/say`): not a verb, the only control there.
+`GET /api/commands/{id}` SHALL serve any report, `POST` run any other; no command but the launch row's pickers (`POST /api/tasks`) gets its own
+endpoint, a GET never starts a task. A report opens in a `<dialog>` over the board, never a page. One about one task (`aboutOneTask`) gets no bar
+button, no tier 2 offer, and one line typing into that session (`POST /api/tasks/say`): not a verb, the only control there.
 #### Scenario: Closing
 - **WHEN** the human presses Escape, the button, or the dimmed area
 - **THEN** the dialog closes
@@ -120,12 +119,13 @@ ship on. The Deploy button is green while the work is live. A `⚐` beside the t
 - **WHEN** ABC-42 shipped twice
 - **THEN** its request chip's hover reads `shipped 2 times`
 ### Requirement: The gear holds the board's settings
-One gear at the header's top right SHALL open a menu choosing the theme: `auto` follows `prefers-color-scheme`,
-`light` and `dark` force it. The choice is kept in this browser alone and applied before the first paint. A colour
-keeps its one meaning in both themes. The legend has the gear's row.
-#### Scenario: Dark chosen
-- **WHEN** the human chooses `dark` on the gear and reloads the board
-- **THEN** the page is dark with no flash, and `auto` clears the choice
+One gear at the header's top right SHALL open a menu: the theme (`auto` follows `prefers-color-scheme`, `light` and `dark` force it) and the
+language, one entry per catalog file present, named by that catalog. Both are kept in this browser alone and applied before the first paint. English
+is the default and fills any key a catalog lacks; only the board's own UI text is translated, never the backend's words or times. A colour keeps its
+one meaning in both themes. The legend has the gear's row.
+#### Scenario: Dark and Polish chosen
+- **WHEN** the human chooses `dark` and Polish on the gear and reloads the board
+- **THEN** the page is dark with no flash and its header reads Polish, a key Polish lacks reads English, and `auto` clears the theme
 ### Requirement: A plan shows what changed since its last approval
 Each `approve-plan` SHALL keep the approved `plan.md` as the task's baseline, in jagt's own root, not the worktree.
 The Artifacts tab SHALL render `plan.md` against that baseline: a line new or changed is bold with a bar,

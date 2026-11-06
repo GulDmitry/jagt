@@ -1,6 +1,7 @@
 // One action on one task, pressed or typed: the page decides nothing about whether it is legal.
 
 import {api, refusal} from '../core/api.js';
+import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 import {blocked, hold, release, waitingFor} from './inflight.js';
 import {refresh} from './refresh.js';
@@ -26,12 +27,12 @@ export async function runGlobal(verbId) {
 export async function run(taskId, actionId) {
   const task = store.taskById(taskId);
   if (!task) {
-    toast(`no task ${taskId} on the board any more`, true);
+    toast(t('act.gone', {task: taskId}), true);
     return;
   }
   const action = actionOf(task, actionId);
   if (blocked(task, action)) {
-    toast(`${task.id} is already running ${waitingFor(task, action)}`, true);
+    toast(t('act.running', {task: task.id, what: waitingFor(task, action)}), true);
     return;
   }
   const question = (task.confirmations || {})[action.id];

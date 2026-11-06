@@ -2,6 +2,7 @@
 
 import {api, refusal} from '../core/api.js';
 import {parse, verdictOf} from '../core/grammar.js';
+import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 import {run} from './act.js';
 import {openReport} from './dialogs.js';
@@ -122,7 +123,7 @@ form.onsubmit = async (event) => {
     }
   }
   await sending(form, {
-    waiting: 'interpreting…',                    // a model call: seconds
+    waiting: t('palette.interpreting'),                    // a model call: seconds
     send: () => api('/api/interpret', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

@@ -1,6 +1,7 @@
 // The form that starts a task, in its own dialog, and the only place its fields are read.
 
 import {api} from '../core/api.js';
+import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 import * as projects from './projects.js';
 import {submits} from './submit.js';
@@ -47,17 +48,17 @@ const notes = document.getElementById('notes');
 
 const problem = () => {
   const ticket = ref.value.trim();
-  if (/\s/.test(ticket)) return 'A ticket is a key or a URL, not words';
-  if (!ticket && !notes.value.trim()) return 'Give a ticket, or notes saying what to do';
-  if (!ticket && !projects.chosen() && store.projects().length !== 1) return 'Choose a project for your notes';
-  return projects.chosen() || plan.checked ? null : 'Choose a project, or start with plan first';
+  if (/\s/.test(ticket)) return t('launch.problem.words');
+  if (!ticket && !notes.value.trim()) return t('launch.problem.empty');
+  if (!ticket && !projects.chosen() && store.projects().length !== 1) return t('launch.problem.notes');
+  return projects.chosen() || plan.checked ? null : t('launch.problem.project');
 };
 
 form.addEventListener('change', () => document.getElementById('launch-state').classList.remove('bad'));
 
 submits(form, {
   problem,
-  waiting: 'starting…',
+  waiting: t('launch.starting'),
   send: () => api('/api/tasks', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},

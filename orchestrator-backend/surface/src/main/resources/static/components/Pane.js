@@ -2,19 +2,20 @@
 
 import {Card} from './Card.js';
 import {reportParts, switchLines} from '../core/format.js';
+import {t} from '../core/i18n.js';
 import {html} from './html.js';
 import {Report} from './Report.js';
 import {draw} from '../ui/mermaid.js';
 import {dayAndMinutes, minutes, sameDay} from '../core/time.js';
 
-export const TABS = [{id: 'overview', label: 'Overview'}, {id: 'round', label: 'Drafted review'},
-  {id: 'artifacts', label: 'Artifacts'}, {id: 'session', label: 'Session'}];
+export const TABS = [{id: 'overview', label: t('tab.overview')}, {id: 'round', label: t('tab.round')},
+  {id: 'artifacts', label: t('tab.artifacts')}, {id: 'session', label: t('tab.session')}];
 
 // Today's steps by the clock alone; an older one by its day too.
 const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
 
 const History = ({task, now}) => html`<section class="history" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
-  <h2 class="group-head">status history</h2>
+  <h2 class="group-head">${t('pane.history')}</h2>
   <ol>${[...(task.history || [])].reverse().map((step) => html`<li data-tip=${step.why || undefined}
     tabIndex=${step.why ? 0 : undefined}>
     <span class="age">${when(step.at, now)}</span> ${step.label || step.status}${
@@ -24,33 +25,33 @@ const History = ({task, now}) => html`<section class="history" role="tabpanel" i
 
 // `shown` is what the tab read, `{held, shown}`, or null while it reads.
 const Session = ({task, shown}) => html`<section class="session" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
-  <pre class="screen">${shown === null ? 'reading…' : shown.held ? shown.shown : 'no window holds this session'}</pre>
+  <pre class="screen">${shown === null ? t('reading') : shown.held ? shown.shown : t('pane.no-window')}</pre>
   <form class="say" data-say=${task.id}>
-    <input name="line" aria-label="tell this session" placeholder="tell this session — no, answer 2 differently"
+    <input name="line" aria-label=${t('say.label')} placeholder=${t('say.hint')}
       autocomplete="off" required/>
-    <button type="submit">Send</button>
+    <button type="submit">${t('say.send')}</button>
   </form>
 </section>`;
 
 const Round = ({shown, offered}) => html`<section class="round" role="tabpanel" id="panel-round" aria-labelledby="tab-round">
-  ${!offered ? html`<p class="muted">Nothing is drafted for this round.</p>`
-    : shown === null ? html`<pre class="screen">reading…</pre>`
+  ${!offered ? html`<p class="muted">${t('pane.nothing-drafted')}</p>`
+    : shown === null ? html`<pre class="screen">${t('reading')}</pre>`
       : html`<pre class="screen"><${Report} parts=${reportParts(shown)}/></pre>`}
 </section>`;
 
 // `shown` is what the tab read, `{names, name, html}`, or null while it reads; `html` is rendered by the server.
 const Artifacts = ({task, shown}) => html`<section class="artifacts" role="tabpanel" id="panel-artifacts" aria-labelledby="tab-artifacts">
   ${switchLines(task).length ? html`<p class="muted switches">${switchLines(task).map((line, at) => html`${at ? html`<br/>` : ''}${line}`)}</p>` : ''}
-  ${shown === null ? html`<p class="muted">reading…</p>`
-    : !shown.names.length ? html`<p class="muted">No document of this task is in its worktree.</p>`
+  ${shown === null ? html`<p class="muted">${t('reading')}</p>`
+    : !shown.names.length ? html`<p class="muted">${t('pane.no-doc')}</p>`
       : html`<div class="doc-names">${shown.names.map((name) => html`<button data-file=${name} data-task=${task.id}
         aria-pressed=${String(name === shown.name)}>${name}</button>`)}</div>
       <div class="doc" ref=${(root) => draw(root)} dangerouslySetInnerHTML=${{__html: shown.html}}></div>`}
 </section>`;
 
 // `fresh` is that the round's replies were written since this tab was last opened.
-export const Pane = ({card, tab, shown, fresh = false}) => html`<section id="pane" aria-label="the open task">
-  <button class="back" data-back="">‹ all tasks</button>
+export const Pane = ({card, tab, shown, fresh = false}) => html`<section id="pane" aria-label=${t('pane.label')}>
+  <button class="back" data-back="">${t('pane.back')}</button>
   <${Card} key=${card.task.id} ...${card}/>
   <div role="tablist" class="tabs">${TABS.map((one) => html`<button role="tab" data-tab=${one.id} id=${`tab-${one.id}`}
     class=${one.id === 'round' && fresh ? 'you' : undefined}

@@ -5,6 +5,7 @@
 
 import {make, span} from '../core/dom.js';
 import {countdown} from '../core/format.js';
+import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 import * as filters from './filters.js';
 import * as order from './order.js';
@@ -18,6 +19,8 @@ const reachChip = document.getElementById('reach-lost');
 const actChip = document.getElementById('act-stopped');
 const masterChip = document.getElementById('master-mode');
 
+const left = (due) => (due > 0 ? countdown(due) : t('due'));
+
 // Only a failed run is news: the next one sits in the hover.
 function renderJobs() {
   const jobs = store.jobs();
@@ -27,9 +30,8 @@ function renderJobs() {
   }
   // A run writes no state, so this stamp is the last change's and goes into the past: past means DUE.
   const due = jobs.nextRunAt ? jobs.nextRunAt - Date.now() : null;
-  jobsChip.textContent = `${jobs.failing} of ${jobs.count} jobs failed`;
-  jobsChip.dataset.tip = 'a job\u2019s last run failed; press for the jobs\nnext run: '
-    + (due === null ? '-' : due > 0 ? countdown(due) : 'due');
+  jobsChip.textContent = t('jobs-failed', {failing: jobs.failing, count: jobs.count});
+  jobsChip.dataset.tip = t('header.jobs.tip', {next: due === null ? '-' : left(due)});
 }
 
 // What has stopped is said; the hover names the provider's last error and when the next read probes.
@@ -40,8 +42,8 @@ function renderAssistant() {
     return;
   }
   const due = down.retryAt - Date.now();
-  assistantChip.textContent = 'assistant unavailable';
-  assistantChip.dataset.tip = `${down.cause}\nnext read to probe: ${due > 0 ? countdown(due) : 'due'}`;
+  assistantChip.textContent = t('assistant');
+  assistantChip.dataset.tip = t('header.assistant.tip', {cause: down.cause, next: left(due)});
 }
 
 function renderReach() {
@@ -49,8 +51,8 @@ function renderReach() {
   reachChip.hidden = !lost.length;
   reachChip.disabled = !lost.some((one) => one.fix.length);
   reachChip.textContent = lost.map((one) => one.said).join(' \u00b7 ');
-  reachChip.dataset.tip = lost.map((one) => one.said + (one.fix.length ? `\nfix: ${one.fix.join(' ')}` : '')).join('\n')
-    + '\nthe next read that succeeds clears this';
+  reachChip.dataset.tip = lost.map((one) => one.said + (one.fix.length ? `\n${t('header.reach.fix', {fix: one.fix.join(' ')})}` : '')).join('\n')
+    + `\n${t('header.reach.clears')}`;
 }
 
 // An empty board has two causes a human cannot act on the wrong one of: nothing exists yet, or controls hide
@@ -60,28 +62,28 @@ function renderEmpty(held, showing) {
   const filtered = document.getElementById('filtered');
   filtered.hidden = !(held > 0 && showing === 0);
   if (!filtered.hidden) {
-    filtered.textContent = `No task matches: ${filters.on()} filter(s) on, ${held} task(s) hidden.`;
+    filtered.textContent = t('header.filtered', {on: filters.on(), held});
   }
 }
 
 export function render(tasks, showing) {
   const waiting = tasks.filter((task) => task.attention === 'REQUIRED').length;
   waitingLabel.hidden = waiting === 0;
-  waitingLabel.textContent = `${waiting} need your action`;
+  waitingLabel.textContent = t('header.waiting', {n: waiting});
   // Polling as it should is not news; only the poll being off is said.
   autoReviewChip.hidden = store.autoReview().enabled;
   autoReviewChip.textContent = store.autoReview().summary || '';
   // The Master pressing buttons for the human is said while it does; judging alone changes nothing on screen.
   masterChip.hidden = store.masterMode() !== 'act';
-  masterChip.textContent = 'Master: act';
-  masterChip.dataset.tip = 'the Master presses the buttons you would; the Master report says what it may do';
+  masterChip.textContent = t('header.master');
+  masterChip.dataset.tip = t('header.master.tip');
   renderJobs();
   renderAssistant();
   renderReach();
   const stop = store.actStop();
   actChip.hidden = !stop;
   actChip.dataset.tip = {
-    STRIKES: 'three tasks the Master moved ended badly in a row, so it only judges now; press to give it act back',
+    STRIKES: t('header.act-stop'),
   }[stop?.cause] || '';
   renderEmpty(tasks.length, showing);
   phaseBar.hidden = tasks.length === 0;
@@ -95,17 +97,17 @@ export function render(tasks, showing) {
     segment.disabled = held === 0;
     segment.dataset.phase = phase;
     segment.setAttribute('aria-pressed', String(filters.holds(phase)));
-    segment.dataset.tip = filters.holds(phase) ? `stop showing only ${label}` : `show only ${label}`;
+    segment.dataset.tip = filters.holds(phase) ? t('header.phase.off', {label}) : t('header.phase.on', {label});
     return index === 0 ? [segment] : [span('sep', ' · '), segment];
   }));
   // Another segment of the same line, separator and all: it states the order the board is IN, and the hover the
   // one a press would take it to.
-  const sort = make('button', 'order', `order: ${order.holds() ? 'alias' : 'added'}`);
+  const sort = make('button', 'order', t(order.holds() ? 'header.order.alias' : 'header.order.added'));
   sort.dataset.order = '';
-  sort.dataset.tip = order.holds() ? 'order by when each task was added' : 'order by alias';
+  sort.dataset.tip = order.holds() ? t('header.order.added.tip') : t('header.order.alias.tip');
   phaseBar.append(span('sep', ' \u00b7 '), sort);
   if (filters.on()) {
-    const clear = make('button', 'clear-filters', `clear ${filters.on()} filter(s)`);
+    const clear = make('button', 'clear-filters', t('header.clear', {n: filters.on()}));
     clear.dataset.clear = '';
     phaseBar.append(clear);
   }

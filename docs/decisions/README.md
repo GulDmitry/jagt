@@ -154,3 +154,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0138 A read may run on OpenCode](0138-a-read-may-run-on-opencode.md) (amends 0137)
 - [0139 Every suite ends within one ceiling](0139-every-suite-ends-within-one-ceiling.md)
 - [0140 In act the Master decides a stop for a suspected loop](0140-in-act-the-master-decides-a-stop-for-a-suspected-loop.md) (amends 0061, 0104)
+- [0141 The board's words are catalog files](0141-the-boards-words-are-catalog-files.md)

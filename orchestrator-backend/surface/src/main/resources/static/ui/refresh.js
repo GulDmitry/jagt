@@ -1,6 +1,7 @@
 // Fetched in one call and repainted once: every action ends here, so a refusal is read against a fresh view.
 
 import {api} from '../core/api.js';
+import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 import {render} from './render.js';
 import {toast} from './toast.js';
@@ -30,7 +31,7 @@ export async function refresh() {
     });
     render();
   } catch (e) {
-    toast(`Cannot reach the backend: ${e.message}`, true);
+    toast(t('refresh.backend', {cause: e.message}), true);
   }
 }
 
@@ -48,7 +49,7 @@ export async function refreshVerbs() {
     verbsFailed = false;
   } catch (e) {
     store.set({verbs: []});
-    if (!verbsFailed) toast(`Cannot read the commands: ${e.message}`, true);
+    if (!verbsFailed) toast(t('refresh.commands', {cause: e.message}), true);
     verbsFailed = true;
   } finally {
     verbsRead();

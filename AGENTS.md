@@ -84,6 +84,8 @@ or local setup; such names live only in git-ignored files.
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
   seam in `main` that only tests call (`ProductionConstructorTest`).
 - **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`EnglishAndUtcTest`, `BoardAssetsTest`).
+  Only the board's UI text may come from a language catalog, English the default
+  ([0141](docs/decisions/0141-the-boards-words-are-catalog-files.md)).
 - **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsTest`).
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring.
 - **Every third-party service or technology is a seam chosen in `jagt.yml`**: a port, a driver per vendor, a key with a
@@ -140,7 +142,7 @@ or local setup; such names live only in git-ignored files.
   **Where no compression keeps every fact, stop and ask the owner** — never trade a fact for a line.
 - **Every log line is structured**: constant event, values as fields, `cause` on every failure, never `{}` or `+`
   in a message. Keys: [`docs/rules/style.md`](docs/rules/style.md).
-- **English only**, but for kitty's ЙЦУКЕН keymap, where the symbols are the key events.
+- **English only**, but for kitty's ЙЦУКЕН keymap, where the symbols are the key events, and the board's language catalogs.
 - **Never a real ticket key, project name or issue title**, tests and fixtures included. Invent `ABC-42`.
 - Markdown ~120 columns; a non-obvious case earns a spec scenario, not a paragraph.
 

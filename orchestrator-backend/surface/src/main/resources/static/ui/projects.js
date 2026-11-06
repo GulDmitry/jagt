@@ -2,6 +2,7 @@
 
 import {api, refusal} from '../core/api.js';
 import {make, span} from '../core/dom.js';
+import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 
 const group = document.getElementById('project');
@@ -40,5 +41,5 @@ export function render() {
     const box = Object.assign(document.createElement('input'), {type: 'checkbox', value: project, name: 'project'});
     box.checked = ticked.has(project);
     return make('label', 'checkbox', '', box, ` ${project}`);
-  }) : [span('muted', 'no projects in jagt.yml')]));
+  }) : [span('muted', t('launch.no-projects'))]));
 }

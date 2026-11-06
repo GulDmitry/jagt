@@ -1,5 +1,6 @@
 // Every binding in one place, so a new panel adds no second answer to Escape.
 
+import {t} from '../core/i18n.js';
 import {run} from './act.js';
 import * as filters from './filters.js';
 import {note} from './interactions.js';
@@ -13,8 +14,8 @@ const typingInto = (target) => target instanceof HTMLInputElement || target inst
   || target instanceof HTMLSelectElement;
 
 // What the keys do, said once under the list; the row verb's own key and name come from the server's verb.
-export const said = (rowVerb) => ['j k walk', '↵ open', 'n next yours', rowVerb?.key && `${rowVerb.key} ${rowVerb.label.toLowerCase()}`,
-  't new task', '/ filter', '⌘K command'].filter(Boolean).join(' · ');
+export const said = (rowVerb) => [t('keys.walk'), t('keys.open'), t('keys.next'), rowVerb?.key && `${rowVerb.key} ${rowVerb.label.toLowerCase()}`,
+  t('keys.new'), t('keys.filter'), t('keys.command')].filter(Boolean).join(' · ');
 
 // A letter moves the selection or opens a form; any other letter is the key of a verb the open task offers, and the
 // server still decides whether it may run.

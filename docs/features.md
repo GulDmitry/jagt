@@ -28,7 +28,7 @@
   [spec](../openspec/specs/board/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — jagt's own failed reach of a code host is one mark on the board's head with its login, never a card's stop.
   [spec](../openspec/specs/board/spec.md#requirement-jagts-lost-reach-is-the-boards-head)
-- **Theme on the gear** — The header's gear chooses auto, light or dark for this browser alone. [spec](../openspec/specs/board/spec.md)
+- **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
 - **Local, installable** — Answers locally only, refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)
 
 ## Board workspace · [spec](../openspec/specs/board-workspace/spec.md)

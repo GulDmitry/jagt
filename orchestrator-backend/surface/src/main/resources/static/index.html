@@ -9,7 +9,7 @@
   <link rel="icon" href="favicon.ico" sizes="48x48 32x32 16x16">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <script>try { document.documentElement.dataset.theme = localStorage.theme || ''; } catch (blocked) {}</script>
+  <script>try { document.documentElement.dataset.theme = localStorage.theme || ''; document.documentElement.lang = localStorage.lang || 'en'; } catch (blocked) {}</script>
   <link rel="stylesheet" href="app.css">
   <script type="importmap">{"imports": {"preact": "./vendor/preact.mjs", "preact/hooks": "./vendor/hooks.mjs", "htm": "./vendor/htm.mjs"}}</script>
 </head>
@@ -22,84 +22,93 @@
   <button id="reach-lost" class="chip bad" data-verb="login" hidden></button>
   <span id="master-mode" class="chip" hidden></span>
   <button id="act-stopped" class="chip stalled" data-verb="act" hidden
-          data-tip="">act stopped</button>
-  <span id="auto-review" class="chip" tabindex="0" data-tip="unattended review polling" hidden></span>
+          data-tip="" data-t="act-stopped"></button>
+  <span id="auto-review" class="chip" tabindex="0" data-t-tip="header.review.tip" hidden></span>
   <span class="grow"></span>
   <label class="search">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-    <input id="filter" aria-label="filter the board" placeholder="a5 filters · ⌘K for a command" autocomplete="off"
-           data-tip="substring match on alias, ticket or title">
-    <button id="open-palette" type="button" aria-label="a command or plain words (⌘K)" data-tip="⌘K / Ctrl-K: a command, or plain words">⌘K</button>
+    <input id="filter" autocomplete="off"
+           data-t-aria-label="filter.label"
+           data-t-placeholder="filter.hint" data-t-tip="filter.tip">
+    <button id="open-palette" type="button"
+            data-t-aria-label="palette.open.aria" data-t-tip="palette.open.tip">⌘K</button>
   </label>
   <div class="menu">
-    <button id="reports-toggle" type="button" aria-expanded="false">Reports ▾</button>
+    <button id="reports-toggle" type="button" aria-expanded="false" data-t="reports.toggle"></button>
     <div id="reports" hidden></div>
   </div>
-  <button id="new-task" type="button" class="primary">New task <kbd>t</kbd></button>
+  <button id="new-task" type="button" class="primary"><span data-t="new-task"></span> <kbd>t</kbd></button>
   <div class="menu">
-    <button id="gear" type="button" aria-label="settings" aria-expanded="false" data-tip="settings">⚙</button>
+    <button id="gear" type="button" aria-expanded="false"
+            data-t-aria-label="gear.label" data-t-tip="gear.label">⚙</button>
     <div id="gear-menu" hidden></div>
   </div>
-  <span id="offline" class="chip bad" role="status" hidden data-tip="nothing on the board is current and nothing on it can run; it reconnects by itself">backend unreachable</span>
+  <span id="offline" class="chip bad" role="status" hidden
+        data-t="offline" data-t-tip="offline.tip"></span>
 </header>
 
 <form id="palette" hidden>
-  <input id="ask" list="ask-options" aria-label="a command or plain words" placeholder="a command (ship a1), or plain words"
-         autocomplete="off" required>
+  <input id="ask" list="ask-options"
+         autocomplete="off" required data-t-aria-label="palette.ask.label" data-t-placeholder="palette.ask.hint">
   <datalist id="ask-options"></datalist>
-  <button type="submit" class="primary">Run</button>
+  <button type="submit" class="primary" data-t="palette.run">Run</button>
   <span id="palette-state" class="muted state"></span>
 </form>
 
 <dialog id="launch-dialog" aria-labelledby="launch-title">
   <form id="launch">
-    <header class="report-head"><strong id="launch-title">New task</strong><span class="grow"></span>
-      <button type="button" id="close-launch">Close</button></header>
-    <label class="field"><span>Ticket</span>
-      <input id="ref" name="ref" aria-label="ticket" placeholder="ABC-42 or a ticket URL — empty for a task of your own" autocomplete="off"></label>
-    <fieldset class="field" id="project-field"><legend>Projects <span class="muted">— pick one, or start with plan first</span></legend>
+    <header class="report-head"><strong id="launch-title" data-t="new-task"></strong><span class="grow"></span>
+      <button type="button" id="close-launch" data-t="close"></button></header>
+    <label class="field"><span data-t="launch.ticket"></span>
+      <input id="ref" name="ref" autocomplete="off"
+             data-t-aria-label="launch.ticket.label" data-t-placeholder="launch.ticket.hint"></label>
+    <fieldset class="field" id="project-field"><legend><span data-t="launch.projects"></span> <span class="muted" data-t="launch.projects.hint"></span></legend>
       <!-- Several picked = one task, one agent session, a worktree in each. -->
-      <div id="project" role="group" aria-label="projects"></div>
-      <button type="button" id="add-project" class="link">+ add a project</button>
+      <div id="project" role="group" data-t-aria-label="launch.group"></div>
+      <button type="button" id="add-project" class="link" data-t="launch.add-project"></button>
     </fieldset>
-    <label class="field"><span>What to do</span>
-      <input id="notes" name="notes" aria-label="instructions for the agent" placeholder="extra instructions — or the whole task, with no ticket" autocomplete="off"></label>
+    <label class="field"><span data-t="launch.notes"></span>
+      <input id="notes" name="notes" autocomplete="off"
+             data-t-aria-label="launch.notes.label" data-t-placeholder="launch.notes.hint"></label>
     <div class="field-row">
-      <label class="field"><span>Base branch</span>
-        <input id="base-branch" name="baseBranch" aria-label="base branch" placeholder="the project's own" autocomplete="off"></label>
-      <label class="field"><span>When the branch exists</span>
-        <select id="strategy" name="strategy" size="1" aria-label="when the branch exists"
-                data-tip="what to do when a branch of this name already exists"></select></label>
-      <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first / project unknown</label>
+      <label class="field"><span data-t="launch.base"></span>
+        <input id="base-branch" name="baseBranch" autocomplete="off"
+               data-t-aria-label="launch.base.label" data-t-placeholder="launch.base.hint"></label>
+      <label class="field"><span data-t="launch.strategy"></span>
+        <select id="strategy" name="strategy" size="1"
+                data-t-aria-label="launch.strategy.aria"
+                data-t-tip="launch.strategy.tip"></select></label>
+      <label class="checkbox" data-t-tip="launch.plan.tip"><input type="checkbox" id="plan"> <span data-t="launch.plan"></span></label>
     </div>
     <footer class="dialog-foot"><span id="launch-state" class="muted state"></span><span class="grow"></span>
-      <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button></footer>
+      <button type="submit" class="primary"
+              data-t="launch.start" data-t-tip="launch.start.tip"></button></footer>
   </form>
 </dialog>
 
 <dialog id="project-dialog" aria-labelledby="project-title">
   <form id="project-form">
-    <header class="report-head"><strong id="project-title">Add a project</strong><span class="grow"></span>
-      <button type="button" id="close-project">Close</button></header>
-    <label class="field"><span>Repository path</span>
+    <header class="report-head"><strong id="project-title" data-t="project.add"></strong><span class="grow"></span>
+      <button type="button" id="close-project" data-t="close"></button></header>
+    <label class="field"><span data-t="project.path"></span>
       <input id="project-path" name="path" list="project-folders" placeholder="~/www/billing-api" autocomplete="off" required>
       <datalist id="project-folders"></datalist></label>
     <ul id="project-checks" class="checks-list" aria-live="polite"></ul>
     <div class="field-row">
-      <label class="field"><span>Key</span><input id="project-key" name="key" autocomplete="off" required></label>
-      <label class="field"><span>Tasks cut from</span><input id="project-base" name="baseBranch" autocomplete="off" required></label>
+      <label class="field"><span data-t="project.key">Key</span><input id="project-key" name="key" autocomplete="off" required></label>
+      <label class="field"><span data-t="project.base"></span><input id="project-base" name="baseBranch" autocomplete="off" required></label>
     </div>
     <div class="field-row">
-      <label class="field"><span>Deploy branch <span class="muted">— empty: no deploy</span></span>
+      <label class="field"><span><span data-t="project.deploy"></span> <span class="muted" data-t="project.deploy.hint"></span></span>
         <input id="project-deploy" name="deployBranch" list="project-branches" autocomplete="off"
-               title="The remote's branches as last fetched; fetch the repository to refresh them">
+               data-t-title="project.deploy.title">
         <datalist id="project-branches"></datalist></label>
-      <label class="field"><span>Verify before hand-back</span><input id="project-verify" name="verify" autocomplete="off"></label>
+      <label class="field"><span data-t="project.verify"></span><input id="project-verify" name="verify" autocomplete="off"></label>
     </div>
-    <label class="field"><span>What it is, in one line</span>
+    <label class="field"><span data-t="project.about"></span>
       <input id="project-about" name="about" autocomplete="off"></label>
     <footer class="dialog-foot"><span class="muted state" id="project-state"></span><span class="grow"></span>
-      <button type="submit" class="primary">Add to jagt.yml</button></footer>
+      <button type="submit" class="primary" data-t="project.add-submit"></button></footer>
   </form>
 </dialog>
 
@@ -107,7 +116,7 @@
   <header class="report-head">
     <strong id="report-title"></strong>
     <span class="grow"></span>
-    <button id="close-report" autofocus>Close</button>
+    <button id="close-report" autofocus data-t="close"></button>
   </header>
   <div id="report-scroll">
     <div id="report-section"></div>
@@ -115,21 +124,23 @@
   </div>
   <!-- Only for a report about ONE task: the session it is about is the one this line reaches. -->
   <form id="report-line" hidden>
-    <input id="say" aria-label="tell this session" placeholder="tell this session — no, answer 2 differently" autocomplete="off" required>
-    <button type="submit" hidden>Send</button>
-    <span id="said" class="checks running" hidden role="img" aria-label="the session is working" tabindex="0" data-tip="the session is working; this repaints when it answers"></span>
+    <input id="say" autocomplete="off" required
+           data-t-aria-label="say.label" data-t-placeholder="say.hint">
+    <button type="submit" hidden data-t="say.send">Send</button>
+    <span id="said" class="checks running" hidden role="img" tabindex="0"
+          data-t-aria-label="said.label" data-t-tip="said.tip"></span>
   </form>
 </dialog>
 
 <div id="phases"></div>
 <main id="board"></main>
 <section id="empty" class="empty" hidden>
-  <p>No tasks yet.</p>
-  <p><button type="button" id="empty-new" class="primary">New task <kbd>t</kbd></button>
-    <button type="button" id="empty-project">Add a project</button></p>
+  <p data-t="empty.none"></p>
+  <p><button type="button" id="empty-new" class="primary"><span data-t="new-task"></span> <kbd>t</kbd></button>
+    <button type="button" id="empty-project" data-t="project.add-short"></button></p>
 </section>
 <p id="filtered" class="empty" hidden></p>
-<button id="show-log" class="log" hidden>log</button>
+<button id="show-log" class="log" hidden data-t="log.open">log</button>
 <div id="toasts" role="status"></div>
 <script type="module" src="app.js"></script>
 </body>

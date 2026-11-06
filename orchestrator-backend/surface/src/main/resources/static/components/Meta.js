@@ -2,6 +2,7 @@
 
 import {httpOnly} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
+import {t} from '../core/i18n.js';
 import {full} from '../core/time.js';
 import {html} from './html.js';
 
@@ -10,7 +11,7 @@ export const watchLine = (watch, now) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
     const remaining = watch.nextPollAt - now;
-    return {line: `next poll ${remaining <= 0 ? 'due' : countdown(remaining)}`};
+    return {line: t('meta.next-poll', {when: remaining <= 0 ? t('due') : countdown(remaining)})};
   }
   return {line: `${watch.label} — ${watch.note}`, stalled: true};
 };
@@ -23,14 +24,14 @@ const classes = (...names) => names.filter(Boolean).join(' ');
 // `sole` is false for one link among several: the approval is every repository's, not one link's.
 const RequestChip = ({url, label, openedAt, task, sole, now}) => {
   const lines = [openedAt > 0
-    ? `review request; opened ${full(openedAt)}`
-    : 'review request; the next sweep will date it'];
+    ? t('meta.request.opened', {at: full(openedAt)})
+    : t('meta.request.undated')];
   const approved = sole && task.approved;
-  if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
+  if (task.approved != null) lines.push(t(task.approved ? 'meta.approved' : 'meta.not-approved'));
   const ships = (task.history || []).filter((step) => step.status === 'SHIPPING').length;
-  if (ships > 1) lines.push(`shipped ${ships} times`);
+  if (ships > 1) lines.push(t('meta.shipped', {n: ships}));
   // Only where the checks have no dot to say it themselves: one verdict in two hovers can disagree with itself.
-  if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
+  if (!marked(task)) lines.push(t('meta.checks', {said: task.pipelineSaid || t('meta.checks.unread')}));
   const watch = watchLine(task.autoReview, now);
   if (watch) lines.push(watch.line);
   const text = openedAt > 0 ? `${label} ${duration(now - openedAt)}` : label;
@@ -40,13 +41,13 @@ const RequestChip = ({url, label, openedAt, task, sole, now}) => {
 };
 
 // Where several links share one approval there is no label to tick, so it becomes the same glyph on its own.
-const ApprovalTick = () => html`<span class="tick" role="img" aria-label="review request approved" tabIndex=${0}
-  data-tip="review request approved">✓</span>`;
+const ApprovalTick = () => html`<span class="tick" role="img" aria-label=${t('request-approved')} tabIndex=${0}
+  data-tip=${t('request-approved')}>✓</span>`;
 
 const ChecksDot = ({task}) => {
-  const said = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+  const said = t('meta.checks', {said: task.pipelineSaid || task.pipeline.toLowerCase()});
   return html`<span class=${`checks ${task.pipeline.toLowerCase()}`} role="img" aria-label=${said} tabIndex=${0}
-    data-tip=${task.pipelineUnread ? `${said}\nthe last sweep could not read them` : said}></span>`;
+    data-tip=${task.pipelineUnread ? `${said}\n${t('meta.checks.fail')}` : said}></span>`;
 };
 
 // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
@@ -55,9 +56,9 @@ const StatusChip = ({task, stalled, now}) => {
   if (task.waiting) tip = tip ? `${tip}\n\n${task.waiting}` : task.waiting;
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   const live = task.deployed && !(task.actions || []).some((action) => action.again);
-  if (live) tip = tip ? `${tip}\n\nits work is on a shared branch` : 'its work is on a shared branch';
+  if (live) tip = tip ? `${tip}\n\n${t('meta.live')}` : t('meta.live');
   return html`<span class=${classes('status', stalled && 'stalled', live && 'live')} data-tip=${tip || undefined} tabIndex=${tip ? 0 : undefined}
-    role=${live ? 'img' : undefined} aria-label=${live ? `${task.statusLabel}, its work is on a shared branch` : undefined}
+    role=${live ? 'img' : undefined} aria-label=${live ? `${task.statusLabel}, ${t('meta.live')}` : undefined}
     >${task.statusLabel} <span class="age">${duration(now - task.statusSince)}</span></span>`;
 };
 
@@ -76,7 +77,7 @@ export function Meta({task, manyProjects, now}) {
     <${StatusChip} task=${task} now=${now} stalled=${!many && !task.reviewRequestUrl && watch?.stalled ? watch : null}/>
     ${many ? html`<${Repositories} task=${task} now=${now}/>` : html`
       ${task.reviewRequestUrl ? html`<${RequestChip} url=${task.reviewRequestUrl}
-        label=${manyProjects ? task.project : 'request'} openedAt=${task.requestOpenedAt} task=${task} sole=${true}
+        label=${manyProjects ? task.project : t('request')} openedAt=${task.requestOpenedAt} task=${task} sole=${true}
         now=${now}/>` : manyProjects ? html`<span>${task.project}</span>` : ''}`}
     ${marked(task) ? html`<${ChecksDot} task=${task}/>` : ''}
   </div>`;

@@ -5,6 +5,7 @@ import {html} from '../components/html.js';
 import {Report} from '../components/Report.js';
 import {refusal, sayTo, text} from '../core/api.js';
 import {reportParts} from '../core/format.js';
+import {t} from '../core/i18n.js';
 import {sending} from './submit.js';
 import {toast} from './toast.js';
 
@@ -105,7 +106,7 @@ function waitForTheAnswer() {
 // A ring that just disappears reads as an answer that landed. The board's own event still repaints this.
 function giveUp() {
   stopWaiting();
-  toast('nothing said back yet — this repaints when it is');
+  toast(t('report.silent'));
 }
 
 function stopWaiting() {

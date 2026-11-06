@@ -2,6 +2,7 @@
 
 import {render} from 'preact';
 import {api, refusal} from '../core/api.js';
+import {t} from '../core/i18n.js';
 import {html} from '../components/html.js';
 import {ProjectChecks} from '../components/ProjectChecks.js';
 import {sending} from './submit.js';
@@ -25,8 +26,8 @@ const reset = (key = null) => {
   form.querySelectorAll('[data-typed]').forEach((field) => delete field.dataset.typed);
   render(null, checks);
   editing = key;
-  $('project-title').textContent = key ? `Edit ${key}` : 'Add a project';
-  form.querySelector('button[type=submit]').textContent = key ? 'Save to jagt.yml' : 'Add to jagt.yml';
+  $('project-title').textContent = key ? t('project.edit', {key}) : t('project.add');
+  form.querySelector('button[type=submit]').textContent = t(key ? 'project.submit.save' : 'project.add-submit');
   $('project-key').readOnly = !!key;
 };
 
@@ -76,7 +77,7 @@ async function offerFolders() {
     const found = await api(`/api/projects/dirs?under=${encodeURIComponent(typed)}`);
     if (mine === listed) {
       folders.replaceChildren(...found.map((each) =>
-        option(`${typed.slice(0, slash + 1)}${each.name}/`, each.repository ? 'repository' : '')));
+        option(`${typed.slice(0, slash + 1)}${each.name}/`, each.repository ? t('project.repository') : '')));
     }
   } catch (e) {
     if (mine === listed) folders.replaceChildren();
@@ -116,7 +117,7 @@ const said = (name) => form.elements[name].value.trim();
 form.onsubmit = (event) => {
   event.preventDefault();
   return sending(form, {
-    waiting: editing ? 'saving…' : 'adding…',
+    waiting: t(editing ? 'project.saving' : 'project.adding'),
     send: () => api(editing ? `/api/projects/${encodeURIComponent(editing)}` : '/api/projects', {
       method: editing ? 'PUT' : 'POST',
       headers: {'Content-Type': 'application/json'},

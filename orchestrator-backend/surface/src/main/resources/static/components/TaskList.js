@@ -2,6 +2,7 @@
 // row is a Tab stop; the keys walk the rest, so Tab reaches the open task past one row and not past all of them.
 
 import {duration} from '../core/format.js';
+import {t} from '../core/i18n.js';
 import {html} from './html.js';
 import {marked, watchLine} from './Meta.js';
 
@@ -16,7 +17,7 @@ const Row = ({task, selected, changed, project, now}) => {
     <button class="pick" data-select=${task.id} aria-current=${selected ? 'true' : undefined} tabIndex=${selected ? 0 : -1}
         aria-label=${[`${task.alias || task.id} ${task.title || ''}`, task.statusLabel,
           marked(task) && `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`,
-          stopped, changed && 'changed since you looked'].filter(Boolean).join(', ')}>
+          stopped, changed && t('list.changed')].filter(Boolean).join(', ')}>
       <span class="row-line">
         <span class="alias">${task.alias || '-'}</span>
         <span class=${changed ? 'row-title changed' : 'row-title'}>${task.title || task.id}</span>
@@ -54,11 +55,11 @@ export function grouped(shown, manyProjects, flagged = () => false) {
   const projects = [...new Set(rest.map((task) => task.project))].sort((a, b) => a.localeCompare(b, 'en'));
   const groups = manyProjects
     ? projects.map((project) => ({name: project, kind: 'project', tasks: rest.filter((task) => task.project === project)}))
-    : [{name: yours.length ? 'the rest' : '', kind: 'project', tasks: rest}];
-  return [...(yours.length ? [{name: 'yours', kind: 'yours', tasks: yours, named: manyProjects}] : []), ...groups]
+    : [{name: yours.length ? t('list.rest') : '', kind: 'project', tasks: rest}];
+  return [...(yours.length ? [{name: t('list.yours'), kind: 'yours', tasks: yours, named: manyProjects}] : []), ...groups]
     .filter((group) => group.tasks.length);
 }
 
-export const TaskList = ({groups, selected, changed, now, keys}) => html`<nav id="tasks" aria-label="tasks">${
+export const TaskList = ({groups, selected, changed, now, keys}) => html`<nav id="tasks" aria-label=${t('list.label')}>${
   groups.map((group) => html`<${Group} key=${group.kind + group.name} ...${group} selected=${selected}
     changed=${changed} now=${now}/>`)}${keys ? html`<p class="keys">${keys}</p>` : ''}</nav>`;

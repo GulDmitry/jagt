@@ -1,6 +1,7 @@
 // Which tab of the open task is showing, and what that tab read: read once per task and tab, again on a change.
 
 import {text, api} from '../core/api.js';
+import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 
 let tab = 'overview';
@@ -21,7 +22,7 @@ const artifacts = async (task) => {
 const sources = {
   artifacts,
   session: (task) => api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`)
-    .catch((e) => ({held: true, shown: `could not read it: ${e.message}`})),
+    .catch((e) => ({held: true, shown: t('tabs.unread', {cause: e.message})})),
   round: (task, offer) => text(`/api/commands/${offer.id}?about=${encodeURIComponent(task.alias || task.id)}`),
 };
 
@@ -71,7 +72,7 @@ export function shown(task, repaint) {
     repaint();
   }).catch((e) => {
     if (mine !== asked) return;
-    read = {key, shown: `could not read it: ${e.message}`, stale: false};
+    read = {key, shown: t('tabs.unread', {cause: e.message}), stale: false};
     repaint();
   });
   return kept;

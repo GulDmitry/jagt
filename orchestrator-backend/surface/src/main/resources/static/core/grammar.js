@@ -1,5 +1,6 @@
 // Tier 1: a typed line understood WITHOUT a model — a known verb and, for the per-task ones, a task that exists.
 
+import {t} from './i18n.js';
 import * as store from './store.js';
 
 // A retired spelling is accepted and never offered: two spellings on screen are two answers to one question.
@@ -26,15 +27,15 @@ export function verdictOf(line) {
   const parsed = parse(line);
   if (!parsed) {
     const word = line.split(/\s+/)[0];
-    return {text: verbFor(word) ? '' : `“${word}” is not a command — this will go to the model as plain words`};
+    return {text: verbFor(word) ? '' : t('grammar.plain', {word})};
   }
   if (parsed.verb.takesTask && !parsed.task) {
     return {
       kind: 'bad',
       text: parsed.argument
-        ? `no task “${parsed.argument}” — use a ticket id or its alias`
-        : `${parsed.verb.id} needs a task: ${parsed.verb.id} <ticket|alias>`,
+        ? t('grammar.no-task', {argument: parsed.argument})
+        : t('grammar.needs-task', {verb: parsed.verb.id}),
     };
   }
-  return {kind: 'ok', text: `runs as typed — ${parsed.verb.hint}`};
+  return {kind: 'ok', text: t('grammar.ok', {hint: parsed.verb.hint})};
 }

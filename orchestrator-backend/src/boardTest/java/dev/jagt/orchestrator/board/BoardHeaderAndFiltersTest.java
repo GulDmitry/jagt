@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -58,6 +60,35 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         page.reload();
 
         assertThat(page.locator("html")).hasAttribute("data-theme", "dark");
+    }
+
+    @Test
+    void polishChosenOnTheGearReadsInPolishAndSurvivesAReload() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.click("#gear");
+        page.click("#gear-menu button[data-lang=pl]");
+        assertThat(page.locator("#reports-toggle")).hasText("Raporty ▾");
+        page.reload();
+
+        assertThat(page.locator("#reports-toggle")).hasText("Raporty ▾");
+        assertThat(page.locator("html")).hasAttribute("lang", "pl");
+    }
+
+    @Test
+    void aKeyMissingFromTheChosenCatalogShowsEnglish() throws IOException {
+        Files.createDirectories(root.resolve("i18n"));
+        Files.writeString(root.resolve("i18n/xx.json"),
+                "{\"language.name\": \"Testish\", \"reports.toggle\": \"Reports-xx\"}");
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        page.click("#gear");
+        page.click("#gear-menu button[data-lang=xx]");
+
+        assertThat(page.locator("#reports-toggle")).hasText("Reports-xx");
+        assertThat(page.locator("#new-task span")).hasText("New task");
     }
 
     @Test
@@ -367,7 +398,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
     @Test
     void givesActBackFromTheHeaderWhereItStoppedItself() throws Exception {
-        java.nio.file.Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
+        Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#act-stopped")).isVisible();
