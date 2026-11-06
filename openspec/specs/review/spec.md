@@ -9,15 +9,12 @@ How a review round is answered, reported and drafted into replies, and how an ex
 ### Requirement: The brief routes each thread
 `RoundBrief.of` SHALL route each thread: fix, change nothing and say why — beyond the ticket is a task of its own —
 or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never CI_POLLING.
-
 #### Scenario: The comment is right
 - **WHEN** a comment is right
 - **THEN** the agent fixes it, uncommitted, never pushing on its own
-
 #### Scenario: The comment is wrong
 - **WHEN** a comment is wrong
 - **THEN** the agent changes nothing and replies with the one technical reason
-
 #### Scenario: Unclear, a design decision, or against the code
 - **WHEN** a comment is unclear, forces a design decision or contradicts what the code enforces
 - **THEN** the agent asks, before the code picks a side: NEEDS INPUT on the board
@@ -59,6 +56,9 @@ a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is writ
 #### Scenario: Red checks outside the code and a reviewer's answer
 - **WHEN** ABC-42's session hands back a question about the checks and writes no block for the thread
 - **THEN** refused, told how many threads await their block
+#### Scenario: A resolved thread
+- **WHEN** a reviewer resolves a thread on ABC-42's request
+- **THEN** no later round reads it again
 
 #### Scenario: GitHub review in the body
 - **WHEN** a GitHub review is written in the body, not a thread
