@@ -29,7 +29,6 @@ class VendorNamesTest {
             Map.entry(SERVICE + "WorktreeSandbox.java gradle", "build tools' cache directories; iteration 2"),
             Map.entry(SERVICE + "WorktreeSandbox.java npm", "build tools' cache directories; iteration 2"),
             Map.entry(SERVICE + "WorktreeNoise.java gradle", "a build tool's directory; iteration 2"),
-            Map.entry(SERVICE + "ConfigService.java sonnet", "a model alias as a default; iteration 3"),
             Map.entry(SERVICE + "ToolGate.java gh", "the tool-gate names the host CLIs; iteration 3"),
             Map.entry(SERVICE + "ToolGate.java glab", "the tool-gate names the host CLIs; iteration 3"),
             Map.entry(SERVICE + "HostCliLine.java gh", "the tool-gate names the host CLIs; iteration 3"),

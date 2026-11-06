@@ -376,10 +376,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
                 return enabled != null && enabled;
             }
 
-            public String modelOrDefault() {
-                return model == null || model.isBlank() ? "sonnet" : model.strip();
-            }
-
             public List<QaEnvironment> environmentsOrEmpty() {
                 return environments == null ? List.of() : environments;
             }

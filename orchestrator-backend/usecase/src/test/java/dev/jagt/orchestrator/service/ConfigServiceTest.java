@@ -59,11 +59,10 @@ class ConfigServiceTest {
     }
 
     @Test
-    void leavesQaOffWithSonnetAndNoEnvironmentWhereTheHumanWroteNone() {
+    void leavesQaOffWithNoEnvironmentWhereTheHumanWroteNone() {
         ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
 
         assertThat(config.qa().enabledOrDefault()).isFalse();
-        assertThat(config.qa().modelOrDefault()).isEqualTo("sonnet");
         assertThat(config.qa().allows("https://stage.example.com")).isFalse();
     }
 
