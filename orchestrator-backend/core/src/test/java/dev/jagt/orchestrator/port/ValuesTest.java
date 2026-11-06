@@ -106,26 +106,18 @@ class ValuesTest {
     void provisionsAWorktreeWithNoHintsUntilItIsGivenSome() {
         AgentWorktree bare = AgentWorktree.of(Path.of("/wt"), Path.of("/root"));
 
-        AgentWorktree hinted = bare.withOutputStyle("terse").withDisabledPlugins(List.of("p1"))
-                .withAllowedTools(List.of("Read")).withSandbox(Sandbox.on(List.of(), List.of()));
-
-        assertThat(bare.outputStyle()).isNull();
-        assertThat(bare.disabledPlugins()).isEmpty();
+        AgentWorktree hinted = bare.withAllowedTools(List.of("Read")).withSandbox(Sandbox.on(List.of(), List.of()));
         assertThat(bare.allowedTools()).isEmpty();
         assertThat(bare.sandbox().enabled()).isFalse();
         assertThat(hinted.path()).isEqualTo(Path.of("/wt"));
         assertThat(hinted.orchestratorRoot()).isEqualTo(Path.of("/root"));
-        assertThat(hinted.outputStyle()).isEqualTo("terse");
-        assertThat(hinted.disabledPlugins()).containsExactly("p1");
         assertThat(hinted.allowedTools()).containsExactly("Read");
         assertThat(hinted.sandbox().enabled()).isTrue();
     }
 
     @Test
     void readsMissingHintListsAsEmpty() {
-        AgentWorktree worktree = new AgentWorktree(Path.of("/wt"), Path.of("/root"), null, null, null, Sandbox.off());
-
-        assertThat(worktree.disabledPlugins()).isEmpty();
+        AgentWorktree worktree = new AgentWorktree(Path.of("/wt"), Path.of("/root"), null, Sandbox.off());
         assertThat(worktree.allowedTools()).isEmpty();
     }
 

@@ -27,10 +27,6 @@ public class WorktreeSetup {
     private final ConfigService configService;
     private final SubAgentBriefing briefing;
 
-    /** Heavy LSP plugins spawn a ~1-2GB server per worktree, so a RAM-constrained setup can opt out. */
-    @Value("${orchestrator.agent-disabled-plugins:}")
-    private List<String> agentDisabledPlugins;
-
     /** A step a ship instruction asks for, such as opening the request, is not left to a classifier's guess. */
     @Value("${orchestrator.agent-allowed-tools:}")
     private List<String> agentAllowedTools;
@@ -90,8 +86,6 @@ public class WorktreeSetup {
     /** Which files exist and what is in them belongs to the runtime. */
     private void provision(Path worktreePath, Sandbox sandbox) {
         agentRuntime.provisionWorktree(AgentWorktree.of(worktreePath, paths.root())
-                .withOutputStyle(configService.load().agent().outputStyleOrNull())
-                .withDisabledPlugins(agentDisabledPlugins)
                 .withAllowedTools(agentAllowedTools)
                 .withSandbox(sandbox));
     }

@@ -79,12 +79,7 @@ orchestrator:
     # declared file's ${ENV} placeholders and the model resolve as usual; only the server list is pinned.
     # Measured cold: it costs MORE than inheriting, which rides the prompt cache the human's own sessions keep warm.
     # mcp-config: /path/to/mcp-servers.json
-  # Opt-in for RAM-constrained setups; disabling an LSP plugin buys memory and costs the agent its
-  # code intelligence.
-  # agent-disabled-plugins:
-  #   - jdtls-lsp@claude-plugins-official
-  #   - php-lsp@claude-plugins-official
-  #   - oh-my-claudecode@omc
+  # claude.outputStyle and claude.disabledPlugins are read from jagt.yml on every access; jagt.yml.dist describes them.
   # A bare name is resolved on PATH and then in the known install dirs; an absolute path is not portable.
   tmux-command: tmux
   # Empty: tmux's default server. A name: every tmux call carries -L <name>.

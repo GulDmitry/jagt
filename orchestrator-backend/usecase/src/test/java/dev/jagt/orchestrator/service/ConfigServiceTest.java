@@ -38,7 +38,7 @@ class ConfigServiceTest {
         String json = """
                 {
                   "viewer": { "tmuxSession": "alt", "viewMode": "tab-per-task", "keepViewer": false },
-                  "agent": { "outputStyle": "acme:eng" }
+                  "agent": { "model": "acme-model" }
                 }
                 """;
 
@@ -47,7 +47,7 @@ class ConfigServiceTest {
         assertThat(config.viewer().tmuxSession()).isEqualTo("alt");
         assertThat(config.viewer().sharedView()).isFalse();
         assertThat(config.viewer().keepViewerOrDefault()).isFalse();
-        assertThat(config.agent().outputStyleOrNull()).isEqualTo("acme:eng");
+        assertThat(config.agent().modelOrInherited()).isEqualTo("acme-model");
     }
 
     @Test

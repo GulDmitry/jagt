@@ -88,7 +88,6 @@ orchestrator:
   agent:
     # cli: codex          # claude | codex | opencode (stub, replay: test runs); read at startup, unlike the two below. A Codex worktree runs
     #                     # against its own CODEX_HOME, so your ~/.codex servers are not there.
-    outputStyle: ""       # a Claude output style to start every sub-agent with
     model: ""             # the model a session starts on when its notes name none; blank inherits your CLI default
     models: []            # the names a session may be told, replacing the CLI's own list; empty keeps it (Codex has none)
     cacheLifetime: 1h     # idle past this, a prompt goes to a fresh session; 0: never (a local model)
@@ -112,6 +111,9 @@ orchestrator:
   claude:
     command: claude       # also used by the headless reads, which stay Claude whichever agent runs the tasks
     # mcpConfig: /path/to/servers.json   # a session loads jagt's server and these alone, none of yours
+    outputStyle: ""       # a Claude output style to start every sub-agent with; read at startup
+    # disabledPlugins:    # Claude plugin ids; dropping an LSP plugin buys memory and costs the agent its code intelligence
+    #   - jdtls-lsp@claude-plugins-official
   # codex:
   #   command: codex
   # opencode:           # agent.cli: opencode; no sandbox, so agent.sandbox.enabled must stay false
@@ -126,9 +128,6 @@ orchestrator:
 
   watchdog:
     staleAfter: 5m        # silence before an "agent stopped" alert; a hook report needs no wait
-
-  # agentDisabledPlugins:   # dropping an LSP plugin buys memory and costs the agent its code intelligence
-  #   - jdtls-lsp@claude-plugins-official
 
   # Pre-approved in every session: a ship's request and its replies write to the code host, which the auto-mode
   # classifier may refuse otherwise. One comma-separated line; never a merge tool, the base branch is read-only.
