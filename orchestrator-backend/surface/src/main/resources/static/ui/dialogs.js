@@ -18,7 +18,6 @@ const reportLine = document.getElementById('report-line');
 const sayInput = document.getElementById('say');
 const working = document.getElementById('said');
 
-// What the open report is showing, so a change under the reader can be read again and repainted.
 let showing = {path: null, about: null, body: '', extra: null};
 let poll = 0;
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
@@ -115,7 +114,6 @@ function stopWaiting() {
   poll = 0;
 }
 
-// Sent as typed, and refused by the backend when no session is running: the page decides neither.
 reportLine.onsubmit = (event) => {
   event.preventDefault();
   const line = sayInput.value.trim();

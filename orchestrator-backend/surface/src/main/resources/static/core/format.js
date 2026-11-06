@@ -18,16 +18,12 @@ export const countdown = (millis) => {
   return minutes < 60 ? `${minutes}m` : `${Math.ceil(minutes / 60)}h`;
 };
 
-// A task by both its names, the short one first; a task with no alias is its id.
 export const bothNames = (task) => (task.alias ? `${task.alias} \u00b7 ${task.id}` : task.id);
 
-// A report's text as data: its links followable, a round's verdicts and the comments they answer told apart.
 // Only http(s) becomes a link: this text comes from an agent, a model and a hand-edited file.
 const WEB_LINK = /https?:\/\/[^\s<>"'`)\]]+/g;
-// The two shapes a report writes: a numbered block head, and the comment a block answers.
 const HEAD = /^(\s*\d+ · )([^·]+)(· .*)$/;
 const QUOTE = /^\s*>/;
-// A verdict with nothing wrong reads as muted, as every other verdict on the board does.
 const TONE = {FIXED: 'ok', QUESTION: 'you'};
 
 function linked(line) {
@@ -56,8 +52,6 @@ function marked(line) {
 export const reportParts = (said) => said.trimEnd().split('\n')
   .flatMap((line, index) => (index ? [{kind: 'text', text: '\n'}, ...marked(line)] : marked(line)));
 
-// What the session judged on each switch, one `name: yes — why` line apiece; empty where it judged none.
 export const switchLines = (task) => Object.entries(task.switches || {}).map(([name, said]) => `${name}: ${said}`);
 
-// What jagt saw when it stopped the task, its advice, and when; the reason on the line is the server's.
 export const stopLines = (task) => (task.stop ? [task.stop.evidence, task.stop.next, `stopped ${full(task.stop.at)}`] : []);

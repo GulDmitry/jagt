@@ -1,4 +1,3 @@
-// The wiring, and nothing else: no module below here has to know that another one exists.
 
 import {t} from './core/i18n.js';
 import * as store from './core/store.js';
@@ -40,10 +39,8 @@ document.getElementById('empty-new').onclick = launch.open;
 document.getElementById('add-project').onclick = addProject.open;
 document.getElementById('empty-project').onclick = addProject.open;
 filters.onChange(render);
-// Where on this page each part a verb names is.
 const parts = {launch: {focus: launch.open}, project: {focus: addProject.open, argued: addProject.argued}, legend: {section: legend.node}, jobs: {section: jobs.node}};
 palette.wire({partFor: (part) => parts[part] || {}});
-// The menu and the header's Jobs chip open a report the same way: its title and part come from the server's verb.
 const openVerb = (id) => {
   const verb = store.verbs().find((each) => each.id === id);
   return openReport(verb ? `${id} — ${verb.hint}` : id, `/api/commands/${id}`, {extra: parts[verb?.part]?.section?.()});

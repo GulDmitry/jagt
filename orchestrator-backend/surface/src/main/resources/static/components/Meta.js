@@ -1,4 +1,3 @@
-// A card's one row of facts: the state, the request and its checks. Pure, like the card it sits on.
 
 import {httpOnly} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
@@ -6,7 +5,6 @@ import {t} from '../core/i18n.js';
 import {full} from '../core/time.js';
 import {html} from './html.js';
 
-// The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
 export const watchLine = (watch, now) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
@@ -68,7 +66,6 @@ const Repositories = ({task, now}) => html`<span class=${classes('repos', watchL
     ? html`<${RequestChip} url=${repo.reviewRequestUrl} label=${repo.project} openedAt=${0} task=${task} sole=${false} now=${now}/>`
     : repo.project}`)}${task.approved ? html` <${ApprovalTick}/>` : ''}</span>`;
 
-// `manyProjects` comes from the wiring: where every card would wear the same key, it is a word nobody reads.
 export function Meta({task, manyProjects, now}) {
   const many = (task.repos || []).length > 1;
   // A stopped poll with no request chip to ring rings the state instead.

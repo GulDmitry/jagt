@@ -1,7 +1,4 @@
-// The one line above the grid: whose move it is, what the install polls, what the jobs are doing, the phase
-// counts and the order. Every count is a number in a line that never moves: a column per phase would move cards.
 //
-// Pure rendering: each button carries its own data attribute, clicks are delegated through `onBarClick`.
 
 import {make, span} from '../core/dom.js';
 import {countdown} from '../core/format.js';
@@ -93,7 +90,6 @@ export function render(tasks, showing) {
   phaseBar.replaceChildren(...store.phases().flatMap(({id: phase, label}, index) => {
     const held = perPhase.filter((task) => task.phase === phase).length;
     const segment = make('button', held ? 'phase' : 'phase empty', `${label} `, span('count', held));
-    // Nothing to show is nothing to press, and an empty phase says so rather than answering with a blank board.
     segment.disabled = held === 0;
     segment.dataset.phase = phase;
     segment.setAttribute('aria-pressed', String(filters.holds(phase)));
