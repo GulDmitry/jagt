@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.NewRepo;
@@ -20,6 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -87,5 +89,22 @@ class RepoAttachmentTest {
         assertThatThrownBy(() -> attachment.attach("ABC-7")).isInstanceOf(Refusal.class);
 
         verify(worktrees, never()).attach(any(), any(), any());
+    }
+
+    @Test
+    void acceptsAProjectJagtYmlHolds() {
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withProjects(Map.of("registry", new ProjectConfig("/reg", "origin/main", null, List.of()))));
+
+        attachment.vet("registry");
+    }
+
+    @Test
+    void refusesAProjectJagtYmlDoesNotHoldNamingTheOnesItDoes() {
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withProjects(Map.of("registry", new ProjectConfig("/reg", "origin/main", null, List.of()))));
+
+        assertThatThrownBy(() -> attachment.vet("gamma")).isInstanceOf(Refusal.class)
+                .hasMessageContaining("Unknown project 'gamma'").hasMessageContaining("registry");
     }
 }

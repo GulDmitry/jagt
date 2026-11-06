@@ -83,7 +83,7 @@ class BoardWorkspaceTest extends BoardPageContext {
                 TaskStatus.CI_FAILED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
         state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-2", TaskAction.FOCUS)).thenReturn("Focused ABC-2.");
+        when(commands.execute("ABC-2", TaskAction.FOCUS, null)).thenReturn("Focused ABC-2.");
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -91,7 +91,7 @@ class BoardWorkspaceTest extends BoardPageContext {
         page.getByLabel("Focus a2", new Page.GetByLabelOptions().setExact(true)).click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-2.");
-        verify(commands).execute("ABC-2", TaskAction.FOCUS);
+        verify(commands).execute("ABC-2", TaskAction.FOCUS, null);
         assertThat(page.locator("#pane article .alias")).hasText("a1");
     }
 

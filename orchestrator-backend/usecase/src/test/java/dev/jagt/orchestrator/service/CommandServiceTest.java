@@ -41,9 +41,18 @@ class CommandServiceTest {
     @Test
     void handsBackWhateverTheFlowSaidWithoutRewordingIt() {
         when(door.presses("ABC-1", TaskAction.SHIP)).thenReturn(true);
-        when(flow.run("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: approval relayed");
+        when(flow.run("ABC-1", TaskAction.SHIP, null)).thenReturn("ship ABC-1: approval relayed");
 
         assertThat(commands.execute("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: approval relayed");
+    }
+
+    @Test
+    void handsTheProjectAHumanTypedToTheFlowAlongWithTheAction() {
+        when(door.presses("ABC-1", TaskAction.ADD_REPO)).thenReturn(true);
+
+        commands.execute("ABC-1", TaskAction.ADD_REPO, "beta");
+
+        verify(flow).run("ABC-1", TaskAction.ADD_REPO, "beta");
     }
 
     @Test
@@ -52,13 +61,13 @@ class CommandServiceTest {
 
         commands.execute("a1", TaskAction.FOCUS);
 
-        verify(flow).run("a1", TaskAction.FOCUS);
+        verify(flow).run("a1", TaskAction.FOCUS, null);
     }
 
     @Test
     void letsARefusalReachTheCallerWithTheCodeItMustActOn() {
         when(door.presses("ABC-1", TaskAction.DEPLOY)).thenReturn(true);
-        when(flow.run("ABC-1", TaskAction.DEPLOY)).thenThrow(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE,
+        when(flow.run("ABC-1", TaskAction.DEPLOY, null)).thenThrow(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE,
                 "Deploy is not available for ABC-1 (it is IN_PROGRESS — agent working)"));
 
         assertThatThrownBy(() -> commands.execute("ABC-1", TaskAction.DEPLOY))

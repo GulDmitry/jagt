@@ -26,9 +26,16 @@ class TaskCommandsControllerTest {
 
     @Test
     void executesAnActionByTheSameNameTheConsoleTakes() {
-        when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: approval relayed");
+        when(commands.execute("ABC-1", TaskAction.SHIP, null)).thenReturn("ship ABC-1: approval relayed");
 
-        assertThat(api.act("ABC-1", "ship").message()).isEqualTo("ship ABC-1: approval relayed");
+        assertThat(api.act("ABC-1", "ship", null).message()).isEqualTo("ship ABC-1: approval relayed");
+    }
+
+    @Test
+    void carriesTheProjectAHumanTypedAfterTheTicketToTheSameAction() {
+        when(commands.execute("ABC-1", TaskAction.ADD_REPO, "beta")).thenReturn("add-repo ABC-1: beta is at /wt");
+
+        assertThat(api.act("ABC-1", "add-repo", "beta").message()).isEqualTo("add-repo ABC-1: beta is at /wt");
     }
 
     @Test
@@ -48,7 +55,7 @@ class TaskCommandsControllerTest {
 
     @Test
     void refusesAnUnknownActionIdRatherThanMappingItToSomethingNear() {
-        assertThatThrownBy(() -> api.act("ABC-1", "shipit"))
+        assertThatThrownBy(() -> api.act("ABC-1", "shipit", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown action 'shipit'");
         verifyNoInteractions(commands);

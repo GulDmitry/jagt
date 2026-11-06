@@ -18,7 +18,10 @@ export function parse(line) {
   if (!verb) return null;
   const argument = tokens.slice(1).join(' ');
   if (!verb.takesTask) return {verb, argument};
-  return {verb, argument, task: store.taskFor(argument)};
+  const whole = store.taskFor(argument);
+  if (whole || !verb.takesProject) return {verb, argument, task: whole};
+  const [name, ...project] = tokens.slice(1);
+  return {verb, argument, task: store.taskFor(name), project: project.join(' ')};
 }
 
 // A typo must be visible before Run, not after a model has been paid to guess at it.

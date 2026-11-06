@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
@@ -20,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +36,21 @@ class FlowEngineTest {
         @Override
         public Outcome run(String taskId) {
             return outcome;
+        }
+    }
+
+    private record KnowingCapability(TaskAction action, Outcome outcome, String known) implements TaskCapability {
+
+        @Override
+        public Outcome run(String taskId) {
+            return outcome;
+        }
+
+        @Override
+        public void vet(String project) {
+            if (!known.equals(project)) {
+                throw Refusal.byState("Unknown project '" + project + "'");
+            }
         }
     }
 
@@ -235,5 +253,87 @@ class FlowEngineTest {
         assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
                 .asInstanceOf(type(Refusal.class))
                 .satisfies(refusal -> assertThat(refusal.getMessage()).contains("window was not read"));
+    }
+
+    @Test
+    void recordsTheProjectAHumanNamesAsTheTasksRequestBeforeAddRepoRuns() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new KnowingCapability(
+                TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")), List.of()),
+                sessions, Clock.systemUTC(), ignored -> false);
+        ArgumentCaptor<UnaryOperator<TaskState>> writes = ArgumentCaptor.captor();
+
+        String said = engine.run("ABC-1", TaskAction.ADD_REPO, "beta");
+
+        assertThat(said).isEqualTo("added");
+        verify(stateService, times(2)).updateTask(eq("ABC-1"), writes.capture());
+        TaskState asked = writes.getAllValues().get(0)
+                .apply(TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build());
+        assertThat(asked.repoRequest()).isEqualTo("beta");
+        assertThat(writes.getAllValues().get(1)
+                .apply(asked).status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"PLAN_PENDING", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
+    void refusesANamedRepositoryAtAStatusThatCannotTakeOneAndWritesNothing(TaskStatus status) {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder("alpha", "/wt", status).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new KnowingCapability(
+                TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")), List.of()),
+                sessions, Clock.systemUTC(), ignored -> false);
+
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "beta"))
+                .asInstanceOf(type(Refusal.class))
+                .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+        verify(stateService, never()).updateTask(any(), any());
+    }
+
+    @Test
+    void refusesANamedRepositoryTheTaskAlreadyWorksInAndWritesNothing() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new KnowingCapability(
+                TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "alpha")), List.of()),
+                sessions, Clock.systemUTC(), ignored -> false);
+
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "alpha"))
+                .asInstanceOf(type(Refusal.class))
+                .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
+                .satisfies(refusal -> assertThat(refusal).hasMessageContaining("already works in alpha"));
+        verify(stateService, never()).updateTask(any(), any());
+    }
+
+    @Test
+    void refusesANamedRepositoryTheCapabilityDoesNotKnowAndWritesNothing() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new KnowingCapability(
+                TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")), List.of()),
+                sessions, Clock.systemUTC(), ignored -> false);
+
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "gamma"))
+                .asInstanceOf(type(Refusal.class))
+                .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
+        verify(stateService, never()).updateTask(any(), any());
+    }
+
+    @Test
+    void refusesAProjectNamedForAVerbThatTakesNone() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(
+                new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))), List.of()),
+                sessions, Clock.systemUTC(), ignored -> false);
+
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS, "beta"))
+                .asInstanceOf(type(Refusal.class))
+                .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
+        verify(stateService, never()).updateTask(any(), any());
     }
 }

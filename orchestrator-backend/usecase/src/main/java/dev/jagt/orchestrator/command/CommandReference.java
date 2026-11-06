@@ -12,16 +12,17 @@ import java.util.List;
 public final class CommandReference {
 
     public record Verb(String id, String hint, boolean takesTask, List<String> aliases, boolean report,
-                       boolean aboutOneTask, @Nullable String part) {
+                       boolean aboutOneTask, @Nullable String part, boolean takesProject) {
 
         /** Built from the declaration rather than by a caller: adjacent flags transpose in silence. */
         static Verb of(TaskAction action) {
-            return new Verb(action.id(), action.hint(), true, action.retiredVerbs(), false, false, null);
+            return new Verb(action.id(), action.hint(), true, action.retiredVerbs(), false, false, null,
+                    action.takesProject());
         }
 
         static Verb of(GlobalCommand command) {
             return new Verb(command.id(), command.hint(), false, List.of(), command.report(),
-                    command.aboutOneTask(), command.part());
+                    command.aboutOneTask(), command.part(), false);
         }
     }
 

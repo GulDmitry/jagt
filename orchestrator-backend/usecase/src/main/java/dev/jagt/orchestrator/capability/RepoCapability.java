@@ -23,6 +23,11 @@ public class RepoCapability implements TaskCapability {
     }
 
     @Override
+    public void vet(String project) {
+        attachment.vet(project);
+    }
+
+    @Override
     public Outcome run(String taskId) {
         try {
             return Outcome.relayed(attachment.attach(taskId), "repository added");

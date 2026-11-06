@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.RequestlessShip;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
 import java.util.Optional;
@@ -26,9 +27,18 @@ public class FlowEngine {
 
     /** Runs {@code action} on the task and returns what to show the human. */
     public String run(String taskIdOrAlias, TaskAction action) {
+        return run(taskIdOrAlias, action, null);
+    }
+
+    /**
+     * As above; a {@code project} the human named becomes the task's repository request first, at any status
+     * {@code action} can leave for another, and is refused with nothing written where it cannot be taken.
+     */
+    public String run(String taskIdOrAlias, TaskAction action, @Nullable String project) {
         String taskId = tasks.canonicalTaskId(taskIdOrAlias);
         TaskState task = tasks.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
-        if (!FlowRules.allows(task.status(), action, facts(task, taskId))) {
+        Facts facts = project == null ? facts(task, taskId) : facts(task, taskId).withRepoRequested(true);
+        if (!FlowRules.allows(task.status(), action, facts)) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "
                     + Move.forTask(task.status(), Facts.projected(task).withShippedWithoutRequest(requestless.stands(task)),
@@ -37,7 +47,25 @@ public class FlowEngine {
         }
         TaskCapability capability = capabilities.of(action).orElseThrow(() ->
                 new IllegalStateException("No capability declared for `" + action.id() + "`"));
+        if (project != null) {
+            named(taskId, task, action, project, capability);
+            tasks.updateTask(taskId, asked -> TaskReducer.repoAsked(asked, project));
+        }
         return apply(taskId, task.status(), action, wrapped(taskId, action, capability));
+    }
+
+    private static void named(String taskId, TaskState task, TaskAction action, String project, TaskCapability capability) {
+        if (!action.takesProject()) {
+            throw Refusal.byState(action.id() + " takes no project");
+        }
+        if (FlowRules.next(task.status(), action, Outcome.Kind.RELAYED).isEmpty()) {
+            throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " cannot name a project for "
+                    + taskId + " (it is " + task.status() + ")");
+        }
+        if (task.repo(project).isPresent()) {
+            throw Refusal.byState("Task " + taskId + " already works in " + project);
+        }
+        capability.vet(project);
     }
 
 

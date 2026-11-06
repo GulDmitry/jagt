@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -35,6 +37,14 @@ class RepoAttachment {
         log.atInfo().setMessage("repository added").addKeyValue("task", id).addKeyValue("project", project)
                 .addKeyValue("path", added.worktreePath()).log();
         return told(id, added, Standing.of(task));
+    }
+
+    /** Refuses a project {@code jagt.yml} does not hold. */
+    void vet(String project) {
+        Set<String> known = configService.load().projects().keySet();
+        if (!known.contains(project)) {
+            throw Refusal.byState("Unknown project '" + project + "'. Known projects: " + known);
+        }
     }
 
     private String told(String taskId, NewRepo added, Standing read) {

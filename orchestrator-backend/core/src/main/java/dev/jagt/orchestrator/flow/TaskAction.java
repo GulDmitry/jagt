@@ -21,7 +21,8 @@ public enum TaskAction {
             "tell the session the plan holds: it starts on the change the plan lists"),
     SHIP(30, Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
     ADD_REPO(95, Group.FLOW, "add-repo", "Add repo",
-            "add the repository the session asked for to the task: its worktree is cut and the session told"),
+            "add a repository to the task, the one the session asked for or the project you name: its worktree is cut and the session told",
+            "add-repo <ticket> [project]"),
     SWEEP(10, Group.FLOW, "sweep", "Check review",
             "read what the pipeline and the reviewers said, the checks and open threads, relay them to the agent"),
     DEPLOY(90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
@@ -68,6 +69,8 @@ public enum TaskAction {
      * by one; what happens in between is the work, and the work is what the reviewer stands in for.
      */
     private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, LIFT, PAUSE, DONE);
+
+    private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO);
 
     /** The verb a task needs most often. */
     private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);
@@ -126,6 +129,11 @@ public enum TaskAction {
     /** Whether this action changes nothing, so nothing else being in flight is a reason to refuse it. */
     public boolean readOnly() {
         return READ_ONLY.contains(this);
+    }
+
+    /** Whether a human may type a project after the ticket. */
+    public boolean takesProject() {
+        return NAMES_A_PROJECT.contains(this);
     }
 
     public boolean onRow() {

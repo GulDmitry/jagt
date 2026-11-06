@@ -14,4 +14,9 @@ public interface TaskCapability {
     }
 
     Outcome run(String taskId);
+
+    /** Throws a {@link Refusal} when the project a human named cannot be taken, before anything is written. */
+    default void vet(String project) {
+        throw Refusal.byState(action().id() + " takes no project");
+    }
 }

@@ -57,7 +57,7 @@ class BoardActionsTest extends BoardPageContext {
     void clickingAnActionRunsItAndShowsTheSentenceItAnswered() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1 — its window is in front.");
+        when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1 — its window is in front.");
 
         Page page = session.newPage();
 
@@ -67,7 +67,7 @@ class BoardActionsTest extends BoardPageContext {
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1 — its window is in front.");
-        verify(commands).execute("ABC-1", TaskAction.FOCUS);
+        verify(commands).execute("ABC-1", TaskAction.FOCUS, null);
     }
 
     @Test
@@ -149,7 +149,7 @@ class BoardActionsTest extends BoardPageContext {
     void aRefusedActionAlsoSaysTheBoardHasCaughtUp() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.SHIP)).thenThrow(new Refusal(
+        when(commands.execute("ABC-1", TaskAction.SHIP, null)).thenThrow(new Refusal(
                 Refusal.Code.ACTION_NOT_AVAILABLE, "Ship is not available for ABC-1 (it is DEPLOYED)"));
 
         Page page = session.newPage();
@@ -170,7 +170,7 @@ class BoardActionsTest extends BoardPageContext {
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .lastActiveTimestamp(System.currentTimeMillis()).build());
         CountDownLatch sweeping = new CountDownLatch(1);
-        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenAnswer(invocation -> {
+        when(commands.execute("ABC-1", TaskAction.SWEEP, null)).thenAnswer(invocation -> {
             sweeping.await(10, TimeUnit.SECONDS);
             return "sweep ABC-1: checks success";
         });
@@ -205,11 +205,11 @@ class BoardActionsTest extends BoardPageContext {
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .lastActiveTimestamp(System.currentTimeMillis()).build());
         CountDownLatch sweeping = new CountDownLatch(1);
-        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenAnswer(invocation -> {
+        when(commands.execute("ABC-1", TaskAction.SWEEP, null)).thenAnswer(invocation -> {
             sweeping.await(10, TimeUnit.SECONDS);
             return "sweep ABC-1: checks success";
         });
-        when(commands.execute("ABC-1", TaskAction.DIFF)).thenReturn("Opened the diff for ABC-1.");
+        when(commands.execute("ABC-1", TaskAction.DIFF, null)).thenReturn("Opened the diff for ABC-1.");
 
         Page page = session.newPage();
 
@@ -239,7 +239,7 @@ class BoardActionsTest extends BoardPageContext {
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .lastActiveTimestamp(System.currentTimeMillis()).build());
         CountDownLatch sweeping = new CountDownLatch(1);
-        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenAnswer(invocation -> {
+        when(commands.execute("ABC-1", TaskAction.SWEEP, null)).thenAnswer(invocation -> {
             sweeping.await(10, TimeUnit.SECONDS);
             return "sweep ABC-1: checks success";
         });
@@ -258,7 +258,7 @@ class BoardActionsTest extends BoardPageContext {
             page.locator("#ask").press("Enter");
 
             assertThat(page.locator("#toasts .toast.error")).containsText("already running sweep");
-            verify(commands, never()).execute("ABC-1", TaskAction.SHIP);
+            verify(commands, never()).execute("ABC-1", TaskAction.SHIP, null);
         } finally {
             sweeping.countDown();
         }
@@ -286,7 +286,7 @@ class BoardActionsTest extends BoardPageContext {
                 TaskStatus.IN_PROGRESS).alias("41").lastActiveTimestamp(System.currentTimeMillis()).build());
         state.putTask("41", TaskState.builder("alpha", root.resolve("41-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("42").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("41", TaskAction.SHIP)).thenReturn("Shipped 41.");
+        when(commands.execute("41", TaskAction.SHIP, null)).thenReturn("Shipped 41.");
 
         Page page = session.newPage();
 
@@ -299,14 +299,14 @@ class BoardActionsTest extends BoardPageContext {
                 .setExact(true)).click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Shipped 41.");
-        verify(commands, never()).execute("4", TaskAction.SHIP);
+        verify(commands, never()).execute("4", TaskAction.SHIP, null);
     }
 
     @Test
     void aRefusalIsAnnouncedAsAnAlertAndDismissedByAButton() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.SHIP)).thenThrow(new IllegalStateException("nothing to ship"));
+        when(commands.execute("ABC-1", TaskAction.SHIP, null)).thenThrow(new IllegalStateException("nothing to ship"));
 
         Page page = session.newPage();
 

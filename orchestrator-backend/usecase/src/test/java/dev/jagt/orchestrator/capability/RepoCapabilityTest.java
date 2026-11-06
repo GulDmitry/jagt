@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.Outcome;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -21,7 +22,10 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class RepoCapabilityTest {
@@ -80,5 +84,37 @@ class RepoCapabilityTest {
         engine.run("ABC-7", TaskAction.ADD_REPO);
 
         assertThat(state.task("ABC-7").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void addsAProjectAHumanNamesToATaskThatAskedForNoneAndPutsItBackToWork(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties
+                .defaults().withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(attachment.attach("ABC-7")).thenReturn("add-repo ABC-7: registry is at /wt2; the session was told");
+        FlowEngine engine = new FlowEngine(state, new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
+                mock(AgentPresence.class), Clock.systemUTC(), ignored -> false);
+
+        engine.run("ABC-7", TaskAction.ADD_REPO, "registry");
+
+        assertThat(state.task("ABC-7").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        verify(attachment).vet("registry");
+    }
+
+    @Test
+    void changesNothingWhenTheNamedProjectIsNotConfigured(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties
+                .defaults().withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        doThrow(Refusal.byState("Unknown project 'gamma'")).when(attachment).vet("gamma");
+        FlowEngine engine = new FlowEngine(state, new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
+                mock(AgentPresence.class), Clock.systemUTC(), ignored -> false);
+
+        assertThatThrownBy(() -> engine.run("ABC-7", TaskAction.ADD_REPO, "gamma")).isInstanceOf(Refusal.class);
+
+        TaskState task = state.task("ABC-7").orElseThrow();
+        assertThat(task.repoRequest()).isNull();
+        assertThat(task.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+        verify(attachment, never()).attach("ABC-7");
     }
 }

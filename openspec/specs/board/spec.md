@@ -37,10 +37,11 @@ task.
 - **THEN** `resume <url>` after ⌘K is the one control
 
 ### Requirement: Verbs come off the wire in groups
-Per-task verbs SHALL come from `Move.actions()`, a row per `TaskAction.Group`; a hint's text lives in
-`command/CommandReference` alone. `approve-plan` replaces the CLI plan mode's approval dialog and its go-ahead hint.
-`add-repo` replaces the answer typed to a session asking for a repository: highlighted in place of `focus` while that
-request stands, no mark. A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised (`TaskAction.RENAMED`).
+Per-task verbs SHALL come from `Move.actions()`, a row per `TaskAction.Group`; a hint's text lives in `command/CommandReference` alone. `approve-plan`
+replaces the CLI plan mode's approval dialog and its go-ahead hint. `add-repo` replaces the answer typed to a session asking for a repository:
+highlighted in place of `focus` while that request stands, no mark. Typed `add-repo <ticket> <project>` it names the repository, with no button; the
+project is an optional parameter of the action's one endpoint. A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised
+(`TaskAction.RENAMED`).
 #### Scenario: A plan or a repository waits
 - **WHEN** a task is at `PLAN_PENDING`, or its session asked for a configured project it lacks
 - **THEN** its top row offers `approve-plan`, or `add-repo` on the NEEDS INPUT card; no other status or question does
@@ -148,10 +149,9 @@ highlighted button says what to do. A badge is the human's move; a quiet "you ca
 - **THEN** it wears no badge: `done` is its only move
 - **AND** while no job's last run failed, no jobs chip shows
 ### Requirement: Components ship as the files that run
-The board SHALL render Preact components written with `htm`, served from `static/vendor/` byte for byte as the npm
-registry published them. The page's import map resolves them. A page SHALL load nothing from outside the jar, and
-the board's code and styles SHALL weigh under 160 KB (`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons,
-served from the jar, make it installable as an app from the URL the banner prints.
+The board SHALL render Preact components written with `htm`, served from `static/vendor/` byte for byte as the npm registry published them. The page's
+import map resolves them. A page SHALL load nothing from outside the jar, and the board's code and styles SHALL weigh under 160 KB
+(`BoardAssetsTest`). Its `manifest.webmanifest` and two PNG icons, served from the jar, make it installable as an app from the URL the banner prints.
 #### Scenario: A shipped file is not what ships
 - **WHEN** `vendor/preact.mjs` differs from the published 11.0.1 by one byte
 - **THEN** `BoardAssetsTest` fails naming the file

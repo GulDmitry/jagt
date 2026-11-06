@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,10 +28,11 @@ public class TaskCommandsController {
 
     /** No aliases: a renamed verb is accepted only where a human types, and a page offering the old id is stale. */
     @PostMapping("/tasks/actions/{actionId}")
-    public ActionResult act(@RequestParam("task") String taskId, @PathVariable String actionId) {
+    public ActionResult act(@RequestParam("task") String taskId, @PathVariable String actionId,
+                            @RequestParam(value = "project", required = false) @Nullable String project) {
         TaskAction action = TaskAction.byId(actionId).orElseThrow(() ->
                 new IllegalArgumentException("Unknown action '" + actionId + "'"));
-        return new ActionResult(commands.execute(taskId, action));
+        return new ActionResult(commands.execute(taskId, action, project));
     }
 
     /** Slow on purpose when a ticket is named: reading it is a remote call. */

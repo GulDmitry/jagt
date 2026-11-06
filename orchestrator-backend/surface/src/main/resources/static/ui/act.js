@@ -24,7 +24,7 @@ export async function runGlobal(verbId) {
   }
 }
 
-export async function run(taskId, actionId) {
+export async function run(taskId, actionId, project = '') {
   const task = store.taskById(taskId);
   if (!task) {
     toast(t('act.gone', {task: taskId}), true);
@@ -43,7 +43,9 @@ export async function run(taskId, actionId) {
   hold(task, action);
   render();
   try {
-    const result = await api(`/api/tasks/actions/${action.id}?task=${encodeURIComponent(task.id)}`, {method: 'POST'});
+    const named = project ? `&project=${encodeURIComponent(project)}` : '';
+    const result = await api(`/api/tasks/actions/${action.id}?task=${encodeURIComponent(task.id)}${named}`,
+      {method: 'POST'});
     toast(result.message);
   } catch (e) {
     toast(refusal(e), true);

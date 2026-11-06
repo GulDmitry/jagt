@@ -61,9 +61,9 @@ const KEPT = {clear: false};
 
 // A line that parses is EXECUTED, not interpreted: only real free text is worth a model call.
 async function runParsed(parsed) {
-  const {verb, argument, task} = parsed;
+  const {verb, argument, task, project} = parsed;
   if (verb.takesTask) {
-    await run(task.id, verb.id);
+    await run(task.id, verb.id, project);
     return HANDLED;
   }
   const part = forms.partFor(verb.part);

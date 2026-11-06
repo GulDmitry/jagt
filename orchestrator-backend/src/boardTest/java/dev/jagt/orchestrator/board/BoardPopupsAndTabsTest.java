@@ -300,7 +300,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     void aVerbsKeyRunsItOnTheOpenTask() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+        when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
         assertThat(page.locator("#pane article .alias")).hasText("a1");
@@ -308,7 +308,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         page.keyboard().press("f");
 
         assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1.");
-        verify(commands).execute("ABC-1", TaskAction.FOCUS);
+        verify(commands).execute("ABC-1", TaskAction.FOCUS, null);
     }
 
     @Test
@@ -355,7 +355,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     void aVerbsKeyDoesNothingWhileANarrowWindowShowsOnlyTheList() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+        when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
         Page page = session.newPage();
         page.setViewportSize(800, 900);
         page.navigate("http://localhost:" + port + "/");
@@ -366,7 +366,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
         page.keyboard().press("f");
 
         assertThat(page.locator("#toasts .toast")).hasCount(1);
-        verify(commands, org.mockito.Mockito.times(1)).execute("ABC-1", TaskAction.FOCUS);
+        verify(commands, org.mockito.Mockito.times(1)).execute("ABC-1", TaskAction.FOCUS, null);
     }
 
     @Test

@@ -49,7 +49,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     void thePaletteExecutesACommandItUnderstandsWithoutPayingForTheModel() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("Shipped ABC-1 — review request updated.");
+        when(commands.execute("ABC-1", TaskAction.SHIP, null)).thenReturn("Shipped ABC-1 — review request updated.");
 
         Page page = session.newPage();
 
@@ -119,7 +119,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host/x/merge_requests/7")
                 .lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
+        when(commands.execute("ABC-1", TaskAction.SWEEP, null)).thenReturn("sweep ABC-1: checks success");
 
         Page page = session.newPage();
 

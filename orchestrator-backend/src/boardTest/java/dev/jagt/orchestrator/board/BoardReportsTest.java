@@ -28,7 +28,7 @@ class BoardReportsTest extends BoardPageContext {
     void theLogButtonKeepsItsNameAndCarriesTheLastMessageInItsHover() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1 — its window is in front.");
+        when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1 — its window is in front.");
 
         Page page = session.newPage();
 
