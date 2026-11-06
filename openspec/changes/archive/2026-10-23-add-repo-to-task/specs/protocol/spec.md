@@ -6,7 +6,7 @@ that is not configured, or that the task already holds, SHALL be a violation nam
 record the request on the task (`TaskState.repoRequest`) until a repository is added or the session reports anything else.
 
 #### Scenario: A session asks for a configured project
-- **WHEN** a task in `sng` reports `outcome=question` with `needsProject: schemaRegistry`
+- **WHEN** a task in `alpha` reports `outcome=question` with `needsProject: schemaRegistry`
 - **THEN** the request is recorded on the task and the question reaches the board
 
 #### Scenario: An unknown or held key

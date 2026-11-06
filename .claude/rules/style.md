@@ -5,7 +5,7 @@ paths:
   - "**/*.md"
 ---
 
-Default to no comment; load `sob-ai:commenting` before writing one. Three collaborators per class, five is the ceiling.
+Default to no comment; load the commenting skill your setup provides, if any, before writing one. Three collaborators per class, five is the ceiling.
 Cognitive complexity 12 per method at most. A unit never names who uses it.
 
 Full rules for comments, prose and the shape of a class: **[`docs/rules/style.md`](../../docs/rules/style.md)** —

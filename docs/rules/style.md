@@ -4,7 +4,7 @@
 
 ## Writing
 
-- The `sob-ai:commenting` gate deletes on sight: narration of what the code does; an argument that a change
+- A comment is deleted on sight when it is narration of what the code does; an argument that a change
   is correct; how the code got this way; a fact whose source of truth is elsewhere.
 - **A situation is a scenario in its spec** (`openspec/specs/`): "the request does not target the base branch → …".
 - The one exception to English is functional: `KittyTerminalDriver`'s ЙЦУКЕН keymap (`map=cmd+м …`).
@@ -46,8 +46,8 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 
 ## Code quality
 
-- **The test is the litmus of the production code**: ~5+ objects of setup or high cognitive load means the
-  smell is in the **production code** (`sob-ai:unit-testing` §5) — fix the code, never the fixture.
+- **The test is the litmus of the production code**: ~5+ objects of setup or high cognitive load: the smell is in the
+  **production code**. Fix the code, never the fixture.
 - **A unit knows what it needs, never who uses it**, a comment included. `RingsTest` fails an inner module
   naming an outer type, review a caller named as a concept.
 - **No duplicated block of 75 tokens or more in main**, found by PMD's copy-paste detector (`DuplicationTest`): one holder
@@ -67,7 +67,7 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   `TaskState.builder(project, worktree, status)`.
 - **What may be null is `@Nullable`**, all else not: NullAway fails the build
   ([0034](../decisions/0034-null-is-declared-and-the-compiler-checks-it.md)).
-- On every code + test change: tests through `sob-ai:unit-testing`, the production code refactored until they
+- On every code + test change: tests written to `docs/rules/testing.md`, the production code refactored until they
   are light. Deliver only light, green **and** reviewed.
 
 ## Code review is mandatory after every code change, before committing

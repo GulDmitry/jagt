@@ -374,11 +374,11 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
-        String json = ClaudeAgentRuntime.settingsJson("sob-ai:Engineer", null, null, null);
+        String json = ClaudeAgentRuntime.settingsJson("team:Engineer", null, null, null);
 
         String style = new JsonMapper().readTree(json).path("outputStyle").asString(null);
 
-        assertThat(style).isEqualTo("sob-ai:Engineer");
+        assertThat(style).isEqualTo("team:Engineer");
     }
 
     @Test

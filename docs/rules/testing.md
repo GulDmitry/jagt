@@ -10,7 +10,7 @@ survivor judged before the commit ([0125](../decisions/0125-mutants-are-judged-o
 [0127](../decisions/0127-mutants-run-with-every-test.md), [0129](../decisions/0129-ci-reports-the-mutants-of-a-push.md)).
 **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`** ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 
-**Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix. Its `docs/cases.md` row and
+**Every fixed bug gets a regression unit test**, verified RED by reverting the fix. Its `docs/cases.md` row and
 `Defect-family:` trailer make defects countable per family. **A new test's run is predicted first**, outcome and message; a surprise is a
 stop to understand, never a blind retry. **Every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite
 booting the app passes `--orchestrator.open-terminal-window=false`, uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes

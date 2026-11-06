@@ -10,6 +10,8 @@ MCP server; a root session presents jagt's Master token, so every one is Master.
 
 **One source of truth, no leaking abstraction, composition pinned by small tests**, above all. A unit knows
 what it needs, never who uses it: it names no caller, surface or feature, a comment included (`RingsTest`).
+**jagt is agnostic to everything**: no tracked file names a user's employer, project, ticket, skill, machine
+or local setup; such names live only in git-ignored files.
 
 ## Where things are written down
 
@@ -60,8 +62,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 - **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's
   hooks running underneath. They refuse a push off the task's branch, deleting, branchless, hook-skipping, with
   `-c`, `$'…'` or forced unleased; a plumbing push; `gh`/`glab` but a read; `git worktree add`; a line reaching
-  the board or token.
-  Else they report state; gaps: [`guards`](docs/rules/guards.md).
+  the board or token. Else they report state; gaps: [`guards`](docs/rules/guards.md).
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.
   Permission to commit is standing, to push is not.
@@ -115,7 +116,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
   `roleEval -Prole=<id>` and `pitest` are asked for by name. **A cached green is not a run**: `--rerun-tasks` at a batch's end
   and before a push; a commit inside a batch runs the tests of what it touched and the rule tests.
 - **A change to `roles/session/brief.md.dist` runs `promptEval` and `roleEval -Prole=master`** before its commit.
-- **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
+- **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. It adds its row to
   [`docs/cases.md`](docs/cases.md) and a `Defect-family: <A–M>` trailer.
 - **Every test pins a business case, and changes only for a reason the commit names**: its scenario changed, or it
@@ -127,7 +128,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 ## Writing
 
 - **Write less than feels complete.** Delete every sentence that explains, argues, reassures or names the
-  option you rejected — `docs/decisions/` alone keeps it. Load `sob-ai:commenting` before writing a comment.
+  option you rejected — `docs/decisions/` alone keeps it. Before writing a comment, load the commenting skill your setup provides, if any.
 - **One fact per line**, in every text: a decision plus one clause of why, never the road to it nor what it used to be.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
 - **Never cite a line number or a line count** in a doc or a comment; name the file, the symbol or the rule.
@@ -152,8 +153,7 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
   both `ActionOrigin.TRACKER` and off by default. The auto-review loop reads and drafts, its gate in the
   outcome rather than the trigger. The base branch stays read-only for all three.
   jagt re-runs a pipeline the host says died on infrastructure, bounded by `infraWait`; nothing else writes to the code host unasked.
-- **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer
-  (`TaskOpeningDoorsTest`).
+- **A task opens from a deterministic source alone**: your command or tracker intake, never a model's answer (`TaskOpeningDoorsTest`).
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A
   task contradicting what the code guarantees is such a question, asked before the code picks a side. It is

@@ -197,7 +197,7 @@ class CodexAgentRuntimeTest {
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
-                .provisionWorktree(AgentWorktree.of(worktree, root).withOutputStyle("sob-ai:Engineer"));
+                .provisionWorktree(AgentWorktree.of(worktree, root).withOutputStyle("team:Engineer"));
 
         assertThat(worktree.resolve(".mcp.json")).doesNotExist();
         assertThat(worktree.resolve(".claude")).doesNotExist();
