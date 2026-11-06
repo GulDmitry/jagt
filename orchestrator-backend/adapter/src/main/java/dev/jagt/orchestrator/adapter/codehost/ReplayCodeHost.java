@@ -24,6 +24,11 @@ public class ReplayCodeHost extends OfflineCodeHost {
     }
 
     @Override
+    public Answer<String> closeRequest(HostSettings host, String requestUrl) {
+        return Answer.failed(TokenUsage.NONE, "a replayed run sends nothing to a host");
+    }
+
+    @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
         return new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE);
     }

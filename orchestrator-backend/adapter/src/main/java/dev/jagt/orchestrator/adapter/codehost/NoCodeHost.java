@@ -25,6 +25,11 @@ public class NoCodeHost extends OfflineCodeHost {
     }
 
     @Override
+    public Answer<String> closeRequest(HostSettings host, String requestUrl) {
+        return Answer.failed(TokenUsage.NONE, host.selectedBy() + " is none: no request is closed");
+    }
+
+    @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
         return new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE);
     }

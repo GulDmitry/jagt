@@ -34,6 +34,8 @@ final class TaskOffers {
 
     private static final RegionId<Fact> REPO_REQUESTED = new RegionId<>("repo requested", Fact.class);
 
+    private static final RegionId<Fact> SEVERAL_REPOS = new RegionId<>("several repos", Fact.class);
+
     private static final RegionId<Fact> REQUEST_MERGED = new RegionId<>("request merged", Fact.class);
 
     private static final RegionId<Fact> SHIPPED_WITHOUT_REQUEST = new RegionId<>("shipped without request", Fact.class);
@@ -64,12 +66,15 @@ final class TaskOffers {
     private static final Set<TaskStatus> REVERT_ON_A_LIVE_DEPLOY = difference(ANY, EnumSet.of(DEPLOYED,
             DEPLOY_CONFLICT));
 
+    static final Set<TaskStatus> REMOVE_REPO_FROM = difference(ANY, EnumSet.of(NEW, DEPLOY_CONFLICT, DONE));
+
     private static final List<Offer> OFFERS = List.of(
             offer(TaskAction.SHIP, WRITTEN, no(GIT_CHANGED), no(REQUEST_MERGED)),
             offer(TaskAction.SHIP, EnumSet.of(SHIPPING), no(GIT_CHANGED), no(REQUEST_MERGED), no(AGENT_LIVE)),
             offer(TaskAction.SHIP, SHIP_ON_A_REQUEST, no(GIT_CHANGED), no(REQUEST_MERGED), yes(REVIEW_REQUEST)),
             offer(TaskAction.APPROVE_PLAN, APPROVE_PLAN_FROM),
             offer(TaskAction.ADD_REPO, OPEN, yes(REPO_REQUESTED)),
+            offer(TaskAction.REMOVE_REPO, REMOVE_REPO_FROM, yes(SEVERAL_REPOS)),
             offer(TaskAction.SWEEP, ANY, yes(REVIEW_REQUEST)),
             offer(TaskAction.DEPLOY, EnumSet.of(DEPLOY_CONFLICT), no(GIT_CHANGED), no(REVERT_CONFLICT)),
             offer(TaskAction.DEPLOY, DEPLOY_ON_A_REQUEST, no(GIT_CHANGED), no(REVERT_CONFLICT),
@@ -101,6 +106,7 @@ final class TaskOffers {
         chart.derived(GIT_CHANGED, facts -> Fact.of(facts.facts().gitStateChanged()));
         chart.derived(STOPPED, facts -> Fact.of(facts.facts().stopped()));
         chart.derived(REPO_REQUESTED, facts -> Fact.of(facts.facts().repoRequested()));
+        chart.derived(SEVERAL_REPOS, facts -> Fact.of(facts.facts().severalRepos()));
         chart.derived(REQUEST_MERGED, facts -> Fact.of(facts.facts().requestMerged()));
         chart.derived(SHIPPED_WITHOUT_REQUEST, facts -> Fact.of(facts.facts().shippedWithoutRequest()));
         chart.derived(REVERT_CONFLICT, facts -> Fact.of(facts.facts().revertConflict()));

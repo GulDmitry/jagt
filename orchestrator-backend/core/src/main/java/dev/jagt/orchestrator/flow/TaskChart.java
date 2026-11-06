@@ -677,6 +677,8 @@ final class TaskChart {
         ran(chart, TaskAction.APPROVE_PLAN, Outcome.Kind.RELAYED, IN_PROGRESS, TaskOffers.APPROVE_PLAN_FROM);
         ran(chart, TaskAction.ADD_REPO, Outcome.Kind.RELAYED, IN_PROGRESS,
                 EnumSet.complementOf(EnumSet.of(PLAN_PENDING, DEPLOYED, DEPLOY_CONFLICT, REVERTED, DONE)));
+        TaskOffers.REMOVE_REPO_FROM.forEach(status -> edge(chart, status, "remove-repo RELAYED",
+                new TaskMove.Ran(TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED)::equals, status));
         ran(chart, TaskAction.DEPLOY, Outcome.Kind.OK, DEPLOYED, TaskOffers.DEPLOY_FROM);
         ran(chart, TaskAction.DEPLOY, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, TaskOffers.DEPLOY_FROM);
         ran(chart, TaskAction.REVERT, Outcome.Kind.OK, REVERTED, OPEN);

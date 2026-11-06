@@ -91,6 +91,10 @@ final class HostCli {
         return Answer.failed(TokenUsage.NONE, "not the address of a pipeline: " + OneLine.clipped(url));
     }
 
+    static <T> Answer<T> notARequest(String url) {
+        return Answer.failed(TokenUsage.NONE, "not the address of a request: " + OneLine.clipped(url));
+    }
+
     // A host hides a private project from a CLI signed out of it behind the same 404 as one that does not exist.
     private boolean signedIn(String hostname) {
         return processes.run(null, TIMEOUT, List.of(Executables.resolve(cli), "auth", "status", "--hostname", hostname))

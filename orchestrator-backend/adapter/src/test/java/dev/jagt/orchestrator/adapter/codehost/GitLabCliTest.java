@@ -30,7 +30,7 @@ class GitLabCliTest {
     private final ReachLedger reach = new ReachLedger();
     private final GitLabCli gitlab = new GitLabCli(processes, reach);
     private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of(), List.of());
+            List.of(), List.of(), List.of(), List.of());
 
     @Test
     void aPipelineIsRetriedThroughItsRetryEndpoint() {
@@ -60,7 +60,7 @@ class GitLabCliTest {
     @Test
     void theConfiguredHostNameAnswersInPlaceOfTheOneAnSshRemoteNames() {
         HostSettings named = new HostSettings("shop", "orchestrator.codeHost", "gitlab.corp.invalid", Path.of("/repo"),
-                List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of());
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
 
         gitlab.onCommit(named, "git@work-alias:shop/web.git", "0123abc");
@@ -223,6 +223,26 @@ class GitLabCliTest {
         Answer<List<FailedJob>> answer = gitlab.failedJobs(host, "https://git.example.invalid/shop/web/-/merge_requests/4");
 
         assertThat(answer.failure()).startsWith("not the address of a pipeline");
+        verifyNoInteractions(processes);
+    }
+
+    @Test
+    void aRequestIsClosedByItsNumberInTheRepositoryItLivesIn() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", "Closed"));
+
+        Answer<String> answer = gitlab.closeRequest(host, "https://git.example.invalid:8443/shop/web/-/merge_requests/7");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(processes).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSubsequence("mr", "close", "7", "-R", "git.example.invalid:8443/shop/web");
+        assertThat(answer.facts()).isPresent();
+    }
+
+    @Test
+    void anAddressThatIsNoRequestIsNotClosedAndNothingIsRun() {
+        Answer<String> answer = gitlab.closeRequest(host, "https://git.example.invalid/shop/web/-/pipelines/77");
+
+        assertThat(answer.failure()).startsWith("not the address of a request");
         verifyNoInteractions(processes);
     }
 }

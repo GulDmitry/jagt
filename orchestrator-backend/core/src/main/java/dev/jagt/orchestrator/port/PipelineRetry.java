@@ -5,8 +5,8 @@ import dev.jagt.orchestrator.task.FailedJob;
 import java.util.List;
 
 /**
- * jagt's one code-host write, the re-run of a pipeline's failed jobs, and its reads: why they failed, and what ran on
- * a commit or after it. {@code project} is the key in {@code jagt.yml} whose code host answers.
+ * jagt's code-host writes, the re-run of a pipeline's failed jobs and the closing of a request, and its reads: why
+ * they failed, and what ran on a commit or after it. {@code project} is the key in {@code jagt.yml} whose code host answers.
  */
 public interface PipelineRetry {
 
@@ -15,6 +15,9 @@ public interface PipelineRetry {
 
     /** Re-runs only what failed; the failure carries the host's or the tool's own words for a refusal. */
     Answer<String> retryFailed(String project, String pipelineUrl);
+
+    /** Closes the open request at {@code requestUrl} unmerged; the failure carries the host's or the tool's own words for a refusal. */
+    Answer<String> closeRequest(String project, String requestUrl);
 
     /** The pipeline the host ran for {@code sha} in the repository at {@code remoteUrl}; the worst of several, none read as {@code none}. */
     Answer<CommitPipeline> onCommit(String project, String remoteUrl, String sha);

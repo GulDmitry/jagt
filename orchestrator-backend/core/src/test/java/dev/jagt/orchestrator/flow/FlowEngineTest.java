@@ -52,6 +52,16 @@ class FlowEngineTest {
                 throw Refusal.byState("Unknown project '" + project + "'");
             }
         }
+
+        @Override
+        public Facts naming(Facts facts) {
+            return facts.withRepoRequested(true);
+        }
+
+        @Override
+        public Outcome run(String taskId, String project) {
+            return Outcome.relayed("added " + project, outcome.stamp());
+        }
     }
 
     private record NeverRunCapability(TaskAction action) implements TaskCapability {
@@ -256,7 +266,7 @@ class FlowEngineTest {
     }
 
     @Test
-    void recordsTheProjectAHumanNamesAsTheTasksRequestBeforeAddRepoRuns() {
+    void handsTheProjectAHumanNamesToTheCapabilityAndLandsWhereTheRulesLeadIt() {
         when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
         when(stateService.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build()));
@@ -267,13 +277,10 @@ class FlowEngineTest {
 
         String said = engine.run("ABC-1", TaskAction.ADD_REPO, "beta");
 
-        assertThat(said).isEqualTo("added");
-        verify(stateService, times(2)).updateTask(eq("ABC-1"), writes.capture());
-        TaskState asked = writes.getAllValues().get(0)
-                .apply(TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build());
-        assertThat(asked.repoRequest()).isEqualTo("beta");
-        assertThat(writes.getAllValues().get(1)
-                .apply(asked).status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(said).isEqualTo("added beta");
+        verify(stateService).updateTask(eq("ABC-1"), writes.capture());
+        assertThat(writes.getValue().apply(TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build())
+                .status()).isEqualTo(TaskStatus.IN_PROGRESS);
     }
 
     @ParameterizedTest
@@ -288,22 +295,6 @@ class FlowEngineTest {
         assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "beta"))
                 .asInstanceOf(type(Refusal.class))
                 .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
-        verify(stateService, never()).updateTask(any(), any());
-    }
-
-    @Test
-    void refusesANamedRepositoryTheTaskAlreadyWorksInAndWritesNothing() {
-        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(
-                TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS).build()));
-        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new KnowingCapability(
-                TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "alpha")), List.of()),
-                sessions, Clock.systemUTC(), ignored -> false);
-
-        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "alpha"))
-                .asInstanceOf(type(Refusal.class))
-                .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
-                .satisfies(refusal -> assertThat(refusal).hasMessageContaining("already works in alpha"));
         verify(stateService, never()).updateTask(any(), any());
     }
 

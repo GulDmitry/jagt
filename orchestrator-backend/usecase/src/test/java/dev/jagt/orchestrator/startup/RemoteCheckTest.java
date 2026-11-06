@@ -25,7 +25,7 @@ class RemoteCheckTest {
 
     private static ProjectConfig project(String codeHost, String remote) {
         return new ProjectConfig("/repo/shop", "main", "dev", List.of(), List.of(), null, null, codeHost, null, null,
-                null, null, remote);
+                null, null, remote, null);
     }
 
     @Test

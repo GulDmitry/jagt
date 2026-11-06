@@ -53,6 +53,14 @@ public class CommandPipeline implements CodeHostDriver {
     }
 
     @Override
+    public Answer<String> closeRequest(HostSettings host, String requestUrl) {
+        if (host.closeCommand().isEmpty()) {
+            return Answer.failed(TokenUsage.NONE, host.key("closeCommand") + " is not set");
+        }
+        return run(host, "closeCommand", host.closeCommand(), "{request}", requestUrl);
+    }
+
+    @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
         if (host.pipelineCommand().isEmpty()) {
             return Answer.failed(TokenUsage.NONE, host.key("pipelineCommand") + " is not set");

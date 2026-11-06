@@ -23,6 +23,9 @@ public enum TaskAction {
     ADD_REPO(95, Group.FLOW, "add-repo", "Add repo",
             "add a repository to the task, the one the session asked for or the project you name: its worktree is cut and the session told",
             "add-repo <ticket> [project]"),
+    REMOVE_REPO(96, Group.FLOW, "remove-repo", "Remove repo",
+            "close the request of a repository of the task on its host and take the repository out of the task",
+            "remove-repo <ticket> <project>"),
     SWEEP(10, Group.FLOW, "sweep", "Check review",
             "read what the pipeline and the reviewers said, the checks and open threads, relay them to the agent"),
     DEPLOY(90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
@@ -68,9 +71,12 @@ public enum TaskAction {
      * Verbs a human keeps even where the Master session acts for them. A task is opened by a person and closed
      * by one; what happens in between is the work, and the work is what the reviewer stands in for.
      */
-    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, LIFT, PAUSE, DONE);
+    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, LIFT, PAUSE, DONE, REMOVE_REPO);
 
-    private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO);
+    private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO);
+
+    /** Verbs a human types with what they act on, so no card carries a button for them. */
+    private static final Set<TaskAction> TYPED = EnumSet.of(REMOVE_REPO);
 
     /** The verb a task needs most often. */
     private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);
@@ -134,6 +140,11 @@ public enum TaskAction {
     /** Whether a human may type a project after the ticket. */
     public boolean takesProject() {
         return NAMES_A_PROJECT.contains(this);
+    }
+
+    /** Whether this verb is only ever typed: a card offers no button for it. */
+    public boolean typed() {
+        return TYPED.contains(this);
     }
 
     public boolean onRow() {

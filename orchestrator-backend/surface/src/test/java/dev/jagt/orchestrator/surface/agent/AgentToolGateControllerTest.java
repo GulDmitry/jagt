@@ -226,7 +226,7 @@ class AgentToolGateControllerTest {
     @Test
     void namesTheProjectsOwnRemoteInTheHintOfARefusedPush() {
         when(configService.project("proj")).thenReturn(new ProjectConfig("/repo", "upstream/main", "dev", List.of(),
-                List.of(), null, null, null, null, null, null, null, "upstream"));
+                List.of(), null, null, null, null, null, null, null, "upstream", null));
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 

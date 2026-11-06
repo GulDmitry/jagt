@@ -17,10 +17,10 @@ import java.util.function.BooleanSupplier;
 public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive,
                     boolean gitStateChanged, boolean stopped, boolean repoRequested,
                     boolean requestMerged, boolean revertConflict, boolean shippedWithoutRequest,
-                    boolean stopIsTheMasters) {
+                    boolean stopIsTheMasters, boolean severalRepos) {
 
     public static Facts defaults() {
-        return new Facts(false, false, () -> false, false, false, false, false, false, false, false);
+        return new Facts(false, false, () -> false, false, false, false, false, false, false, false, false);
     }
 
     /** A recorded merge is one no revert has taken out yet. */
@@ -41,6 +41,7 @@ public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplie
                 .withStopped(task.stopped())
                 .withStopIsTheMasters(StopHold.mayBeLifted(task) && !StopHold.asked(task))
                 .withRepoRequested(task.asksForARepository())
+                .withSeveralRepos(task.repos().size() > 1)
                 .withRequestMerged(task.requestsMerged())
                 .withRevertConflict(revertConflicted(task));
     }

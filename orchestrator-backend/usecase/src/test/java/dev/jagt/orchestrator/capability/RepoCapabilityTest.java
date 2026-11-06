@@ -10,10 +10,12 @@ import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.InOrder;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -23,6 +25,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -116,5 +119,26 @@ class RepoCapabilityTest {
         assertThat(task.repoRequest()).isNull();
         assertThat(task.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
         verify(attachment, never()).attach("ABC-7");
+    }
+
+    @Test
+    void refusesANamedProjectTheTaskAlreadyWorksIn() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("api", "/wt"), TaskRepo.of("registry", "/wt2")),
+                TaskStatus.IN_PROGRESS).build();
+
+        assertThatThrownBy(() -> new RepoCapability(attachment).vet("ABC-7", task, "registry"))
+                .isInstanceOf(Refusal.class).hasMessageContaining("already works in registry");
+    }
+
+    @Test
+    void recordsTheProjectAHumanNamesAsTheTasksRequestBeforeItAttaches() {
+        when(attachment.attach("ABC-7")).thenReturn("add-repo ABC-7: registry is at /wt2; the session was told");
+
+        Outcome outcome = new RepoCapability(attachment).run("ABC-7", "registry");
+
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
+        InOrder order = inOrder(attachment);
+        order.verify(attachment).ask("ABC-7", "registry");
+        order.verify(attachment).attach("ABC-7");
     }
 }

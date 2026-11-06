@@ -33,6 +33,7 @@ orchestrator:
   #   codeHostName: git.example.com           # the host, where the remote does not name it (a self-hosted GitLab, GitHub Enterprise)
   #   pipelineCommand: ["ci-state", "{sha}"]  # codeHost command: run in the project's directory, prints success | failed | running | none | unknown
   #   retryCommand: ["ci-rerun", "{pipeline}"]  # optional: re-runs a pipeline that died on infrastructure
+  #   closeCommand: ["ci-close", "{request}"]   # optional: closes the open request at {request}, for `remove-repo`
   #   loginCommand: ["ci-login", "--web"]       # optional: what the board's `login` opens when pipelineCommand exits 77 (signed out)
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────

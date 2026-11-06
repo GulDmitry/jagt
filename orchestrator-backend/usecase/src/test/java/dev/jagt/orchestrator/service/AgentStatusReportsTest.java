@@ -63,7 +63,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                        List.of("./gradlew", "test"), null, null, null, null, null, null, null, null))));
+                        List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null))));
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
@@ -95,7 +95,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                        List.of("./gradlew", "test"), null, null, null, null, null, null, null, null))));
+                        List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null))));
         AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
@@ -719,7 +719,7 @@ class AgentStatusReportsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null))
                 .withProjects(Map.of("proj", new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main",
-                        "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null, null))));
+                        "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null))));
 
         String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 

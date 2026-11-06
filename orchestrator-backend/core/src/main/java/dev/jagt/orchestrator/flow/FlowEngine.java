@@ -31,13 +31,14 @@ public class FlowEngine {
     }
 
     /**
-     * As above; a {@code project} the human named becomes the task's repository request first, at any status
-     * {@code action} can leave for another, and is refused with nothing written where it cannot be taken.
+     * As above, on a {@code project} the human named: the capability vets it and does the work on it, at any status
+     * {@code action} can be taken, and it is refused with nothing written where it cannot be taken.
      */
     public String run(String taskIdOrAlias, TaskAction action, @Nullable String project) {
         String taskId = tasks.canonicalTaskId(taskIdOrAlias);
         TaskState task = tasks.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
-        Facts facts = project == null ? facts(task, taskId) : facts(task, taskId).withRepoRequested(true);
+        Facts read = facts(task, taskId);
+        Facts facts = project == null ? read : capabilities.of(action).map(named -> named.naming(read)).orElse(read);
         if (!FlowRules.allows(task.status(), action, facts)) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "
@@ -49,9 +50,8 @@ public class FlowEngine {
                 new IllegalStateException("No capability declared for `" + action.id() + "`"));
         if (project != null) {
             named(taskId, task, action, project, capability);
-            tasks.updateTask(taskId, asked -> TaskReducer.repoAsked(asked, project));
         }
-        return apply(taskId, task.status(), action, wrapped(taskId, action, capability));
+        return apply(taskId, task.status(), action, wrapped(taskId, action, capability, project));
     }
 
     private static void named(String taskId, TaskState task, TaskAction action, String project, TaskCapability capability) {
@@ -62,16 +62,13 @@ public class FlowEngine {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " cannot name a project for "
                     + taskId + " (it is " + task.status() + ")");
         }
-        if (task.repo(project).isPresent()) {
-            throw Refusal.byState("Task " + taskId + " already works in " + project);
-        }
-        capability.vet(project);
+        capability.vet(taskId, task, project);
     }
 
 
     /** The work, inside whatever an install declared around this verb; the capability itself is innermost. */
-    private Outcome wrapped(String taskId, TaskAction action, TaskCapability capability) {
-        Supplier<Outcome> work = () -> capability.run(taskId);
+    private Outcome wrapped(String taskId, TaskAction action, TaskCapability capability, @Nullable String project) {
+        Supplier<Outcome> work = project == null ? () -> capability.run(taskId) : () -> capability.run(taskId, project);
         for (CapabilityInterceptor interceptor : capabilities.around(action).reversed()) {
             Supplier<Outcome> inner = work;
             work = () -> interceptor.around(taskId, inner);
@@ -116,6 +113,7 @@ public class FlowEngine {
                 .withGitStateChanged(task.gitStateChanged())
                 .withStopped(task.stopped())
                 .withRepoRequested(task.asksForARepository())
+                .withSeveralRepos(task.repos().size() > 1)
                 .withRequestMerged(task.requestsMerged())
                 .withRevertConflict(Facts.revertConflicted(task))
                 .withShippedWithoutRequest(requestless.stands(task));

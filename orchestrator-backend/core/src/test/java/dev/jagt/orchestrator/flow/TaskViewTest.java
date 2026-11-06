@@ -46,6 +46,16 @@ class TaskViewTest {
         assertThat(view.detail()).doesNotContain("agent stopped");
     }
 
+    @Test
+    void drawsNoButtonForARepositoryRemovalWhichIsOnlyTyped() {
+        TaskState several = TaskState.builder(List.of(TaskRepo.of("api", "/wt"), TaskRepo.of("web", "/wt2")),
+                TaskStatus.IN_PROGRESS).build();
+
+        TaskView view = TaskView.of("ABC-1", several, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+
+        assertThat(view.actions()).extracting(TaskView.ActionView::id).doesNotContain("remove-repo");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "javascript:fetch('/api/tasks/a1/actions/deploy',{method:'POST'})",

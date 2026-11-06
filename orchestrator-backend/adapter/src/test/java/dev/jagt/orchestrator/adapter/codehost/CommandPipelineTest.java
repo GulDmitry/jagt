@@ -27,7 +27,7 @@ class CommandPipelineTest {
     private final ReachLedger reach = new ReachLedger();
     private final CommandPipeline command = new CommandPipeline(processes, reach);
     private final HostSettings host = new HostSettings("shop", "orchestrator.projects.shop.codeHost", null,
-            Path.of("/repo/shop"), List.of("/bin/ci-state", "{sha}"), List.of("/bin/ci-rerun", "{pipeline}"), List.of());
+            Path.of("/repo/shop"), List.of("/bin/ci-state", "{sha}"), List.of("/bin/ci-rerun", "{pipeline}"), List.of(), List.of());
 
     @Test
     void theStatePrintedForTheCommitIsTheCommitsPipeline() {
@@ -74,7 +74,7 @@ class CommandPipelineTest {
     @Test
     void aCommandExitingSeventySevenIsSignedOutAndTheProjectsLoginCommandIsTheFix() {
         HostSettings withLogin = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo/shop"),
-                List.of("/bin/ci-state", "{sha}"), List.of(), List.of("ci-login", "--web"));
+                List.of("/bin/ci-state", "{sha}"), List.of(), List.of("ci-login", "--web"), List.of());
         when(processes.run(any(Path.class), any(Duration.class), anyList())).thenReturn(new Processes.Result(77, "", ""));
 
         Answer<CommitPipeline> answer = command.onCommit(withLogin, "git@anywhere:shop/web.git", "0123abc");
@@ -94,7 +94,7 @@ class CommandPipelineTest {
     @Test
     void aCommandNotInstalledIsLostReachWithNoCommandToFixIt() {
         HostSettings uninstalled = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo/shop"),
-                List.of("no-such-ci-program", "{sha}"), List.of(), List.of());
+                List.of("no-such-ci-program", "{sha}"), List.of(), List.of(), List.of());
         when(processes.run(any(Path.class), any(Duration.class), anyList()))
                 .thenThrow(new IllegalStateException("Failed to start command"));
 
@@ -118,7 +118,7 @@ class CommandPipelineTest {
     @Test
     void aProjectWithoutAPipelineCommandIsUnreadWithoutRunningAnything() {
         HostSettings bare = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo/shop"), List.of(),
-                List.of(), List.of());
+                List.of(), List.of(), List.of());
 
         Answer<CommitPipeline> answer = command.onCommit(bare, "git@anywhere:shop/web.git", "0123abc");
 
@@ -141,7 +141,7 @@ class CommandPipelineTest {
     @Test
     void withoutARetryCommandNothingIsReRun() {
         HostSettings noRetry = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo/shop"),
-                List.of("/bin/ci-state", "{sha}"), List.of(), List.of());
+                List.of("/bin/ci-state", "{sha}"), List.of(), List.of(), List.of());
 
         Answer<String> answer = command.retryFailed(noRetry, "https://ci.example.invalid/runs/9");
 
@@ -151,7 +151,7 @@ class CommandPipelineTest {
     @Test
     void startupRefusesACommandWhoseProgramIsNowhereNamingTheKey() {
         HostSettings missing = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo/shop"),
-                List.of("no-such-ci-program", "{sha}"), List.of(), List.of());
+                List.of("no-such-ci-program", "{sha}"), List.of(), List.of(), List.of());
 
         assertThat(command.problems(missing)).extracting(Problem::key)
                 .containsExactly("orchestrator.projects.shop.pipelineCommand");
@@ -160,9 +160,31 @@ class CommandPipelineTest {
     @Test
     void startupRefusesACommandHostWithoutAPipelineCommand() {
         HostSettings bare = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo/shop"), List.of(),
-                List.of(), List.of());
+                List.of(), List.of(), List.of());
 
         assertThat(command.problems(bare)).extracting(Problem::key)
                 .containsExactly("orchestrator.projects.shop.pipelineCommand");
+    }
+
+    @Test
+    void theCloseCommandGetsTheRequestAddress() {
+        HostSettings closing = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo/shop"),
+                List.of("/bin/ci-state", "{sha}"), List.of(), List.of(), List.of("/bin/ci-close", "{request}"));
+        when(processes.run(any(Path.class), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "ok", ""));
+
+        Answer<String> answer = command.closeRequest(closing, "https://ci.example.invalid/requests/9");
+
+        ArgumentCaptor<List<String>> run = ArgumentCaptor.captor();
+        verify(processes).run(any(Path.class), any(Duration.class), run.capture());
+        assertThat(run.getValue()).containsExactly("/bin/ci-close", "https://ci.example.invalid/requests/9");
+        assertThat(answer.facts()).isPresent();
+    }
+
+    @Test
+    void withoutACloseCommandNoRequestIsClosed() {
+        Answer<String> answer = command.closeRequest(host, "https://ci.example.invalid/requests/9");
+
+        assertThat(answer.failure()).isEqualTo("orchestrator.projects.shop.closeCommand is not set");
+        verifyNoInteractions(processes);
     }
 }

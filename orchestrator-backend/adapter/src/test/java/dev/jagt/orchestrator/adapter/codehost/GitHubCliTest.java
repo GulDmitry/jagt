@@ -30,7 +30,7 @@ class GitHubCliTest {
     private final ReachLedger reach = new ReachLedger();
     private final GitHubCli github = new GitHubCli(processes, reach);
     private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of(), List.of());
+            List.of(), List.of(), List.of(), List.of());
 
     @Test
     void aRunReRunsOnlyItsFailedJobsOnTheHostItLivesOn() {
@@ -199,5 +199,36 @@ class GitHubCliTest {
         Answer<String> answer = github.retryFailed(host, "https://github.example.invalid/acme/shop/actions/runs/5");
 
         assertThat(answer.failure()).isEqualTo("gh exited 2: boom");
+    }
+
+    @Test
+    void aRequestIsClosedByItsAddressOnTheHostItLivesOn() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", "Closed pull request #7"));
+
+        Answer<String> answer = github.closeRequest(host, "https://ghe.corp.invalid/acme/shop/pull/7");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(processes).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSubsequence("pr", "close", "https://ghe.corp.invalid/acme/shop/pull/7");
+        assertThat(answer.facts()).isPresent();
+    }
+
+    @Test
+    void anAddressThatIsNoRequestIsNotClosedAndNothingIsRun() {
+        Answer<String> answer = github.closeRequest(host, "https://ghe.corp.invalid/acme/shop/actions/runs/5");
+
+        assertThat(answer.failure()).startsWith("not the address of a request");
+        verifyNoInteractions(processes);
+    }
+
+    @Test
+    void aRefusalOfTheHostOnCloseCarriesItsOwnWords() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(1, "", "GraphQL: Resource not accessible"));
+
+        Answer<String> answer = github.closeRequest(host, "https://ghe.corp.invalid/acme/shop/pull/7");
+
+        assertThat(answer.failure()).contains("Resource not accessible");
+        assertThat(answer.facts()).isEmpty();
     }
 }

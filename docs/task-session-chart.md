@@ -100,6 +100,7 @@ stateDiagram-v2
     %% derived git changed
     %% derived stopped
     %% derived repo requested
+    %% derived several repos
     %% derived request merged
     %% derived shipped without request
     %% derived revert conflict

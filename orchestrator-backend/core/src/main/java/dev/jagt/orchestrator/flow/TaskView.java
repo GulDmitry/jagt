@@ -111,7 +111,7 @@ public record TaskView(
                 autoReview == null ? AutoReviewWatch.none() : autoReview);
         boolean deployed = Facts.deployLive(task);
         DashboardLine.Line line = DashboardLine.forTask(task, webLink(task.mrUrl()));
-        List<ActionView> actions = move.actions().stream()
+        List<ActionView> actions = move.actions().stream().filter(action -> !action.typed())
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
                         action == move.primary() && move.owner() == Owner.YOU, action.group().id(), action.readOnly(),
                         deployed && action == TaskAction.DEPLOY, action.onRow(), action.apart(), action.key()))

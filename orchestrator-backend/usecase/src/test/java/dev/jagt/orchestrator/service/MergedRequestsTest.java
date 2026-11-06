@@ -90,7 +90,7 @@ class MergedRequestsTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(java.util.Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
                 "web", new ProjectConfig("/web", "main", "dev", List.of(), List.of(),
-                        null, null, "none", null, null, null, null, null),
+                        null, null, "none", null, null, null, null, null, null),
                 "docs", new ProjectConfig("/docs", "origin/main", "dev", List.of()))));
         MergedRequests requests = new MergedRequests(new StateService(new JsonMapper(), new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))), config, inspection,

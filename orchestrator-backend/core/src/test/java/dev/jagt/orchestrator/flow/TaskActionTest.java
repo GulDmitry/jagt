@@ -39,6 +39,13 @@ class TaskActionTest {
         assertThat(action.readOnly()).isEqualTo(readOnly);
     }
 
+    @ParameterizedTest
+    @CsvSource({"ADD_REPO,true,false", "REMOVE_REPO,true,true", "SHIP,false,false", "DONE,false,false"})
+    void letsAHumanTypeAProjectForTheRepositoryVerbsAndGivesRemovalNoButton(TaskAction action, boolean takesProject, boolean typed) {
+        assertThat(action.takesProject()).isEqualTo(takesProject);
+        assertThat(action.typed()).isEqualTo(typed);
+    }
+
     @Test
     void sortsTheMostUsedVerbsLowest() {
         assertThat(TaskAction.SWEEP.rank()).isLessThan(TaskAction.SHIP.rank());

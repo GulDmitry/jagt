@@ -9,9 +9,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TaskActionHandsTest {
 
     @Test
-    void keepsClosingATaskTrustingWhatItsGitObeysAndPausingAndLiftingAStopInAHumansHands() {
+    void keepsClosingATaskTrustingWhatItsGitObeysPausingAndLiftingAStopAndRemovingARepositoryInAHumansHands() {
         var kept = Arrays.stream(TaskAction.values()).filter(TaskAction::humanOnly).toList();
 
-        assertThat(kept).containsExactly(TaskAction.TRUST, TaskAction.LIFT, TaskAction.PAUSE, TaskAction.DONE);
+        assertThat(kept).containsExactly(TaskAction.REMOVE_REPO, TaskAction.TRUST, TaskAction.LIFT,
+                TaskAction.PAUSE, TaskAction.DONE);
     }
 }

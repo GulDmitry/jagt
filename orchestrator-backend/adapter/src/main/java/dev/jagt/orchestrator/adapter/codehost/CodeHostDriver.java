@@ -17,6 +17,8 @@ public interface CodeHostDriver {
 
     Answer<String> retryFailed(HostSettings host, String pipelineUrl);
 
+    Answer<String> closeRequest(HostSettings host, String requestUrl);
+
     Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha);
 
     Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha);

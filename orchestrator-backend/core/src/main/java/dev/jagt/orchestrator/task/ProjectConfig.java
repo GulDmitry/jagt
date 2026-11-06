@@ -23,7 +23,8 @@ public record ProjectConfig(
         @Nullable List<String> retryCommand,
         @Nullable List<String> loginCommand,
         // The git remote branches are shared through; blank is origin, none a repository kept on this machine.
-        @Nullable String remote
+        @Nullable String remote,
+        @Nullable List<String> closeCommand
 ) {
 
     /** The {@code codeHost} value of a repository with no host to open a request on or read a pipeline from. */
@@ -31,7 +32,7 @@ public record ProjectConfig(
 
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
-        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null, null, null);
+        this(path, baseBranch, deployBranch, labels, List.of(), null, null, null, null, null, null, null, null, null);
     }
 
     /** What a router is told this repository is; its path where nobody wrote a line, the name carrying most. */

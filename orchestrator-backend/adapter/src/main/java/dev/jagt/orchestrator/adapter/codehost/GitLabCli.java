@@ -18,12 +18,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/** Reads and re-runs a pipeline through {@code glab api}, on the host the remote or the configured name gives. */
+/** Reads and re-runs a pipeline, closes a request, through {@code glab}, on the host the remote or the configured name gives. */
 @Component
 public class GitLabCli implements CodeHostDriver {
 
     static final String ID = "gitlab";
     private static final String MARKER = "/pipelines/";
+    private static final String REQUEST_MARKER = "/merge_requests/";
     private static final Set<String> FAILED = Set.of("failed", "canceled", "canceling");
     private static final Set<String> RUNNING = Set.of("created", "waiting_for_resource", "preparing", "pending",
             "running", "scheduled");
@@ -56,6 +57,13 @@ public class GitLabCli implements CodeHostDriver {
         return HostAddress.ofPipeline(pipelineUrl, MARKER, true).map(address -> cli.run(address.hostname(),
                 api(address, "-X", "POST", "/pipelines/" + address.id() + "/retry")))
                 .orElseGet(() -> HostCli.notAPipeline(pipelineUrl));
+    }
+
+    @Override
+    public Answer<String> closeRequest(HostSettings host, String requestUrl) {
+        return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, true).map(address -> cli.run(address.hostname(),
+                List.of("mr", "close", address.id(), "-R", address.hostname() + "/" + address.project())))
+                .orElseGet(() -> HostCli.notARequest(requestUrl));
     }
 
     @Override

@@ -13,7 +13,7 @@ class NoCodeHostTest {
 
     private final NoCodeHost none = new NoCodeHost();
     private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of(), List.of());
+            List.of(), List.of(), List.of(), List.of());
 
     @Test
     void noPipelineIsReadAndTheDeploySettlesOnTheAddressNoHostHas() {
@@ -32,5 +32,10 @@ class NoCodeHostTest {
     @Test
     void nothingIsReRun() {
         assertThat(none.retryFailed(host, "https://git.example.invalid/shop/web/-/pipelines/7").facts()).isEmpty();
+    }
+
+    @Test
+    void noRequestIsClosed() {
+        assertThat(none.closeRequest(host, "https://git.example.invalid/shop/web/-/merge_requests/7").facts()).isEmpty();
     }
 }

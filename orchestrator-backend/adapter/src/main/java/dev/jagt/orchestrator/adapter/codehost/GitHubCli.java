@@ -18,12 +18,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
-/** Reads and re-runs a pipeline through {@code gh}; every call names the host, so an Enterprise host answers for itself. */
+/** Reads and re-runs a pipeline and closes a request through {@code gh}; every call names its host, so an Enterprise host answers. */
 @Component
 public class GitHubCli implements CodeHostDriver {
 
     static final String ID = "github";
     private static final String MARKER = "/actions/runs/";
+    private static final String REQUEST_MARKER = "/pull/";
     private static final Set<String> RAN_FINE = Set.of("success", "skipped", "neutral");
     private static final Set<String> FAILED = Set.of("failure", "startup_failure", "cancelled", "timed_out",
             "action_required");
@@ -57,6 +58,12 @@ public class GitHubCli implements CodeHostDriver {
         return HostAddress.ofPipeline(pipelineUrl, MARKER, false).map(address -> cli.run(address.hostname(),
                 List.of("run", "rerun", address.id(), "--failed", "-R", repository(address))))
                 .orElseGet(() -> HostCli.notAPipeline(pipelineUrl));
+    }
+
+    @Override
+    public Answer<String> closeRequest(HostSettings host, String requestUrl) {
+        return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false).map(address -> cli.run(address.hostname(),
+                List.of("pr", "close", requestUrl.strip()))).orElseGet(() -> HostCli.notARequest(requestUrl));
     }
 
     @Override

@@ -61,7 +61,7 @@
   [spec](../openspec/specs/task-start/spec.md#requirement-a-project-names-the-remote-its-branches-are-shared-through)
 - **Push guard** — A session cannot push off its task's branch, force, delete or skip hooks.
   [spec](../openspec/specs/git/spec.md#requirement-push-guard-lives-in-the-worktree)
-- **Several repositories** — One task spans several repositories, a worktree in each; `add-repo` attaches one a session asks for, or one you name.
+- **Several repositories** — One task spans several repositories, a worktree in each; `add-repo` attaches one, `remove-repo` drops one.
   [spec](../openspec/specs/repo-attach/spec.md#requirement-a-running-task-gains-a-repository)
 
 ## Git trust · [spec](../openspec/specs/git-trust/spec.md)

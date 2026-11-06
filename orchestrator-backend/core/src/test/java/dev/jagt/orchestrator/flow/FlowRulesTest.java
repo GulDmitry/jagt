@@ -487,6 +487,28 @@ class FlowRulesTest {
         assertThat(FlowRules.next(status, TaskAction.ADD_REPO, Outcome.Kind.RELAYED)).isEmpty();
     }
 
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"NEW", "DEPLOY_CONFLICT", "DONE"}, mode = EnumSource.Mode.EXCLUDE)
+    void offersRemoveRepoOnlyWhereTheTaskHoldsSeveralRepositories(TaskStatus status) {
+        assertThat(FlowRules.allows(status, TaskAction.REMOVE_REPO,
+                Facts.defaults().withSeveralRepos(true))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.REMOVE_REPO,
+                Facts.defaults().withSeveralRepos(false))).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"NEW", "DEPLOY_CONFLICT", "DONE"})
+    void offersNoRemoveRepoWhereARepositoryCannotLeave(TaskStatus status) {
+        assertThat(FlowRules.allows(status, TaskAction.REMOVE_REPO,
+                Facts.defaults().withSeveralRepos(true))).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING", "REVIEWED", "DEPLOYED"})
+    void leavesTheStatusWhereItIsWhenARepositoryIsRemoved(TaskStatus status) {
+        assertThat(FlowRules.next(status, TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED)).contains(status);
+    }
+
     @Test
     void awaitsTheApprovalNotWhileTheAgentStillWorks() {
         assertThat(FlowRules.awaitsApproval(TaskStatus.IN_PROGRESS)).isFalse();

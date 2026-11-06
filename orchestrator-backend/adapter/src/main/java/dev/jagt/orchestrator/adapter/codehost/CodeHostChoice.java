@@ -27,7 +27,8 @@ record CodeHostChoice(String kind, HostSettings host) {
         }
         return new CodeHostChoice(kind.strip().toLowerCase(Locale.ROOT), new HostSettings(project, selectedBy,
                 declared.codeHostName(), Path.of(String.valueOf(declared.path())),
-                orNone(declared.pipelineCommand()), orNone(declared.retryCommand()), orNone(declared.loginCommand())));
+                orNone(declared.pipelineCommand()), orNone(declared.retryCommand()), orNone(declared.loginCommand()),
+                orNone(declared.closeCommand())));
     }
 
     private static List<String> orNone(@Nullable List<String> command) {

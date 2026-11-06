@@ -13,7 +13,7 @@ class ReplayCodeHostTest {
 
     private final ReplayCodeHost replay = new ReplayCodeHost();
     private final HostSettings host = new HostSettings("proj", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of(), List.of());
+            List.of(), List.of(), List.of(), List.of());
 
     @Test
     void aReplayedFailureReadsAsTheCodesSoTheSessionHearsOfIt() {
@@ -32,5 +32,10 @@ class ReplayCodeHostTest {
     @Test
     void aReplayedRunReadsEveryCommitAsGreenSoItsDeploysAreChecked() {
         assertThat(replay.onCommit(host, "/tmp/shop.git", "0123abc").facts().orElseThrow().status()).isEqualTo("success");
+    }
+
+    @Test
+    void aReplayedRunClosesNoRequest() {
+        assertThat(replay.closeRequest(host, "https://git.example.invalid/shop/web/-/merge_requests/7").facts()).isEmpty();
     }
 }
