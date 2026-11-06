@@ -24,34 +24,27 @@ class SessionReportsTest {
     private final TurnEnds turnEnds = mock(TurnEnds.class);
 
     @Test
-    void signsAnAskWhenItsNotificationNamesWhatThisCliSaysWhileBlocked() {
-        when(runtime.blockingNotification()).thenReturn("needs your permission");
-
-        new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
-                SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
-
-        verify(signs).asked("ABC-1", new SessionSign.Asked("Claude needs your permission to use Bash",
-                SessionSign.Asked.Channel.HOOK));
-    }
-
-    @Test
-    void leavesANotificationThisCliDoesNotUseWhileBlockedToTheThreshold() {
-        when(runtime.blockingNotification()).thenReturn("needs your permission");
-
-        new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
-                SessionReports.Report.defaults().withSaid("Claude is waiting for your input"));
+    void signsAnAskNamingTheToolWhenThePermissionPromptOpens() {
+        new SessionReports(signs, runtime, turnEnds).permissionAsked("ABC-1",
+                SessionReports.Report.defaults().withToolName("Bash"));
 
         verify(signs).record("ABC-1", null, new SessionSign.TurnEnded(null));
-        verify(signs, never()).asked(any(), any());
+        verify(signs).asked("ABC-1", new SessionSign.Asked("permission to use Bash", SessionSign.Asked.Channel.HOOK));
     }
 
     @Test
-    void leavesANotificationNamingWhatThisCliSaysWhileBlockedAloneWhileTheSessionIsStillWorking() {
-        when(runtime.blockingNotification()).thenReturn("needs your permission");
+    void signsAnAskWithoutAToolWhenThePermissionPromptNamesNone() {
+        new SessionReports(signs, runtime, turnEnds).permissionAsked("ABC-1", SessionReports.Report.defaults());
 
-        new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.WORKING,
+        verify(signs).asked("ABC-1", new SessionSign.Asked("permission", SessionSign.Asked.Channel.HOOK));
+    }
+
+    @Test
+    void signsNoAskForANotificationWhoseWordingSaysItNeedsPermission() {
+        new SessionReports(signs, runtime, turnEnds).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
 
+        verify(signs).record("ABC-1", null, new SessionSign.TurnEnded(null));
         verify(signs, never()).asked(any(), any());
     }
 

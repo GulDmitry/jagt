@@ -12,8 +12,9 @@ class SessionHooksTest {
     }
 
     @Test
-    void declaresThePhraseThatSeparatesABlockedSessionFromAQuietOne() {
-        assertThat(SessionHooks.blockingNotification("claude")).isNotBlank();
+    void declaresTheEventAPermissionPromptOpensOnWithoutMappingItToAState() {
+        assertThat(SessionHooks.permissionRequest("claude")).contains("PermissionRequest");
+        assertThat(SessionHooks.of("claude")).doesNotContainKey("PermissionRequest");
     }
 
     @Test

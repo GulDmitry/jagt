@@ -523,6 +523,25 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void reportsAPermissionPromptThroughItsOwnEventToTheEndpointAnsweringNothing(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+
+        new ClaudeAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                new ClaudeProperties("claude", ""), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"), Clock.systemUTC())
+                .provisionWorktree(AgentWorktree.of(worktree, root));
+
+        var hook = new JsonMapper()
+                .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
+                .path("hooks").path("PermissionRequest").path(0);
+        assertThat(hook.has("matcher")).isFalse();
+        assertThat(hook.path("hooks").path(0).path("command").asString(""))
+                .contains("/api/agent/session/permission", worktree.toString());
+    }
+
+    @Test
     void refusesATurnEndInTheShapeClaudeReadsAsKeepGoing() {
         String refusal = new ClaudeAgentRuntime(
                 new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
@@ -848,7 +867,6 @@ class ClaudeAgentRuntimeTest {
         assertThat(runtime.compactedStart()).isEqualTo("compact");
         assertThat(runtime.rateLimitError()).isEqualTo("rate_limit");
         assertThat(runtime.continuingEnds()).containsExactlyInAnyOrder("clear", "resume");
-        assertThat(runtime.blockingNotification()).isNotBlank();
     }
 
     @Test

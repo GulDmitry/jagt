@@ -56,7 +56,7 @@ class AgentSessionControllerTest {
         when(reports.turnFailed("ABC-1", report)).thenReturn(true);
 
         new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, null, "rate_limit", null, java.util.List.of(), null));
+                new SessionHookReport(null, null, null, null, "rate_limit", null, java.util.List.of(), null, null));
 
         verify(wakes).arm("ABC-1");
     }
@@ -69,7 +69,7 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, null, "overloaded", null, java.util.List.of(), null));
+                new SessionHookReport(null, null, null, null, "overloaded", null, java.util.List.of(), null, null));
 
         verify(wakes, never()).arm("ABC-1");
     }
@@ -168,6 +168,20 @@ class AgentSessionControllerTest {
     }
 
     @Test
+    void handsThePermissionPromptsToolToTheReportAndAnswersNothing() {
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+
+        String answered = new AgentSessionController(state, reports, wakes).permission("/wt/ABC-1-proj",
+                new SessionHookReport(null, null, null, null, null, null, java.util.List.of(), null, "Bash"));
+
+        verify(reports).permissionAsked("ABC-1", SessionReports.Report.defaults().withToolName("Bash").withTask(task));
+        assertThat(answered).isEmpty();
+    }
+
+    @Test
     void tellsTheTurnEndWhetherARefusalAlreadySentItOn() {
         StateService state = mock(StateService.class);
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
@@ -175,7 +189,7 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).turnEnd("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, true, null, null, java.util.List.of(Map.of("id", "b1")), null));
+                new SessionHookReport(null, null, null, true, null, null, java.util.List.of(Map.of("id", "b1")), null, null));
 
         verify(reports).turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), true, true);
     }

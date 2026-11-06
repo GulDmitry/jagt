@@ -25,7 +25,8 @@ public record SessionHookReport(@JsonProperty("transcript_path") @Nullable Strin
                                 @JsonProperty("error") @Nullable String error,
                                 @JsonProperty("reason") @Nullable String reason,
                                 @JsonProperty("background_tasks") List<Object> backgroundTasks,
-                                @JsonProperty("prompt") @Nullable String prompt) implements Message {
+                                @JsonProperty("prompt") @Nullable String prompt,
+                                @JsonProperty("tool_name") @Nullable String toolName) implements Message {
 
     public SessionHookReport {
         transcriptPath = absent(transcriptPath);
@@ -34,11 +35,12 @@ public record SessionHookReport(@JsonProperty("transcript_path") @Nullable Strin
         error = absent(error);
         reason = absent(reason);
         prompt = absent(prompt);
+        toolName = absent(toolName);
         backgroundTasks = backgroundTasks == null ? List.of() : backgroundTasks;
     }
 
     public SessionHookReport(@Nullable String transcriptPath, @Nullable String source, @Nullable String message) {
-        this(transcriptPath, source, message, null, null, null, List.of(), null);
+        this(transcriptPath, source, message, null, null, null, List.of(), null, null);
     }
 
     /** Nothing was posted at all, which is a state the address alone still reports. */

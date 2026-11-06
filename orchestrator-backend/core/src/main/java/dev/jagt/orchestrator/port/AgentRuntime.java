@@ -156,11 +156,6 @@ public interface AgentRuntime {
         return "";
     }
 
-    /** What this CLI puts in a notification that a session cannot go on without a human; blank when it says nothing. */
-    default String blockingNotification() {
-        return "";
-    }
-
     /** The error word this CLI gives a turn that ended on a usage limit; blank when it names none. */
     default String rateLimitError() {
         return "";

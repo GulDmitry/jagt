@@ -25,7 +25,7 @@ final class SessionHooks {
     /** Declarations that are not an event-to-state line: one is answered, the other is a vendor's word. */
     private static final String GATE = "gate";
     private static final String COMPACTED_START = "compacted-start";
-    private static final String BLOCKING_NOTIFICATION = "blocking-notification";
+    private static final String PERMISSION_REQUEST = "permission-request";
     private static final String TURN_END = "turn-end";
     private static final String PROMPT_GATE = "prompt-gate";
     private static final String TURN_FAILURE = "turn-failure";
@@ -33,7 +33,7 @@ final class SessionHooks {
     private static final String CONTINUING_END = "continuing-end";
     private static final String TRUST_DIALOG = "trust-dialog";
     private static final Set<String> NOT_A_STATE =
-            Set.of(GATE, PROMPT_GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END, TURN_FAILURE, RATE_LIMIT_ERROR,
+            Set.of(GATE, PROMPT_GATE, COMPACTED_START, PERMISSION_REQUEST, TURN_END, TURN_FAILURE, RATE_LIMIT_ERROR,
                     CONTINUING_END, TRUST_DIALOG);
 
     /** The event this CLI answers with allow or deny, or nothing where it has none. */
@@ -78,9 +78,9 @@ final class SessionHooks {
         return declared(runtime).getProperty(COMPACTED_START, "");
     }
 
-    /** What this CLI says in a notification a session cannot go on past, or blank where it says nothing. */
-    static String blockingNotification(String runtime) {
-        return declared(runtime).getProperty(BLOCKING_NOTIFICATION, "");
+    /** The event firing as a permission prompt opens, or nothing where this CLI has none. */
+    static Optional<String> permissionRequest(String runtime) {
+        return Optional.ofNullable(declared(runtime).getProperty(PERMISSION_REQUEST));
     }
 
     /** Event to state, in a fixed order so the generated file does not churn between provisionings. */

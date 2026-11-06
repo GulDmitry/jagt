@@ -65,6 +65,14 @@ public class AgentSessionController {
         return "";
     }
 
+    @PostMapping(value = "/permission", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String permission(@RequestHeader(value = "X-Working-Directory", required = false) String cwd,
+                             @RequestBody(required = false) SessionHookReport session) {
+        var task = task(cwd);
+        reports.permissionAsked(task.getKey(), read(task, session));
+        return "";
+    }
+
     private Map.Entry<String, TaskState> task(String cwd) {
         return stateService.findByWorktree(cwd)
                 .orElseThrow(() -> new IllegalArgumentException("No task runs in '" + cwd + "'"));
@@ -87,6 +95,7 @@ public class AgentSessionController {
                 .withSaid(said.message())
                 .withEndedBy(said.reason())
                 .withFailedOn(said.error())
+                .withToolName(said.toolName())
                 .withTask(task.getValue());
     }
 

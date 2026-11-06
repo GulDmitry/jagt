@@ -61,8 +61,8 @@ It alerts only where `Move.ownerOf` is AGENT, not `VERIFYING`.
 - **WHEN** the CLI ends a turn on an API error and names `overloaded`
 - **THEN** NEEDS YOU at once with no threshold, saying its turn failed: overloaded, the CLI's own error word
 ### Requirement: A hook reports, the watchdog decides
-Blocking wording MUST be declared, never matched: `blocking-notification` in the runtime's properties →
-`AgentRuntime.blockingNotification`, unrecognised wording staying the quieter. The stop SHALL be the reducer's
+A blocked prompt MUST come from the runtime's typed `permission-request` event, never from wording: a Notification is always
+`idle`. The report is answered with nothing, so the CLI shows its own dialog. The stop SHALL be the reducer's
 alone, on the transition only, cleared by any report (`withStatus`), a later alive sign winning by arrival.
 #### Scenario: A stamped task reports
 - **WHEN** any report arrives

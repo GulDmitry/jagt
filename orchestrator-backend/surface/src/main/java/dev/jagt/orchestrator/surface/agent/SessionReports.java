@@ -27,48 +27,58 @@ public class SessionReports {
      * Everything a harness hands a hook that jagt can use, which is not the state. {@code sessionLog} is the file
      * the session appends to, otherwise derived; {@code startedBy} why it started, in the CLI's own word;
      * {@code said} what the CLI told the human; {@code task} the task it runs for; {@code endedBy} why a session
-     * ended; {@code failedOn} the error a turn ended on. Each null where nothing was named.
+     * ended; {@code failedOn} the error a turn ended on; {@code toolName} the tool a permission prompt asks for. Each null where nothing was named.
      */
     public record Report(@Nullable Path sessionLog, @Nullable String startedBy, @Nullable String said,
-                         @Nullable TaskState task, @Nullable String endedBy, @Nullable String failedOn) {
+                         @Nullable TaskState task, @Nullable String endedBy, @Nullable String failedOn,
+                         @Nullable String toolName) {
 
         /** Everything absent: a harness may hand a hook nothing jagt can use, and most of them do. */
         public static Report defaults() {
-            return new Report(null, null, null, null, null, null);
+            return new Report(null, null, null, null, null, null, null);
         }
 
         public Report withSessionLog(@Nullable Path sessionLog) {
-            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
         }
 
         public Report withStartedBy(@Nullable String startedBy) {
-            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
         }
 
         public Report withSaid(@Nullable String said) {
-            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
         }
 
         public Report withTask(@Nullable TaskState task) {
-            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
         }
 
         public Report withEndedBy(@Nullable String endedBy) {
-            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
         }
 
         public Report withFailedOn(@Nullable String failedOn) {
-            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn);
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
+        }
+
+        public Report withToolName(@Nullable String toolName) {
+            return new Report(sessionLog, startedBy, said, task, endedBy, failedOn, toolName);
         }
     }
 
     /** The brief for a session that has just been compacted, or empty for every other report. */
     public String record(String taskId, SessionProbe.State state, Report report) {
         signs.record(taskId, report.sessionLog(), signOf(state, report));
-        if (blocked(state, report.said())) {
-            signs.asked(taskId, new SessionSign.Asked(report.said(), SessionSign.Asked.Channel.HOOK));
-        }
         return brief(taskId, report.startedBy(), report.task());
+    }
+
+    /** Records the session as idle and asking for permission, naming the tool where the CLI did. */
+    public void permissionAsked(String taskId, Report report) {
+        signs.record(taskId, report.sessionLog(), signOf(SessionProbe.State.IDLE, report));
+        String tool = report.toolName();
+        signs.asked(taskId, new SessionSign.Asked(tool == null ? "permission" : "permission to use " + tool,
+                SessionSign.Asked.Channel.HOOK));
     }
 
     /** Records the turn as failed on the error the CLI named, and says whether that error is a usage limit. */
@@ -82,16 +92,6 @@ public class SessionReports {
     public String turnEnded(String taskId, Report report, boolean sentOn, boolean pausedOnBackgroundWork) {
         record(taskId, pausedOnBackgroundWork ? SessionProbe.State.WORKING : SessionProbe.State.IDLE, report);
         return turnEnds.answer(taskId, report.task(), sentOn, pausedOnBackgroundWork);
-    }
-
-    /** A session refused a permission cannot go on; one merely quiet may be part-way through something long. */
-    private boolean blocked(SessionProbe.State state, @Nullable String said) {
-        if (state != SessionProbe.State.IDLE || said == null) {
-            return false;
-        }
-        String blocking = runtime.blockingNotification();
-        return blocking != null && !blocking.isBlank()
-                && said.toLowerCase(java.util.Locale.ROOT).contains(blocking.toLowerCase(java.util.Locale.ROOT));
     }
 
     private boolean continuing(SessionProbe.State state, @Nullable String endedBy) {

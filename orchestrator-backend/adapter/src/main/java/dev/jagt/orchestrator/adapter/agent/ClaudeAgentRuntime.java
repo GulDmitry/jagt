@@ -354,11 +354,6 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
-    public String blockingNotification() {
-        return SessionHooks.blockingNotification("claude");
-    }
-
-    @Override
     public String rateLimitError() {
         return SessionHooks.rateLimitError("claude");
     }
@@ -421,6 +416,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                         HookEndpoint.PROMPT_GATE_SECONDS + 5)),
                         SessionHooks.turnFailure("claude").stream()
                                 .map(event -> hook(event, hooks.command(worktree, "turn-failure"))),
+                        SessionHooks.permissionRequest("claude").stream()
+                                .map(event -> hook(event, hooks.command(worktree, "permission"))),
                         // Scoped to the tools that can push or write a file: a hook on all of them would sit in
                         // front of every step the agent takes.
                         SessionHooks.gate("claude").stream()
