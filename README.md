@@ -30,14 +30,13 @@ flowchart LR
 
 ## Key features
 
-- **One task, one worktree, one branch.** The base branch is read-only; nothing rewrites shared history.
-- **The machine owns every move.** Statuses and actions live in one compiler-checked table; a model only judges.
-- **A deterministic protocol.** A session reports through a schema-checked MCP message; every violation comes
-  back at once, typed: validation, business, permission or transient.
-- **A session can write only inside its task**, opt-in, under the agent CLI's own OS sandbox.
-- **The Master** reviews every round in your place; in `act` it ships and deploys, and your word overrules it.
-- **jagt runs the checks itself**: a plan's acceptance probes, and a valid spec change before any hand-back.
-- **Any agent CLI, no token.** Tracker and code host are read through your own MCP.
+- **Several tickets at once.** Each in its own worktree and branch: agents never trip over each other or your base branch.
+- **You look only when it needs you.** Questions, stalls and crashes are flagged and ranked by whose move it is, with a banner.
+- **Review comments answered for you.** Each thread is fixed, declined with a why, or asked; replies are drafted for you to read first.
+- **A red pipeline goes back by itself.** The session fixes it; a failure the host blames on infrastructure is re-run.
+- **A reviewer before you read.** The Master judges every round by your brief; in `act` it ships and deploys, your word overrules it.
+- **Done means checked.** jagt runs the plan's acceptance probes itself and refuses a hand-back without a valid spec change.
+- **Tickets in, tickets out.** A ready ticket can open a task and a done one close it, through your own MCP; jagt holds no token.
 
 Everything jagt does, one line each and linked to its spec: [Features](docs/features.md).
 
