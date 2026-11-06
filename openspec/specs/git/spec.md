@@ -10,18 +10,17 @@ Shared-branch writes, commits, ships, worktree hooks and multi-repo tasks.
 `deploy` SHALL merge `origin/<task>` into `deployBranch` (`mergeIntoAndPush`), `revert` its merge commit
 (`revertMergeAndPush`); Master-only (`Audience.MASTER`). `do <ticket> from <branch>` (`TaskState.baseBranch`) moves
 the cut and the request's **target**, never the merge destination (`baseBranchOr`). A `deployBranch` naming
-`baseBranch`, however spelled, MUST be refused.
-With `remote: none` both fast-forward the checkout holding the target, which git refuses a push to, else push within the repository.
+`baseBranch`, however spelled, MUST be refused. With `remote: none` both fast-forward the target's checkout
+(git refuses a push to it), else push within the repository.
 
 #### Scenario: Diff base
 - **WHEN** `ide <task> diff` shows files the task never touched
 - **THEN** read against the request's target, never `deployBranch`
 
 ### Requirement: Nothing rewrites what left the machine
-`GitDeploy` (`HEAD:<target>`) and `GitWorktrees` (`refs/heads/x:refs/heads/x`) SHALL push **one** branch, never
-`--force` or `-u`; no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6). The one exception:
-a rebase of the task's own branch onto its request's target. The resume or the session pushes it under
-`--force-with-lease` when the target moved on.
+`GitDeploy` (`HEAD:<target>`) and `GitWorktrees` (`refs/heads/x:refs/heads/x`) SHALL push **one** branch, never `--force` or `-u`;
+no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6). The one exception: a rebase of the task's own
+branch onto its request's target. The resume or the session pushes it under `--force-with-lease` when the target moved on.
 
 #### Scenario: Release request
 - **WHEN** resuming a `dev` → `main` request
@@ -69,10 +68,10 @@ the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 - **THEN** status untouched, naming what is already live
 
 ### Requirement: Siblings share one deploy path
-Siblings SHALL derive one deploy path (`<taskId>-deploy`): `hasDeployWorktree` asks git who cut it,
-`mergeIntoAndPush` **refuses** another repository's, only DEPLOY_CONFLICT resumes. Every press starts the merge over
-unless the human's own work sits there (staged, committed or part done; committed only with its base
-on the target). Editor residue is **deleted** (`clearEditorResidue`); anything else left and named (`StaleDeployPathException`).
+Siblings SHALL derive one deploy path (`<taskId>-deploy`): `hasDeployWorktree` asks git who cut it, `mergeIntoAndPush` **refuses**
+another repository's, only DEPLOY_CONFLICT resumes. Every press starts the merge over unless the human's own work sits there
+(staged, committed or part done; committed only with its base on the target). Editor residue is **deleted**
+(`clearEditorResidue`); anything else left and named (`StaleDeployPathException`).
 
 #### Scenario: Blocked path
 - **WHEN** `deploy` keeps refusing over the deploy directory
@@ -91,14 +90,16 @@ agent's. A ship approves ONE commit: only the next relay replaces `task_context.
 its target): commit, push, open or update a request against its own target, every link in one `update_agent_status`
 (`reviewRequests`; a bare url only for a one-repository task). jagt calls no host and writes no git; the task waits in SHIPPING.
 A repository whose `codeHost` is `none` is asked for the push alone and no request, one with no `remote` for neither.
-Where every repository is so and none holds unpublished work, REVIEW_PENDING offers the deploy, read from the
-configuration and the worktrees each time. A sweep never asks such a repository for a request.
-Nothing to ship or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened.
 
 #### Scenario: Ship
 - **WHEN** `ship ABC-42`
 - **THEN** a commit, push and request per repository onto its base
 - **AND** where `codeHost` is `none`, a push alone: the session reports REVIEW_PENDING and `deploy` is next
+
+#### Scenario: No request to open
+- **WHEN** every repository has `codeHost` `none` or no `remote`, and none holds unpublished work
+- **THEN** REVIEW_PENDING offers the deploy, read from the configuration and the worktrees each time; a sweep never asks them for a request
+- **AND** nothing to ship or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over and named, no request opened
 
 ### Requirement: A request is merged when the host says so
 A request SHALL count as merged when the host says so in a review read, which stands: git alone never sees a squash.
@@ -173,9 +174,9 @@ as the least finished (`RoundReading.merged`): approved only when all are, the *
 
 ### Requirement: A running task gains a repository
 `add-repo` SHALL cut the task branch's worktree in the project the request names, as `do` does (`NewTaskWorktrees`),
-or adopt one already on that branch (`GitWorktrees.worktreeOf`). It SHALL register it after the session's own and
-rewrite every worktree's briefing and sandbox. It SHALL clear the request, hand the session the path and move the task
-to `IN_PROGRESS`. A cut that fails SHALL unwind and leave the request standing, the cause on the card.
+or adopt one already on that branch (`GitWorktrees.worktreeOf`). It SHALL register it after the session's own and rewrite
+every worktree's briefing and sandbox. It SHALL clear the request, hand the session the path and move the task to `IN_PROGRESS`.
+A cut that fails SHALL unwind and leave the request standing, the cause on the card.
 
 #### Scenario: The request is granted
 - **WHEN** you press `add-repo` on ABC-42, which asked for `schemaRegistry`

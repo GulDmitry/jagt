@@ -61,10 +61,8 @@ write to any file but `plan.md`, `task_visual.md` and `task_notes.md` is refused
 ### Requirement: A task may plan before it has a repository
 The board form's `plan first` with no project ticked SHALL start a task with no project, never routed (`ProjectRouting` is not asked).
 A typed `do <ticket>` without a project and tracker intake SHALL still go through the router.
-A start with no project and no `plan first` SHALL be refused by the server, and nothing is created.
 Its planning session SHALL run in `scratch/<slug>`, a sibling of `state.json` under jagt's work dir: no git
 (`GIT_CEILING_DIRECTORIES` set for that session, `scratch/` gitignored), no push, no ship; the plan gate holds there as anywhere.
-`done` on such a task SHALL delete its scratch folder.
 
 #### Scenario: Planning with no project
 - **WHEN** you press Start with `plan first` ticked, no project ticked, and notes
@@ -80,7 +78,7 @@ Its planning session SHALL run in `scratch/<slug>`, a sibling of `state.json` un
 
 #### Scenario: Done
 - **WHEN** you `done` a task that never left its scratch folder
-- **THEN** the folder is deleted
+- **THEN** `done` deletes the folder
 
 ### Requirement: A scratch folder is no repository
 A task with no repository SHALL hold no worktree, branch or request: its folder under `scratch/` is outside git for its session
@@ -100,29 +98,30 @@ It SHALL say the plan's `## Repositories` names every project the task changes, 
 
 ### Requirement: An approved plan places the task
 `approve-plan` on a task with no repository SHALL cut a worktree per `[changed]` key of the plan's `## Repositories`, the first primary.
-It SHALL copy `plan.md` and the task's other artifacts into it.
-An existing ticket branch follows the intake rule: its own commits are resumed, else it is recreated.
 The scratch folder SHALL be deleted after the state write; the session starts fresh in the primary and the task is `IN_PROGRESS`.
-A cut that fails SHALL unwind every cut and the task keeps its scratch folder.
 A `[changed]` key `jagt.yml` lacks, or a typed base branch a named project lacks, SHALL cut nothing:
 the task stays `PLAN_PENDING` and the human's question names the keys and points at the add-project form.
-The Master in `act` never adds a project; its approval SHALL return the plan to the session, naming those keys and the registered projects.
 
 #### Scenario: Placed
 - **WHEN** you approve a plan listing `- [changed] api` and `- [changed] web`, both configured
-- **THEN** worktrees exist for both, `api` runs the session fresh with the plan copied in, the scratch folder is gone, the task is `IN_PROGRESS`
+- **THEN** worktrees exist for both, with `plan.md` and the task's other artifacts copied into them
+- **AND** `api` runs the session fresh, the scratch folder is gone, the task is `IN_PROGRESS`
+
+#### Scenario: An existing ticket branch
+- **WHEN** the plan's repository already holds ABC-42's branch
+- **THEN** its own commits are resumed, else the branch is recreated, as the intake rule says
 
 #### Scenario: A key jagt.yml lacks
-- **WHEN** the plan lists `- [changed] billing`, not configured
+- **WHEN** the plan lists `- [changed] billing`, not configured, or a typed base branch a named project lacks
 - **THEN** nothing is cut, the task stays `PLAN_PENDING` and the question names `billing` and the add-project form
 
 #### Scenario: The Master approves
 - **WHEN** the Master in `act` approves that plan
-- **THEN** no project is added, nothing is cut, and the session is told to revise the plan: `billing` and the registered projects
+- **THEN** the Master never adds a project: nothing is cut, and the session is told to revise the plan: `billing` and the registered projects
 
 #### Scenario: A cut fails
 - **WHEN** the second worktree's cut fails
-- **THEN** the first is removed and the task keeps its scratch folder
+- **THEN** every cut is unwound, the first is removed, and the task keeps its scratch folder
 
 ### Requirement: An existing branch is never lost
 Nothing SHALL be freed or moved until `recreate` or `resume` is picked for a branch that exists.
@@ -162,14 +161,13 @@ A project with no remote is passed over.
 
 ### Requirement: A project names the remote its branches are shared through
 `projects.<key>.remote` SHALL name the git remote every fetch, push and remote-tracking ref of that repository uses, `origin` where unset.
-`none` SHALL mean a repository kept on this machine: worktrees are cut from the local base branch, nothing is fetched or pushed, and a
-deploy merges into the local deploy branch. Startup MUST refuse a remote `git remote` does not list, and `none` beside a `codeHost`
+`none` SHALL mean a repository kept on this machine. Startup MUST refuse a remote `git remote` does not list, and `none` beside a `codeHost`
 that is not `none`, each naming its keys; it reads no network.
 A base branch is read with that remote's prefix dropped, and the briefs and refusals that name a push name that remote.
 
 #### Scenario: A repository kept on this machine
 - **WHEN** `remote` is `none` and ABC-42 starts
-- **THEN** its worktree is cut from the local `main` and no fetch runs
+- **THEN** its worktree is cut from the local base branch `main`, nothing is fetched or pushed, and a deploy merges into the local deploy branch
 
 #### Scenario: A remote the repository lacks
 - **WHEN** `remote` is `upstream` and `git remote` lists `origin` alone

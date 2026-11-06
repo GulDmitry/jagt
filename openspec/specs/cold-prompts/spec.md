@@ -30,7 +30,6 @@ Idle SHALL count from `Session.idleSince`, the later of the session's halt and l
 session-log line; never a repaint), in every phase, an open turn included: a turn alive signs within the lifetime.
 It never counts where the session has signed nothing. `SessionPhase.cold` is the one predicate every caller reads.
 The record is persisted, so a restart of jagt never reads a cold session as warm.
-Starting a fresh session starts the record over, so nothing the old session signed speaks for the new one.
 The first read after the start stamps its start.
 
 #### Scenario: jagt restarted while the session idled
@@ -45,7 +44,7 @@ The first read after the start stamps its start.
 - **WHEN** a prompt arrives within the lifetime of the fresh session's first read, as its first one does
 - **THEN** it reaches the model
 - **WHEN** a prompt arrives before the fresh session's first hook
-- **THEN** it passes, the old session's idle stamp being gone
+- **THEN** it passes: a fresh session starts the record over, so the old session's idle stamp is gone
 - **WHEN** no hook has landed within the stale limit of the first read after the start, however old the previous transcript
 - **THEN** the fresh session is not QUIET, and no stopped banner is raised for it
 

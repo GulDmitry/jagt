@@ -70,7 +70,7 @@ names the stop kind it ends.
 ### Requirement: In act the Master decides a stop for a suspected loop
 With `roles.master.mode: act` and `lift` not in `mine`, a STALLED, SHIPS, ROUNDS, PACE or UNCHANGED_FAILURE stop SHALL be asked of the Master once
 (`MasterStopJob`). Its first line decides: `lift: <reason>` lifts it, and `return: <instruction>` lifts it and tells the session the instruction as
-an answer. `human: <why>`, any other line or no answer leaves it yours. Between your lifts or deploys the Master SHALL lift one stop per task. MISS,
+an answer. `human: <why>`, any other line or no answer leaves it yours. MISS,
 QA_FAILED and PAUSE stay yours, and the stops a read ends end on it.
 
 #### Scenario: A looping task goes on
@@ -87,7 +87,8 @@ QA_FAILED and PAUSE stay yours, and the stops a read ends end on it.
 
 #### Scenario: One lift between yours
 - **WHEN** the Master lifted ABC-42's stop and the task stops again before your lift or deploy
-- **THEN** that stop is yours, and your lift or deploy restores the Master's one, a deploy too where no stop stands
+- **THEN** that stop is yours: the Master lifts one stop per task between your lifts or deploys
+- **AND** your lift or deploy restores the Master's one, a deploy too where no stop stands
 
 #### Scenario: The Master holds the stop
 - **WHEN** ABC-42 stops on ROUNDS in `act` and the Master was not yet asked
@@ -121,12 +122,11 @@ stops are counted on a request; the others SHALL stand.
 `pause` SHALL stop a started task for you to look at: nothing of jagt runs on it, reads included, until your `lift`.
 It is offered from IN_PROGRESS on, never to a stopped task, and is the human's in every Master mode.
 You may say it to the Master instead: its `pause_task` pauses the task on your word alone, with your reason on the stop,
-under the same offer. The task's session keeps running; jagt says nothing into it and moves nothing. The card carries
-the stop mark. A `deploy` you press lifts it as it lifts any stop. Nothing else ends it.
+under the same offer. The card carries the stop mark. A `deploy` you press lifts it as it lifts any stop. Nothing else ends it.
 
 #### Scenario: A paused task is left alone
 - **WHEN** you press `pause` on ABC-42 at IN_PROGRESS
-- **THEN** no job reads or moves it and nothing is relayed into its session until you press `lift`
+- **THEN** no job reads or moves it and nothing is relayed into its session, which keeps running, until you press `lift`
 - **AND** the stop is neither logged as a warning nor notified
 
 #### Scenario: Where pause is offered

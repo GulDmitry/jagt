@@ -73,17 +73,20 @@ staged in full it MUST finish the press, `deploy` or `revert` ([0013](../../../d
 ### Requirement: A stalled deploy conflict is the human's
 A handed conflict unchanged for `conflictStallMinutes` SHALL go to the Master first where it answers:
 `act`, `answer` not kept by the human, task not stopped, no question standing. The stall becomes the session's `QUESTION` at `DEPLOY_CONFLICT`,
-answered by the Master as any question is.
+answered by the Master as any question is
+([0134](../../../docs/decisions/0134-a-stalled-deploy-conflict-asks-the-master-first.md)).
 The `Conflict` SHALL record that it was asked, and the stall clock restarts then.
-A stall after that, or one where the Master does not answer, SHALL tell the human once per stall.
-A worktree moved since the last telling makes the next stall a new one. Its card SHALL name the paths unmerged,
-where and since when, across a restart (its `Conflict`, [0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md),
-[0134](../../../docs/decisions/0134-a-stalled-deploy-conflict-asks-the-master-first.md)); a status past it clears it.
 
 #### Scenario: A conflict nobody works, where the Master answers
 - **WHEN** ABC-42's deploy worktree has not changed for `conflictStallMinutes` and the Master acts
 - **THEN** no banner: ABC-42's report is a `QUESTION` naming the paths unmerged, its worktree and since when, and the Master answers it
 - **AND** the answer is relayed to the same session, and a restart in between asks nothing again
+
+### Requirement: A stall the Master does not settle is told to the human
+A stall after the Master was asked, or one where the Master does not answer, SHALL tell the human once per stall.
+A worktree moved since the last telling makes the next stall a new one. Its card SHALL name the paths unmerged,
+where and since when, across a restart (its `Conflict`, [0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md));
+a status past it clears it.
 
 #### Scenario: The Master's question goes unanswered or the worktree stays unchanged
 - **WHEN** the worktree has not changed for `conflictStallMinutes` since the Master was asked
@@ -141,8 +144,6 @@ sentence MAY name the status; nothing parses it. `withStatus` MUST appear only i
 Where a task holds several repositories and the host says one's request was closed unmerged, that repository SHALL
 leave the task: its checkout is removed, its branch kept, the session told in one line, and the sweep judges the others
 in the same pass. A task's only repository, and a request the host says does not exist, stay gone.
-A repository a deploy already landed stays in the deployment's record, so `revert` still covers it.
-The one a deploy was handed back on for its pipeline leaves the record too, and the task lands `DEPLOYED` on the others.
 
 #### Scenario: One of three requests closed
 - **WHEN** ABC-42 spans `alpha`, `beta` and `gamma`, and the host says `beta`'s request was closed unmerged
@@ -159,10 +160,11 @@ The one a deploy was handed back on for its pipeline leaves the record too, and 
 
 #### Scenario: A repository already landed
 - **WHEN** `beta` was deployed, then its request reads closed
-- **THEN** `beta` stays in the deployment's record and `revert` still takes it out
+- **THEN** `beta` stays in the deployment's record, so `revert` still covers it
 
 #### Scenario: The repository a deploy waits on closed
 - **WHEN** ABC-42 spans `alpha`, `beta` and `gamma`, all landed, and `beta`'s pipeline went red, so the task stands in `DEPLOY_CONFLICT`
 - **AND** the host says `beta`'s request was closed unmerged
-- **THEN** `beta` leaves the task and the deployment's record, no revert of it is owed, and the task lands `DEPLOYED` on `alpha` and `gamma`
+- **THEN** `beta`, the one the deploy was handed back on, leaves the task and the deployment's record, no revert of it is owed
+- **AND** the task lands `DEPLOYED` on `alpha` and `gamma`
 - **AND** the stalled-conflict line ends, and the deploy check goes on for `alpha` and `gamma` as for any deploy

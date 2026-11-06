@@ -51,9 +51,9 @@ Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeCh
 - **THEN** not believed: the round has a diff
 
 ### Requirement: The unit of a round is a thread
-`ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest; a thread it answered last waits on the
-reviewer. Threads SHALL be relayed while unresolved, each named new, still open with a new note, or unchanged since the last round
-(`RoundTrail.sinceLast`); a resolved one is never read again. The checks SHALL never decide whether a thread is answered. After a round with threads,
+`ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest.
+Threads SHALL be relayed while unresolved, each named new, still open with a new note, or unchanged since the last round
+(`RoundTrail.sinceLast`). The checks SHALL never decide whether a thread is answered. After a round with threads,
 a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
 
 #### Scenario: Red checks outside the code and a reviewer's answer
@@ -66,7 +66,7 @@ a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is writ
 
 #### Scenario: The agent answered last
 - **WHEN** two polls read a thread whose newest note is by the account the host's tools act as
-- **THEN** neither relays it, the task is not REVIEWED, and only a new note on it starts a round
+- **THEN** neither relays it, as it waits on the reviewer, the task is not REVIEWED, and only a new note on it starts a round
 
 ### Requirement: Threads are resolved at ship
 The agent SHALL resolve at ship time over its own MCP (`ShipService.repliesStep`), only threads whose code it changed. During the

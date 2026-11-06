@@ -90,14 +90,20 @@ A repro SHALL count only when it shows the report's signal. The default SHALL be
 ### Requirement: A session judges each switch that is on
 A session SHALL answer each of `autoplan`, `visualize` and `diagnose` that is on as `yes — <why>` or `no — <why>`.
 The answers go in `switches` (`protocol/SwitchJudgements`) of its first `update_agent_status` report, whatever status it reports.
-They go in the report handing back its plan at `PLAN_PENDING` too, judged after reading the task.
 jagt SHALL refuse such a report as `validation`, naming the switch and the form, when an answer is missing, lacks its why or is
 unknown; other reports need none and a later answer replaces an earlier.
-jagt SHALL refuse a plan hand-back answering `visualize` with `yes` as `validation` naming `task_visual.md`, while the file is missing.
 
 #### Scenario: A switch left unanswered
 - **WHEN** `visualize` is on and the first report of ABC-42 carries no `switches` answer for it
 - **THEN** the report is refused as `validation` naming `visualize`, and the task stays NEW
+
+#### Scenario: A switch that is off
+- **WHEN** `visualize` is off and the first report of ABC-42 carries no answer for it
+- **THEN** the report is accepted
+
+### Requirement: A plan hand-back answers its switches too
+A session's answers SHALL go in the report handing back its plan at `PLAN_PENDING` too, judged after reading the task.
+jagt SHALL refuse a plan hand-back answering `visualize` with `yes` as `validation` naming `task_visual.md`, while the file is missing.
 
 #### Scenario: A plan handed back without an answer
 - **WHEN** ABC-42 hands back its plan with `visualize` on and no `switches` answer for it
@@ -106,10 +112,6 @@ jagt SHALL refuse a plan hand-back answering `visualize` with `yes` as `validati
 #### Scenario: A yes without its picture
 - **WHEN** ABC-42 hands back its plan answering `visualize` with `yes — <why>` and its worktree holds no `task_visual.md`
 - **THEN** the report is refused as `validation` naming `task_visual.md`, and the task stays where it was
-
-#### Scenario: A switch that is off
-- **WHEN** `visualize` is off and the first report of ABC-42 carries no answer for it
-- **THEN** the report is accepted
 
 ### Requirement: The switch answers are kept and shown
 The answers SHALL be kept on the task.

@@ -67,9 +67,8 @@ A pipeline red on infrastructure SHALL be retried and counted as a request's is,
 ### Requirement: A deploy pipeline red on the code goes to the session
 A pipeline red on the code SHALL be re-run once per commit jagt pushed (`DeployPipelines`), kept on the deployment's target across a restart
 ([0133](../../../docs/decisions/0133-a-red-deploy-pipeline-is-rerun-once.md)); the deploy stays open meanwhile.
-Red after its re-run, or refused one, it SHALL hand the session the deploy worktree, cut from the deploy branch as it stands:
+Red after its re-run, or refused one, it SHALL hand the session the deploy worktree:
 `DEPLOY_CONFLICT`, handed as any deploy conflict is ([task-flow](../task-flow/spec.md#requirement-in-act-a-deploy-conflict-is-the-sessions)).
-A fix staged there SHALL be committed and pushed by the next `deploy`, never by the session; the pipeline is then read on the commit it pushed.
 
 #### Scenario: The deploy pipeline is red on the code
 - **WHEN** a failed job of the pipeline on ABC-42's deploy commit failed its script
@@ -78,7 +77,7 @@ A fix staged there SHALL be committed and pushed by the next `deploy`, never by 
 
 #### Scenario: The re-run is red again
 - **WHEN** the pipeline on ABC-42's deploy commit is red again after its re-run
-- **THEN** ABC-42 is `DEPLOY_CONFLICT`, its line reads `red pipeline on the deploy commit: proj 01234567`, and its deploy worktree is cut from `dev`
+- **THEN** ABC-42 is `DEPLOY_CONFLICT`, its line reads `red pipeline on the deploy commit: proj 01234567`, its worktree cut from `dev` as it stands
 - **AND** where the Master acts the session is handed that worktree once; in `judge` the card says NEEDS YOU and nothing is pressed
 
 #### Scenario: The host refuses the re-run
@@ -87,8 +86,8 @@ A fix staged there SHALL be committed and pushed by the next `deploy`, never by 
 
 #### Scenario: The session fixes the merge result
 - **WHEN** the session stages its fix in full in the deploy worktree
-- **THEN** jagt commits it and pushes it to `dev` through `deploy`, and ABC-42 is `DEPLOYED` on the new commit
-- **AND** the pipeline on that commit is read, re-run once if red on the code, and the session is asked once it is green
+- **THEN** the next `deploy` commits it and pushes it to `dev`, never the session, and ABC-42 is `DEPLOYED` on the new commit
+- **AND** the pipeline is read on the commit pushed, re-run once if red on the code, and the session is asked once it is green
 
 #### Scenario: A press before the fix
 - **WHEN** a `deploy` is pressed on ABC-42 while nothing is staged in its fix worktree
@@ -117,11 +116,9 @@ With it on, QA checks the deploy ([qa](../qa/spec.md)) and `DeployCheckJob` MUST
 - **THEN** `deploy` is never sent to the session and QA's check runs
 
 ### Requirement: The code host is chosen
-jagt SHALL read a deploy's pipeline through the driver `codeHost` names, a project's key over `orchestrator.codeHost` over `github`.
-The drivers are `github` (`gh`), `gitlab` (`glab`), `command`, `none` and `replay`. jagt MUST NOT guess the kind from a host name or an
-address, and the agent chosen by `agent.cli` selects none. `replay` reads every commit green and re-runs nothing.
-`codeHostName` names the host where the remote does not. `gh` is told the host with `-R <host>/<owner>/<repo>`.
-`glab` keeps a port the remote has in `--hostname`. A CLI or command holds the credential, jagt none.
+jagt SHALL read a deploy's pipeline through the driver `codeHost` names, a project's key over `orchestrator.codeHost` over `github`. The drivers are
+`github` (`gh`), `gitlab` (`glab`), `command`, `none` and `replay`. jagt MUST NOT guess the kind from a host name or an address, and the agent
+chosen by `agent.cli` selects none. `replay` reads every commit green and re-runs nothing. A CLI or command holds the credential, jagt none.
 
 #### Scenario: No key
 - **WHEN** a project and `orchestrator` name no `codeHost`
@@ -130,6 +127,10 @@ address, and the agent chosen by `agent.cli` selects none. `replay` reads every 
 #### Scenario: A host the name does not give away
 - **WHEN** `projects.proj.codeHost` is `gitlab` and the remote is `git@git.example.invalid:acme/shop.git`
 - **THEN** its pipelines are read through `glab` on `git.example.invalid`
+
+#### Scenario: A host the remote does not name
+- **WHEN** `codeHostName` names the host where the remote does not
+- **THEN** `gh` is told the host with `-R <host>/<owner>/<repo>`, and `glab` keeps a port the remote has in `--hostname`
 
 #### Scenario: An enterprise host
 - **WHEN** the remote is `git@ghe.example.invalid:acme/shop.git` and `codeHost` is `github`

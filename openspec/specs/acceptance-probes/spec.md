@@ -114,19 +114,7 @@ For a task with several repositories, `plan.md` SHALL hold a `## Repositories` s
 `- [changed] <key>` or `- [unaffected: <why>] <key>` (`protocol/PlanRepositories`).
 A PLAN_PENDING report SHALL be refused as `validation` for a missing section, an untagged item, a key outside the task
 or a repository left out. A repository the plan lacks is asked for with `needsProject`.
-On approval every repository tagged unaffected SHALL leave the task (`UnaffectedRepos`). The primary stays: it holds the
-session's checkout. One whose task branch holds own commits stays.
-
-A task with no repository SHALL report PLAN_PENDING only with the section and at least one `- [changed] <key>`;
-any key passes, configured or not, and `[unaffected]` keys are ignored.
-
-#### Scenario: A task with no repository names none
-- **WHEN** a task with no repository reports a plan whose section lists `- [unaffected: no change] api` alone
-- **THEN** the report is refused as `validation`, naming `## Repositories`
-
-#### Scenario: A task with no repository names a key jagt.yml lacks
-- **WHEN** a task with no repository reports a plan listing `- [changed] billing`, not configured
-- **THEN** the plan passes
+On approval every repository tagged unaffected SHALL leave the task (`UnaffectedRepos`).
 
 #### Scenario: A repository left out
 - **WHEN** a task of repositories `api` and `web` reports a plan listing only `- [changed] api`
@@ -142,4 +130,16 @@ any key passes, configured or not, and `[unaffected]` keys are ignored.
 
 #### Scenario: The primary repository marked unaffected
 - **WHEN** the approved plan lists `- [unaffected: only the web changes] api` and `api` is the primary
-- **THEN** `api` stays on the task with its checkout
+- **THEN** `api` stays on the task with its checkout, which holds the session's
+
+### Requirement: A task with no repository names a changed key
+A task with no repository SHALL report PLAN_PENDING only with the section and at least one `- [changed] <key>`;
+any key passes, configured or not, and `[unaffected]` keys are ignored.
+
+#### Scenario: A task with no repository names none
+- **WHEN** a task with no repository reports a plan whose section lists `- [unaffected: no change] api` alone
+- **THEN** the report is refused as `validation`, naming `## Repositories`
+
+#### Scenario: A task with no repository names a key jagt.yml lacks
+- **WHEN** a task with no repository reports a plan listing `- [changed] billing`, not configured
+- **THEN** the plan passes

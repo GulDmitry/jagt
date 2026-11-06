@@ -70,8 +70,8 @@ See [components](../../../docs/rules/components.md#whoever-works-on-jagt-reads-t
 `orchestrator.agent.cli: opencode` SHALL run every session on OpenCode, reaching jagt as a remote MCP server carrying the
 task's worktree as its caller. Its config SHALL be jagt's own; the project's `opencode.json` neither replaces nor feeds it.
 `orchestrator.opencode.endpoint` and `model`, when set, SHALL be the sessions' model; blank, the user's own OpenCode config
-chooses. Startup SHALL refuse OpenCode with `agent.sandbox.enabled`, an endpoint that is no http(s) address, and an
-endpoint without a model.
+chooses. Startup SHALL refuse it with `agent.sandbox.enabled`, an endpoint that is no http(s) address, or one without a
+model.
 
 #### Scenario: A local model
 - **WHEN** `endpoint` and `model` are set under `orchestrator.opencode`
@@ -117,12 +117,9 @@ deprecation line and is never a startup problem.
 
 ### Requirement: A read that needs no tool may ask a local model
 Where `orchestrator.assistant.local.endpoint` is set, a read of a kind in `orchestrator.assistant.local.kinds`
-(`COMMAND_MAP` unless set) SHALL go to that OpenAI-compatible endpoint.
-The read's schema is sent as its response format.
+(`COMMAND_MAP` unless set) SHALL go to that OpenAI-compatible endpoint. The read's schema is sent as its response format.
 A local read that fails, times out or answers outside the schema SHALL be asked of the cloud once, and a WARN says why.
 With no endpoint set every read goes to the cloud.
-The start SHALL be refused, naming the key, in three cases: an endpoint that is no http(s) address,
-a blank `model`, a listed kind that reads tools.
 
 #### Scenario: A local model is configured
 - **WHEN** an endpoint is set and the operator types a request jagt maps onto a command
@@ -137,7 +134,7 @@ a blank `model`, a listed kind that reads tools.
 - **THEN** it goes to the cloud
 
 #### Scenario: A misconfigured local model
-- **WHEN** the endpoint is set and `model` is blank, the endpoint is not http(s), or `kinds` lists `TICKET_READ`
+- **WHEN** the endpoint is set and `model` is blank, the endpoint is not http(s), or `kinds` lists a kind that reads tools, such as `TICKET_READ`
 - **THEN** the start is refused naming `orchestrator.assistant.local.model`, `.endpoint` or `.kinds`
 
 ### Requirement: A role may read on OpenCode
@@ -180,8 +177,6 @@ A read SHALL be offered `read`, `grep`, `glob`, `bash` and, where the role fetch
 Its permissions SHALL deny every command first, allow the role's, deny its refused ones, and deny any redirect last.
 Every call SHALL first go to jagt's read gate through a plugin written beside `state.json` at each start.
 A refused call or an unreachable gate denies the call, and the model retries.
-A completed call no gate heard, or a completed read of a file the role refuses, discards the answer and answers failed.
-Tokens SHALL be booked whatever the read answered, and a local failure SHALL NOT open the cloud's breaker.
 
 #### Scenario: A call outside the scope
 - **WHEN** a read's `git log > f` is put to the gate, or its `touch b.txt` was denied by the permissions
@@ -190,6 +185,11 @@ Tokens SHALL be booked whatever the read answered, and a local failure SHALL NOT
 #### Scenario: The plugin never loaded
 - **WHEN** a call completed and no call reached the gate
 - **THEN** the answer is discarded and the check reports that it failed
+- **AND** a completed read of a file the role refuses is discarded and answers failed the same way
+
+#### Scenario: Tokens and the breaker
+- **WHEN** a read completes, or a local read fails
+- **THEN** its tokens are booked whatever it answered, and the cloud's breaker stays closed
 
 ### Requirement: A local endpoint is read for its model
 `orchestrator.opencode.endpoint` and `orchestrator.assistant.local.endpoint`, when set, SHALL each be read every minute
