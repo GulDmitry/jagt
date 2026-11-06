@@ -8,8 +8,10 @@ let code = 'en';
 try { code = localStorage.lang || code; } catch (blocked) { /* English */ }
 const chosen = code === 'en' ? english : await get(code);
 
+const platform = {mod: /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl+'};
+
 export const t = (key, values = {}) => (chosen[key] ?? english[key] ?? key)
-  .replace(/\{(\w+)\}/g, (hole, name) => values[name] ?? hole);
+  .replace(/\{(\w+)\}/g, (hole, name) => values[name] ?? platform[name] ?? hole);
 
 export const current = () => code;
 

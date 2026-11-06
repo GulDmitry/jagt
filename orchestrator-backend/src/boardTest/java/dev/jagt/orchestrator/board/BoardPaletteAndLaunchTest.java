@@ -29,6 +29,17 @@ import static org.mockito.Mockito.when;
 
 class BoardPaletteAndLaunchTest extends BoardPageContext {
 
+    @ParameterizedTest
+    @CsvSource({"Macintosh; Intel Mac OS X 10_15_7, ⌘K", "X11; Linux x86_64, Ctrl+K"})
+    void thePaletteButtonNamesTheModifierOfTheHumansPlatform(String platform, String label) {
+        session.addInitScript("Object.defineProperty(navigator, 'userAgent', {get: () => 'Mozilla/5.0 (" + platform + ")'})");
+
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#open-palette")).hasText(label);
+    }
+
     @Test
     void thePaletteConfirmsALineItCanRunAsTyped() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
