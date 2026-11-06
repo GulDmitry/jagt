@@ -36,6 +36,7 @@ model wrote was 1.5–5% of context; tool results were the rest (browser snapsho
 - A longer cache TTL: no TTL survives a review that waits hours or days.
 - A light model summarising the transcript: it rereads 500k; the session writes the notes with its cache warm.
 - Claude Code's own auto-memory: neither jagt nor the human sees it, and the model decides when it writes.
+- Compacting at 100k (history analysis 2026-11-05, est. −69 USD/month): unmeasured against the summaries and lost context it costs.
 
 ## Reopen when
 

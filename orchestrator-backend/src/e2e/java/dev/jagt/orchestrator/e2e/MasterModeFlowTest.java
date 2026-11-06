@@ -294,8 +294,11 @@ class MasterModeFlowTest {
 
         assertThat(awaitTask(TaskState::stopped).stop().trigger()).isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
         E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "verify");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-stop");
         assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
-        assertThat(asked()).isFalse();
+        assertThat(mockingDetails(reviewer).getInvocations())
+                .extracting(call -> call.<RoundReviewer.Round>getArgument(0).prompt())
+                .singleElement().asString().contains("which jagt stopped because it suspects a loop");
     }
 
     @Test
