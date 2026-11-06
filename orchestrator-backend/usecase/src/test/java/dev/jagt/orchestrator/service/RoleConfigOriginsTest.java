@@ -62,6 +62,17 @@ class RoleConfigOriginsTest {
 
     @Test
     @ResourceLock(Resources.GLOBAL)
+    void modelComesFromTheShippedDistWhenTheHumanCopyCannotBeRead(@TempDir Path root) throws Exception {
+        install(root, "model: [haiku\n");
+        when(config.load()).thenReturn(ConfigFile.defaults());
+
+        List<String> lines = logged(root);
+
+        assertThat(lines).contains("qa model sonnet role.yml.dist");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
     void enabledAndEnvironmentsAreDefaultsWhenJagtYmlWritesNone(@TempDir Path root) throws Exception {
         install(root, null);
         when(config.load()).thenReturn(ConfigFile.defaults());
