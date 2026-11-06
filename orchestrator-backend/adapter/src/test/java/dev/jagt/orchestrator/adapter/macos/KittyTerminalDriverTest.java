@@ -71,7 +71,7 @@ class KittyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(false),
                 mock(OsaScript.class), new KittyOptions("kitty", ""), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         verifyNoInteractions(runner);
     }
@@ -84,7 +84,7 @@ class KittyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner, times(2)).run(isNull(), any(Duration.class), command.capture());
@@ -93,15 +93,14 @@ class KittyTerminalDriverTest {
     }
 
     @Test
-    void attachesTheFirstViewerToTheNamedTmuxServerWhereASocketIsConfigured() {
+    void firstViewerRunsTheAttachCommandItIsGiven() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", ""));
         var driver = new KittyTerminalDriver(runner,
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withTmuxSocket("jagt-sock")
-                        .withOpenTerminalWindow(true),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(true),
                 mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "-L", "jagt-sock", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner, times(2)).run(isNull(), any(Duration.class), command.capture());
@@ -110,15 +109,14 @@ class KittyTerminalDriverTest {
     }
 
     @Test
-    void attachesAnExtraTabToTheNamedTmuxServerWhereASocketIsConfigured() {
+    void extraTabRunsTheAttachCommandItIsGiven() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
         var driver = new KittyTerminalDriver(runner,
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withTmuxSocket("jagt-sock")
-                        .withOpenTerminalWindow(true),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(true),
                 mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents tab", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "-L", "jagt-sock", "attach", "-t", "agents"), "agents tab", Path.of("/work/tree"));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner, times(2)).run(isNull(), any(Duration.class), command.capture());
@@ -134,7 +132,7 @@ class KittyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents tab", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents tab", Path.of("/work/tree"));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner, times(2)).run(isNull(), any(Duration.class), command.capture());
@@ -151,8 +149,8 @@ class KittyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         verify(runner, times(2)).run(isNull(), any(Duration.class), anyList());
     }
@@ -165,8 +163,8 @@ class KittyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
-        driver.openViewer("others", "others", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "others"), "others", Path.of("/work/tree"));
 
         verify(runner, times(4)).run(isNull(), any(Duration.class), anyList());
     }

@@ -29,7 +29,7 @@ class GhosttyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(false),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         verifyNoInteractions(osaScript);
     }
@@ -41,7 +41,7 @@ class GhosttyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents \"main\"", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents \"main\"", Path.of("/work/tree"));
 
         ArgumentCaptor<String> script = ArgumentCaptor.captor();
         verify(osaScript).run(script.capture());
@@ -53,14 +53,13 @@ class GhosttyTerminalDriverTest {
     }
 
     @Test
-    void attachesTheViewerToTheNamedTmuxServerWhereASocketIsConfigured() {
+    void runsTheAttachCommandItIsGivenWordForWord() {
         OsaScript osaScript = mock(OsaScript.class);
         var driver = new GhosttyTerminalDriver(
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withTmuxSocket("jagt-sock")
-                        .withOpenTerminalWindow(true),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "-L", "jagt-sock", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         ArgumentCaptor<String> script = ArgumentCaptor.captor();
         verify(osaScript).run(script.capture());
@@ -74,8 +73,8 @@ class GhosttyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         verify(osaScript).run(anyString());
     }
@@ -88,7 +87,7 @@ class GhosttyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         verify(osaScript).run(anyString());
     }
@@ -170,8 +169,8 @@ class GhosttyTerminalDriverTest {
                 OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), clock);
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         verify(osaScript, times(2)).run(anyString());
     }

@@ -192,7 +192,7 @@ class TmuxSessionHostTest {
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).anySatisfy(command ->
                 assertThat(command).startsWith("/opt/jagt/tmux", "select-window", "-t", "@2"));
-        verify(terminal).openViewer(eq("jagt"), eq("agents"), any());
+        verify(terminal).openViewer(eq(List.of("/opt/jagt/tmux", "attach", "-t", "jagt")), eq("agents"), any());
     }
 
     @Test
@@ -212,6 +212,24 @@ class TmuxSessionHostTest {
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).isNotEmpty().allSatisfy(command ->
                 assertThat(command).startsWith("/opt/jagt/tmux", "-L", "jagt-sock"));
+    }
+
+    @Test
+    void theViewerAttachesToTheSessionOnTheConfiguredSocket() {
+        Processes processes = mock(Processes.class);
+        TerminalDriver terminal = mock(TerminalDriver.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withTmuxCommand("/opt/jagt/tmux")
+                .withTmuxSocket("jagt-sock");
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                terminal, mock(AgentRuntime.class));
+
+        host.focusTaskWindow("jagt", "agents", "ABC-1");
+
+        verify(terminal).openViewer(eq(List.of("/opt/jagt/tmux", "-L", "jagt-sock", "attach", "-t", "jagt")),
+                eq("agents"), any());
     }
 
     @Test
@@ -520,13 +538,13 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-clients")))).thenReturn(new Processes.Result(0, "", ""));
-        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 terminal, mock(AgentRuntime.class));
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
 
-        verify(terminal).openViewer(eq("jagt"), eq("agents"), any());
+        verify(terminal).openViewer(eq(List.of("/opt/jagt/tmux", "attach", "-t", "jagt")), eq("agents"), any());
     }
 
     @Test
@@ -610,7 +628,7 @@ class TmuxSessionHostTest {
                 command.contains("has-session")))).thenReturn(new Processes.Result(1, "", "no session"));
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-clients")))).thenReturn(new Processes.Result(0, "", ""));
-        OrchestratorProperties properties = OrchestratorProperties.defaults();
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
         TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
                 terminal, mock(AgentRuntime.class));
 
@@ -620,7 +638,7 @@ class TmuxSessionHostTest {
         verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
         assertThat(commands.getAllValues()).anySatisfy(command ->
                 assertThat(command).containsSequence("new-session", "-d", "-s", "jagt"));
-        verify(terminal).openViewer(eq("jagt"), eq("jagt-title"), any());
+        verify(terminal).openViewer(eq(List.of("/opt/jagt/tmux", "attach", "-t", "jagt")), eq("jagt-title"), any());
     }
 
     @Test

@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.adapter.macos;
 
-import dev.jagt.orchestrator.adapter.Executables;
-import dev.jagt.orchestrator.adapter.tmux.TmuxArgv;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
@@ -17,8 +15,8 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static dev.jagt.orchestrator.adapter.macos.OsaScript.string;
 
@@ -55,19 +53,17 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
     }
 
     @Override
-    public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {
-        String attach = String.join(" ", TmuxArgv.prefix(
-                Executables.resolve(Objects.requireNonNull(properties.tmuxCommand())), properties.tmuxSocket()))
-                + " attach -t " + tmuxSession;
+    public void openViewer(List<String> attachCommand, String dedicatedTitle, Path tabCwd) {
+        String attach = attachCommand.stream().map(GhosttyTerminalDriver::shellWord).collect(Collectors.joining(" "));
         if (!properties.openTerminalWindow()) {
             log.atInfo().setMessage("terminal auto-open disabled").addKeyValue("fix", attach).log();
             return;
         }
         long now = clock.millis();
-        if (now - openedAt.getOrDefault(tmuxSession, 0L) < ATTACH_GRACE_MS) {
+        if (now - openedAt.getOrDefault(dedicatedTitle, 0L) < ATTACH_GRACE_MS) {
             return;
         }
-        openedAt.put(tmuxSession, now);
+        openedAt.put(dedicatedTitle, now);
         try {
             osaScript.run("tell application \"Ghostty\"\n"
                     + "set cfg to new surface configuration from {command:" + string(attach)
@@ -83,7 +79,7 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
                     + "end tell");
         } catch (RuntimeException e) {
             log.atWarn().setMessage("ghostty tab open failed")
-                    .addKeyValue("session", tmuxSession)
+                    .addKeyValue("title", dedicatedTitle)
                     .addKeyValue("cause", Causes.of(e))
                     .addKeyValue("fix", attach)
                     .log();
@@ -134,6 +130,10 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
     @Override
     public void bringToFront() {
         osaScript.run("tell application \"Ghostty\" to activate");
+    }
+
+    private static String shellWord(String word) {
+        return word.matches("[\\w@%+=:,./-]+") ? word : "'" + word.replace("'", "'\\''") + "'";
     }
 
     private static String findTab(String title) {

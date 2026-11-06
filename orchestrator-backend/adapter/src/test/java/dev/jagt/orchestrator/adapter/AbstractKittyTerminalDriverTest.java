@@ -23,7 +23,7 @@ class AbstractKittyTerminalDriverTest {
     @Test
     void launchesADetachedRemoteControllableInstanceAttachedToTheSession() {
         List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "",
-                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), "agents", List.of());
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), List.of());
 
         assertThat(cmd).startsWith("kitty", "--detach")
                 .containsSequence("-o", "allow_remote_control=yes")
@@ -33,7 +33,7 @@ class AbstractKittyTerminalDriverTest {
     @Test
     void isolatesTheViewerFromTheUsersOwnKittyWindows() {
         List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "",
-                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), "agents", List.of());
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), List.of());
 
         assertThat(cmd).containsSequence("--single-instance", "--instance-group", "jagt-agents")
                 .containsSequence("--listen-on", "unix:/tmp/jagt-kitty-agents");
@@ -42,7 +42,7 @@ class AbstractKittyTerminalDriverTest {
     @Test
     void appliesTheConfiguredFontSizeToTheViewerInstance() {
         List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "13",
-                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), "agents", List.of());
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), List.of());
 
         assertThat(cmd).containsSequence("-o", "font_size=13");
     }
@@ -50,7 +50,7 @@ class AbstractKittyTerminalDriverTest {
     @Test
     void leavesTheFontSizeToKittysOwnConfigWhenUnset() {
         List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "",
-                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), "agents", List.of());
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), List.of());
 
         assertThat(cmd).noneMatch(argument -> argument.startsWith("font_size="));
     }
@@ -58,7 +58,7 @@ class AbstractKittyTerminalDriverTest {
     @Test
     void passesAPlatformsOwnLaunchOptionsThrough() {
         List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "",
-                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"), "agents",
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", List.of("tmux", "attach", "-t", "agents"),
                 List.of("-o", "map=cmd+м paste_from_clipboard"));
 
         assertThat(cmd).containsSequence("-o", "map=cmd+м paste_from_clipboard");
@@ -79,7 +79,7 @@ class AbstractKittyTerminalDriverTest {
             }
         };
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
         verify(runner, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
@@ -105,8 +105,8 @@ class AbstractKittyTerminalDriverTest {
             }
         };
 
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
-        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+        driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
         ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
         verify(runner, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());

@@ -47,7 +47,7 @@ class LinuxKittyTerminalDriverLinuxTest {
     void bringsUpADetachedRemoteControllableViewerAttachedToTheSession() {
         runner.run(null, T, List.of("tmux", "new-session", "-d", "-s", SESSION));
 
-        driver().openViewer(SESSION, SESSION, Path.of(System.getProperty("java.io.tmpdir")));
+        driver().openViewer(List.of("tmux", "attach", "-t", SESSION), SESSION, Path.of(System.getProperty("java.io.tmpdir")));
 
         String listed = awaitRemoteControl();
         assertThat(listed).as("kitty's own view of itself").contains("\"tabs\"");
@@ -65,7 +65,7 @@ class LinuxKittyTerminalDriverLinuxTest {
     void revealsARunningViewerAndThenClosesItByItsOwnSocket() {
         runner.run(null, T, List.of("tmux", "new-session", "-d", "-s", SESSION));
         LinuxKittyTerminalDriver driver = driver();
-        driver.openViewer(SESSION, SESSION, Path.of(System.getProperty("java.io.tmpdir")));
+        driver.openViewer(List.of("tmux", "attach", "-t", SESSION), SESSION, Path.of(System.getProperty("java.io.tmpdir")));
         awaitRemoteControl();
 
         assertThat(driver.reveal(SESSION)).isEqualTo(TerminalDriver.Revealed.WINDOW);

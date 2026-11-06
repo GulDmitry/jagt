@@ -370,7 +370,7 @@ public class TmuxSessionHost implements SessionHost {
         if (clients.exitCode() == 0 && !clients.stdout().isBlank()) {
             return;
         }
-        terminalDriver.openViewer(session, dedicatedTitle, VIEWER_CWD);
+        terminalDriver.openViewer(tmux("attach", "-t", session), dedicatedTitle, VIEWER_CWD);
     }
 
     /** Resolved HERE, where the process is spawned: a bare name is what the human configured, not a path. */

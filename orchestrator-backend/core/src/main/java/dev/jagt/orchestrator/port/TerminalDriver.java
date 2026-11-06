@@ -1,16 +1,17 @@
 package dev.jagt.orchestrator.port;
 
 import java.nio.file.Path;
+import java.util.List;
 
 /** How the agents' sessions become visible: ONE dedicated agents window, task views as tabs inside it. */
 public interface TerminalDriver {
 
     /**
      * Adds a tab to the window titled {@code dedicatedTitle}, creating that window when it is absent, attached to
-     * {@code attachTarget}. Debounce internally — opening takes seconds and this may be called again meanwhile.
-     * Logs failures, never throws.
+     * running {@code attachCommand}, the argv that shows the session. Debounce internally per title — opening takes
+     * seconds and this may be called again meanwhile. Logs failures, never throws.
      */
-    void openViewer(String attachTarget, String dedicatedTitle, Path tabCwd);
+    void openViewer(List<String> attachCommand, String dedicatedTitle, Path tabCwd);
 
     /** Brings the terminal application to the foreground. Best-effort. */
     void bringToFront();

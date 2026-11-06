@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.adapter.tmux.TmuxArgv;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +13,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** kitty's tabs are addressable, so they can be titled, focused and closed; the tab execs {@code tmux attach},
@@ -60,41 +58,40 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     protected abstract List<String> platformOptions();
 
     @Override
-    public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {
+    public void openViewer(List<String> attachCommand, String dedicatedTitle, Path tabCwd) {
         if (!properties.openTerminalWindow()) {
             log.atInfo().setMessage("terminal auto-open disabled")
-                    .addKeyValue("fix", String.join(" ", attach(tmuxSession)))
+                    .addKeyValue("fix", String.join(" ", attachCommand))
                     .log();
             return;
         }
         long now = clock.millis();
-        if (now - openedAt.getOrDefault(tmuxSession, 0L) < ATTACH_GRACE_MS) {
+        if (now - openedAt.getOrDefault(dedicatedTitle, 0L) < ATTACH_GRACE_MS) {
             return;
         }
-        openedAt.put(tmuxSession, now);
+        openedAt.put(dedicatedTitle, now);
 
-        String socket = socket(tmuxSession);
-        List<String> attach = attach(tmuxSession);
+        String socket = socket(dedicatedTitle);
         if (instanceRunning(socket)) {
             List<String> tabCommand = new ArrayList<>(List.of(kittyCommand, "@", "--to", socket,
                     "launch", "--type=tab", "--tab-title", dedicatedTitle, "--cwd", tabCwd.toString(), "--"));
-            tabCommand.addAll(attach);
+            tabCommand.addAll(attachCommand);
             var launch = processRunner.run(null, TIMEOUT, tabCommand);
             if (launch.exitCode() != 0) {
                 log.atWarn().setMessage("kitty tab open failed")
-                        .addKeyValue("session", tmuxSession)
+                        .addKeyValue("title", dedicatedTitle)
                         .addKeyValue("cause", OneLine.clipped(launch.stderr()))
                         .log();
             }
             return;
         }
         var open = processRunner.run(null, TIMEOUT, firstOpenCommand(kittyCommand, kittyFontSize, socket,
-                dedicatedTitle, tabCwd.toString(), attach, tmuxSession, platformOptions()));
+                dedicatedTitle, tabCwd.toString(), attachCommand, platformOptions()));
         if (open.exitCode() != 0) {
             log.atWarn().setMessage("kitty launch failed")
-                    .addKeyValue("session", tmuxSession)
+                    .addKeyValue("title", dedicatedTitle)
                     .addKeyValue("cause", OneLine.clipped(open.stderr()))
-                    .addKeyValue("fix", String.join(" ", attach))
+                    .addKeyValue("fix", String.join(" ", attachCommand))
                     .log();
         }
     }
@@ -121,10 +118,9 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
     /** {@code --detach} forks kitty into the background; without it the command blocks until it times out. */
     static List<String> firstOpenCommand(String kittyCommand, String fontSize, String socket, String title,
-                                         String directory, List<String> attach, String tmuxSession,
-                                         List<String> platformOptions) {
+                                         String directory, List<String> attach, List<String> platformOptions) {
         List<String> cmd = new ArrayList<>(List.of(kittyCommand, "--detach",
-                "--single-instance", "--instance-group", "jagt-" + tmuxSession,
+                "--single-instance", "--instance-group", "jagt-" + title,
                 "--listen-on", socket, "-o", "allow_remote_control=yes"));
         cmd.addAll(platformOptions);
         if (fontSize != null && !fontSize.isBlank()) {
@@ -135,22 +131,15 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
         return List.copyOf(cmd);
     }
 
-    private List<String> attach(String tmuxSession) {
-        List<String> attach = new ArrayList<>(TmuxArgv.prefix(
-                Objects.requireNonNull(properties.tmuxCommand()), properties.tmuxSocket()));
-        attach.addAll(List.of("attach", "-t", tmuxSession));
-        return List.copyOf(attach);
-    }
-
     private boolean instanceRunning(String socket) {
         return processRunner.run(null, TIMEOUT, List.of(kittyCommand, "@", "--to", socket, "ls")).exitCode() == 0;
     }
 
-    protected String socket(String tmuxSession) {
-        return "unix:" + socketPath(tmuxSession);
+    protected String socket(String dedicatedTitle) {
+        return "unix:" + socketPath(dedicatedTitle);
     }
 
-    private String socketPath(String tmuxSession) {
-        return Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-" + tmuxSession).toString();
+    private String socketPath(String dedicatedTitle) {
+        return Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-" + dedicatedTitle).toString();
     }
 }
