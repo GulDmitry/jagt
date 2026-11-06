@@ -67,6 +67,7 @@ orchestrator:
   # kittyCommand: kitty   # if the binary is not on PATH
   # kittyFontSize: 13     # blank keeps kitty.conf's own
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs
+  # tmuxSocket: jagt      # a named tmux server (-L): jagt's sessions stay apart from yours; empty = the default server
   # terminalNotifierCommand: terminal-notifier   # macOS: clickable banners; falls back to osascript
   # notifySendCommand: notify-send               # Linux: the libnotify sender
 

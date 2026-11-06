@@ -39,8 +39,7 @@ the window, not the context. A human's `respawn` SHALL be fresh, as SHALL a revi
 So SHALL a relay past the cache lifetime (`AgentRuntime.pastCacheLifetime` from `Session.idleSince`), read as it is sent.
 
 #### Scenario: The tmux server is lost, a relay comes late, or a round comes early
-- **WHEN** jagt revives a session after its tmux server died
-- **THEN** the revived session re-enters with `--continue`
+- **WHEN** jagt revives a session after its tmux server died - **THEN** the revived session re-enters with `--continue`
 - **WHEN** jagt revives a session whose worktree holds no conversation (its repository left the task)
 - **THEN** the session starts fresh, since `--continue` there exits
 - **WHEN** a relay comes after the cache lifetime
@@ -54,14 +53,10 @@ its `next-model: <name>` line names, else `orchestrator.agent.model`, else the C
 `AgentRuntime.models()` SHALL refuse the hand-back as `validation`, or startup; a runtime that cannot choose ignores both.
 
 #### Scenario: The notes or the config name a model
-- **WHEN** a hand-back follows `next-model: gpt`
-- **THEN** it is refused as `validation`, naming the allowed models
-- **WHEN** `agent.model` is `gpt`
-- **THEN** startup is refused, naming `gpt` and the allowed models
-- **WHEN** a fresh start finds no `next-model:` line and `agent.model` is `sonnet`
-- **THEN** the session launches with `--model sonnet`
-- **WHEN** the notes say `next-model: opus` and `agent.model` is `sonnet`
-- **THEN** the session launches with `--model opus`
+- **WHEN** a hand-back follows `next-model: gpt` - **THEN** it is refused as `validation`, naming the allowed models
+- **WHEN** `agent.model` is `gpt` - **THEN** startup is refused, naming `gpt` and the allowed models
+- **WHEN** a fresh start finds no `next-model:` line and `agent.model` is `sonnet` - **THEN** the session launches with `--model sonnet`
+- **WHEN** the notes say `next-model: opus` and `agent.model` is `sonnet` - **THEN** the session launches with `--model opus`
 
 ### Requirement: A detached launch gets its own session
 A launch SHALL leave jagt's process group, which Ctrl-C reaches and `ProcessBuilder.start()` never leaves:
@@ -69,10 +64,8 @@ A launch SHALL leave jagt's process group, which Ctrl-C reaches and `ProcessBuil
 `exec`, so `destroy()` on the returned `Process` reaches the app.
 
 #### Scenario: Ctrl-C stops jagt, or a detached binary is missing
-- **WHEN** the human presses Ctrl-C in jagt's terminal
-- **THEN** an app launched detached keeps running
-- **WHEN** `runDetached` launches a binary that does not exist
-- **THEN** the wrapper exits non-zero and the launch fails
+- **WHEN** the human presses Ctrl-C in jagt's terminal - **THEN** an app launched detached keeps running
+- **WHEN** `runDetached` launches a binary that does not exist - **THEN** the wrapper exits non-zero and the launch fails
 
 ### Requirement: kitty is one driver, not one per OS
 `AbstractKittyTerminalDriver` SHALL hold remote control, the per-session socket, tabs, reveal and close; a platform
@@ -84,16 +77,21 @@ through its per-session socket, each tab attached to tmux.
 - **WHEN** `closeViewerWindow` runs
 - **THEN** the kitty instance is killed by its socket path
 
+### Requirement: jagt's tmux calls can name their own server
+With `orchestrator.tmuxSocket` set, every tmux call jagt makes and every attach it hands a viewer SHALL carry
+`-L <socket>`; empty keeps tmux's default server. The window bar, titles and mouse SHALL be set on jagt's session alone, never `-g`.
+
+#### Scenario: A socket is named
+- **WHEN** `tmuxSocket` is `jagt` and a task window opens **THEN** each tmux call starts `tmux -L jagt`; the human's sessions keep their options
+
 ### Requirement: Every call a session needs is pre-approved
 Claude Code's auto-mode classifier blocks calls not pre-approved: the backend SHALL make none; the committed root
 `.claude/settings.json` covers sessions there. Every sub-agent worktree's generated `.claude/settings.local.json` MUST
 carry `enableAllProjectMcpServers: true`, `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` and `agentAllowedTools`.
 
 #### Scenario: A worktree setting is missing, or the generated settings change
-- **WHEN** a worktree lacks either
-- **THEN** `ship` / `feedback` stall on an invisible prompt, or `git commit` freezes
-- **WHEN** they change while a worktree already exists
-- **THEN** it keeps its old file until patched or re-created: only `initialize_task` writes it
+- **WHEN** a worktree lacks either - **THEN** `ship` / `feedback` stall on an invisible prompt, or `git commit` freezes
+- **WHEN** they change while a worktree already exists - **THEN** it keeps its old file until patched or re-created: only `initialize_task` writes it
 
 ### Requirement: The session compacts at 300k tokens
 A Claude session SHALL compact at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`), set on the command too. Its

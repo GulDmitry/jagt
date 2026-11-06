@@ -64,7 +64,7 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - no ring between the centre and the edge depends on `adapter/`.
 - it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, or the words a host invents.
-- it exempts only `tmuxCommand` and `tmuxSession`, keys naming a vendor by design; renaming one a human already
+- it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, keys naming a vendor by design; renaming one a human already
   wrote is the owner's call.
 
 ## The flow machine

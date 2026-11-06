@@ -196,6 +196,46 @@ class TmuxSessionHostTest {
     }
 
     @Test
+    void everyTmuxCommandNamesTheServerWhereASocketIsConfigured() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withTmuxCommand("/opt/jagt/tmux")
+                .withTmuxSocket("jagt-sock");
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.focusTaskWindow("jagt", "agents", "ABC-1");
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).isNotEmpty().allSatisfy(command ->
+                assertThat(command).startsWith("/opt/jagt/tmux", "-L", "jagt-sock"));
+    }
+
+    @Test
+    void scopesTheWindowBarAndTitleOptionsToTheTasksSessionAlone() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withTmuxCommand("tmux");
+        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(properties),
+                mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.keepFeedWindow("jagt", "feed", Path.of("/feed.log"));
+
+        ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+        verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+        assertThat(commands.getAllValues()).filteredOn(command -> command.contains("set-titles")).singleElement()
+                .satisfies(options -> assertThat(options)
+                        .containsSequence("set-option", "-t", "jagt", "set-titles", "on")
+                        .containsSequence("set-option", "-t", "jagt", "status-style", "bg=colour252,fg=colour235")
+                        .containsSequence("set-hook", "-t", "jagt", "after-new-window")
+                        .doesNotContainSequence("-g", "set-titles")
+                        .doesNotContain("window-status-format"));
+    }
+
+    @Test
     void opensNoSecondViewerWhereAClientIsAlreadyAttached() {
         Processes processes = mock(Processes.class);
         TerminalDriver terminal = mock(TerminalDriver.class);

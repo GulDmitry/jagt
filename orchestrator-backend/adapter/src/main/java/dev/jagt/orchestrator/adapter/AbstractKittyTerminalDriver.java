@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.adapter.tmux.TmuxArgv;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +63,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {
         if (!properties.openTerminalWindow()) {
             log.atInfo().setMessage("terminal auto-open disabled")
-                    .addKeyValue("fix", properties.tmuxCommand() + " attach -t " + tmuxSession)
+                    .addKeyValue("fix", String.join(" ", attach(tmuxSession)))
                     .log();
             return;
         }
@@ -73,11 +74,12 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
         openedAt.put(tmuxSession, now);
 
         String socket = socket(tmuxSession);
-        String tmux = Objects.requireNonNull(properties.tmuxCommand());
+        List<String> attach = attach(tmuxSession);
         if (instanceRunning(socket)) {
-            var launch = processRunner.run(null, TIMEOUT, List.of(kittyCommand, "@", "--to", socket,
-                    "launch", "--type=tab", "--tab-title", dedicatedTitle, "--cwd", tabCwd.toString(),
-                    "--", tmux, "attach", "-t", tmuxSession));
+            List<String> tabCommand = new ArrayList<>(List.of(kittyCommand, "@", "--to", socket,
+                    "launch", "--type=tab", "--tab-title", dedicatedTitle, "--cwd", tabCwd.toString(), "--"));
+            tabCommand.addAll(attach);
+            var launch = processRunner.run(null, TIMEOUT, tabCommand);
             if (launch.exitCode() != 0) {
                 log.atWarn().setMessage("kitty tab open failed")
                         .addKeyValue("session", tmuxSession)
@@ -87,12 +89,12 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
             return;
         }
         var open = processRunner.run(null, TIMEOUT, firstOpenCommand(kittyCommand, kittyFontSize, socket,
-                dedicatedTitle, tabCwd.toString(), tmux, tmuxSession, platformOptions()));
+                dedicatedTitle, tabCwd.toString(), attach, tmuxSession, platformOptions()));
         if (open.exitCode() != 0) {
             log.atWarn().setMessage("kitty launch failed")
                     .addKeyValue("session", tmuxSession)
                     .addKeyValue("cause", OneLine.clipped(open.stderr()))
-                    .addKeyValue("fix", tmux + " attach -t " + tmuxSession)
+                    .addKeyValue("fix", String.join(" ", attach))
                     .log();
         }
     }
@@ -119,7 +121,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
     /** {@code --detach} forks kitty into the background; without it the command blocks until it times out. */
     static List<String> firstOpenCommand(String kittyCommand, String fontSize, String socket, String title,
-                                         String directory, String tmux, String tmuxSession,
+                                         String directory, List<String> attach, String tmuxSession,
                                          List<String> platformOptions) {
         List<String> cmd = new ArrayList<>(List.of(kittyCommand, "--detach",
                 "--single-instance", "--instance-group", "jagt-" + tmuxSession,
@@ -128,9 +130,16 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
         if (fontSize != null && !fontSize.isBlank()) {
             cmd.addAll(List.of("-o", "font_size=" + fontSize.trim()));
         }
-        cmd.addAll(List.of("--title", title, "--directory", directory,
-                "--", tmux, "attach", "-t", tmuxSession));
+        cmd.addAll(List.of("--title", title, "--directory", directory, "--"));
+        cmd.addAll(attach);
         return List.copyOf(cmd);
+    }
+
+    private List<String> attach(String tmuxSession) {
+        List<String> attach = new ArrayList<>(TmuxArgv.prefix(
+                Objects.requireNonNull(properties.tmuxCommand()), properties.tmuxSocket()));
+        attach.addAll(List.of("attach", "-t", tmuxSession));
+        return List.copyOf(attach);
     }
 
     private boolean instanceRunning(String socket) {

@@ -22,6 +22,7 @@ public record OrchestratorProperties(
         @Nullable List<String> editorCommand,
         @Nullable List<String> editorDiffCommand,
         @Nullable String tmuxCommand,
+        @Nullable String tmuxSocket,
         boolean openTerminalWindow,
         Watchdog watchdog
 ) {
@@ -31,7 +32,7 @@ public record OrchestratorProperties(
 
     /** Everything unset but the watchdog threshold, dereferenced on every scan, and {@code openTerminalWindow}. */
     public static OrchestratorProperties defaults() {
-        return new OrchestratorProperties(null, null, null, null, null, null, null,
+        return new OrchestratorProperties(null, null, null, null, null, null, null, null,
                 false, new Watchdog(Duration.ofMinutes(5)));
     }
 }

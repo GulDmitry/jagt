@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.macos;
 
 import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.adapter.tmux.TmuxArgv;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
@@ -55,8 +56,9 @@ public class GhosttyTerminalDriver implements TerminalDriver, StartupCheck {
 
     @Override
     public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {
-        String tmux = Executables.resolve(Objects.requireNonNull(properties.tmuxCommand()));
-        String attach = tmux + " attach -t " + tmuxSession;
+        String attach = String.join(" ", TmuxArgv.prefix(
+                Executables.resolve(Objects.requireNonNull(properties.tmuxCommand())), properties.tmuxSocket()))
+                + " attach -t " + tmuxSession;
         if (!properties.openTerminalWindow()) {
             log.atInfo().setMessage("terminal auto-open disabled").addKeyValue("fix", attach).log();
             return;

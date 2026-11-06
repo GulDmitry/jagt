@@ -107,7 +107,7 @@ class RingsTest {
     void theVendorIsNamedOnlyAtTheEdge() {
         List<String> vendors = List.of("claude", "codex", "kitty", "tmux", "intellij", "jetbrains", "jira", "gitlab",
                 "github", "anthropic", "openai", "mcp__");
-        Pattern keysNamingAVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession");
+        Pattern keysNamingAVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession|tmuxSocket");
 
         assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)
                 .filter(path -> !path.toString().contains("/adapter/"))

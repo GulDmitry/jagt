@@ -87,6 +87,8 @@ orchestrator:
   #   - oh-my-claudecode@omc
   # A bare name is resolved on PATH and then in the known install dirs; an absolute path is not portable.
   tmux-command: tmux
+  # Empty: tmux's default server. A name: every tmux call carries -L <name>.
+  tmux-socket:
   # A suite passes false, so a run leaves no kitty window behind.
   open-terminal-window: true
   # Refuse to start when a part of the installation is missing, instead of failing at the click that needs it.

@@ -93,6 +93,40 @@ class KittyTerminalDriverTest {
     }
 
     @Test
+    void attachesTheFirstViewerToTheNamedTmuxServerWhereASocketIsConfigured() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        var driver = new KittyTerminalDriver(runner,
+                OrchestratorProperties.defaults().withTmuxCommand("tmux").withTmuxSocket("jagt-sock")
+                        .withOpenTerminalWindow(true),
+                mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
+
+        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner, times(2)).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getAllValues().get(1))
+                .containsSequence("--", "tmux", "-L", "jagt-sock", "attach", "-t", "agents");
+    }
+
+    @Test
+    void attachesAnExtraTabToTheNamedTmuxServerWhereASocketIsConfigured() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        var driver = new KittyTerminalDriver(runner,
+                OrchestratorProperties.defaults().withTmuxCommand("tmux").withTmuxSocket("jagt-sock")
+                        .withOpenTerminalWindow(true),
+                mock(OsaScript.class), new KittyOptions("/k/kitty", ""), Clock.systemUTC());
+
+        driver.openViewer("agents", "agents tab", Path.of("/work/tree"));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner, times(2)).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getAllValues().get(1))
+                .containsSequence("--", "tmux", "-L", "jagt-sock", "attach", "-t", "agents");
+    }
+
+    @Test
     void opensATabInTheViewerInstanceThatAnswers() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));

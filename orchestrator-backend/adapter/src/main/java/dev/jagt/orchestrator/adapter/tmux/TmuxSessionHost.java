@@ -33,6 +33,11 @@ public class TmuxSessionHost implements SessionHost {
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
     /** Only what is shown is cut: the full window name stays the task's identity. */
     private static final String SHOWN_NAME = "#{=/10/…:window_name}";
+    /** The default is #I:#W#F; the trailing #F renders the window flags (`*` current, `-` last, `Z` zoomed). */
+    private static final String WINDOW_FORMAT = "#I:" + SHOWN_NAME + "#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
+    private static final String WINDOW_OPTIONS = "set-option -w window-status-format \"" + WINDOW_FORMAT
+            + "\" ; set-option -w window-status-current-format \"" + WINDOW_FORMAT
+            + "\" ; set-option -w window-status-current-style \"bg=colour160,fg=colour231,bold\"";
     private static final String EXITED = "[jagt] agent exited";
     private static final int TAIL_LINES = 3;
 
@@ -93,7 +98,7 @@ public class TmuxSessionHost implements SessionHost {
                     .addKeyValue("window", windowId).log();
             // The window name must stay the taskId; the alias rides in a window user-option.
             if (alias != null && !alias.isBlank()) {
-                processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
+                processRunner.run(null, TIMEOUT, tmux("set-option",
                         "-w", "-t", windowId, "@jagt_alias", alias));
             }
             ensureViewer(session, dedicatedTitle);
@@ -125,7 +130,7 @@ public class TmuxSessionHost implements SessionHost {
             ensureSession(session);
             killTaskWindows(session, name);
             String windowId = newWindow(session, name, VIEWER_CWD, line);
-            processRunner.run(null, TIMEOUT, List.of(tmux(), "select-window", "-t", windowId));
+            processRunner.run(null, TIMEOUT, tmux("select-window", "-t", windowId));
             ensureViewer(session, dedicatedTitle);
         }
     }
@@ -136,12 +141,12 @@ public class TmuxSessionHost implements SessionHost {
         // Exec'd, the tail holds no child process, so the window reads as exited while it shows why.
         String ran = command
                 + "; printf '\\n" + EXITED + " — window closes in 15s (Ctrl+C to close now)\\n'; exec sleep 15";
-        String windowId = processRunner.run(null, TIMEOUT, List.of(tmux(), "new-window",
+        String windowId = processRunner.run(null, TIMEOUT, tmux("new-window",
                         "-P", "-F", "#{window_id}",
                         "-t", "=" + session + ":", "-n", name, "-c", cwd.toString(), ran))
                 .expectSuccess("tmux new-window " + name)
                 .stdout().trim();
-        var rename = processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
+        var rename = processRunner.run(null, TIMEOUT, tmux("set-option",
                 "-w", "-t", windowId, "automatic-rename", "off"));
         if (rename.exitCode() != 0) {
             log.atWarn().setMessage("tmux window rename failed")
@@ -159,7 +164,7 @@ public class TmuxSessionHost implements SessionHost {
             if (windowId.isEmpty()) {
                 return false;
             }
-            processRunner.run(null, TIMEOUT, List.of(tmux(), "select-window", "-t", windowId.get()))
+            processRunner.run(null, TIMEOUT, tmux("select-window", "-t", windowId.get()))
                     .expectSuccess("tmux select-window " + windowId.get());
             ensureViewer(session, dedicatedTitle);
             return true;
@@ -185,7 +190,7 @@ public class TmuxSessionHost implements SessionHost {
             if (window.isEmpty() || agentRunning(window.get())) {
                 return Optional.empty();
             }
-            String shown = processRunner.run(null, TIMEOUT, List.of(tmux(), "capture-pane", "-p", "-t",
+            String shown = processRunner.run(null, TIMEOUT, tmux("capture-pane", "-p", "-t",
                     window.get().id())).expectSuccess("tmux capture-pane " + window.get().id()).stdout();
             return printedBeforeExit(shown);
         }
@@ -213,7 +218,7 @@ public class TmuxSessionHost implements SessionHost {
             if (windowId.isEmpty()) {
                 return Optional.empty();
             }
-            var screen = processRunner.run(null, TIMEOUT, List.of(tmux(), "capture-pane", "-p", "-e", "-t",
+            var screen = processRunner.run(null, TIMEOUT, tmux("capture-pane", "-p", "-e", "-t",
                     windowId.get()));
             return Optional.of(screen.expectSuccess("tmux capture-pane " + windowId.get()).stdout());
         }
@@ -226,7 +231,7 @@ public class TmuxSessionHost implements SessionHost {
             if (windowId.isEmpty()) {
                 return false;
             }
-            processRunner.run(null, TIMEOUT, List.of(tmux(), "send-keys", "-t", windowId.get(), "-l", message))
+            processRunner.run(null, TIMEOUT, tmux("send-keys", "-t", windowId.get(), "-l", message))
                     .expectSuccess("tmux send-keys (nudge) " + taskId);
             enter(windowId.get(), taskId);
             return true;
@@ -243,7 +248,7 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     private void enter(String windowId, String taskId) {
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "send-keys", "-t", windowId, "Enter"))
+        processRunner.run(null, TIMEOUT, tmux("send-keys", "-t", windowId, "Enter"))
                 .expectSuccess("tmux send-keys Enter " + taskId);
     }
 
@@ -257,7 +262,7 @@ public class TmuxSessionHost implements SessionHost {
                     .toList();
             int killed = 0;
             for (String id : ids) {
-                var kill = processRunner.run(null, TIMEOUT, List.of(tmux(), "kill-window", "-t", id));
+                var kill = processRunner.run(null, TIMEOUT, tmux("kill-window", "-t", id));
                 if (kill.exitCode() == 0) {
                     killed++;
                     log.atInfo().setMessage("task window closed").addKeyValue("task", taskId)
@@ -299,7 +304,7 @@ public class TmuxSessionHost implements SessionHost {
 
     /** A session or server that is not there lists no windows; any other failure is unknown, never "none". */
     private List<String> windowLines(String session, String format) {
-        var windows = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-windows",
+        var windows = processRunner.run(null, TIMEOUT, tmux("list-windows",
                 "-t", "=" + session, "-F", format));
         if (windows.exitCode() == 0) {
             return windows.stdout().lines().toList();
@@ -320,32 +325,30 @@ public class TmuxSessionHost implements SessionHost {
             Pattern.compile("no server running|can't find session|error connecting to");
 
     private void ensureSession(String session) {
-        var has = processRunner.run(null, TIMEOUT, List.of(tmux(), "has-session", "-t", "=" + session));
+        var has = processRunner.run(null, TIMEOUT, tmux("has-session", "-t", "=" + session));
         if (has.exitCode() != 0) {
-            processRunner.run(null, TIMEOUT, List.of(tmux(), "new-session",
+            processRunner.run(null, TIMEOUT, tmux("new-session",
                             "-d", "-s", session, "-c", paths.root().toString()))
                     .expectSuccess("tmux new-session " + session);
         }
-        // The default is #I:#W#F. Keep the trailing #F: it renders the window flags (`*` current, `-` last,
-        // `Z` zoomed), and dropping it loses the marker on the active window.
-        String windowFormat = "#I:" + SHOWN_NAME + "#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
         // One invocation: this runs every few seconds under the lock every other window call waits on.
-        var options = processRunner.run(null, TIMEOUT, List.of(tmux(),
+        var options = processRunner.run(null, TIMEOUT, tmux(
                 // No ESC delay, which makes TUIs feel sluggish.
                 "set-option", "-sg", "escape-time", "0", ";",
                 "set-option", "-g", "focus-events", "on", ";",
                 "set-option", "-t", session, "mouse", "on", ";",
                 // A title-aware terminal decorates its tab with the active window name.
-                "set-option", "-g", "set-titles", "on", ";",
+                "set-option", "-t", session, "set-titles", "on", ";",
                 // "taskId (alias)" when the window carries an alias, else just the window name.
-                "set-option", "-g", "set-titles-string",
+                "set-option", "-t", session, "set-titles-string",
                 "#{?#{@jagt_alias}," + SHOWN_NAME + " (#{@jagt_alias})," + SHOWN_NAME + "}", ";",
-                "set-option", "-g", "window-status-format", windowFormat, ";",
-                "set-option", "-g", "window-status-current-format", windowFormat, ";",
                 // Two levels, both lost in tmux's black-on-green default: the bar reads as a bar and not as more
                 // pane output, and the active window reads as the active window.
-                "set-option", "-g", "status-style", "bg=colour252,fg=colour235", ";",
-                "set-option", "-g", "window-status-current-style", "bg=colour160,fg=colour231,bold", ";",
+                "set-option", "-t", session, "status-style", "bg=colour252,fg=colour235", ";",
+                // A window option has no session scope: the hook styles each window this session gets, and
+                // the immediate run covers the one it already has.
+                "set-hook", "-t", session, "after-new-window", WINDOW_OPTIONS, ";",
+                "set-hook", "-R", "-t", "=" + session + ":", "after-new-window", ";",
                 // Warp does not grab Shift+Left/Right, unlike Ctrl+b.
                 "bind-key", "-n", "S-Left", "previous-window", ";",
                 "bind-key", "-n", "S-Right", "next-window"));
@@ -363,7 +366,7 @@ public class TmuxSessionHost implements SessionHost {
     private static final Path VIEWER_CWD = Path.of(System.getProperty("user.home"));
 
     private void ensureViewer(String session, String dedicatedTitle) {
-        var clients = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-clients", "-t", "=" + session));
+        var clients = processRunner.run(null, TIMEOUT, tmux("list-clients", "-t", "=" + session));
         if (clients.exitCode() == 0 && !clients.stdout().isBlank()) {
             return;
         }
@@ -371,7 +374,10 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     /** Resolved HERE, where the process is spawned: a bare name is what the human configured, not a path. */
-    private String tmux() {
-        return Executables.resolve(properties.tmuxCommand());
+    private List<String> tmux(String... args) {
+        List<String> argv = new ArrayList<>(TmuxArgv.prefix(Executables.resolve(properties.tmuxCommand()),
+                properties.tmuxSocket()));
+        argv.addAll(List.of(args));
+        return argv;
     }
 }

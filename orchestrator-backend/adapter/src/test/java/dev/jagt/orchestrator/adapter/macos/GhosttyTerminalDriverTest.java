@@ -53,6 +53,21 @@ class GhosttyTerminalDriverTest {
     }
 
     @Test
+    void attachesTheViewerToTheNamedTmuxServerWhereASocketIsConfigured() {
+        OsaScript osaScript = mock(OsaScript.class);
+        var driver = new GhosttyTerminalDriver(
+                OrchestratorProperties.defaults().withTmuxCommand("tmux").withTmuxSocket("jagt-sock")
+                        .withOpenTerminalWindow(true),
+                osaScript, mock(Host.class), Clock.systemUTC());
+
+        driver.openViewer("agents", "agents", Path.of("/work/tree"));
+
+        ArgumentCaptor<String> script = ArgumentCaptor.captor();
+        verify(osaScript).run(script.capture());
+        assertThat(script.getValue()).contains(" -L jagt-sock attach -t agents\"");
+    }
+
+    @Test
     void opensNoSecondViewerWhileTheFirstIsStillAttaching() {
         OsaScript osaScript = mock(OsaScript.class);
         var driver = new GhosttyTerminalDriver(
