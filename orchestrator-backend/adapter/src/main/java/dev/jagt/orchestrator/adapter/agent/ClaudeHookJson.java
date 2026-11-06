@@ -13,4 +13,9 @@ class ClaudeHookJson {
     JacksonModule claudeHookReportModule() {
         return ClaudeHookReportMixIn.module();
     }
+
+    @Bean
+    JacksonModule claudeToolCallModule() {
+        return ClaudeToolCallDeserializer.module();
+    }
 }

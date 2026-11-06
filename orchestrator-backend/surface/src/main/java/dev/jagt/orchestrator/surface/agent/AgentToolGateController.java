@@ -2,8 +2,9 @@ package dev.jagt.orchestrator.surface.agent;
 
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.jagt.orchestrator.port.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
+import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.KeepAlive;
@@ -23,10 +24,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Clock;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /** A gate that failed closed would make a stopped backend look like a rule, so anything not refused answers nothing. */
 @RestController
@@ -34,43 +33,27 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AgentToolGateController {
 
-    /** Only a shell command can push; every other tool is answered with nothing, but a write while a plan waits. */
-    private static final String SHELL_TOOL = "Bash";
-    private static final Set<String> WRITE_TOOLS = Set.of("edit", "write", "multiedit", "notebookedit");
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record ToolCall(@JsonProperty("tool_name") @Nullable String toolName,
-                           @JsonProperty("tool_input") @Nullable Map<String, Object> toolInput) {
-
-        @Nullable String command() {
-            Object command = toolInput == null ? null : toolInput.get("command");
-            return command == null ? null : command.toString();
-        }
-
-        @Nullable String file() {
-            Object file = toolInput == null ? null : toolInput.getOrDefault("file_path", toolInput.get("notebook_path"));
-            return file == null ? null : file.toString();
-        }
-    }
-
     private final StateService stateService;
     private final Clock clock;
     private final ConfigService configService;
+    private final ToolGateEnvelope envelope;
 
     /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> gate(
             @RequestHeader(value = "X-Working-Directory", required = false) @Nullable String cwd,
             @RequestBody(required = false) @Nullable ToolCall call, HttpServletRequest request) {
-        if (call == null || call.toolName() == null) {
+        String tool = call == null ? null : call.toolName();
+        if (call == null || tool == null) {
             return ResponseEntity.noContent().build();
         }
         stateService.findByWorktree(cwd)
                 .ifPresent(task -> KeepAlive.beat(stateService, task, new SessionSign.ToolUsed(), clock.millis()));
-        if (WRITE_TOOLS.contains(call.toolName().toLowerCase(Locale.ROOT))) {
+        Kind kind = envelope.kindOf(tool);
+        if (kind == Kind.FILE_WRITE) {
             return planFirst(cwd, call);
         }
-        if (!SHELL_TOOL.equalsIgnoreCase(call.toolName())) {
+        if (kind != Kind.SHELL) {
             return ResponseEntity.noContent().build();
         }
         // A directory no task owns has no branch a push could be refused against.
@@ -81,7 +64,7 @@ public class AgentToolGateController {
                     stateService.updateTask(Objects.requireNonNull(taskBranch),
                             task -> task.refused(Guard.SESSION_LINE));
                     log.atInfo().setMessage("session line refused").addKeyValue("task", taskBranch).log();
-                    return ResponseEntity.ok(denied(reason));
+                    return denied(reason);
                 })
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
@@ -100,17 +83,12 @@ public class AgentToolGateController {
                     stateService.updateTask(owner.getKey(), task -> task.refused(Guard.PLAN_FIRST));
                     log.atInfo().setMessage("write refused").addKeyValue("task", owner.getKey())
                             .addKeyValue("cause", "plan not approved").addKeyValue("file", call.file()).log();
-                    return ResponseEntity.ok(denied(reason));
+                    return denied(reason);
                 }))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    /** The CLI's own shape for a refusal a model is meant to read. */
-    static Map<String, Object> denied(String reason) {
-        return Map.of("continue", true,
-                "hookSpecificOutput", Map.of(
-                        "hookEventName", "PreToolUse",
-                        "permissionDecision", "deny",
-                        "permissionDecisionReason", reason));
+    private ResponseEntity<Map<String, Object>> denied(String reason) {
+        return ResponseEntity.ok(envelope.denial(reason));
     }
 }

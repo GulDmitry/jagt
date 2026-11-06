@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import dev.jagt.orchestrator.port.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
+import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -35,10 +38,18 @@ class AgentToolGateControllerTest {
     private final StateService stateService = mock(StateService.class);
     private final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC);
     private final ConfigService configService = mock(ConfigService.class);
+    private final ToolGateEnvelope envelope = mock(ToolGateEnvelope.class);
 
     @BeforeEach
     void theProjectSharesItsBranchesThroughOrigin() {
         when(configService.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+        when(envelope.kindOf(any())).thenReturn(Kind.OTHER);
+        when(envelope.kindOf("Bash")).thenReturn(Kind.SHELL);
+        when(envelope.kindOf("Write")).thenReturn(Kind.FILE_WRITE);
+        when(envelope.kindOf("Edit")).thenReturn(Kind.FILE_WRITE);
+        when(envelope.kindOf("MultiEdit")).thenReturn(Kind.FILE_WRITE);
+        when(envelope.kindOf("NotebookEdit")).thenReturn(Kind.FILE_WRITE);
+        when(envelope.denial(any())).thenAnswer(call -> Map.of("denied", call.getArgument(0)));
     }
 
     @Test
@@ -46,18 +57,12 @@ class AgentToolGateControllerTest {
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        Map<String, Object> answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")),
+        Map<String, Object> answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Bash", "git push origin dev", null),
                 new MockHttpServletRequest())
                 .getBody();
 
-        assertThat(answered).containsEntry("continue", true);
-        assertThat(answered.get("hookSpecificOutput")).asInstanceOf(
-                        org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
-                .containsEntry("permissionDecision", "deny")
-                .containsEntry("hookEventName", "PreToolUse")
-                .hasEntrySatisfying("permissionDecisionReason",
-                        reason -> assertThat(reason).asString().contains("ABC-1"));
+        assertThat(answered).extractingByKey("denied").asString().contains("ABC-1");
     }
 
     @Test
@@ -66,8 +71,8 @@ class AgentToolGateControllerTest {
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
                         .lastActiveTimestamp(100_000).build())));
 
-        new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")),
+        new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Bash", "git push origin dev", null),
                 new MockHttpServletRequest());
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
@@ -81,8 +86,8 @@ class AgentToolGateControllerTest {
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin ABC-1")),
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Bash", "git push origin ABC-1", null),
                 new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
@@ -92,8 +97,8 @@ class AgentToolGateControllerTest {
     void refusesNothingFromADirectoryNoTaskOwns() {
         when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/elsewhere",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")),
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/elsewhere",
+                new ToolCall("Bash", "git push origin dev", null),
                 new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
@@ -104,8 +109,8 @@ class AgentToolGateControllerTest {
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Read", Map.of("command", "git push origin dev")),
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Read", "git push origin dev", null),
                 new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
@@ -113,7 +118,7 @@ class AgentToolGateControllerTest {
 
     @Test
     void answersACallWithNoPayloadWithNothing() {
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj", null,
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj", null,
                 new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
@@ -125,15 +130,11 @@ class AgentToolGateControllerTest {
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
                         .planGate(PlanGate.REQUIRED).lastActiveTimestamp(100_000).build())));
 
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Write", Map.of("file_path", "/wt/ABC-1-proj/src/Foo.java")),
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Write", null, "/wt/ABC-1-proj/src/Foo.java"),
                 new MockHttpServletRequest());
 
-        assertThat(answered.getBody().get("hookSpecificOutput")).asInstanceOf(
-                        org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
-                .containsEntry("permissionDecision", "deny")
-                .hasEntrySatisfying("permissionDecisionReason",
-                        reason -> assertThat(reason).asString().contains("plan first"));
+        assertThat(answered.getBody()).extractingByKey("denied").asString().contains("plan first");
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-1"), write.capture());
         assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
@@ -147,11 +148,11 @@ class AgentToolGateControllerTest {
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
                         .planGate(PlanGate.REQUIRED).build())));
 
-        var plan = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall(tool, Map.of("file_path", "/wt/ABC-1-proj/plan.md")),
+        var plan = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall(tool, null, "/wt/ABC-1-proj/plan.md"),
                 new MockHttpServletRequest());
-        var visual = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall(tool, Map.of("file_path", "/wt/ABC-1-proj/task_visual.md")),
+        var visual = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall(tool, null, "/wt/ABC-1-proj/task_visual.md"),
                 new MockHttpServletRequest());
 
         assertThat(plan.getBody()).isNull();
@@ -164,9 +165,8 @@ class AgentToolGateControllerTest {
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
                         .planGate(PlanGate.CLOSED).build())));
 
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("NotebookEdit",
-                        Map.of("notebook_path", "/wt/ABC-1-proj/analysis.ipynb")),
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("NotebookEdit", null, "/wt/ABC-1-proj/analysis.ipynb"),
                 new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNotNull();
@@ -177,8 +177,8 @@ class AgentToolGateControllerTest {
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Edit", Map.of("file_path", "/wt/ABC-1-proj/src/Foo.java")),
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Edit", null, "/wt/ABC-1-proj/src/Foo.java"),
                 new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
@@ -188,8 +188,8 @@ class AgentToolGateControllerTest {
     void refusesNoWriteFromADirectoryNoTaskOwns() {
         when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
-        var answered = new AgentToolGateController(stateService, clock, configService).gate("/elsewhere",
-                new AgentToolGateController.ToolCall("Write", Map.of("file_path", "/elsewhere/Foo.java")),
+        var answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/elsewhere",
+                new ToolCall("Write", null, "/elsewhere/Foo.java"),
                 new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
@@ -201,8 +201,8 @@ class AgentToolGateControllerTest {
                 .lastActiveTimestamp(1_000).build();
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", held)));
 
-        new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Read", Map.of("file_path", "/wt/ABC-1-proj/a.txt")),
+        new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
                 new MockHttpServletRequest());
 
         ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
@@ -216,8 +216,8 @@ class AgentToolGateControllerTest {
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
                         .lastActiveTimestamp(95_000).build())));
 
-        new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Read", Map.of("file_path", "/wt/ABC-1-proj/a.txt")),
+        new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
                 new MockHttpServletRequest());
 
         verify(stateService, never()).updateTask(any(), any());
@@ -230,15 +230,12 @@ class AgentToolGateControllerTest {
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        Map<String, Object> answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push --no-verify upstream ABC-1")),
+        Map<String, Object> answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Bash", "git push --no-verify upstream ABC-1", null),
                 new MockHttpServletRequest())
                 .getBody();
 
-        assertThat(answered.get("hookSpecificOutput")).asInstanceOf(
-                        org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
-                .hasEntrySatisfying("permissionDecisionReason",
-                        reason -> assertThat(reason).asString().contains("`git push upstream ABC-1`"));
+        assertThat(answered).extractingByKey("denied").asString().contains("`git push upstream ABC-1`");
     }
 
     @Test
@@ -247,14 +244,11 @@ class AgentToolGateControllerTest {
         when(stateService.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        Map<String, Object> answered = new AgentToolGateController(stateService, clock, configService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push --no-verify origin ABC-1")),
+        Map<String, Object> answered = new AgentToolGateController(stateService, clock, configService, envelope).gate("/wt/ABC-1-proj",
+                new ToolCall("Bash", "git push --no-verify origin ABC-1", null),
                 new MockHttpServletRequest())
                 .getBody();
 
-        assertThat(answered.get("hookSpecificOutput")).asInstanceOf(
-                        org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
-                .hasEntrySatisfying("permissionDecisionReason",
-                        reason -> assertThat(reason).asString().contains("`git push origin ABC-1`"));
+        assertThat(answered).extractingByKey("denied").asString().contains("`git push origin ABC-1`");
     }
 }

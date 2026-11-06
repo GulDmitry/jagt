@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface.agent;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.jagt.orchestrator.port.ToolGateEnvelope;
 import dev.jagt.orchestrator.service.ReadGate;
 import dev.jagt.orchestrator.service.ReadScopes;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class ReadGateController {
     }
 
     private final ReadScopes scopes;
+    private final ToolGateEnvelope envelope;
 
     @PostMapping(value = "/api/agent/read/{fence}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> gate(@PathVariable String fence,
@@ -40,7 +42,7 @@ public class ReadGateController {
                         .map(scope -> ReadGate.refusal(scope, call.toolName(), call.toolInput(), call.cwd()))
                         .orElse(Optional.of("jagt refuses a call it holds no read for."));
         refusal.ifPresent(reason -> scopes.refuse(fence));
-        return refusal.map(reason -> ResponseEntity.ok(AgentToolGateController.denied(reason)))
+        return refusal.map(reason -> ResponseEntity.ok(envelope.denial(reason)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }
