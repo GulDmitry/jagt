@@ -11,7 +11,7 @@ class OpenCodeScopeTest {
 
     @Test
     void letsTheGateFetchTheEnvironmentsWhereTheRoleFetches() {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), true, false, List.of(Path.of("/wt")),
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of(), true, false, List.of(Path.of("/wt")),
                 List.of("https://dev.example.test"));
 
         assertThat(scope.fenced().fetchable()).containsExactly("https://dev.example.test");
@@ -19,7 +19,7 @@ class OpenCodeScopeTest {
 
     @Test
     void letsTheGateFetchNothingWhereTheRoleDoesNotFetch() {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, true, List.of(Path.of("/wt")),
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of(), false, true, List.of(Path.of("/wt")),
                 List.of("https://dev.example.test"));
 
         assertThat(scope.fenced().fetchable()).isEmpty();

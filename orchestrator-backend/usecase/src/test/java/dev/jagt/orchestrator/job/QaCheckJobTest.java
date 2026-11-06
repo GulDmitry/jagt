@@ -150,7 +150,7 @@ class QaCheckJobTest {
     @Test
     void opensWithNoEnvironmentNamedWhereTheRolesTriggerOmitsEnvironmentNamed(@TempDir Path root) throws IOException {
         Files.writeString(root.resolve("role.yml"), "id: qa\nname: QA\nmodel: sonnet\ntrigger: [deployed, pipelines-green]\noncePer: deploy\noutcomes: [round]\n"
-                + "tools:\n  cli: [Read]\n  allow: [Read]\n  refuse: [Write]\nanswer:\n  - required: failure\ndecline:\n  - required: failure\n");
+                + "tools:\n  shell: [\"git log*\"]\nanswer:\n  - required: failure\ndecline:\n  - required: failure\n");
         ConfigService config = mock(ConfigService.class);
         CheckerReads reader = mock(CheckerReads.class);
         when(config.load()).thenReturn(ConfigFile.defaults().withQa(new ConfigFile.QaConfig(true, null, List.of())));
@@ -167,7 +167,7 @@ class QaCheckJobTest {
     @Test
     void opensNothingWithNoEnvironmentNamedWhereTheRolesTriggerNamesIt(@TempDir Path root) throws IOException {
         Files.writeString(root.resolve("role.yml"), "id: qa\nname: QA\nmodel: sonnet\ntrigger: [deployed, pipelines-green, environment-named]\noncePer: deploy\noutcomes: [round]\n"
-                + "tools:\n  cli: [Read]\n  allow: [Read]\n  refuse: [Write]\nanswer:\n  - required: failure\ndecline:\n  - required: failure\n");
+                + "tools:\n  shell: [\"git log*\"]\nanswer:\n  - required: failure\ndecline:\n  - required: failure\n");
         ConfigService config = mock(ConfigService.class);
         CheckerReads reader = mock(CheckerReads.class);
         when(config.load()).thenReturn(ConfigFile.defaults().withQa(new ConfigFile.QaConfig(true, null, List.of())));
@@ -184,7 +184,7 @@ class QaCheckJobTest {
     @Test
     void opensOnATaskNoLongerOpenWhereTheRolesTriggerOmitsTrackerOpen(@TempDir Path root) throws IOException {
         Files.writeString(root.resolve("role.yml"), "id: qa\nname: QA\nmodel: sonnet\ntrigger: [deployed, pipelines-green, environment-named]\noncePer: deploy\noutcomes: [round]\n"
-                + "tools:\n  cli: [Read]\n  allow: [Read]\n  refuse: [Write]\nanswer:\n  - required: failure\ndecline:\n  - required: failure\n");
+                + "tools:\n  shell: [\"git log*\"]\nanswer:\n  - required: failure\ndecline:\n  - required: failure\n");
         ConfigService config = mock(ConfigService.class);
         CheckerReads reader = mock(CheckerReads.class);
         when(config.load()).thenReturn(ON);

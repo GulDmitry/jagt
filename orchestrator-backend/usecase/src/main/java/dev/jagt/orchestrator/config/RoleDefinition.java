@@ -17,7 +17,8 @@ public record RoleDefinition(String id, String name, String model, List<String> 
 
     /** The stand-in for a role no {@code role.yml} installs: it declares nothing, so its jobs find nothing to do. */
     public static RoleDefinition absent(String id) {
-        return new RoleDefinition(id, id, "", List.of(), "", List.of(), new Tools(List.of(), List.of(), List.of(), false, false),
+        return new RoleDefinition(id, id, "", List.of(), "", List.of(), new Tools(List.of(), List.of(), List.of(), false,
+                false),
                 ABSENT, ABSENT, new Checking(false, List.of()));
     }
 
@@ -29,7 +30,8 @@ public record RoleDefinition(String id, String name, String model, List<String> 
     public record Checking(boolean jobs, List<String> readSteps) {
     }
 
-    /** {@code cli} is the tool set the CLI offers, {@code allow} and {@code refuse} its permission lists. */
-    public record Tools(List<String> cli, List<String> allow, List<String> refuse, boolean git, boolean fetch) {
+    /** Command globs a read may run and may not, and path globs it may not open; reads are on, writes refused. */
+    public record Tools(List<String> shell, List<String> refuseShell, List<String> refuseRead, boolean git,
+                        boolean fetch) {
     }
 }

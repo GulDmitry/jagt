@@ -2,6 +2,7 @@
 # Write what you change into `roles/qa/role.yml`: it layers over this file per key, a list replacing whole.
 # Take effect: id, model (the default; `roles.qa.model` in jagt.yml overrides it), trigger, tools, answer, decline,
 # jobs (true = the role runs jobs), readSteps (the brief steps whose turn opens its read).
+# tools: shell and refuseShell are command globs, refuseRead path globs; reads are always on, writes always refused.
 # trigger: deployed = the change is live; environment-named = jagt.yml names an environment;
 # pipelines-green always holds, as the check's key is the digest the green deploy pipelines set.
 # Declared for the lint only, nothing else reads them: name, oncePer (one check per deploy is fixed), outcomes.
@@ -14,10 +15,9 @@ outcomes: [round, question, wait, dispute, stop]
 jobs: true
 readSteps: [accept, again, decline]
 tools:
-  cli: [Read, Grep, Glob, Bash, WebFetch]
-  allow: [Read, Grep, Glob, WebFetch, "Bash(curl -sS:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)"]
-  refuse: [Write, Edit, NotebookEdit, "Bash(git * --output*)", "Bash(git push:*)", "Bash(git commit:*)",
-           "Bash(git reset:*)", "Bash(git checkout:*)"]
+  shell: ["curl -sS*", "git log*", "git show*", "git diff*"]
+  refuseShell: ["git * --output*", "git push*", "git commit*", "git reset*", "git checkout*"]
+  refuseRead: []
   git: true
   fetch: environments
 answer:

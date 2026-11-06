@@ -27,9 +27,9 @@ class OpenCodeRoundReviewer {
     Answer<RoundReviewer.Judgement> review(RoundReviewer.Round round) {
         String model = opencode.readModel(ROLE).orElseThrow(() -> new IllegalStateException("no OpenCode model for " + ROLE));
         String prompt = round.shared().isBlank() ? round.prompt() : round.shared() + "\n\n" + round.prompt();
-        OpenCodeScope scope = OpenCodeScope.of(RoundReadTools.READS,
-                Stream.concat(RoundReadTools.REFUSED.stream(), RoundReadTools.BUILDS.stream()).toList(), false,
-                true, round.worktrees(), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(RoundReadTools.SHELL,
+                Stream.concat(RoundReadTools.REFUSED_SHELL.stream(), RoundReadTools.BUILDS.stream()).toList(),
+                RoundReadTools.REFUSED_READ, false, true, round.worktrees(), List.of());
         return RoundAnswers.judged(headless.run(new OpenCodeRead(round.worktrees().getFirst(), prompt,
                 RoundRead.SCHEMA.json(), model, scope, AssistantCallKind.MASTER_REVIEW, TIMEOUT)));
     }

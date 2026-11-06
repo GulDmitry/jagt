@@ -66,7 +66,7 @@ class RoleStartupTest {
         assertThat(qa.model()).isEqualTo("opus");
         assertThat(qa.trigger()).containsExactly("deployed");
         assertThat(qa.tools().git()).isFalse();
-        assertThat(qa.tools().cli()).contains("Read");
+        assertThat(qa.tools().shell()).contains("git log*");
         assertThat(qa.outcomes()).contains("round");
     }
 

@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,8 +23,9 @@ class RoleDefinitionsTest {
         assertThat(compiled.trigger()).containsExactly("deployed", "pipelines-green", "environment-named");
         assertThat(compiled.oncePer()).isEqualTo("deploy");
         assertThat(compiled.outcomes()).containsExactly("round", "question", "wait", "dispute", "stop");
-        assertThat(compiled.tools().cli()).containsExactly("Read", "Grep", "Glob", "Bash", "WebFetch");
-        assertThat(compiled.tools().refuse()).contains("Write", "Bash(git push:*)");
+        assertThat(compiled.tools().shell()).containsExactly("curl -sS*", "git log*", "git show*", "git diff*");
+        assertThat(compiled.tools().refuseShell()).contains("git push*");
+        assertThat(compiled.tools().refuseRead()).isEmpty();
         assertThat(compiled.tools().git()).isTrue();
         assertThat(compiled.tools().fetch()).isTrue();
     }
@@ -75,6 +78,15 @@ class RoleDefinitionsTest {
     void aCheckerTriggerWithoutDeployedIsRefused() {
         assertThatThrownBy(() -> RoleDefinitions.compile("id: x\nname: X\nmodel: m\ntrigger: [pipelines-green]\n"
                 + "oncePer: deploy\noutcomes: [round]\n")).isInstanceOf(RoleInvalid.class).hasMessageContaining("deployed");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"cli: [Read]", "allow: [Read]", "refuse: [Write]"})
+    void refusesAToolsKeyThatMovedNamingTheNewOnes(String oldKey) {
+        assertThatThrownBy(() -> RoleDefinitions.compile("id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
+                + "oncePer: deploy\noutcomes: [round]\ntools:\n  " + oldKey + "\n")).isInstanceOf(RoleInvalid.class)
+                .hasMessageContaining("tools.shell").hasMessageContaining("tools.refuseShell")
+                .hasMessageContaining("tools.refuseRead").hasMessageContaining(oldKey.substring(0, oldKey.indexOf(':')));
     }
 
     @Test

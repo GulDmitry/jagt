@@ -53,11 +53,12 @@ public class HeadlessClaudeCheckerReader {
         if (!run.model().isBlank()) {
             cmd.addAll(List.of("--model", run.model()));
         }
-        cmd.addAll(List.of("--tools", String.join(",", scope.cli()), "--permission-mode", "dontAsk", "--disallowedTools"));
-        cmd.addAll(scope.refuse());
+        ClaudeToolScope claude = ClaudeToolScope.of(scope.shell(), scope.refuseShell(), scope.refuseRead(), scope.fetch());
+        cmd.addAll(List.of("--tools", claude.tools(), "--permission-mode", "dontAsk", "--disallowedTools"));
+        cmd.addAll(claude.refuse());
         cmd.addAll(ReadOnlyTools.MCP_WRITES);
         cmd.add("--allowedTools");
-        cmd.addAll(scope.allow());
+        cmd.addAll(claude.allow());
         cmd.addAll(mcpReads);
         List<String> tools = new ArrayList<>(mcpReads);
         tools.add(HeadlessClaude.STRUCTURED_OUTPUT);

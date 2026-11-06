@@ -16,7 +16,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void namesTheFileAReadOpenedThatTheRoleRefuses(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of("Read(**/review_replies.md)"), false, false,
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of("**/review_replies.md"), false, false,
                 List.of(worktree), List.of());
         Call call = new Call("read", "completed", json.createObjectNode().put("filePath",
                 worktree.resolve("review_replies.md").toString()));
@@ -26,7 +26,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void keepsAnAnswerThatReadAFileTheRoleDoesNotRefuseBesideOneItDoes(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of("Read(**/review_replies.md)"), false, false,
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of("**/review_replies.md"), false, false,
                 List.of(worktree), List.of());
         Call call = new Call("read", "completed", json.createObjectNode().put("filePath", worktree.resolve("A.java").toString()));
 
@@ -35,7 +35,7 @@ class OpenCodeToolCallsTest {
 
     @Test
     void keepsAnAnswerWhoseRefusedReadWasDeniedAndSoNeverRan(@TempDir Path worktree) {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of("Read(**/review_replies.md)"), false, false,
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of("**/review_replies.md"), false, false,
                 List.of(worktree), List.of());
         Call call = new Call("read", "error", json.createObjectNode().put("filePath",
                 worktree.resolve("review_replies.md").toString()));

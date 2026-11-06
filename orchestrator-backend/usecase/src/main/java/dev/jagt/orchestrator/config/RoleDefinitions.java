@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /** Compiles a {@code roles/<id>/role.yml} into a {@link RoleDefinition}; every word it holds is from a closed vocabulary. */
 public final class RoleDefinitions {
@@ -80,7 +81,12 @@ public final class RoleDefinitions {
     }
 
     private static RoleDefinition.Tools tools(Map<?, ?> tools) {
-        return new RoleDefinition.Tools(strings(tools, "cli"), strings(tools, "allow"), strings(tools, "refuse"),
+        List<String> old = Stream.of("cli", "allow", "refuse").filter(tools::containsKey).toList();
+        if (!old.isEmpty()) {
+            throw new RoleInvalid("tools." + String.join(", tools.", old) + " is no longer read: a role names its tools as "
+                    + "tools.shell, tools.refuseShell and tools.refuseRead, command and path globs");
+        }
+        return new RoleDefinition.Tools(strings(tools, "shell"), strings(tools, "refuseShell"), strings(tools, "refuseRead"),
                 Boolean.TRUE.equals(tools.get("git")), "environments".equals(tools.get("fetch")));
     }
 

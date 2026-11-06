@@ -13,7 +13,7 @@ class OpenCodeConfigTest {
 
     @Test
     void switchesEveryToolOffBeforeNamingTheReadOnesSoNoneIsMasked() {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(Path.of("/wt")),
+        OpenCodeScope scope = OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(Path.of("/wt")),
                 List.of());
 
         JsonNode tools = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")))
@@ -25,8 +25,8 @@ class OpenCodeConfigTest {
 
     @Test
     void deniesEveryCommandFirstThenCurlWritesAndAnyRedirectLastSoTheLastMatchingRuleHoldsTheLine() {
-        OpenCodeScope scope = OpenCodeScope.of(List.of("Bash(git log:*)", "Bash(git show:*)"),
-                List.of("Bash(git * --ou*)"), false, true, List.of(Path.of("/wt")), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of("git log*", "git show*"),
+                List.of("git * --ou*"), List.of(), false, true, List.of(Path.of("/wt")), List.of());
 
         JsonNode bash = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")))
                 .path("agent").path("jagt-read").path("permission").path("bash");
@@ -43,7 +43,7 @@ class OpenCodeConfigTest {
 
     @Test
     void opensEveryWorktreeOfTheReadAndNoOtherDirectory() {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt1"), Path.of("/wt2")),
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of(), false, false, List.of(Path.of("/wt1"), Path.of("/wt2")),
                 List.of());
 
         JsonNode outside = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")))
@@ -56,9 +56,9 @@ class OpenCodeConfigTest {
 
     @Test
     void offersAWebFetchAndAllowsItOnlyWhereTheRoleFetches() {
-        OpenCodeScope fetching = OpenCodeScope.of(List.of(), List.of(), true, false, List.of(Path.of("/wt")),
+        OpenCodeScope fetching = OpenCodeScope.of(List.of(), List.of(), List.of(), true, false, List.of(Path.of("/wt")),
                 List.of("https://dev.example.test"));
-        OpenCodeScope silent = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
+        OpenCodeScope silent = OpenCodeScope.of(List.of(), List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
 
         JsonNode allowed = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", fetching, Path.of("/state/gate")));
         JsonNode denied = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", silent, Path.of("/state/gate")));
@@ -71,7 +71,7 @@ class OpenCodeConfigTest {
 
     @Test
     void runsTheReadOnItsOwnAgentOnTheRolesModelWithNoMcpServerAndNoEdit() {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
 
         JsonNode config = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")));
 
@@ -87,7 +87,7 @@ class OpenCodeConfigTest {
 
     @Test
     void loadsTheGatePluginFromItsDirectoryAndNoOther() {
-        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
+        OpenCodeScope scope = OpenCodeScope.of(List.of(), List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of());
 
         JsonNode plugin = new JsonMapper().readTree(OpenCodeConfig.json("http://127.0.0.1:8080/v1", "qwen-4b", scope,
                 Path.of("/state/opencode-gate"))).path("plugin");

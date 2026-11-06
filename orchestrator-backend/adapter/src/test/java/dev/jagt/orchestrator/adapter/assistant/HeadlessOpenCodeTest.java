@@ -55,7 +55,7 @@ class HeadlessOpenCodeTest {
                 .thenReturn(new Processes.Result(0, "", ""));
 
         headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         ArgumentCaptor<Map<String, String>> env = ArgumentCaptor.captor();
@@ -78,7 +78,7 @@ class HeadlessOpenCodeTest {
         });
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(1);
@@ -92,7 +92,7 @@ class HeadlessOpenCodeTest {
                 "{\"type\":\"text\",\"part\":{\"text\":\"I could not tell.\"}}", ""));
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(reply.envelope()).isNotNull();
@@ -106,7 +106,7 @@ class HeadlessOpenCodeTest {
                 "model not found"));
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(reply.envelope()).isNull();
@@ -126,7 +126,7 @@ class HeadlessOpenCodeTest {
         });
 
         headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(held).isTrue();
@@ -140,7 +140,7 @@ class HeadlessOpenCodeTest {
                 new Processes.Result(0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), ""));
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(reply.envelope()).isNull();
@@ -153,7 +153,7 @@ class HeadlessOpenCodeTest {
                 "{\"type\":\"text\",\"part\":{\"text\":\"```json\\n{\\\"commits\\\":2}\\n```\"}}", ""));
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(2);
@@ -167,7 +167,7 @@ class HeadlessOpenCodeTest {
                         + "{\"type\":\"text\",\"part\":{\"text\":\"```json\\n{\\\"commits\\\":3}\\n```\"}}", ""));
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(3);
@@ -184,7 +184,7 @@ class HeadlessOpenCodeTest {
         });
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of(), List.of("Read(**/review_replies.md)"), false, false, List.of(worktree),
+                OpenCodeScope.of(List.of(), List.of(), List.of("**/review_replies.md"), false, false, List.of(worktree),
                         List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
@@ -198,7 +198,7 @@ class HeadlessOpenCodeTest {
                 .thenThrow(new IllegalStateException("Command timed out"));
 
         HeadlessReply reply = headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1)));
 
         assertThat(reply.envelope()).isNull();
@@ -212,7 +212,7 @@ class HeadlessOpenCodeTest {
                 .thenThrow(new Processes.Stopped(List.of("opencode")));
 
         assertThatThrownBy(() -> headless.run(new OpenCodeRead(worktree, "count the commits", SCHEMA, "qwen-4b",
-                OpenCodeScope.of(List.of("Bash(git log:*)"), List.of(), false, true, List.of(worktree), List.of()),
+                OpenCodeScope.of(List.of("git log*"), List.of(), List.of(), false, true, List.of(worktree), List.of()),
                 AssistantCallKind.QA_CHECK, Duration.ofMinutes(1))))
                 .isInstanceOf(Processes.Stopped.class);
     }

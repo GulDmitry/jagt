@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Component
 @ConditionalOnExpression(HeadlessClaude.NOT_REPLAYED)
@@ -21,7 +22,6 @@ import java.util.List;
 public class HeadlessClaudeRoundReviewer {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(15);
-    private static final String TOOLS = "Read,Grep,Glob,Bash";
     private final HeadlessClaude headless;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
@@ -48,12 +48,14 @@ public class HeadlessClaudeRoundReviewer {
         if (!round.model().isBlank()) {
             cmd.addAll(List.of("--model", round.model()));
         }
-        cmd.addAll(List.of("--tools", TOOLS, "--permission-mode", "dontAsk", "--disallowedTools"));
-        cmd.addAll(RoundReadTools.REFUSED);
-        cmd.addAll(RoundReadTools.BUILDS);
+        ClaudeToolScope scope = ClaudeToolScope.of(RoundReadTools.SHELL,
+                Stream.concat(RoundReadTools.REFUSED_SHELL.stream(), RoundReadTools.BUILDS.stream()).toList(),
+                RoundReadTools.REFUSED_READ, false);
+        cmd.addAll(List.of("--tools", scope.tools(), "--permission-mode", "dontAsk", "--disallowedTools"));
+        cmd.addAll(scope.refuse());
         cmd.addAll(ReadOnlyTools.MCP_WRITES);
         cmd.add("--allowedTools");
-        cmd.addAll(RoundReadTools.READS);
+        cmd.addAll(scope.allow());
         cmd.addAll(mcpReads);
         List<String> tools = new ArrayList<>(mcpReads);
         tools.add(HeadlessClaude.STRUCTURED_OUTPUT);
