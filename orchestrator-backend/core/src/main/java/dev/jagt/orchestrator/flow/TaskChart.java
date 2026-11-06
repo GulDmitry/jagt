@@ -219,7 +219,7 @@ final class TaskChart {
         reports(chart);
         reads(chart);
         edge(chart, DEPLOY_CONFLICT, "conflicted repository left",
-                move -> move instanceof TaskMove.RepoLeft left && left.endsConflict(), DEPLOYED);
+                move -> move instanceof TaskMove.RepoLeft left && left.landsTheTask(), DEPLOYED);
         edge(chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
         edge(chart, DEPLOY_CONFLICT, "deploy read green", new TaskMove.DeployRead(false)::equals, DEPLOYED);
         composition.roles().forEach(role -> role.declareLifecycleEdge(chart));
@@ -322,7 +322,7 @@ final class TaskChart {
                 || step instanceof DeployStep.Referred || step instanceof DeployStep.Told
                 || step instanceof DeployStep.Held);
         chart.onMatching(DEPLOY, DeployPhase.HANDED, "conflicted repository left",
-                        move -> move instanceof TaskMove.RepoLeft left && left.endsConflict())
+                        move -> move instanceof TaskMove.RepoLeft left && left.leavesTheRecord())
                 .emitFor(move -> new TaskEffect.Deploys(new DeployStep.Dropped(((TaskMove.RepoLeft) move).project())))
                 .to(DeployPhase.LANDING);
         chart.onMatching(DEPLOY, DeployPhase.HANDED, "conflict left", move -> !(move instanceof TaskMove.DeployStepped))

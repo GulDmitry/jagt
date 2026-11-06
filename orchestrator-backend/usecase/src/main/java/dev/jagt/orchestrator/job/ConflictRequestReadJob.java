@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Reads the request of the repository a deploy was handed back on for its pipeline, for as long as the hand-back stands. */
+/** Reads the request of the repository a deploy was handed back on for its pipeline or its merge, for as long as the hand-back stands. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,7 +33,7 @@ public class ConflictRequestReadJob implements TaskJob {
 
     @Override
     public String describe() {
-        return "read the request of the repository a deploy waits on for its pipeline, and take it out of the task once the host closed it";
+        return "read the request of the repository a deploy waits on for its pipeline or its merge, and take it out of the task once the host closed it";
     }
 
     @Override
@@ -59,7 +59,7 @@ public class ConflictRequestReadJob implements TaskJob {
     }
 
     private static Optional<TaskRepo> conflictedRepo(TaskState task) {
-        if (!DeployTargets.handedBackForItsPipeline(task)) {
+        if (DeployTargets.conflictCause(task).filter(cause -> cause != Deployment.Cause.REVERT).isEmpty()) {
             return Optional.empty();
         }
         return Objects.requireNonNull(task.deployment()).conflictedTarget().map(Deployment.Target::project)

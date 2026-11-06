@@ -360,6 +360,31 @@ class DeployServiceTest {
     }
 
     @Test
+    void aPressAfterTheConflictedRepositoryLeftLandsTheUnpushedOnesWithoutOpeningAgain(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployment(new Deployment(1, List.of(
+                Deployment.Target.of("api", "dev").withMerge("cafebabe1234"), Deployment.Target.of("web", "dev")), 1, null)));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig("/repo/api", "origin/main", "dev", null), "web", new ProjectConfig("/repo/web", "origin/main", "dev", null))));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
+        DeployTargets targets = new DeployTargets(config, git);
+        DeployService deploys = new DeployService(state, targets, git,
+                new DeployRunner(state, targets, git, Clock.systemUTC()));
+
+        Outcome outcome = deploys.deploy("a1");
+
+        verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/api")), anyString(), anyString());
+        assertThat(outcome.message()).contains("web into dev (f00dfeed)", "already on the deploy branch: api (cafebabe)");
+        assertThat(state.task("ABC-1").orElseThrow().deployment().targets().getFirst().merge()).isEqualTo("cafebabe1234");
+    }
+
+    @Test
     void refusesAPressWhenTheRecordedConflictsDeployWorktreeIsGoneInsteadOfMergingTheFirstRepositoryAgain(
             @TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()

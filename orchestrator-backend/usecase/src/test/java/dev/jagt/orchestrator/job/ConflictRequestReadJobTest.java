@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ConflictRequestReadJobTest {
@@ -41,5 +42,39 @@ class ConflictRequestReadJobTest {
         new ConflictRequestReadJob(reader, merged).run("ABC-42", red);
 
         verify(merged).hostSaidClosed("ABC-42", beta);
+    }
+
+    @Test
+    void takesTheRepositoryTheMergeConflictedOnOutOfTheTaskWhereTheHostClosedItsRequest() {
+        TaskRepo beta = new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta");
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"), beta),
+                TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("beta",
+                Deployment.Cause.MERGE), 1_100);
+        when(reader.read("ABC-42", "http://mr/beta")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
+                true, false, "none", "", List.of(), 0, List.of(), List.of(), "", false, true)), TokenUsage.NONE));
+
+        new ConflictRequestReadJob(reader, merged).run("ABC-42", conflicted);
+
+        verify(merged).hostSaidClosed("ABC-42", beta);
+    }
+
+    @Test
+    void readsNoRequestWhereTheDeployWaitsOnARevertThatConflicted() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
+                TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))), 1_000);
+        TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("beta",
+                Deployment.Cause.REVERT), 1_100);
+
+        new ConflictRequestReadJob(reader, merged).run("ABC-42", conflicted);
+
+        verifyNoInteractions(reader, merged);
     }
 }

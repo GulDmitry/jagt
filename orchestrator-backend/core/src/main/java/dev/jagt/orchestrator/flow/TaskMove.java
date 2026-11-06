@@ -146,10 +146,24 @@ sealed interface TaskMove {
 
     /**
      * A repository whose request the host closed unmerged, taken out of the task; {@code after} is where the request
-     * region then stands, {@code endsConflict} where it was the repository a deploy handed back for its pipeline.
+     * region then stands, {@code drop} what it was to the deploy standing in conflict.
      */
-    record RepoLeft(String project, RequestPhase after, boolean endsConflict) implements TaskMove {
+    record RepoLeft(String project, RequestPhase after, ConflictDrop drop) implements TaskMove {
+
+        boolean leavesTheRecord() {
+            return drop != ConflictDrop.NONE;
+        }
+
+        boolean landsTheTask() {
+            return drop == ConflictDrop.LANDS;
+        }
     }
+
+    /**
+     * What a repository leaving does to a deploy standing in conflict: nothing, the task lands on the others, or the
+     * task stays handed back with later repositories still unpushed.
+     */
+    enum ConflictDrop { NONE, LANDS, HOLDS }
 
     /**
      * A report's request links: one per repository, or the one {@code url} on the primary where {@code byProject} is

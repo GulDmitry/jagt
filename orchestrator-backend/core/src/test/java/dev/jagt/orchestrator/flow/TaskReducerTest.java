@@ -794,4 +794,85 @@ class TaskReducerTest {
         assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         assertThat(left.deployment().conflictedTarget()).isPresent();
     }
+
+    @Test
+    void holdsTheDeployConflictOnTheUnpushedRepositoryWhereTheMergeConflictedRepositoryLeavesTheTask() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
+                new TaskRepo("gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
+                TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"),
+                Deployment.Target.of("gamma", "dev"))), 1_000);
+        TaskState merged = TaskReducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
+        TaskState conflicted = TaskReducer.deployStepped(merged, new DeployStep.Conflicted("beta",
+                Deployment.Cause.MERGE), 1_200);
+
+        TaskState left = TaskReducer.repoLeft(conflicted, "beta");
+
+        assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(left.projects()).containsExactly("alpha", "gamma");
+        assertThat(left.deployment().targets()).extracting(Deployment.Target::project).containsExactly("alpha", "gamma");
+        assertThat(left.deployment().at()).isEqualTo(1);
+        assertThat(left.deployment().conflictedTarget()).isEmpty();
+        assertThat(left.deployment().targets().getFirst().merge()).isEqualTo("a1");
+        assertThat(DeployPhase.of(left.deployment())).isEqualTo(DeployPhase.LANDING);
+    }
+
+    @Test
+    void landsDeployedWhereTheMergeConflictedLastRepositoryLeavesAfterAnotherLanded() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
+                TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))), 1_000);
+        TaskState merged = TaskReducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
+        TaskState conflicted = TaskReducer.deployStepped(merged, new DeployStep.Conflicted("beta",
+                Deployment.Cause.MERGE), 1_200);
+
+        TaskState left = TaskReducer.repoLeft(conflicted, "beta");
+
+        assertThat(left.status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(left.deployment().targets()).extracting(Deployment.Target::project).containsExactly("alpha");
+        assertThat(left.deployment().conflictedTarget()).isEmpty();
+    }
+
+    @Test
+    void leavesNothingToPushWhereThePipelineConflictedRepositoryLeavesTheTask() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
+                new TaskRepo("gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
+                TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"),
+                Deployment.Target.of("gamma", "dev"))), 1_000);
+        TaskState red = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("beta",
+                Deployment.Cause.RED_PIPELINE), 1_200);
+
+        TaskState left = TaskReducer.repoLeft(red, "beta");
+
+        assertThat(left.deployment().at()).isEqualTo(2);
+    }
+
+    @Test
+    void keepsTheDeployConflictWhereAnotherRepositoryThanTheConflictedOneLeavesTheTask() {
+        TaskState task = TaskState.builder(List.of(
+                new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
+                new TaskRepo("gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
+                TaskStatus.DEPLOY_CONFLICT).build();
+        TaskState opened = TaskReducer.deployStepped(task, new DeployStep.Opened(List.of(
+                Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"),
+                Deployment.Target.of("gamma", "dev"))), 1_000);
+        TaskState red = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("beta",
+                Deployment.Cause.RED_PIPELINE), 1_200);
+
+        TaskState left = TaskReducer.repoLeft(red, "gamma");
+
+        assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(left.deployment().conflictedTarget().orElseThrow().project()).isEqualTo("beta");
+    }
 }

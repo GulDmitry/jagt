@@ -237,7 +237,7 @@ public final class TaskReducer {
 
     /** {@code task} without {@code project}, its request ended with it; the last repository stays. */
     public static TaskState repoLeft(TaskState task, String project) {
-        return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE, false)), 0);
+        return step(task, resolved(task, new TaskMove.RepoLeft(project, RequestPhase.NONE, TaskMove.ConflictDrop.NONE)), 0);
     }
 
     /** {@code task} without {@code project}, and without the trusted git entries only it held. */
@@ -316,7 +316,7 @@ public final class TaskReducer {
             case TaskMove.MergedByHost merges -> new TaskMove.MergedByHost(merges.project(),
                     RequestPhase.of(task.withMergedByHost(merges.project())) == RequestPhase.MERGED);
             case TaskMove.RepoLeft left -> new TaskMove.RepoLeft(left.project(),
-                    RequestPhase.of(task.withoutRepo(left.project())), leavesItsConflict(task, left.project()));
+                    RequestPhase.of(task.withoutRepo(left.project())), dropOf(task, left.project()));
             case TaskMove.MasterNoted noted -> new TaskMove.MasterNoted(noted.note(), MasterPhase.of(
                     task.withMaster(noted.note().applyTo(task.masterOrNone()))));
             case TaskMove.Checked.Passed passed -> new TaskMove.Checked.Passed(passed.role(), passed.sha(),
@@ -338,10 +338,23 @@ public final class TaskReducer {
         return task.withReport(report).withMaster(task.masterOrNone().withUnanswered(""));
     }
 
-    private static boolean leavesItsConflict(TaskState task, String project) {
-        return task.status() == TaskStatus.DEPLOY_CONFLICT && task.repos().size() > 1 && task.deployment() != null
-                && task.deployment().conflictedTarget().filter(target -> target.project().equals(project)
-                && Objects.requireNonNull(target.conflict()).cause() == Deployment.Cause.RED_PIPELINE).isPresent();
+    private static TaskMove.ConflictDrop dropOf(TaskState task, String project) {
+        Deployment deployment = task.deployment();
+        if (task.status() != TaskStatus.DEPLOY_CONFLICT || task.repos().size() < 2 || deployment == null) {
+            return TaskMove.ConflictDrop.NONE;
+        }
+        return deployment.conflictedTarget().filter(target -> target.project().equals(project))
+                .map(target -> dropOf(deployment, target)).orElse(TaskMove.ConflictDrop.NONE);
+    }
+
+    private static TaskMove.ConflictDrop dropOf(Deployment deployment, Deployment.Target conflicted) {
+        return switch (Objects.requireNonNull(conflicted.conflict()).cause()) {
+            case RED_PIPELINE -> TaskMove.ConflictDrop.LANDS;
+            case REVERT -> TaskMove.ConflictDrop.NONE;
+            case MERGE -> deployment.indexOf(conflicted.project()) < deployment.targets().size() - 1
+                    ? TaskMove.ConflictDrop.HOLDS
+                    : deployment.live() ? TaskMove.ConflictDrop.LANDS : TaskMove.ConflictDrop.NONE;
+        };
     }
 
     private static InfraPhase unarmed(TaskState task) {

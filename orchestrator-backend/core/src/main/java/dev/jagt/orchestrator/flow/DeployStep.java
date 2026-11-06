@@ -79,7 +79,13 @@ public sealed interface DeployStep {
         public Deployment applyTo(Deployment deployment, long now) {
             List<Deployment.Target> kept = deployment.targets().stream()
                     .filter(target -> !target.project().equals(project)).toList();
-            return deployment.withTargets(kept).withAt(kept.size());
+            return deployment.withTargets(kept).withAt(unpushed(deployment) ? deployment.indexOf(project) : kept.size());
+        }
+
+        private boolean unpushed(Deployment deployment) {
+            return deployment.conflictedTarget().filter(target -> target.project().equals(project))
+                    .map(Deployment.Target::conflict).filter(conflict -> conflict.cause() == Deployment.Cause.MERGE)
+                    .isPresent();
         }
     }
 
