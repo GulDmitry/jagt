@@ -54,6 +54,11 @@ public class Notifications {
     private static void deliver(Notifier channel, Notification notification) {
         try {
             channel.deliver(notification);
+            log.atInfo().setMessage("notification sent")
+                    .addKeyValue("channel", channel.id())
+                    .addKeyValue("task", notification.taskId())
+                    .addKeyValue("said", notification.title())
+                    .log();
         } catch (Throwable t) {
             log.atWarn().setMessage("notification delivery failed")
                     .addKeyValue("channel", channel.id())
