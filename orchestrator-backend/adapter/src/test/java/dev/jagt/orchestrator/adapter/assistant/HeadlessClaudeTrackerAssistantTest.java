@@ -63,6 +63,35 @@ class HeadlessClaudeTrackerAssistantTest {
         assertThat(facts.get().labels()).containsExactly("backend");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"True", "TRUE", "tRuE"})
+    void readsTheItemAsExistingWhenTheModelWritesTrueAsAText(String written) {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"result\":\"{\\\"exists\\\":\\\"" + written + "\\\",\\\"failure\\\":\\\"\\\","
+                        + "\\\"key\\\":\\\"ABC-42\\\",\\\"title\\\":\\\"Widget\\\"}\"}", ""));
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readTicket("ABC-42").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().exists()).isTrue();
+    }
+
+    @Test
+    void refusesTheAnswerAsUnusableWhenTheModelWritesABooleanAsMaybe() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":\"maybe\",\"failure\":\"\",\"key\":\"ABC-42\"}}", ""));
+        var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())), ClaudeProperties.defaults(),
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
+        var facts = assistant.readTicket("ABC-42").facts();
+
+        assertThat(facts).isEmpty();
+    }
+
     @Test
     void listsTheKeysTheSearchAnsweredWithoutBlanksOrPadding() {
         ProcessRunner runner = mock(ProcessRunner.class);

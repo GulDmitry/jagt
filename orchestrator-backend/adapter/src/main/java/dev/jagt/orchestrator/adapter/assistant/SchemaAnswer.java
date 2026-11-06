@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -21,6 +22,28 @@ final class SchemaAnswer {
 
     /** {@code structured_output} when the CLI already parsed it, else {@code result}, holding the same JSON. */
     static Optional<JsonNode> answerOf(JsonNode envelope, String label, String schema) {
+        return objectOf(envelope, label, schema).flatMap(answer -> withBooleans(answer, label, schema));
+    }
+
+    /** A model writes "True" for a boolean as often as true: a text of true or false either way is read, any other word is no answer. */
+    private static Optional<JsonNode> withBooleans(JsonNode answer, String label, String schema) {
+        ObjectNode object = (ObjectNode) answer;
+        for (var property : MAPPER.readTree(schema).path("properties").properties()) {
+            JsonNode value = object.get(property.getKey());
+            if (value == null || !"boolean".equals(property.getValue().path("type").asString(""))
+                    || value.isBoolean()) {
+                continue;
+            }
+            String text = value.isString() ? value.asString("") : "";
+            if (!text.equalsIgnoreCase("true") && !text.equalsIgnoreCase("false")) {
+                return outsideSchema(label, property.getKey() + " is not a boolean", answer.toString());
+            }
+            object.put(property.getKey(), text.equalsIgnoreCase("true"));
+        }
+        return Optional.of(answer);
+    }
+
+    private static Optional<JsonNode> objectOf(JsonNode envelope, String label, String schema) {
         JsonNode structured = envelope.path("structured_output");
         if (structured.isObject()) {
             return Optional.of(structured);
