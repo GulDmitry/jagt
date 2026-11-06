@@ -215,6 +215,21 @@ class MasterCheckTest {
     }
 
     @Test
+    void acceptsAMasterModelWhenTheConfigListsModelsForARuntimeListingNone(@TempDir Path root) throws Exception {
+        Files.createDirectories(root.resolve("roles/master"));
+        Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withAgent(ConfigFile.AgentConfig.defaults().withModels(List.of("gpt-5")))
+                .withMaster(MasterConfig.defaults().withMode("judge").withModel("gpt-5")));
+        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
+                agentRuntime);
+
+        assertThat(check.problems()).isEmpty();
+    }
+
+    @Test
     void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
         Files.createDirectories(root.resolve("roles/master"));
         Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");

@@ -21,7 +21,7 @@ public interface AgentRuntime {
     String launchCommand(Path worktree, boolean planMode);
 
     /**
-     * The same, run by a named model. A runtime that cannot be told answers {@link #choosesModel()} false, and a
+     * The same, run by a named model. A runtime that cannot be told offers no {@link #models()}, and a
      * configured model is refused at startup rather than ignored here.
      */
     default String launchCommand(Path worktree, boolean planMode, String model) {
@@ -52,11 +52,6 @@ public interface AgentRuntime {
     /** The model names a session may ask for, a closed list of aliases; EMPTY where this runtime cannot be told. */
     default List<String> models() {
         return List.of();
-    }
-
-    /** Whether this runtime can be told which model to run. */
-    default boolean choosesModel() {
-        return !models().isEmpty();
     }
 
     /** The log a session in {@code worktree} is appending to, where this runtime keeps one jagt can find. */

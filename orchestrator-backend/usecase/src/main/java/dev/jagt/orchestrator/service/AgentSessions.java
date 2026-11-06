@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -516,11 +517,10 @@ public class AgentSessions {
 
     /** The notes' `next-model:` wins over `agent.model`; blank is the CLI's own default. */
     private String modelFor(Path worktree, ConfigService.ConfigFile config) {
-        return agentRuntime.choosesModel()
-                ? WorktreeFiles.read(worktree.resolve(Artifact.NOTES.fileName())).flatMap(TaskNotes::nextModel)
-                        .or(() -> Optional.of(config.agent().modelOrInherited()))
-                        .filter(agentRuntime.models()::contains).orElse("")
-                : "";
+        List<String> models = config.agent().modelsFor(agentRuntime);
+        return WorktreeFiles.read(worktree.resolve(Artifact.NOTES.fileName())).flatMap(TaskNotes::nextModel)
+                .or(() -> Optional.of(config.agent().modelOrInherited()))
+                .filter(models::contains).orElse("");
     }
 
     /** Whether the human has an unsent draft in the task's window. */

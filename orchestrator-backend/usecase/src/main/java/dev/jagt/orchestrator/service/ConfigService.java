@@ -224,11 +224,11 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds,
                                   @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan,
                                   @Nullable VisualizeConfig visualize, @Nullable DiagnoseConfig diagnose,
-                                  @Nullable String model, @Nullable String cacheLifetime,
-                                  @Nullable String notesEvery) {
+                                  @Nullable String model, @Nullable List<String> models,
+                                  @Nullable String cacheLifetime, @Nullable String notesEvery) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null, null, null, null, null, null, null, null);
+                return new AgentConfig(null, null, null, null, null, null, null, null, null, null);
             }
 
             /** Idle for this long, a session's prompt cache is gone; zero means a session is never judged cold. */
@@ -250,6 +250,11 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
                 } catch (IllegalArgumentException unreadable) {
                     return unset;
                 }
+            }
+
+            /** Written names replace the agent CLI's own list whole; none written keeps it. */
+            public List<String> modelsFor(AgentRuntime runtime) {
+                return models == null || models.isEmpty() ? runtime.models() : models;
             }
 
             /** Blank: the agent CLI's own default. */

@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.Artifact;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 /** What a hand-back owes the next session: notes rewritten this round, small enough to reread every turn. */
@@ -52,13 +52,11 @@ final class TaskNotes {
                 .findFirst();
     }
 
-    static Optional<String> unknownModel(String notes, AgentRuntime runtime) {
-        return runtime.choosesModel()
-                ? nextModel(notes).filter(name -> !runtime.models().contains(name))
+    static Optional<String> unknownModel(String notes, String agentName, List<String> models) {
+        return models.isEmpty() ? Optional.empty()
+                : nextModel(notes).filter(name -> !models.contains(name))
                         .map(name -> Artifact.NOTES.fileName() + " names the model '" + name + "', which "
-                                + runtime.displayName() + " does not offer: one of "
-                                + String.join(", ", runtime.models()))
-                : Optional.empty();
+                                + agentName + " does not offer: one of " + String.join(", ", models));
     }
 
     static Optional<String> agentFileOwed(Path worktree, int added) {

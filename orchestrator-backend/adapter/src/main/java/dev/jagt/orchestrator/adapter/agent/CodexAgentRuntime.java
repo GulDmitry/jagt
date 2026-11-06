@@ -69,6 +69,7 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
         // A read-only sandbox IS plan mode here: the agent can reason but cannot touch the files.
         return "CODEX_HOME=" + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString()) + " " + codex.command()
                 + (planMode ? " --sandbox read-only" : "")
+                + (model == null || model.isBlank() ? "" : " -m " + shellQuote(model.strip()))
                 + " " + shellQuote(prompt);
     }
 

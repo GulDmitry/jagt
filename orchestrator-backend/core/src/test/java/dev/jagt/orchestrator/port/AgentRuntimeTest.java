@@ -37,14 +37,6 @@ class AgentRuntimeTest {
         }
     }
 
-    private static final class Choosing extends Minimal {
-
-        @Override
-        public List<String> models() {
-            return List.of("fast", "deep");
-        }
-    }
-
     @Test
     void startsTheSameSessionWhateverModelOrPromptARuntimeCannotBeTold() {
         AgentRuntime runtime = new Minimal();
@@ -59,9 +51,8 @@ class AgentRuntimeTest {
     }
 
     @Test
-    void choosesAModelOnlyWhereItOffersSome() {
-        assertThat(new Minimal().choosesModel()).isFalse();
-        assertThat(new Choosing().choosesModel()).isTrue();
+    void offersNoModelByDefault() {
+        assertThat(new Minimal().models()).isEmpty();
     }
 
     @Test

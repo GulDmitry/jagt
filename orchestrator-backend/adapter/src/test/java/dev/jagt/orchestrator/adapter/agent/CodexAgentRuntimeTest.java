@@ -34,6 +34,22 @@ class CodexAgentRuntimeTest {
     }
 
     @Test
+    void tellsCodexTheModelItIsGivenAndNoneWhenBlank(@TempDir Path root) throws Exception {
+        Files.createDirectories(root.resolve("roles/session"));
+        Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
+                new McpEndpoint("http://127.0.0.1:8290/mcp"));
+
+        assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false, " gpt-5 ", "go"))
+                .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex -m 'gpt-5' 'go'");
+        assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false, " ", "go"))
+                .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex 'go'");
+    }
+
+    @Test
     void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves(@TempDir Path root) throws Exception {
         Files.createDirectories(root.resolve("roles/session"));
         Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");

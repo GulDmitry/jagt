@@ -22,7 +22,6 @@ class AgentModelCheckTest {
     void refusesAModelTheRuntimeDoesNotListNamingIt() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withAgent(AgentConfig.defaults().withModel("gpt")));
-        when(agentRuntime.choosesModel()).thenReturn(true);
         when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
 
         List<Problem> problems = new AgentModelCheck(configService, agentRuntime).problems();
@@ -35,7 +34,6 @@ class AgentModelCheckTest {
     void acceptsAModelTheRuntimeLists() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withAgent(AgentConfig.defaults().withModel("sonnet")));
-        when(agentRuntime.choosesModel()).thenReturn(true);
         when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
 
         assertThat(new AgentModelCheck(configService, agentRuntime).problems()).isEmpty();
@@ -52,6 +50,34 @@ class AgentModelCheckTest {
     @Test
     void acceptsABlankModelWhateverTheRuntime() {
         when(configService.load()).thenReturn(ConfigFile.defaults());
+
+        assertThat(new AgentModelCheck(configService, agentRuntime).problems()).isEmpty();
+    }
+
+    @Test
+    void acceptsAModelTheConfigListsWhereTheRuntimeListsNone() {
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withAgent(AgentConfig.defaults().withModel("gpt-5").withModels(List.of("gpt-5", "gpt-5-mini"))));
+
+        assertThat(new AgentModelCheck(configService, agentRuntime).problems()).isEmpty();
+    }
+
+    @Test
+    void refusesAModelOutsideTheConfigListEvenWhenTheRuntimeListsIt() {
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withAgent(AgentConfig.defaults().withModel("opus").withModels(List.of("gpt-5"))));
+        when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+
+        List<Problem> problems = new AgentModelCheck(configService, agentRuntime).problems();
+
+        assertThat(problems.get(0).text()).contains("'opus'").contains("[gpt-5]");
+    }
+
+    @Test
+    void keepsTheRuntimeListWhenTheConfigListIsEmpty() {
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withAgent(AgentConfig.defaults().withModel("opus").withModels(List.of())));
+        when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
 
         assertThat(new AgentModelCheck(configService, agentRuntime).problems()).isEmpty();
     }

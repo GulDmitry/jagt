@@ -22,10 +22,11 @@ public class AgentModelCheck implements StartupCheck {
     @Override
     public List<Problem> problems() {
         String model = configService.load().agent().modelOrInherited();
-        if (model.isEmpty() || !agentRuntime.choosesModel()) {
+        List<String> models = configService.load().agent().modelsFor(agentRuntime);
+        if (model.isEmpty() || models.isEmpty()) {
             return List.of();
         }
-        return agentRuntime.models().contains(model) ? List.of() : List.of(new Problem(KEY, KEY + ": '" + model
-                + "' is not one of " + agentRuntime.models()));
+        return models.contains(model) ? List.of() : List.of(new Problem(KEY, KEY + ": '" + model
+                + "' is not one of " + models));
     }
 }

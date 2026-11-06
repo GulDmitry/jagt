@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -8,9 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class TaskNotesTest {
 
@@ -101,8 +100,8 @@ class TaskNotesTest {
     }
 
     @Test
-    void ignoresTheModelLineWhenTheRuntimeCannotChoose() {
-        assertThat(TaskNotes.unknownModel("next-model: gpt", mock(AgentRuntime.class))).isEmpty();
+    void ignoresTheModelLineWhenNoModelIsOffered() {
+        assertThat(TaskNotes.unknownModel("next-model: gpt", "Codex", List.of())).isEmpty();
     }
 
     @Test

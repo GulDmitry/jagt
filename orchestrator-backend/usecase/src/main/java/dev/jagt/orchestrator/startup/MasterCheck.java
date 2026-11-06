@@ -42,7 +42,7 @@ public class MasterCheck implements StartupCheck {
         if (!master.running()) {
             return List.copyOf(problems);
         }
-        if (!master.modelOrInherited().isEmpty() && !agentRuntime.choosesModel()) {
+        if (!master.modelOrInherited().isEmpty() && config.agent().modelsFor(agentRuntime).isEmpty()) {
             problems.add(new Problem("orchestrator.roles.master.model", "orchestrator.roles.master.model: "
                     + agentRuntime.displayName() + " cannot be told which model to run — leave it blank to"
                     + " inherit its own"));

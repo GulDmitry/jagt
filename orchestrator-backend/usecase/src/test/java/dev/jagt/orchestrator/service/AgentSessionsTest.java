@@ -413,7 +413,6 @@ class AgentSessionsTest {
         Files.writeString(root.resolve("task_notes.md"), "kept the retry\nnext-model: sonnet\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(agentRuntime.choosesModel()).thenReturn(true);
         when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
         when(agentRuntime.displayName()).thenReturn("Claude");
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
@@ -428,7 +427,6 @@ class AgentSessionsTest {
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  agent:\n    model: sonnet\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(agentRuntime.choosesModel()).thenReturn(true);
         when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
         when(agentRuntime.displayName()).thenReturn("Claude");
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
@@ -444,7 +442,6 @@ class AgentSessionsTest {
         Files.writeString(root.resolve("task_notes.md"), "next-model: opus\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(agentRuntime.choosesModel()).thenReturn(true);
         when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
         when(agentRuntime.displayName()).thenReturn("Claude");
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
@@ -458,7 +455,6 @@ class AgentSessionsTest {
     void startsTheFreshSessionOnTheCliDefaultWhenNeitherNotesNorConfigNameAModel() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(agentRuntime.choosesModel()).thenReturn(true);
         when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
         when(agentRuntime.displayName()).thenReturn("Claude");
         AgentSessions sessions = new AgentSessions(config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
