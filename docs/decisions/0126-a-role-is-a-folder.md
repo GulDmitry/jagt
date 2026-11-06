@@ -25,7 +25,8 @@ Proposed 2026-11-02 by the owner's order; accepted with the commit moving QA's c
 - A `role.yml` copy layers over its `.dist` per key, nested maps too, a list replacing whole (owner 2026-11-04).
 - A role's `role.yml` declares `jobs:` and `readSteps:`; the chart reads both from the installed roles, none from code.
 - A role's config defaults sit in its `role.yml`; `jagt.yml` `roles.<id>.*` overrides them per key, and a project's
-  `roles.<id>.*` overrides that. The board shows each value's origin.
+  `roles.<id>.*` overrides that. Each value's origin is a start log line, never a board mark: no card or view holds a
+  role setting (owner 2026-11-06).
 - Eval cases are data: `roles/<id>/eval/*.yml`. The Master's Java cases move there; the harness code stays a source set.
 - The arbiter stays in code (0122): its folder carries files and defaults, never its rights.
 
