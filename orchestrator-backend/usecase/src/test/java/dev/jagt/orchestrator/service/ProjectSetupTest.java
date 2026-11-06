@@ -56,7 +56,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         String answer = setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "dev",
                 List.of("./gradlew", "test"), "the invoicing backend", null, null));
@@ -88,7 +88,7 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(128, "", "not a git repository"));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("notes", folder.toString(), "origin/main", null, null,
                 null, null, null))).isInstanceOf(IllegalArgumentException.class).hasMessage("not a git repository");
@@ -106,7 +106,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
                 null, null, null))).isInstanceOf(IllegalArgumentException.class);
@@ -134,7 +134,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
@@ -164,7 +164,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
@@ -181,7 +181,7 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(docs.toString());
 
@@ -200,7 +200,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "main",
                 null, null, null, null)))
@@ -219,7 +219,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "https://user:secret@host.test/g/p.git\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -236,7 +236,7 @@ class ProjectSetupTest {
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(128, "",
                 "fatal: detected dubious ownership in repository at '/x'\nmore"));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -257,7 +257,7 @@ class ProjectSetupTest {
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
         ConfigService config = spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)));
         doThrow(new IllegalStateException("bad yaml")).when(config).project("billing");
-        ProjectSetup setup = new ProjectSetup(config, paths, git);
+        ProjectSetup setup = new ProjectSetup(config, paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null,
                 null, null, null, null)))
@@ -283,7 +283,7 @@ class ProjectSetupTest {
             Files.createDirectories(configFile.resolve("child"));
             throw new IllegalStateException("bad yaml");
         }).when(config).project("billing");
-        ProjectSetup setup = new ProjectSetup(config, paths, git);
+        ProjectSetup setup = new ProjectSetup(config, paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null,
                 null, null, null, null)))
@@ -303,7 +303,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
@@ -317,7 +317,7 @@ class ProjectSetupTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
-                paths, mock(Processes.class));
+                paths, mock(Processes.class), checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(missing.toString());
 
@@ -333,7 +333,7 @@ class ProjectSetupTest {
                 .withConfigFile(root.resolve("jagt.yml").toString()));
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(128, "", "fatal: not a git repository"));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(folder.toString());
 
@@ -351,7 +351,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         doReturn(new Processes.Result(exit, stdout, stderr)).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -368,7 +368,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         doReturn(new Processes.Result(1, "", "fatal: broken config\nmore")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -379,7 +379,6 @@ class ProjectSetupTest {
     @Test
     void readsWhatTheEntryWouldSayFromTheOriginsHeadTheDeployBranchAndTheBuildScript() throws Exception {
         Path repo = Files.createDirectories(root.resolve("billing"));
-        Files.writeString(repo.resolve("gradlew"), "");
         Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()));
@@ -389,7 +388,8 @@ class ProjectSetupTest {
         doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
         doReturn(new Processes.Result(0, "origin/trunk\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
         doReturn(new Processes.Result(0, "origin/HEAD\norigin/trunk\norigin/dev\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("for-each-ref")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git,
+                checkout -> List.of("./gradlew", "test"));
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -413,7 +413,7 @@ class ProjectSetupTest {
         doReturn(new Processes.Result(0, "origin/main\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
         doReturn(new Processes.Result(0, "origin\norigin/main\norigin/feature-x\norigin/staging\norigin/develop\n", ""))
                 .when(git).run(any(), any(), argThat(command -> command.contains("for-each-ref")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -433,7 +433,7 @@ class ProjectSetupTest {
         doReturn(new Processes.Result(0, "origin/main\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
         doReturn(new Processes.Result(0, "origin/main\norigin/feature-x\n", ""))
                 .when(git).run(any(), any(), argThat(command -> command.contains("for-each-ref")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -441,31 +441,9 @@ class ProjectSetupTest {
         assertThat(reading.deployBranches()).containsExactly("feature-x");
     }
 
-    @ParameterizedTest
-    @CsvSource(delimiter = '|', value = {
-            "mvnw|#!/bin/sh|./mvnw test",
-            "Makefile|test:\\n\\tgo test ./...|make test",
-            "Makefile|build:\\n\\tgo build|''"})
-    void suggestsTheVerifyCommandTheRepositoryItselfCarries(String file, String content, String expected) throws Exception {
-        Path repo = Files.createDirectories(root.resolve("billing"));
-        Files.writeString(repo.resolve(file), content.replace("\\n", "\n").replace("\\t", "\t"));
-        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-        Processes git = mock(Processes.class);
-        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
-
-        ProjectSetup.Reading reading = setup.read(repo.toString());
-
-        assertThat(String.join(" ", reading.verifyCommand())).isEqualTo(expected);
-    }
-
     @Test
     void fallsBackToOriginMainWhereTheRemoteNamesNoHead() throws Exception {
         Path repo = Files.createDirectories(root.resolve("billing"));
-        Files.writeString(repo.resolve("package.json"), "{}");
         Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()));
@@ -474,13 +452,12 @@ class ProjectSetupTest {
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
         doReturn(new Processes.Result(0, "abc\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("origin/main")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
         assertThat(reading.baseBranch()).isEqualTo("origin/main");
         assertThat(reading.deployBranch()).isEmpty();
-        assertThat(reading.verifyCommand()).containsExactly("npm", "test");
     }
 
     @Test
@@ -494,7 +471,7 @@ class ProjectSetupTest {
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
         doReturn(new Processes.Result(0, "abc\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("origin/master")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -512,7 +489,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -532,7 +509,7 @@ class ProjectSetupTest {
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -550,7 +527,7 @@ class ProjectSetupTest {
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null,
                 null, null, null, null)))
@@ -574,7 +551,7 @@ class ProjectSetupTest {
         Processes git = mock(Processes.class);
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null, null, null, null));
 
@@ -596,7 +573,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
         doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
         doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("get-url")));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
                 null, null, null))).isInstanceOf(IllegalArgumentException.class)
@@ -630,7 +607,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         String answer = setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", "dev",
                 List.of("make", "test"), "the invoicing backend", null, null));
@@ -667,7 +644,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         String answer = setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
                 "now with a line", null, null));
@@ -688,7 +665,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
                 null, null, null))).isInstanceOf(IllegalArgumentException.class)
@@ -708,7 +685,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
                 null, null, null))).isInstanceOf(IllegalArgumentException.class)
@@ -727,7 +704,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.edit(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
                 null, null, null))).isInstanceOf(IllegalArgumentException.class)
@@ -759,7 +736,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         String answer = setup.remove("billing");
 
@@ -796,7 +773,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         setup.remove("billing");
 
@@ -821,7 +798,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
 
         assertThatThrownBy(() -> setup.remove("billing")).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("only project");
@@ -841,7 +818,7 @@ class ProjectSetupTest {
         when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
         when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
                 .thenReturn(new Processes.Result(0, repo + "\n", ""));
-        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git);
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
         folder.toFile().setWritable(false);
 
         assertThatThrownBy(() -> setup.add(new ProjectSetup.Entry("billing", repo.toString(), "origin/main", null, null,
@@ -866,7 +843,7 @@ class ProjectSetupTest {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()));
         ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
-                paths, mock(Processes.class));
+                paths, mock(Processes.class), checkout -> List.of());
 
         assertThat(setup.entry("billing")).isEqualTo(new ProjectSetup.Entry("billing", "/srv/billing", "origin/main",
                 "dev", null, "the invoicing backend", List.of("bill", "pay"), List.of("**/auth/**")));

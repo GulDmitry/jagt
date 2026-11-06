@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
+import dev.jagt.orchestrator.port.BuildTools;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.GitRemote;
@@ -61,6 +62,7 @@ public class ProjectSetup {
     private final ConfigService configService;
     private final OrchestratorPaths paths;
     private final Processes processes;
+    private final BuildTools buildTools;
 
     /** What the path is, and what its entry would most likely say. Writes nothing. */
     public Reading read(String rawPath) {
@@ -84,7 +86,7 @@ public class ProjectSetup {
         String deploy = DEPLOY_NAMES.stream().filter(offered::contains).findFirst().orElse("");
         boolean taken = taken(path, own);
         lines.add(new Line(!taken, taken ? "a project already points here" : "no project points here yet"));
-        return new Reading(lines, key, base, deploy, offered, verifyCommand(path));
+        return new Reading(lines, key, base, deploy, offered, buildTools.testCommand(path));
     }
 
     private Optional<String> problemWith(Path path) {
@@ -135,28 +137,6 @@ public class ProjectSetup {
                 .filter(ref -> ref.startsWith(prefix) && !ref.equals(prefix + "HEAD") && !ref.equals(base))
                 .map(ref -> ref.substring(prefix.length()))
                 .toList();
-    }
-
-    private static List<String> verifyCommand(Path path) {
-        if (Files.exists(path.resolve("gradlew"))) {
-            return List.of("./gradlew", "test");
-        }
-        if (Files.exists(path.resolve("mvnw"))) {
-            return List.of("./mvnw", "test");
-        }
-        if (Files.exists(path.resolve("package.json"))) {
-            return List.of("npm", "test");
-        }
-        return hasTestTarget(path.resolve("Makefile")) ? List.of("make", "test") : List.of();
-    }
-
-    private static boolean hasTestTarget(Path makefile) {
-        try {
-            return Files.isRegularFile(makefile) && Files.readString(makefile, StandardCharsets.UTF_8).lines()
-                    .anyMatch(line -> line.startsWith("test:"));
-        } catch (IOException unreadable) {
-            return false;
-        }
     }
 
     /** Refuses an entry the file could not hold, and leaves the file as it was when the result does not read. */
