@@ -28,6 +28,16 @@ public class ToolchainCheck implements StartupCheck {
                     + " the usual install directories, and every agent runs inside a tmux session. Install"
                     + " tmux or set the key to a full path."));
         }
+        if (!Executables.onPath("pgrep")) {
+            problems.add(new Problem("pgrep",
+                    "pgrep is not on PATH — without it every agent's window reads as a dead shell."));
+        }
         return problems;
+    }
+
+    @Override
+    public List<Problem> notes() {
+        return Executables.onPath("lsof") ? List.of() : List.of(new Problem("lsof",
+                "lsof is not on PATH — a removed worktree's leftover processes are not stopped."));
     }
 }

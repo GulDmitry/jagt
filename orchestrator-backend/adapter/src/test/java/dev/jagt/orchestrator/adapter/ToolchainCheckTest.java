@@ -22,4 +22,16 @@ class ToolchainCheckTest {
 
         assertThat(new ToolchainCheck(properties).problems()).extracting(Problem::key).doesNotContain("git");
     }
+
+    @Test
+    void raisesNoAgentProcessProblemWhereItsToolIsOnPath() {
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withTmuxCommand("no-such-tmux");
+
+        assertThat(new ToolchainCheck(properties).problems()).extracting(Problem::key).doesNotContain("pgrep");
+    }
+
+    @Test
+    void notesNothingAboutLeftoverProcessesWhereTheirToolIsOnPath() {
+        assertThat(new ToolchainCheck(OrchestratorProperties.defaults()).notes()).isEmpty();
+    }
 }

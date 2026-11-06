@@ -50,6 +50,12 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
                 : List.of();
     }
 
+    @Override
+    public List<Problem> notes() {
+        return Executables.onPath("pkill") ? List.of() : List.of(new Problem("pkill",
+                "pkill is not on PATH — a closed viewer's kitty instance keeps running."));
+    }
+
     protected abstract List<String> platformOptions();
 
     @Override

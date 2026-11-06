@@ -28,6 +28,14 @@ import static org.mockito.Mockito.verify;
 class KittyTerminalDriverTest {
 
     @Test
+    void notesNothingAboutAClosedViewerWhereItsKillToolIsOnPath() {
+        var driver = new KittyTerminalDriver(mock(ProcessRunner.class), OrchestratorProperties.defaults(),
+                mock(OsaScript.class), new KittyOptions("kitty", ""), Clock.systemUTC());
+
+        assertThat(driver.notes()).isEmpty();
+    }
+
+    @Test
     void bindsCyrillicPasteAndCopySoPastingWorksOnTheRussianLayout() {
         var driver = new KittyTerminalDriver(mock(ProcessRunner.class), OrchestratorProperties.defaults(),
                 mock(OsaScript.class), new KittyOptions("kitty", ""), Clock.systemUTC());
