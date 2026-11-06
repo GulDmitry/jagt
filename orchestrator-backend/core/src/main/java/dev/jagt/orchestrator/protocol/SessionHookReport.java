@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.protocol;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jspecify.annotations.Nullable;
 
@@ -14,19 +13,18 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 /**
  * What a session's own harness says about it. The one message jagt does not shape: a hook posts whatever the CLI
  * handed it, and the hook swallows the answer, so a violation here is not a correction anybody will read. jagt
- * therefore DROPS what it cannot believe and records the rest — the field names are the vendor's, kept in this
- * one place so the rest of jagt never spells them.
+ * therefore DROPS what it cannot believe and records the rest.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record SessionHookReport(@JsonProperty("transcript_path") @Nullable String transcriptPath,
-                                @JsonProperty("source") @Nullable String source,
-                                @JsonProperty("message") @Nullable String message,
-                                @JsonProperty("stop_hook_active") @Nullable Boolean continuing,
-                                @JsonProperty("error") @Nullable String error,
-                                @JsonProperty("reason") @Nullable String reason,
-                                @JsonProperty("background_tasks") List<Object> backgroundTasks,
-                                @JsonProperty("prompt") @Nullable String prompt,
-                                @JsonProperty("tool_name") @Nullable String toolName) implements Message {
+public record SessionHookReport(@Nullable String transcriptPath,
+                                @Nullable String source,
+                                @Nullable String message,
+                                @Nullable Boolean continuing,
+                                @Nullable String error,
+                                @Nullable String reason,
+                                List<Object> backgroundTasks,
+                                @Nullable String prompt,
+                                @Nullable String toolName) implements Message {
 
     public SessionHookReport {
         transcriptPath = absent(transcriptPath);
@@ -70,7 +68,7 @@ public record SessionHookReport(@JsonProperty("transcript_path") @Nullable Strin
     @Override
     public List<Violation> violations(MessageContext context) {
         return transcriptPath != null && !Path.of(transcriptPath).isAbsolute()
-                ? List.of(new Violation("transcript_path",
+                ? List.of(new Violation("transcriptPath",
                         "an absolute path; '" + transcriptPath + "' would resolve against jagt's own directory"))
                 : List.of();
     }

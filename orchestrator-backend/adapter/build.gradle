@@ -8,6 +8,7 @@ dependencies {
     implementation 'tools.jackson.core:jackson-databind'
     implementation 'io.github.java-diff-utils:java-diff-utils:4.18'
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-jackson'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
