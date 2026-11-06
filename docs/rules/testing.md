@@ -34,7 +34,7 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 ### One constructor, the one production calls
 
 - **Every constructor in `main` is called from `main`** (`ProductionConstructorTest`), but a record's canonical one,
-  a Spring bean's only one and a private one.
+  a bean's or failure analyzer's only one, a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies
   is a collaborator, supplied by `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies
   is a constant, and the test writes the volume that reaches it.

@@ -12,8 +12,8 @@ tool only tidying up after a task (`lsof`, `pkill`) missing is said once and sta
 the network; `--orchestrator.startup-checks=false` skips the checks about the machine, never those of jagt's own files.
 
 #### Scenario: Missing or wrong setup
-- **WHEN** something the setup needs is missing or wrong, and you start jagt
-- **THEN** it is refused with every problem at once, each naming the key that fixes it
+- **WHEN** something the setup needs is missing or wrong, such as an `agent.cli` no agent CLI answers to, and you start jagt
+- **THEN** it is refused with every problem at once, each naming the key that fixes it, and an unknown `agent.cli` its value
 
 #### Scenario: Wrong token or unreachable host
 - **WHEN** a token is wrong or the host unreachable, and you start jagt
