@@ -4,14 +4,13 @@ import dev.jagt.orchestrator.port.SessionLog;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
@@ -22,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * turn is priced by the model it names, at list price.
  */
 @Component
+@ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "claude", matchIfMissing = true)
 @Slf4j
 public class ClaudeSessionLog implements SessionLog {
 
@@ -39,22 +39,12 @@ public class ClaudeSessionLog implements SessionLog {
         }
     }
 
-    /** A session appends WHILE this reads, so the last line is usually half-written: the window ends at the last
-     *  newline, and so does the mark. */
     private Spent counted(Path log, long from, long limit) throws IOException {
-        byte[] window;
-        try (InputStream in = Files.newInputStream(log)) {
-            in.skipNBytes(from);
-            window = in.readNBytes((int) Math.min(limit, Integer.MAX_VALUE));
+        JsonlWindow window = JsonlWindow.of(log, from, limit);
+        String[] lines = window.lines();
+        if (lines.length == 0) {
+            return new Spent(TokenUsage.NONE, from + window.bytes());
         }
-        int lastLine = lastNewlineIn(window);
-        if (lastLine < 0) {
-            // A record longer than the window: waiting for a newline that is not coming would freeze the spend
-            // for good. A SHORT window is the tail being written.
-            return window.length < limit ? Spent.nothing(from)
-                    : new Spent(TokenUsage.NONE, from + window.length);
-        }
-        String[] lines = new String(window, 0, lastLine, StandardCharsets.UTF_8).split("\n");
         int counted = linesBeforeAnOpenMessage(lines);
         TokenUsage total = TokenUsage.NONE;
         boolean firstTurn = from == 0;
@@ -66,7 +56,7 @@ public class ClaudeSessionLog implements SessionLog {
             firstTurn &= turn.isNone();
             total = total.plus(turn);
         }
-        return new Spent(total, from + bytesOf(lines, counted, lastLine));
+        return new Spent(total, from + bytesOf(lines, counted, window.bytes()));
     }
 
     /**
@@ -86,9 +76,9 @@ public class ClaudeSessionLog implements SessionLog {
         return start == 0 ? lines.length : start;
     }
 
-    private static long bytesOf(String[] lines, int counted, int lastLine) {
+    private static long bytesOf(String[] lines, int counted, long whole) {
         if (counted == lines.length) {
-            return lastLine + 1;
+            return whole;
         }
         long bytes = 0;
         for (int at = 0; at < counted; at++) {
@@ -106,15 +96,6 @@ public class ClaudeSessionLog implements SessionLog {
         } catch (RuntimeException unreadable) {
             return null;
         }
-    }
-
-    private static int lastNewlineIn(byte[] window) {
-        for (int at = window.length - 1; at >= 0; at--) {
-            if (window[at] == '\n') {
-                return at;
-            }
-        }
-        return -1;
     }
 
     /** One unreadable line costs one turn, never the whole log: throwing would stop the mark advancing. */

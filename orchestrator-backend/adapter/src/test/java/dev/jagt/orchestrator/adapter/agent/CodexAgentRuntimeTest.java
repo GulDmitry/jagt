@@ -248,4 +248,18 @@ class CodexAgentRuntimeTest {
 
         assertThat(runtime.displayName()).isEqualTo("Codex");
     }
+
+    @Test
+    void namesTheSessionLogInTheWorktreesOwnCodexHome(@TempDir Path worktree) throws Exception {
+        Path rollout = Files.createDirectories(worktree.resolve(".jagt/codex/sessions/2026/11/06"))
+                .resolve("rollout-a.jsonl");
+        Files.writeString(rollout, "{}");
+        var runtime = new CodexAgentRuntime(
+                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
+                new McpEndpoint("http://127.0.0.1:8290/mcp"));
+
+        assertThat(runtime.sessionLogOf(worktree)).contains(rollout);
+    }
 }

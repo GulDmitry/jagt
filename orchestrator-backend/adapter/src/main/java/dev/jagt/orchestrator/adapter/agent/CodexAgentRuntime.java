@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Codex reads {@code AGENTS.md} natively, so there is no alias to create. {@code $CODEX_HOME} points at a
@@ -69,6 +70,11 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
         return "CODEX_HOME=" + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString()) + " " + codex.command()
                 + (planMode ? " --sandbox read-only" : "")
                 + " " + shellQuote(prompt);
+    }
+
+    @Override
+    public Optional<Path> sessionLogOf(Path worktree) {
+        return CodexRollouts.newest(worktree.resolve(CODEX_HOME_DIR));
     }
 
     @Override
