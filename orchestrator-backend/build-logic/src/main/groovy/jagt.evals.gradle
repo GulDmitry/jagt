@@ -101,20 +101,21 @@ tasks.register('promptEval', Test) {
     testClassesDirs = sourceSets.promptEval.output.classesDirs
     classpath = sourceSets.promptEval.runtimeClasspath
     useJUnitPlatform()
-    // The rows are independent calls of the assistant's CLI, so they run side by side; -PevalParallelism sizes the pool.
+    // -PlocalEndpoint and -PlocalModel read the rows through assistant.local (0135) instead of the cloud; -PlocalTimeout is optional.
+    String localEndpoint = (project.findProperty('localEndpoint') ?: '').toString()
+    String localModel = (project.findProperty('localModel') ?: '').toString()
+    boolean onLocal = !localEndpoint.isEmpty() || !localModel.isEmpty()
+    // The rows are independent calls, so they run side by side; one local server queues them past the per-row timeout,
+    // so local rows run one at a time. -PevalParallelism sizes the pool.
     systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
     systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
     systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'fixed'
-    systemProperty 'junit.jupiter.execution.parallel.config.fixed.parallelism', project.findProperty('evalParallelism') ?: '6'
+    systemProperty 'junit.jupiter.execution.parallel.config.fixed.parallelism', project.findProperty('evalParallelism') ?: (onLocal ? '1' : '6')
     ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
         if (project.hasProperty(property)) {
             systemProperty key, project.property(property)
         }
     }
-    // -PlocalEndpoint and -PlocalModel read the rows through assistant.local (0135) instead of the cloud; -PlocalTimeout is optional.
-    String localEndpoint = (project.findProperty('localEndpoint') ?: '').toString()
-    String localModel = (project.findProperty('localModel') ?: '').toString()
-    boolean onLocal = !localEndpoint.isEmpty() || !localModel.isEmpty()
     if (onLocal) {
         systemProperty 'orchestrator.assistant.local.endpoint', localEndpoint
         systemProperty 'orchestrator.assistant.local.model', localModel
