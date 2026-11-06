@@ -208,10 +208,6 @@ main#board { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); align-i
 }
 .group.yours .group-head { color: var(--you); background: var(--you-bg); }
 .row { display: flex; border-left: 3px solid var(--line); border-top: 1px solid var(--line); }
-.row.you { border-left-color: var(--you); }
-.row.you.optional { border-left-color: var(--line); }
-.row.agent { border-left-color: var(--agent); }
-.row.ci { border-left-color: var(--ci); }
 .row.selected { background: var(--chip-bg); }
 .row .pick {
   flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 6px 8px;
@@ -253,11 +249,11 @@ article {
   background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line);
   border-radius: 8px; padding: 10px; align-self: start;
 }
-article.you { border-left-color: var(--you); }
+.row.you, article.you { border-left-color: var(--you); }
 /* A move of theirs that nothing is waiting on keeps the plain edge: the colour is for the cards that are stuck. */
-article.you.optional { border-left-color: var(--line); }
-article.agent { border-left-color: var(--agent); }
-article.ci { border-left-color: var(--ci); }
+.row.you.optional, article.you.optional { border-left-color: var(--line); }
+.row.agent, article.agent { border-left-color: var(--agent); }
+.row.ci, article.ci { border-left-color: var(--ci); }
 /* Wraps: the badge is a phrase, and on one line it would break inside its own pill. */
 .card-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .alias {
@@ -342,8 +338,7 @@ a { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .checks.running { animation: none; } }
 
 /* A verb whose last run is live wears it itself: the meta row is the busiest on a card. Colour only. */
-button:not(.primary).again { border-color: var(--ok); color: var(--ok); }
-button:not(.primary).again:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
+button:not(.primary).again, button:not(.primary).again:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
 /* The highlighted move keeps its fill and takes the mark as a ring: green ON accent is legible in neither theme. */
 button.primary.again { box-shadow: 0 0 0 2px var(--ok); }
 #styleguide h2 { font-size: 15px; margin: 16px 16px 0; }

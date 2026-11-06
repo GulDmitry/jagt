@@ -27,6 +27,8 @@ const RequestChip = ({url, label, openedAt, task, sole, now}) => {
     : 'review request; the next sweep will date it'];
   const approved = sole && task.approved;
   if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
+  const ships = (task.history || []).filter((step) => step.status === 'SHIPPING').length;
+  if (ships > 1) lines.push(`shipped ${ships} times`);
   // Only where the checks have no dot to say it themselves: one verdict in two hovers can disagree with itself.
   if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
   const watch = watchLine(task.autoReview, now);

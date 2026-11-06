@@ -4,6 +4,7 @@ import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.Reach;
 import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,25 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         assertThat(page.locator("#auto-review")).isHidden();
         assertThat(page.locator("article .meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("next poll 10m"));
+    }
+
+    @Test
+    void theRequestSaysHowOftenItsTaskWasShipped() {
+        long now = System.currentTimeMillis();
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").lastActiveTimestamp(now)
+                .mrUrl("https://host/alpha/-/merge_requests/1").mrCreatedAt(now)
+                .history(List.of(new StatusChange(TaskStatus.SHIPPING, now - 3000, null),
+                        new StatusChange(TaskStatus.IN_PROGRESS, now - 2000, null),
+                        new StatusChange(TaskStatus.SHIPPING, now - 1000, null)))
+                .build());
+
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("article .meta a.mr-age"))
+                .hasAttribute("data-tip", Pattern.compile("shipped 2 times"));
     }
 
     @Test

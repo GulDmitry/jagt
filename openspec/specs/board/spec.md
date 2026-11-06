@@ -41,8 +41,7 @@ project key renders only where projects are several, in the install or the task.
 Per-task verbs SHALL come from `Move.actions()`, a row per `TaskAction.Group`; a hint's text lives in
 `command/CommandReference` alone. `approve-plan` replaces the CLI plan mode's approval dialog and its go-ahead hint.
 `add-repo` replaces the answer typed to a session asking for a repository: highlighted in place of `focus` while that
-request stands, no mark. A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised
-(`TaskAction.RENAMED`).
+request stands, no mark. A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised (`TaskAction.RENAMED`).
 #### Scenario: A plan or a repository waits
 - **WHEN** a task is at `PLAN_PENDING`, or its session asked for a configured project it lacks
 - **THEN** its top row offers `approve-plan`, or `add-repo` on the NEEDS INPUT card; no other status or question does
@@ -59,8 +58,7 @@ and the palette's verb list. A launch creating no task is refused.
 - **THEN** `stats` splits each open task's time: human, agent, host
 - **AND** `stats` counts per task the moves a human made, `BY YOU`
 - **AND** `stats` adds a `COLD` column, starts that read no cache as `3/40`, `?` where usage has no cache field
-- **AND** `master` the Master's verdicts the human overrode: passed then reverted or never deployed, failed then
-  deployed
+- **AND** `master` the Master's verdicts the human overrode: passed then reverted or never deployed, failed then deployed
 - **AND** `finished` every retired task with its status log, their median, the same split
 #### Scenario: A verb typed alone
 - **WHEN** the human types `do` alone
@@ -76,9 +74,8 @@ session (`POST /api/tasks/say`): not a verb, the only control there.
 ### Requirement: Tier 1 is grammar, tier 2 only proposes
 Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2,
 `surface/board/NaturalLanguageDispatch`, sends ⌘K free text via `POST /api/interpret` to a model proposing one grammar
-command, validated (task and verb exist) and run through `CommandService`: never more than a button. The call is
-stripped (`--strict-mcp-config
---mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
+command, validated (task and verb exist) and run through `CommandService`: never more than a button. The call is stripped
+(`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
 #### Scenario: A proposal names no real verb
 - **WHEN** the model proposes a missing task or verb
 - **THEN** nothing runs
@@ -107,8 +104,7 @@ card carries `data-action`, never a closure, so a rebuilt card cannot act for it
 - **WHEN** the push connection drops, or misses two beats
 - **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
 ### Requirement: A banner leads to its task
-A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only: no caller may depend
-on it.
+A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only: no caller may depend on it.
 #### Scenario: Clicking a notification
 - **WHEN** the human clicks one
 - **THEN** the board opens filtered to that task; elsewhere the title names the task
@@ -117,6 +113,7 @@ on it.
 ### Requirement: Facts sit on the thing they are about
 The task number SHALL open the ticket. Where the board names projects, each project's name opens its own request;
 on a board of one project the `request` chip does. The chip shows the request's own age, green with ✓ once approved.
+Its hover says how often the task shipped, from the second ship on.
 The Deploy button is green while the work is live. A `⚐` beside the title flags the task, in this browser alone.
 #### Scenario: Taking the colour off
 - **WHEN** a live task is reverted
@@ -124,6 +121,9 @@ The Deploy button is green while the work is live. A `⚐` beside the title flag
 #### Scenario: A one-repository card on a board of several projects
 - **WHEN** ABC-42 in `alpha`, its request open 8h, shares the board with a task in `beta`
 - **THEN** its card reads `alpha 8h`, the name opening the request, and no `request` word
+#### Scenario: A task shipped again
+- **WHEN** ABC-42 shipped twice
+- **THEN** its request chip's hover reads `shipped 2 times`
 ### Requirement: A plan shows what changed since its last approval
 Each `approve-plan` SHALL keep the approved `plan.md` as the task's baseline, in jagt's own root, not the worktree.
 The Artifacts tab SHALL render `plan.md` against that baseline: a line new or changed is bold with a bar,
