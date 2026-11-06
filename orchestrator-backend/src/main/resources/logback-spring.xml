@@ -6,12 +6,24 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
 -->
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- Boot's console appender, declared here to carry the alias filter every appender needs. -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${CONSOLE_LOG_THRESHOLD}</level>
+        </filter>
+        <filter class="dev.jagt.orchestrator.surface.ui.TaskAliasLogFilter"/>
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>${CONSOLE_LOG_CHARSET}</charset>
+        </encoder>
+    </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>${FILE_LOG_THRESHOLD}</level>
         </filter>
+        <filter class="dev.jagt.orchestrator.surface.ui.TaskAliasLogFilter"/>
         <!-- The file is read by a machine, the console by a human: `logging.pattern.console` is the human's. -->
         <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
             <format>ecs</format>
@@ -31,6 +43,7 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
     <!-- The human's: what the Master does, followed in the `master` window (`MasterFeedWindow`). -->
     <springProperty name="MASTER_LOG" source="logging.master.name" defaultValue="jagt-master.log"/>
     <appender name="MASTER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="dev.jagt.orchestrator.surface.ui.TaskAliasLogFilter"/>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} %highlight(%msg) %kvp%n</pattern>
         </encoder>

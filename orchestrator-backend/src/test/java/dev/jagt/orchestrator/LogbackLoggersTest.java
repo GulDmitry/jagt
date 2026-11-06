@@ -50,6 +50,16 @@ class LogbackLoggersTest {
         assertThat(config).contains("<pattern>%d{yyyy-MM-dd HH:mm:ssX, UTC} ");
     }
 
+    @Test
+    void everyAppenderGivesATaskLineItsAlias() throws IOException {
+        String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
+
+        var appenders = Pattern.compile("(?s)<appender name=\"(\\w+)\".*?</appender>").matcher(config).results()
+                .filter(match -> match.group().contains("TaskAliasLogFilter")).map(match -> match.group(1)).toList();
+
+        assertThat(appenders).containsExactlyInAnyOrder("CONSOLE", "FILE", "MASTER");
+    }
+
     private static Stream<Path> walk(Path root) {
         try {
             return Files.walk(root).filter(path -> path.toString().endsWith(".java"));

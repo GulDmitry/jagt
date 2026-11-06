@@ -5,6 +5,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaModifier;
+import ch.qos.logback.core.spi.LifeCycle;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +19,7 @@ class ProductionConstructorTest {
     void everyConstructorIsCalledFromMain() {
         constructors().that().areNotPrivate().and(notCalledFromMain())
                 .should(ArchCondition.from(DescribedPredicate.describe(
-                        "be a Spring bean's only constructor or a record's canonical one",
+                        "be a Spring bean's or Logback component's only constructor or a record's canonical one",
                         ProductionConstructorTest::springOrRecordOwns)))
                 .check(MainClasses.CODE);
     }
@@ -35,7 +36,8 @@ class ProductionConstructorTest {
         boolean canonical = owner.isRecord()
                 && constructor.getRawParameterTypes().size() == owner.getFields().stream().filter(field -> !field.getModifiers().contains(JavaModifier.STATIC)).count();
         boolean theBeansOnly = owner.getConstructors().size() == 1 && (owner.isMetaAnnotatedWith(Component.class)
-                || owner.isAnnotatedWith(ConfigurationProperties.class) || owner.isAnnotatedWith(Configuration.class));
+                || owner.isAnnotatedWith(ConfigurationProperties.class) || owner.isAnnotatedWith(Configuration.class)
+                || owner.isAssignableTo(LifeCycle.class));
         return canonical || theBeansOnly;
     }
 }

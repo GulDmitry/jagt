@@ -30,6 +30,7 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 - **keys**: one word each, lowercase, from the shared vocabulary and never invented twice for one thing —
   `ref url api task alias project repo path file from to branch session window pid cmd exit tool method
   channel job port attempt limit tokens mcp servers status previous outcome said cause effect fix note role key value origin`.
+- A line naming `task` gets its `alias` from `TaskAliasLogFilter`; write `alias` only for a task the state has not stored yet.
 - `ref` is what was being read, `url` an address fetched or served, `said` the sentence a surface showed a
   human. One key means one type everywhere, and a number stays a number (`secrets=102`).
 - `cause` is the failure itself, never null or blank (`Causes.of(e)`, stderr, exit line; a throwable also goes in
