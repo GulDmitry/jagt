@@ -4,9 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.Nulls;
 
-import lombok.Builder;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -26,69 +27,14 @@ import java.util.function.UnaryOperator;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Builder(toBuilder = true)
 public record TaskState(
         List<TaskRepo> repos,
-        TaskStatus status,
-        long lastActiveTimestamp,
-        @Nullable String message,
-        AgentReport report,
-        @Nullable String alias,
-        @Nullable String title,
-        @Nullable String ticketUrl,
-        // Null = the project's configured baseBranch, so a config change still reaches the task.
-        @Nullable String baseBranch,
-        // mrCreatedAt is when jagt stamped the round, not the host's own creation time. Zero = unset.
-        long mrCreatedAt,
-        // When the HOST says the request was opened; 0 until a read said so (a model read cannot).
-        long requestOpenedAt,
-        long lastPolledAt,
-        @Nullable Boolean autoReview,
-        // The host's own wording for the checks, unparsed. Null = never read.
-        @Nullable String pipelineStatus,
-        // The reads running that could not list them, newest last; any = the word above is an older round's.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<ChecksUnread> checksUnread,
-        // Whether the host says this round is approved. Null = no read has said yet.
-        @Nullable Boolean approved,
-        // Null until the first metered call.
-        @Nullable TokenUsage usage,
-        // What this task's own agent sessions have burned, and how far their log has been read.
-        @Nullable AgentSpend agentSpend,
-        // Append-only, oldest first: every status this task actually moved TO, with when.
-        List<StatusChange> history,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
-        // Null until first recorded.
-        @Nullable GitTrust gitTrust,
-        // What the last plan submitted declared, each with its last result once VERIFYING ran it.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Probe> probes,
-        PlanGate planGate,
-        @Nullable RoundTrail trail,
-        // Set by jagt alone, cleared by a human's lift alone.
-        @Nullable TaskStop stop,
-        // The project key a session asked to have a repository of, until one is added or it reports anything else.
-        @Nullable String repoRequest,
-        // Absent in a file written before the turn existed, which reads as no turn open.
-        @Nullable Turn turn,
-        // Switch name to the session's "yes — why" or "no — why"; empty until it judged one.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> switches,
-        // The re-runs of a pipeline that died on infrastructure: the ones sent, and at most one still armed.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<InfraRetry> infraRetries,
-        // The pushed commit the stored checks and approval were read on; null = a read that named none.
-        @Nullable String checksTip,
-        // The newest pushed commit a read saw. Null = none yet, and the stored reads stand as they are.
-        @Nullable String headTip,
-        // Absent in a file written before the deployment was recorded.
-        @Nullable Deployment deployment,
-        // Absent in a file written before the session was recorded, which reads as no sign yet.
-        Session session,
-        // Null until an auto-review ping was sent.
-        @Nullable AutoReviewTold told,
-        // Every stretch the human held the turn, oldest first; the last may still stand.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits,
-        // What each checker left on the task, by role id; empty until one read or judged.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, RoleRecord> roles,
-        // What the Master left on the task; absent until it left, answered or sealed one.
-        @Nullable Master master
+        @JsonUnwrapped Standing standing,
+        @JsonUnwrapped Ticket ticket,
+        @JsonUnwrapped Round round,
+        @JsonUnwrapped Checks checks,
+        @JsonUnwrapped Gate gate,
+        @JsonUnwrapped Work work
 ) {
 
     /** The log cannot be unbounded, so the oldest entries drop; the first stays, for it says who opened the task. */
@@ -96,109 +42,187 @@ public record TaskState(
 
     public TaskState {
         repos = repos == null ? List.of() : List.copyOf(repos);
-        history = history == null ? List.of(new StatusChange(status, lastActiveTimestamp, null)) : List.copyOf(history);
-        refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
-        probes = probes == null ? List.of() : List.copyOf(probes);
-        checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
-        switches = switches == null ? Map.of() : Map.copyOf(switches);
-        infraRetries = infraRetries == null ? List.of() : List.copyOf(infraRetries);
-        waits = waits == null ? List.of() : List.copyOf(waits);
-        roles = roles == null ? Map.of() : Map.copyOf(roles);
+    }
+
+    /** Where the task stands, and every move that brought it there. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Standing(
+            TaskStatus status,
+            long lastActiveTimestamp,
+            @Nullable String message,
+            AgentReport report,
+            // Append-only, oldest first: every status this task actually moved TO, with when.
+            List<StatusChange> history
+    ) {
+
+        public Standing {
+            history = List.copyOf(history);
+        }
+    }
+
+    /** What the task was opened for. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Ticket(
+            @Nullable String alias,
+            @Nullable String title,
+            @Nullable String ticketUrl,
+            // Null = the project's configured baseBranch, so a config change still reaches the task.
+            @Nullable String baseBranch
+    ) {
+    }
+
+    /** The review round on the request: when it opened, how it is polled, what it was told. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Round(
+            // mrCreatedAt is when jagt stamped the round, not the host's own creation time. Zero = unset.
+            long mrCreatedAt,
+            // When the HOST says the request was opened; 0 until a read said so (a model read cannot).
+            @JsonSetter(nulls = Nulls.AS_EMPTY) long requestOpenedAt,
+            long lastPolledAt,
+            @Nullable Boolean autoReview,
+            // Whether the host says this round is approved. Null = no read has said yet.
+            @Nullable Boolean approved,
+            // Null until an auto-review ping was sent.
+            @Nullable AutoReviewTold told,
+            @Nullable RoundTrail trail
+    ) {
+    }
+
+    /** What the host's checks last said, on which commit, and the re-runs they earned. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Checks(
+            // The host's own wording for the checks, unparsed. Null = never read.
+            @Nullable String pipelineStatus,
+            // The reads running that could not list them, newest last; any = the word above is an older round's.
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<ChecksUnread> checksUnread,
+            // The pushed commit the stored checks and approval were read on; null = a read that named none.
+            @Nullable String checksTip,
+            // The newest pushed commit a read saw. Null = none yet, and the stored reads stand as they are.
+            @Nullable String headTip,
+            // The re-runs of a pipeline that died on infrastructure: the ones sent, and at most one still armed.
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<InfraRetry> infraRetries
+    ) {
+
+        public Checks {
+            checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
+            infraRetries = infraRetries == null ? List.of() : List.copyOf(infraRetries);
+        }
+    }
+
+    /** What jagt holds back and meters on the task: the plan gate, the probes, the refusals, the spend. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Gate(
+            PlanGate planGate,
+            // What the last plan submitted declared, each with its last result once VERIFYING ran it.
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<Probe> probes,
+            // Switch name to the session's "yes — why" or "no — why"; empty until it judged one.
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> switches,
+            // Null until first recorded.
+            @Nullable GitTrust gitTrust,
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
+            // Null until the first metered call.
+            @Nullable TokenUsage usage,
+            // What this task's own agent sessions have burned, and how far their log has been read.
+            @Nullable AgentSpend agentSpend
+    ) {
+
+        public Gate {
+            planGate = planGate == null ? PlanGate.OPEN : planGate;
+            probes = probes == null ? List.of() : List.copyOf(probes);
+            switches = switches == null ? Map.of() : Map.copyOf(switches);
+            refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
+        }
+    }
+
+    /** The work in flight: the session, whose turn it is, what stopped it, what it deployed, who checked it. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Work(
+            // Absent in a file written before the session was recorded, which reads as no sign yet.
+            Session session,
+            // Absent in a file written before the turn existed, which reads as no turn open.
+            @Nullable Turn turn,
+            // Every stretch the human held the turn, oldest first; the last may still stand.
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits,
+            // Set by jagt alone, cleared by a human's lift alone.
+            @Nullable TaskStop stop,
+            // The project key a session asked to have a repository of, until one is added or it reports anything else.
+            @Nullable String repoRequest,
+            // Absent in a file written before the deployment was recorded.
+            @Nullable Deployment deployment,
+            // What each checker left on the task, by role id; empty until one read or judged.
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, RoleRecord> roles,
+            // What the Master left on the task; absent until it left, answered or sealed one.
+            @Nullable Master master
+    ) {
+
+        public Work {
+            session = session == null ? Session.defaults() : session;
+            waits = waits == null ? List.of() : List.copyOf(waits);
+            roles = roles == null ? Map.of() : Map.copyOf(roles);
+        }
     }
 
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
-    @JsonCreator
-    static TaskState fromJson(
-            @JsonProperty("repos") @Nullable List<LegacyDeployment.Repo> repos,
-            @JsonProperty("project") @Nullable String project,
-            @JsonProperty("worktreePath") @Nullable String worktreePath,
-            @JsonProperty("remoteUrl") @Nullable String remoteUrl,
-            @JsonProperty("mrUrl") @Nullable String mrUrl,
-            @JsonProperty("deployCommit") @Nullable String deployCommit,
-            @JsonProperty("status") TaskStatus status,
-            @JsonProperty("lastActiveTimestamp") long lastActiveTimestamp,
-            @JsonProperty("message") @Nullable String message,
-            // Absent in a file written while the meaning was a marker in the message.
-            @JsonProperty("report") @Nullable AgentReport report,
-            @JsonProperty("alias") @Nullable String alias,
-            @JsonProperty("title") @Nullable String title,
-            @JsonProperty("ticketUrl") @Nullable String ticketUrl,
-            @JsonProperty("baseBranch") @Nullable String baseBranch,
-            @JsonProperty("mrCreatedAt") long mrCreatedAt,
-            @JsonProperty("requestOpenedAt") @Nullable Long requestOpenedAt,
-            @JsonProperty("lastPolledAt") long lastPolledAt,
-            // Written before the session record held it: read once, rewritten as the session's quiet.
-            @JsonProperty("silentSince") @Nullable Long legacySilentSince,
-            @JsonProperty("autoReview") @Nullable Boolean autoReview,
-            @JsonProperty("pipelineStatus") @Nullable String pipelineStatus,
-            // A file written before the reads were kept holds only whether the newest one failed.
-            @JsonProperty("pipelineUnread") @Nullable Boolean pipelineUnread,
-            @JsonProperty("checksUnread") @Nullable List<ChecksUnread> checksUnread,
-            @JsonProperty("approved") @Nullable Boolean approved,
-            @JsonProperty("usage") @Nullable TokenUsage usage,
-            @JsonProperty("agentSpend") @Nullable AgentSpend agentSpend,
-            @JsonProperty("history") @Nullable List<StatusChange> history,
-            @JsonProperty("refusals") @Nullable Map<Guard, Integer> refusals,
-            @JsonProperty("gitTrust") @Nullable GitTrust gitTrust,
-            @JsonProperty("probes") @Nullable List<Probe> probes,
-            // Absent in a file written before the gate existed, which reads as nothing to wait for.
-            @JsonProperty("planGate") @Nullable PlanGate planGate,
-            @JsonProperty("trail") @Nullable RoundTrail trail,
-            @JsonProperty("stop") @Nullable TaskStop stop,
-            // Written before the stop left the trail: read once, rewritten as the two above.
-            @JsonProperty("loop") @Nullable Loop loop,
-            // Written before the conflict moved onto the deployment: read once, rewritten there.
-            @JsonProperty("conflict") LegacyDeployment.@Nullable Watch legacyConflict,
-            @JsonProperty("repoRequest") @Nullable String repoRequest,
-            @JsonProperty("turn") @Nullable Turn turn,
-            @JsonProperty("switches") @Nullable Map<String, String> switches,
-            @JsonProperty("infraRetries") @Nullable List<InfraRetry> infraRetries,
-            @JsonProperty("checksTip") @Nullable String checksTip,
-            @JsonProperty("headTip") @Nullable String headTip,
-            @JsonProperty("deployment") @Nullable Deployment deployment,
-            @JsonProperty("session") @Nullable Session session,
-            @JsonProperty("told") @Nullable AutoReviewTold told,
-            @JsonProperty("waits") @Nullable List<HumanWait> waits,
-            // Written before roles: read once into roles["qa"], rewritten there.
-            @JsonProperty("qa") @Nullable RoleRecord qa,
-            @JsonProperty("roles") @Nullable Map<String, RoleRecord> roles,
-            @JsonProperty("master") @Nullable Master master) {
-        List<LegacyDeployment.Repo> stored = LegacyDeployment.stored(repos,
-                new LegacyDeployment.Repo(project, worktreePath, remoteUrl, mrUrl, deployCommit, null, null, null));
-        TaskState read = new TaskState(stored.stream().map(LegacyDeployment.Repo::repo).toList(), status,
-                lastActiveTimestamp,
-                report == null ? ReportMarkerMigration.lineOf(message) : message,
-                report == null ? ReportMarkerMigration.reportOf(message) : report, alias, title, ticketUrl,
-                baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
-                autoReview, pipelineStatus,
-                unreadOf(checksUnread, pipelineUnread), approved, usage, agentSpend, history == null ? List.of() : history,
-                refusals == null ? Map.of() : refusals, gitTrust,
-                probes == null ? List.of() : probes, planGate == null ? PlanGate.OPEN : planGate,
-                Loop.trail(trail, loop), Loop.stop(stop, loop), repoRequest, LegacyMaster.withoutMarks(LegacyQa.withoutMarks(turn)), switches == null ? Map.of() : switches,
-                infraRetries == null ? List.of() : infraRetries, checksTip, headTip, deployment,
-                Session.migrated(session, legacySilentSince), told,
-                waits == null ? List.of() : waits, LegacyRoles.of(roles, LegacyQa.of(qa, turn, status)), LegacyMaster.of(master, turn));
-        Deployment migrated = LegacyDeployment.of(read, stored, legacyConflict);
-        return migrated == deployment ? read : read.toBuilder().deployment(migrated).build();
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    static TaskState fromJson(StoredTask stored) {
+        return stored.read();
     }
 
-    record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {
+    @JsonIgnore public TaskStatus status() { return standing.status(); }
+    @JsonIgnore public long lastActiveTimestamp() { return standing.lastActiveTimestamp(); }
+    @JsonIgnore public @Nullable String message() { return standing.message(); }
+    @JsonIgnore public AgentReport report() { return standing.report(); }
+    @JsonIgnore public List<StatusChange> history() { return standing.history(); }
+    @JsonIgnore public @Nullable String alias() { return ticket.alias(); }
+    @JsonIgnore public @Nullable String title() { return ticket.title(); }
+    @JsonIgnore public @Nullable String ticketUrl() { return ticket.ticketUrl(); }
+    @JsonIgnore public @Nullable String baseBranch() { return ticket.baseBranch(); }
+    @JsonIgnore public long mrCreatedAt() { return round.mrCreatedAt(); }
+    @JsonIgnore public long requestOpenedAt() { return round.requestOpenedAt(); }
+    @JsonIgnore public long lastPolledAt() { return round.lastPolledAt(); }
+    @JsonIgnore public @Nullable Boolean autoReview() { return round.autoReview(); }
+    @JsonIgnore public @Nullable Boolean approved() { return round.approved(); }
+    @JsonIgnore public @Nullable AutoReviewTold told() { return round.told(); }
+    @JsonIgnore public @Nullable RoundTrail trail() { return round.trail(); }
+    @JsonIgnore public @Nullable String pipelineStatus() { return checks.pipelineStatus(); }
+    @JsonIgnore public List<ChecksUnread> checksUnread() { return checks.checksUnread(); }
+    @JsonIgnore public @Nullable String checksTip() { return checks.checksTip(); }
+    @JsonIgnore public @Nullable String headTip() { return checks.headTip(); }
+    @JsonIgnore public List<InfraRetry> infraRetries() { return checks.infraRetries(); }
+    @JsonIgnore public PlanGate planGate() { return gate.planGate(); }
+    @JsonIgnore public List<Probe> probes() { return gate.probes(); }
+    @JsonIgnore public Map<String, String> switches() { return gate.switches(); }
+    @JsonIgnore public @Nullable GitTrust gitTrust() { return gate.gitTrust(); }
+    @JsonIgnore public Map<Guard, Integer> refusals() { return gate.refusals(); }
+    @JsonIgnore public @Nullable TokenUsage usage() { return gate.usage(); }
+    @JsonIgnore public @Nullable AgentSpend agentSpend() { return gate.agentSpend(); }
+    @JsonIgnore public Session session() { return work.session(); }
+    @JsonIgnore public @Nullable Turn turn() { return work.turn(); }
+    @JsonIgnore public List<HumanWait> waits() { return work.waits(); }
+    @JsonIgnore public @Nullable TaskStop stop() { return work.stop(); }
+    @JsonIgnore public @Nullable String repoRequest() { return work.repoRequest(); }
+    @JsonIgnore public @Nullable Deployment deployment() { return work.deployment(); }
+    @JsonIgnore public Map<String, RoleRecord> roles() { return work.roles(); }
+    @JsonIgnore public @Nullable Master master() { return work.master(); }
 
-        static @Nullable RoundTrail trail(@Nullable RoundTrail trail, @Nullable Loop loop) {
-            return trail != null || loop == null ? trail : new RoundTrail(loop.rounds(), loop.since());
-        }
-
-        static @Nullable TaskStop stop(@Nullable TaskStop stop, @Nullable Loop loop) {
-            return stop != null || loop == null ? stop : loop.stop();
-        }
-    }
-
-    /** Flagged without a stamp, so it never counts toward a stop. */
-    private static List<ChecksUnread> unreadOf(@Nullable List<ChecksUnread> checksUnread, @Nullable Boolean flagged) {
-        if (checksUnread != null) {
-            return checksUnread;
-        }
-        return Boolean.TRUE.equals(flagged) ? List.of(new ChecksUnread(0, "")) : List.of();
+    public TaskStateBuilder toBuilder() {
+        return new TaskStateBuilder().repos(repos).status(status()).lastActiveTimestamp(lastActiveTimestamp())
+                .message(message()).report(report()).history(history())
+                .alias(alias()).title(title()).ticketUrl(ticketUrl()).baseBranch(baseBranch())
+                .mrCreatedAt(mrCreatedAt()).requestOpenedAt(requestOpenedAt()).lastPolledAt(lastPolledAt())
+                .autoReview(autoReview()).approved(approved()).told(told()).trail(trail())
+                .pipelineStatus(pipelineStatus()).checksUnread(checksUnread()).checksTip(checksTip())
+                .headTip(headTip()).infraRetries(infraRetries())
+                .planGate(planGate()).probes(probes()).switches(switches()).gitTrust(gitTrust())
+                .refusals(refusals()).usage(usage()).agentSpend(agentSpend())
+                .session(session()).turn(turn()).waits(waits()).stop(stop()).repoRequest(repoRequest())
+                .deployment(deployment()).roles(roles()).master(master());
     }
 
     @JsonIgnore
@@ -280,10 +304,10 @@ public record TaskState(
      */
     public TaskState withStatus(TaskStatus status, @Nullable String message, boolean event, long now) {
         List<StatusChange> known = seededHistory(now);
-        boolean record = event || status != this.status;
+        boolean record = event || status != this.status();
         return toBuilder().status(status).lastActiveTimestamp(now).message(message)
-                .session(session.withQuietSince(0).withHalt(session.halt() != null && session.halt().kind() == Session.Halt.Kind.IDLE
-                        ? session.halt() : null))
+                .session(session().withQuietSince(0).withHalt(session().halt() != null && session().halt().kind() == Session.Halt.Kind.IDLE
+                        ? session().halt() : null))
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
     }
@@ -327,11 +351,11 @@ public record TaskState(
      * {@link #statusSince()} falls back to a stamp every keep-alive bumps.
      */
     private List<StatusChange> seededHistory(long now) {
-        if (!history.isEmpty()) {
-            return history;
+        if (!history().isEmpty()) {
+            return history();
         }
-        long since = lastActiveTimestamp > 0 ? lastActiveTimestamp : now;
-        return List.of(new StatusChange(status, since, null));
+        long since = lastActiveTimestamp() > 0 ? lastActiveTimestamp() : now;
+        return List.of(new StatusChange(status(), since, null));
     }
 
     /** The host's own answer; a read that does not know it (0) must not erase one that did. */
@@ -347,7 +371,7 @@ public record TaskState(
     /** The newest commit a read saw pushed. */
     public TaskState withHead(@Nullable String tip) {
         String head = blankToNull(tip);
-        if (head == null || head.equals(headTip)) {
+        if (head == null || head.equals(headTip())) {
             return this;
         }
         return toBuilder().headTip(head).build();
@@ -355,21 +379,21 @@ public record TaskState(
 
     /** The checks as the host last said them of the request's current head; null where they were read on another or on none. */
     public @Nullable String checksRead() {
-        return readsStale() ? null : pipelineStatus;
+        return readsStale() ? null : pipelineStatus();
     }
 
     /** The approval as the host last said it of the request's current head; null where it was read on another or on none. */
     public @Nullable Boolean approvedRead() {
-        return readsStale() ? null : approved;
+        return readsStale() ? null : approved();
     }
 
     private boolean readsStale() {
-        return readsStaleOn(checksTip);
+        return readsStaleOn(checksTip());
     }
 
     /** Whether checks read on {@code tip} are not of the head the task has seen; none seen, none stale. */
     public boolean readsStaleOn(@Nullable String tip) {
-        return headTip != null && !headTip.equals(blankToNull(tip));
+        return headTip() != null && !headTip().equals(blankToNull(tip));
     }
 
     private static @Nullable String blankToNull(@Nullable String tip) {
@@ -378,7 +402,7 @@ public record TaskState(
 
     /** A round that could not read them: the last verdict stands, marked as not this round's. */
     public TaskState withChecksUnread(ChecksUnread read) {
-        List<ChecksUnread> running = new ArrayList<>(checksUnread);
+        List<ChecksUnread> running = new ArrayList<>(checksUnread());
         running.add(read);
         return toBuilder().checksUnread(running.subList(Math.max(0, running.size() - ChecksUnread.CEILING),
                 running.size())).build();
@@ -386,12 +410,12 @@ public record TaskState(
 
     @JsonIgnore
     public boolean pipelineUnread() {
-        return !checksUnread.isEmpty();
+        return !checksUnread().isEmpty();
     }
 
     /** Something was done to the task that leaves its status where it is: one step in its history, nothing else touched. */
     public TaskState withMoveRecorded(long now) {
-        return toBuilder().history(appended(seededHistory(now), new StatusChange(status, now, null))).build();
+        return toBuilder().history(appended(seededHistory(now), new StatusChange(status(), now, null))).build();
     }
 
     public TaskState withInfraRetries(List<InfraRetry> retries) {
@@ -410,7 +434,7 @@ public record TaskState(
     /** Does NOT touch lastActiveTimestamp: a refused call moved nothing. */
     public TaskState refused(Guard guard) {
         Map<Guard, Integer> counted = new EnumMap<>(Guard.class);
-        counted.putAll(refusals);
+        counted.putAll(refusals());
         counted.merge(guard, 1, Integer::sum);
         return toBuilder().refusals(counted).build();
     }
@@ -434,10 +458,10 @@ public record TaskState(
     }
 
     private TaskState withLastChange(UnaryOperator<StatusChange> stamp) {
-        if (history.isEmpty()) {
+        if (history().isEmpty()) {
             return this;
         }
-        List<StatusChange> stamped = new ArrayList<>(history);
+        List<StatusChange> stamped = new ArrayList<>(history());
         stamped.set(stamped.size() - 1, stamp.apply(stamped.getLast()));
         return toBuilder().history(List.copyOf(stamped)).build();
     }
@@ -454,13 +478,13 @@ public record TaskState(
     /** Whether the oldest steps have been dropped, which makes any total over the log a FLOOR, not the figure. */
     @JsonIgnore
     public boolean historyAtCap() {
-        return history.size() >= MAX_HISTORY;
+        return history().size() >= MAX_HISTORY;
     }
 
     /** How many times the task went out for review: every entry into CI_POLLING is one round. */
     @JsonIgnore
     public int rounds() {
-        return (int) history.stream().filter(step -> step.status() == TaskStatus.CI_POLLING).count();
+        return (int) history().stream().filter(step -> step.status() == TaskStatus.CI_POLLING).count();
     }
 
     /**
@@ -468,7 +492,7 @@ public record TaskState(
      * bumps.
      */
     public long statusSince() {
-        return history.isEmpty() ? lastActiveTimestamp : history.get(history.size() - 1).at();
+        return history().isEmpty() ? lastActiveTimestamp() : history().get(history().size() - 1).at();
     }
 
     public TaskState touched(long now) {
@@ -478,8 +502,8 @@ public record TaskState(
 
     /** The status, line and deployment {@code read} had, written back as one move. */
     public TaskState restoredFrom(TaskState read, long now) {
-        return withStatus(read.status, read.message, now).toBuilder().deployment(read.deployment)
-                .planGate(read.planGate).report(read.report).build();
+        return withStatus(read.status(), read.message(), now).toBuilder().deployment(read.deployment())
+                .planGate(read.planGate()).report(read.report()).build();
     }
 
     public TaskState withReport(AgentReport report) {
@@ -542,20 +566,20 @@ public record TaskState(
 
     /** The task's own base branch, or the project default when it has none (null or blank). */
     public String baseBranchOr(String projectDefault) {
-        return baseBranch == null || baseBranch.isBlank() ? projectDefault : baseBranch;
+        return baseBranch() == null || baseBranch().isBlank() ? projectDefault : baseBranch();
     }
 
     /** An unset (null) per-task flag follows the config default. */
     public boolean autoReviewEnabled(boolean configDefault) {
-        return autoReview == null ? configDefault : autoReview;
+        return autoReview() == null ? configDefault : autoReview();
     }
 
     public TokenUsage usageOrNone() {
-        return usage == null ? TokenUsage.NONE : usage;
+        return usage() == null ? TokenUsage.NONE : usage();
     }
 
     public AgentSpend agentSpendOrNone() {
-        return agentSpend == null ? AgentSpend.NONE : agentSpend;
+        return agentSpend() == null ? AgentSpend.NONE : agentSpend();
     }
 
     /** Every token this task has cost, jagt's own reads and its agent's session alike. */
@@ -576,7 +600,7 @@ public record TaskState(
 
     @JsonIgnore
     public boolean gitStateChanged() {
-        return gitTrust != null && gitTrust.changed() != null;
+        return gitTrust() != null && gitTrust().changed() != null;
     }
 
     /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
@@ -585,7 +609,7 @@ public record TaskState(
     }
 
     public RoundTrail trailOrNone() {
-        return trail == null ? RoundTrail.none() : trail;
+        return trail() == null ? RoundTrail.none() : trail();
     }
 
     /** Does NOT touch lastActiveTimestamp: jagt recorded it, the agent did nothing. */
@@ -600,19 +624,19 @@ public record TaskState(
 
     @JsonIgnore
     public boolean stopped() {
-        return stop != null;
+        return stop() != null;
     }
 
     @JsonIgnore
     public boolean paused() {
-        return stop != null && stop.trigger().ends() == TaskStop.Trigger.Ends.PAUSE;
+        return stop() != null && stop().trigger().ends() == TaskStop.Trigger.Ends.PAUSE;
     }
 
     /** The conflict this task stands in now, as its deployment records it. */
     @JsonIgnore
     public Optional<Conflict> currentConflict() {
-        return status == TaskStatus.DEPLOY_CONFLICT
-                ? Optional.ofNullable(deployment).flatMap(Deployment::conflictedTarget).map(target -> target.progress().conflict())
+        return status() == TaskStatus.DEPLOY_CONFLICT
+                ? Optional.ofNullable(deployment()).flatMap(Deployment::conflictedTarget).map(target -> target.progress().conflict())
                 : Optional.empty();
     }
 
@@ -628,7 +652,7 @@ public record TaskState(
 
     @JsonIgnore
     public boolean asksForARepository() {
-        return repoRequest != null;
+        return repoRequest() != null;
     }
 
     /** Adds the repository the session asked for, which ends the request. */
@@ -660,34 +684,34 @@ public record TaskState(
         if (judged.isEmpty()) {
             return this;
         }
-        Map<String, String> merged = new TreeMap<>(switches);
+        Map<String, String> merged = new TreeMap<>(switches());
         merged.putAll(judged);
         return toBuilder().switches(merged).build();
     }
 
     /** The role passed the change now live: its record names the tips it checked, so a later deploy shows none. */
     public boolean passedBy(String role) {
-        return status == TaskStatus.DEPLOYED && passedOnTips(role);
+        return status() == TaskStatus.DEPLOYED && passedOnTips(role);
     }
 
     /** The role passed the tips the deployment stands at now. */
     public boolean passedOnTips(String role) {
-        return deployment != null && roleOrNone(role).passedOn(deployment.tips());
+        return deployment() != null && roleOrNone(role).passedOn(deployment().tips());
     }
 
     /** A round of the role went out on the deploy now live and the session has not yet settled it. */
     public boolean roundOpen(String role) {
-        return deployment != null && deployment.askedDigest() != null
-                && deployment.askedDigest().equals(roleOrNone(role).roundDigest());
+        return deployment() != null && deployment().askedDigest() != null
+                && deployment().askedDigest().equals(roleOrNone(role).roundDigest());
     }
 
     public RoleRecord roleOrNone(String role) {
-        return roles.getOrDefault(role, RoleRecord.defaults());
+        return roles().getOrDefault(role, RoleRecord.defaults());
     }
 
     @JsonIgnore
     public Master masterOrNone() {
-        return master == null ? Master.defaults() : master;
+        return master() == null ? Master.defaults() : master();
     }
 
     public TaskState withMaster(Master master) {
@@ -696,11 +720,11 @@ public record TaskState(
 
     /** The digest of the question standing on the task, which the Master's unanswered mark names. */
     public String askedDigest() {
-        return Turn.digestOf(message == null ? "" : message);
+        return Turn.digestOf(message() == null ? "" : message());
     }
 
     public TaskState withRole(String role, RoleRecord record) {
-        Map<String, RoleRecord> kept = new TreeMap<>(roles);
+        Map<String, RoleRecord> kept = new TreeMap<>(roles());
         if (record.isEmpty()) {
             kept.remove(role);
         } else {
@@ -723,7 +747,7 @@ public record TaskState(
 
     @JsonIgnore
     public Turn turnOrNone() {
-        return turn == null ? Turn.none() : turn;
+        return turn() == null ? Turn.none() : turn();
     }
 
     public TaskState withDeployment(Deployment deployment) {
@@ -732,7 +756,7 @@ public record TaskState(
 
     @JsonIgnore
     public AutoReviewTold toldOrNone() {
-        return told == null ? AutoReviewTold.none() : told;
+        return told() == null ? AutoReviewTold.none() : told();
     }
 
     public TaskState withWaits(List<HumanWait> waits) {
@@ -768,14 +792,81 @@ public record TaskState(
     /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
     @SuppressWarnings("NullAway.Init")
     public static class TaskStateBuilder {
+        private List<TaskRepo> repos;
+        private TaskStatus status;
+        private long lastActiveTimestamp;
+        private @Nullable String message;
         private AgentReport report = AgentReport.PLAIN;
+        private @Nullable List<StatusChange> history;
+        private @Nullable String alias;
+        private @Nullable String title;
+        private @Nullable String ticketUrl;
+        private @Nullable String baseBranch;
+        private long mrCreatedAt;
+        private long requestOpenedAt;
+        private long lastPolledAt;
+        private @Nullable Boolean autoReview;
+        private @Nullable Boolean approved;
+        private @Nullable AutoReviewTold told;
+        private @Nullable RoundTrail trail;
+        private @Nullable String pipelineStatus;
         private List<ChecksUnread> checksUnread = List.of();
+        private @Nullable String checksTip;
+        private @Nullable String headTip;
         private List<InfraRetry> infraRetries = List.of();
-        private Map<Guard, Integer> refusals = Map.of();
-        private List<Probe> probes = List.of();
         private PlanGate planGate = PlanGate.OPEN;
+        private List<Probe> probes = List.of();
         private Map<String, String> switches = Map.of();
+        private @Nullable GitTrust gitTrust;
+        private Map<Guard, Integer> refusals = Map.of();
+        private @Nullable TokenUsage usage;
+        private @Nullable AgentSpend agentSpend;
         private Session session = Session.defaults();
+        private @Nullable Turn turn;
+        private List<HumanWait> waits = List.of();
+        private @Nullable TaskStop stop;
+        private @Nullable String repoRequest;
+        private @Nullable Deployment deployment;
+        private Map<String, RoleRecord> roles = Map.of();
+        private @Nullable Master master;
+
+        public TaskStateBuilder repos(List<TaskRepo> repos) { this.repos = repos; return this; }
+        public TaskStateBuilder status(TaskStatus status) { this.status = status; return this; }
+        public TaskStateBuilder lastActiveTimestamp(long lastActiveTimestamp) { this.lastActiveTimestamp = lastActiveTimestamp; return this; }
+        public TaskStateBuilder message(@Nullable String message) { this.message = message; return this; }
+        public TaskStateBuilder report(AgentReport report) { this.report = report; return this; }
+        public TaskStateBuilder history(@Nullable List<StatusChange> history) { this.history = history; return this; }
+        public TaskStateBuilder alias(@Nullable String alias) { this.alias = alias; return this; }
+        public TaskStateBuilder title(@Nullable String title) { this.title = title; return this; }
+        public TaskStateBuilder ticketUrl(@Nullable String ticketUrl) { this.ticketUrl = ticketUrl; return this; }
+        public TaskStateBuilder baseBranch(@Nullable String baseBranch) { this.baseBranch = baseBranch; return this; }
+        public TaskStateBuilder mrCreatedAt(long mrCreatedAt) { this.mrCreatedAt = mrCreatedAt; return this; }
+        public TaskStateBuilder requestOpenedAt(long requestOpenedAt) { this.requestOpenedAt = requestOpenedAt; return this; }
+        public TaskStateBuilder lastPolledAt(long lastPolledAt) { this.lastPolledAt = lastPolledAt; return this; }
+        public TaskStateBuilder autoReview(@Nullable Boolean autoReview) { this.autoReview = autoReview; return this; }
+        public TaskStateBuilder approved(@Nullable Boolean approved) { this.approved = approved; return this; }
+        public TaskStateBuilder told(@Nullable AutoReviewTold told) { this.told = told; return this; }
+        public TaskStateBuilder trail(@Nullable RoundTrail trail) { this.trail = trail; return this; }
+        public TaskStateBuilder pipelineStatus(@Nullable String pipelineStatus) { this.pipelineStatus = pipelineStatus; return this; }
+        public TaskStateBuilder checksUnread(List<ChecksUnread> checksUnread) { this.checksUnread = checksUnread; return this; }
+        public TaskStateBuilder checksTip(@Nullable String checksTip) { this.checksTip = checksTip; return this; }
+        public TaskStateBuilder headTip(@Nullable String headTip) { this.headTip = headTip; return this; }
+        public TaskStateBuilder infraRetries(List<InfraRetry> infraRetries) { this.infraRetries = infraRetries; return this; }
+        public TaskStateBuilder planGate(PlanGate planGate) { this.planGate = planGate; return this; }
+        public TaskStateBuilder probes(List<Probe> probes) { this.probes = probes; return this; }
+        public TaskStateBuilder switches(Map<String, String> switches) { this.switches = switches; return this; }
+        public TaskStateBuilder gitTrust(@Nullable GitTrust gitTrust) { this.gitTrust = gitTrust; return this; }
+        public TaskStateBuilder refusals(Map<Guard, Integer> refusals) { this.refusals = refusals; return this; }
+        public TaskStateBuilder usage(@Nullable TokenUsage usage) { this.usage = usage; return this; }
+        public TaskStateBuilder agentSpend(@Nullable AgentSpend agentSpend) { this.agentSpend = agentSpend; return this; }
+        public TaskStateBuilder session(Session session) { this.session = session; return this; }
+        public TaskStateBuilder turn(@Nullable Turn turn) { this.turn = turn; return this; }
+        public TaskStateBuilder waits(List<HumanWait> waits) { this.waits = waits; return this; }
+        public TaskStateBuilder stop(@Nullable TaskStop stop) { this.stop = stop; return this; }
+        public TaskStateBuilder repoRequest(@Nullable String repoRequest) { this.repoRequest = repoRequest; return this; }
+        public TaskStateBuilder deployment(@Nullable Deployment deployment) { this.deployment = deployment; return this; }
+        public TaskStateBuilder roles(Map<String, RoleRecord> roles) { this.roles = roles; return this; }
+        public TaskStateBuilder master(@Nullable Master master) { this.master = master; return this; }
 
         public TaskStateBuilder mrUrl(@Nullable String mrUrl) {
             return firstRepo(repo -> repo.withMrUrl(mrUrl));
@@ -786,6 +877,16 @@ public record TaskState(
             updated.set(0, change.apply(updated.get(0)));
             this.repos = List.copyOf(updated);
             return this;
+        }
+
+        public TaskState build() {
+            List<StatusChange> opened = history == null ? List.of(new StatusChange(status, lastActiveTimestamp, null)) : history;
+            return new TaskState(repos, new Standing(status, lastActiveTimestamp, message, report, opened),
+                    new Ticket(alias, title, ticketUrl, baseBranch),
+                    new Round(mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, trail),
+                    new Checks(pipelineStatus, checksUnread, checksTip, headTip, infraRetries),
+                    new Gate(planGate, probes, switches, gitTrust, refusals, usage, agentSpend),
+                    new Work(session, turn, waits, stop, repoRequest, deployment, roles, master));
         }
     }
 }

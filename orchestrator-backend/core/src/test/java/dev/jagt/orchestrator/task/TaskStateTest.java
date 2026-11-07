@@ -70,8 +70,8 @@ class TaskStateTest {
 
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
-        TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
-                AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, null, null, List.of(), null, null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null, null, null, null, null, null);
+        TaskState legacy = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).lastActiveTimestamp(5_000)
+                .alias("a1").history(List.of()).build();
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -132,9 +132,8 @@ class TaskStateTest {
 
     @Test
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
-        TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
-                1_700_000_000_000L, "working", AgentReport.PLAIN, "a1", null, null, null, 0, 0, 0, null, null, List.of(), null,
-                null, null, List.of(), null, null, List.of(), PlanGate.OPEN, null, null, null, null, null, List.of(), null, null, null, null, null, null, null, null);
+        TaskState legacy = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(1_700_000_000_000L).message("working").alias("a1").history(List.of()).build();
 
         TaskState afterKeepAlive = legacy.touched(1_700_000_001_000L);
 
