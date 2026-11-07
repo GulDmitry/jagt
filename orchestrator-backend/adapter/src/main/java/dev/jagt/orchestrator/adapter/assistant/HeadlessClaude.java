@@ -299,11 +299,30 @@ class HeadlessClaude {
     return judged(result, kind, label);
   }
 
+  // TokenUsage folds cache writes into fresh input; apart, they show what a warm call re-sends.
+  private static void logCacheSplit(
+      @Nullable JsonNode envelope, AssistantCallKind kind, String label) {
+    if (envelope == null || !envelope.path("usage").isObject()) {
+      return;
+    }
+    JsonNode usage = envelope.path("usage");
+    log.atInfo()
+        .setMessage("assistant call tokens")
+        .addKeyValue("ref", label)
+        .addKeyValue("kind", kind)
+        .addKeyValue("turns", envelope.path("num_turns").asLong(0))
+        .addKeyValue("fresh", usage.path("input_tokens").asLong(0))
+        .addKeyValue("written", usage.path("cache_creation_input_tokens").asLong(0))
+        .addKeyValue("cached", usage.path("cache_read_input_tokens").asLong(0))
+        .log();
+  }
+
   private HeadlessReply judged(Processes.Result result, AssistantCallKind kind, String label) {
     JsonNode envelope = parseEnvelope(result.stdout(), label);
     // Booked whatever the outcome: a call that errored or came back unusable was still paid for.
     TokenUsage usage = usageOf(envelope);
     usageTracker.record(kind, usage);
+    logCacheSplit(envelope, kind, label);
     if (usage.isNone()) {
       log.atWarn()
           .setMessage("assistant call reported no usage")
