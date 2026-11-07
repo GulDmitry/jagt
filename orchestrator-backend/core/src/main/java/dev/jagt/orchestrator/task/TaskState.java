@@ -503,6 +503,11 @@ public record TaskState(
         return toBuilder().repos(repos).requestOpenedAt(now);
     }
 
+    /** {@code project} holding no request, its read answers gone with it. */
+    public TaskState withoutRequest(String project) {
+        return toBuilder().repos(mapRepo(project, repo -> repo.withMrUrl(null))).build();
+    }
+
     public TaskState withMrUrl(String mrUrl, long now) {
         return withMrUrl(primary().project(), mrUrl, now);
     }

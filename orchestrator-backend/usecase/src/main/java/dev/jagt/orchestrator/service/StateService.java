@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.ForeignLinks;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.extern.slf4j.Slf4j;
@@ -286,7 +287,17 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     private StateFile parse(Path file) throws IOException {
-        return mapper.readValue(Files.readString(file), StateFile.class);
+        StateFile read = mapper.readValue(Files.readString(file), StateFile.class);
+        Map<String, TaskState> kept = new LinkedHashMap<>();
+        read.tasks().forEach((id, task) -> kept.put(id, withoutForeignRequests(id, task)));
+        return new StateFile(kept);
+    }
+
+    private static TaskState withoutForeignRequests(String taskId, TaskState task) {
+        ForeignLinks.foreignIn(task).forEach(foreign -> log.atInfo().setMessage("foreign request cleared")
+                .addKeyValue("task", taskId).addKeyValue("project", foreign.project())
+                .addKeyValue("request", foreign.url()).addKeyValue("cause", "not under the repository's remote").log());
+        return ForeignLinks.cleared(task);
     }
 
     /**

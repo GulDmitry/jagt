@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.Reported;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -28,6 +29,12 @@ public class ReportEffects {
     private final TaskTurns turns;
     private final TaskStops stops;
     private final InfraWaitProperties properties;
+    private final LinkRefusals refusals;
+
+    /** Called once the report is applied, with the links it carried. */
+    public void linked(Reported reported, String taskId) {
+        refusals.after(reported, taskId);
+    }
 
     /** The rules a report is judged by, told whether a wait is something jagt does here. */
     public MessageContext judged(MessageContext context) {

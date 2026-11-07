@@ -43,7 +43,7 @@ class ReportEffectsTest {
     private ReportEffects effects(StateService state, InfraWaitProperties properties) {
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
         TaskTurns turns = new TaskTurns(state, clock);
-        return new ReportEffects(new SessionWakes(state, turns, clock), turns, stops, properties);
+        return new ReportEffects(new SessionWakes(state, turns, clock), turns, stops, properties, mock(LinkRefusals.class));
     }
 
     private static TaskState taskAnswering(String step, String waited) {
@@ -115,7 +115,7 @@ class ReportEffectsTest {
         TaskStops realStops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
-                InfraWaitProperties.defaults());
+                InfraWaitProperties.defaults(), mock(LinkRefusals.class));
         state.putTask("ABC-42", taskAnswering("wait-over", "3"));
         effects.after(waits, "ABC-42");
 
@@ -133,7 +133,7 @@ class ReportEffectsTest {
         TaskStops realStops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
-                InfraWaitProperties.defaults());
+                InfraWaitProperties.defaults(), mock(LinkRefusals.class));
         state.putTask("ABC-42", taskAnswering("wait-over", "3"));
         realStops.stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
         effects.after(waits, "ABC-42");
@@ -153,7 +153,7 @@ class ReportEffectsTest {
         TaskStops realStops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)), clock);
         ReportEffects effects = new ReportEffects(new SessionWakes(state, turns, clock), turns, realStops,
-                InfraWaitProperties.defaults());
+                InfraWaitProperties.defaults(), mock(LinkRefusals.class));
         state.putTask("ABC-42", taskAnswering("wait-over", "3"));
         realStops.stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
         effects.after(AgentStatusMessage.of("IN_PROGRESS", "db is back"), "ABC-42");

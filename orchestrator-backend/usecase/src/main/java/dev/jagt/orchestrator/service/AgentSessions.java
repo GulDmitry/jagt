@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AgentSessions {
+public class AgentSessions implements SessionLines {
 
     private static final Duration DRAFT_POLL = Duration.ofSeconds(1);
     private static final Duration SUBMIT_WAIT = Duration.ofMillis(700);
@@ -170,6 +170,7 @@ public class AgentSessions {
      * A line the human types, typed into the running session as they would have typed it in its window. Never a
      * relay: that OVERWRITES task_context.md, and the round's brief is still what the agent is working from.
      */
+    @Override
     public String say(String taskId, String line) {
         String id = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(id);

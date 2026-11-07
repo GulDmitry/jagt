@@ -44,6 +44,7 @@ public class OwnStatusReports {
         });
         String answer = statusReports.report(said, taskId);
         effects.after(said, taskId);
+        accepted.ifPresent(reported -> effects.linked(reported, taskId));
         return answer;
     }
 

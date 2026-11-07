@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.protocol.Reported;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.ForeignLinks;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -110,8 +111,9 @@ public class AgentStatusReports {
         return stateService.task(taskId).map(TaskState::projects).orElse(List.of());
     }
 
-    private String report(Reported said, String taskId, Predicate<TaskState> verificationOwed, boolean closesTurn) {
+    private String report(Reported asked, String taskId, Predicate<TaskState> verificationOwed, boolean closesTurn) {
         Optional<TaskState> current = stateService.task(taskId);
+        Reported said = current.map(task -> withoutForeignLinks(asked, task)).orElse(asked);
         TaskStatus newStatus = said.status();
         Map<String, String> requestsByProject = said.requests();
         AgentReport means = measured(said, current, taskId);
@@ -136,6 +138,23 @@ public class AgentStatusReports {
         logChange(taskId, current.map(TaskState::alias).orElse(null), previous, landed, shortMessage, means, askedNow);
         logReplacedStop(taskId, current);
         return answer(taskId, newStatus, landed, shortMessage);
+    }
+
+    /** A ship whose every link is foreign is a missed one: the report lands on the status the task already holds. */
+    private static Reported withoutForeignLinks(Reported said, TaskState task) {
+        ForeignLinks.Judged judged = ForeignLinks.judge(task, said.requests(), said.link());
+        if (judged.foreign().isEmpty()) {
+            return said;
+        }
+        boolean missedShip = judged.refusedAll() && said.status() == TaskStatus.CI_POLLING;
+        if (missedShip && !FlowRules.reportable(task.status(), task.status())) {
+            throw Refusal.byState("jagt refuses this report: " + judged.foreign().getFirst().url()
+                    + " is not under the repository's remote, so no request was linked and the task stays "
+                    + task.status() + ".");
+        }
+        TaskStatus stays = missedShip ? task.status() : said.status();
+        return new Reported(stays, said.claimed(), said.detail(), judged.url(), judged.byProject(), said.noPlan(),
+                said.needsProject(), said.switches());
     }
 
     private void logReplacedStop(String taskId, Optional<TaskState> before) {

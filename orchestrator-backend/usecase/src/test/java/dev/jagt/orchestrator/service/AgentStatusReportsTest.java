@@ -282,6 +282,66 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void leavesTheStatusAndRecordsNoRoundWhenTheOnlyLinkIsForeign(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null))).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                configService);
+
+        reports.report(new AgentStatusMessage("CI_POLLING", "shipped", null, "https://host/other/proj/-/merge_requests/9",
+                Map.of()), "ABC-1");
+
+        TaskState reported = state.task("ABC-1").orElseThrow();
+        assertThat(reported.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(reported.mrUrl()).isNull();
+        assertThat(reported.mrCreatedAt()).isZero();
+    }
+
+    @Test
+    void refusesAShipWhoseOnlyLinkIsForeignFromATaskThatCannotHoldItsStatus(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1")
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null))).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                configService);
+
+        assertThatThrownBy(() -> reports.report(new AgentStatusMessage("CI_POLLING", "shipped", null,
+                "https://host/other/proj/-/merge_requests/9", Map.of()), "ABC-1"))
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("not under the repository's remote");
+    }
+
+    @Test
+    void dropsOnlyTheForeignLinkOfAShipAndRecordsTheGoodOne(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null),
+                        new TaskRepo("web", "/wt-web", "git@host:team/web.git", null))).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                configService);
+
+        reports.report(new AgentStatusMessage("CI_POLLING", "shipped", null, null,
+                Map.of("proj", "https://host/other/proj/-/merge_requests/9",
+                        "web", "https://host/team/web/-/merge_requests/3")), "ABC-1");
+
+        TaskState reported = state.task("ABC-1").orElseThrow();
+        assertThat(reported.status()).isEqualTo(TaskStatus.CI_POLLING);
+        assertThat(reported.reviewRequestOf("proj")).isEmpty();
+        assertThat(reported.reviewRequestOf("web")).contains("https://host/team/web/-/merge_requests/3");
+        assertThat(reported.mrCreatedAt()).isPositive();
+    }
+
+    @Test
     void readsTheOutcomeFromTheArgumentWhenTheMessageCarriesNoMarker(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));

@@ -43,6 +43,22 @@ class StateServiceTest {
     }
 
     @Test
+    void clearsARequestItsRepositorysRemoteDoesNotHoldOnTheFirstRead(@TempDir Path root) {
+        Path stateFile = root.resolve("state.json");
+        StateService writer = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+        writer.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git",
+                        "https://host/other/proj/-/merge_requests/9"))).build());
+        StateService reader = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+
+        TaskState read = reader.task("ABC-1").orElseThrow();
+
+        assertThat(read.reviewRequestOf("proj")).isEmpty();
+    }
+
+    @Test
     void resolvesACallerFromAnyRepositoryItsTaskWorksIn(@TempDir Path root) throws IOException {
         Path api = Files.createDirectories(root.resolve("ABC-1-alpha"));
         Path client = Files.createDirectories(root.resolve("ABC-1-beta"));

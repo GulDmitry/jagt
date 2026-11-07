@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
@@ -40,13 +41,17 @@ import static org.mockito.Mockito.when;
 class OwnStatusReportsTest {
 
     private static ReportEffects effects(StateService state) {
+        return effects(state, new ReachLedger());
+    }
+
+    private static ReportEffects effects(StateService state, ReachLedger reach) {
         TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()))),
                 Clock.systemUTC());
         return new ReportEffects(new SessionWakes(state, turns, Clock.systemUTC()), turns, stops,
-                InfraWaitProperties.defaults());
+                InfraWaitProperties.defaults(), new LinkRefusals(reach, (task, line) -> "", state));
     }
 
 
@@ -86,6 +91,26 @@ class OwnStatusReportsTest {
                 .isNotInstanceOf(Refusal.class)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("task_notes.md names the model 'gpt'");
+    }
+
+    @Test
+    void putsASessionsForeignLinkOnTheBoardsHead(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .repos(List.of(new TaskRepo("proj", root.toString(), "git@host:team/proj.git", null))).build());
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
+        when(statusReports.contextFor("ABC-1")).thenReturn(MessageContext.NONE);
+        CaseDoor door = mock(CaseDoor.class);
+        when(door.takes("ABC-1", TaskStatus.CI_POLLING, AgentReport.PLAIN)).thenReturn(true);
+        ReachLedger reach = new ReachLedger();
+        OwnStatusReports reports = new OwnStatusReports(state, mock(HandBackDue.class), statusReports, door,
+                effects(state, reach));
+
+        reports.report(new AgentStatusMessage("CI_POLLING", "shipped", null, "https://host/other/proj/-/merge_requests/9",
+                Map.of()), "ABC-1");
+
+        assertThat(reach.standing()).hasSize(1);
     }
 
     @Test
