@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.tmux;
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.ReadScope;
 import dev.jagt.orchestrator.port.SessionHost.WindowsUnreadable;
 import dev.jagt.orchestrator.service.OneLine;
 import java.time.Duration;
@@ -24,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class TmuxReads {
+public class TmuxReads implements ReadScope {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(20);
   private static final String FIELDS = "#{window_id} #{pane_pid} #{window_activity} #{window_name}";
@@ -48,6 +49,7 @@ public class TmuxReads {
   private final AtomicLong generation = new AtomicLong();
   private final ScopedValue<Tick> tick = ScopedValue.newInstance();
 
+  @Override
   public void once(Runnable reads) {
     if (tick.isBound()) {
       reads.run();

@@ -36,15 +36,6 @@ public interface SessionHost {
     }
   }
 
-  /**
-   * Runs {@code tick}, during which the windows and processes it asks about are listed once for
-   * every task it visits. A window opened, closed or pressed makes the next ask list again; nothing
-   * outlives the call.
-   */
-  default void readingOnce(Runnable tick) {
-    tick.run();
-  }
-
   /** The session name to use, given whatever the human configured (blank included). */
   String sessionName(@Nullable String configured);
 

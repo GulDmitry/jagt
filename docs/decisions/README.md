@@ -160,3 +160,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0144 What was told once is one ledger, written by the reducer](0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md) (extends 0076)
 - [0145 jagt's own records roll themselves](0145-jagts-own-records-roll-themselves.md)
 - [0146 Error Prone gates its default checks in main](0146-error-prone-gates-its-default-checks-in-main.md) (extends 0143)
+- [0147 The tick scope is its own port](0147-the-tick-scope-is-its-own-port.md)

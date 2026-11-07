@@ -69,11 +69,6 @@ public class TmuxSessionHost implements SessionHost {
   }
 
   @Override
-  public void readingOnce(Runnable tick) {
-    reads.once(tick);
-  }
-
-  @Override
   public String sessionName(@Nullable String configured) {
     return configured == null || configured.isBlank() ? "jagt" : configured;
   }

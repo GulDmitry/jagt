@@ -25,7 +25,7 @@ after showing its tail 15s; an interactive shell MUST NEVER be left in it.
 
 ### Requirement: An unreadable window list decides nothing
 A missing session or server SHALL list none; any other failed `list-windows` SHALL be unknown: a job or the watchdog decides nothing, a pressed verb
-is refused. A job run SHALL list windows and the process table once for all its tasks (`readingOnce`); an opened, closed or pressed window relists.
+is refused. A job run SHALL list windows and the process table once for all its tasks (`ReadScope`); an opened, closed or pressed window relists.
 
 #### Scenario: The windows cannot be listed
 - **WHEN** tmux cannot list the session's windows for any cause but a missing session or server

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.port.ReadScope;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -16,15 +16,15 @@ class TickSchedulerTest {
 
   @Test
   void runsEveryScheduledRunWithinOneWindowRead() throws InterruptedException {
-    SessionHost sessions = mock(SessionHost.class);
+    ReadScope reads = mock(ReadScope.class);
     doAnswer(
             call -> {
               ((Runnable) call.getArgument(0)).run();
               return null;
             })
-        .when(sessions)
-        .readingOnce(any());
-    TickScheduler scheduler = new TickScheduler(sessions);
+        .when(reads)
+        .once(any());
+    TickScheduler scheduler = new TickScheduler(reads);
     scheduler.setPoolSize(1);
     scheduler.initialize();
     CountDownLatch ran = new CountDownLatch(1);
@@ -33,7 +33,7 @@ class TickSchedulerTest {
         ran::countDown, context -> context.lastActualExecution() == null ? Instant.now() : null);
 
     assertThat(ran.await(5, TimeUnit.SECONDS)).isTrue();
-    verify(sessions).readingOnce(any());
+    verify(reads).once(any());
     scheduler.shutdown();
   }
 }

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.TickScheduler;
-import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.port.ReadScope;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
 import java.net.http.HttpClient;
 import java.time.Clock;
@@ -76,8 +76,8 @@ public class RuntimeWiring {
 
   /** One thread per job, which holds it for the whole run, and one for the board's heartbeat. */
   @Bean
-  public TaskScheduler taskScheduler(List<Job> jobs, Clock clock, SessionHost sessions) {
-    ThreadPoolTaskScheduler scheduler = new TickScheduler(sessions);
+  public TaskScheduler taskScheduler(List<Job> jobs, Clock clock, ReadScope reads) {
+    ThreadPoolTaskScheduler scheduler = new TickScheduler(reads);
     scheduler.setPoolSize(jobs.size() + 1);
     scheduler.setClock(clock);
     scheduler.setDaemon(true);

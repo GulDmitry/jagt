@@ -94,16 +94,17 @@ class TmuxSessionHostTest {
             any(Duration.class),
             argThat((List<String> command) -> command.contains("ps"))))
         .thenReturn(new Processes.Result(0, "    1\n  100\n  300\n", ""));
+    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults()),
+            reads,
             new OrchestratorPaths(OrchestratorProperties.defaults()),
             mock(TerminalDriver.class),
             mock(AgentRuntime.class));
     List<WindowState> states = new java.util.ArrayList<>();
 
-    host.readingOnce(
+    reads.once(
         () -> {
           states.add(host.taskWindowState("jagt", "ABC-1"));
           states.add(host.taskWindowState("jagt", "ABC-2"));
@@ -143,15 +144,16 @@ class TmuxSessionHostTest {
             any(Duration.class),
             argThat((List<String> command) -> command.contains("send-keys"))))
         .thenReturn(new Processes.Result(0, "", ""));
+    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults()),
+            reads,
             new OrchestratorPaths(OrchestratorProperties.defaults()),
             mock(TerminalDriver.class),
             mock(AgentRuntime.class));
 
-    host.readingOnce(
+    reads.once(
         () -> {
           host.lastWindowActivityMillis("jagt", "ABC-1");
           host.submitTaskWindow("jagt", "ABC-1");
@@ -175,15 +177,16 @@ class TmuxSessionHostTest {
             any(Duration.class),
             argThat((List<String> command) -> command.contains("list-windows"))))
         .thenReturn(new Processes.Result(0, "jagt\t@1 100 1700000000 ABC-1\n", ""));
+    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults()),
+            reads,
             new OrchestratorPaths(OrchestratorProperties.defaults()),
             mock(TerminalDriver.class),
             mock(AgentRuntime.class));
 
-    host.readingOnce(
+    reads.once(
         () -> {
           host.lastWindowActivityMillis("jagt", "ABC-1");
           host.keepFeedWindow("jagt", "feed", Path.of("/feeds/a.log"));
@@ -209,15 +212,16 @@ class TmuxSessionHostTest {
             any(Duration.class),
             argThat((List<String> command) -> command.contains("list-windows"))))
         .thenReturn(new Processes.Result(0, "jagt\t@1 100 1700000000 ABC-1\n", ""));
+    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults()),
+            reads,
             new OrchestratorPaths(OrchestratorProperties.defaults()),
             mock(TerminalDriver.class),
             mock(AgentRuntime.class));
 
-    host.readingOnce(
+    reads.once(
         () -> {
           host.lastWindowActivityMillis("jagt", "ABC-1");
           host.killTaskWindows("jagt", "ABC-1");
@@ -241,16 +245,17 @@ class TmuxSessionHostTest {
             any(Duration.class),
             argThat((List<String> command) -> command.contains("list-windows"))))
         .thenReturn(new Processes.Result(0, "other\t@4 400 1700000009 ABC-4\n", ""));
+    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults()),
+            reads,
             new OrchestratorPaths(OrchestratorProperties.defaults()),
             mock(TerminalDriver.class),
             mock(AgentRuntime.class));
     List<Long> activity = new java.util.ArrayList<>();
 
-    host.readingOnce(() -> activity.add(host.lastWindowActivityMillis("jagt", "ABC-4")));
+    reads.once(() -> activity.add(host.lastWindowActivityMillis("jagt", "ABC-4")));
 
     assertThat(activity).containsExactly(0L);
   }
@@ -263,15 +268,16 @@ class TmuxSessionHostTest {
             any(Duration.class),
             argThat((List<String> command) -> command.contains("list-windows"))))
         .thenReturn(new Processes.Result(0, "jagt\t@1 100 1700000000 ABC-1\n", ""));
+    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
     TmuxSessionHost host =
         new TmuxSessionHost(
             processes,
-            new TmuxReads(processes, ToolchainProperties.defaults()),
+            reads,
             new OrchestratorPaths(OrchestratorProperties.defaults()),
             mock(TerminalDriver.class),
             mock(AgentRuntime.class));
 
-    host.readingOnce(() -> host.lastWindowActivityMillis("jagt", "ABC-1"));
+    reads.once(() -> host.lastWindowActivityMillis("jagt", "ABC-1"));
     host.lastWindowActivityMillis("jagt", "ABC-1");
 
     verify(processes, times(2))
