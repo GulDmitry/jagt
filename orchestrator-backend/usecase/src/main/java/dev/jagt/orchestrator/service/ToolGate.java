@@ -99,8 +99,7 @@ public final class ToolGate {
         if (PLUMBING.matcher(unquotedLine).find()
                 || Stream.of(SEPARATORS.split(command)).anyMatch(HostCliLine::writes) || HostCliLine.writes(command)) {
             return Optional.of("jagt refuses writing to the code host from here: gh and glab only read ("
-                    + HostCliLine.readsAllowed() + "). Push " + taskBranch
-                    + " with a plain `git push " + remote.pushTarget() + " " + taskBranch + "`.");
+                    + HostCliLine.readsAllowed() + "). " + remote.pushAdvice(taskBranch));
         }
         return Optional.empty();
     }
@@ -115,8 +114,8 @@ public final class ToolGate {
     private static Optional<String> skipsPrePush(String command, String taskBranch, Remote remote) {
         if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
                 || Stream.of(SEPARATORS.split(command)).anyMatch(ToolGate::configuresAPush))) {
-            return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
-                    + " with a plain `git push " + remote.pushTarget() + " " + taskBranch + "`.");
+            return Optional.of("jagt refuses a push that could skip its pre-push check. "
+                    + remote.pushAdvice(taskBranch));
         }
         return Optional.empty();
     }

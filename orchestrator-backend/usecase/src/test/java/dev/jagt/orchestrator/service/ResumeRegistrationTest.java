@@ -148,4 +148,15 @@ class ResumeRegistrationTest {
         assertThat(created.getValue().instructions()).contains("--force-with-lease upstream widget-fix")
                 .doesNotContain("origin");
     }
+
+    @Test
+    void tellsASessionOfARepositoryKeptOnThisMachineToPushNothing() {
+        when(provisioning.remoteOf("proj")).thenReturn(Remote.LOCAL);
+
+        registration.register("feature/widget-layout", "proj", "https://host/mr/455", "Widget layout is off", "main");
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue().instructions()).doesNotContain("git push");
+    }
 }

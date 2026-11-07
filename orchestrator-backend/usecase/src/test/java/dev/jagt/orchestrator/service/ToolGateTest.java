@@ -256,4 +256,11 @@ class ToolGateTest {
         assertThat(ToolGate.refusal("git push --no-verify upstream ABC-42", "ABC-42", 8290, new Remote("upstream"))).get()
                 .asString().contains("`git push upstream ABC-42`").doesNotContain("origin");
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"git push --no-verify . ABC-42", "gh pr merge 1"})
+    void namesNoPushWhereTheRepositoryIsKeptOnThisMachine(String command) {
+        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.LOCAL)).get()
+                .asString().doesNotContain("git push .");
+    }
 }

@@ -37,6 +37,12 @@ public record Remote(String name) {
         return local() ? "." : name;
     }
 
+    /** The sentence telling a session how its branch is shared: a push where there is a remote, none where there is not. */
+    public String pushAdvice(String branch) {
+        return local() ? "Nothing is pushed from here: the repository stays on this machine, so commit " + branch + "."
+                : "Push " + branch + " with a plain `git push " + name + " " + branch + "`.";
+    }
+
     /** The branch a configured ref names, with this remote's prefix and any {@code refs/heads/} dropped. */
     public String branchOf(@Nullable String ref) {
         if (ref == null) {

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.Launched;
+import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -44,12 +45,13 @@ public class ResumeRegistration {
                     ? "error: ticket read failed: " + taskId + " (cause in the log) — no task created"
                     : "error: asked for " + taskId + " and got " + other + " back — no task created");
         }
+        Remote remote = provisioning.remoteOf(project);
         String instructions = "Reopened for review. Your branch is resumed with its existing commits and"
                 + " review request " + mrUrl + " is open — there is NOTHING to build or commit right now."
                 + " FIRST run `git status`: a rebase onto " + targetBranch + " in progress is jagt's, and it"
-                + " conflicted — resolve the conflicts, `git rebase --continue`, then `git push"
-                + " --force-with-lease " + provisioning.remoteOf(project).pushTarget() + " " + taskId + "` (this brief is the permission, for THIS branch"
-                + " only), and report `question` where a resolution was not obvious. Otherwise do NOT"
+                + " conflicted — resolve the conflicts, `git rebase --continue`"
+                + afterTheRebase(remote, taskId)
+                + ", and report `question` where a resolution was not obvious. Otherwise do NOT"
                 + " re-implement and"
                 + " do NOT call update_agent_status: the Master has already set your status (CI_POLLING). Stay"
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
@@ -68,5 +70,11 @@ public class ResumeRegistration {
         statusReports.report(FlowRules.resumedOnARequest(), "review request: " + mrUrl, taskId);
         return Launched.created(taskId, "Resumed " + taskId + " on its existing branch, linked " + mrUrl
                 + "; CI_POLLING — `sweep` or `deploy`.");
+    }
+
+    private static String afterTheRebase(Remote remote, String taskId) {
+        return remote.local() ? " (nothing is pushed: the repository stays on this machine)"
+                : ", then `git push --force-with-lease " + remote.pushTarget() + " " + taskId
+                + "` (this brief is the permission, for THIS branch only)";
     }
 }
