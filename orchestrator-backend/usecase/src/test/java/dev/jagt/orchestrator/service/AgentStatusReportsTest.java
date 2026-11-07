@@ -20,15 +20,13 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
-import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.ReachLost;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -52,7 +50,7 @@ import static org.mockito.Mockito.when;
 
 class AgentStatusReportsTest {
 
-    private final Notifications notifications = mock(Notifications.class);
+    private final LinkRefusals refusals = mock(LinkRefusals.class);
     private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
     private final ConfigService configService = mock(ConfigService.class);
 
@@ -64,7 +62,7 @@ class AgentStatusReportsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of(),
                         List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null, null))));
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -79,7 +77,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -96,7 +94,7 @@ class AgentStatusReportsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
                 new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of(),
                         List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null, null))));
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -112,7 +110,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
         ListAppender<ILoggingEvent> log = new ListAppender<>();
@@ -130,7 +128,7 @@ class AgentStatusReportsTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -148,7 +146,7 @@ class AgentStatusReportsTest {
         doReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()))
                 .when(staleView).task("ABC-1");
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(staleView, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(staleView, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -163,7 +161,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
@@ -181,7 +179,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -197,7 +195,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
                 .message("deployed").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -213,7 +211,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -230,7 +228,7 @@ class AgentStatusReportsTest {
                 .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", null),
                         new TaskRepo("web", "/wt-web", "git@host:web.git", null))).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -250,7 +248,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -269,7 +267,7 @@ class AgentStatusReportsTest {
                         new TaskRepo("web", "/wt-web", "git@host:web.git", null)))
                 .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -288,7 +286,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null))).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -302,13 +300,34 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void putsAForeignLinkOnTheBoardsHeadWhenThePathIntoReportsIsNotASessions(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null))).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        ReachLedger reach = new ReachLedger();
+        AgentStatusReports reports = new AgentStatusReports(state, new LinkRefusals(reach, (task, line) -> {
+            throw new AssertionError("no session to tell");
+        }, state),
+                new FlowReports(state, Clock.systemUTC()),
+                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                configService);
+
+        reports.report(new AgentStatusMessage("CI_POLLING", "shipped", null, "https://host/other/proj/-/merge_requests/9",
+                Map.of()), "ABC-1");
+
+        assertThat(reach.standing()).extracting(ReachLost::said).containsExactly("a1 proj: request is not under team/proj");
+    }
+
+    @Test
     void refusesAShipWhoseOnlyLinkIsForeignFromATaskThatCannotHoldItsStatus(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1")
                 .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null))).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -326,7 +345,7 @@ class AgentStatusReportsTest {
                 .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null),
                         new TaskRepo("web", "/wt-web", "git@host:team/web.git", null))).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -347,7 +366,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -364,7 +383,7 @@ class AgentStatusReportsTest {
                 .mrUrl("https://host/mr/1").build());
         when(worktreeChanges.anyUncommitted(any())).thenReturn(true);
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -381,7 +400,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/mr/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -401,7 +420,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -422,7 +441,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -437,7 +456,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -453,7 +472,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
                 .mrUrl("https://gitlab.example/g/p/-/merge_requests/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -468,7 +487,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -485,7 +504,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         String link = "https://gitlab.example/group/subgroup/team/project/-/merge_requests/1234567";
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -501,7 +520,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -517,7 +536,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -535,7 +554,7 @@ class AgentStatusReportsTest {
                 .mrUrl("http://mr/1").message("squash or keep the commits?").report(AgentReport.QUESTION)
                 .lastActiveTimestamp(1_700_000_000_000L).session(Session.defaults().withQuietSince(1_700_000_000_000L)).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -553,7 +572,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -570,7 +589,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).lastPolledAt(lastRound).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -587,7 +606,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -603,7 +622,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
                 .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1_000, "4 ships", "http://mr/1")).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -619,7 +638,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).pipelineStatus("failed").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -637,7 +656,7 @@ class AgentStatusReportsTest {
                 .pipelineStatus("success").approved(true).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(worktreeChanges.pushedTips(any())).thenReturn("proj=aaa");
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -656,7 +675,7 @@ class AgentStatusReportsTest {
                 .pipelineStatus("failed").approved(true).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         when(worktreeChanges.pushedTips(any())).thenReturn("proj=bbb");
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -673,7 +692,7 @@ class AgentStatusReportsTest {
         Files.writeString(root.resolve("plan.md"), "# Plan\n1. change the guide\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -689,7 +708,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -707,7 +726,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.APPROVED)
                 .alias("a1").mrUrl("https://host/mr/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -724,7 +743,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -740,7 +759,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -756,7 +775,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
         TaskStop stop = new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
@@ -773,7 +792,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
@@ -794,7 +813,7 @@ class AgentStatusReportsTest {
         Files.writeString(root.resolve("plan.md"), "# Plan\n## Acceptance criteria\n- [here] guide exists\n```probes\nartifact docs/guide.md\n```\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -811,7 +830,7 @@ class AgentStatusReportsTest {
         Files.writeString(root.resolve("plan.md"), "## Acceptance criteria\n- [here] builds\n```probes\ncommand ./gradlew test | tee out.log\n```\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -829,7 +848,7 @@ class AgentStatusReportsTest {
                         new TaskRepo("web", "/wt-web", "git@host:web.git", "https://host/web/mr/3")))
                 .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -841,29 +860,12 @@ class AgentStatusReportsTest {
     }
 
     @Test
-    void tapsTheHumanWithTheTitleAndMessageTheAgentGaveAndSaysSo(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
-                new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
-                configService);
-
-        String answer = reports.notifyUser("jagt", "round addressed");
-
-        ArgumentCaptor<Notification> sent = ArgumentCaptor.forClass(Notification.class);
-        verify(notifications).send(sent.capture());
-        assertThat(sent.getValue().title()).isEqualTo("jagt");
-        assertThat(sent.getValue().body()).isEqualTo("round addressed");
-        assertThat(answer).isEqualTo("Notification sent");
-    }
-
-    @Test
     void opensThePlanGateWhenAnAutoplanSessionReportsThatTheTaskNeedsNoPlan(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.CLOSED).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -879,7 +881,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.REQUIRED).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -897,7 +899,7 @@ class AgentStatusReportsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "proj", new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of()),
                 "registry", new dev.jagt.orchestrator.task.ProjectConfig("/reg", "origin/main", "dev", List.of()))));
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -914,7 +916,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "proj", new dev.jagt.orchestrator.task.ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -930,7 +932,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -945,7 +947,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -963,7 +965,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", working);
         state.putTask("ABC-2", working);
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -981,7 +983,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
         ListAppender<ILoggingEvent> log = new ListAppender<>();
@@ -1002,7 +1004,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
         ListAppender<ILoggingEvent> log = new ListAppender<>();
@@ -1025,7 +1027,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a2")
                 .report(AgentReport.QUESTION).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
         ListAppender<ILoggingEvent> log = new ListAppender<>();
@@ -1048,7 +1050,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .repoRequest("registry").build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -1065,7 +1067,7 @@ class AgentStatusReportsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withAgent(
                 ConfigService.ConfigFile.AgentConfig.defaults()
                         .withVisualize(new ConfigService.ConfigFile.VisualizeConfig(true))));
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -1080,7 +1082,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -1095,7 +1097,7 @@ class AgentStatusReportsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withAgent(
                 ConfigService.ConfigFile.AgentConfig.defaults()
                         .withVisualize(new ConfigService.ConfigFile.VisualizeConfig(true))));
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -1108,7 +1110,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -1122,7 +1124,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -1135,7 +1137,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "", TaskStatus.IN_PROGRESS).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
@@ -1148,7 +1150,7 @@ class AgentStatusReportsTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state, Clock.systemUTC()),
+        AgentStatusReports reports = new AgentStatusReports(state, refusals, new FlowReports(state, Clock.systemUTC()),
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 

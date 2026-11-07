@@ -20,6 +20,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -51,7 +52,7 @@ class McpProtocolServiceTest {
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(new StatusTools(
-                mock(AgentStatusReports.class), mock(OwnStatusReports.class), new CallerScope(state))));
+                mock(AgentStatusReports.class), mock(OwnStatusReports.class), new CallerScope(state), new Notifications(List.of(), state, Runnable::run))));
 
         JsonNode response = protocol.handle(
                 mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"), null, true).orElseThrow();
@@ -329,7 +330,7 @@ class McpProtocolServiceTest {
                 .alias("a1").build());
         CallerScope scope = new CallerScope(state);
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new StatusTools(mock(AgentStatusReports.class), mock(OwnStatusReports.class), scope),
+                List.of(new StatusTools(mock(AgentStatusReports.class), mock(OwnStatusReports.class), scope, new Notifications(List.of(), state, Runnable::run)),
                         new IdeTools(mock(CommandService.class), scope),
                         new DeployTools(mock(CommandService.class))));
 
@@ -442,7 +443,7 @@ class McpProtocolServiceTest {
         CallerScope scope = new CallerScope(state);
         McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(
                 new DeployTools(mock(CommandService.class)), new StatusTools(mock(AgentStatusReports.class),
-                mock(OwnStatusReports.class), scope)));
+                mock(OwnStatusReports.class), scope, new Notifications(List.of(), state, Runnable::run))));
 
         String text = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\","
                 + "\"params\":{\"name\":\"report_status\",\"arguments\":{}}}"), root.toString(), false)

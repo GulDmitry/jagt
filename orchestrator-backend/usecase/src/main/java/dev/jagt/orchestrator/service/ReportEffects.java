@@ -33,7 +33,7 @@ public class ReportEffects {
 
     /** Called once the report is applied, with the links it carried. */
     public void linked(Reported reported, String taskId) {
-        refusals.after(reported, taskId);
+        refusals.told(reported, taskId);
     }
 
     /** The rules a report is judged by, told whether a wait is something jagt does here. */

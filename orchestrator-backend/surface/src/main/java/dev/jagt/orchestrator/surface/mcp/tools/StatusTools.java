@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.UserNotice;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.OwnStatusReports;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.Notification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,7 @@ public class StatusTools implements McpTools {
     private final AgentStatusReports statusReports;
     private final OwnStatusReports ownReports;
     private final CallerScope callerScope;
+    private final Notifications notifications;
 
     /** The task a report is about: the one it names where a Master sent it, else the caller's own worktree. */
     private String taskOf(AgentStatusMessage said, @Nullable String caller) {
@@ -39,6 +42,9 @@ public class StatusTools implements McpTools {
 
         tools.tool("notify_user", Audience.ANYONE, Effect.REPORTS, UserNotice.SCHEMA, UserNotice.class,
                 (said, caller) -> MessageContext.NONE,
-                (said, caller) -> statusReports.notifyUser(said.title(), said.message()));
+                (said, caller) -> {
+                    notifications.send(Notification.fromAgent(null, said.title(), said.message()));
+                    return "Notification sent";
+                });
     }
 }

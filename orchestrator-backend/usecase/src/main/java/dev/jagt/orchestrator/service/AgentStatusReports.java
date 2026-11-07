@@ -18,8 +18,6 @@ import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.notify.Notifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -43,7 +41,7 @@ public class AgentStatusReports {
     private static final int MAX_MESSAGE = 100;
 
     private final StateService stateService;
-    private final Notifications notifications;
+    private final LinkRefusals refusals;
     private final FlowReports flow;
     private final HandBack handBack;
     private final ConfigService configService;
@@ -137,6 +135,7 @@ public class AgentStatusReports {
         boolean askedNow = means.asks() && !current.map(TaskState::report).orElse(AgentReport.PLAIN).asks();
         logChange(taskId, current.map(TaskState::alias).orElse(null), previous, landed, shortMessage, means, askedNow);
         logReplacedStop(taskId, current);
+        refusals.onBoard(asked, taskId);
         return answer(taskId, newStatus, landed, shortMessage);
     }
 
@@ -254,11 +253,6 @@ public class AgentStatusReports {
         };
         String id = stateService.canonicalTaskId(taskId);
         flow.read(id, read, message);
-    }
-
-    public String notifyUser(String title, String message) {
-        notifications.send(Notification.fromAgent(null, title, message));
-        return "Notification sent";
     }
 
     /**

@@ -97,7 +97,7 @@ A ship whose every link is dropped SHALL be a missed one: no round is recorded a
 A ship linking several repositories SHALL lose only its foreign links.
 The board's head SHALL carry one line per dropped link, under the existing reach mark.
 That line ends on the repository's next good link, or when the task closes.
-The reporting session SHALL be told once, naming the expected remote path.
+The line SHALL stand whoever reported; only a reporting session SHALL be told, once, naming the expected remote path.
 A foreign request found in `state.json` SHALL be cleared on the first read, with one INFO log line.
 #### Scenario: The only link is foreign
 - **WHEN** ABC-42 at `IN_PROGRESS` ships with a link outside its repository's remote
@@ -109,8 +109,12 @@ A foreign request found in `state.json` SHALL be cleared on the first read, with
 - **THEN** the good link is recorded as the round and the foreign one is not
 
 #### Scenario: The session is told once
-- **WHEN** a link is dropped
+- **WHEN** a session's link is dropped
 - **THEN** the reporting session is sent one line naming the expected remote path
+
+#### Scenario: The Master's link is foreign
+- **WHEN** the Master or jagt reports a link outside its repository's remote
+- **THEN** the board's head carries the line and no session is sent one
 
 #### Scenario: The line ends on a good link
 - **WHEN** that repository's next report carries a link under its remote

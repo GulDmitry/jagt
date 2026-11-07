@@ -9,6 +9,8 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.service.LinkRefusals;
+import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -73,7 +75,7 @@ class QaRoundFlowTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, new Notifications(List.of(), state, Runnable::run), flow,
+        AgentStatusReports reports = new AgentStatusReports(state, new LinkRefusals(new ReachLedger(), (session, line) -> "", state), flow,
                 new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false), config), config);
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");
@@ -112,7 +114,7 @@ class QaRoundFlowTest {
         StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, turns);
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        AgentStatusReports reports = new AgentStatusReports(state, new Notifications(List.of(), state, Runnable::run), flow,
+        AgentStatusReports reports = new AgentStatusReports(state, new LinkRefusals(new ReachLedger(), (session, line) -> "", state), flow,
                 new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false), config), config);
         QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")), "", "");

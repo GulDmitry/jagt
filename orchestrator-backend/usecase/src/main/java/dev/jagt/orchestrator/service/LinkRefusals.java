@@ -27,8 +27,8 @@ public class LinkRefusals {
     private final SessionLines sessions;
     private final StateService stateService;
 
-    /** Called once the report is applied. */
-    public void after(Reported reported, String taskId) {
+    /** Every report's links, once applied: the board's head, whoever reported. */
+    public void onBoard(Reported reported, String taskId) {
         Optional<TaskState> task = stateService.task(taskId);
         if (task.isEmpty()) {
             return;
@@ -41,9 +41,12 @@ public class LinkRefusals {
         }
         judged.foreign().forEach(foreign -> reach.lost(new ReachLost(DRIVER, host(taskId, foreign.project()), List.of(),
                 said(task.get(), foreign)), () -> standing(taskId, foreign.project())));
-        if (!judged.foreign().isEmpty()) {
-            nudge(taskId, judged.foreign());
-        }
+    }
+
+    /** Called once a session's own report is applied: jagt's own and the Master's have no session to tell. */
+    public void told(Reported reported, String taskId) {
+        stateService.task(taskId).map(task -> ForeignLinks.judge(task, reported.requests(), reported.link()).foreign())
+                .filter(foreign -> !foreign.isEmpty()).ifPresent(foreign -> nudge(taskId, foreign));
     }
 
     private boolean standing(String taskId, String project) {

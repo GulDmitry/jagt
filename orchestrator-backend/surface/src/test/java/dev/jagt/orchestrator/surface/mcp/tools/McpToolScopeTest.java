@@ -22,7 +22,11 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskRetarget;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.Notification;
 import org.junit.jupiter.api.Test;
+import dev.jagt.orchestrator.port.Notifier;
+import java.util.ArrayList;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -115,7 +119,8 @@ class McpToolScopeTest {
         when(stateService.canonicalTaskId("OTHER-1")).thenReturn("OTHER-1");
         OwnStatusReports ownReports = mock(OwnStatusReports.class);
         Registered registered = new Registered();
-        new StatusTools(statusReports, ownReports, new CallerScope(stateService)).declare(registered);
+        new StatusTools(statusReports, ownReports, new CallerScope(stateService),
+                new Notifications(List.of(), stateService, Runnable::run)).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");
 
         assertThatThrownBy(() -> handler.call(
@@ -131,7 +136,8 @@ class McpToolScopeTest {
         OwnStatusReports ownReports = mock(OwnStatusReports.class);
         when(ownReports.contextFor(any())).thenReturn(MessageContext.NONE);
         Registered registered = new Registered();
-        new StatusTools(statusReports, ownReports, new CallerScope(mock(StateService.class))).declare(registered);
+        new StatusTools(statusReports, ownReports, new CallerScope(mock(StateService.class)),
+                new Notifications(List.of(), mock(StateService.class), Runnable::run)).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");
         when(ownReports.report(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1")))
                 .thenReturn("recorded for MINE-1");
@@ -145,17 +151,30 @@ class McpToolScopeTest {
 
     @Test
     void notifiesTheHumanWithTheTitleAndLineTheCallerGave() {
-        AgentStatusReports statusReports = mock(AgentStatusReports.class);
-        when(statusReports.notifyUser("jagt", "round addressed")).thenReturn("notified");
+        List<Notification> delivered = new ArrayList<>();
+        Notifier channel = new Notifier() {
+            public String id() {
+                return "test";
+            }
+
+            public void deliver(Notification notification) {
+                delivered.add(notification);
+            }
+        };
         Registered registered = new Registered();
-        new StatusTools(statusReports, mock(OwnStatusReports.class), new CallerScope(mock(StateService.class)))
-                .declare(registered);
+        new StatusTools(mock(AgentStatusReports.class), mock(OwnStatusReports.class),
+                new CallerScope(mock(StateService.class)),
+                new Notifications(List.of(channel), mock(StateService.class), Runnable::run)).declare(registered);
         ToolHandler handler = registered.handlers.get("notify_user");
 
         String answered = handler.call(new JsonMapper().readTree("{\"title\":\"jagt\",\"message\":\"round addressed\"}"),
                 "MINE-1");
 
-        assertThat(answered).isEqualTo("notified");
+        assertThat(delivered).singleElement().satisfies(sent -> {
+            assertThat(sent.title()).isEqualTo("jagt");
+            assertThat(sent.body()).isEqualTo("round addressed");
+        });
+        assertThat(answered).isEqualTo("Notification sent");
     }
 
     @Test
