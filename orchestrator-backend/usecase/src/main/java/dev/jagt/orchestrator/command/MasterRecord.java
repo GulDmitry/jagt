@@ -46,7 +46,7 @@ public class MasterRecord {
         return new Seen(judged.size(),
                 count(judged, FinishedTask::passed),
                 count(judged, FinishedTask::asked),
-                count(judged, task -> task.passed() && task.rounds() > 0 && !task.reached(TaskStatus.DEPLOYED)
+                count(judged, task -> task.passed() && task.course().rounds() > 0 && !task.reached(TaskStatus.DEPLOYED)
                         && deployable(task)),
                 count(judged, MasterRecord::passedReverted),
                 count(judged, MasterRecord::failedButDeployed));
@@ -61,7 +61,7 @@ public class MasterRecord {
         return finished.all().stream().filter(FinishedTask::judged)
                 .filter(task -> passedReverted(task) || failedButDeployed(task))
                 .max(Comparator.comparingLong(FinishedTask::finishedAt))
-                .map(task -> new Disagreement(task.id(), task.passed()));
+                .map(task -> new Disagreement(task.identity().id(), task.passed()));
     }
 
     private static boolean passedReverted(FinishedTask task) {
@@ -75,7 +75,7 @@ public class MasterRecord {
     /** A project jagt does not deploy, or no longer knows, owes no deploy: its work lands elsewhere. */
     private boolean deployable(FinishedTask task) {
         Map<String, ProjectConfig> projects = configService.load().projects();
-        return task.projects().stream().map(projects::get)
+        return task.identity().projects().stream().map(projects::get)
                 .allMatch(project -> project != null && project.deployBranch() != null
                         && !project.deployBranch().isBlank());
     }

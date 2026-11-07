@@ -59,11 +59,11 @@ public class FinishedArtifacts {
 
     /** Called while the worktree still exists: after retirement there is nothing left to copy. */
     public void keep(FinishedTask finished) {
-        stateService.task(finished.id()).ifPresent(task -> copy(finished, Path.of(task.worktreePath())));
+        stateService.task(finished.identity().id()).ifPresent(task -> copy(finished, Path.of(task.worktreePath())));
     }
 
     private void copy(FinishedTask finished, Path worktree) {
-        Path into = store.resolve(LocalDateTime.now(clock).format(STAMP) + "-" + TaskName.slug(finished.id()));
+        Path into = store.resolve(LocalDateTime.now(clock).format(STAMP) + "-" + TaskName.slug(finished.identity().id()));
         try {
             Files.createDirectories(into);
             for (String name : Artifact.fileNames()) {
@@ -72,7 +72,7 @@ public class FinishedArtifacts {
             Files.writeString(into.resolve("finished.json"),
                     mapper.writerWithDefaultPrettyPrinter().writeValueAsString(finished), StandardCharsets.UTF_8);
         } catch (IOException | RuntimeException e) {
-            log.atWarn().setMessage("finished artifacts not kept").addKeyValue("task", finished.id())
+            log.atWarn().setMessage("finished artifacts not kept").addKeyValue("task", finished.identity().id())
                     .addKeyValue("cause", e.toString()).log();
         }
         trimToBudget(into);

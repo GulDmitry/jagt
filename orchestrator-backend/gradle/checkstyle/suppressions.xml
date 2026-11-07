@@ -11,9 +11,6 @@
     <suppress files="[\\/]ClaudeHookReportMixIn\.java$" checks="ParameterNumber"/>
     <!-- jagt.yml file shape, read in the old shape; ~1 pt -->
     <suppress files="[\\/]ConfigService\.java$" checks="RecordComponentNumber"/>
-    <!-- persisted Target; ~0.5 pt -->
-    <!-- persisted in finished.jsonl, read in the old flat shape; ~1 pt -->
-    <suppress files="[\\/]FinishedTask\.java$" checks="RecordComponentNumber"/>
     <suppress files="[\\/]NewTaskMessage\.java$" checks="RecordComponentNumber"/>
     <!-- Spring binding of jagt.yml; nested properties keep the keys; ~0.3 pt -->
     <suppress files="[\\/]OrchestratorProperties\.java$" checks="RecordComponentNumber"/>

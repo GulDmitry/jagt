@@ -188,14 +188,18 @@ class UsageStatsRendererTest {
     @Test
     void takesTheMedianCostOfDeployedTasksAndLeavesOutOneWithAnUnreadSpend() {
         List<FinishedTask> finished = List.of(
-                new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 1.0, null, null, null, null),
-                new FinishedTask("ABC-2", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 4.0, null, null, null, null),
-                new FinishedTask("ABC-3", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null, null, null, null, null),
-                new FinishedTask("ABC-4", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, null)), null, null, 90.0, null, null, null, null));
+                new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, 1.0, null, null),
+                new FinishedTask.Course(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), 0, null, null, null, null), null),
+                new FinishedTask(new FinishedTask.Identity("ABC-2", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, 4.0, null, null),
+                new FinishedTask.Course(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), 0, null, null, null, null), null),
+                new FinishedTask(new FinishedTask.Identity("ABC-3", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, null, null, null),
+                new FinishedTask.Course(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), 0, null, null, null, null), null),
+                new FinishedTask(new FinishedTask.Identity("ABC-4", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, 90.0, null, null),
+                new FinishedTask.Course(List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, null)), 0, null, null, null, null), null));
 
         assertThat(UsageStatsRenderer.costPerDeployed(finished))
                 .isEqualTo("median cost per deployed task: 2.50 USD (2 of 3 deployed with a known spend)\n");
@@ -204,8 +208,9 @@ class UsageStatsRendererTest {
     @Test
     void saysUnknownWhenNoDeployedTaskHasAKnownSpend() {
         List<FinishedTask> finished = List.of(
-                new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, null, null, null, null, null));
+                new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, null, null, null),
+                new FinishedTask.Course(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), 0, null, null, null, null), null));
 
         assertThat(UsageStatsRenderer.costPerDeployed(finished))
                 .isEqualTo("median cost per deployed task: unknown (1 deployed, none with a known spend)\n");
@@ -214,9 +219,9 @@ class UsageStatsRendererTest {
     @Test
     void marksTheMedianCostAsALowerBoundWhenADeployedTaskHadAnUnpricedCall() {
         List<FinishedTask> finished = List.of(
-                new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0,
-                        List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), null, null, 2.0, null,
-                        TokenUsage.ofCall(10, 0, 10, 2.0).plus(TokenUsage.ofUnpricedCall(10, 0, 10)), null, null));
+                new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, 2.0, null, TokenUsage.ofCall(10, 0, 10, 2.0).plus(TokenUsage.ofUnpricedCall(10, 0, 10))),
+                new FinishedTask.Course(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)), 0, null, null, null, null), null));
 
         assertThat(UsageStatsRenderer.costPerDeployed(finished))
                 .isEqualTo("median cost per deployed task: ≥ 2.00 USD (1 of 1 deployed with a known spend)\n");

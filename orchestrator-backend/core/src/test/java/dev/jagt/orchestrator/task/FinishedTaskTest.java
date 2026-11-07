@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
@@ -143,7 +144,9 @@ class FinishedTaskTest {
 
     @Test
     void tookNothingWhenNoStepWasEverRecorded() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 6_000L, 0, null, 0, List.of(), null, null, null, null, null, null, null);
+        var task = new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 6_000L,
+                new FinishedTask.Spend(0, null, null, null),
+                new FinishedTask.Course(List.of(), 0, null, null, null, null), null);
 
         assertThat(task.tookMillis()).isZero();
     }
@@ -154,7 +157,7 @@ class FinishedTaskTest {
                 .usage(TokenUsage.ofCall(10, 0, 10, 0.5))
                 .agentSpend(new AgentSpend(TokenUsage.ofCall(10, 0, 10, 2.0), java.util.Map.of())).build(), 2L);
 
-        assertThat(task.costUsd()).isEqualTo(2.5);
+        assertThat(task.spend().costUsd()).isEqualTo(2.5);
     }
 
     @Test
@@ -162,7 +165,7 @@ class FinishedTaskTest {
         var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE)
                 .usage(TokenUsage.ofCall(10, 0, 10, 0.5)).build(), 2L);
 
-        assertThat(task.costUsd()).isNull();
+        assertThat(task.spend().costUsd()).isNull();
     }
 
     @Test
@@ -172,8 +175,8 @@ class FinishedTaskTest {
                 .agentSpend(new AgentSpend(TokenUsage.ofCall(30, 5, 20, 2.0), java.util.Map.of("/logs/a.jsonl", 9L)))
                 .build(), 2L);
 
-        assertThat(task.usage()).isEqualTo(TokenUsage.ofCall(10, 0, 10, 0.5));
-        assertThat(task.agentUsage()).isEqualTo(TokenUsage.ofCall(30, 5, 20, 2.0));
+        assertThat(task.spend().usage()).isEqualTo(TokenUsage.ofCall(10, 0, 10, 0.5));
+        assertThat(task.spend().agentUsage()).isEqualTo(TokenUsage.ofCall(30, 5, 20, 2.0));
         assertThat(task.transcripts()).containsExactly("/logs/a.jsonl");
     }
 
@@ -181,40 +184,67 @@ class FinishedTaskTest {
     void carriesNoUsageForACountThatNeverReadAnything() {
         var task = FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE).build(), 2L);
 
-        assertThat(task.usage()).isNull();
-        assertThat(task.agentUsage()).isNull();
+        assertThat(task.spend().usage()).isNull();
+        assertThat(task.spend().agentUsage()).isNull();
         assertThat(task.transcripts()).isEmpty();
     }
 
     @Test
     void readsTheCostAsALowerBoundWhenTheOwnReadsHadAnUnpricedCall() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, 1.0,
-                TokenUsage.ofUnpricedCall(10, 0, 10), TokenUsage.ofCall(10, 0, 10, 1.0), null, null);
+        var task = new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, 1.0, TokenUsage.ofUnpricedCall(10, 0, 10), TokenUsage.ofCall(10, 0, 10, 1.0)),
+                new FinishedTask.Course(List.of(), 0, null, null, null, null), null);
 
-        assertThat(task.costIsLowerBound()).isTrue();
+        assertThat(task.spend().costIsLowerBound()).isTrue();
     }
 
     @Test
     void readsTheCostAsALowerBoundWhenTheAgentSessionHadAnUnpricedCall() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, 1.0,
-                TokenUsage.ofCall(10, 0, 10, 1.0), TokenUsage.ofUnpricedCall(10, 0, 10), null, null);
+        var task = new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, 1.0, TokenUsage.ofCall(10, 0, 10, 1.0), TokenUsage.ofUnpricedCall(10, 0, 10)),
+                new FinishedTask.Course(List.of(), 0, null, null, null, null), null);
 
-        assertThat(task.costIsLowerBound()).isTrue();
+        assertThat(task.spend().costIsLowerBound()).isTrue();
     }
 
     @Test
     void readsTheCostAsCompleteWhenEveryCallWasPriced() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, 1.0,
-                TokenUsage.ofCall(10, 0, 10, 0.5), TokenUsage.ofCall(10, 0, 10, 0.5), null, null);
+        var task = new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, 1.0, TokenUsage.ofCall(10, 0, 10, 0.5), TokenUsage.ofCall(10, 0, 10, 0.5)),
+                new FinishedTask.Course(List.of(), 0, null, null, null, null), null);
 
-        assertThat(task.costIsLowerBound()).isFalse();
+        assertThat(task.spend().costIsLowerBound()).isFalse();
     }
 
     @Test
     void readsNoCostAsNoBoundWhateverTheUnpricedCalls() {
-        var task = new FinishedTask("ABC-1", null, null, List.of(), null, 9L, 0, null, 0, List.of(), null, null, null,
-                TokenUsage.ofUnpricedCall(10, 0, 10), null, null, null);
+        var task = new FinishedTask(new FinishedTask.Identity("ABC-1", null, null, List.of(), null), 9L,
+                new FinishedTask.Spend(0, null, TokenUsage.ofUnpricedCall(10, 0, 10), null),
+                new FinishedTask.Course(List.of(), 0, null, null, null, null), null);
 
-        assertThat(task.costIsLowerBound()).isFalse();
+        assertThat(task.spend().costIsLowerBound()).isFalse();
+    }
+
+    @Test
+    void readsAndWritesAFinishedTaskAsOneFlatObject() {
+        String usage = "{\"calls\":1,\"inputTokens\":10,\"cachedInputTokens\":0,\"outputTokens\":10,"
+                + "\"costUsd\":0.5,\"coldStarts\":0,\"warmStarts\":0}";
+        String json = "{\"id\":\"ABC-1\",\"alias\":\"abc\",\"title\":\"a thing\",\"projects\":[\"sc\"],"
+                + "\"ticketUrl\":\"https://t/ABC-1\",\"finishedAt\":9,\"tokens\":20,\"costUsd\":0.5,"
+                + "\"usage\":" + usage + ",\"agentUsage\":" + usage + ","
+                + "\"history\":[{\"status\":\"NEW\",\"at\":1,\"origin\":\"BOARD\"}],\"rounds\":2,"
+                + "\"checks\":\"green\",\"refusals\":{\"SESSION_LINE\":3},"
+                + "\"waits\":[{\"since\":100,\"until\":700,\"why\":\"STATUS\"}],\"masterVerdict\":\"ready\","
+                + "\"transcripts\":[\"/logs/a.jsonl\"]}";
+        JsonMapper mapper = new JsonMapper();
+
+        FinishedTask task = mapper.readValue(json, FinishedTask.class);
+
+        assertThat(task.identity().id()).isEqualTo("ABC-1");
+        assertThat(task.spend().costUsd()).isEqualTo(0.5);
+        assertThat(task.course().refusals()).containsEntry(Guard.SESSION_LINE, 3);
+        assertThat(task.course().waits()).containsExactly(new HumanWait(100, 700, HumanWait.Why.STATUS));
+        assertThat(task.transcripts()).containsExactly("/logs/a.jsonl");
+        assertThat(mapper.readTree(mapper.writeValueAsString(task))).isEqualTo(mapper.readTree(json));
     }
 }

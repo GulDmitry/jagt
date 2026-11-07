@@ -99,7 +99,7 @@ public class FinishedTasks {
             Files.writeString(file, mapper.writeValueAsString(finished) + "\n", StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException | RuntimeException e) {
-            log.atWarn().setMessage("finished entry not recorded").addKeyValue("task", finished.id())
+            log.atWarn().setMessage("finished entry not recorded").addKeyValue("task", finished.identity().id())
                     .addKeyValue("cause", e.toString()).log();
             return;
         }

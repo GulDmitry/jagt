@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.task;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-
-
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -18,35 +18,59 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record FinishedTask(
-        String id,
-        @Nullable String alias,
-        @Nullable String title,
-        List<String> projects,
-        @Nullable String ticketUrl,
+        @JsonUnwrapped Identity identity,
         long finishedAt,
-        int rounds,
-        // The host's last word on the checks, or null if nothing ever read one.
-        @Nullable String checks,
-        long tokens,
-        List<StatusChange> history,
-        // What the unattended reviewer concluded last, or null where nothing judged this task.
-        @Nullable String masterVerdict,
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
-        // List price of the agent session plus jagt's own reads of this task, or null where the session's spend was never read.
-        @Nullable Double costUsd,
-        // The task's own reads and the agent sessions' spend apart, null where nothing was counted.
-        @Nullable TokenUsage usage,
-        @Nullable TokenUsage agentUsage,
+        @JsonUnwrapped Spend spend,
+        @JsonUnwrapped Course course,
         // The session logs the agent spend was read from: paths only, the logs themselves are not kept.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> transcripts,
-        // The stretches the human held the turn: when, until when, and why.
-        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> transcripts
 ) {
 
+    @With
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Identity(String id, @Nullable String alias, @Nullable String title, List<String> projects,
+                           @Nullable String ticketUrl) {
+    }
+
+    @With
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Spend(
+            long tokens,
+            // List price of the agent session plus jagt's own reads of this task, or null where the session's spend was never read.
+            @Nullable Double costUsd,
+            // The task's own reads and the agent sessions' spend apart, null where nothing was counted.
+            @Nullable TokenUsage usage,
+            @Nullable TokenUsage agentUsage) {
+
+        /** Whether a call of an unpriced model is missing from {@code costUsd}. */
+        @JsonIgnore
+        public boolean costIsLowerBound() {
+            return costUsd != null && ((usage != null && usage.costIsLowerBound())
+                    || (agentUsage != null && agentUsage.costIsLowerBound()));
+        }
+    }
+
+    @With
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Course(
+            List<StatusChange> history,
+            int rounds,
+            // The host's last word on the checks, or null if nothing ever read one.
+            @Nullable String checks,
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<Guard, Integer> refusals,
+            // The stretches the human held the turn: when, until when, and why.
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<HumanWait> waits,
+            // What the unattended reviewer concluded last, or null where nothing judged this task.
+            @Nullable String masterVerdict) {
+
+        public Course {
+            refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
+            waits = waits == null ? List.of() : List.copyOf(waits);
+        }
+    }
+
     public FinishedTask {
-        refusals = refusals == null ? Map.of() : Map.copyOf(refusals);
         transcripts = transcripts == null ? List.of() : List.copyOf(transcripts);
-        waits = waits == null ? List.of() : List.copyOf(waits);
     }
 
     public static FinishedTask of(String id, TaskState task, long finishedAt) {
@@ -54,50 +78,46 @@ public record FinishedTask(
     }
 
     public static FinishedTask of(String id, TaskState task, long finishedAt, @Nullable String masterVerdict) {
-        return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
-                task.rounds(), task.checksRead(), task.totalUsage().total(), task.history(), masterVerdict,
-                task.refusals(), task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd(),
-                countedOrNull(task.usageOrNone()), countedOrNull(task.agentSpendOrNone().usageOrNone()),
-                List.copyOf(task.agentSpendOrNone().marks().keySet()), HumanWait.endedAt(task.waits(), finishedAt));
+        return new FinishedTask(
+                new Identity(id, task.alias(), task.title(), task.projects(), task.ticketUrl()), finishedAt,
+                new Spend(task.totalUsage().total(),
+                        task.agentSpendOrNone().usageOrNone().isNone() ? null : task.totalUsage().costUsd(),
+                        countedOrNull(task.usageOrNone()), countedOrNull(task.agentSpendOrNone().usageOrNone())),
+                new Course(task.history(), task.rounds(), task.checksRead(), task.refusals(),
+                        HumanWait.endedAt(task.waits(), finishedAt), masterVerdict),
+                List.copyOf(task.agentSpendOrNone().marks().keySet()));
     }
 
     private static @Nullable TokenUsage countedOrNull(TokenUsage usage) {
         return usage.isNone() ? null : usage;
     }
 
-    /** Whether a call of an unpriced model is missing from {@code costUsd}. */
-    @JsonIgnore
-    public boolean costIsLowerBound() {
-        return costUsd != null && ((usage != null && usage.costIsLowerBound())
-                || (agentUsage != null && agentUsage.costIsLowerBound()));
-    }
-
     /** Whether the reviewer read this task at all; every comparison below is over these and no others. */
     public boolean judged() {
-        return masterVerdict != null && !masterVerdict.isBlank();
+        return course.masterVerdict() != null && !course.masterVerdict().isBlank();
     }
 
     /** The one word that means it passed; every other ending was a round going back. */
     public boolean passed() {
-        return "ready".equalsIgnoreCase(masterVerdict == null ? "" : masterVerdict.strip());
+        return "ready".equalsIgnoreCase(course.masterVerdict() == null ? "" : course.masterVerdict().strip());
     }
 
     /** A question judged nothing, so whatever you did after it cannot disagree with it. */
     public boolean asked() {
-        return "question".equalsIgnoreCase(masterVerdict == null ? "" : masterVerdict.strip());
+        return "question".equalsIgnoreCase(course.masterVerdict() == null ? "" : course.masterVerdict().strip());
     }
 
     /** Who opened it, which is who chose its repository; null for a task opened before origins were stamped. */
     public @Nullable ActionOrigin openedBy() {
-        return history.isEmpty() ? null : history.get(0).origin();
+        return course.history().isEmpty() ? null : course.history().get(0).origin();
     }
 
     /** Whether the last round judged came back before the task first reached {@code status}. */
     public boolean judgedBefore(TaskStatus status) {
         int judged = -1;
         int reachedAt = -1;
-        for (int i = 0; i < history.size(); i++) {
-            TaskStatus step = history.get(i).status();
+        for (int i = 0; i < course.history().size(); i++) {
+            TaskStatus step = course.history().get(i).status();
             if (step == TaskStatus.REVIEW_PENDING) {
                 judged = i;
             }
@@ -110,7 +130,7 @@ public record FinishedTask(
 
     /** Whether the task ever stood in this status, which is how a claim about it is checked against what it did. */
     public boolean reached(TaskStatus status) {
-        return history.stream().anyMatch(step -> step.status() == status);
+        return course.history().stream().anyMatch(step -> step.status() == status);
     }
 
     /**
@@ -118,12 +138,12 @@ public record FinishedTask(
      * the shared branch from it — a routing nothing confirmed is the router's own guess coming back as a lesson.
      */
     public boolean routingWorthLearningFrom() {
-        return projects.size() == 1
+        return identity.projects().size() == 1
                 && (openedBy() != ActionOrigin.TRACKER || reached(TaskStatus.DEPLOYED));
     }
 
     /** From the first step it took to the moment it was retired; zero where nothing was ever recorded. */
     public long tookMillis() {
-        return history.isEmpty() ? 0 : finishedAt - history.get(0).at();
+        return course.history().isEmpty() ? 0 : finishedAt - course.history().get(0).at();
     }
 }

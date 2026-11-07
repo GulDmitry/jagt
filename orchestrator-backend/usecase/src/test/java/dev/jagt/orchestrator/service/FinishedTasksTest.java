@@ -36,8 +36,8 @@ class FinishedTasksTest {
 
         List<FinishedTask> all = finished.all();
         assertThat(all).singleElement().satisfies(task -> {
-            assertThat(task.id()).isEqualTo("ABC-1");
-            assertThat(task.title()).isEqualTo("a thing");
+            assertThat(task.identity().id()).isEqualTo("ABC-1");
+            assertThat(task.identity().title()).isEqualTo("a thing");
         });
     }
 
@@ -54,7 +54,7 @@ class FinishedTasksTest {
                 Files.readString(root.resolve("finished.jsonl")) + "{ this is not json\n");
 
         assertThat(finished.all()).singleElement()
-                .satisfies(task -> assertThat(task.id()).isEqualTo("ABC-1"));
+                .satisfies(task -> assertThat(task.identity().id()).isEqualTo("ABC-1"));
     }
 
     @Test
@@ -74,7 +74,7 @@ class FinishedTasksTest {
 
         finished.record("ABC-3");
 
-        assertThat(finished.all()).extracting(FinishedTask::id).containsExactly("ABC-3");
+        assertThat(finished.all()).extracting(task -> task.identity().id()).containsExactly("ABC-3");
         assertThat(finished.archives()).singleElement().satisfies(archive -> {
             try (var in = new GZIPInputStream(Files.newInputStream(archive))) {
                 assertThat(new String(in.readAllBytes())).contains("\"ABC-1\"", "\"ABC-2\"")

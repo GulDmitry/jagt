@@ -104,13 +104,13 @@ public class UsageStatsRenderer {
     /** Over the tasks that reached DEPLOYED; one whose session spend was never read is left out, not counted as 0. */
     static String costPerDeployed(List<FinishedTask> finished) {
         List<FinishedTask> deployed = finished.stream().filter(task -> task.reached(TaskStatus.DEPLOYED)).toList();
-        double[] costs = deployed.stream().map(FinishedTask::costUsd).filter(Objects::nonNull)
+        double[] costs = deployed.stream().map(task -> task.spend().costUsd()).filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue).sorted().toArray();
         if (costs.length == 0) {
             return "median cost per deployed task: unknown (" + deployed.size() + " deployed, none with a known spend)\n";
         }
         double median = (costs[(costs.length - 1) / 2] + costs[costs.length / 2]) / 2;
-        String bound = deployed.stream().anyMatch(FinishedTask::costIsLowerBound) ? "≥ " : "";
+        String bound = deployed.stream().anyMatch(task -> task.spend().costIsLowerBound()) ? "≥ " : "";
         return String.format(Locale.ROOT, "median cost per deployed task: " + bound + "%.2f USD (%d of %d deployed with a known spend)%n",
                 median, costs.length, deployed.size());
     }

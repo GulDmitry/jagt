@@ -41,7 +41,7 @@ public class IntakeHistory {
 
     public Set<String> held() {
         Set<String> keys = new HashSet<>(stateService.tasks().keySet());
-        finished.all().stream().map(FinishedTask::id).forEach(keys::add);
+        finished.all().stream().map(task -> task.identity().id()).forEach(keys::add);
         return keys;
     }
 

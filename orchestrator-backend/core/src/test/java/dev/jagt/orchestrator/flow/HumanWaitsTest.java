@@ -85,7 +85,7 @@ class HumanWaitsTest {
 
         FinishedTask finished = FinishedTask.of("ABC-42", retired, 700);
 
-        assertThat(finished.waits()).containsExactly(new HumanWait(100, 700, Why.STATUS));
+        assertThat(finished.course().waits()).containsExactly(new HumanWait(100, 700, Why.STATUS));
     }
 
     @Test

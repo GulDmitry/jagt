@@ -139,9 +139,9 @@ public class ProjectRouting {
     /** Only the router's own placements can be contradicted: what a human did before was never a rule's doing. */
     private boolean routerPlacedElsewhere(String ticketKey, String project) {
         return finished.all().stream()
-                .filter(task -> task.id().equals(ticketKey))
+                .filter(task -> task.identity().id().equals(ticketKey))
                 .anyMatch(task -> task.openedBy() == ActionOrigin.TRACKER
-                        && !task.projects().contains(project));
+                        && !task.identity().projects().contains(project));
     }
 
     private void learn(TicketFacts item, RoutingAnswer routed) {
@@ -181,7 +181,7 @@ public class ProjectRouting {
                 .toList();
         return learnable.stream()
                 .skip(Math.max(0, learnable.size() - PRECEDENTS))
-                .map(task -> "- " + task.id() + " \"" + task.title() + "\" → " + task.projects().get(0))
+                .map(task -> "- " + task.identity().id() + " \"" + task.identity().title() + "\" → " + task.identity().projects().get(0))
                 .toList();
     }
 

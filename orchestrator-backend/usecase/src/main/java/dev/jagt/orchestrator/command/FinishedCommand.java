@@ -59,16 +59,16 @@ public class FinishedCommand implements GlobalCommand {
         List<String> lines = new ArrayList<>();
         lines.add("finished (newest first):");
         for (FinishedTask task : records) {
-            lines.add("  %-14s %-9s %-8s %s".formatted(task.id(), took(task),
-                    task.rounds() + (task.rounds() == 1 ? " round" : " rounds"),
-                    task.title() == null ? "" : task.title()));
+            lines.add("  %-14s %-9s %-8s %s".formatted(task.identity().id(), took(task),
+                    task.course().rounds() + (task.course().rounds() == 1 ? " round" : " rounds"),
+                    task.identity().title() == null ? "" : task.identity().title()));
         }
         String clock = clock(records);
         if (!clock.isEmpty()) {
             lines.add(clock);
         }
         Map<Guard, Integer> refused = new EnumMap<>(Guard.class);
-        records.forEach(task -> task.refusals().forEach((guard, count) -> refused.merge(guard, count, Integer::sum)));
+        records.forEach(task -> task.course().refusals().forEach((guard, count) -> refused.merge(guard, count, Integer::sum)));
         if (!refused.isEmpty()) {
             lines.add("refused: " + refused.entrySet().stream()
                     .map(entry -> entry.getKey().label() + " " + entry.getValue()).collect(Collectors.joining(", ")));
@@ -84,7 +84,7 @@ public class FinishedCommand implements GlobalCommand {
         }
         long median = (took[(took.length - 1) / 2] + took[took.length / 2]) / 2;
         Map<Owner, Long> held = new EnumMap<>(Owner.class);
-        records.forEach(task -> HeldTime.byOwner(task.history(), task.finishedAt()).forEach(
+        records.forEach(task -> HeldTime.byOwner(task.course().history(), task.finishedAt()).forEach(
                 (owner, millis) -> held.merge(owner, millis, Long::sum)));
         held.remove(Owner.NOBODY);
         long total = held.values().stream().mapToLong(Long::longValue).sum();
