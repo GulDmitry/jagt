@@ -29,17 +29,18 @@ class DecisionIndexTest {
   @Test
   void anAmendedOrSupersededRecordNamesItsAmenderInItsStatus() throws Exception {
     Pattern status = Pattern.compile("(?s)## Status\\s*(.*?)\\n## ");
-    Pattern forward = Pattern.compile("(?i)\\b(?:amends|supersedes)\\b[^.:;]*");
+    Pattern opening = Pattern.compile("(?s)^(.*?)\\n## Context");
+    Pattern forward = Pattern.compile("(?i)\\b(?:amends|supersedes)\\b[^.:;·]*");
     List<String> unnamed = new ArrayList<>();
     try (Stream<Path> files = Files.list(Path.of("../docs/decisions"))) {
       for (Path record :
           files.filter(file -> file.getFileName().toString().matches("\\d{4}-.*\\.md")).toList()) {
         String number = record.getFileName().toString().substring(0, 4);
-        Matcher text = status.matcher(Files.readString(record));
+        Matcher text = opening.matcher(Files.readString(record));
         String own = text.find() ? text.group(1).replaceAll("\\[(\\d{4})]\\([^)]*\\)", "$1") : "";
         Matcher claim = forward.matcher(own);
         while (claim.find()) {
-          Matcher target = Pattern.compile("\\d{4}").matcher(claim.group());
+          Matcher target = Pattern.compile("\\b0\\d{3}\\b").matcher(claim.group());
           while (target.find()) {
             Path other =
                 Files.list(Path.of("../docs/decisions"))

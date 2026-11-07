@@ -7,6 +7,7 @@
 ## Status
 
 Accepted 2026-10-24.
+Extended by [0144](0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md).
 
 ## Context
 

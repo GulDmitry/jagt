@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-23.
+Amended by [0132](0132-banners-are-chosen-per-event.md).
 
 ## Context
 

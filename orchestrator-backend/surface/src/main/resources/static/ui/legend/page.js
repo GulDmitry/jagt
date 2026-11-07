@@ -38,6 +38,6 @@ export const pageRows = () => [
   [span('waiting', t('header.waiting', {n: 2}))],
   [span('chip', t('auto-review-off')), span('chip bad', t('jobs-failed', {failing: 1, count: 16})),
     span('chip', t('header.master'))],
-  [span('chip bad', t('offline')), span('chip bad', t('assistant')), span('chip bad', 'glab not logged in to host')],
+  [span('chip bad', t('offline')), span('chip bad', t('assistant')), span('chip bad', 'code host CLI not logged in')],
   [gearButton()],
 ];

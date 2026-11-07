@@ -6,6 +6,7 @@
 ## Status
 
 Accepted 2026-11-02 by the owner's order.
+Amended by [0129](0129-ci-reports-the-mutants-of-a-push.md).
 
 ## Context
 

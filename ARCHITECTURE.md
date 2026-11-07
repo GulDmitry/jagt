@@ -156,10 +156,13 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `flow/TaskCapability` | one per verb under `capability/` |
 | `flow/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/trust/GitStateGuard`; an install may add its own step |
 | `Specs` | `adapter/OpenSpec` |
-| `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
+| `AgentRuntime` | `adapter/agent/{Claude,Codex,OpenCode,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
 | `PipelineRetry` | `adapter/codehost/CodeHostPipelines` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline is jagt's one code-host write |
-| `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer`, `ReplayRoundReviewer` (a stand recording played back) |
+| `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
+| `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
+| `AssistantHealth` | `adapter/assistant/AssistantBreaker` |
+| `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login` |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
@@ -168,13 +171,17 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
 | `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
+| `BuildTools` | `adapter/RepositoryBuildTools` |
+| `LineDiff` | `adapter/DiffUtilsLineDiff` |
+| `RequestlessShip` | `service/HostlessShips` |
+| `ToolGateEnvelope` | `adapter/agent/ClaudeToolGateEnvelope` |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
 | `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/SystemdInhibit` |
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |
 | `EditorDriver` | `adapter/CliEditorDriver` |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
-| `AgentWorktree`, `Notification`, `Answer` | nothing: value **records** the ports pass |
+| `AgentWorktree`, `Notification`, `Answer`, `Sandbox` | nothing: value **records** the ports pass |
 
 - **Every third party jagt talks to is a row here**, its driver chosen by a `jagt.yml` key with a default; a vendor
   guessed from a name, a URL or a host is a defect ([0130](docs/decisions/0130-every-third-party-is-a-configured-seam.md)).

@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-10-22. Adds to [0013](0013-a-deploy-conflict-is-the-sessions-in-act.md).
+Accepted 2026-10-22. Amended by [0133](0133-a-red-deploy-pipeline-is-rerun-once.md),
+[0134](0134-a-stalled-deploy-conflict-asks-the-master-first.md). Adds to [0013](0013-a-deploy-conflict-is-the-sessions-in-act.md).
 Superseded in part by [0112](0112-a-deploy-is-a-saga-record-advanced-by-one-runner.md): the hand-off lives on the deployment's conflicted target.
 
 ## Context

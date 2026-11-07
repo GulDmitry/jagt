@@ -7,6 +7,7 @@
 Accepted 2026-10-15. "On by default" superseded by [0092](0092-the-session-sandbox-is-opt-in.md): opt-in.
 Reopens nothing; holds [0025](0025-the-board-is-no-way-around-the-token.md)'s sandbox condition
 open.
+Extended by [0095](0095-a-verdict-file-jagt-did-not-write-is-no-verdict.md).
 
 ## Context
 

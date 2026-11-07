@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-02 (`e1401a2`).
+Extended by [0094](0094-a-prompt-typed-into-a-cold-session-goes-to-a-fresh-one.md).
 
 ## Context
 

@@ -42,7 +42,7 @@ orchestrator:
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
   archive:
     maxMegabytes: 20       # `archive/` beside state.json, what `done` keeps; past it the oldest snapshots go first
-  loopBreaker:             # stops a task jagt suspects it is looping on, whoever asked; only your `lift` resumes it
+  loopBreaker:             # stops a task jagt suspects it is looping on, whoever asked; your `lift` or the Master's resumes it
     stalledRounds: 3       # rounds relayed running that brought no new note and left the same job failing (at most 19)
     ships: 4               # ships within autoReview.windowHours whose round brought no new note;
                            # the next one jagt would press unasked stops the task

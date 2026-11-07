@@ -35,7 +35,7 @@
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
   [row](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row) ·
   [open](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
-- **Session and Files tabs** — Read the session's screen as it stands and type a line to it; read a task's plan, notes and sketch rendered.
+- **Session and Artifacts tabs** — Read the session's screen as it stands and type a line to it; read a task's plan, notes and sketch rendered.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-four-tabs)
 - **Plan changes since approval** — The Artifacts tab marks plan lines new or rewritten since your last approval, and strikes removed ones.
   [spec](../openspec/specs/board/spec.md#requirement-a-plan-shows-what-changed-since-its-last-approval)

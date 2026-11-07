@@ -6,6 +6,7 @@ and [0130](0130-every-third-party-is-a-configured-seam.md)
 ## Status
 
 Accepted 2026-11-05.
+Amended by [0138](0138-a-read-may-run-on-opencode.md).
 
 ## Context
 

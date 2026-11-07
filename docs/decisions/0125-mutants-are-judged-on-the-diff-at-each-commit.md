@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-11-01.
+Superseded in part by [0127](0127-mutants-run-with-every-test.md): the writer's run before each commit became a run with every test.
 
 ## Context
 

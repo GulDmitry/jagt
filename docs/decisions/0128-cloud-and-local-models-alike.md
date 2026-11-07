@@ -5,6 +5,7 @@
 ## Status
 
 Proposed 2026-11-02 by the owner. Accepted with the first task run through jagt's whole cycle on a local model.
+Amended by [0135](0135-tool-less-reads-may-call-a-local-model-directly.md).
 
 ## Context
 
