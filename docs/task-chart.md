@@ -113,6 +113,7 @@ stateDiagram-v2
         state "CI_POLLING, CI_FAILED, REVIEWED, APPROVED" as lifecycle_from_40
         lifecycle_from_40 --> lifecycle_APPROVED : read APPROVED
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOYED : conflicted repository left
+        lifecycle_DEPLOY_CONFLICT --> lifecycle_REVIEWED : conflicted repository left, nothing landed
         lifecycle_DEPLOYED --> lifecycle_DEPLOY_CONFLICT : deploy read red
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOYED : deploy read green
         lifecycle_IN_PROGRESS --> lifecycle_DEPLOYED : qa round declined

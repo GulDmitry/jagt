@@ -220,6 +220,8 @@ final class TaskChart {
         reads(chart);
         edge(chart, DEPLOY_CONFLICT, "conflicted repository left",
                 move -> move instanceof TaskMove.RepoLeft left && left.landsTheTask(), DEPLOYED);
+        edge(chart, DEPLOY_CONFLICT, "conflicted repository left, nothing landed",
+                move -> move instanceof TaskMove.RepoLeft left && left.returnsTheTask(), REVIEWED);
         edge(chart, DEPLOYED, "deploy read red", new TaskMove.DeployRead(true)::equals, DEPLOY_CONFLICT);
         edge(chart, DEPLOY_CONFLICT, "deploy read green", new TaskMove.DeployRead(false)::equals, DEPLOYED);
         composition.roles().forEach(role -> role.declareLifecycleEdge(chart));

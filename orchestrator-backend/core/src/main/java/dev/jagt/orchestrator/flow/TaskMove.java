@@ -157,13 +157,18 @@ sealed interface TaskMove {
         boolean landsTheTask() {
             return drop == ConflictDrop.LANDS;
         }
+
+        boolean returnsTheTask() {
+            return drop == ConflictDrop.RETURNS;
+        }
     }
 
     /**
      * What a repository leaving does to a deploy standing in conflict: nothing, the task lands on the others, or the
-     * task stays handed back with later repositories still unpushed.
+     * task stays handed back with later repositories still unpushed, or, with nothing landed, the task goes back to
+     * where {@code deploy} is offered.
      */
-    enum ConflictDrop { NONE, LANDS, HOLDS }
+    enum ConflictDrop { NONE, LANDS, HOLDS, RETURNS }
 
     /**
      * A report's request links: one per repository, or the one {@code url} on the primary where {@code byProject} is

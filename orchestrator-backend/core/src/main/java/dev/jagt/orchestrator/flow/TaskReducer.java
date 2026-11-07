@@ -351,9 +351,9 @@ public final class TaskReducer {
         return switch (Objects.requireNonNull(conflicted.conflict()).cause()) {
             case RED_PIPELINE -> TaskMove.ConflictDrop.LANDS;
             case REVERT -> TaskMove.ConflictDrop.NONE;
-            case MERGE -> deployment.indexOf(conflicted.project()) < deployment.targets().size() - 1
-                    ? TaskMove.ConflictDrop.HOLDS
-                    : deployment.live() ? TaskMove.ConflictDrop.LANDS : TaskMove.ConflictDrop.NONE;
+            case MERGE -> !deployment.live() ? TaskMove.ConflictDrop.RETURNS
+                    : deployment.indexOf(conflicted.project()) < deployment.targets().size() - 1
+                    ? TaskMove.ConflictDrop.HOLDS : TaskMove.ConflictDrop.LANDS;
         };
     }
 

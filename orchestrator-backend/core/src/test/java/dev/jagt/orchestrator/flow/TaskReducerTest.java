@@ -779,7 +779,7 @@ class TaskReducerTest {
     }
 
     @Test
-    void keepsTheDeployConflictWhereTheConflictedRepositoryWasNeverMerged() {
+    void offersDeployAgainWhereTheConflictedRepositoryLeavesAndNothingLanded() {
         TaskState task = TaskState.builder(List.of(
                 new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
                 new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
@@ -791,8 +791,8 @@ class TaskReducerTest {
 
         TaskState left = TaskReducer.repoLeft(conflicted, "beta");
 
-        assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-        assertThat(left.deployment().conflictedTarget()).isPresent();
+        assertThat(left.status()).isEqualTo(TaskStatus.REVIEWED);
+        assertThat(left.deployment().conflictedTarget()).isEmpty();
     }
 
     @Test
