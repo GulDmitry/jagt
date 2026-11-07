@@ -13,7 +13,6 @@
     <suppress files="[\\/]ConfigService\.java$" checks="RecordComponentNumber"/>
     <!-- persisted Target; ~0.5 pt -->
     <suppress files="[\\/]Deployment\.java$" checks="RecordComponentNumber"/>
-    <suppress files="[\\/]Facts\.java$" checks="RecordComponentNumber"/>
     <!-- persisted in finished.jsonl, read in the old flat shape; ~1 pt -->
     <suppress files="[\\/]FinishedTask\.java$" checks="RecordComponentNumber"/>
     <suppress files="[\\/]NewTaskMessage\.java$" checks="RecordComponentNumber"/>

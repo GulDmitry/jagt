@@ -107,8 +107,10 @@ public record TaskView(
                               Map<String, String> deployBranches) {
         boolean draftedReplies = round.draftedReplies();
         Stop stop = Stop.of(task.stop());
-        Move move = Move.forTask(task.status(), Facts.projected(task).withShippedWithoutRequest(round.requestless()), round, SessionPhase.silent(task),
-                autoReview == null ? AutoReviewWatch.none() : autoReview);
+        Facts projected = Facts.projected(task);
+        Move move = Move.forTask(task.status(),
+                projected.withDelivery(projected.delivery().withShippedWithoutRequest(round.requestless())), round,
+                SessionPhase.silent(task), autoReview == null ? AutoReviewWatch.none() : autoReview);
         boolean deployed = Facts.deployLive(task);
         DashboardLine.Line line = DashboardLine.forTask(task, webLink(task.mrUrl()));
         List<ActionView> actions = move.actions().stream().filter(action -> !action.typed())

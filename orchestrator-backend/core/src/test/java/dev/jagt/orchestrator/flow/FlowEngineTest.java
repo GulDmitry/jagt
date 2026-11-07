@@ -55,7 +55,7 @@ class FlowEngineTest {
 
         @Override
         public Facts naming(Facts facts) {
-            return facts.withRepoRequested(true);
+            return facts.withWorkspace(facts.workspace().withRepoRequested(true));
         }
 
         @Override

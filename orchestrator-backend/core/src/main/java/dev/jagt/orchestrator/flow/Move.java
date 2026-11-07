@@ -25,20 +25,20 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
     /** The WATCH rather than a flag off it: a promised poll that STOPPED and no poller at all are different cards. */
     public static Move forTask(TaskStatus status, Facts facts, RoundState round,
                                boolean agentSilent, AutoReviewWatch watch) {
-        if (facts.gitStateChanged()) {
+        if (facts.workspace().gitStateChanged()) {
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "read what git changed",
                     FlowRules.allowed(status, facts), TaskAction.TRUST,
                     "git config or hooks changed since you trusted them; read the line, then trust");
         }
-        if (facts.stopped() && facts.stopIsTheMasters() && round.master().may(MasterRight.LIFT)) {
+        if (facts.hold().stopped() && facts.hold().stopIsTheMasters() && round.master().may(MasterRight.LIFT)) {
             return masterDecidesStop(status, facts);
         }
-        if (facts.stopped()) {
+        if (facts.hold().stopped()) {
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "lift the stop",
                     FlowRules.allowed(status, facts), TaskAction.LIFT,
                     "the task is stopped; hover for why and what to check, then lift or close");
         }
-        if (facts.repoRequested() && asking(status, round)) {
+        if (facts.workspace().repoRequested() && asking(status, round)) {
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "add the repository",
                     FlowRules.allowed(status, facts), TaskAction.ADD_REPO,
                     "the session asked for another repository: add it, or answer in the agent's window (focus)");
@@ -48,12 +48,12 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                     FlowRules.allowed(status, facts), TaskAction.DONE,
                     "every request is merged: nothing is left to approve or deploy; done closes the task");
         }
-        if (status == TaskStatus.REVIEW_PENDING && facts.shippedWithoutRequest() && !asking(status, round)) {
+        if (status == TaskStatus.REVIEW_PENDING && facts.delivery().shippedWithoutRequest() && !asking(status, round)) {
             return new Move(phaseOf(status), Owner.YOU, Attention.REQUIRED, "deploy it",
                     FlowRules.allowed(status, facts), TaskAction.DEPLOY,
                     "shipped without a request, so no review is open: deploy it, or ship again after more work");
         }
-        boolean hasReviewRequest = facts.hasReviewRequest();
+        boolean hasReviewRequest = facts.delivery().hasReviewRequest();
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());
         Attention attention = attentionOf(owner, status, round, polled);
@@ -61,7 +61,7 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
                 ask(status, hasReviewRequest, round, agentSilent, attention),
                 FlowRules.allowed(status, facts),
                 revertLeads(status, facts, primaryOf(status, hasReviewRequest, round, polled)),
-                hint(status, hasReviewRequest, round, agentSilent, polled, facts.revertConflict()));
+                hint(status, hasReviewRequest, round, agentSilent, polled, facts.delivery().revertConflict()));
     }
 
     private static Move masterDecidesStop(TaskStatus status, Facts facts) {
@@ -70,13 +70,13 @@ public record Move(Phase phase, Owner owner, Attention attention, @Nullable Stri
     }
 
     private static @Nullable TaskAction revertLeads(TaskStatus status, Facts facts, @Nullable TaskAction primary) {
-        return status == TaskStatus.DEPLOY_CONFLICT && facts.revertConflict() && primary == TaskAction.DEPLOY
+        return status == TaskStatus.DEPLOY_CONFLICT && facts.delivery().revertConflict() && primary == TaskAction.DEPLOY
                 ? TaskAction.REVERT : primary;
     }
 
     /** Merged requests leave the approval and the deploy nothing to act on, so only the close is left. */
     private static boolean nothingLeftToLand(TaskStatus status, Facts facts, RoundState round) {
-        return facts.requestMerged() && FlowRules.awaitsApproval(status)
+        return facts.delivery().requestMerged() && FlowRules.awaitsApproval(status)
                 && !asking(status, round) && !masterReading(status, round);
     }
 

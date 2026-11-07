@@ -16,12 +16,15 @@ import java.util.stream.IntStream;
 public final class LegalMoves {
 
     private static final List<Facts> EVERY_FACT = IntStream.range(0, 64).mapToObj(bits -> Facts.defaults()
-            .withHasReviewRequest(bit(bits, 0))
-            .withLiveDeploy(bit(bits, 1))
-            .withAgentLive(() -> bit(bits, 2))
-            .withGitStateChanged(bit(bits, 3))
-            .withStopped(bit(bits, 4))
-            .withRepoRequested(bit(bits, 5))).toList();
+            .withDelivery(Facts.Delivery.defaults()
+                    .withHasReviewRequest(bit(bits, 0))
+                    .withLiveDeploy(bit(bits, 1)))
+            .withHold(Facts.Hold.defaults()
+                    .withAgentLive(() -> bit(bits, 2))
+                    .withStopped(bit(bits, 4)))
+            .withWorkspace(Facts.Workspace.defaults()
+                    .withGitStateChanged(bit(bits, 3))
+                    .withRepoRequested(bit(bits, 5)))).toList();
 
     private LegalMoves() {
     }

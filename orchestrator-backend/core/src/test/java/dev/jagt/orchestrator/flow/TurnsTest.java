@@ -52,7 +52,7 @@ class TurnsTest {
     void theBoardShowsTheHolderWhereNoMasterHoldsTheTurn(TaskStatus status, AgentReport report, String profile) {
         Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
                 AutoReviewWatch.watching(Long.MAX_VALUE));
 
@@ -66,7 +66,7 @@ class TurnsTest {
             "REVIEWED, PLAIN, act",
             "APPROVED, PLAIN, act"})
     void theBoardShowsTheMasterAtWorkWhereItStandsInForTheHuman(TaskStatus status, AgentReport report, String profile) {
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(report, false).withMaster(PROFILES.get(profile)), false,
                 AutoReviewWatch.watching(Long.MAX_VALUE));
 
@@ -96,7 +96,7 @@ class TurnsTest {
                                                                   String profile) {
         Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(report, false).withMasterReading(true), false);
 
         assertThat(holder).isEqualTo(Holder.ARBITER);
@@ -134,7 +134,7 @@ class TurnsTest {
     void qaHoldsTheDeployedTurnWhileItsCheckReadsAndTheBoardShowsTheAgentAtWork(String profile) {
         Holder holder = Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, Map.of("qa", CheckerPhase.READING), PROFILES.get(profile));
 
-        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.PLAIN, false).withCheckers(Map.of("qa", CheckerPhase.READING)).withMaster(PROFILES.get(profile)), false);
 
         assertThat(holder).isEqualTo(new Holder.Role("qa"));

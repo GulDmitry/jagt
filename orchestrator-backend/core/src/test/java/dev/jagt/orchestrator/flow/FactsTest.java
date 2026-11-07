@@ -15,7 +15,7 @@ class FactsTest {
     void projectsEveryTaskAsHavingNoLiveAgentSoADashboardSpawnsNoProbe() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build();
 
-        assertThat(Facts.projected(task).agentLive().getAsBoolean()).isFalse();
+        assertThat(Facts.projected(task).hold().agentLive().getAsBoolean()).isFalse();
     }
 
     @Test
@@ -23,13 +23,13 @@ class FactsTest {
         TaskState task = TaskState.builder(List.of(TaskRepo.of("api", "/wt"), TaskRepo.of("web", "/wt2")),
                 TaskStatus.IN_PROGRESS).build();
 
-        assertThat(Facts.projected(task).severalRepos()).isTrue();
+        assertThat(Facts.projected(task).workspace().severalRepos()).isTrue();
     }
 
     @Test
     void projectsATaskHoldingOneRepositoryAsHoldingNoSeveral() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
-        assertThat(Facts.projected(task).severalRepos()).isFalse();
+        assertThat(Facts.projected(task).workspace().severalRepos()).isFalse();
     }
 }

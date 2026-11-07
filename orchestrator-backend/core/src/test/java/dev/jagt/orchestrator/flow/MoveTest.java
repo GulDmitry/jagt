@@ -32,7 +32,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void withholdsShipWhereEveryRequestIsMerged(TaskStatus status) {
-        List<TaskAction> actions = Move.forTask(status, Facts.defaults().withHasReviewRequest(true).withRequestMerged(true),
+        List<TaskAction> actions = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true).withRequestMerged(true)),
                 RoundState.NONE, false).actions();
 
         assertThat(actions).doesNotContain(TaskAction.SHIP);
@@ -41,7 +41,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void offersWhatMovesTheTaskOnBeforeWhatOnlyLooksAtIt(TaskStatus status) {
-        List<TaskAction> actions = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE,
+        List<TaskAction> actions = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE,
                 false).actions();
 
         assertThat(actions).isSortedAccordingTo(Comparator.comparing(TaskAction::group));
@@ -86,7 +86,7 @@ class MoveTest {
     @Test
     void leadsWithTheRevertAndSaysSoWhereTheConflictIsARevertsAndNotADeploys() {
         Move move = Move.forTask(TaskStatus.DEPLOY_CONFLICT,
-                Facts.defaults().withHasReviewRequest(true).withLiveDeploy(true).withRevertConflict(true), RoundState.NONE, false);
+                Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true).withLiveDeploy(true).withRevertConflict(true)), RoundState.NONE, false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.REVERT);
         assertThat(move.hint()).endsWith("git add, then revert");
@@ -94,7 +94,7 @@ class MoveTest {
 
     @Test
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.NO_CHANGES, false), false,
                 AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
@@ -106,7 +106,7 @@ class MoveTest {
 
     @Test
     void handsAReviewRoundBackToTheHumanOncePollingHasStoppedForIt() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.NO_CHANGES, false), false, AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -118,7 +118,7 @@ class MoveTest {
 
     @Test
     void leavesATaskWithItsAgentWhenThePollingWindowElapsedWhileItWorks() {
-        Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.owner()).isEqualTo(Owner.AGENT);
@@ -127,7 +127,7 @@ class MoveTest {
 
     @Test
     void stillAdvisesAShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.NO_CHANGES, true), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
@@ -149,7 +149,7 @@ class MoveTest {
 
     @Test
     void keepsTheRoundWithTheHumanWhenTheDraftedRepliesStillNeedAShip() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.NO_CHANGES, true),
                 false);
 
@@ -159,7 +159,7 @@ class MoveTest {
 
     @Test
     void asksTheHumanToSweepARoundThePollHasGivenUpOn() {
-        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -168,7 +168,7 @@ class MoveTest {
 
     @Test
     void leavesARoundStillBeingPolledWithTheHost() {
-        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
         assertThat(move.owner()).isEqualTo(Owner.CI);
@@ -186,7 +186,7 @@ class MoveTest {
 
     @Test
     void pointsAtTheAgentWhenTheRoundEndedInAQuestionInsteadOfAtTheShipButton() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
@@ -195,7 +195,7 @@ class MoveTest {
 
     @Test
     void leavesAQuestionUnshoutedWhileAPollIsStillReadingTheRoundItWasAskedOn() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false),
                 false, AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
@@ -206,7 +206,7 @@ class MoveTest {
 
     @Test
     void interruptsForTheSameQuestionOnceNothingIsPollingTheRoundAnyMore() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false),
                 false, AutoReviewWatch.windowElapsed(24));
 
@@ -217,14 +217,14 @@ class MoveTest {
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "CI_FAILED", "DEPLOY_CONFLICT", "APPROVED",
             "DEPLOYED"})
     void interruptsForAQuestionNoCommentOnTheRequestCanReachEvenWhileThatRequestIsPolled(TaskStatus status) {
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.of(AgentReport.QUESTION, false), false, AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.of(AgentReport.QUESTION, false), false, AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
     }
 
     @Test
     void asksForTheRoundToBeReadRatherThanTheSessionAnsweredWhenTheQuestionCameBackWithIt() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false),
                 false);
 
@@ -263,14 +263,14 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_POLLING", "DEPLOYED", "DONE"})
     void keepsTheOwnerOfAStatusThatWasNeverTheAgentsEvenIfSilenceWasStamped(TaskStatus status) {
-        assertThat(Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, true))
-                .isEqualTo(Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false));
+        assertThat(Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, true))
+                .isEqualTo(Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false));
     }
 
     @Test
     void namesTheHumanAsTheOwnerOfExactlyTheStatusesThatWaitForOne() {
         var waitingOnYou = Arrays.stream(TaskStatus.values())
-                .filter(status -> Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE,
+                .filter(status -> Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE,
                         false).owner() == Owner.YOU).toList();
 
         assertThat(waitingOnYou).containsExactly(TaskStatus.PLAN_PENDING, TaskStatus.REVIEW_PENDING,
@@ -279,7 +279,7 @@ class MoveTest {
 
     @Test
     void asksForNothingOnceTheChangeIsLiveWhileStillOfferingTheClose() {
-        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false);
+        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false);
 
         assertThat(move.owner()).isEqualTo(Owner.NOBODY);
         assertThat(move.primary()).isEqualTo(TaskAction.DONE);
@@ -287,7 +287,7 @@ class MoveTest {
 
     @Test
     void stillAsksForTheHumanWhenAnAgentQuestionOutlivesTheDeploy() {
-        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -297,7 +297,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void saysNothingAboutAttentionUnlessTheMoveIsTheHumansOwn(TaskStatus status) {
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false);
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false);
 
         assertThat(move.attention() == Attention.NONE).isEqualTo(move.owner() != Owner.YOU);
     }
@@ -305,10 +305,10 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void namesTheActOnEveryCardWhoseMoveIsTheHumansOwn(TaskStatus status) {
-        Move working = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false);
-        Move stopped = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, true);
-        Move asked = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.of(AgentReport.QUESTION, false), false);
-        Move unpolled = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move working = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false);
+        Move stopped = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, true);
+        Move asked = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.of(AgentReport.QUESTION, false), false);
+        Move unpolled = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.windowElapsed(24));
         Move requestless = Move.forTask(status, Facts.defaults(), RoundState.NONE, false);
 
@@ -326,13 +326,13 @@ class MoveTest {
             "DEPLOY_CONFLICT, resolve the conflict"
     })
     void namesTheActItWantsRatherThanHowLoudlyItWantsIt(TaskStatus status, String ask) {
-        assertThat(Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE,
+        assertThat(Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE,
                 false).ask()).isEqualTo(ask);
     }
 
     @Test
     void namesTheReadWhenTheRoundIsBackWithTheHumanBecauseNothingPollsIt() {
-        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.ask()).isEqualTo("read the review");
@@ -340,7 +340,7 @@ class MoveTest {
 
     @Test
     void asksForTheApprovalRatherThanAReadOnARoundThatCameBackWithNothingUnresolved() {
-        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.ask()).isEqualTo("check for the approval");
@@ -363,13 +363,13 @@ class MoveTest {
             "REVERTED, you can ship a fix"
     })
     void offersRatherThanOrdersTheActWhoseCardCanWait(TaskStatus status, String ask) {
-        assertThat(Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE,
+        assertThat(Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE,
                 false).ask()).isEqualTo(ask);
     }
 
     @Test
     void asksForAnAnswerWhereverTheSessionStoppedToPutTheQuestion() {
-        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.DEPLOYED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.ask()).isEqualTo("answer the session");
@@ -386,10 +386,10 @@ class MoveTest {
     @EnumSource(TaskStatus.class)
     void highlightsAButtonForTheActItsBadgeNames(TaskStatus status) {
         List<Move> badged = Stream.of(
-                        Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false),
+                        Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false),
                         Move.forTask(status, Facts.defaults(), RoundState.NONE, false),
-                        Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, true),
-                        Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+                        Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, true),
+                        Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                                 AutoReviewWatch.windowElapsed(24)))
                 .filter(move -> move.ask() != null).toList();
 
@@ -414,7 +414,7 @@ class MoveTest {
 
     @Test
     void saysNothingAboutARoundWhoseOpenThreadsAreTheReviewersToClose() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.NO_CHANGES, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.CI);
@@ -424,7 +424,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"APPROVED", "REVERTED"})
     void offersTheNextMoveWithoutInterruptingWhenNothingIsStuck(TaskStatus status) {
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false);
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
@@ -433,13 +433,13 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_FAILED", "DEPLOY_CONFLICT"})
     void interruptsForATaskThatMovesNoFurtherWithoutTheHuman(TaskStatus status) {
-        assertThat(Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false).attention())
+        assertThat(Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false).attention())
                 .isEqualTo(Attention.REQUIRED);
     }
 
     @Test
     void interruptsWhenAnAgentAsksFromAStatusThatWouldOtherwiseWait() {
-        Move move = Move.forTask(TaskStatus.APPROVED, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.APPROVED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
@@ -454,7 +454,7 @@ class MoveTest {
 
     @Test
     void waitsOnTheReviewerAfterACleanRoundThatNobodyHasApprovedYet() {
-        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.watching(System.currentTimeMillis() + 60_000));
 
         assertThat(move.owner()).isEqualTo(Owner.CI);
@@ -465,7 +465,7 @@ class MoveTest {
 
     @Test
     void highlightsTheReadWhenNothingIsPollingForTheApprovalAtAll() {
-        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false);
+        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false);
 
         assertThat(move.owner()).isEqualTo(Owner.CI);
         assertThat(move.primary()).isEqualTo(TaskAction.SWEEP);
@@ -476,14 +476,14 @@ class MoveTest {
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_FAILED", "REVIEWED", "APPROVED",
             "REVERTED", "DEPLOYED"})
     void highlightsTheAnswerRatherThanAVerbThatActsWhileAQuestionIsOpen(TaskStatus status) {
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.of(AgentReport.QUESTION, false), false);
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
 
     @Test
     void handsACleanRoundBackToTheHumanOnceNothingPollsItForTheApproval() {
-        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false,
+        Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false,
                 AutoReviewWatch.windowElapsed(24));
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -494,7 +494,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED"})
     void handsTheTaskOverForAQuestionAskedFromAStatusThatWaitsOnTheCodeHost(TaskStatus status) {
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true), RoundState.of(AgentReport.QUESTION, false), false);
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.hint()).contains("answer the question");
@@ -502,7 +502,7 @@ class MoveTest {
 
     @Test
     void leavesAClosedTaskAloneWhateverItsLastMessageSaid() {
-        Move move = Move.forTask(TaskStatus.DONE, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.DONE, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.NOBODY);
@@ -513,7 +513,7 @@ class MoveTest {
             "APPROVED,true,READY"})
     void collapsesTheFourStatusesThatAllReadAsReviewIntoDistinctPhases(TaskStatus status, boolean hasRequest,
                                                                       Phase phase) {
-        assertThat(Move.forTask(status, Facts.defaults().withHasReviewRequest(hasRequest), RoundState.NONE,
+        assertThat(Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(hasRequest)), RoundState.NONE,
                 false).phase()).isEqualTo(phase);
     }
 
@@ -529,7 +529,7 @@ class MoveTest {
     @CsvSource(nullValues = "NOTHING", value = {"REVIEW_PENDING,false,SHIP", "CI_FAILED,true,SWEEP",
             "APPROVED,true,DEPLOY", "DEPLOYED,true,DONE", "IN_PROGRESS,false,FOCUS", "DONE,false,NOTHING"})
     void pointsAtTheOneObviousActionForEachStatus(TaskStatus status, boolean hasRequest, TaskAction primary) {
-        assertThat(Move.forTask(status, Facts.defaults().withHasReviewRequest(hasRequest), RoundState.NONE,
+        assertThat(Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(hasRequest)), RoundState.NONE,
                 false).primary()).isEqualTo(primary);
     }
 
@@ -542,7 +542,7 @@ class MoveTest {
 
     @Test
     void advisesAFixOntoTheSameRequestForATaskWhoseDeployWasTakenBackOut() {
-        Move move = Move.forTask(TaskStatus.REVERTED, Facts.defaults().withHasReviewRequest(true), RoundState.NONE, false);
+        Move move = Move.forTask(TaskStatus.REVERTED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE, false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
         assertThat(move.actions()).contains(TaskAction.SHIP);
@@ -557,7 +557,7 @@ class MoveTest {
 
     @Test
     void leavesAReversionInTheDeployPhaseBecauseThatIsWhereItWentWrong() {
-        assertThat(Move.forTask(TaskStatus.REVERTED, Facts.defaults().withHasReviewRequest(true), RoundState.NONE,
+        assertThat(Move.forTask(TaskStatus.REVERTED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)), RoundState.NONE,
                 false).phase()).isEqualTo(Phase.DEPLOY);
     }
 
@@ -581,7 +581,7 @@ class MoveTest {
 
     @Test
     void asksTheHumanToReviewTheRoundWhereTheQuestionCameBackWithTheHandBack() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withHasReviewRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.ask()).isEqualTo("review the round");
@@ -598,7 +598,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING", "CI_FAILED"})
     void putsAddRepoOnTheQuestionOfASessionAskingForARepository(TaskStatus status) {
-        Move move = Move.forTask(status, Facts.defaults().withRepoRequested(true),
+        Move move = Move.forTask(status, Facts.defaults().withWorkspace(Facts.Workspace.defaults().withRepoRequested(true)),
                 RoundState.of(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -618,7 +618,7 @@ class MoveTest {
 
     @Test
     void offersNoAddRepoOnceTheSessionIsWorkingAgainWhateverRequestIsLeftOnTheTask() {
-        Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults().withRepoRequested(true),
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults().withWorkspace(Facts.Workspace.defaults().withRepoRequested(true)),
                 RoundState.NONE, false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
@@ -627,7 +627,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEWED", "APPROVED"})
     void offersTheCloseQuietlyOnceEveryRequestIsMerged(TaskStatus status) {
-        Move move = Move.forTask(status, Facts.defaults().withHasReviewRequest(true).withRequestMerged(true), RoundState.NONE, false);
+        Move move = Move.forTask(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true).withRequestMerged(true)), RoundState.NONE, false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
@@ -637,7 +637,7 @@ class MoveTest {
 
     @Test
     void advisesTheDeployOfATaskShippedWithoutARequestSinceNoReviewIsOpenOnIt() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withShippedWithoutRequest(true),
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withShippedWithoutRequest(true)),
                 RoundState.NONE, false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.DEPLOY);

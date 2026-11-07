@@ -55,21 +55,21 @@ class FlowRulesTest {
     void shipsAStuckTaskAgainOnlyOnceTheAgentThatWasPushingItIsGone() {
         assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, Facts.defaults())).isTrue();
         assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP,
-                Facts.defaults().withHasReviewRequest(true).withAgentLive(() -> true))).isFalse();
+                Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)).withHold(Facts.Hold.defaults().withAgentLive(() -> true)))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class,
             names = {"CI_POLLING", "CI_FAILED", "REVIEWED", "DEPLOYED", "REVERTED"})
     void shipsAFurtherRoundOnlyOntoARequestThatIsAlreadyOpen(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.defaults().withHasReviewRequest(true))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)))).isTrue();
         assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.defaults())).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "DONE"})
     void refusesAShipForATaskWithNothingOnItsBranchYetOrNothingLeftToSay(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.defaults().withHasReviewRequest(true))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)))).isFalse();
     }
 
     @Test
@@ -79,7 +79,7 @@ class FlowRulesTest {
 
     @Test
     void refusesADeployWhileTheConflictIsARevertsAndStillOffersTheRevert() {
-        Facts facts = Facts.defaults().withHasReviewRequest(true).withLiveDeploy(true).withRevertConflict(true);
+        Facts facts = Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true).withLiveDeploy(true).withRevertConflict(true));
 
         assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.DEPLOY, facts)).isFalse();
         assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, facts)).isTrue();
@@ -89,19 +89,19 @@ class FlowRulesTest {
     @EnumSource(value = TaskStatus.class,
             names = {"REVIEW_PENDING", "CI_POLLING", "CI_FAILED", "REVIEWED", "APPROVED", "DEPLOYED"})
     void landsAnOpenRequestWhateverTheReviewerSaidAboutIt(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.defaults().withHasReviewRequest(true))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)))).isTrue();
         assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.defaults())).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING", "REVERTED", "DONE"})
     void refusesADeployWhereItCouldOnlyRaceTheAgentOrRefuse(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.defaults().withHasReviewRequest(true))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)))).isFalse();
     }
 
     @Test
     void revertsATaskWhoseDeployActuallyLandedWhateverBecameOfItsRequest() {
-        assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, Facts.defaults().withHasReviewRequest(true))).isTrue();
+        assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)))).isTrue();
         assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, Facts.defaults())).isTrue();
     }
 
@@ -113,13 +113,13 @@ class FlowRulesTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"DEPLOYED", "DEPLOY_CONFLICT"})
     void refusesARevertForATaskWithNothingLiveToTakeBackOut(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.REVERT, Facts.defaults().withHasReviewRequest(true))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.REVERT, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void readsAReviewRoundFromAnywhereButOnlyWhereThereIsARequestToRead(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SWEEP, Facts.defaults().withHasReviewRequest(true))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SWEEP, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)))).isTrue();
         assertThat(FlowRules.allows(status, TaskAction.SWEEP, Facts.defaults())).isFalse();
     }
 
@@ -193,10 +193,10 @@ class FlowRulesTest {
     void doesNotProbeTheAgentForAStatusWhoseVerdictLivenessCannotChange(TaskStatus status) {
         AtomicBoolean probed = new AtomicBoolean();
 
-        FlowRules.allowed(status, Facts.defaults().withHasReviewRequest(true).withAgentLive(() -> {
+        FlowRules.allowed(status, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)).withHold(Facts.Hold.defaults().withAgentLive(() -> {
             probed.set(true);
             return true;
-        }));
+        })));
 
         assertThat(probed).isFalse();
     }
@@ -282,20 +282,20 @@ class FlowRulesTest {
     @CsvSource({"REVIEW_PENDING,SHIP", "APPROVED,DEPLOY", "DEPLOYED,REVERT"})
     void refusesGitWithTheHumansCredentialsOnceWhatItObeysChanged(TaskStatus status, TaskAction action) {
         assertThat(FlowRules.allows(status, action,
-                Facts.defaults().withHasReviewRequest(true).withLiveDeploy(true).withGitStateChanged(true))).isFalse();
+                Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true).withLiveDeploy(true)).withWorkspace(Facts.Workspace.defaults().withGitStateChanged(true)))).isFalse();
     }
 
     @Test
     void offersTrustOnlyOnceWhatGitObeysChanged() {
-        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, Facts.defaults().withHasReviewRequest(true).withGitStateChanged(true)))
+        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)).withWorkspace(Facts.Workspace.defaults().withGitStateChanged(true))))
                 .isTrue();
-        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, Facts.defaults().withHasReviewRequest(true)))
+        assertThat(FlowRules.allows(TaskStatus.APPROVED, TaskAction.TRUST, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true))))
                 .isFalse();
     }
 
     @Test
     void parksATaskWhoseGitChangedWithTheHumanAndTrustAsTheMove() {
-        Move move = Move.forTask(TaskStatus.APPROVED, Facts.defaults().withHasReviewRequest(true).withGitStateChanged(true), RoundState.NONE,
+        Move move = Move.forTask(TaskStatus.APPROVED, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)).withWorkspace(Facts.Workspace.defaults().withGitStateChanged(true)), RoundState.NONE,
                 false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -305,9 +305,9 @@ class FlowRulesTest {
 
     @Test
     void offersLiftOnlyWhileJagtHoldsTheTaskStopped() {
-        assertThat(FlowRules.allows(TaskStatus.CI_POLLING, TaskAction.LIFT, Facts.defaults().withHasReviewRequest(true).withStopped(true)))
+        assertThat(FlowRules.allows(TaskStatus.CI_POLLING, TaskAction.LIFT, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)).withHold(Facts.Hold.defaults().withStopped(true))))
                 .isTrue();
-        assertThat(FlowRules.allows(TaskStatus.CI_POLLING, TaskAction.LIFT, Facts.defaults().withHasReviewRequest(true)))
+        assertThat(FlowRules.allows(TaskStatus.CI_POLLING, TaskAction.LIFT, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true))))
                 .isFalse();
     }
 
@@ -315,13 +315,13 @@ class FlowRulesTest {
     @CsvSource({"NEW,false,false", "PLAN_PENDING,false,false", "IN_PROGRESS,false,true", "REVERTED,false,true",
             "DONE,false,false", "IN_PROGRESS,true,false"})
     void offersPauseOnlyToAStartedTaskNotAlreadyStopped(TaskStatus status, boolean stopped, boolean offered) {
-        assertThat(FlowRules.allows(status, TaskAction.PAUSE, Facts.defaults().withStopped(stopped)))
+        assertThat(FlowRules.allows(status, TaskAction.PAUSE, Facts.defaults().withHold(Facts.Hold.defaults().withStopped(stopped))))
                 .isEqualTo(offered);
     }
 
     @Test
     void parksAStoppedTaskWithTheHumanAndLiftAsTheMove() {
-        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withHasReviewRequest(true).withStopped(true), RoundState.NONE,
+        Move move = Move.forTask(TaskStatus.CI_POLLING, Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)).withHold(Facts.Hold.defaults().withStopped(true)), RoundState.NONE,
                 false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
@@ -463,7 +463,7 @@ class FlowRulesTest {
     @EnumSource(value = TaskStatus.class, names = "DONE", mode = EnumSource.Mode.EXCLUDE)
     void offersAddRepoOnlyWhileASessionsRequestForARepositoryStands(TaskStatus status) {
         assertThat(FlowRules.allows(status, TaskAction.ADD_REPO,
-                Facts.defaults().withRepoRequested(true))).isTrue();
+                Facts.defaults().withWorkspace(Facts.Workspace.defaults().withRepoRequested(true)))).isTrue();
         assertThat(FlowRules.allows(status, TaskAction.ADD_REPO,
                 Facts.defaults())).isFalse();
     }
@@ -471,7 +471,7 @@ class FlowRulesTest {
     @Test
     void offersNoAddRepoOnAClosedTask() {
         assertThat(FlowRules.allows(TaskStatus.DONE, TaskAction.ADD_REPO,
-                Facts.defaults().withRepoRequested(true))).isFalse();
+                Facts.defaults().withWorkspace(Facts.Workspace.defaults().withRepoRequested(true)))).isFalse();
     }
 
     @ParameterizedTest
@@ -491,16 +491,16 @@ class FlowRulesTest {
     @EnumSource(value = TaskStatus.class, names = {"NEW", "DEPLOY_CONFLICT", "DONE"}, mode = EnumSource.Mode.EXCLUDE)
     void offersRemoveRepoOnlyWhereTheTaskHoldsSeveralRepositories(TaskStatus status) {
         assertThat(FlowRules.allows(status, TaskAction.REMOVE_REPO,
-                Facts.defaults().withSeveralRepos(true))).isTrue();
+                Facts.defaults().withWorkspace(Facts.Workspace.defaults().withSeveralRepos(true)))).isTrue();
         assertThat(FlowRules.allows(status, TaskAction.REMOVE_REPO,
-                Facts.defaults().withSeveralRepos(false))).isFalse();
+                Facts.defaults().withWorkspace(Facts.Workspace.defaults().withSeveralRepos(false)))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "DEPLOY_CONFLICT", "DONE"})
     void offersNoRemoveRepoWhereARepositoryCannotLeave(TaskStatus status) {
         assertThat(FlowRules.allows(status, TaskAction.REMOVE_REPO,
-                Facts.defaults().withSeveralRepos(true))).isFalse();
+                Facts.defaults().withWorkspace(Facts.Workspace.defaults().withSeveralRepos(true)))).isFalse();
     }
 
     @ParameterizedTest

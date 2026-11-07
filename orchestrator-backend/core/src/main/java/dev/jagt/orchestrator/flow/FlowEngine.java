@@ -40,9 +40,10 @@ public class FlowEngine {
         Facts read = facts(task, taskId);
         Facts facts = project == null ? read : capabilities.of(action).map(named -> named.naming(read)).orElse(read);
         if (!FlowRules.allows(task.status(), action, facts)) {
+            Facts projected = Facts.projected(task);
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "
-                    + Move.forTask(task.status(), Facts.projected(task).withShippedWithoutRequest(requestless.stands(task)),
+                    + Move.forTask(task.status(), projected.withDelivery(projected.delivery().withShippedWithoutRequest(requestless.stands(task))),
                             dev.jagt.orchestrator.flow.RoundState.of(task.report(), false),
                             SessionPhase.silent(task)).hint() + ")");
         }
@@ -106,16 +107,19 @@ public class FlowEngine {
 
     /** The real liveness probe, unlike the projection's: this one is about to act on the answer. */
     private Facts facts(TaskState task, String taskId) {
-        return Facts.defaults()
-                .withHasReviewRequest(task.hasReviewRequest())
-                .withLiveDeploy(Facts.deployLive(task))
-                .withAgentLive(() -> live(taskId))
-                .withGitStateChanged(task.gitStateChanged())
-                .withStopped(task.stopped())
-                .withRepoRequested(task.asksForARepository())
-                .withSeveralRepos(task.repos().size() > 1)
-                .withRequestMerged(task.requestsMerged())
-                .withRevertConflict(Facts.revertConflicted(task))
-                .withShippedWithoutRequest(requestless.stands(task));
+        return new Facts(
+                Facts.Delivery.defaults()
+                        .withHasReviewRequest(task.hasReviewRequest())
+                        .withLiveDeploy(Facts.deployLive(task))
+                        .withRequestMerged(task.requestsMerged())
+                        .withRevertConflict(Facts.revertConflicted(task))
+                        .withShippedWithoutRequest(requestless.stands(task)),
+                Facts.Hold.defaults()
+                        .withAgentLive(() -> live(taskId))
+                        .withStopped(task.stopped()),
+                Facts.Workspace.defaults()
+                        .withGitStateChanged(task.gitStateChanged())
+                        .withRepoRequested(task.asksForARepository())
+                        .withSeveralRepos(task.repos().size() > 1));
     }
 }

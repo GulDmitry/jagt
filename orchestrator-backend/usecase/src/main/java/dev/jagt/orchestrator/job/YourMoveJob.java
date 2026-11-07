@@ -71,7 +71,9 @@ public class YourMoveJob implements Job {
 
     private void watch(String taskId, TaskState task) {
         RoundState round = handBack.round(task);
-        Move move = Move.forTask(task.status(), Facts.projected(task).withShippedWithoutRequest(round.requestless()), round, false);
+        Facts projected = Facts.projected(task);
+        Move move = Move.forTask(task.status(),
+                projected.withDelivery(projected.delivery().withShippedWithoutRequest(round.requestless())), round, false);
         String title = title(task.status(), round);
         String banner = banner(move.hint(), round);
         Optional<String> yours = move.owner() == Owner.YOU ? Optional.of(title + "\n" + banner) : Optional.empty();

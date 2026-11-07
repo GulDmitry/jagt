@@ -100,16 +100,16 @@ final class TaskOffers {
     }
 
     static void declare(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, RegionId<TaskStatus> lifecycle) {
-        chart.derived(REVIEW_REQUEST, facts -> Fact.of(facts.facts().hasReviewRequest()));
-        chart.derived(LIVE_DEPLOY, facts -> Fact.of(facts.facts().liveDeploy()));
-        chart.derived(AGENT_LIVE, facts -> Fact.of(facts.facts().agentLive().getAsBoolean()));
-        chart.derived(GIT_CHANGED, facts -> Fact.of(facts.facts().gitStateChanged()));
-        chart.derived(STOPPED, facts -> Fact.of(facts.facts().stopped()));
-        chart.derived(REPO_REQUESTED, facts -> Fact.of(facts.facts().repoRequested()));
-        chart.derived(SEVERAL_REPOS, facts -> Fact.of(facts.facts().severalRepos()));
-        chart.derived(REQUEST_MERGED, facts -> Fact.of(facts.facts().requestMerged()));
-        chart.derived(SHIPPED_WITHOUT_REQUEST, facts -> Fact.of(facts.facts().shippedWithoutRequest()));
-        chart.derived(REVERT_CONFLICT, facts -> Fact.of(facts.facts().revertConflict()));
+        chart.derived(REVIEW_REQUEST, facts -> Fact.of(facts.facts().delivery().hasReviewRequest()));
+        chart.derived(LIVE_DEPLOY, facts -> Fact.of(facts.facts().delivery().liveDeploy()));
+        chart.derived(AGENT_LIVE, facts -> Fact.of(facts.facts().hold().agentLive().getAsBoolean()));
+        chart.derived(GIT_CHANGED, facts -> Fact.of(facts.facts().workspace().gitStateChanged()));
+        chart.derived(STOPPED, facts -> Fact.of(facts.facts().hold().stopped()));
+        chart.derived(REPO_REQUESTED, facts -> Fact.of(facts.facts().workspace().repoRequested()));
+        chart.derived(SEVERAL_REPOS, facts -> Fact.of(facts.facts().workspace().severalRepos()));
+        chart.derived(REQUEST_MERGED, facts -> Fact.of(facts.facts().delivery().requestMerged()));
+        chart.derived(SHIPPED_WITHOUT_REQUEST, facts -> Fact.of(facts.facts().delivery().shippedWithoutRequest()));
+        chart.derived(REVERT_CONFLICT, facts -> Fact.of(facts.facts().delivery().revertConflict()));
         for (Offer offer : OFFERS) {
             chart.onMatching(lifecycle, offer.from(), "offers " + offer.action().id(),
                             move -> move instanceof TaskMove.Offers offers && offers.action() == offer.action())
