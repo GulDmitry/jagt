@@ -121,10 +121,13 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
     static ReviewFacts review(JsonNode n) {
         List<String> threads = new ArrayList<>();
         n.path("threads").forEach(t -> threads.add(cappedTail(t.asString(""))));
-        return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
-                n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
-                threads, HostStamp.epochMillis(n.path("openedAt").asString("")), List.of(), List.of(),
-                n.path("pipelineUrl").asString(""), n.path("merged").asBoolean(false), n.path("closed").asBoolean(false))
+        return new ReviewFacts(
+                new ReviewFacts.Request(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
+                        n.path("merged").asBoolean(false), n.path("closed").asBoolean(false),
+                        HostStamp.epochMillis(n.path("openedAt").asString(""))),
+                new ReviewFacts.Pipeline(n.path("pipelineStatus").asString(""),
+                        capped(n.path("pipelineFailure").asString("")), n.path("pipelineUrl").asString("")),
+                new ReviewFacts.Discussion(threads, List.of(), List.of()))
                 .answeredBy(n.path("signedInAs").asString(""));
     }
 

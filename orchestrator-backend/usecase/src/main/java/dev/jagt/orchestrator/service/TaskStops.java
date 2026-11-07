@@ -86,7 +86,7 @@ public class TaskStops {
         Optional<TaskStop> stop = trip(taskId, task -> {
             verdict.set(verdictOn(task, digest, notes, failing));
             return verdict.get() != Relay.RELAY ? task : task.withTrail(task.trailOrNone().withRound(
-                    new RoundTrail.Round(clock.millis(), facts.threads().size(), failing, digest, notes)));
+                    new RoundTrail.Round(clock.millis(), facts.discussion().threads().size(), failing, digest, notes)));
         }, task -> verdict.get() != Relay.RELAY ? Optional.empty()
                 : breaker.afterRound(task.trailOrNone(), task.history(), clock.millis()));
         return stop.isPresent() ? Relay.STOPPED : verdict.get();
@@ -218,14 +218,14 @@ public class TaskStops {
 
     /** Equal for one round read twice, the brief's wording aside; empty where a fact it turns on is unknown. */
     private static String factKey(ReviewFacts facts, String failing, String notes, String tip) {
-        boolean red = Pipeline.of(facts.pipelineStatus()) == Pipeline.RED;
+        boolean red = Pipeline.of(facts.pipeline().status()) == Pipeline.RED;
         boolean unknown = red && (failing.isBlank() || tip.isBlank())
-                || !facts.threads().isEmpty() && notes.isBlank() || !red && facts.threads().isEmpty();
+                || !facts.discussion().threads().isEmpty() && notes.isBlank() || !red && facts.discussion().threads().isEmpty();
         return unknown ? "" : (red ? failing + "@" + tip : "") + "\n" + notes;
     }
 
     private static String failing(ReviewFacts facts) {
-        return Pipeline.of(facts.pipelineStatus()) == Pipeline.RED
-                ? facts.pipelineFailure().lines().findFirst().orElse("") : "";
+        return Pipeline.of(facts.pipeline().status()) == Pipeline.RED
+                ? facts.pipeline().failure().lines().findFirst().orElse("") : "";
     }
 }

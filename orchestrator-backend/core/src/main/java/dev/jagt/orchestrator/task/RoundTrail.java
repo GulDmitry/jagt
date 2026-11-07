@@ -64,12 +64,12 @@ public record RoundTrail(List<Round> rounds, long since) {
 
     /** The notes told as new or unchanged against the last round's; blank before a second round or where no note id is known. */
     public String sinceLast(ReviewFacts facts) {
-        if (rounds.isEmpty() || facts.newestNotes().isEmpty()) {
+        if (rounds.isEmpty() || facts.discussion().newestNotes().isEmpty()) {
             return "";
         }
         Set<String> last = new HashSet<>(noteIds(rounds.getLast().notes()).facts());
-        long fresh = facts.newestNotes().stream().filter(id -> !last.contains(id)).count();
-        long kept = facts.newestNotes().size() - fresh;
+        long fresh = facts.discussion().newestNotes().stream().filter(id -> !last.contains(id)).count();
+        long kept = facts.discussion().newestNotes().size() - fresh;
         List<String> told = new ArrayList<>();
         if (fresh > 0) {
             told.add("new notes: " + fresh);

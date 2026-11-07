@@ -23,14 +23,14 @@ public class RoundOutcome {
     public SweepResult settle(String taskId, String project, String mrUrl, ReviewFacts r, String tip) {
         // THIS round's own read is what decides and what is relayed; the word the CARD carries is the last one
         // a round managed to read, and a green nobody looked at must not mark the task REVIEWED.
-        String said = RoundRecord.orUnknown(r.pipelineStatus());
+        String said = RoundRecord.orUnknown(r.pipeline().status());
         RoundRecord.Recorded recorded = roundRecord.record(taskId, project, r, tip);
         if (recorded.stop().isPresent()) {
             return stopped(taskId, said, recorded.stop().get());
         }
         RedCauses.Verdict red = recorded.red();
-        Optional<TaskStatus> read = FlowRules.readReview(!r.threads().isEmpty() || !r.awaitingReviewer().isEmpty(),
-                r.approved(), Pipeline.of(said), red.cause(), red.retryLeft());
+        Optional<TaskStatus> read = FlowRules.readReview(!r.discussion().threads().isEmpty() || !r.discussion().awaitingReviewer().isEmpty(),
+                r.request().approved(), Pipeline.of(said), red.cause(), red.retryLeft());
         read.ifPresent(status -> statusReports.markRead(taskId, status, red.stop()));
         if (red.stop().isPresent()) {
             return stopped(taskId, said, red.stop().get());
@@ -49,12 +49,12 @@ public class RoundOutcome {
 
     private SweepResult open(String taskId, String mrUrl, ReviewFacts r, String said, String tip, boolean held,
                              String waiting) {
-        if (held && r.threads().isEmpty() && !r.awaitingReviewer().isEmpty()) {
+        if (held && r.discussion().threads().isEmpty() && !r.discussion().awaitingReviewer().isEmpty()) {
             return new SweepResult(SweepResult.Kind.PENDING,
-                    "sweep " + taskId + ": checks " + said + ", " + r.awaitingReviewer().size()
+                    "sweep " + taskId + ": checks " + said + ", " + r.discussion().awaitingReviewer().size()
                             + " thread(s) answered by the agent — waiting on the reviewer");
         }
-        if (held && r.threads().isEmpty()) {
+        if (held && r.discussion().threads().isEmpty()) {
             return new SweepResult(SweepResult.Kind.PENDING, "sweep " + taskId + ": checks " + said
                     + (waiting.isBlank() ? ", nothing unresolved yet, not approved — waiting"
                     : " on infrastructure, nothing unresolved — retry armed (" + waiting + ")"));

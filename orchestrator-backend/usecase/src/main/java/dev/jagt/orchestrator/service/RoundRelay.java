@@ -25,8 +25,8 @@ public class RoundRelay {
     public SweepResult relay(String taskId, String mrUrl, ReviewFacts round, String said, String tip) {
         ReviewFacts r = stops.asking(taskId) ? round.withoutChecks() : round;
         Standing standing = steps.standing(taskId);
-        String told = RoundRecord.orUnknown(r.pipelineStatus());
-        String read = "sweep " + taskId + ": " + r.threads().size() + " thread(s)";
+        String told = RoundRecord.orUnknown(r.pipeline().status());
+        String read = "sweep " + taskId + ": " + r.discussion().threads().size() + " thread(s)";
         TaskStatus checked = null;
         for (Step step : RoundBrief.steps(r, told)) {
             CaseDoor.Admission admission = door.opens(taskId, step);

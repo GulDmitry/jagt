@@ -22,7 +22,7 @@ public class ReviewRound {
     public Answer<ReviewFacts> read(String taskId, String project, String reviewRequestUrl) {
         Answer<ReviewFacts> answer = reader.read(taskId, reviewRequestUrl);
         Optional<ReviewFacts> read = answer.facts();
-        if (read.isEmpty() || !read.get().exists()) {
+        if (read.isEmpty() || !read.get().request().exists()) {
             return answer;
         }
         Answer<List<String>> notes = host.unresolvedNotes(project, reviewRequestUrl);

@@ -32,7 +32,10 @@ class ReviewSweepServiceTest {
 
     @Test
     void settlesTheRoundItRead() {
-        ReviewFacts facts = new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, true, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
         when(reading.read("ABC-1")).thenReturn(new RoundReading.Round("shop", "http://mr/1", facts, ""));
         when(outcome.settle("ABC-1", "shop", "http://mr/1", facts, "")).thenReturn(new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.APPROVED, "approved"));

@@ -38,7 +38,7 @@ public class ReviewReader {
                 ReviewRead::violations, facts -> ReviewRead.violations(facts).isEmpty());
         // Charged even when the read came back empty: every call was paid for either way.
         usage.chargeTask(taskId, answer.usage());
-        return new Answer<>(paidRead(answer.facts(), ReviewFacts::exists, reviewRequestUrl), answer.usage(),
+        return new Answer<>(paidRead(answer.facts(), facts -> facts.request().exists(), reviewRequestUrl), answer.usage(),
                 answer.failure(), answer.refused());
     }
 

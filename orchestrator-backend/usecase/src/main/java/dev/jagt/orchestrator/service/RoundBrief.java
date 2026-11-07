@@ -20,12 +20,12 @@ final class RoundBrief {
         if (Pipeline.of(said) == Pipeline.RED) {
             steps.add(Step.ROUND_CHECKS);
         }
-        if (!r.threads().isEmpty()) {
+        if (!r.discussion().threads().isEmpty()) {
             steps.add(Step.ROUND_THREADS);
         }
         // An unanswered question ENDS the round rather than parking in it: staying CI_POLLING would have the poll
         // re-brief the agent on the very comments it was told to hold.
-        steps.add(r.threads().isEmpty() ? Step.ROUND_CHECKS_DONE : Step.ROUND_THREADS_DONE);
+        steps.add(r.discussion().threads().isEmpty() ? Step.ROUND_CHECKS_DONE : Step.ROUND_THREADS_DONE);
         return List.copyOf(steps);
     }
 
@@ -35,15 +35,15 @@ final class RoundBrief {
         StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
         if (steps.contains(Step.ROUND_CHECKS)) {
             brief.append("Checks: ").append(said).append(" — find out why and fix it.\n");
-            if (!r.pipelineFailure().isBlank()) {
-                brief.append(Outside.fence("checks", r.pipelineFailure())).append('\n');
+            if (!r.pipeline().failure().isBlank()) {
+                brief.append(Outside.fence("checks", r.pipeline().failure())).append('\n');
             }
             brief.append(section(sessionBrief, Step.ROUND_CHECKS));
         }
         if (steps.contains(Step.ROUND_THREADS)) {
             brief.append(section(sessionBrief, Step.ROUND_THREADS))
                     .append(since.isBlank() ? "" : since + "\n")
-                    .append(Outside.fence("threads", String.join("\n\n", r.threads()))).append('\n');
+                    .append(Outside.fence("threads", String.join("\n\n", r.discussion().threads()))).append('\n');
         }
         brief.append(section(sessionBrief, steps.getLast()));
         return brief.toString().stripTrailing();

@@ -33,7 +33,10 @@ class HostMergedRequestTest {
                 .alias("a1").mrUrl("http://mr/1").build());
         RoundReading reading = new RoundReading(state, reviewRound, mergedRequests);
         when(reviewRound.read("ABC-1", "proj", "http://mr/1")).thenReturn(new Answer<>(Optional.of(
-                new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", true, false)),
+                new ReviewFacts(
+                        new ReviewFacts.Request(true, false, true, false, 0),
+                        new ReviewFacts.Pipeline("success", "", ""),
+                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
                 TokenUsage.NONE));
 
         reading.read("ABC-1");

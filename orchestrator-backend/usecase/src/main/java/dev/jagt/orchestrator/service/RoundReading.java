@@ -81,7 +81,7 @@ public class RoundReading {
                 return new Refused(new SweepResult(SweepResult.Kind.GONE,
                         "error: no such request: " + repo.mrUrl() + " (the host says so)"), Objects.requireNonNull(repo.mrUrl()));
             }
-            if (read.get().merged()) {
+            if (read.get().request().merged()) {
                 mergedRequests.hostSaidMerged(taskId, Objects.requireNonNull(repo.project()));
             }
             kept.add(repo);
@@ -91,11 +91,11 @@ public class RoundReading {
     }
 
     private boolean leaves(String taskId, TaskRepo repo, ReviewFacts read) {
-        return read.exists() && read.closed() && mergedRequests.hostSaidClosed(taskId, repo);
+        return read.request().exists() && read.request().closed() && mergedRequests.hostSaidClosed(taskId, repo);
     }
 
     private static boolean standing(ReviewFacts read) {
-        return read.exists() && !read.closed();
+        return read.request().exists() && !read.request().closed();
     }
 
     private static Refused noRequest(String taskId) {
@@ -118,12 +118,11 @@ public class RoundReading {
     }
 
     private static ReviewFacts named(String project, ReviewFacts round) {
-        return new ReviewFacts(round.exists(), round.approved(), round.pipelineStatus(),
-                round.pipelineFailure().isBlank() ? "" : "[" + project + "] " + round.pipelineFailure(),
-                round.threads().stream().map(thread -> "[" + project + "] " + thread).toList(),
-                round.openedAt(),
-                round.awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList(),
-                round.newestNotes(), round.pipelineUrl(), round.merged(), round.closed());
+        return new ReviewFacts(round.request(),
+                round.pipeline().withFailure(round.pipeline().failure().isBlank() ? "" : "[" + project + "] " + round.pipeline().failure()),
+                round.discussion()
+                        .withThreads(round.discussion().threads().stream().map(thread -> "[" + project + "] " + thread).toList())
+                        .withAwaitingReviewer(round.discussion().awaitingReviewer().stream().map(thread -> "[" + project + "] " + thread).toList()));
     }
 
     /**
@@ -135,19 +134,19 @@ public class RoundReading {
             return rounds.get(0);
         }
         ReviewFacts worst = worstChecks(rounds);
-        return new ReviewFacts(true,
-                rounds.stream().allMatch(ReviewFacts::approved),
-                worst.pipelineStatus(), worst.pipelineFailure(),
-                rounds.stream().flatMap(round -> round.threads().stream()).toList(),
-                longestOpen(rounds),
-                rounds.stream().flatMap(round -> round.awaitingReviewer().stream()).toList(),
-                rounds.stream().flatMap(round -> round.newestNotes().stream()).toList(),
-                worst.pipelineUrl(), rounds.stream().allMatch(ReviewFacts::merged), false);
+        return new ReviewFacts(
+                new ReviewFacts.Request(true, rounds.stream().allMatch(round -> round.request().approved()),
+                        rounds.stream().allMatch(round -> round.request().merged()), false, longestOpen(rounds)),
+                worst.pipeline(),
+                new ReviewFacts.Discussion(
+                        rounds.stream().flatMap(round -> round.discussion().threads().stream()).toList(),
+                        rounds.stream().flatMap(round -> round.discussion().awaitingReviewer().stream()).toList(),
+                        rounds.stream().flatMap(round -> round.discussion().newestNotes().stream()).toList()));
     }
 
     /** The OLDEST request: how long the review has been hanging is the longest any of them has waited. */
     private static long longestOpen(List<ReviewFacts> rounds) {
-        return rounds.stream().mapToLong(ReviewFacts::openedAt).filter(opened -> opened > 0).min().orElse(0);
+        return rounds.stream().mapToLong(round -> round.request().openedAt()).filter(opened -> opened > 0).min().orElse(0);
     }
 
     /**
@@ -156,7 +155,7 @@ public class RoundReading {
      */
     private static ReviewFacts worstChecks(List<ReviewFacts> rounds) {
         return rounds.stream()
-                .min(Comparator.comparingInt(round -> Pipeline.of(round.pipelineStatus()).severity()))
+                .min(Comparator.comparingInt(round -> Pipeline.of(round.pipeline().status()).severity()))
                 .orElseThrow();
     }
 }

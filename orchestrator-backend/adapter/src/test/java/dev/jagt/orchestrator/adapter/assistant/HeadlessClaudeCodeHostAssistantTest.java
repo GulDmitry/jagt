@@ -123,7 +123,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().threads()).containsExactly("https://host/mr/9#note_1\nbot: quote the pattern\n"
+        assertThat(facts.get().discussion().threads()).containsExactly("https://host/mr/9#note_1\nbot: quote the pattern\n"
                 + "dev: the rule IS a pattern\nbot: then bound the input");
     }
 
@@ -139,7 +139,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().closed()).isTrue();
+        assertThat(facts.get().request().closed()).isTrue();
     }
 
     @Test
@@ -155,7 +155,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().threads()).singleElement().asString()
+        assertThat(facts.get().discussion().threads()).singleElement().asString()
                 .startsWith("…").endsWith("\ndev: it is bound\nbot: then bound the input");
     }
 
@@ -173,7 +173,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().openedAt()).isEqualTo(1785575700000L);
+        assertThat(facts.get().request().openedAt()).isEqualTo(1785575700000L);
     }
 
     @Test
@@ -191,8 +191,8 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().threads()).isEmpty();
-        assertThat(facts.get().awaitingReviewer()).containsExactly(
+        assertThat(facts.get().discussion().threads()).isEmpty();
+        assertThat(facts.get().discussion().awaitingReviewer()).containsExactly(
                 "https://host/mr/9#note_1\nmia: Why is this loop not bounded?\nlee: The page size bounds it, see Paging.java");
     }
 
@@ -211,7 +211,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().newestNotes()).isEmpty();
+        assertThat(facts.get().discussion().newestNotes()).isEmpty();
     }
 
     @Test
@@ -228,7 +228,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().pipelineFailure()).hasSize(2001).endsWith("…");
+        assertThat(facts.get().pipeline().failure()).hasSize(2001).endsWith("…");
     }
 
     @Test
@@ -245,7 +245,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().pipelineFailure()).isEqualTo("x".repeat(2000));
+        assertThat(facts.get().pipeline().failure()).isEqualTo("x".repeat(2000));
     }
 
     @Test
@@ -260,7 +260,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().threads()).containsExactly("x".repeat(2000));
+        assertThat(facts.get().discussion().threads()).containsExactly("x".repeat(2000));
     }
 
     @ParameterizedTest

@@ -70,7 +70,7 @@ public class ConflictRequestReadJob implements TaskJob {
     private void read(String taskId, TaskRepo repo) {
         try {
             reviewReader.read(taskId, Objects.requireNonNull(repo.mrUrl())).facts()
-                    .filter(facts -> facts.exists() && facts.closed())
+                    .filter(facts -> facts.request().exists() && facts.request().closed())
                     .ifPresent(closed -> mergedRequests.hostSaidClosed(taskId, repo));
         } catch (RuntimeException failed) {
             log.atWarn().setMessage("request of the conflicted repository not read").addKeyValue("task", taskId)

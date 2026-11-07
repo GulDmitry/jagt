@@ -81,9 +81,10 @@ class RoundTrailTest {
     @Test
     void tellsHowManyNotesAreNewAndHowManyUnchangedSinceTheLastRound() {
         RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a", "11\n21"));
-        ReviewFacts round = new ReviewFacts(true, false, "success", "",
-                List.of("mr#note_1\nbot: still wrong", "mr#note_2\nbot: drop it", "mr#note_3\nbot: rename"), 0,
-                List.of(), List.of("12", "21", "31"), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("mr#note_1\nbot: still wrong", "mr#note_2\nbot: drop it", "mr#note_3\nbot: rename"), List.of(), List.of("12", "21", "31")));
 
         String since = trail.sinceLast(round);
 
@@ -92,8 +93,10 @@ class RoundTrailTest {
 
     @Test
     void tellsNothingOnTheFirstRound() {
-        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("mr#note_1\nbot: rename"), 0,
-                List.of(), List.of("11"), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("mr#note_1\nbot: rename"), List.of(), List.of("11")));
 
         assertThat(RoundTrail.none().sinceLast(round)).isEmpty();
     }
@@ -101,8 +104,10 @@ class RoundTrailTest {
     @Test
     void saysNothingOfNewNotesWhereEveryNoteIsOneTheLastRoundCarried() {
         RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 1, "", "a", "11"));
-        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("mr#note_1\nbot: rename"), 0,
-                List.of(), List.of("11"), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("mr#note_1\nbot: rename"), List.of(), List.of("11")));
 
         assertThat(trail.sinceLast(round)).isEqualTo("Since the last round — still open, unchanged: 1.");
     }
@@ -110,8 +115,10 @@ class RoundTrailTest {
     @Test
     void saysNothingOfUnchangedNotesWhereEveryNoteIsNew() {
         RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 1, "", "a", "11"));
-        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("mr#note_2\nbot: rename"), 0,
-                List.of(), List.of("12"), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("mr#note_2\nbot: rename"), List.of(), List.of("12")));
 
         assertThat(trail.sinceLast(round)).isEqualTo("Since the last round — new notes: 1.");
     }

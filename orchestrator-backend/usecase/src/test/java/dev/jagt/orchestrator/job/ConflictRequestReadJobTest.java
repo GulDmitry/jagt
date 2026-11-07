@@ -37,7 +37,9 @@ class ConflictRequestReadJobTest {
         TaskState red = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("beta",
                 Deployment.Cause.RED_PIPELINE), 1_100);
         when(reader.read("ABC-42", "http://mr/beta")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
-                true, false, "none", "", List.of(), 0, List.of(), List.of(), "", false, true)), TokenUsage.NONE));
+                new ReviewFacts.Request(true, false, false, true, 0),
+                new ReviewFacts.Pipeline("none", "", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()))), TokenUsage.NONE));
 
         new ConflictRequestReadJob(reader, merged).run("ABC-42", red);
 
@@ -55,7 +57,9 @@ class ConflictRequestReadJobTest {
         TaskState conflicted = TaskReducer.deployStepped(opened, new DeployStep.Conflicted("beta",
                 Deployment.Cause.MERGE), 1_100);
         when(reader.read("ABC-42", "http://mr/beta")).thenReturn(new Answer<>(Optional.of(new ReviewFacts(
-                true, false, "none", "", List.of(), 0, List.of(), List.of(), "", false, true)), TokenUsage.NONE));
+                new ReviewFacts.Request(true, false, false, true, 0),
+                new ReviewFacts.Pipeline("none", "", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()))), TokenUsage.NONE));
 
         new ConflictRequestReadJob(reader, merged).run("ABC-42", conflicted);
 

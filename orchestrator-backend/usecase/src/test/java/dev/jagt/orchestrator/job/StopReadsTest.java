@@ -28,7 +28,9 @@ class StopReadsTest {
     @Test
     void offersTheStopTheCheckVerdictOfARequestItCouldRead() {
         when(reading.read("ABC-42")).thenReturn(new RoundReading.Round("shop", "http://mr/1", new ReviewFacts(
-                true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false), ""));
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of())), ""));
 
         reads.probe("ABC-42");
 
@@ -49,7 +51,10 @@ class StopReadsTest {
 
     @Test
     void keepsWhatItReadOnTheTaskWhereTheReadEndsTheStop() {
-        ReviewFacts green = new ReviewFacts(true, true, "success", "", List.of(), 0, List.of(), List.of(), "", false, false);
+        ReviewFacts green = new ReviewFacts(
+                new ReviewFacts.Request(true, true, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
         when(reading.read("ABC-42")).thenReturn(new RoundReading.Round("shop", "http://mr/1", green, ""));
 
         reads.probe("ABC-42");

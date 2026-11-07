@@ -33,35 +33,35 @@ public class RoundRecord {
     private final RedCauses causes;
 
     public Recorded record(String taskId, String project, ReviewFacts facts, String tip) {
-        if (gotNoListing(facts.pipelineStatus())) {
+        if (gotNoListing(facts.pipeline().status())) {
             long now = clock.millis();
             stateService.updateTask(taskId, task -> TaskReducer.headSeen(TaskReducer.approvalRead(
-                    TaskReducer.checksUnread(task, new ChecksUnread(now, facts.pipelineFailure())), facts.approved())
-                    .withRequestOpenedAt(facts.openedAt()), tip));
+                    TaskReducer.checksUnread(task, new ChecksUnread(now, facts.pipeline().failure())), facts.request().approved())
+                    .withRequestOpenedAt(facts.request().openedAt()), tip));
             return new Recorded(stops.trip(taskId, task -> ChecksUnread.stop(task.checksUnread(), task.trailOrNone(), now)),
                     RedCauses.Verdict.CODE);
         }
         recordListed(taskId, facts, tip);
-        return new Recorded(Optional.empty(), causes.judge(taskId, project, facts, Pipeline.of(orUnknown(facts.pipelineStatus()))));
+        return new Recorded(Optional.empty(), causes.judge(taskId, project, facts, Pipeline.of(orUnknown(facts.pipeline().status()))));
     }
 
     /** Writes what a read that listed the checks said on {@code tip} and nothing else; a read that listed none writes nothing. */
     public void recordListed(String taskId, ReviewFacts facts, String tip) {
-        if (gotNoListing(facts.pipelineStatus())) {
+        if (gotNoListing(facts.pipeline().status())) {
             return;
         }
         Optional<TaskState> before = stateService.task(taskId);
-        String read = orUnknown(facts.pipelineStatus());
+        String read = orUnknown(facts.pipeline().status());
         boolean newChecks = !Objects.equals(before.map(TaskState::pipelineStatus).orElse(null), read)
                 || before.map(TaskState::pipelineUnread).orElse(false);
         boolean newTip = !tip.isBlank() && !tip.equals(before.map(TaskState::checksTip).orElse(null));
-        boolean newApproval = !Objects.equals(before.map(TaskState::approved).orElse(null), facts.approved());
-        boolean newOpened = facts.openedAt() > 0
-                && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.openedAt();
+        boolean newApproval = !Objects.equals(before.map(TaskState::approved).orElse(null), facts.request().approved());
+        boolean newOpened = facts.request().openedAt() > 0
+                && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.request().openedAt();
         if (newChecks || newTip || newApproval || newOpened) {
             stateService.updateTask(taskId, task -> TaskReducer.approvalRead(
-                    TaskReducer.checksRead(TaskReducer.headSeen(task, tip), read, tip), facts.approved())
-                    .withRequestOpenedAt(facts.openedAt()));
+                    TaskReducer.checksRead(TaskReducer.headSeen(task, tip), read, tip), facts.request().approved())
+                    .withRequestOpenedAt(facts.request().openedAt()));
         }
     }
 

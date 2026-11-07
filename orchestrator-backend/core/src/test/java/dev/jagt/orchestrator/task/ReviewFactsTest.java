@@ -10,125 +10,163 @@ class ReviewFactsTest {
 
     @Test
     void movesAThreadWhoseNewestNoteIsTheAgentsOwnToTheOnesAwaitingTheReviewer() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null,
-                List.of("rev: fix this\nbot: done", "rev: and this"), 7, List.of("old thread"), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("rev: fix this\nbot: done", "rev: and this"), List.of("old thread"), List.of()));
 
         ReviewFacts answered = facts.answeredBy("bot");
 
-        assertThat(answered.threads()).containsExactly("rev: and this");
-        assertThat(answered.awaitingReviewer()).containsExactly("old thread", "rev: fix this\nbot: done");
-        assertThat(answered.exists()).isTrue();
-        assertThat(answered.pipelineStatus()).isEqualTo("success");
-        assertThat(answered.openedAt()).isEqualTo(7);
+        assertThat(answered.discussion().threads()).containsExactly("rev: and this");
+        assertThat(answered.discussion().awaitingReviewer()).containsExactly("old thread", "rev: fix this\nbot: done");
+        assertThat(answered.request().exists()).isTrue();
+        assertThat(answered.pipeline().status()).isEqualTo("success");
+        assertThat(answered.request().openedAt()).isEqualTo(7);
     }
 
     @Test
     void keepsThePipelineAddressWhenThreadsAreMovedToTheOnesAwaitingTheReviewer() {
-        ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of("bot: done"), 7, List.of(),
-                List.of("n1"), "https://host.invalid/p/1", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("failed", "unit-tests", "https://host.invalid/p/1"),
+                new ReviewFacts.Discussion(List.of("bot: done"), List.of(), List.of("n1")));
 
-        assertThat(facts.answeredBy("bot").pipelineUrl()).isEqualTo("https://host.invalid/p/1");
+        assertThat(facts.answeredBy("bot").pipeline().url()).isEqualTo("https://host.invalid/p/1");
     }
 
     @Test
     void dropsThePipelineAddressWithTheChecksItLeftUnsaid() {
-        ReviewFacts facts = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 7, List.of(), List.of(),
-                "https://host.invalid/p/1", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("failed", "unit-tests", "https://host.invalid/p/1"),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
-        assertThat(facts.withoutChecks().pipelineUrl()).isEmpty();
+        assertThat(facts.withoutChecks().pipeline().url()).isEmpty();
     }
 
     @Test
     void readsTheNewestNoteAsTheLastLineAndIgnoresSurroundingBlankSpace() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of("bot: first\nrev: reply\n\n"), 7,
-                List.of(), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("bot: first\nrev: reply\n\n"), List.of(), List.of()));
 
-        assertThat(facts.answeredBy("bot").awaitingReviewer()).isEmpty();
+        assertThat(facts.answeredBy("bot").discussion().awaitingReviewer()).isEmpty();
     }
 
     @Test
     void matchesTheAccountWithoutAnAtSignOrCase() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of("rev: x\n@Bot: done"), 7, List.of(), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("rev: x\n@Bot: done"), List.of(), List.of()));
 
-        assertThat(facts.answeredBy(" @bot ").awaitingReviewer()).hasSize(1);
-        assertThat(facts.answeredBy("BOT").awaitingReviewer()).hasSize(1);
+        assertThat(facts.answeredBy(" @bot ").discussion().awaitingReviewer()).hasSize(1);
+        assertThat(facts.answeredBy("BOT").discussion().awaitingReviewer()).hasSize(1);
     }
 
     @Test
     void movesNothingForABlankAccount() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of(": done"), 7, List.of(), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of(": done"), List.of(), List.of()));
 
-        assertThat(facts.answeredBy(" ").awaitingReviewer()).isEmpty();
+        assertThat(facts.answeredBy(" ").discussion().awaitingReviewer()).isEmpty();
     }
 
     @Test
     void movesNothingForANewestNoteWithNoAuthor() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of("rev: x\n: bot says"), 7, List.of(), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("rev: x\n: bot says"), List.of(), List.of()));
 
-        assertThat(facts.answeredBy("bot").awaitingReviewer()).isEmpty();
+        assertThat(facts.answeredBy("bot").discussion().awaitingReviewer()).isEmpty();
     }
 
     @Test
     void movesNothingForAnEmptyThread() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of(""), 7, List.of(), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of(""), List.of(), List.of()));
 
-        assertThat(facts.answeredBy("bot").threads()).containsExactly("");
+        assertThat(facts.answeredBy("bot").discussion().threads()).containsExactly("");
     }
 
     @Test
     void readsAMissingPipelineFailureAndAwaitingListAsEmpty() {
-        ReviewFacts facts = new ReviewFacts(true, true, "failed", null, List.of(), 0, null, List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, true, false, false, 0),
+                new ReviewFacts.Pipeline("failed", null, ""),
+                new ReviewFacts.Discussion(List.of(), null, List.of()));
 
-        assertThat(facts.pipelineFailure()).isEmpty();
-        assertThat(facts.awaitingReviewer()).isEmpty();
+        assertThat(facts.pipeline().failure()).isEmpty();
+        assertThat(facts.discussion().awaitingReviewer()).isEmpty();
     }
 
     @Test
     void keepsTheHostsNoteIdsWhenAThreadMovesToTheReviewer() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null,
-                List.of("l1\nrev: a", "l2\nrev: b\nbot: done", "l3\nrev: c"), 7, List.of(),
-                List.of("note_1", "note_3"), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l1\nrev: a", "l2\nrev: b\nbot: done", "l3\nrev: c"), List.of(), List.of("note_1", "note_3")));
 
         ReviewFacts answered = facts.answeredBy("bot");
 
-        assertThat(answered.threads()).containsExactly("l1\nrev: a", "l3\nrev: c");
-        assertThat(answered.newestNotes()).containsExactly("note_1", "note_3");
+        assertThat(answered.discussion().threads()).containsExactly("l1\nrev: a", "l3\nrev: c");
+        assertThat(answered.discussion().newestNotes()).containsExactly("note_1", "note_3");
     }
 
     @Test
     void fingerprintsTheSameHostNoteIdsEquallyWhateverTheCopiedTextOrOrder() {
-        ReviewFacts first = new ReviewFacts(true, false, "success", null,
-                List.of("l2\nrev: b", "l1\nrev: a\nbot: fine"), 7, List.of(), List.of("note_2", "note_1"), "", false, false);
-        ReviewFacts second = new ReviewFacts(true, false, "success", null,
-                List.of("l1\nrev: a\nbot: fine, agreed", "other\nrev: b"), 9, List.of(), List.of("note_1", "note_2"), "", false, false);
+        ReviewFacts first = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l2\nrev: b", "l1\nrev: a\nbot: fine"), List.of(), List.of("note_2", "note_1")));
+        ReviewFacts second = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 9),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l1\nrev: a\nbot: fine, agreed", "other\nrev: b"), List.of(), List.of("note_1", "note_2")));
 
         assertThat(first.noteFingerprint()).isEqualTo(second.noteFingerprint());
     }
 
     @Test
     void fingerprintsADifferentNoteIdDifferently() {
-        ReviewFacts before = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 7, List.of(),
-                List.of("note_1"), "", false, false);
-        ReviewFacts after = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 7, List.of(),
-                List.of("note_2"), "", false, false);
+        ReviewFacts before = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_1")));
+        ReviewFacts after = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_2")));
 
         assertThat(before.noteFingerprint()).isNotEqualTo(after.noteFingerprint());
     }
 
     @Test
     void fingerprintsNothingWhereTheHostGaveNoNoteId() {
-        ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a", "l2\nrev: b"), 7,
-                List.of(), List.of(), "", false, false);
+        ReviewFacts facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l1\nrev: a", "l2\nrev: b"), List.of(), List.of()));
 
         assertThat(facts.noteFingerprint()).isEmpty();
     }
 
     @Test
     void twoReadsWithABlankNoteIdAreNeverTheSameRound() {
-        ReviewFacts first = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 7,
-                List.of(), List.of("note_1", ""), "", false, false);
-        ReviewFacts second = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 9,
-                List.of(), List.of("note_1", ""), "", false, false);
+        ReviewFacts first = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 7),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_1", "")));
+        ReviewFacts second = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 9),
+                new ReviewFacts.Pipeline("success", null, ""),
+                new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_1", "")));
 
         assertThat(first.noteKey().sameAs(second.noteKey())).isFalse();
     }

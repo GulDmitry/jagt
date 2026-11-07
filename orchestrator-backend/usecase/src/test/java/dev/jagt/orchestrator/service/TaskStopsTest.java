@@ -58,8 +58,10 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
-                List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), 0, List.of(), List.of("note_1", "note_2"), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "unit-tests\nCartTest failed", ""),
+                new ReviewFacts.Discussion(List.of("https://host/mr/1#note_1", "https://host/mr/1#note_2"), List.of(), List.of("note_1", "note_2")));
         stops.round("ABC-42", round, "brief 1", "");
         stops.round("ABC-42", round, "brief 2", "");
         stops.round("ABC-42", round, "brief 3", "");
@@ -107,7 +109,10 @@ class TaskStopsTest {
 
         stops.lift("ABC-42");
 
-        assertThat(stops.round("ABC-42", new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false, false), "same", ""))
+        assertThat(stops.round("ABC-42", new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("running", "", ""),
+                new ReviewFacts.Discussion(List.of("x"), List.of(), List.of())), "same", ""))
                 .isEqualTo(TaskStops.Relay.RELAY);
     }
 
@@ -185,7 +190,10 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("running", "", ""),
+                new ReviewFacts.Discussion(List.of("x"), List.of(), List.of()));
 
         TaskStops.Relay first = stops.round("ABC-42", round, "brief", "");
         TaskStops.Relay again = stops.round("ABC-42", round, "brief", "");
@@ -204,10 +212,14 @@ class TaskStopsTest {
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
 
-        stops.round("ABC-42", new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed", List.of("x"), 0,
-                List.of(), List.of(), "", false, false), "red", "");
-        stops.round("ABC-42", new ReviewFacts(true, false, "running", "unit-tests\nCartTest failed", List.of("x"), 0,
-                List.of(), List.of(), "", false, false), "running", "");
+        stops.round("ABC-42", new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "unit-tests\nCartTest failed", ""),
+                new ReviewFacts.Discussion(List.of("x"), List.of(), List.of())), "red", "");
+        stops.round("ABC-42", new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("running", "unit-tests\nCartTest failed", ""),
+                new ReviewFacts.Discussion(List.of("x"), List.of(), List.of())), "running", "");
 
         assertThat(state.task("ABC-42").orElseThrow().trailOrNone().rounds()).extracting(RoundTrail.Round::failing)
                 .containsExactly("unit-tests", "");
@@ -221,10 +233,14 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts first = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough."), 0, List.of(), List.of("note_7"), "", false, false);
-        ReviewFacts second = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough, conceded."), 0, List.of(), List.of("note_7"), "", false, false);
+        ReviewFacts first = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough."), List.of(), List.of("note_7")));
+        ReviewFacts second = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("https://host/mr/1#note_1\nmia: Why?\nbot: Fair enough, conceded."), List.of(), List.of("note_7")));
 
         stops.round("ABC-42", first, "brief with one copy", "");
         TaskStops.Relay again = stops.round("ABC-42", second, "brief with another copy", "");
@@ -241,10 +257,14 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts first = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?"), 0, List.of(), List.of("note_7"), "", false, false);
-        ReviewFacts second = new ReviewFacts(true, false, "success", "",
-                List.of("https://host/mr/1#note_1\nmia: Why?\nmia: And this?"), 0, List.of(), List.of("note_8"), "", false, false);
+        ReviewFacts first = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("https://host/mr/1#note_1\nmia: Why?"), List.of(), List.of("note_7")));
+        ReviewFacts second = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("https://host/mr/1#note_1\nmia: Why?\nmia: And this?"), List.of(), List.of("note_8")));
 
         stops.round("ABC-42", first, "brief one", "");
         TaskStops.Relay next = stops.round("ABC-42", second, "brief two", "");
@@ -260,10 +280,14 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts first = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed: expected 60",
-                List.of(), 0, List.of(), List.of(), "", false, false);
-        ReviewFacts second = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed: expected 60 but",
-                List.of(), 0, List.of(), List.of(), "", false, false);
+        ReviewFacts first = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "unit-tests\nCartTest failed: expected 60", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
+        ReviewFacts second = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "unit-tests\nCartTest failed: expected 60 but", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
         stops.round("ABC-42", first, "brief worded one way", "api=a1b2c3");
         TaskStops.Relay again = stops.round("ABC-42", second, "brief worded another way", "api=a1b2c3");
@@ -279,8 +303,10 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts round = new ReviewFacts(true, false, "failed", "unit-tests\nCartTest failed",
-                List.of(), 0, List.of(), List.of(), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "unit-tests\nCartTest failed", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
         stops.round("ABC-42", round, "same brief", "api=a1b2c3");
         TaskStops.Relay next = stops.round("ABC-42", round, "same brief", "api=d4e5f6");
@@ -331,8 +357,10 @@ class TaskStopsTest {
                 .trail(RoundTrail.none().withRound(new RoundTrail.Round(1, 1, "", "a", "t1 note_7"))).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts answered = new ReviewFacts(true, false, "success", "", List.of("t1\nmia: And this?"), 0,
-                List.of(), List.of("note_8"), "", false, false);
+        ReviewFacts answered = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("t1\nmia: And this?"), List.of(), List.of("note_8")));
 
         TaskStops.Relay relay = stops.round("ABC-42", answered, "brief", "");
 
@@ -509,7 +537,10 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts round = new ReviewFacts(true, false, "running", "", List.of("x"), 0, List.of(), List.of(), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("running", "", ""),
+                new ReviewFacts.Discussion(List.of("x"), List.of(), List.of()));
         stops.round("ABC-42", round, "brief 1", "");
 
         TaskStops.Relay again = stops.round("ABC-42", round, "brief 2", "");
@@ -525,7 +556,10 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", false, false);
+        ReviewFacts round = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
         stops.round("ABC-42", round, "brief 1", "");
 
         TaskStops.Relay again = stops.round("ABC-42", round, "brief 2", "");
@@ -541,10 +575,14 @@ class TaskStopsTest {
         state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
         TaskStops stops = new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)), clock);
-        stops.round("ABC-42", new ReviewFacts(true, false, "success", "", List.of("https://host/mr/1#note_1"), 0,
-                List.of(), List.of("note_1"), "", false, false), "brief 1", "");
-        ReviewFacts next = new ReviewFacts(true, false, "success", "", List.of("https://host/mr/1#note_1"), 0,
-                List.of(), List.of("note_5"), "", false, false);
+        stops.round("ABC-42", new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("https://host/mr/1#note_1"), List.of(), List.of("note_1"))), "brief 1", "");
+        ReviewFacts next = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "", ""),
+                new ReviewFacts.Discussion(List.of("https://host/mr/1#note_1"), List.of(), List.of("note_5")));
 
         String since = stops.sinceLast("ABC-42", next);
 

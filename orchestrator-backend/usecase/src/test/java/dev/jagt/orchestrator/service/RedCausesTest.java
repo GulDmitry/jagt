@@ -28,8 +28,10 @@ class RedCausesTest {
     private final PipelineRetry pipelines = mock(PipelineRetry.class);
     private final InfraRetries retries = mock(InfraRetries.class);
     private final RedCauses causes = new RedCauses(pipelines, retries, InfraWaitProperties.defaults());
-    private final ReviewFacts red = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(),
-            List.of(), "https://host.invalid/p/1", false, false);
+    private final ReviewFacts red = new ReviewFacts(
+            new ReviewFacts.Request(true, false, false, false, 0),
+            new ReviewFacts.Pipeline("failed", "unit-tests", "https://host.invalid/p/1"),
+            new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
     @Test
     void waitsOutARunWhoseEveryFailedJobDiedOnInfrastructure() {
@@ -101,8 +103,10 @@ class RedCausesTest {
 
     @Test
     void handsARunToTheSessionWhenTheReadGaveNoPipelineAddress() {
-        ReviewFacts unaddressed = new ReviewFacts(true, false, "failed", "unit-tests", List.of(), 0, List.of(),
-                List.of(), "", false, false);
+        ReviewFacts unaddressed = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "unit-tests", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
         RedCauses.Verdict verdict = causes.judge("ABC-42", "shop", unaddressed, Pipeline.RED);
 

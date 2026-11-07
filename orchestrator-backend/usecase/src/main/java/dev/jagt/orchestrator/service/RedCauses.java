@@ -43,10 +43,10 @@ public class RedCauses {
             }
             return Verdict.CODE;
         }
-        if (facts.pipelineUrl().isBlank() || !retries.applies(taskId)) {
+        if (facts.pipeline().url().isBlank() || !retries.applies(taskId)) {
             return Verdict.CODE;
         }
-        return judgeRed(taskId, project, facts.pipelineUrl());
+        return judgeRed(taskId, project, facts.pipeline().url());
     }
 
     /** The same ask of the pipeline a deploy commit ran, which no round of the review request carries. */

@@ -37,7 +37,7 @@ class ReplayCodeHostAssistantTest {
 
         Answer<ReviewFacts> answer = assistant.readReview("mr-1");
 
-        assertThat(answer.facts().orElseThrow().approved()).isTrue();
+        assertThat(answer.facts().orElseThrow().request().approved()).isTrue();
     }
 
     @Test

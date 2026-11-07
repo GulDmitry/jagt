@@ -25,7 +25,10 @@ class ReadAnswerTest {
 
     @Test
     void refusesAFailingJobsLinesQuotedUnderAVerdictThatIsNotRed() {
-        var facts = new ReviewFacts(true, false, "success", "step 3 exited 1", List.of(), 0, List.of(), List.of(), "", false, false);
+        var facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("success", "step 3 exited 1", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
         assertThat(ReviewRead.violations(facts)).extracting(Violation::field)
                 .containsExactly("pipelineFailure");
@@ -33,14 +36,20 @@ class ReadAnswerTest {
 
     @Test
     void acceptsWhyTheListingCouldNotBeGotWhereTheChecksAreUnknown() {
-        var facts = new ReviewFacts(true, false, "unknown", "list_pipelines: 403 Forbidden", List.of(), 0, List.of(), List.of(), "", false, false);
+        var facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
         assertThat(ReviewRead.violations(facts)).isEmpty();
     }
 
     @Test
     void acceptsTheFailingJobsLinesWhereTheRunActuallyFailed() {
-        var facts = new ReviewFacts(true, false, "failed", "step 3 exited 1", List.of(), 0, List.of(), List.of(), "", false, false);
+        var facts = new ReviewFacts(
+                new ReviewFacts.Request(true, false, false, false, 0),
+                new ReviewFacts.Pipeline("failed", "step 3 exited 1", ""),
+                new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
         assertThat(ReviewRead.violations(facts)).isEmpty();
     }
