@@ -13,7 +13,7 @@ step: accept
 at: DEPLOYED
 by: jagt
 replies: DEPLOYED, IN_PROGRESS; plain, question, wait
-The deploy's pipeline is green and the change read up, so QA checks every criterion of the ticket on the environment.
+The deploy's pipeline is green and the change read up, so the run checks every criterion of the ticket on the environment.
 > WHEN ABC-42 is DEPLOYED, its tracker item open and each target's pipeline green THEN QA opens one check on the tip's sha;
 > all rows met → `qa passed`; a row not met → `qa-round`; a row unprovable or no login → a question to you; environment down → wait.
 
