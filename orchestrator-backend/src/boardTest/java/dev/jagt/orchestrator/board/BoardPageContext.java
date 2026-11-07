@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.board;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Playwright;
@@ -147,6 +150,12 @@ abstract class BoardPageContext {
     Files.deleteIfExists(root.resolve("state.json"));
     Files.deleteIfExists(root.resolve("state.json.bak"));
     session = browser.newContext();
+    doAnswer(tick -> {
+          tick.<Runnable>getArgument(0).run();
+          return null;
+        })
+        .when(sessionHost)
+        .readingOnce(any());
   }
 
   @AfterEach
