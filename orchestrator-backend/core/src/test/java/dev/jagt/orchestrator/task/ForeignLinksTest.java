@@ -40,6 +40,19 @@ class ForeignLinksTest {
   }
 
   @Test
+  void judgesNothingOfARepositoryWhoseRemoteIsALocalBareRepository() {
+    TaskState local =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .repos(List.of(new TaskRepo("proj", "/wt", "file:///srv/git/origin.git", null)))
+            .build();
+
+    ForeignLinks.Judged judged =
+        ForeignLinks.judge(local, Map.of(), "http://127.0.0.1:1/proj/merge_requests/1");
+
+    assertThat(judged.foreign()).isEmpty();
+  }
+
+  @Test
   void clearsOnlyTheRequestsTheirRemotesDoNotHold() {
     TaskState linked =
         task.withMrUrl("proj", "https://host/other/proj/-/merge_requests/9", 1L)

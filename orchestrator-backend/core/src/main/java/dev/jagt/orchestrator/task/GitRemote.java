@@ -44,6 +44,11 @@ public final class GitRemote {
     return given.size() >= wanted.size() && given.subList(0, wanted.size()).equals(wanted);
   }
 
+  /** Whether the remote names a host; a local path or {@code file:} remote names none. */
+  public static boolean hasHost(@Nullable String remoteUrl) {
+    return host(remoteUrl) != null;
+  }
+
   /**
    * Whether the remote names the very host the address is on; a remote naming none is on no host.
    */

@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A link is foreign where its repository's remote does not hold it. A repository whose remote is
- * unknown judges nothing.
+ * unknown or names no host judges nothing.
  */
 public final class ForeignLinks {
 
@@ -78,6 +78,7 @@ public final class ForeignLinks {
       TaskState task, String project, @Nullable String link) {
     return task.repo(project)
         .map(TaskRepo::remoteUrl)
-        .filter(remote -> !remote.isBlank() && link != null && !GitRemote.holds(remote, link));
+        .filter(
+            remote -> GitRemote.hasHost(remote) && link != null && !GitRemote.holds(remote, link));
   }
 }

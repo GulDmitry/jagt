@@ -16,6 +16,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | H13 | a read on OpenCode runs a command outside its globs, or reads a second worktree of its round → the read's own agent denies the command before it runs and opens each worktree, no other directory | seen 2026-11-05 by hand: `touch` ran under a top-level permission a custom agent ignores; a second worktree read was denied | `OpenCodeConfigTest` |
 | H14 | a QA read on OpenCode runs a curl that writes a file or sends data, or fetches a URL outside its environments → OpenCode denies the flags before the call and the gate discards the answer | seen 2026-11-05 by hand: `curl -sS -o saved.html <url>` ran and wrote under `curl -sS*` | `HeadlessOpenCodeTest`, `OpenCodeConfigTest` |
 | H15 | a change validates but names a requirement archive cannot apply (MODIFIED of a missing one, ADDED of an existing one) → the hand-back is refused with the validator's issue, not at ship | seen 2026-11-05: the CLI reports it at INFO with exit 0, so a session handed back what ship then refused | `OpenSpecTest` |
+| H16 | a repository's remote is a local path or `file:` URL → its request links are judged by no remote, never dropped as foreign | seen 2026-11-07: the replay stand's ship never linked, the task held in SHIPPING | `ForeignLinksTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
