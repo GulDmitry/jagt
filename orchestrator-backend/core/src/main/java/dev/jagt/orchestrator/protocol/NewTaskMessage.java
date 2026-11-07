@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.protocol;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.task.BranchStrategy;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +13,19 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 
 /** Everything a task needs to exist before any of it has been cut. */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record NewTaskMessage(String taskId, String projectKey, List<String> alsoProjects, String instructions,
-                             String title, String ticketUrl, String mode, String branchStrategy,
-                             String baseBranch, String why) implements Message {
+public record NewTaskMessage(String taskId, @JsonUnwrapped Placement placement, String instructions,
+                             String title, String ticketUrl, String mode, String why) implements Message {
+
+    public record Placement(@Nullable String projectKey, List<String> alsoProjects, @Nullable String baseBranch,
+                            @Nullable String branchStrategy) {
+
+        public Placement {
+            projectKey = absent(projectKey);
+            baseBranch = absent(baseBranch);
+            branchStrategy = absent(branchStrategy);
+            alsoProjects = alsoProjects == null ? List.of() : List.copyOf(alsoProjects);
+        }
+    }
 
     public static final Schema SCHEMA = Schema
             .of("Create an isolated Git worktree for a task, register it in state.json and start a sub-agent in"
@@ -38,19 +50,18 @@ public record NewTaskMessage(String taskId, String projectKey, List<String> also
 
     public NewTaskMessage {
         taskId = absent(taskId);
-        projectKey = absent(projectKey);
         instructions = absent(instructions);
         title = absent(title);
         ticketUrl = absent(ticketUrl);
         mode = absent(mode);
-        branchStrategy = absent(branchStrategy);
-        baseBranch = absent(baseBranch);
         why = absent(why);
-        alsoProjects = alsoProjects == null ? List.of() : List.copyOf(alsoProjects);
+        placement = placement == null ? new Placement(null, List.of(), null, null) : placement;
     }
 
     @Override
     public List<Violation> violations(MessageContext context) {
+        String projectKey = placement.projectKey();
+        String branchStrategy = placement.branchStrategy();
         List<Violation> found = new ArrayList<>();
         Why.violation(why).ifPresent(found::add);
         if (taskId == null) {
@@ -68,7 +79,7 @@ public record NewTaskMessage(String taskId, String projectKey, List<String> also
         if (ticketUrl != null && !ticketUrl.startsWith("http://") && !ticketUrl.startsWith("https://")) {
             found.add(new Violation("ticketUrl", "an http(s) link the human can open, not " + ticketUrl));
         }
-        if (projectKey != null && alsoProjects.contains(projectKey)) {
+        if (projectKey != null && placement.alsoProjects().contains(projectKey)) {
             found.add(new Violation("alsoProjects", "the further repositories only; " + projectKey
                     + " is already where the session runs"));
         }

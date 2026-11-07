@@ -20,8 +20,9 @@ class ClaudeHookReportMixInTest {
                  "error": "overloaded", "reason": "clear", "background_tasks": [{"id": "bash-1"}],
                  "prompt": "go on", "tool_name": "Bash", "session_id": "ignored"}""", SessionHookReport.class);
 
-        assertThat(said).isEqualTo(new SessionHookReport("/tmp/s.jsonl", "startup", "hi", true, "overloaded", "clear",
-                List.of(Map.of("id", "bash-1")), "go on", "Bash"));
+        assertThat(said).isEqualTo(new SessionHookReport("/tmp/s.jsonl", "startup", "hi",
+                new SessionHookReport.Ending(true, "overloaded", "clear"),
+                new SessionHookReport.Turn("go on", "Bash", List.of(Map.of("id", "bash-1")))));
     }
 
     @Test

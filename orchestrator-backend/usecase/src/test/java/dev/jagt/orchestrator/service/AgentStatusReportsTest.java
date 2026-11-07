@@ -903,7 +903,7 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
-        reports.report(new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", null, Map.of(), null,
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", new AgentStatusMessage.Request(null, null), null,
                 "registry", null, Map.of()), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isEqualTo("registry");
@@ -920,8 +920,8 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
-        assertThatThrownBy(() -> reports.report(new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null,
-                Map.of(), null, "ghost", null, Map.of()), "ABC-1")).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> reports.report(new AgentStatusMessage("IN_PROGRESS", "needs it", "question",
+                new AgentStatusMessage.Request(null, null), null, "ghost", null, Map.of()), "ABC-1")).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("needsProject").hasMessageContaining("[proj]");
         assertThat(state.task("ABC-1").orElseThrow().repoRequest()).isNull();
     }
@@ -1154,7 +1154,7 @@ class AgentStatusReportsTest {
                 new HandBack(worktreeChanges, new Rounds(configService, ignored -> false), configService),
                 configService);
 
-        reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null, null,
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, new AgentStatusMessage.Request(null, null), null, null, null,
                 Map.of("visualize", "no — config-only change")), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().switches())

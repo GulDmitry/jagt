@@ -24,8 +24,8 @@ class ClaudeHookJsonTest {
                     SessionHookReport.class);
 
             assertThat(said.transcriptPath()).isEqualTo("/tmp/s.jsonl");
-            assertThat(said.prompt()).isEqualTo("go on");
-            assertThat(said.toolName()).isEqualTo("Bash");
+            assertThat(said.turn().prompt()).isEqualTo("go on");
+            assertThat(said.turn().toolName()).isEqualTo("Bash");
         });
     }
 

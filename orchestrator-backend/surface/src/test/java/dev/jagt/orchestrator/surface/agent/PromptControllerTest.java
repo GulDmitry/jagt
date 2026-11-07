@@ -21,8 +21,8 @@ class PromptControllerTest {
     private final PromptGate gate = mock(PromptGate.class);
     private final AgentSessionController sessions = mock(AgentSessionController.class);
     private final TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
-    private final SessionHookReport typed = new SessionHookReport(null, null, null, null, null, null,
-            java.util.List.of(), "go on", null);
+    private final SessionHookReport typed = new SessionHookReport(null, null, null,
+            new SessionHookReport.Ending(null, null, null), new SessionHookReport.Turn("go on", null, java.util.List.of()));
 
     @Test
     void reportsTheSessionWorkingWhenTheGateLetsThePromptThrough() {

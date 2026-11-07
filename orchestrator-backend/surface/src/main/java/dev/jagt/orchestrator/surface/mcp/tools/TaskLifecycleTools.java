@@ -30,12 +30,12 @@ public class TaskLifecycleTools implements McpTools {
     public void declare(McpToolRegistry tools) {
         tools.tool("initialize_task", Audience.MASTER, Effect.CHANGES, NewTaskMessage.SCHEMA, NewTaskMessage.class,
                 (said, caller) -> MessageContext.NONE,
-                (said, caller) -> provisioning.initializeTask(NewTask.builder(said.taskId(), said.projectKey())
-                        .alsoIn(said.alsoProjects())
+                (said, caller) -> provisioning.initializeTask(NewTask.builder(said.taskId(), said.placement().projectKey())
+                        .alsoIn(said.placement().alsoProjects())
                         .instructions(said.instructions())
                         .mode(said.mode())
-                        .branchStrategy(said.branchStrategy())
-                        .baseBranch(said.baseBranch())
+                        .branchStrategy(said.placement().branchStrategy())
+                        .baseBranch(said.placement().baseBranch())
                         .title(said.title())
                         .ticketUrl(said.ticketUrl())
                         .build()));

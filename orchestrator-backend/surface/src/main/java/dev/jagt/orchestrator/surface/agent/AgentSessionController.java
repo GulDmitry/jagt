@@ -93,9 +93,9 @@ public class AgentSessionController {
                 .withSessionLog(said.sessionLog().orElse(null))
                 .withStartedBy(said.source())
                 .withSaid(said.message())
-                .withEndedBy(said.reason())
-                .withFailedOn(said.error())
-                .withToolName(said.toolName())
+                .withEndedBy(said.ending().reason())
+                .withFailedOn(said.ending().error())
+                .withToolName(said.turn().toolName())
                 .withTask(task.getValue());
     }
 

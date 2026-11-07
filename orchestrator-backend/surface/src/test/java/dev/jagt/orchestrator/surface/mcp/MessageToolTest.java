@@ -81,7 +81,7 @@ class MessageToolTest {
     void readsEveryFieldTheMessageDeclaresWithoutBeingToldOneByOne() {
         ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
                 (said, caller) -> new MessageContext(java.util.List.of("api"), false, java.util.List.of()),
-                (said, caller) -> said.reviewRequests().toString() + " " + said.taskId());
+                (said, caller) -> said.request().reviewRequests().toString() + " " + said.taskId());
 
         String answer = tool.call(mapper.readTree("{\"status\":\"CI_POLLING\",\"taskId\":\"ABC-9\",\"why\":\"request opened\","
                 + "\"reviewRequests\":{\"api\":\"https://host/mr/1\"}}"), "ABC-1");

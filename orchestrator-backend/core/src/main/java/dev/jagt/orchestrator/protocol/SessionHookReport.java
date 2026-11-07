@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 import org.jspecify.annotations.Nullable;
 
@@ -19,26 +20,36 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
 public record SessionHookReport(@Nullable String transcriptPath,
                                 @Nullable String source,
                                 @Nullable String message,
-                                @Nullable Boolean continuing,
-                                @Nullable String error,
-                                @Nullable String reason,
-                                List<Object> backgroundTasks,
-                                @Nullable String prompt,
-                                @Nullable String toolName) implements Message {
+                                @JsonUnwrapped Ending ending,
+                                @JsonUnwrapped Turn turn) implements Message {
+
+    public record Ending(@Nullable Boolean continuing, @Nullable String error, @Nullable String reason) {
+
+        public Ending {
+            error = absent(error);
+            reason = absent(reason);
+        }
+    }
+
+    public record Turn(@Nullable String prompt, @Nullable String toolName, List<Object> backgroundTasks) {
+
+        public Turn {
+            prompt = absent(prompt);
+            toolName = absent(toolName);
+            backgroundTasks = backgroundTasks == null ? List.of() : backgroundTasks;
+        }
+    }
 
     public SessionHookReport {
         transcriptPath = absent(transcriptPath);
         source = absent(source);
         message = absent(message);
-        error = absent(error);
-        reason = absent(reason);
-        prompt = absent(prompt);
-        toolName = absent(toolName);
-        backgroundTasks = backgroundTasks == null ? List.of() : backgroundTasks;
+        ending = ending == null ? new Ending(null, null, null) : ending;
+        turn = turn == null ? new Turn(null, null, List.of()) : turn;
     }
 
     public SessionHookReport(@Nullable String transcriptPath, @Nullable String source, @Nullable String message) {
-        this(transcriptPath, source, message, null, null, null, List.of(), null, null);
+        this(transcriptPath, source, message, new Ending(null, null, null), new Turn(null, null, List.of()));
     }
 
     /** Nothing was posted at all, which is a state the address alone still reports. */
@@ -48,17 +59,17 @@ public record SessionHookReport(@Nullable String transcriptPath,
 
     /** The turn ending was itself sent on by a refusal, so refusing again could never resolve. */
     public boolean sentOn() {
-        return Boolean.TRUE.equals(continuing);
+        return Boolean.TRUE.equals(ending.continuing());
     }
 
     /** What the human typed, which only a prompt hook carries; blank where it is not one. */
     public String typed() {
-        return prompt == null ? "" : prompt;
+        return turn.prompt() == null ? "" : turn.prompt();
     }
 
     /** Work still in flight wakes the session back up: a pause, not a stop. */
     public boolean pausedOnBackgroundWork() {
-        return !backgroundTasks.isEmpty();
+        return !turn.backgroundTasks().isEmpty();
     }
 
     /**

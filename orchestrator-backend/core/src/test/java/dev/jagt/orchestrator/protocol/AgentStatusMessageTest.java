@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.protocol;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -51,8 +52,8 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesBothLinkFormsAtOnceBecauseNeitherWinsWithoutGuessing() {
-        var said = AgentStatusMessage.of("CI_POLLING", "shipped").withReviewRequestUrl("https://host/mr/9")
-                .withReviewRequests(Map.of("api", "https://host/api/mr/1"));
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped").withRequest(new AgentStatusMessage.Request("https://host/mr/9",
+                        Map.of("api", "https://host/api/mr/1")));
 
         assertThat(said.reportViolations(new MessageContext(List.of("api"), false, java.util.List.of()))).extracting(Violation::field)
                 .containsExactly("reviewRequests");
@@ -60,7 +61,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesALinkNobodyCanOpen() {
-        var said = AgentStatusMessage.of("CI_POLLING", "shipped").withReviewRequestUrl("git@host:proj.git");
+        var said = AgentStatusMessage.of("CI_POLLING", "shipped").withRequest(new AgentStatusMessage.Request("git@host:proj.git", null));
 
         assertThat(said.reportViolations(MessageContext.NONE)).extracting(Violation::field)
                 .contains("reviewRequestUrl");
@@ -69,7 +70,7 @@ class AgentStatusMessageTest {
     @Test
     void refusesARequestFiledUnderAProjectTheTaskDoesNotHave() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("nope", "https://host/mr/9"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("nope", "https://host/mr/9")));
 
         assertThat(said.reportViolations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).extracting(Violation::expected)
                 .allSatisfy(expected -> assertThat(expected).contains("not on this task"));
@@ -85,7 +86,7 @@ class AgentStatusMessageTest {
     @Test
     void readsTheSessionsOwnRepositoryAsTheLinkAHumanFollowsFirst() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("api", "https://host/api/mr/1", "web", "https://host/web/mr/2"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("api", "https://host/api/mr/1", "web", "https://host/web/mr/2")));
 
         assertThat(said.accepted(new MessageContext(List.of("web", "api"), false, java.util.List.of())).orElseThrow().link())
                 .isEqualTo("https://host/web/mr/2");
@@ -112,7 +113,7 @@ class AgentStatusMessageTest {
     @Test
     void refusesEveryRequestUnderAProjectTheTaskDoesNotHaveByNamingIt() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("nope", "https://host/mr/9"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("nope", "https://host/mr/9")));
 
         assertThat(said.reportViolations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).singleElement()
                 .satisfies(violation -> assertThat(violation.field()).isEqualTo("reviewRequests"))
@@ -123,7 +124,7 @@ class AgentStatusMessageTest {
     @Test
     void acceptsARequestFiledUnderAProjectOfTheTask() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("web", "https://host/mr/9"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("web", "https://host/mr/9")));
 
         assertThat(said.reportViolations(new MessageContext(List.of("api", "web"), false, java.util.List.of()))).isEmpty();
     }
@@ -131,14 +132,14 @@ class AgentStatusMessageTest {
     @Test
     void leavesTheProjectsAloneWhenTheTaskIsNotKnown() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("nope", "https://host/mr/9"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("nope", "https://host/mr/9")));
 
         assertThat(said.reportViolations(MessageContext.NONE)).isEmpty();
     }
 
     @Test
     void readsTheLinkFromTheFieldTheMapAndTheMessageInThatOrder() {
-        var field = AgentStatusMessage.of("CI_POLLING", "see https://host/other").withReviewRequestUrl("  https://host/mr/1 ");
+        var field = AgentStatusMessage.of("CI_POLLING", "see https://host/other").withRequest(new AgentStatusMessage.Request("  https://host/mr/1 ", null));
         var message = AgentStatusMessage.of("CI_POLLING", "request https://host/mr/2 opened");
         var neither = AgentStatusMessage.of("REVIEW_PENDING", "all handled");
 
@@ -150,7 +151,7 @@ class AgentStatusMessageTest {
     @Test
     void readsTheOnlyRequestAsTheLinkWhenTheSessionsOwnRepositoryHasNone() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("web", "https://host/web/mr/2"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("web", "https://host/web/mr/2")));
 
         assertThat(said.accepted(new MessageContext(List.of("api", "web"), false, java.util.List.of())).orElseThrow().link())
                 .isEqualTo("https://host/web/mr/2");
@@ -159,7 +160,7 @@ class AgentStatusMessageTest {
     @Test
     void readsTheOnlyRequestAsTheLinkWhenTheTaskIsNotKnown() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("web", "https://host/web/mr/2"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("web", "https://host/web/mr/2")));
 
         assertThat(said.accepted(MessageContext.NONE).orElseThrow().link()).isEqualTo("https://host/web/mr/2");
     }
@@ -167,7 +168,7 @@ class AgentStatusMessageTest {
     @Test
     void keepsEveryRequestTheReportNamedForTheRoundToRecord() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped")
-                .withReviewRequests(Map.of("api", "https://host/api/mr/1", "web", "https://host/web/mr/2"));
+                .withRequest(new AgentStatusMessage.Request(null, Map.of("api", "https://host/api/mr/1", "web", "https://host/web/mr/2")));
 
         assertThat(said.accepted(new MessageContext(List.of("api", "web"), false, java.util.List.of())).orElseThrow().requests())
                 .containsOnlyKeys("api", "web");
@@ -215,7 +216,7 @@ class AgentStatusMessageTest {
 
     @Test
     void carriesTheProjectAQuestionNeedsWhenItIsConfiguredAndNotOnTheTask() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", null, Map.of(), null,
+        var said = new AgentStatusMessage("IN_PROGRESS", "needs the registry", "question", new AgentStatusMessage.Request(null, null), null,
                 "registry", null, Map.of());
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
@@ -225,7 +226,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectNoConfigurationHasNamingTheOnesThereAre() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "ghost", null, Map.of());
+        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", new AgentStatusMessage.Request(null, null), null, "ghost", null, Map.of());
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
         assertThat(said.reportViolations(context)).singleElement().satisfies(violation -> {
@@ -236,7 +237,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectTheTaskAlreadyHoldsNamingItsProjects() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", null, Map.of(), null, "api", null, Map.of());
+        var said = new AgentStatusMessage("IN_PROGRESS", "needs it", "question", new AgentStatusMessage.Request(null, null), null, "api", null, Map.of());
         var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
         assertThat(said.reportViolations(context)).singleElement().satisfies(violation -> {
@@ -247,7 +248,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAProjectNeededOutsideAQuestion() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", "progress", null, Map.of(), null, "registry", null, Map.of());
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", "progress", new AgentStatusMessage.Request(null, null), null, "registry", null, Map.of());
 
         assertThat(said.reportViolations(new MessageContext(List.of("api"), false, List.of("api", "registry"))))
                 .singleElement().satisfies(violation -> assertThat(violation.expected())
@@ -263,7 +264,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAReasonLongerThanOneSentenceNamingTheLimit() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, new AgentStatusMessage.Request(null, null), null, null,
                 "the human asked for the billing repository because the invoice export reads it, and the change"
                         + " crosses both sides of the contract", Map.of());
 
@@ -273,7 +274,7 @@ class AgentStatusMessageTest {
 
     @Test
     void acceptsAReportWithItsReason() {
-        var said = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("REVIEW_PENDING", "done", null, new AgentStatusMessage.Request(null, null), null, null,
                 "work done, tests green, ready for review", Map.of());
 
         assertThat(said.violations(MessageContext.NONE)).isEmpty();
@@ -281,7 +282,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesTheFirstReportThatLeavesOutASwitchThatIsOn() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, new AgentStatusMessage.Request(null, null), null, null,
                 "starting work", Map.of());
 
         assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")).withFirstReport(true)))
@@ -290,7 +291,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAPlanHandBackThatLeavesOutASwitchThatIsOn() {
-        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, new AgentStatusMessage.Request(null, null), null, null,
                 "plan written for approval", Map.of());
 
         assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize"))))
@@ -300,7 +301,7 @@ class AgentStatusMessageTest {
 
     @Test
     void refusesAPlanHandBackJudgingVisualizeYesWhileThePictureIsMissing() {
-        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, new AgentStatusMessage.Request(null, null), null, null,
                 "plan written for approval", Map.of("visualize", "yes — a new table"));
 
         assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")).withVisualMissing(true)))
@@ -309,7 +310,7 @@ class AgentStatusMessageTest {
 
     @Test
     void acceptsAPlanHandBackJudgingVisualizeYesOnceThePictureIsThere() {
-        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, new AgentStatusMessage.Request(null, null), null, null,
                 "plan written for approval", Map.of("visualize", "yes — a new table"));
 
         assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")))).isEmpty();
@@ -317,7 +318,7 @@ class AgentStatusMessageTest {
 
     @Test
     void acceptsAPlanHandBackJudgingVisualizeNoWhileThePictureIsMissing() {
-        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("PLAN_PENDING", "plan ready", null, new AgentStatusMessage.Request(null, null), null, null,
                 "plan written for approval", Map.of("visualize", "no — a two-line fix"));
 
         assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")).withVisualMissing(true)))
@@ -326,7 +327,7 @@ class AgentStatusMessageTest {
 
     @Test
     void owesNoSwitchOnALaterReportThatHandsBackNoPlan() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, new AgentStatusMessage.Request(null, null), null, null,
                 "back to work", Map.of());
 
         assertThat(said.violations(MessageContext.NONE.withSwitchesOn(List.of("visualize")))).isEmpty();
@@ -334,7 +335,7 @@ class AgentStatusMessageTest {
 
     @Test
     void acceptsTheFirstReportWhenNoSwitchIsOwed() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, new AgentStatusMessage.Request(null, null), null, null,
                 "starting work", Map.of());
 
         assertThat(said.violations(MessageContext.NONE)).isEmpty();
@@ -342,7 +343,7 @@ class AgentStatusMessageTest {
 
     @Test
     void carriesTheJudgementsOfAnAcceptedReport() {
-        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of(), null, null,
+        var said = new AgentStatusMessage("IN_PROGRESS", "working", null, new AgentStatusMessage.Request(null, null), null, null,
                 "starting work", Map.of("visualize", "no — config-only change"));
 
         assertThat(said.accepted(MessageContext.NONE).orElseThrow().switches())
@@ -387,5 +388,18 @@ class AgentStatusMessageTest {
 
         assertThat(said.reportViolations(MessageContext.NONE.refusingWaits())).singleElement()
                 .satisfies(violation -> assertThat(violation.field()).isEqualTo("outcome"));
+    }
+
+    @Test
+    void readsTheFlatReportJsonAndWritesItBackEqual() throws Exception {
+        var mapper = JsonMapper.builder().build();
+        var flat = """
+                {"status":"CI_POLLING","message":"shipped","outcome":"progress",
+                 "reviewRequestUrl":"https://host/mr/9","reviewRequests":{"api":"https://host/api/mr/1"},
+                 "taskId":"ABC-9","needsProject":"web","why":"request opened","switches":{"visualize":"no"}}""";
+
+        var said = mapper.readValue(flat, AgentStatusMessage.class);
+
+        assertThat(mapper.readTree(mapper.writeValueAsString(said))).isEqualTo(mapper.readTree(flat));
     }
 }

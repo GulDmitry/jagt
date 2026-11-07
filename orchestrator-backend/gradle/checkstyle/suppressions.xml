@@ -3,15 +3,10 @@
         "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
     <!-- 0143: each line names its reason and estimated cost (weekly points, estimate); zero is the target. -->
-    <!-- wire message a session sends; nesting changes the protocol schema; ~0.5 pt -->
-    <suppress files="[\\/]AgentStatusMessage\.java$" checks="RecordComponentNumber"/>
     <!-- board JSON the page reads; split with the page; ~0.5 pt -->
     <suppress files="[\\/]BoardApiController\.java$" checks="RecordComponentNumber"/>
-    <!-- Jackson creator mirroring an outside hook payload; a nested record per group; ~0.3 pt -->
-    <suppress files="[\\/]ClaudeHookReportMixIn\.java$" checks="ParameterNumber"/>
     <!-- jagt.yml file shape, read in the old shape; ~1 pt -->
     <suppress files="[\\/]ConfigService\.java$" checks="RecordComponentNumber"/>
-    <suppress files="[\\/]NewTaskMessage\.java$" checks="RecordComponentNumber"/>
     <!-- Spring binding of jagt.yml; nested properties keep the keys; ~0.3 pt -->
     <suppress files="[\\/]OrchestratorProperties\.java$" checks="RecordComponentNumber"/>
     <!-- not yet split; ~0.5 pt -->
@@ -23,7 +18,6 @@
     <suppress files="[\\/]RoleDefinition\.java$" checks="RecordComponentNumber"/>
     <!-- persisted in state.json; ~0.3 pt -->
     <suppress files="[\\/]Session\.java$" checks="RecordComponentNumber"/>
-    <suppress files="[\\/]SessionHookReport\.java$" checks="RecordComponentNumber"/>
     <!-- persisted in state.json, read in the old flat shape; split last; ~3 pt -->
     <suppress files="[\\/]TaskState\.java$" checks="ParameterNumber"/>
     <suppress files="[\\/]TaskState\.java$" checks="RecordComponentNumber"/>

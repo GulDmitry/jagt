@@ -56,7 +56,8 @@ class AgentSessionControllerTest {
         when(reports.turnFailed("ABC-1", report)).thenReturn(true);
 
         new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, null, "rate_limit", null, java.util.List.of(), null, null));
+                new SessionHookReport(null, null, null,
+                        new SessionHookReport.Ending(null, "rate_limit", null), new SessionHookReport.Turn(null, null, java.util.List.of())));
 
         verify(wakes).arm("ABC-1");
     }
@@ -69,7 +70,8 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).turnFailure("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, null, "overloaded", null, java.util.List.of(), null, null));
+                new SessionHookReport(null, null, null,
+                        new SessionHookReport.Ending(null, "overloaded", null), new SessionHookReport.Turn(null, null, java.util.List.of())));
 
         verify(wakes, never()).arm("ABC-1");
     }
@@ -175,7 +177,8 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         String answered = new AgentSessionController(state, reports, wakes).permission("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, null, null, null, java.util.List.of(), null, "Bash"));
+                new SessionHookReport(null, null, null,
+                        new SessionHookReport.Ending(null, null, null), new SessionHookReport.Turn(null, "Bash", java.util.List.of())));
 
         verify(reports).permissionAsked("ABC-1", SessionReports.Report.defaults().withToolName("Bash").withTask(task));
         assertThat(answered).isEmpty();
@@ -189,7 +192,8 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports, wakes).turnEnd("/wt/ABC-1-proj",
-                new SessionHookReport(null, null, null, true, null, null, java.util.List.of(Map.of("id", "b1")), null, null));
+                new SessionHookReport(null, null, null,
+                        new SessionHookReport.Ending(true, null, null), new SessionHookReport.Turn(null, null, java.util.List.of(Map.of("id", "b1")))));
 
         verify(reports).turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), true, true);
     }

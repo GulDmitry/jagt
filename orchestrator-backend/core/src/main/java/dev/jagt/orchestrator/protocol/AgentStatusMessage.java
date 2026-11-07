@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
@@ -27,9 +28,18 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentStatusMessage(@Nullable String status, @Nullable String message, @With @Nullable String outcome,
-                                 @With @Nullable String reviewRequestUrl, @With Map<String, String> reviewRequests,
+                                 @With @JsonUnwrapped Request request,
                                  @Nullable String taskId, @Nullable String needsProject,
                                  @Nullable String why, Map<String, String> switches) implements Message {
+
+    @With
+    public record Request(@Nullable String reviewRequestUrl, Map<String, String> reviewRequests) {
+
+        public Request {
+            reviewRequestUrl = absent(reviewRequestUrl);
+            reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
+        }
+    }
 
     /** The wire spelling of what a report means; absent is progress. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "permission", "no_changes",
@@ -83,22 +93,21 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
         status = absent(status);
         message = absent(message);
         outcome = absent(outcome);
-        reviewRequestUrl = absent(reviewRequestUrl);
+        request = request == null ? new Request(null, Map.of()) : request;
         taskId = absent(taskId);
         needsProject = absent(needsProject);
         why = absent(why);
-        reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
         switches = switches == null ? Map.of() : Map.copyOf(switches);
     }
 
     /** The five-field form, for jagt's own reports, which name no task of someone else's. */
     public AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
                               @Nullable String reviewRequestUrl, Map<String, String> reviewRequests) {
-        this(status, message, outcome, reviewRequestUrl, reviewRequests, null, null, null, Map.of());
+        this(status, message, outcome, new Request(reviewRequestUrl, reviewRequests), null, null, null, Map.of());
     }
 
     public static AgentStatusMessage of(@Nullable String status, @Nullable String message) {
-        return new AgentStatusMessage(status, message, null, null, Map.of(), null, null, null, Map.of());
+        return new AgentStatusMessage(status, message, null, new Request(null, Map.of()), null, null, null, Map.of());
     }
 
     /**
@@ -143,7 +152,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             found.add(new Violation("status", "IN_PROGRESS with no_plan"));
         }
         waitViolations(context).forEach(found::add);
-        if (!reviewRequests.isEmpty() && reviewRequestUrl != null) {
+        if (!request.reviewRequests().isEmpty() && request.reviewRequestUrl() != null) {
             found.add(new Violation("reviewRequests", "given instead of reviewRequestUrl, never beside it"));
         }
         notWebLinks().forEach(link -> found.add(new Violation("reviewRequestUrl",
@@ -208,7 +217,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
             return Optional.empty();
         }
         return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), message,
-                link(context.projectsOnTask()), reviewRequests, noPlan(), needsProject,
+                link(context.projectsOnTask()), request.reviewRequests(), noPlan(), needsProject,
                 SwitchJudgements.normalised(switches)));
     }
 
@@ -248,6 +257,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
 
     /** The request this report is about, wherever it was written: the named field, the map, or the message. */
     private @Nullable String link(List<String> projectsOnTask) {
+        Map<String, String> reviewRequests = request.reviewRequests();
+        String reviewRequestUrl = request.reviewRequestUrl();
         if (!reviewRequests.isEmpty()) {
             if (!projectsOnTask.isEmpty() && reviewRequests.containsKey(projectsOnTask.get(0))) {
                 return reviewRequests.get(projectsOnTask.get(0));
@@ -262,7 +273,8 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
     }
 
     private List<String> notWebLinks() {
-        List<String> links = new ArrayList<>(reviewRequests.values());
+        List<String> links = new ArrayList<>(request.reviewRequests().values());
+        String reviewRequestUrl = request.reviewRequestUrl();
         if (reviewRequestUrl != null && !reviewRequestUrl.isBlank()) {
             links.add(reviewRequestUrl.strip());
         }
@@ -271,7 +283,7 @@ public record AgentStatusMessage(@Nullable String status, @Nullable String messa
 
     private List<String> unknownProjects(List<String> projectsOnTask) {
         return projectsOnTask.isEmpty() ? List.of()
-                : reviewRequests.keySet().stream().filter(key -> !projectsOnTask.contains(key)).toList();
+                : request.reviewRequests().keySet().stream().filter(key -> !projectsOnTask.contains(key)).toList();
     }
 
     private static String normalised(String outcome) {
