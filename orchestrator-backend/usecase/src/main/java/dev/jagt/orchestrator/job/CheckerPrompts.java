@@ -27,7 +27,7 @@ public class CheckerPrompts {
                 .collect(Collectors.joining("\n"));
         String facts = deployFact(taskId, sha) + "\nCheck it on:\n" + environments;
         return new CheckerReader.Run(brief.text(), brief.section(step) + "\n\n" + facts, Path.of(worktree), sha,
-                qa.modelOrInherited(), reachable(qa), role.answer().json(), role.id());
+                qa.modelOrInherited(), reachable(qa), role.replies().answer().json(), role.id());
     }
 
     /** The round QA sent back and the reason the session gave for changing nothing, read against fresh evidence. */
@@ -37,7 +37,7 @@ public class CheckerPrompts {
         String facts = deployFact(taskId, sha) + "\nThe rows you found not met:\n" + rows
                 + "\nThe session changed nothing, and says:\n" + reason + "\nCheck on:\n" + environments;
         return new CheckerReader.Run(brief.text(), brief.section(QaVerdict.DECLINE) + "\n\n" + facts, Path.of(worktree), sha,
-                qa.modelOrInherited(), reachable(qa), role.decline().json(), role.id());
+                qa.modelOrInherited(), reachable(qa), role.replies().decline().json(), role.id());
     }
 
     private static String deployFact(String taskId, String sha) {

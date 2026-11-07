@@ -9,21 +9,27 @@ import java.util.List;
  * its check opens, which outcomes may end it, what its read may call, and the shapes of what it answers to a check
  * and to a decline.
  */
-public record RoleDefinition(String id, String name, String model, List<String> trigger, String oncePer,
-                             List<String> outcomes, Tools tools, Schema answer, Schema decline,
+public record RoleDefinition(String id, String name, String model, Trigger trigger, Replies replies, Tools tools,
                              Checking checking) {
 
     private static final Schema ABSENT = Schema.of("no role installed");
 
     /** The stand-in for a role no {@code role.yml} installs: it declares nothing, so its jobs find nothing to do. */
     public static RoleDefinition absent(String id) {
-        return new RoleDefinition(id, id, "", List.of(), "", List.of(), new Tools(List.of(), List.of(), List.of(), false,
-                false),
-                ABSENT, ABSENT, new Checking(false, List.of()));
+        return new RoleDefinition(id, id, "", new Trigger(List.of(), ""), new Replies(List.of(), ABSENT, ABSENT),
+                new Tools(List.of(), List.of(), List.of(), false, false), new Checking(false, List.of()));
     }
 
     public boolean installed() {
-        return answer != ABSENT;
+        return replies.answer() != ABSENT;
+    }
+
+    /** The events whose coincidence opens a check, and the unit of work it opens once per. */
+    public record Trigger(List<String> trigger, String oncePer) {
+    }
+
+    /** The outcomes that may end a read, and the shapes of what it answers to a check and to a decline. */
+    public record Replies(List<String> outcomes, Schema answer, Schema decline) {
     }
 
     /** Whether the role runs jobs, and the brief steps whose turn opens its read. */

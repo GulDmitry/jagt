@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 class QaReadsTest {
 
     private static final CheckerReader.Run RUN = new CheckerReader.Run("", "", Paths.get("/wt"), "proj@0123", "", List.of(),
-            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).answer().json(), "qa");
+            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json(), "qa");
 
     private static TaskState deployed() {
         return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build().withDeployment(new Deployment(1,

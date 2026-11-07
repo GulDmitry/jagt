@@ -12,8 +12,6 @@
     <suppress files="[\\/]ProjectCards\.java$" checks="RecordComponentNumber"/>
     <!-- next split, with a builder; ~1 pt -->
     <suppress files="[\\/]ProjectConfig\.java$" checks="RecordComponentNumber"/>
-    <!-- role file shape; ~0.3 pt -->
-    <suppress files="[\\/]RoleDefinition\.java$" checks="RecordComponentNumber"/>
     <!-- persisted in state.json; ~0.3 pt -->
     <suppress files="[\\/]Session\.java$" checks="RecordComponentNumber"/>
     <!-- persisted in state.json, read in the old flat shape; split last; ~3 pt -->

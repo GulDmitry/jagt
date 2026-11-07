@@ -64,10 +64,10 @@ class RoleStartupTest {
         RoleDefinition qa = new InstalledRoles(paths).find("qa").orElseThrow();
 
         assertThat(qa.model()).isEqualTo("opus");
-        assertThat(qa.trigger()).containsExactly("deployed");
+        assertThat(qa.trigger().trigger()).containsExactly("deployed");
         assertThat(qa.tools().git()).isFalse();
         assertThat(qa.tools().shell()).contains("git log*");
-        assertThat(qa.outcomes()).contains("round");
+        assertThat(qa.replies().outcomes()).contains("round");
     }
 
     @Test
@@ -79,7 +79,7 @@ class RoleStartupTest {
 
         InstalledRoles roles = new InstalledRoles(paths);
 
-        assertThat(roles.find("qa")).hasValueSatisfying(qa -> assertThat(qa.outcomes()).contains("round"));
+        assertThat(roles.find("qa")).hasValueSatisfying(qa -> assertThat(qa.replies().outcomes()).contains("round"));
         assertThat(roles.skipped()).singleElement().satisfies(problem ->
                 assertThat(problem.text()).startsWith("role.yml: ").endsWith("the shipped file stands"));
     }

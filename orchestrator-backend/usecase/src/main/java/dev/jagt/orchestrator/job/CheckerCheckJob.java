@@ -78,7 +78,7 @@ public class CheckerCheckJob implements TaskJob {
 
     /** The deployment where a check may open: the role is on and every predicate its trigger names holds. */
     private Optional<Deployment> openFor(TaskState task, RoleConfig config) {
-        List<String> trigger = settings.role().trigger();
+        List<String> trigger = settings.role().trigger().trigger();
         return Optional.ofNullable(task.deployment()).filter(deployment -> config.enabledOrDefault()
                 && deployment.askedDigest() != null
                 && trigger.stream().allMatch(predicate -> holds(predicate, deployment, config)));

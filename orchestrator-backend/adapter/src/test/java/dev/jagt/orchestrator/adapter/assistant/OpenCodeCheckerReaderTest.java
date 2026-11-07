@@ -56,7 +56,7 @@ class OpenCodeCheckerReaderTest {
                         + "\\\"status\\\":\\\"met\\\",\\\"evidence\\\":\\\"GET answered 200\\\"}]}\\n```\"}}", ""));
 
         Answer<QaVerdict> answer = reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "",
-                List.of(), QA.answer().json(), "qa"));
+                List.of(), QA.replies().answer().json(), "qa"));
 
         assertThat(answer.facts().orElseThrow().rows()).extracting(QaVerdict.Row::status)
                 .containsExactly(QaVerdict.Status.MET);
@@ -68,7 +68,7 @@ class OpenCodeCheckerReaderTest {
                 .thenReturn(new Processes.Result(0, "", ""));
 
         reader.reconsider(new CheckerReader.Run("house rules", "check ABC-42", worktree, "abc123", "sonnet",
-                List.of("https://dev.example.test"), QA.decline().json(), "qa"));
+                List.of("https://dev.example.test"), QA.replies().decline().json(), "qa"));
 
         ArgumentCaptor<Map<String, String>> env = ArgumentCaptor.captor();
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
@@ -84,7 +84,7 @@ class OpenCodeCheckerReaderTest {
                 .thenThrow(new IllegalStateException("Command timed out"));
 
         Answer<QaDecline> answer = reader.reconsider(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "",
-                List.of(), QA.decline().json(), "qa"));
+                List.of(), QA.replies().decline().json(), "qa"));
 
         assertThat(answer.facts().orElseThrow().failure()).startsWith("the check failed: did not return");
     }

@@ -20,14 +20,26 @@ class RoleDefinitionsTest {
         RoleDefinition compiled = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"));
 
         assertThat(compiled.id()).isEqualTo("qa");
-        assertThat(compiled.trigger()).containsExactly("deployed", "pipelines-green", "environment-named");
-        assertThat(compiled.oncePer()).isEqualTo("deploy");
-        assertThat(compiled.outcomes()).containsExactly("round", "question", "wait", "dispute", "stop");
+        assertThat(compiled.trigger().trigger()).containsExactly("deployed", "pipelines-green", "environment-named");
+        assertThat(compiled.trigger().oncePer()).isEqualTo("deploy");
+        assertThat(compiled.replies().outcomes()).containsExactly("round", "question", "wait", "dispute", "stop");
         assertThat(compiled.tools().shell()).containsExactly("curl -sS*", "git log*", "git show*", "git diff*");
         assertThat(compiled.tools().refuseShell()).contains("git push*");
         assertThat(compiled.tools().refuseRead()).isEmpty();
         assertThat(compiled.tools().git()).isTrue();
         assertThat(compiled.tools().fetch()).isTrue();
+    }
+
+    @Test
+    void aFlatRoleDocumentCompilesItsTriggerAndItsRepliesIntoOneValueEach() {
+        RoleDefinition compiled = RoleDefinitions.compile("id: x\nname: X\nmodel: m\ntrigger: [deployed, pipelines-green]\n"
+                + "oncePer: deploy\noutcomes: [round, stop]\nanswer:\n  - required: verdict\ndecline:\n  - text: why\n");
+
+        assertThat(compiled.trigger().trigger()).containsExactly("deployed", "pipelines-green");
+        assertThat(compiled.trigger().oncePer()).isEqualTo("deploy");
+        assertThat(compiled.replies().outcomes()).containsExactly("round", "stop");
+        assertThat(compiled.replies().answer().json()).contains("verdict");
+        assertThat(compiled.replies().decline().json()).contains("why");
     }
 
     @Test

@@ -75,8 +75,9 @@ public final class RoleDefinitions {
             throw new RoleInvalid(id + ": its trigger names deployed, or a check would open before the change is live");
         }
         return new RoleDefinition(id, text(document, "name"), text(document, "model"),
-                trigger, word(document, "oncePer", ONCE_PER), outcomes,
-                tools(map(document, "tools")), schema(document, "answer"), schema(document, "decline"),
+                new RoleDefinition.Trigger(trigger, word(document, "oncePer", ONCE_PER)),
+                new RoleDefinition.Replies(outcomes, schema(document, "answer"), schema(document, "decline")),
+                tools(map(document, "tools")),
                 new RoleDefinition.Checking(Boolean.TRUE.equals(document.get("jobs")), strings(document, "readSteps")));
     }
 
